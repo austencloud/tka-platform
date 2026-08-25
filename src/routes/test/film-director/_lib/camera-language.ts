@@ -183,7 +183,7 @@ export function compileCameraMoves(
   context: CameraLanguageContext
 ): ResolvedDirectorCameraKeyframe[] {
   if (moves.length === 0) {
-    // No moves to chain: an honest two-frame hold spanning the whole shot,
+    // No moves to chain: an honest two-frame hold spanning the whole scene,
     // rather than crashing on frames[0] below.
     return [
       {
@@ -345,7 +345,7 @@ function allocateWindows(
   );
   if (explicit > durationSeconds + 1e-6) {
     throw new Error(
-      `Camera moves total ${explicit}s but the shot's duration is ${durationSeconds}s.`
+      `Camera moves total ${explicit}s but the scene's duration is ${durationSeconds}s.`
     );
   }
   const openCount = moves.filter((move) => move.durationSeconds === undefined).length;

@@ -23,9 +23,9 @@ describe("film library", () => {
     describe(`"${entry.label}" (${entry.key})`, () => {
       it("resolves without rejection", () => {
         const resolved = resolveFilmDirectorSpec(entry.film);
-        expect(resolved.shots.length).toBeGreaterThan(0);
-        for (const shot of resolved.shots) {
-          expect(shot.performance.performers.length).toBeGreaterThan(0);
+        expect(resolved.scenes.length).toBeGreaterThan(0);
+        for (const scene of resolved.scenes) {
+          expect(scene.performance.performers.length).toBeGreaterThan(0);
         }
       });
 
@@ -41,15 +41,15 @@ describe("film library", () => {
     const ninePlanes = FILM_LIBRARY.find((entry) => entry.key === "planes")!;
     const resolved = resolveFilmDirectorSpec(ninePlanes.film);
 
-    const wheelhouse = resolved.shots.find((shot) => shot.id === "wheelhouse")!;
-    expect(wheelhouse.scene.visiblePlanes).toEqual(["wheel"]);
+    const wheelhouse = resolved.scenes.find((scene) => scene.id === "wheelhouse")!;
+    expect(wheelhouse.location.visiblePlanes).toEqual(["wheel"]);
     for (const performer of wheelhouse.performance.performers) {
       expect(performer.bluePlane).toBe("wheel");
       expect(performer.redPlane).toBe("wheel");
     }
 
-    const noTwoAlike = resolved.shots.find(
-      (shot) => shot.id === "no-two-alike"
+    const noTwoAlike = resolved.scenes.find(
+      (scene) => scene.id === "no-two-alike"
     )!;
     const bluePlanes = noTwoAlike.performance.performers.map(
       (performer) => performer.bluePlane
@@ -60,17 +60,17 @@ describe("film library", () => {
     );
     expect(new Set(redPlanes).size).toBe(redPlanes.length);
 
-    const scramble = resolved.shots.find(
-      (shot) => shot.id === "mid-phrase-scramble"
+    const scramble = resolved.scenes.find(
+      (scene) => scene.id === "mid-phrase-scramble"
     )!;
     for (const performer of scramble.performance.performers) {
       expect(performer.stepPlanes).toHaveLength(4);
     }
 
-    const shieldWall = resolved.shots.find(
-      (shot) => shot.id === "shield-wall"
+    const shieldWall = resolved.scenes.find(
+      (scene) => scene.id === "shield-wall"
     )!;
-    expect(shieldWall.scene.visiblePlanes).toEqual([
+    expect(shieldWall.location.visiblePlanes).toEqual([
       "left-shield",
       "right-shield",
     ]);
@@ -82,41 +82,41 @@ describe("film library", () => {
     )!;
     const resolved = resolveFilmDirectorSpec(understudy.film);
 
-    const leadShot = resolved.shots.find(
-      (shot) => shot.id === "lead-and-copies"
+    const leadScene = resolved.scenes.find(
+      (scene) => scene.id === "lead-and-copies"
     )!;
-    const lead = leadShot.performance.performers.find(
+    const lead = leadScene.performance.performers.find(
       (performer) => performer.id === "performer-1"
     )!;
     expect(lead.name).toBe("Lead");
     expect(lead.effect).toBe("fire");
-    const understudies = leadShot.performance.performers.filter(
+    const understudies = leadScene.performance.performers.filter(
       (performer) => performer.id !== "performer-1"
     );
     for (const performer of understudies) {
       expect(performer.prop).toBe(lead.prop);
       expect(performer.effect).not.toBe("fire");
     }
-    const efforts = leadShot.performance.performers.map(
+    const efforts = leadScene.performance.performers.map(
       (performer) => performer.effort
     );
     expect(new Set(efforts).size).toBe(efforts.length);
 
-    const allEight = resolved.shots.find(
-      (shot) => shot.id === "all-eight-efforts"
+    const allEight = resolved.scenes.find(
+      (scene) => scene.id === "all-eight-efforts"
     )!;
     const eightEfforts = allEight.performance.performers.map(
       (performer) => performer.effort
     );
     expect(new Set(eightEfforts).size).toBe(8);
 
-    const mirrorShot = resolved.shots.find(
-      (shot) => shot.id === "mirror-pair"
+    const mirrorScene = resolved.scenes.find(
+      (scene) => scene.id === "mirror-pair"
     )!;
-    const original = mirrorShot.performance.performers.find(
+    const original = mirrorScene.performance.performers.find(
       (performer) => performer.name === "Original"
     )!;
-    const mirror = mirrorShot.performance.performers.find(
+    const mirror = mirrorScene.performance.performers.find(
       (performer) => performer.name === "Mirror"
     )!;
     expect(mirror.prop).toBe(original.prop);
@@ -127,19 +127,19 @@ describe("film library", () => {
     expect(mirror.staffLengthCm).not.toBe(original.staffLengthCm);
   });
 
-  it("Chance Suite's identical directives on different shots draw from different streams", () => {
+  it("Chance Suite's identical directives on different scenes draw from different streams", () => {
     const chance = FILM_LIBRARY.find((entry) => entry.key === "chance")!;
     const resolved = resolveFilmDirectorSpec(chance.film);
 
-    const distinct = resolved.shots.find(
-      (shot) => shot.id === "distinct-everything"
+    const distinct = resolved.scenes.find(
+      (scene) => scene.id === "distinct-everything"
     )!;
     const props = distinct.performance.performers.map(
       (performer) => performer.prop
     );
     expect(new Set(props).size).toBe(props.length);
 
-    const loaded = resolved.shots.find((shot) => shot.id === "loaded-dice")!;
+    const loaded = resolved.scenes.find((scene) => scene.id === "loaded-dice")!;
     for (const performer of loaded.performance.performers) {
       expect(["fire", "led", "trails"]).toContain(performer.effect);
       const redStep = performer.stepPlanes.find(

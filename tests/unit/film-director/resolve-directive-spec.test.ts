@@ -8,7 +8,7 @@ function film(performance: Record<string, unknown>, extras: Record<string, unkno
     version: 2,
     id: "directive-film",
     title: "Directive Film",
-    shots: [{ id: "s1", title: "S1", performance }],
+    scenes: [{ id: "s1", title: "S1", performance }],
     ...extras,
   };
 }
@@ -25,7 +25,7 @@ describe("resolveFilmDirectorSpec with directives", () => {
         },
       })
     );
-    const performers = spec.shots[0]!.performance.performers;
+    const performers = spec.scenes[0]!.performance.performers;
     expect(performers).toHaveLength(8);
     expect(new Set(performers.map((p) => p.prop)).size).toBe(8);
     expect(performers[2]!.effect).toBe("led");
@@ -36,16 +36,16 @@ describe("resolveFilmDirectorSpec with directives", () => {
     const doc = film({ cast: { count: 4, defaults: { prop: { pick: "distinct" } } } });
     const first = resolveFilmDirectorSpec(doc);
     const second = resolveFilmDirectorSpec(doc);
-    expect(first.shots[0]!.performance.performers).toEqual(
-      second.shots[0]!.performance.performers
+    expect(first.scenes[0]!.performance.performers).toEqual(
+      second.scenes[0]!.performance.performers
     );
 
     const rerolled = resolveFilmDirectorSpec({
       ...doc,
       seed: { axes: { effect: 5 } },
     });
-    expect(rerolled.shots[0]!.performance.performers.map((p) => p.prop)).toEqual(
-      first.shots[0]!.performance.performers.map((p) => p.prop)
+    expect(rerolled.scenes[0]!.performance.performers.map((p) => p.prop)).toEqual(
+      first.scenes[0]!.performance.performers.map((p) => p.prop)
     );
   });
 
@@ -58,11 +58,11 @@ describe("resolveFilmDirectorSpec with directives", () => {
     });
     const base = resolveFilmDirectorSpec(doc);
     const rerolled = resolveFilmDirectorSpec({ ...doc, seed: { axes: { prop: 1 } } });
-    expect(rerolled.shots[0]!.performance.performers.map((p) => p.avatarId)).toEqual(
-      base.shots[0]!.performance.performers.map((p) => p.avatarId)
+    expect(rerolled.scenes[0]!.performance.performers.map((p) => p.avatarId)).toEqual(
+      base.scenes[0]!.performance.performers.map((p) => p.avatarId)
     );
-    expect(rerolled.shots[0]!.performance.performers.map((p) => p.prop)).not.toEqual(
-      base.shots[0]!.performance.performers.map((p) => p.prop)
+    expect(rerolled.scenes[0]!.performance.performers.map((p) => p.prop)).not.toEqual(
+      base.scenes[0]!.performance.performers.map((p) => p.prop)
     );
   });
 
@@ -71,17 +71,17 @@ describe("resolveFilmDirectorSpec with directives", () => {
       version: 2,
       id: "env-film",
       title: "Env",
-      shots: [
+      scenes: [
         {
           id: "s1",
           title: "S1",
-          scene: { environmentId: { oneOf: ["ocean", "forest"] } },
+          location: { environmentId: { oneOf: ["ocean", "forest"] } },
           performance: { formation: { pick: "any" }, cast: { count: 3 } },
         },
       ],
     });
-    expect(["ocean", "forest"]).toContain(spec.shots[0]!.scene.environmentId);
-    expect(spec.shots[0]!.performance.formation).not.toBe("custom");
+    expect(["ocean", "forest"]).toContain(spec.scenes[0]!.location.environmentId);
+    expect(spec.scenes[0]!.performance.formation).not.toBe("custom");
   });
 
   it("rejects an unsatisfiable distinct demand with the pool in the message", () => {
@@ -124,7 +124,7 @@ describe("resolveFilmDirectorSpec with directives", () => {
         },
       })
     );
-    const performers = spec.shots[0]!.performance.performers;
+    const performers = spec.scenes[0]!.performance.performers;
     expect(performers[0]!.staffLengthCm).toBe(120);
     expect(performers[1]!.staffLengthCm).toBe(120);
   });
@@ -149,8 +149,8 @@ describe("resolveFilmDirectorSpec with directives", () => {
       version: 1,
       id: "v1",
       title: "V1",
-      shots: [{ id: "s1", title: "S1" }],
+      scenes: [{ id: "s1", title: "S1" }],
     });
-    expect(spec.shots[0]!.performance.performers[0]!.prop).toBe("staff");
+    expect(spec.scenes[0]!.performance.performers[0]!.prop).toBe("staff");
   });
 });

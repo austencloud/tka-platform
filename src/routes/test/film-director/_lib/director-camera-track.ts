@@ -172,7 +172,7 @@ export function resolveDirectorCameraTrack(
       throw new Error("The first camera keyframe must start at 0 seconds.");
     }
     if (resolved.at(-1)!.atSeconds > durationSeconds) {
-      throw new Error("A camera keyframe falls after the shot has ended.");
+      throw new Error("A camera keyframe falls after the scene has ended.");
     }
     for (let index = 1; index < resolved.length; index += 1) {
       if (resolved[index]!.atSeconds === resolved[index - 1]!.atSeconds) {

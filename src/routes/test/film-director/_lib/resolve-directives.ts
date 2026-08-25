@@ -8,7 +8,7 @@ import { seededShuffle } from "./directive-random";
 
 export interface CastAxisInput<T extends string | number> {
   axis: string;
-  shotId: string;
+  sceneId: string;
   performerIds: readonly string[];
   /** One effective directive per performer (precedence already applied). */
   values: readonly DirectiveValue<T>[];
@@ -26,8 +26,8 @@ export interface CastAxisInput<T extends string | number> {
 export function resolveCastAxis<T extends string | number>(
   input: CastAxisInput<T>
 ): T[] {
-  const { axis, shotId, performerIds, values, catalog, random } = input;
-  const where = `Shot "${shotId}", axis "${axis}"`;
+  const { axis, sceneId, performerIds, values, catalog, random } = input;
+  const where = `Scene "${sceneId}", axis "${axis}"`;
   const normalized = values.map((value) => normalizeDirective(value));
   const resolved = new Array<T | undefined>(values.length);
   const taken = new Set<T>();

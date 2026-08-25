@@ -12,17 +12,17 @@ import { corpusFilm } from "./_helpers";
 
 export const entries: CorpusEntry[] = [
   {
-    id: "camera-hold-full-shot",
-    utterance: "Just hold the camera steady for the whole shot.",
-    film: corpusFilm("camera-hold-full-shot", {
+    id: "camera-hold-full-scene",
+    utterance: "Just hold the camera steady for the whole scene.",
+    film: corpusFilm("camera-hold-full-scene", {
       performance: { cast: { count: 1 } },
       camera: { moves: [{ move: "hold" }] },
     }),
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const frames = spec.shots[0]!.camera.keyframes;
-        if (frames.length !== 2) throw new Error("expected a two-frame hold spanning the shot");
+        const frames = spec.scenes[0]!.camera.keyframes;
+        if (frames.length !== 2) throw new Error("expected a two-frame hold spanning the scene");
         if (JSON.stringify(frames[0]!.position) !== JSON.stringify(frames[1]!.position))
           throw new Error("a hold must not move the camera");
       },
@@ -66,7 +66,7 @@ export const entries: CorpusEntry[] = [
   },
   {
     id: "camera-crane-up-one-meter",
-    utterance: "Crane up one meter over the course of the shot.",
+    utterance: "Crane up one meter over the course of the scene.",
     film: corpusFilm("camera-crane-up-one-meter", {
       performance: { cast: { count: 1 } },
       camera: { moves: [{ move: "crane", direction: "up", amount: { meters: 1 } }] },
@@ -116,7 +116,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const frames = spec.shots[0]!.camera.keyframes;
+        const frames = spec.scenes[0]!.camera.keyframes;
         if (frames.length < 3) throw new Error("expected a multi-frame chain from two moves");
       },
     },
@@ -131,9 +131,9 @@ export const entries: CorpusEntry[] = [
     expect: { outcome: "resolves" },
   },
   {
-    id: "camera-high-angle-wide-shot",
-    utterance: "High angle, wide shot of the whole group.",
-    film: corpusFilm("camera-high-angle-wide-shot", {
+    id: "camera-high-angle-wide-scene",
+    utterance: "High angle, wide scene of the whole group.",
+    film: corpusFilm("camera-high-angle-wide-scene", {
       performance: { cast: { count: 4 } },
       camera: { angle: "high", shotSize: "wide" },
     }),
@@ -185,14 +185,14 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[0]!.camera.keyframes.length !== 1)
+        if (spec.scenes[0]!.camera.keyframes.length !== 1)
           throw new Error("front-lockoff should produce a single static keyframe");
       },
     },
   },
   {
     id: "camera-preset-hero-dolly-in",
-    utterance: "Give this shot a hero dolly-in.",
+    utterance: "Give this scene a hero dolly-in.",
     film: corpusFilm("camera-preset-hero-dolly-in", {
       performance: { cast: { count: 1 } },
       camera: { preset: "hero-dolly-in" },
@@ -200,14 +200,14 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[0]!.camera.keyframes.length !== 2)
+        if (spec.scenes[0]!.camera.keyframes.length !== 2)
           throw new Error("hero-dolly-in should produce two keyframes");
       },
     },
   },
   {
     id: "camera-preset-high-reveal",
-    utterance: "Open on a high reveal shot.",
+    utterance: "Open on a high reveal scene.",
     film: corpusFilm("camera-preset-high-reveal", {
       performance: { cast: { count: 4 } },
       camera: { preset: "high-reveal" },
@@ -216,7 +216,7 @@ export const entries: CorpusEntry[] = [
   },
   {
     id: "camera-preset-group-orbit-custom-degrees",
-    utterance: "Orbit the whole group 180 degrees for this shot.",
+    utterance: "Orbit the whole group 180 degrees for this scene.",
     film: corpusFilm("camera-preset-group-orbit-custom-degrees", {
       performance: { cast: { count: 6 } },
       camera: { preset: "group-orbit", orbitDegrees: 180 },
@@ -245,7 +245,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[0]!.camera.keyframes.length !== 1)
+        if (spec.scenes[0]!.camera.keyframes.length !== 1)
           throw new Error("expected the single supplied keyframe to pass through");
       },
     },
@@ -314,9 +314,9 @@ export const entries: CorpusEntry[] = [
     },
   },
   {
-    id: "camera-moves-exceed-shot-duration",
-    utterance: "Hold for three seconds, then push in for three more — on a four-second shot.",
-    film: corpusFilm("camera-moves-exceed-shot-duration", {
+    id: "camera-moves-exceed-scene-duration",
+    utterance: "Hold for three seconds, then push in for three more — on a four-second scene.",
+    film: corpusFilm("camera-moves-exceed-scene-duration", {
       durationSeconds: 4,
       performance: { cast: { count: 1 } },
       camera: {
@@ -328,12 +328,12 @@ export const entries: CorpusEntry[] = [
     }),
     expect: {
       outcome: "rejects",
-      messageIncludes: "Camera moves total 6s but the shot's duration is 4s",
+      messageIncludes: "Camera moves total 6s but the scene's duration is 4s",
     },
   },
   {
     id: "camera-keyframes-and-shotsize-exclusive",
-    utterance: "Use raw keyframes, but also make it a wide shot.",
+    utterance: "Use raw keyframes, but also make it a wide scene.",
     film: corpusFilm("camera-keyframes-and-shotsize-exclusive", {
       performance: { cast: { count: 1 } },
       camera: { shotSize: "wide", keyframes: [{ atSeconds: 0, position: [0, 1, 2] }] },
@@ -345,7 +345,7 @@ export const entries: CorpusEntry[] = [
   },
   {
     id: "camera-preset-and-shotsize-exclusive",
-    utterance: "Use the hero dolly-in preset, but also make it a wide shot.",
+    utterance: "Use the hero dolly-in preset, but also make it a wide scene.",
     film: corpusFilm("camera-preset-and-shotsize-exclusive", {
       performance: { cast: { count: 1 } },
       camera: { preset: "hero-dolly-in", shotSize: "wide" },
@@ -419,9 +419,9 @@ export const entries: CorpusEntry[] = [
     },
   },
   {
-    id: "camera-keyframe-past-shot-end",
-    utterance: "Add a keyframe at nine seconds on a five-second shot.",
-    film: corpusFilm("camera-keyframe-past-shot-end", {
+    id: "camera-keyframe-past-scene-end",
+    utterance: "Add a keyframe at nine seconds on a five-second scene.",
+    film: corpusFilm("camera-keyframe-past-scene-end", {
       durationSeconds: 5,
       performance: { cast: { count: 1 } },
       camera: {
@@ -433,7 +433,7 @@ export const entries: CorpusEntry[] = [
     }),
     expect: {
       outcome: "rejects",
-      messageIncludes: "A camera keyframe falls after the shot has ended.",
+      messageIncludes: "A camera keyframe falls after the scene has ended.",
     },
   },
   {

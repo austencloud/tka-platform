@@ -16,7 +16,7 @@
   import {
     applyDirectorCameraFrame,
     applyDirectorEffectPresets,
-    applyDirectorShotToViewer,
+    applyDirectorSceneToViewer,
     buildDirectorViewerSeed,
   } from "../_lib/director-viewer-adapter";
   import { getPreviewCameraFov } from "../_lib/director-camera-track";
@@ -26,30 +26,30 @@
   import { getSceneEnvironmentRendererKey } from "$lib/shared/3d/environments/domain/scene-environment";
   import type { EnvironmentTransitionObservation } from "$lib/shared/3d/environments/domain/environment-transition";
   import type { BackgroundType } from "@austencloud/backgrounds";
-  import type { ResolvedDirectorShot } from "../_lib/film-director-schema";
+  import type { ResolvedDirectorScene } from "../_lib/film-director-schema";
 
   const director = getFilmDirectorContext();
   const sequence = demoSequenceJson as unknown as SequenceData;
-  const firstShot = director.film.shots[0]!;
+  const firstScene = director.film.scenes[0]!;
   const reservedPerformerCount = $derived(
     Math.max(
-      ...director.film.shots.map((shot) => shot.performance.performers.length)
+      ...director.film.scenes.map((scene) => scene.performance.performers.length)
     )
   );
   const retainedEnvironmentTypes = $derived(
     Array.from(
       new Set(
-        director.film.shots.map((shot) =>
-          getSceneEnvironmentRendererKey(shot.scene.environmentId)
+        director.film.scenes.map((scene) =>
+          getSceneEnvironmentRendererKey(scene.location.environmentId)
         )
       )
     )
   );
-  const sceneFeatures = createSceneFeatureState(firstShot.scene.sceneFeatures, {
+  const sceneFeatures = createSceneFeatureState(firstScene.location.sceneFeatures, {
     isolated: true,
   });
   const effectsConfig = createEffectsConfigState(undefined, { persist: false });
-  const viewer = createViewer3DState(buildDirectorViewerSeed(firstShot));
+  const viewer = createViewer3DState(buildDirectorViewerSeed(firstScene));
   const transitionProfiler = createFilmDirectorTransitionProfiler();
   const sequenceLibrary = createDirectorSequenceLibrary(sequence);
   if (typeof window !== "undefined") {
@@ -65,7 +65,7 @@
   viewer.enter3D(sequence);
   viewer.hideAllPlanes();
 
-  let appliedShotId = "";
+  let appliedSceneId = "";
   let warmupCursor = $state(0);
   let acknowledgedWarmupCursor = $state(-1);
   let initialSceneReady = $state(false);
@@ -83,17 +83,17 @@
     director.film.format.width / director.film.format.height
   );
   const warmupPlan = $derived(
-    createFilmDirectorWarmupPlan(director.film.shots.length)
+    createFilmDirectorWarmupPlan(director.film.scenes.length)
   );
-  const presentedShot = $derived(
+  const presentedScene = $derived(
     director.preparation.complete
-      ? director.frame.shot
-      : director.film.shots[warmupPlan[warmupCursor] ?? 0]!
+      ? director.frame.scene
+      : director.film.scenes[warmupPlan[warmupCursor] ?? 0]!
   );
   const presentedStepOffsets = $derived(
     director.preparation.complete
       ? director.frame.performerStepOffsets
-      : presentedShot.performance.performers.map(
+      : presentedScene.performance.performers.map(
           (performer) => performer.beatOffset
         )
   );
@@ -106,7 +106,7 @@
   );
   const effectQualityTier = $derived(
     resolveFilmDirectorEffectQualityTier(
-      presentedShot.performance.performers.length
+      presentedScene.performance.performers.length
     )
   );
 
@@ -116,7 +116,7 @@
 
     const transition = latestEnvironmentTransition;
     const expectedEnvironment = getSceneEnvironmentRendererKey(
-      presentedShot.scene.environmentId
+      presentedScene.location.environmentId
     );
     if (
       !transition?.settled ||
@@ -134,9 +134,9 @@
     }
 
     warmupCursor += 1;
-    const nextShotIndex = warmupPlan[warmupCursor] ?? 0;
-    director.setPreparationShot(
-      nextShotIndex,
+    const nextSceneIndex = warmupPlan[warmupCursor] ?? 0;
+    director.setPreparationScene(
+      nextSceneIndex,
       Math.min(warmupCursor, director.preparation.totalSteps)
     );
   }
@@ -171,26 +171,26 @@
     return true;
   }
 
-  function applyShot(shot: ResolvedDirectorShot): void {
-    appliedShotId = shot.id;
+  function applyScene(scene: ResolvedDirectorScene): void {
+    appliedSceneId = scene.id;
 
-    for (const [feature, enabled] of Object.entries(shot.scene.sceneFeatures)) {
+    for (const [feature, enabled] of Object.entries(scene.location.sceneFeatures)) {
       if (sceneFeatures.isEnabled(feature) !== enabled)
         sceneFeatures.toggle(feature);
     }
-    applyDirectorShotToViewer(viewer, shot, {
+    applyDirectorSceneToViewer(viewer, scene, {
       reservedPerformerCount,
-      sequences: sequenceLibrary.forShot(shot.id),
+      sequences: sequenceLibrary.forScene(scene.id),
     });
-    applyDirectorEffectPresets(effectsConfig, shot);
+    applyDirectorEffectPresets(effectsConfig, scene);
   }
 
   async function waitForIncomingFrame(
     token: number,
-    shot: ResolvedDirectorShot
+    scene: ResolvedDirectorScene
   ): Promise<boolean> {
     const expectedEnvironment = getSceneEnvironmentRendererKey(
-      shot.scene.environmentId
+      scene.location.environmentId
     );
     const startedAt = performance.now();
 
@@ -212,7 +212,7 @@
 
       if (performance.now() - startedAt > 60_000) {
         console.error(
-          `[FilmDirector] Incoming shot "${shot.id}" did not produce a settled frame within 60 seconds.`
+          `[FilmDirector] Incoming scene "${scene.id}" did not produce a settled frame within 60 seconds.`
         );
         return token === activeTransitionToken;
       }
@@ -222,13 +222,13 @@
     return false;
   }
 
-  async function beginShotTransition(
-    shot: ResolvedDirectorShot
+  async function beginSceneTransition(
+    scene: ResolvedDirectorScene
   ): Promise<void> {
     const token = ++activeTransitionToken;
-    const transition = shot.transition;
-    const previousShot = director.film.shots.find(
-      (candidate) => candidate.id === appliedShotId
+    const transition = scene.transition;
+    const previousScene = director.film.scenes.find(
+      (candidate) => candidate.id === appliedSceneId
     );
     const timelineBlackIsOpaque =
       transition.kind === "fade-through-black" &&
@@ -253,16 +253,16 @@
     }
 
     transitionProfiler.beginHostTransition(
-      previousShot
-        ? getSceneEnvironmentRendererKey(previousShot.scene.environmentId)
+      previousScene
+        ? getSceneEnvironmentRendererKey(previousScene.location.environmentId)
         : null,
-      getSceneEnvironmentRendererKey(shot.scene.environmentId)
+      getSceneEnvironmentRendererKey(scene.location.environmentId)
     );
-    applyShot(shot);
+    applyScene(scene);
 
-    if (!(await waitForIncomingFrame(token, shot))) return;
+    if (!(await waitForIncomingFrame(token, scene))) return;
 
-    // The black overlay is already fully opaque at a fade-through-black shot
+    // The black overlay is already fully opaque at a fade-through-black scene
     // boundary. Releasing the held playhead lowers that same overlay over the
     // prepared incoming frame; no environment veil participates.
     if (timelineBlackIsOpaque) {
@@ -315,26 +315,26 @@
       snapshotFading = false;
       snapshotOpacity = 0;
       director.setTransitionHolding(false);
-      director.setPreparationShot(0);
+      director.setPreparationScene(0);
     }
 
-    const shot = presentedShot;
-    if (shot.id === appliedShotId) return;
-    if (!director.preparation.complete || appliedShotId === "") {
-      applyShot(shot);
+    const scene = presentedScene;
+    if (scene.id === appliedSceneId) return;
+    if (!director.preparation.complete || appliedSceneId === "") {
+      applyScene(scene);
       return;
     }
 
-    void beginShotTransition(shot);
+    void beginSceneTransition(scene);
   });
 
   // Spelled and mirrored sequences have to be generated, so they arrive after
-  // the opening shot is already on screen with the film's shared sequence.
+  // the opening scene is already on screen with the film's shared sequence.
   //
   // The re-application lives in the promise callback rather than in a second
-  // effect on purpose. `applyShot` both reads and writes viewer state, so an
+  // effect on purpose. `applyScene` both reads and writes viewer state, so an
   // effect that calls it tracks everything it wrote and re-runs forever; the
-  // microtask runs outside any tracking scope. A shot that has not been
+  // microtask runs outside any tracking scope. A scene that has not been
   // applied yet needs nothing here — whenever it is applied it reads the
   // library, which by then holds the finished sequences.
   $effect(() => {
@@ -342,13 +342,13 @@
     let active = true;
     void sequenceLibrary.prepare(film).then(() => {
       if (!active) return;
-      const shot = film.shots.find(
-        (candidate) => candidate.id === appliedShotId
+      const scene = film.scenes.find(
+        (candidate) => candidate.id === appliedSceneId
       );
       // Full re-application, not a bare loadSequence sweep: loading a sequence
-      // resets that performer's per-step plane overrides, so the shot's plane
+      // resets that performer's per-step plane overrides, so the scene's plane
       // direction has to go back on afterwards.
-      if (shot) applyShot(shot);
+      if (scene) applyScene(scene);
     });
     return () => {
       active = false;
@@ -371,7 +371,7 @@
 <div
   bind:this={sceneElement}
   class="director-scene"
-  data-director-shot={director.frame.shot.id}
+  data-director-scene={director.frame.scene.id}
   data-director-scene-ready={director.sceneReady}
   aria-hidden="true"
 >
@@ -381,7 +381,7 @@
       ? director.frame.sequenceStep
       : 0}
     isPlaying={director.isPlaying}
-    bpm={presentedShot.performance.bpm}
+    bpm={presentedScene.performance.bpm}
     hideOverlays={true}
     hidePerformerBadges={true}
     hideOrientationHelpers={true}
@@ -391,7 +391,7 @@
     {effectQualityTier}
     waitForPerformersOnInitialReveal={true}
     performerStepOffsets={presentedStepOffsets}
-    visiblePerformerCount={presentedShot.performance.performers.length}
+    visiblePerformerCount={presentedScene.performance.performers.length}
     {retainedEnvironmentTypes}
     environmentTransitionVisualMode="host-controlled"
     sceneLoadTimeoutMs={60_000}
@@ -400,11 +400,11 @@
   />
   <canvas
     bind:this={snapshotCanvas}
-    class="shot-snapshot"
+    class="scene-snapshot"
     class:visible={snapshotVisible}
     class:fading={snapshotFading}
     style:opacity={snapshotOpacity}
-    style:--shot-dissolve-duration={`${snapshotDurationMs}ms`}
+    style:--scene-dissolve-duration={`${snapshotDurationMs}ms`}
     aria-hidden="true"
   ></canvas>
   <div
@@ -432,7 +432,7 @@
     pointer-events: none;
   }
 
-  .shot-snapshot {
+  .scene-snapshot {
     position: absolute;
     inset: 0;
     z-index: 39;
@@ -442,17 +442,17 @@
     pointer-events: none;
   }
 
-  .shot-snapshot.visible {
+  .scene-snapshot.visible {
     visibility: visible;
   }
 
-  .shot-snapshot.fading {
-    transition: opacity var(--shot-dissolve-duration) linear;
+  .scene-snapshot.fading {
+    transition: opacity var(--scene-dissolve-duration) linear;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .editorial-fade,
-    .shot-snapshot.fading {
+    .scene-snapshot.fading {
       transition: none;
     }
   }

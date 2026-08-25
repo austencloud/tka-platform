@@ -5,8 +5,8 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
  * The seeded-chance film. Almost nothing is pinned: environments, formations,
  * props, effects, efforts, and planes are drawn from pools by the seeded
  * resolver. The same seed always produces the same film; bumping one axis in
- * the seed block rerolls only that axis. Shots 1 and 4 carry identical
- * directives on different shot ids, which proves each shot draws from its
+ * the seed block rerolls only that axis. Scenes 1 and 4 carry identical
+ * directives on different scene ids, which proves each scene draws from its
  * own stream.
  */
 const ROLLABLE_PROPS = [
@@ -33,22 +33,22 @@ const ROLLABLE_EFFECTS = [
 ];
 
 export const chanceSuiteFilm: FilmDirectorInput = {
-  version: 2,
+  version: 3,
   id: "chance-suite-r1",
   title: "Chance Suite",
   brief:
-    "A film the seed writes: environment, formation, prop, effect, effort, and both hand planes are all drawn from pools. Rerolling means bumping one integer in the seed block, and the opening and closing shots share directives but land on different rolls.",
+    "A film the seed writes: environment, formation, prop, effect, effort, and both hand planes are all drawn from pools. Rerolling means bumping one integer in the seed block, and the opening and closing scenes share directives but land on different rolls.",
   seed: { base: 20260824 },
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
-  shots: [
+  scenes: [
     {
       id: "cold-open-rolled",
       title: "Cold open, rolled",
       intent:
         "Four performers whose look, effort, and hand planes were all drawn by the resolver, in an environment and formation it also chose.",
       durationSeconds: 9,
-      scene: { environmentId: { pick: "any" }, showStage: true },
+      location: { environmentId: { pick: "any" }, showStage: true },
       performance: {
         bpm: 82,
         formation: { pick: "any" },
@@ -82,7 +82,7 @@ export const chanceSuiteFilm: FilmDirectorInput = {
         "Five performers where the distinct draws guarantee no repeats: five different props exactly saturate the pool, and effects, efforts, and blue planes each differ across the cast.",
       durationSeconds: 10,
       transition: { kind: "environment-dissolve", durationSeconds: 0.9 },
-      scene: {
+      location: {
         environmentId: { pick: "any", from: ["cosmic", "celestial", "rainbow"] },
         showStage: true,
       },
@@ -123,7 +123,7 @@ export const chanceSuiteFilm: FilmDirectorInput = {
         "Chance with the pools narrowed and a count canon underneath: six performers offset by one count each, effects loaded toward three options, and step four's hands rolled onto planes the wall is excluded from.",
       durationSeconds: 10,
       transition: { kind: "cut" },
-      scene: {
+      location: {
         environmentId: { not: ["void", "winter"] },
         showStage: true,
       },
@@ -173,10 +173,10 @@ export const chanceSuiteFilm: FilmDirectorInput = {
       id: "reroll-finale",
       title: "Reroll finale",
       intent:
-        "The same directives as the cold open on a different shot id and a bigger cast. Every axis draws from its own per-shot stream, so this is a fresh roll of the same instructions.",
+        "The same directives as the cold open on a different scene id and a bigger cast. Every axis draws from its own per-scene stream, so this is a fresh roll of the same instructions.",
       durationSeconds: 9,
       transition: { kind: "fade-through-black", durationSeconds: 1.1 },
-      scene: { environmentId: { pick: "any" }, showStage: true },
+      location: { environmentId: { pick: "any" }, showStage: true },
       performance: {
         bpm: 82,
         formation: { pick: "any" },

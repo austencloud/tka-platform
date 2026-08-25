@@ -16,7 +16,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[0]!.performance.bpm !== 20) throw new Error("expected bpm 20 to pass through");
+        if (spec.scenes[0]!.performance.bpm !== 20) throw new Error("expected bpm 20 to pass through");
       },
     },
   },
@@ -45,7 +45,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[0]!.performance.performers[0]!.staffLengthCm !== 300)
+        if (spec.scenes[0]!.performance.performers[0]!.staffLengthCm !== 300)
           throw new Error("expected staffLengthCm 300 to pass through");
       },
     },
@@ -75,14 +75,14 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[0]!.performance.performers.length !== 8)
+        if (spec.scenes[0]!.performance.performers.length !== 8)
           throw new Error("expected 8 performers to resolve");
       },
     },
   },
   {
     id: "cast-count-invalid-zero",
-    utterance: "Cast zero performers for this shot.",
+    utterance: "Cast zero performers for this scene.",
     film: corpusFilm("cast-count-invalid-zero", {
       performance: { cast: { count: 0 } },
     }),
@@ -90,7 +90,7 @@ export const entries: CorpusEntry[] = [
   },
   {
     id: "cast-count-invalid-nine-via-schema",
-    utterance: "Cast nine performers for this shot.",
+    utterance: "Cast nine performers for this scene.",
     film: corpusFilm("cast-count-invalid-nine-via-schema", {
       performance: { cast: { count: 9 } },
     }),
@@ -98,7 +98,7 @@ export const entries: CorpusEntry[] = [
   },
   {
     id: "performers-array-valid-at-upper-bound-8",
-    utterance: "Name eight performers explicitly for this shot.",
+    utterance: "Name eight performers explicitly for this scene.",
     film: corpusFilm("performers-array-valid-at-upper-bound-8", {
       performance: {
         formation: "circle",
@@ -108,14 +108,14 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[0]!.performance.performers.length !== 8)
+        if (spec.scenes[0]!.performance.performers.length !== 8)
           throw new Error("expected 8 named performers to resolve");
       },
     },
   },
   {
     id: "performers-array-invalid-nine",
-    utterance: "Name nine performers explicitly for this shot.",
+    utterance: "Name nine performers explicitly for this scene.",
     film: corpusFilm("performers-array-invalid-nine", {
       performance: {
         performers: Array.from({ length: 9 }, (_, i) => ({ id: `performer-${i + 1}` })),
@@ -230,7 +230,7 @@ export const entries: CorpusEntry[] = [
   },
   {
     id: "camera-moves-valid-at-upper-bound-16",
-    utterance: "Chain sixteen holds together for this shot — the most moves we allow.",
+    utterance: "Chain sixteen holds together for this scene — the most moves we allow.",
     film: corpusFilm("camera-moves-valid-at-upper-bound-16", {
       performance: { cast: { count: 1 } },
       camera: { moves: Array.from({ length: 16 }, () => ({ move: "hold" as const })) },
@@ -238,14 +238,14 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[0]!.camera.keyframes.length < 16)
+        if (spec.scenes[0]!.camera.keyframes.length < 16)
           throw new Error("expected at least one keyframe per chained hold");
       },
     },
   },
   {
     id: "camera-moves-invalid-empty-array",
-    utterance: "Give this shot an empty list of camera moves.",
+    utterance: "Give this scene an empty list of camera moves.",
     film: corpusFilm("camera-moves-invalid-empty-array", {
       performance: { cast: { count: 1 } },
       camera: { moves: [] },
@@ -254,7 +254,7 @@ export const entries: CorpusEntry[] = [
   },
   {
     id: "camera-moves-invalid-seventeen",
-    utterance: "Chain seventeen holds together for this shot.",
+    utterance: "Chain seventeen holds together for this scene.",
     film: corpusFilm("camera-moves-invalid-seventeen", {
       performance: { cast: { count: 1 } },
       camera: { moves: Array.from({ length: 17 }, () => ({ move: "hold" as const })) },
@@ -263,7 +263,7 @@ export const entries: CorpusEntry[] = [
   },
   {
     id: "camera-keyframes-valid-at-upper-bound-32",
-    utterance: "Hand-place thirty-two camera keyframes across this shot.",
+    utterance: "Hand-place thirty-two camera keyframes across this scene.",
     film: corpusFilm("camera-keyframes-valid-at-upper-bound-32", {
       durationSeconds: 60,
       performance: { cast: { count: 1 } },
@@ -277,14 +277,14 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[0]!.camera.keyframes.length !== 32)
+        if (spec.scenes[0]!.camera.keyframes.length !== 32)
           throw new Error("expected all 32 supplied keyframes to pass through");
       },
     },
   },
   {
     id: "camera-keyframes-invalid-empty-array",
-    utterance: "Give this shot an empty list of camera keyframes.",
+    utterance: "Give this scene an empty list of camera keyframes.",
     film: corpusFilm("camera-keyframes-invalid-empty-array", {
       performance: { cast: { count: 1 } },
       camera: { keyframes: [] },
@@ -293,7 +293,7 @@ export const entries: CorpusEntry[] = [
   },
   {
     id: "camera-keyframes-invalid-thirty-three",
-    utterance: "Hand-place thirty-three camera keyframes across this shot.",
+    utterance: "Hand-place thirty-three camera keyframes across this scene.",
     film: corpusFilm("camera-keyframes-invalid-thirty-three", {
       durationSeconds: 60,
       performance: { cast: { count: 1 } },
@@ -307,33 +307,33 @@ export const entries: CorpusEntry[] = [
     expect: { outcome: "rejects", messageIncludes: "Too big: expected array to have <=32 items" },
   },
   {
-    id: "shot-duration-valid-at-upper-bound-60",
-    utterance: "Make this shot the full sixty seconds — as long as a single shot goes.",
-    film: corpusFilm("shot-duration-valid-at-upper-bound-60", {
+    id: "scene-duration-valid-at-upper-bound-60",
+    utterance: "Make this scene the full sixty seconds — as long as a single scene goes.",
+    film: corpusFilm("scene-duration-valid-at-upper-bound-60", {
       durationSeconds: 60,
       performance: { cast: { count: 1 } },
     }),
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[0]!.durationSeconds !== 60)
-          throw new Error("expected shot durationSeconds 60 to pass through");
+        if (spec.scenes[0]!.durationSeconds !== 60)
+          throw new Error("expected scene durationSeconds 60 to pass through");
       },
     },
   },
   {
-    id: "shot-duration-invalid-zero",
-    utterance: "Make this shot zero seconds long.",
-    film: corpusFilm("shot-duration-invalid-zero", {
+    id: "scene-duration-invalid-zero",
+    utterance: "Make this scene zero seconds long.",
+    film: corpusFilm("scene-duration-invalid-zero", {
       durationSeconds: 0,
       performance: { cast: { count: 1 } },
     }),
     expect: { outcome: "rejects", messageIncludes: "Too small: expected number to be >=1" },
   },
   {
-    id: "shot-duration-invalid-sixty-one",
-    utterance: "Make this shot sixty-one seconds long.",
-    film: corpusFilm("shot-duration-invalid-sixty-one", {
+    id: "scene-duration-invalid-sixty-one",
+    utterance: "Make this scene sixty-one seconds long.",
+    film: corpusFilm("scene-duration-invalid-sixty-one", {
       durationSeconds: 61,
       performance: { cast: { count: 1 } },
     }),
@@ -422,9 +422,9 @@ export const entries: CorpusEntry[] = [
   },
   {
     id: "transition-duration-valid-at-upper-bound-3",
-    utterance: "Fade through black for a full three seconds between shots.",
+    utterance: "Fade through black for a full three seconds between scenes.",
     film: corpusFilm("transition-duration-valid-at-upper-bound-3", {}, {
-      shots: [
+      scenes: [
         { id: "s1", title: "S1", performance: { cast: { count: 1 } } },
         {
           id: "s2",
@@ -437,16 +437,16 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[1]!.transition.durationSeconds !== 3)
+        if (spec.scenes[1]!.transition.durationSeconds !== 3)
           throw new Error("expected transition durationSeconds 3 to pass through");
       },
     },
   },
   {
     id: "transition-duration-invalid-above-4",
-    utterance: "Fade through black for four seconds between shots.",
+    utterance: "Fade through black for four seconds between scenes.",
     film: corpusFilm("transition-duration-invalid-above-4", {}, {
-      shots: [
+      scenes: [
         { id: "s1", title: "S1", performance: { cast: { count: 1 } } },
         {
           id: "s2",
@@ -459,10 +459,10 @@ export const entries: CorpusEntry[] = [
     expect: { outcome: "rejects", messageIncludes: "Too big: expected number to be <=3" },
   },
   {
-    id: "shots-array-valid-at-upper-bound-24",
-    utterance: "Cut this into twenty-four shots — as many as a single film allows.",
-    film: corpusFilm("shots-array-valid-at-upper-bound-24", {}, {
-      shots: Array.from({ length: 24 }, (_, i) => ({
+    id: "scenes-array-valid-at-upper-bound-24",
+    utterance: "Cut this into twenty-four scenes — as many as a single film allows.",
+    film: corpusFilm("scenes-array-valid-at-upper-bound-24", {}, {
+      scenes: Array.from({ length: 24 }, (_, i) => ({
         id: `s${i}`,
         title: `S${i}`,
         performance: { cast: { count: 1 } },
@@ -471,15 +471,15 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots.length !== 24) throw new Error("expected all 24 shots to resolve");
+        if (spec.scenes.length !== 24) throw new Error("expected all 24 scenes to resolve");
       },
     },
   },
   {
-    id: "shots-array-invalid-twenty-five",
-    utterance: "Cut this into twenty-five shots.",
-    film: corpusFilm("shots-array-invalid-twenty-five", {}, {
-      shots: Array.from({ length: 25 }, (_, i) => ({
+    id: "scenes-array-invalid-twenty-five",
+    utterance: "Cut this into twenty-five scenes.",
+    film: corpusFilm("scenes-array-invalid-twenty-five", {}, {
+      scenes: Array.from({ length: 25 }, (_, i) => ({
         id: `s${i}`,
         title: `S${i}`,
         performance: { cast: { count: 1 } },

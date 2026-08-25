@@ -3,23 +3,23 @@
  * Task 3 of docs/superpowers/plans/2026-08-24-film-director-plane-axes.md:
  * "wire resolved planes into the viewer." Task 2 (already landed) taught
  * `resolveFilmDirectorSpec` to resolve bluePlane/redPlane/stepPlanes per
- * performer and scene.visiblePlanes per shot. This file proves the adapter
+ * performer and scene.visiblePlanes per scene. This file proves the adapter
  * actually carries those resolved values onto the viewer/avatar-instance
  * layer:
  *
  *  (a) `buildDirectorViewerSeed` puts the resolved planes on the seed.
- *  (b) `applyDirectorShotToViewer` clears a PREVIOUS shot's per-step plane
- *      overrides before the next shot's (possibly empty) list is applied -
+ *  (b) `applyDirectorSceneToViewer` clears a PREVIOUS scene's per-step plane
+ *      overrides before the next scene's (possibly empty) list is applied -
  *      a stale override must never bleed into a cut that doesn't repeat it.
- *  (c) `applyDirectorShotToViewer` sets whole-sequence hand planes on a
- *      REUSED performer instance across a shot transition.
+ *  (c) `applyDirectorSceneToViewer` sets whole-sequence hand planes on a
+ *      REUSED performer instance across a scene transition.
  */
 import { beforeAll, describe, expect, it } from "vitest";
 import { Plane } from "@austencloud/scene-3d";
 
 import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/_lib/resolve-film-director-spec";
 import {
-  applyDirectorShotToViewer,
+  applyDirectorSceneToViewer,
   buildDirectorViewerSeed,
 } from "../../../src/routes/test/film-director/_lib/director-viewer-adapter";
 import { createViewer3DStateForTest } from "../3d-viewer/viewer3d-test-helpers.svelte";
@@ -48,12 +48,12 @@ beforeAll(() => {
   __resetWebGL2CapabilityForTests();
 });
 
-function film(shot: Record<string, unknown>, extras: Record<string, unknown> = {}) {
+function film(scene: Record<string, unknown>, extras: Record<string, unknown> = {}) {
   return {
     version: 2,
     id: "viewer-adapter-film",
     title: "Viewer Adapter Film",
-    shots: [{ id: "s1", title: "S1", ...shot }],
+    scenes: [{ id: "s1", title: "S1", ...scene }],
     ...extras,
   };
 }
@@ -73,11 +73,11 @@ describe("buildDirectorViewerSeed carries resolved planes", () => {
         },
       })
     );
-    const shot = spec.shots[0]!;
-    const seed = buildDirectorViewerSeed(shot);
+    const scene = spec.scenes[0]!;
+    const seed = buildDirectorViewerSeed(scene);
 
     expect(seed.performers).toHaveLength(2);
-    shot.performance.performers.forEach((performer, index) => {
+    scene.performance.performers.forEach((performer, index) => {
       const seededPerformer = seed.performers![index]!;
       expect(seededPerformer.customBluePlane).toBe(performer.bluePlane);
       expect(seededPerformer.customRedPlane).toBe(performer.redPlane);
@@ -90,28 +90,28 @@ describe("buildDirectorViewerSeed carries resolved planes", () => {
   it("seeds visiblePlanes from the resolved scene.visiblePlanes", () => {
     const spec = resolveFilmDirectorSpec(
       film({
-        scene: { visiblePlanes: ["wall", "wheel"] },
+        location: { visiblePlanes: ["wall", "wheel"] },
         performance: { cast: { count: 1 } },
       })
     );
-    const shot = spec.shots[0]!;
-    expect(shot.scene.visiblePlanes).toEqual([Plane.WALL, Plane.WHEEL]);
+    const scene = spec.scenes[0]!;
+    expect(scene.location.visiblePlanes).toEqual([Plane.WALL, Plane.WHEEL]);
 
-    const seed = buildDirectorViewerSeed(shot);
+    const seed = buildDirectorViewerSeed(scene);
     expect(seed.visiblePlanes).toEqual([Plane.WALL, Plane.WHEEL]);
   });
 
-  it("defaults to no visible planes when the shot doesn't request any", () => {
+  it("defaults to no visible planes when the scene doesn't request any", () => {
     const spec = resolveFilmDirectorSpec(
       film({ performance: { cast: { count: 1 } } })
     );
-    const seed = buildDirectorViewerSeed(spec.shots[0]!);
+    const seed = buildDirectorViewerSeed(spec.scenes[0]!);
     expect(seed.visiblePlanes).toEqual([]);
   });
 });
 
-describe("applyDirectorShotToViewer wires planes onto real avatar instances", () => {
-  it("sets hand planes and step overrides on shot A, then on shot B (reused instance) clears A's stale step overrides and applies B's own hand planes", () => {
+describe("applyDirectorSceneToViewer wires planes onto real avatar instances", () => {
+  it("sets hand planes and step overrides on scene A, then on scene B (reused instance) clears A's stale step overrides and applies B's own hand planes", () => {
     const { state, dispose } = createViewer3DStateForTest({});
     try {
       state.performerManager.initialize();
@@ -119,7 +119,7 @@ describe("applyDirectorShotToViewer wires planes onto real avatar instances", ()
       expect(state.currentSequenceData).toEqual(demoSequence);
       expect(state.performerManager.performers).toHaveLength(1);
 
-      const shotA = resolveFilmDirectorSpec(
+      const sceneA = resolveFilmDirectorSpec(
         film({
           performance: {
             cast: {
@@ -138,12 +138,12 @@ describe("applyDirectorShotToViewer wires planes onto real avatar instances", ()
             },
           },
         })
-      ).shots[0]!;
+      ).scenes[0]!;
 
-      applyDirectorShotToViewer(state, shotA, { reservedPerformerCount: 1 });
+      applyDirectorSceneToViewer(state, sceneA, { reservedPerformerCount: 1 });
 
       const performer = state.performerManager.performers[0]!;
-      // Reused-instance identity across the whole test: shot A and shot B
+      // Reused-instance identity across the whole test: scene A and scene B
       // both target this exact AvatarInstanceState.
       expect(state.performerManager.performers).toHaveLength(1);
 
@@ -165,7 +165,7 @@ describe("applyDirectorShotToViewer wires planes onto real avatar instances", ()
         red: Plane.FLOOR,
       });
 
-      const shotB = resolveFilmDirectorSpec(
+      const sceneB = resolveFilmDirectorSpec(
         film({
           performance: {
             cast: {
@@ -180,9 +180,9 @@ describe("applyDirectorShotToViewer wires planes onto real avatar instances", ()
             },
           },
         })
-      ).shots[0]!;
+      ).scenes[0]!;
 
-      applyDirectorShotToViewer(state, shotB, { reservedPerformerCount: 1 });
+      applyDirectorSceneToViewer(state, sceneB, { reservedPerformerCount: 1 });
 
       // Still the same single pooled instance - proves (c): hand planes were
       // set on a REUSED performer, not a freshly created one.
@@ -192,8 +192,8 @@ describe("applyDirectorShotToViewer wires planes onto real avatar instances", ()
       expect(performer.customBluePlane).toBe(Plane.RIGHT_SHIELD);
       expect(performer.customRedPlane).toBe(Plane.WALL);
 
-      // Proves (b): shot A's per-step overrides do not survive into shot B,
-      // which declares no stepPlanes of its own. Every step reports shot B's
+      // Proves (b): scene A's per-step overrides do not survive into scene B,
+      // which declares no stepPlanes of its own. Every step reports scene B's
       // whole-sequence hand planes.
       expect(performer.getStepPlanes(1)).toEqual({
         blue: Plane.RIGHT_SHIELD,
@@ -208,14 +208,14 @@ describe("applyDirectorShotToViewer wires planes onto real avatar instances", ()
     }
   });
 
-  it("backfills loadSequence onto a pooled performer created beyond the first shot's cast, so its step-plane overrides are not silently dropped", () => {
+  it("backfills loadSequence onto a pooled performer created beyond the first scene's cast, so its step-plane overrides are not silently dropped", () => {
     const { state, dispose } = createViewer3DStateForTest({});
     try {
       state.performerManager.initialize();
       state.loadSequenceScoped(demoSequence);
       expect(state.performerManager.performers).toHaveLength(1);
 
-      const shot = resolveFilmDirectorSpec(
+      const scene = resolveFilmDirectorSpec(
         film({
           performance: {
             cast: {
@@ -231,13 +231,13 @@ describe("applyDirectorShotToViewer wires planes onto real avatar instances", ()
             },
           },
         })
-      ).shots[0]!;
+      ).scenes[0]!;
 
       // reservedPerformerCount: 2 forces ensurePerformerCount to grow the
       // pool - the newly created 2nd performer never went through enter3D's
       // sequence load, so without the adapter's backfill its
       // setStepHandPlane call below would no-op forever.
-      applyDirectorShotToViewer(state, shot, { reservedPerformerCount: 2 });
+      applyDirectorSceneToViewer(state, scene, { reservedPerformerCount: 2 });
 
       expect(state.performerManager.performers).toHaveLength(2);
       const secondPerformer = state.performerManager.performers[1]!;

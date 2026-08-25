@@ -19,7 +19,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performers = spec.shots[0]!.performance.performers;
+        const performers = spec.scenes[0]!.performance.performers;
         if (performers[2]!.effect !== "led") throw new Error("performer-3 must be led");
         if (performers.filter((p) => p.effect === "led").length !== 1)
           throw new Error("only performer-3 may be led");
@@ -35,7 +35,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[0]!.performance.performers[0]!.effect === "led")
+        if (spec.scenes[0]!.performance.performers[0]!.effect === "led")
           throw new Error("led was excluded");
       },
     },
@@ -64,7 +64,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performers = spec.shots[0]!.performance.performers;
+        const performers = spec.scenes[0]!.performance.performers;
         if (performers[4]!.effect !== "fire") throw new Error("performer-5 must be fire");
         if (performers.filter((p) => p.effect === "fire").length !== 1)
           throw new Error("only performer-5 may be fire");
@@ -90,7 +90,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performers = spec.shots[0]!.performance.performers;
+        const performers = spec.scenes[0]!.performance.performers;
         if (performers[1]!.effect === "sparkles" || performers[3]!.effect === "sparkles")
           throw new Error("performers 2 and 4 must not be sparkles");
         if (performers[0]!.effect !== "sparkles" || performers[2]!.effect !== "sparkles")
@@ -113,7 +113,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performers = spec.shots[0]!.performance.performers;
+        const performers = spec.scenes[0]!.performance.performers;
         if (performers[2]!.prop !== "fan") throw new Error("performer-3 must be on fan");
         for (const [index, performer] of performers.entries()) {
           if (index === 2) continue;
@@ -131,7 +131,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performers = spec.shots[0]!.performance.performers;
+        const performers = spec.scenes[0]!.performance.performers;
         if (performers.some((p) => p.effect === "led"))
           throw new Error("nobody may be led");
       },
@@ -156,7 +156,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performers = spec.shots[0]!.performance.performers;
+        const performers = spec.scenes[0]!.performance.performers;
         if (performers[0]!.staffLengthCm !== 100) throw new Error("performer-1 must be 100cm");
         if (performers[1]!.staffLengthCm === 100 || performers[2]!.staffLengthCm === 100)
           throw new Error("nobody else may be exactly 100cm");
@@ -172,7 +172,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const prop = spec.shots[0]!.performance.performers[1]!.prop;
+        const prop = spec.scenes[0]!.performance.performers[1]!.prop;
         if (prop === "staff" || prop === "fan")
           throw new Error("performer-2 must not be staff or fan");
       },
@@ -193,7 +193,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[0]!.performance.performers[0]!.effort !== "punch")
+        if (spec.scenes[0]!.performance.performers[0]!.effort !== "punch")
           throw new Error("performer-1 must be punch");
       },
     },
@@ -207,7 +207,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const effect = spec.shots[0]!.performance.performers[0]!.effect;
+        const effect = spec.scenes[0]!.performance.performers[0]!.effect;
         if (effect !== "fire" && effect !== "led")
           throw new Error("effect must be fire or led");
       },
@@ -227,7 +227,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performers = spec.shots[0]!.performance.performers;
+        const performers = spec.scenes[0]!.performance.performers;
         if (performers[0]!.prop !== performers[1]!.prop)
           throw new Error("performer-2 must copy performer-1's prop");
       },
@@ -252,7 +252,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performers = spec.shots[0]!.performance.performers;
+        const performers = spec.scenes[0]!.performance.performers;
         if (performers.some((p) => p.effect !== "zap"))
           throw new Error("every performer must end up on zap");
       },
@@ -267,7 +267,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[0]!.performance.formation !== "circle")
+        if (spec.scenes[0]!.performance.formation !== "circle")
           throw new Error("formation must be circle");
       },
     },
@@ -276,15 +276,15 @@ export const entries: CorpusEntry[] = [
     id: "pin-environment-exclude-effect",
     utterance: "Set this one in the ocean, and make sure nobody's doing LED.",
     film: corpusFilm("pin-environment-exclude-effect", {
-      scene: { environmentId: "ocean" },
+      location: { environmentId: "ocean" },
       performance: { cast: { count: 3, defaults: { effect: { not: "led" } } } },
     }),
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const shot = spec.shots[0]!;
-        if (shot.scene.environmentId !== "ocean") throw new Error("environment must be ocean");
-        if (shot.performance.performers.some((p) => p.effect === "led"))
+        const scene = spec.scenes[0]!;
+        if (scene.location.environmentId !== "ocean") throw new Error("environment must be ocean");
+        if (scene.performance.performers.some((p) => p.effect === "led"))
           throw new Error("nobody may be led");
       },
     },
@@ -298,7 +298,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[0]!.performance.performers[0]!.avatarId !== "y-bot")
+        if (spec.scenes[0]!.performance.performers[0]!.avatarId !== "y-bot")
           throw new Error("performer-1 must be y-bot");
       },
     },
@@ -317,7 +317,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performers = spec.shots[0]!.performance.performers;
+        const performers = spec.scenes[0]!.performance.performers;
         if (performers[0]!.avatarId !== performers[1]!.avatarId)
           throw new Error("performer-2 must match performer-1's avatar");
       },
@@ -332,7 +332,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const effect = spec.shots[0]!.performance.performers[0]!.effect;
+        const effect = spec.scenes[0]!.performance.performers[0]!.effect;
         if (effect === "fire" || effect === "led")
           throw new Error("fire and led were both excluded");
       },
@@ -352,7 +352,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performers = spec.shots[0]!.performance.performers;
+        const performers = spec.scenes[0]!.performance.performers;
         if (performers[0]!.prop !== "sword") throw new Error("performer-1 must be sword");
         if (performers[1]!.prop !== "fan") throw new Error("performer-2 must be fan");
       },
@@ -372,7 +372,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const effort = spec.shots[0]!.performance.performers[2]!.effort;
+        const effort = spec.scenes[0]!.performance.performers[2]!.effort;
         if (effort !== "linear" && effort !== "dab")
           throw new Error("performer-3's effort must be linear or dab");
       },
@@ -396,7 +396,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performers = spec.shots[0]!.performance.performers;
+        const performers = spec.scenes[0]!.performance.performers;
         if (performers.some((p) => p.effort !== "bounce"))
           throw new Error("the chain must resolve to bounce");
       },
@@ -411,7 +411,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[0]!.performance.performers[0]!.prop === "staff")
+        if (spec.scenes[0]!.performance.performers[0]!.prop === "staff")
           throw new Error("staff was excluded");
       },
     },
@@ -431,7 +431,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performers = spec.shots[0]!.performance.performers;
+        const performers = spec.scenes[0]!.performance.performers;
         if (performers[0]!.effect !== "fire" || performers[1]!.effect !== "led")
           throw new Error("pinned effects must hold under the facing-each-other formation");
       },
@@ -453,7 +453,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performers = spec.shots[0]!.performance.performers;
+        const performers = spec.scenes[0]!.performance.performers;
         if (performers[1]!.effect !== "sparkles") throw new Error("performer-2 must stay sparkles");
         if (performers[4]!.effect !== "smoke") throw new Error("performer-5 must stay smoke");
       },
@@ -473,7 +473,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performer = spec.shots[0]!.performance.performers[3]!;
+        const performer = spec.scenes[0]!.performance.performers[3]!;
         if (performer.effect === "bloom") throw new Error("bloom was excluded");
         if (performer.prop !== "club") throw new Error("performer-4 must carry a club");
       },
@@ -496,7 +496,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performers = spec.shots[0]!.performance.performers;
+        const performers = spec.scenes[0]!.performance.performers;
         if (performers[1]!.staffLengthCm !== 220)
           throw new Error("performer-2's staff must copy performer-1's 220cm");
       },
@@ -511,7 +511,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[0]!.performance.performers.some((p) => p.avatarId === "x-bot"))
+        if (spec.scenes[0]!.performance.performers.some((p) => p.avatarId === "x-bot"))
           throw new Error("x-bot was excluded from the whole cast");
       },
     },

@@ -14,7 +14,7 @@ describe("film director effect quality", () => {
     expect(resolveFilmDirectorEffectQualityTier(8)).toBe(QualityTier.LOW);
   });
 
-  it("keeps the film's largest cast alive between smaller shots", () => {
+  it("keeps the film's largest cast alive between smaller scenes", () => {
     expect(resolveDirectorPerformerPoolSize(3, 8)).toBe(8);
     expect(resolveDirectorPerformerPoolSize(8, 8)).toBe(8);
     expect(resolveDirectorPerformerPoolSize(10, 8)).toBe(10);

@@ -40,11 +40,11 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
   let preparationRevision = $state(0);
   let preparation = $state({
     complete: false,
-    shotIndex: 0,
-    totalShots: film.shots.length,
-    shotTitle: film.shots[0]?.title ?? "Opening shot",
+    sceneIndex: 0,
+    totalScenes: film.scenes.length,
+    sceneTitle: film.scenes[0]?.title ?? "Opening scene",
     preparedSteps: 0,
-    totalSteps: getFilmDirectorWarmupStepCount(film.shots.length),
+    totalSteps: getFilmDirectorWarmupStepCount(film.scenes.length),
   });
   let editorOpen = $state(false);
   let validationError = $state<string | null>(null);
@@ -89,22 +89,22 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
     isPlaying = sceneReady && wantsToPlay && !holding;
   }
 
-  function setPreparationShot(index: number, preparedSteps = 0): void {
-    const shot = film.shots[index];
-    if (!shot) return;
+  function setPreparationScene(index: number, preparedSteps = 0): void {
+    const scene = film.scenes[index];
+    if (!scene) return;
     preparation = {
       complete: false,
-      shotIndex: index,
-      totalShots: film.shots.length,
-      shotTitle: shot.title,
+      sceneIndex: index,
+      totalScenes: film.scenes.length,
+      sceneTitle: scene.title,
       preparedSteps: Math.max(
         0,
         Math.min(
-          getFilmDirectorWarmupStepCount(film.shots.length),
+          getFilmDirectorWarmupStepCount(film.scenes.length),
           preparedSteps
         )
       ),
-      totalSteps: getFilmDirectorWarmupStepCount(film.shots.length),
+      totalSteps: getFilmDirectorWarmupStepCount(film.scenes.length),
     };
   }
 
@@ -119,32 +119,32 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
     preparationRevision += 1;
     preparation = {
       complete: false,
-      shotIndex: 0,
-      totalShots: film.shots.length,
-      shotTitle: film.shots[0]?.title ?? "Opening shot",
+      sceneIndex: 0,
+      totalScenes: film.scenes.length,
+      sceneTitle: film.scenes[0]?.title ?? "Opening scene",
       preparedSteps: 0,
-      totalSteps: getFilmDirectorWarmupStepCount(film.shots.length),
+      totalSteps: getFilmDirectorWarmupStepCount(film.scenes.length),
     };
   }
 
-  function selectShot(index: number): void {
-    const shot = film.shots[index];
-    if (!shot) return;
+  function selectScene(index: number): void {
+    const scene = film.scenes[index];
+    if (!scene) return;
     const clearPreviewOffset =
-      shot.transition.kind === "fade-through-black"
-        ? shot.transition.durationSeconds / 2 + 0.001
+      scene.transition.kind === "fade-through-black"
+        ? scene.transition.durationSeconds / 2 + 0.001
         : 0.001;
-    seek(shot.startSeconds + clearPreviewOffset);
+    seek(scene.startSeconds + clearPreviewOffset);
   }
 
-  function previousShot(): void {
-    selectShot(
-      frame.shotIndex > 0 ? frame.shotIndex - 1 : film.shots.length - 1
+  function previousScene(): void {
+    selectScene(
+      frame.sceneIndex > 0 ? frame.sceneIndex - 1 : film.scenes.length - 1
     );
   }
 
-  function nextShot(): void {
-    selectShot((frame.shotIndex + 1) % film.shots.length);
+  function nextScene(): void {
+    selectScene((frame.sceneIndex + 1) % film.scenes.length);
   }
 
   function setDraft(value: string): void {
@@ -277,11 +277,11 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
     togglePlayback,
     setSceneReady,
     setTransitionHolding,
-    setPreparationShot,
+    setPreparationScene,
     completePreparation,
-    selectShot,
-    previousShot,
-    nextShot,
+    selectScene,
+    previousScene,
+    nextScene,
     setDraft,
     applyDraft,
     resetDraft,

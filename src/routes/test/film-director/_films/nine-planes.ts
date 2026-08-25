@@ -2,27 +2,27 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 /**
- * The plane-language showcase. Every shot leans on an axis that shipped in
+ * The plane-language showcase. Every scene leans on an axis that shipped in
  * the 2026-08-24 plane pass: whole-cast hand planes, distinct-plane draws,
  * per-step scrambles, and dictated grid visibility.
  */
 export const ninePlanesFilm: FilmDirectorInput = {
-  version: 2,
+  version: 3,
   id: "nine-planes-r1",
   title: "Nine Planes",
   brief:
-    "Four shots that put the plane grammar on camera: a whole-cast wheel circle, a distinct-plane draw where no two performers match, a mid-phrase scramble driven by per-step overrides, and a split shield wall with its grids dictated visible.",
+    "Four scenes that put the plane grammar on camera: a whole-cast wheel circle, a distinct-plane draw where no two performers match, a mid-phrase scramble driven by per-step overrides, and a split shield wall with its grids dictated visible.",
   seed: { base: 9 },
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
-  shots: [
+  scenes: [
     {
       id: "wheelhouse",
       title: "Wheelhouse",
       intent:
         "Eight performers run the same phrase entirely in the wheel plane while the wheel grid stays visible as the only scenery.",
       durationSeconds: 9,
-      scene: {
+      location: {
         environmentId: "void",
         showStage: true,
         visiblePlanes: ["wheel"],
@@ -65,7 +65,7 @@ export const ninePlanesFilm: FilmDirectorInput = {
         "A line of eight where every performer's blue hand draws a different plane from the nine-plane catalog, and every red hand draws its own as well.",
       durationSeconds: 9,
       transition: { kind: "environment-dissolve", durationSeconds: 0.9 },
-      scene: { environmentId: "celestial", showStage: true },
+      location: { environmentId: "celestial", showStage: true },
       performance: {
         bpm: 84,
         formation: "line",
@@ -105,7 +105,7 @@ export const ninePlanesFilm: FilmDirectorInput = {
         "Everyone starts on the wall plane, then per-step overrides throw individual hands onto planes drawn per performer, so the chevron breaks apart and reforms inside one phrase.",
       durationSeconds: 10,
       transition: { kind: "cut" },
-      scene: { environmentId: "ember", showStage: true },
+      location: { environmentId: "ember", showStage: true },
       performance: {
         bpm: 92,
         formation: "v-shape",
@@ -147,7 +147,7 @@ export const ninePlanesFilm: FilmDirectorInput = {
         "The left half of the row works the left shield and the right half the right shield, with both shield grids dictated visible while the camera cranes down into the seam.",
       durationSeconds: 9,
       transition: { kind: "fade-through-black", durationSeconds: 1 },
-      scene: {
+      location: {
         environmentId: "winter",
         showStage: true,
         visiblePlanes: ["left-shield", "right-shield"],

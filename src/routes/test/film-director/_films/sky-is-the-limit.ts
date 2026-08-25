@@ -2,21 +2,21 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 export const skyIsTheLimitFilm: FilmDirectorInput = {
-  version: 2,
+  version: 3,
   id: "sky-is-the-limit-r1",
   title: "Sky Is the Limit",
   brief:
     "A first directed proof that changes cast, formation, prop, effect, effort, environment, timing, and camera without inheriting the viewer settings of whoever opens it.",
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
-  shots: [
+  scenes: [
     {
       id: "autumn-fire-circle",
       title: "Autumn fire circle",
       intent:
         "Eight performers glide through one sequence with matching staffs and classic fire while the camera orbits the group.",
       durationSeconds: 10,
-      scene: { environmentId: "autumn", showStage: true },
+      location: { environmentId: "autumn", showStage: true },
       performance: {
         bpm: 78,
         formation: "circle",
@@ -90,7 +90,7 @@ export const skyIsTheLimitFilm: FilmDirectorInput = {
         "A sword lead owns the foreground while two double-staff performers frame the move from behind.",
       durationSeconds: 8,
       transition: { kind: "environment-dissolve", durationSeconds: 0.9 },
-      scene: { environmentId: "forest", showStage: true },
+      location: { environmentId: "forest", showStage: true },
       performance: {
         bpm: 92,
         formation: "custom",
@@ -141,7 +141,7 @@ export const skyIsTheLimitFilm: FilmDirectorInput = {
         "Two triad and two club performers hold a stage-sized chevron underwater while a high camera settles into their level.",
       durationSeconds: 9,
       transition: { kind: "environment-dissolve", durationSeconds: 1 },
-      scene: { environmentId: "ocean", showStage: false },
+      location: { environmentId: "ocean", showStage: false },
       performance: {
         bpm: 66,
         formation: "v-shape",
@@ -186,7 +186,7 @@ export const skyIsTheLimitFilm: FilmDirectorInput = {
         "Eight club performers form a tunnel. Each starts one count behind the performer ahead while the camera moves from head-on to the side.",
       durationSeconds: 10,
       transition: { kind: "fade-through-black", durationSeconds: 1.1 },
-      scene: { environmentId: "celestial", showStage: true },
+      location: { environmentId: "celestial", showStage: true },
       performance: {
         bpm: 84,
         formation: "tunnel-stack",

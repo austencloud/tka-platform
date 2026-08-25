@@ -2,14 +2,14 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 /**
- * The constraint-drama film. Each shot stresses a different corner of the
+ * The constraint-drama film. Each scene stresses a different corner of the
  * directive grammar: a pinned lead with sameAs/not understudies, a distinct
  * draw that exactly saturates the eight-effort catalog, a two-performer
  * mirror built entirely from sameAs (including the plane axes), and an
  * odd-one-out cast where one performer is excluded from the group's pool.
  */
 export const understudyNightFilm: FilmDirectorInput = {
-  version: 2,
+  version: 3,
   id: "understudy-night-r1",
   title: "Understudy Night",
   brief:
@@ -17,14 +17,14 @@ export const understudyNightFilm: FilmDirectorInput = {
   seed: { base: 47 },
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
-  shots: [
+  scenes: [
     {
       id: "lead-and-copies",
       title: "The lead and the copies",
       intent:
         "One pinned sword lead burns classic fire up front. The four understudies copy the lead's prop via sameAs, are barred from fire via not, and draw four different efforts around the lead's pinned punch.",
       durationSeconds: 10,
-      scene: { environmentId: "forest", showStage: true },
+      location: { environmentId: "forest", showStage: true },
       performance: {
         bpm: 88,
         formation: "v-shape",
@@ -74,7 +74,7 @@ export const understudyNightFilm: FilmDirectorInput = {
         "Eight performers, eight efforts, one distinct draw. The pool is exactly the size of the cast, so every effort in the catalog appears exactly once.",
       durationSeconds: 9,
       transition: { kind: "environment-dissolve", durationSeconds: 0.9 },
-      scene: { environmentId: "rainbow", showStage: true },
+      location: { environmentId: "rainbow", showStage: true },
       performance: {
         bpm: 96,
         formation: "line",
@@ -113,7 +113,7 @@ export const understudyNightFilm: FilmDirectorInput = {
         "Stage left is authored in full. Stage right is nothing but sameAs: prop, effect, effort, and both hand planes copied from the original, with only the staff length drawn distinct so the mirror is one detail off.",
       durationSeconds: 8,
       transition: { kind: "cut" },
-      scene: { environmentId: "blossom", showStage: true },
+      location: { environmentId: "blossom", showStage: true },
       performance: {
         bpm: 72,
         formation: "stage-lr",
@@ -165,7 +165,7 @@ export const understudyNightFilm: FilmDirectorInput = {
         "Five performers share a silk look while the sixth draws from a pool the group never touches, so the outlier reads on camera without any staging change.",
       durationSeconds: 9,
       transition: { kind: "fade-through-black", durationSeconds: 1 },
-      scene: { environmentId: "autumn", showStage: true },
+      location: { environmentId: "autumn", showStage: true },
       performance: {
         bpm: 80,
         formation: "circle",

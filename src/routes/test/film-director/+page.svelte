@@ -47,7 +47,7 @@
       ></i>
       <div>
         <span>3D Film Director</span>
-        <h1>{loadError ?? "Preparing the first shot"}</h1>
+        <h1>{loadError ?? "Preparing the first scene"}</h1>
       </div>
     </section>
   </main>

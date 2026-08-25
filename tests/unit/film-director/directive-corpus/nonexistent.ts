@@ -113,7 +113,7 @@ export const entries: CorpusEntry[] = [
     id: "nonexistent-environment-moon",
     utterance: "Set the scene on the moon.",
     film: corpusFilm("nonexistent-environment-moon", {
-      scene: { environmentId: "moon" },
+      location: { environmentId: "moon" },
       performance: { cast: { count: 1 } },
     }),
     expect: { outcome: "rejects", messageIncludes: 'Unknown 3D environment \\"moon\\"' },
@@ -122,7 +122,7 @@ export const entries: CorpusEntry[] = [
     id: "nonexistent-environment-tundra-oneof",
     utterance: "Set the scene in either the forest or the tundra.",
     film: corpusFilm("nonexistent-environment-tundra-oneof", {
-      scene: { environmentId: { oneOf: ["forest", "tundra"] } },
+      location: { environmentId: { oneOf: ["forest", "tundra"] } },
       performance: { cast: { count: 1 } },
     }),
     expect: { outcome: "rejects", messageIncludes: 'Unknown 3D environment \\"tundra\\"' },
@@ -156,7 +156,7 @@ export const entries: CorpusEntry[] = [
   },
   {
     id: "nonexistent-effect-preset-references-unknown-effect",
-    utterance: "Apply the holo-shimmer preset to this shot.",
+    utterance: "Apply the holo-shimmer preset to this scene.",
     film: corpusFilm("nonexistent-effect-preset-references-unknown-effect", {
       effectPresets: { "holo-shimmer": "some-preset" },
     }),
@@ -205,7 +205,7 @@ export const entries: CorpusEntry[] = [
   },
   {
     id: "nonexistent-effect-with-no-registered-presets-pick-any",
-    utterance: "Pick any preset for the trails effect on this shot.",
+    utterance: "Pick any preset for the trails effect on this scene.",
     film: corpusFilm("nonexistent-effect-with-no-registered-presets-pick-any", {
       effectPresets: { trails: { pick: "any" } },
     }),
@@ -252,7 +252,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performer = spec.shots[0]!.performance.performers[0]!;
+        const performer = spec.scenes[0]!.performance.performers[0]!;
         if (performer.prop !== "staff" || performer.effect !== "fire")
           throw new Error("expected the real staff/fire values to pass through unchanged");
       },

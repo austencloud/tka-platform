@@ -5,8 +5,8 @@ import { corpusFilm } from "./_helpers";
 // 2026-08-24, plan docs/superpowers/plans/2026-08-24-film-director-plane-axes.md).
 // bluePlane/redPlane are full performer-scoped directives (literal, pick
 // any/distinct, oneOf, not, sameAs) exactly like prop/effort/avatarId.
-// stepPlanes entries are shot-scoped directives (literal, pick:any, oneOf,
-// not) resolved via resolveShotDirective, same restriction as environmentId
+// stepPlanes entries are scene-scoped directives (literal, pick:any, oneOf,
+// not) resolved via resolveSceneDirective, same restriction as environmentId
 // and formation — hence the two rejection entries proving distinct/sameAs
 // don't reach stepPlane scope. scene.visiblePlanes is a plain literal array
 // with duplicate rejection. The nine Plane values: wall, wheel, floor,
@@ -20,7 +20,7 @@ import { corpusFilm } from "./_helpers";
 // JSON-stringified issue list — embedded quotes come through
 // backslash-escaped, same reasoning as nonexistent.ts and unknown-axis.ts.
 // The resolver's own thrown Errors (pool-too-small, sameAs-unknown-performer,
-// the stepPlane shot-scope rejection) are plain Errors, not ZodErrors, so
+// the stepPlane scene-scope rejection) are plain Errors, not ZodErrors, so
 // their quotes are NOT escaped — matches unsatisfiable.ts and
 // distribution.ts's sameAs/formation-scope entries.
 
@@ -34,7 +34,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const bluePlanes = spec.shots[0]!.performance.performers.map((p) => p.bluePlane);
+        const bluePlanes = spec.scenes[0]!.performance.performers.map((p) => p.bluePlane);
         if (new Set(bluePlanes).size !== 8) throw new Error("all 8 bluePlane values must be distinct");
       },
     },
@@ -48,7 +48,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const redPlane = spec.shots[0]!.performance.performers[0]!.redPlane;
+        const redPlane = spec.scenes[0]!.performance.performers[0]!.redPlane;
         if (redPlane !== "wall" && redPlane !== "floor")
           throw new Error("redPlane must land on wall or floor");
       },
@@ -63,7 +63,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const redPlane = spec.shots[0]!.performance.performers[0]!.redPlane;
+        const redPlane = spec.scenes[0]!.performance.performers[0]!.redPlane;
         if (redPlane === "wall" || redPlane === "wheel")
           throw new Error("redPlane must not resolve to wall or wheel");
       },
@@ -86,7 +86,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performers = spec.shots[0]!.performance.performers;
+        const performers = spec.scenes[0]!.performance.performers;
         if (performers[1]!.bluePlane !== "wheel")
           throw new Error("performer-2's bluePlane must copy performer-1's (wheel)");
       },
@@ -110,7 +110,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const planes = spec.shots[0]!.performance.performers.map((p) => p.bluePlane);
+        const planes = spec.scenes[0]!.performance.performers.map((p) => p.bluePlane);
         if (planes[0] !== planes[1] || planes[1] !== planes[2])
           throw new Error("the whole chain must resolve to the same bluePlane as performer 1");
       },
@@ -125,7 +125,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performers = spec.shots[0]!.performance.performers;
+        const performers = spec.scenes[0]!.performance.performers;
         if (performers.some((p) => p.redPlane !== "right-wing"))
           throw new Error("both performers must inherit the cast-default redPlane");
       },
@@ -145,7 +145,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const stepPlanes = spec.shots[0]!.performance.performers[0]!.stepPlanes;
+        const stepPlanes = spec.scenes[0]!.performance.performers[0]!.stepPlanes;
         if (JSON.stringify(stepPlanes) !== JSON.stringify([{ step: 3, hand: "blue", plane: "forward-ramp" }]))
           throw new Error("the literal stepPlanes entry must resolve unchanged");
       },
@@ -165,7 +165,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const entry = spec.shots[0]!.performance.performers[0]!.stepPlanes[0]!;
+        const entry = spec.scenes[0]!.performance.performers[0]!.stepPlanes[0]!;
         if (entry.step !== 5 || entry.hand !== "red")
           throw new Error("stepPlanes entry must keep its step and hand");
         const catalog = [
@@ -200,7 +200,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const entry = spec.shots[0]!.performance.performers[0]!.stepPlanes[0]!;
+        const entry = spec.scenes[0]!.performance.performers[0]!.stepPlanes[0]!;
         if (entry.plane !== "floor" && entry.plane !== "wheel")
           throw new Error("the stepPlanes plane must land on floor or wheel");
       },
@@ -229,7 +229,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const stepPlanes = spec.shots[0]!.performance.performers[0]!.stepPlanes;
+        const stepPlanes = spec.scenes[0]!.performance.performers[0]!.stepPlanes;
         if (stepPlanes.length !== 3) throw new Error("all three stepPlanes entries must resolve");
         if (stepPlanes[0]!.plane !== "wall") throw new Error("step 0 must stay pinned to wall");
         if (stepPlanes[2]!.plane !== "floor" && stepPlanes[2]!.plane !== "wheel")
@@ -241,13 +241,13 @@ export const entries: CorpusEntry[] = [
     id: "plane-visibleplanes-literal-list",
     utterance: "Show the wall, floor, and wheel planes in this scene.",
     film: corpusFilm("plane-visibleplanes-literal-list", {
-      scene: { visiblePlanes: ["wall", "floor", "wheel"] },
+      location: { visiblePlanes: ["wall", "floor", "wheel"] },
       performance: { cast: { count: 1 } },
     }),
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const visiblePlanes = spec.shots[0]!.scene.visiblePlanes;
+        const visiblePlanes = spec.scenes[0]!.location.visiblePlanes;
         if (JSON.stringify(visiblePlanes) !== JSON.stringify(["wall", "floor", "wheel"]))
           throw new Error("visiblePlanes must resolve exactly as given");
       },
@@ -257,20 +257,20 @@ export const entries: CorpusEntry[] = [
     id: "plane-visibleplanes-empty-explicit",
     utterance: "No planes should be visible in this scene.",
     film: corpusFilm("plane-visibleplanes-empty-explicit", {
-      scene: { visiblePlanes: [] },
+      location: { visiblePlanes: [] },
       performance: { cast: { count: 1 } },
     }),
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        if (spec.shots[0]!.scene.visiblePlanes.length !== 0)
+        if (spec.scenes[0]!.location.visiblePlanes.length !== 0)
           throw new Error("an explicit empty visiblePlanes list must resolve empty");
       },
     },
   },
   {
     id: "plane-blueplane-plus-stepplanes-combined",
-    utterance: "This performer's blue hand lives on the left-wing plane for the whole shot, except at step 1, where the red hand moves to the backward-ramp plane.",
+    utterance: "This performer's blue hand lives on the left-wing plane for the whole scene, except at step 1, where the red hand moves to the backward-ramp plane.",
     film: corpusFilm("plane-blueplane-plus-stepplanes-combined", {
       performance: {
         cast: {
@@ -288,7 +288,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performer = spec.shots[0]!.performance.performers[0]!;
+        const performer = spec.scenes[0]!.performance.performers[0]!;
         if (performer.bluePlane !== "left-wing") throw new Error("bluePlane must resolve to left-wing");
         if (JSON.stringify(performer.stepPlanes) !== JSON.stringify([{ step: 1, hand: "red", plane: "backward-ramp" }]))
           throw new Error("stepPlanes must resolve to the single backward-ramp entry");
@@ -309,7 +309,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const planes = spec.shots[0]!.performance.performers.map((p) => p.redPlane).sort();
+        const planes = spec.scenes[0]!.performance.performers.map((p) => p.redPlane).sort();
         if (JSON.stringify(planes) !== JSON.stringify(["floor", "forward-ramp", "wheel"]))
           throw new Error("all three redPlane values from the pool must be used, exactly once each");
       },
@@ -324,7 +324,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const performers = spec.shots[0]!.performance.performers;
+        const performers = spec.scenes[0]!.performance.performers;
         if (performers.some((p) => p.bluePlane !== "wall" || p.redPlane !== "wall"))
           throw new Error("unspecified bluePlane/redPlane must default to wall");
       },
@@ -339,7 +339,7 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const bluePlane = spec.shots[0]!.performance.performers[0]!.bluePlane;
+        const bluePlane = spec.scenes[0]!.performance.performers[0]!.bluePlane;
         if (bluePlane === "wall") throw new Error("bluePlane must never resolve to wall");
       },
     },
@@ -410,7 +410,7 @@ export const entries: CorpusEntry[] = [
     id: "plane-visibleplanes-duplicate",
     utterance: "Show the floor plane, and also show the floor plane again.",
     film: corpusFilm("plane-visibleplanes-duplicate", {
-      scene: { visiblePlanes: ["floor", "wheel", "floor"] },
+      location: { visiblePlanes: ["floor", "wheel", "floor"] },
       performance: { cast: { count: 1 } },
     }),
     expect: { outcome: "rejects", messageIncludes: 'scene.visiblePlanes lists \\"floor\\" twice.' },

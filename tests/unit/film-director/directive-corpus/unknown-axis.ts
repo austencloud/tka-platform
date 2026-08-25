@@ -76,7 +76,7 @@ export const entries: CorpusEntry[] = [
   },
   {
     id: "unknown-axis-cast-choreographer",
-    utterance: "The choreographer for this shot is Paul.",
+    utterance: "The choreographer for this scene is Paul.",
     film: corpusFilm("unknown-axis-cast-choreographer", {
       performance: { cast: { count: 1, choreographer: "Paul" } },
     }),
@@ -84,7 +84,7 @@ export const entries: CorpusEntry[] = [
   },
   {
     id: "unknown-axis-performance-dancers-instead-of-cast",
-    utterance: "Here are the dancers for this shot.",
+    utterance: "Here are the dancers for this scene.",
     film: corpusFilm("unknown-axis-performance-dancers-instead-of-cast", {
       performance: { dancers: [{ id: "performer-1" }] },
     }),
@@ -94,7 +94,7 @@ export const entries: CorpusEntry[] = [
     id: "unknown-axis-scene-avatarScale",
     utterance: "Scale up everyone's avatar by 20 percent.",
     film: corpusFilm("unknown-axis-scene-avatarScale", {
-      scene: { avatarScale: 1.2 },
+      location: { avatarScale: 1.2 },
       performance: { cast: { count: 1 } },
     }),
     expect: { outcome: "rejects", messageIncludes: 'Unrecognized key: \\"avatarScale\\"' },
@@ -103,7 +103,7 @@ export const entries: CorpusEntry[] = [
     id: "unknown-axis-scene-oceanVariant",
     utterance: "Use the tropical ocean variant for this scene.",
     film: corpusFilm("unknown-axis-scene-oceanVariant", {
-      scene: { oceanVariant: "tropical" },
+      location: { oceanVariant: "tropical" },
       performance: { cast: { count: 1 } },
     }),
     expect: { outcome: "rejects", messageIncludes: 'Unrecognized key: \\"oceanVariant\\"' },
@@ -112,7 +112,7 @@ export const entries: CorpusEntry[] = [
     id: "unknown-axis-scene-timeOfDay",
     utterance: "Set the time of day to dusk.",
     film: corpusFilm("unknown-axis-scene-timeOfDay", {
-      scene: { timeOfDay: "dusk" },
+      location: { timeOfDay: "dusk" },
       performance: { cast: { count: 1 } },
     }),
     expect: { outcome: "rejects", messageIncludes: 'Unrecognized key: \\"timeOfDay\\"' },
@@ -121,7 +121,7 @@ export const entries: CorpusEntry[] = [
     id: "unknown-axis-scene-weather",
     utterance: "Make it rain in this scene.",
     film: corpusFilm("unknown-axis-scene-weather", {
-      scene: { weather: "rain" },
+      location: { weather: "rain" },
       performance: { cast: { count: 1 } },
     }),
     expect: { outcome: "rejects", messageIncludes: 'Unrecognized key: \\"weather\\"' },
@@ -130,7 +130,7 @@ export const entries: CorpusEntry[] = [
     id: "unknown-axis-scene-fogDensity",
     utterance: "Turn up the fog density in this scene.",
     film: corpusFilm("unknown-axis-scene-fogDensity", {
-      scene: { fogDensity: 0.5 },
+      location: { fogDensity: 0.5 },
       performance: { cast: { count: 1 } },
     }),
     expect: { outcome: "rejects", messageIncludes: 'Unrecognized key: \\"fogDensity\\"' },
@@ -139,7 +139,7 @@ export const entries: CorpusEntry[] = [
     id: "unknown-axis-scene-wallColor",
     utterance: "Paint the walls a deep blue for this scene.",
     film: corpusFilm("unknown-axis-scene-wallColor", {
-      scene: { wallColor: "navy" },
+      location: { wallColor: "navy" },
       performance: { cast: { count: 1 } },
     }),
     expect: { outcome: "rejects", messageIncludes: 'Unrecognized key: \\"wallColor\\"' },
@@ -173,7 +173,7 @@ export const entries: CorpusEntry[] = [
   },
   {
     id: "unknown-axis-camera-colorGrade",
-    utterance: "Apply a teal-and-orange color grade to this shot's camera.",
+    utterance: "Apply a teal-and-orange color grade to this scene's camera.",
     film: corpusFilm("unknown-axis-camera-colorGrade", {
       camera: { colorGrade: "teal-orange" },
       performance: { cast: { count: 1 } },
@@ -220,27 +220,27 @@ export const entries: CorpusEntry[] = [
     expect: { outcome: "rejects", messageIncludes: 'Unrecognized key: \\"subtitle\\"' },
   },
   {
-    id: "unknown-axis-shot-mood",
-    utterance: "This shot's mood should be somber.",
-    film: corpusFilm("unknown-axis-shot-mood", {
+    id: "unknown-axis-scene-mood",
+    utterance: "This scene's mood should be somber.",
+    film: corpusFilm("unknown-axis-scene-mood", {
       mood: "somber",
       performance: { cast: { count: 1 } },
     }),
     expect: { outcome: "rejects", messageIncludes: 'Unrecognized key: \\"mood\\"' },
   },
   {
-    id: "unknown-axis-shot-soundEffect",
-    utterance: "Play a whoosh sound effect during this shot.",
-    film: corpusFilm("unknown-axis-shot-soundEffect", {
+    id: "unknown-axis-scene-soundEffect",
+    utterance: "Play a whoosh sound effect during this scene.",
+    film: corpusFilm("unknown-axis-scene-soundEffect", {
       soundEffect: "whoosh",
       performance: { cast: { count: 1 } },
     }),
     expect: { outcome: "rejects", messageIncludes: 'Unrecognized key: \\"soundEffect\\"' },
   },
   {
-    id: "unknown-axis-shot-notes",
-    utterance: "Leave a director's note on this shot: 'reshoot if the timing feels off'.",
-    film: corpusFilm("unknown-axis-shot-notes", {
+    id: "unknown-axis-scene-notes",
+    utterance: "Leave a director's note on this scene: 'reshoot if the timing feels off'.",
+    film: corpusFilm("unknown-axis-scene-notes", {
       notes: "reshoot if the timing feels off",
       performance: { cast: { count: 1 } },
     }),

@@ -15,8 +15,8 @@
       <button
         class="icon-button"
         type="button"
-        onclick={director.previousShot}
-        aria-label="Previous shot"
+        onclick={director.previousScene}
+        aria-label="Previous scene"
       >
         <i class="fas fa-backward-step" aria-hidden="true"></i>
       </button>
@@ -35,8 +35,8 @@
       <button
         class="icon-button"
         type="button"
-        onclick={director.nextShot}
-        aria-label="Next shot"
+        onclick={director.nextScene}
+        aria-label="Next scene"
       >
         <i class="fas fa-forward-step" aria-hidden="true"></i>
       </button>
@@ -69,18 +69,18 @@
     </button>
   </div>
 
-  <div class="shot-strip themed-scrollbar" aria-label="Film shots">
-    {#each director.film.shots as shot, index (shot.id)}
+  <div class="scene-strip themed-scrollbar" aria-label="Film scenes">
+    {#each director.film.scenes as scene, index (scene.id)}
       <button
-        class:active={index === director.frame.shotIndex}
-        class="shot-button"
+        class:active={index === director.frame.sceneIndex}
+        class="scene-button"
         type="button"
-        onclick={() => director.selectShot(index)}
-        aria-current={index === director.frame.shotIndex ? "true" : undefined}
+        onclick={() => director.selectScene(index)}
+        aria-current={index === director.frame.sceneIndex ? "true" : undefined}
       >
-        <span class="shot-number">{String(index + 1).padStart(2, "0")}</span>
-        <span class="shot-name">{shot.title}</span>
-        <span class="shot-duration">{shot.durationSeconds}s</span>
+        <span class="scene-number">{String(index + 1).padStart(2, "0")}</span>
+        <span class="scene-name">{scene.title}</span>
+        <span class="scene-duration">{scene.durationSeconds}s</span>
       </button>
     {/each}
   </div>
@@ -195,7 +195,7 @@
     text-align: center;
   }
 
-  .shot-strip {
+  .scene-strip {
     display: flex;
     gap: 0.5rem;
     min-width: 0;
@@ -204,7 +204,7 @@
     scroll-snap-type: x proximity;
   }
 
-  .shot-button {
+  .scene-button {
     display: grid;
     grid-template-columns: auto minmax(8rem, auto) auto;
     flex: 0 0 auto;
@@ -216,7 +216,7 @@
     text-align: left;
   }
 
-  .shot-button.active {
+  .scene-button.active {
     border-color: var(--theme-accent, #9d8cff);
     background: color-mix(
       in srgb,
@@ -225,14 +225,14 @@
     );
   }
 
-  .shot-number,
-  .shot-duration {
+  .scene-number,
+  .scene-duration {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-compact, 0.75rem);
     font-variant-numeric: tabular-nums;
   }
 
-  .shot-name {
+  .scene-name {
     overflow: hidden;
     font-size: var(--font-size-min, 0.875rem);
     font-weight: 700;
@@ -287,12 +287,12 @@
       padding: 0;
     }
 
-    .shot-button {
+    .scene-button {
       grid-template-columns: auto minmax(7rem, auto);
       min-width: 10.5rem;
     }
 
-    .shot-duration {
+    .scene-duration {
       display: none;
     }
   }
@@ -303,15 +303,15 @@
       align-items: center;
     }
 
-    .shot-strip {
+    .scene-strip {
       order: -1;
     }
 
-    .shot-button {
+    .scene-button {
       min-width: 10rem;
     }
 
-    .shot-duration {
+    .scene-duration {
       display: none;
     }
   }

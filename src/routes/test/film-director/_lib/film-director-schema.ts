@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { Plane, type AvatarId, type FormationPreset } from "@austencloud/scene-3d";
+import {
+  Plane,
+  type AvatarId,
+  type FormationPreset,
+} from "@austencloud/scene-3d";
 
 import { EFFECTS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
 import type { EffectType } from "$lib/shared/effects/domain/effects-config";
@@ -10,9 +14,11 @@ import {
 } from "$lib/shared/3d/environments/domain/scene-environment";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { directiveSchema } from "./directives";
+import { normalizeFilmDirectorInput } from "./normalize-film-director-input";
 
 export const FILM_DIRECTOR_SCHEMA_VERSION = 1 as const;
 export const FILM_DIRECTOR_SCHEMA_VERSION_2 = 2 as const;
+export const FILM_DIRECTOR_SCHEMA_VERSION_3 = 3 as const;
 
 export const FILM_DIRECTOR_DIRECTIVE_AXES = [
   "avatarId",
@@ -72,16 +78,20 @@ export const DIRECTOR_FORMATIONS = [
 // that refine's own message directly. Matches effectIdSchema/
 // environmentIdSchema below, which already use this shape for the same
 // reason.
-const effortIdSchema = z.string().refine(
-  (value): value is (typeof DIRECTOR_EFFORT_IDS)[number] =>
-    (DIRECTOR_EFFORT_IDS as readonly string[]).includes(value),
-  { error: (issue) => `Unknown effort "${String(issue.input)}"` }
-);
-const formationIdSchema = z.string().refine(
-  (value): value is (typeof DIRECTOR_FORMATIONS)[number] =>
-    (DIRECTOR_FORMATIONS as readonly string[]).includes(value),
-  { error: (issue) => `Unknown formation "${String(issue.input)}"` }
-);
+const effortIdSchema = z
+  .string()
+  .refine(
+    (value): value is (typeof DIRECTOR_EFFORT_IDS)[number] =>
+      (DIRECTOR_EFFORT_IDS as readonly string[]).includes(value),
+    { error: (issue) => `Unknown effort "${String(issue.input)}"` }
+  );
+const formationIdSchema = z
+  .string()
+  .refine(
+    (value): value is (typeof DIRECTOR_FORMATIONS)[number] =>
+      (DIRECTOR_FORMATIONS as readonly string[]).includes(value),
+    { error: (issue) => `Unknown formation "${String(issue.input)}"` }
+  );
 
 export const DIRECTOR_CAMERA_PRESETS = [
   "front-lockoff",
@@ -103,20 +113,19 @@ const finiteNumber = z.number().finite();
 const vector3Schema = z.tuple([finiteNumber, finiteNumber, finiteNumber]);
 const position2Schema = z.object({ x: finiteNumber, z: finiteNumber }).strict();
 
-const environmentIdSchema = z
-  .string()
-  .refine(isSceneEnvironmentId, {
-    error: (issue) => `Unknown 3D environment "${String(issue.input)}"`,
-  });
+const environmentIdSchema = z.string().refine(isSceneEnvironmentId, {
+  error: (issue) => `Unknown 3D environment "${String(issue.input)}"`,
+});
 const avatarIdSchema = z.string().min(1);
 const PROP_TYPE_VALUES = new Set<string>(Object.values(PropType));
 // string+refine, not z.nativeEnum — see the comment above effortIdSchema for
 // why: it lets the refine's own message surface through directiveSchema()'s
 // union instead of the generic "expected literal or directive object" text.
-const propTypeSchema = z.string().refine(
-  (value): value is PropType => PROP_TYPE_VALUES.has(value),
-  { error: (issue) => `Unknown prop "${String(issue.input)}"` }
-);
+const propTypeSchema = z
+  .string()
+  .refine((value): value is PropType => PROP_TYPE_VALUES.has(value), {
+    error: (issue) => `Unknown prop "${String(issue.input)}"`,
+  });
 const effectIdSchema = z
   .string()
   .refine(
@@ -126,13 +135,9 @@ const effectIdSchema = z
   );
 const configurableEffectIdSchema = z
   .string()
-  .refine(
-    (value) => EFFECTS.some((effect) => effect.id === value),
-    {
-      error: (issue) =>
-        `Unknown configurable effect "${String(issue.input)}"`,
-    }
-  );
+  .refine((value) => EFFECTS.some((effect) => effect.id === value), {
+    error: (issue) => `Unknown configurable effect "${String(issue.input)}"`,
+  });
 
 // Derived from the live enum, never retyped — see the comment above
 // effortIdSchema for why this is string+refine (with a type-predicate to
@@ -141,14 +146,16 @@ const configurableEffectIdSchema = z
 // catalog in its message: there is no "closest" plane the way there's an
 // obvious closest prop, so directors are more likely to need the full list.
 const PLANE_VALUES = Object.values(Plane) as Plane[];
-const planeSchema = z.string().refine(
-  (value): value is Plane =>
-    (PLANE_VALUES as readonly string[]).includes(value),
-  {
-    error: (issue) =>
-      `Unknown plane "${String(issue.input)}". Planes: ${PLANE_VALUES.join(", ")}.`,
-  }
-);
+const planeSchema = z
+  .string()
+  .refine(
+    (value): value is Plane =>
+      (PLANE_VALUES as readonly string[]).includes(value),
+    {
+      error: (issue) =>
+        `Unknown plane "${String(issue.input)}". Planes: ${PLANE_VALUES.join(", ")}.`,
+    }
+  );
 
 function firstDuplicate(values: readonly string[]): string | undefined {
   const seen = new Set<string>();
@@ -159,16 +166,15 @@ function firstDuplicate(values: readonly string[]): string | undefined {
   return undefined;
 }
 
-const visiblePlanesSchema = z.array(planeSchema).refine(
-  (values) => firstDuplicate(values) === undefined,
-  {
+const visiblePlanesSchema = z
+  .array(planeSchema)
+  .refine((values) => firstDuplicate(values) === undefined, {
     error: (issue) =>
       `scene.visiblePlanes lists "${firstDuplicate(issue.input as readonly string[])}" twice.`,
-  }
-);
+  });
 
-// Per-step plane overrides are a shot-scope directive (literal, pick:any,
-// oneOf, not) resolved by resolveShotDirective in
+// Per-step plane overrides are a scene-scope directive (literal, pick:any,
+// oneOf, not) resolved by resolveSceneDirective in
 // resolve-film-director-spec.ts — distinct/sameAs make no sense pinned to a
 // single (performer, step, hand) triple, same reasoning as environmentId
 // and formation.
@@ -277,7 +283,7 @@ const performanceSchema = z
     path: ["cast"],
   });
 
-const sceneSchema = z
+const locationSchema = z
   .object({
     environmentId: directiveSchema(environmentIdSchema).optional(),
     showStage: z.boolean().optional(),
@@ -306,8 +312,17 @@ const cameraSchema = z
       .array(
         z
           .object({
-            move: z.enum(["hold", "push-in", "pull-back", "orbit", "crane", "pan"]),
-            direction: z.enum(["cw", "ccw", "up", "down", "left", "right"]).optional(),
+            move: z.enum([
+              "hold",
+              "push-in",
+              "pull-back",
+              "orbit",
+              "crane",
+              "pan",
+            ]),
+            direction: z
+              .enum(["cw", "ccw", "up", "down", "left", "right"])
+              .optional(),
             amount: z
               .union([
                 z.object({ degrees: finiteNumber }).strict(),
@@ -334,18 +349,31 @@ const cameraSchema = z
   .refine(
     (camera) =>
       !camera.keyframes ||
-      !(camera.shotSize || camera.angle || camera.position || camera.moves || camera.subject),
-    { message: "Raw keyframes and framing grammar are exclusive — use one.", path: ["keyframes"] }
+      !(
+        camera.shotSize ||
+        camera.angle ||
+        camera.position ||
+        camera.moves ||
+        camera.subject
+      ),
+    {
+      message: "Raw keyframes and framing grammar are exclusive — use one.",
+      path: ["keyframes"],
+    }
   )
   .refine(
     (camera) =>
       !camera.preset ||
       camera.preset === "custom" ||
       !(camera.shotSize || camera.angle || camera.position || camera.moves),
-    { message: "A preset and framing grammar are exclusive — use one.", path: ["preset"] }
+    {
+      message: "A preset and framing grammar are exclusive — use one.",
+      path: ["preset"],
+    }
   )
   .refine((camera) => !(camera.subject && camera.target), {
-    message: 'Use "subject" with framing grammar, "target" with presets/keyframes.',
+    message:
+      'Use "subject" with framing grammar, "target" with presets/keyframes.',
     path: ["subject"],
   });
 
@@ -356,19 +384,22 @@ const transitionSchema = z
   })
   .strict();
 
-const shotSchema = z
+const sceneSchema = z
   .object({
     id: z.string().min(1),
     title: z.string().min(1),
     intent: z.string().min(1).optional(),
     durationSeconds: finiteNumber.min(1).max(60).optional(),
     transition: transitionSchema.optional(),
-    scene: sceneSchema.optional(),
+    location: locationSchema.optional(),
     performance: performanceSchema.optional(),
     effectPresets: z
       .record(
         z.string(),
-        z.union([z.string().min(1), z.object({ pick: z.literal("any") }).strict()])
+        z.union([
+          z.string().min(1),
+          z.object({ pick: z.literal("any") }).strict(),
+        ])
       )
       .optional(),
     effectOverrides: z
@@ -378,11 +409,12 @@ const shotSchema = z
   })
   .strict();
 
-export const FilmDirectorInputSchema = z
+const filmDirectorInputSchema = z
   .object({
     version: z.union([
       z.literal(FILM_DIRECTOR_SCHEMA_VERSION),
       z.literal(FILM_DIRECTOR_SCHEMA_VERSION_2),
+      z.literal(FILM_DIRECTOR_SCHEMA_VERSION_3),
     ]),
     id: z.string().min(1),
     title: z.string().min(1),
@@ -403,12 +435,17 @@ export const FilmDirectorInputSchema = z
       })
       .strict()
       .optional(),
-    shots: z.array(shotSchema).min(1).max(24),
+    scenes: z.array(sceneSchema).min(1).max(24),
   })
   .strict();
 
-export type FilmDirectorInput = z.input<typeof FilmDirectorInputSchema>;
-export type DirectorShotInput = z.infer<typeof shotSchema>;
+export const FilmDirectorInputSchema = z.preprocess(
+  normalizeFilmDirectorInput,
+  filmDirectorInputSchema
+);
+
+export type FilmDirectorInput = z.infer<typeof FilmDirectorInputSchema>;
+export type DirectorSceneInput = z.infer<typeof sceneSchema>;
 export type DirectorCastInput = z.infer<typeof castSchema>;
 export type DirectorCameraInput = z.infer<typeof cameraSchema>;
 export type DirectorCameraTargetInput = z.infer<typeof cameraTargetSchema>;
@@ -448,7 +485,7 @@ export interface ResolvedDirectorCameraKeyframe {
   easing: DirectorEasing;
 }
 
-export interface ResolvedDirectorShot {
+export interface ResolvedDirectorScene {
   id: string;
   title: string;
   intent: string | null;
@@ -458,7 +495,7 @@ export interface ResolvedDirectorShot {
     kind: "cut" | "environment-dissolve" | "fade-through-black";
     durationSeconds: number;
   };
-  scene: {
+  location: {
     environmentId: SceneEnvironmentId;
     showStage: boolean;
     showAudience: boolean;
@@ -480,12 +517,15 @@ export interface ResolvedDirectorShot {
 }
 
 export interface ResolvedFilmDirectorSpec {
-  version: typeof FILM_DIRECTOR_SCHEMA_VERSION;
+  version:
+    | typeof FILM_DIRECTOR_SCHEMA_VERSION
+    | typeof FILM_DIRECTOR_SCHEMA_VERSION_2
+    | typeof FILM_DIRECTOR_SCHEMA_VERSION_3;
   id: string;
   title: string;
   brief: string | null;
   format: { width: number; height: number; fps: number };
   playback: { loop: boolean; autoplay: boolean };
-  shots: ResolvedDirectorShot[];
+  scenes: ResolvedDirectorScene[];
   durationSeconds: number;
 }

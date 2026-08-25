@@ -5,7 +5,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
  * A five-point star facing the audience, revealed from its tip outward.
  *
  * The audience sits on the negative-Z side (every director camera fronts the
- * group from -Z, per computeFramingShot's wall-plane eye), so the tip of the
+ * group from -Z, per computeFramingScene's wall-plane eye), so the tip of the
  * star is the most negative Z and the back pair is the most positive. All five
  * face 180 degrees, straight down the barrel of the lens.
  *
@@ -18,21 +18,21 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
  * - The second fan and the second buugeng mirror the first of their pair.
  */
 export const starOfFiveFilm: FilmDirectorInput = {
-  version: 2,
+  version: 3,
   id: "star-of-five-r1",
   title: "Star of Five",
   brief:
     "Five performers hold a star facing the audience under the clouds. The camera opens tight on the baton at the tip and pulls back until the whole star is in frame.",
   format: { width: 1920, height: 1080, fps: 30 },
   playback: { loop: true, autoplay: true },
-  shots: [
+  scenes: [
     {
       id: "star-reveal",
       title: "Star reveal",
       intent:
         "Open on the LED baton alone, then pull back and rise to find two fans behind him and two buugeng behind them, all on the wall plane.",
       durationSeconds: 16,
-      scene: { environmentId: "celestial", showStage: true },
+      location: { environmentId: "celestial", showStage: true },
       performance: {
         bpm: 72,
         formation: "custom",

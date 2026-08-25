@@ -4,7 +4,7 @@
  * The film schema lets a performer say what they spin — the shared demo, a
  * spelled word, or another performer's sequence mirrored. Turning a word into
  * motion means running the generator, which is async, so this sits between the
- * synchronous spec resolver and the scene: the scene asks for a shot's
+ * synchronous spec resolver and the location: the scene asks for a scene's
  * sequences, gets whatever has resolved so far, and re-applies once the rest
  * land.
  *
@@ -22,7 +22,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 import type {
   DirectorPerformerSequence,
-  ResolvedDirectorShot,
+  ResolvedDirectorScene,
   ResolvedFilmDirectorSpec,
 } from "./film-director-schema";
 
@@ -32,8 +32,8 @@ export interface DirectorSequenceLibrary {
    * film returns the first call's promise rather than regenerating.
    */
   prepare(film: ResolvedFilmDirectorSpec): Promise<void>;
-  /** Performer id → sequence, for a shot that has finished resolving. */
-  forShot(shotId: string): ReadonlyMap<string, SequenceData>;
+  /** Performer id → sequence, for a scene that has finished resolving. */
+  forScene(sceneId: string): ReadonlyMap<string, SequenceData>;
   /** Human-readable reasons a directed sequence fell back to the demo. */
   readonly failures: readonly string[];
 }
@@ -50,7 +50,7 @@ export function createDirectorSequenceLibrary(
 ): DirectorSequenceLibrary {
   const sources = new Map<string, Promise<SequenceData>>();
   const mirrors = new Map<string, Promise<SequenceData>>();
-  const byShot = new Map<string, Map<string, SequenceData>>();
+  const byScene = new Map<string, Map<string, SequenceData>>();
   const failures: string[] = [];
   let preparedFilmId: string | null = null;
   let preparing: Promise<void> | null = null;
@@ -96,8 +96,8 @@ export function createDirectorSequenceLibrary(
     return created;
   }
 
-  async function resolveShot(shot: ResolvedDirectorShot): Promise<void> {
-    const performers = shot.performance.performers;
+  async function resolveScene(scene: ResolvedDirectorScene): Promise<void> {
+    const performers = scene.performance.performers;
     const byId = new Map(
       performers.map((performer) => [performer.id, performer.sequence])
     );
@@ -109,7 +109,7 @@ export function createDirectorSequenceLibrary(
         try {
           if ("mirrorOf" in directed) {
             // The spec resolver already proved this names a non-mirror
-            // performer in this same shot.
+            // performer in this same scene.
             const source = byId.get(directed.mirrorOf)!;
             resolved.set(performer.id, await resolveMirror(source));
             return;
@@ -118,10 +118,10 @@ export function createDirectorSequenceLibrary(
         } catch (error: unknown) {
           const reason = error instanceof Error ? error.message : String(error);
           failures.push(
-            `Shot "${shot.id}", performer "${performer.id}": ${reason}`
+            `Scene "${scene.id}", performer "${performer.id}": ${reason}`
           );
           console.error(
-            `[FilmDirector] Could not build the directed sequence for "${performer.id}" in shot "${shot.id}". Falling back to the film's demo sequence.`,
+            `[FilmDirector] Could not build the directed sequence for "${performer.id}" in scene "${scene.id}". Falling back to the film's demo sequence.`,
             error
           );
           resolved.set(performer.id, demoSequence);
@@ -129,22 +129,22 @@ export function createDirectorSequenceLibrary(
       })
     );
 
-    byShot.set(shot.id, resolved);
+    byScene.set(scene.id, resolved);
   }
 
   function prepare(film: ResolvedFilmDirectorSpec): Promise<void> {
     if (preparedFilmId === film.id && preparing) return preparing;
 
     preparedFilmId = film.id;
-    byShot.clear();
+    byScene.clear();
     failures.length = 0;
-    preparing = Promise.all(film.shots.map(resolveShot)).then(() => undefined);
+    preparing = Promise.all(film.scenes.map(resolveScene)).then(() => undefined);
     return preparing;
   }
 
   return {
     prepare,
-    forShot: (shotId) => byShot.get(shotId) ?? EMPTY,
+    forScene: (sceneId) => byScene.get(sceneId) ?? EMPTY,
     get failures() {
       return failures;
     },

@@ -6,12 +6,12 @@ import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/
 
 const PLANE_VALUES = Object.values(Plane) as Plane[];
 
-function film(shot: Record<string, unknown>, extras: Record<string, unknown> = {}) {
+function film(scene: Record<string, unknown>, extras: Record<string, unknown> = {}) {
   return {
     version: 2,
     id: "plane-film",
     title: "Plane Film",
-    shots: [{ id: "s1", title: "S1", ...shot }],
+    scenes: [{ id: "s1", title: "S1", ...scene }],
     ...extras,
   };
 }
@@ -21,13 +21,13 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
     const spec = resolveFilmDirectorSpec(
       film({ performance: { cast: { count: 3 } } })
     );
-    const shot = spec.shots[0]!;
-    for (const performer of shot.performance.performers) {
+    const scene = spec.scenes[0]!;
+    for (const performer of scene.performance.performers) {
       expect(performer.bluePlane).toBe(Plane.WALL);
       expect(performer.redPlane).toBe(Plane.WALL);
       expect(performer.stepPlanes).toEqual([]);
     }
-    expect(shot.scene.visiblePlanes).toEqual([]);
+    expect(scene.location.visiblePlanes).toEqual([]);
   });
 
   it("resolves distinct bluePlane across 8 performers deterministically", () => {
@@ -38,13 +38,13 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
     });
     const first = resolveFilmDirectorSpec(doc);
     const second = resolveFilmDirectorSpec(doc);
-    const firstPlanes = first.shots[0]!.performance.performers.map(
+    const firstPlanes = first.scenes[0]!.performance.performers.map(
       (performer) => performer.bluePlane
     );
     expect(firstPlanes).toHaveLength(8);
     expect(new Set(firstPlanes).size).toBe(8);
     expect(
-      second.shots[0]!.performance.performers.map((performer) => performer.bluePlane)
+      second.scenes[0]!.performance.performers.map((performer) => performer.bluePlane)
     ).toEqual(firstPlanes);
   });
 
@@ -62,7 +62,7 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
         },
       })
     );
-    const performers = spec.shots[0]!.performance.performers;
+    const performers = spec.scenes[0]!.performance.performers;
     expect(performers[0]!.redPlane).toBe("wheel");
     expect(performers[1]!.redPlane).toBe("wheel");
     // sameAs only ever copies the SAME axis — bluePlane stays at its own
@@ -79,7 +79,7 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
         },
       })
     );
-    for (const performer of spec.shots[0]!.performance.performers) {
+    for (const performer of spec.scenes[0]!.performance.performers) {
       expect(performer.bluePlane).not.toBe("wall");
     }
   });
@@ -141,7 +141,7 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
         },
       })
     );
-    const entry = spec.shots[0]!.performance.performers[0]!.stepPlanes[0]!;
+    const entry = spec.scenes[0]!.performance.performers[0]!.stepPlanes[0]!;
     expect(entry).toMatchObject({ step: 2, hand: "red" });
     expect(PLANE_VALUES).toContain(entry.plane);
   });
@@ -171,8 +171,8 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
 
     const base = resolveFilmDirectorSpec(doc);
     const again = resolveFilmDirectorSpec(doc);
-    expect(again.shots[0]!.performance.performers).toEqual(
-      base.shots[0]!.performance.performers
+    expect(again.scenes[0]!.performance.performers).toEqual(
+      base.scenes[0]!.performance.performers
     );
 
     const rerolled = resolveFilmDirectorSpec({
@@ -180,20 +180,20 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
       seed: { axes: { stepPlane: 9 } },
     });
 
-    const basePlanes = base.shots[0]!.performance.performers[0]!.stepPlanes.map(
+    const basePlanes = base.scenes[0]!.performance.performers[0]!.stepPlanes.map(
       (entry) => entry.plane
     );
-    const rerolledPlanes = rerolled.shots[0]!.performance.performers[0]!.stepPlanes.map(
+    const rerolledPlanes = rerolled.scenes[0]!.performance.performers[0]!.stepPlanes.map(
       (entry) => entry.plane
     );
     expect(rerolledPlanes).not.toEqual(basePlanes);
 
     expect(
-      rerolled.shots[0]!.performance.performers.map((performer) => performer.bluePlane)
-    ).toEqual(base.shots[0]!.performance.performers.map((performer) => performer.bluePlane));
+      rerolled.scenes[0]!.performance.performers.map((performer) => performer.bluePlane)
+    ).toEqual(base.scenes[0]!.performance.performers.map((performer) => performer.bluePlane));
     expect(
-      rerolled.shots[0]!.performance.performers.map((performer) => performer.redPlane)
-    ).toEqual(base.shots[0]!.performance.performers.map((performer) => performer.redPlane));
+      rerolled.scenes[0]!.performance.performers.map((performer) => performer.redPlane)
+    ).toEqual(base.scenes[0]!.performance.performers.map((performer) => performer.redPlane));
   });
 
   it("rejects duplicate values in scene.visiblePlanes, naming the duplicate", () => {
@@ -201,7 +201,7 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
     try {
       resolveFilmDirectorSpec(
         film({
-          scene: { visiblePlanes: ["wall", "wheel", "wall"] },
+          location: { visiblePlanes: ["wall", "wheel", "wall"] },
           performance: { cast: { count: 1 } },
         })
       );
@@ -212,7 +212,7 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
     expect(String(caught)).toContain('scene.visiblePlanes lists \\"wall\\" twice.');
   });
 
-  it("rejects distinct at stepPlane scope with the shot-scope rejection message", () => {
+  it("rejects distinct at stepPlane scope with the scene-scope rejection message", () => {
     expect(() =>
       resolveFilmDirectorSpec(
         film({
@@ -234,7 +234,7 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
     );
   });
 
-  it("rejects sameAs at stepPlane scope with the shot-scope rejection message", () => {
+  it("rejects sameAs at stepPlane scope with the scene-scope rejection message", () => {
     expect(() =>
       resolveFilmDirectorSpec(
         film({
@@ -277,7 +277,7 @@ describe("plane axes: bluePlane, redPlane, stepPlanes, visiblePlanes", () => {
         },
       })
     );
-    const performers = spec.shots[0]!.performance.performers;
+    const performers = spec.scenes[0]!.performance.performers;
     // performer-1 stated its own list — it REPLACES the cast default list,
     // it does not gain the default's step-0 entry too.
     expect(performers[0]!.stepPlanes).toEqual([

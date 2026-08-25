@@ -74,7 +74,7 @@ describe("computeCameraFraming", () => {
     // Regression: the target was once computed as groundOffset + 1.45, but
     // groundOffset is the rig ORIGIN (shoulder height) — feet sit
     // userProportionsState.groundY below it. That aimed close-ups ~1.5m over
-    // every head and framed empty air (Understudy Night shot 1).
+    // every head and framed empty air (Understudy Night scene 1).
     const framing = computeCameraFraming(
       {
         subject: { kind: "performer", performerId: "performer-1" },
@@ -198,7 +198,7 @@ describe("compileCameraMoves", () => {
     ).toThrow(/duration/i);
   });
 
-  it("an empty moves array returns a two-frame hold spanning the shot", () => {
+  it("an empty moves array returns a two-frame hold spanning the scene", () => {
     const frames = compileCameraMoves([], framing, CONTEXT);
     expect(frames).toHaveLength(2);
     expect(frames[0]!.atSeconds).toBe(0);

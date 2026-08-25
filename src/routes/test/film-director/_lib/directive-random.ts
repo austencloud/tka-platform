@@ -24,20 +24,20 @@ export function resolveFilmSeed(filmId: string, input?: FilmSeedInput): FilmSeed
 
 /**
  * Draws from the returned generator are position-dependent within a given
- * (shot, axis): editing earlier picks in that shot+axis rerolls every later
+ * (scene, axis): editing earlier picks in that scene+axis rerolls every later
  * one. The per-axis salt in `seed.axes` is the stable reroll knob — bump it
  * to reshuffle just that axis without disturbing anything else.
  */
 export function createAxisStream(
   seed: FilmSeed,
-  shotId: string,
+  sceneId: string,
   axis: string
 ): () => number {
   const salt = seed.axes[axis] ?? 0;
   // Field values (e.g. axis names like "effectPreset:${effectId}") may
   // themselves contain ":", so a colon-joined key is ambiguous. NUL can't
   // appear in authored ids, so it's a safe unambiguous separator.
-  return mulberry32(hashString(`${seed.base}\u0000${salt}\u0000${shotId}\u0000${axis}`));
+  return mulberry32(hashString(`${seed.base}\u0000${salt}\u0000${sceneId}\u0000${axis}`));
 }
 
 export function seededShuffle<T>(

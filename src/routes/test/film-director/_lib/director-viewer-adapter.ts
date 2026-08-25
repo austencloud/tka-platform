@@ -14,15 +14,15 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 import type { DirectorCameraFrame } from "./director-camera-track";
-import type { ResolvedDirectorShot } from "./film-director-schema";
+import type { ResolvedDirectorScene } from "./film-director-schema";
 import { resolveDirectorPerformerPoolSize } from "./film-director-performance-policy";
 
-interface ApplyDirectorShotOptions {
+interface ApplyDirectorSceneOptions {
   /** Keep a stable rig pool so a cut never destroys and rebuilds half the cast. */
   reservedPerformerCount?: number;
   /**
-   * Performer id → the sequence that performer spins in this shot, from
-   * `director-sequence-library`. A performer with no entry — or a shot applied
+   * Performer id → the sequence that performer spins in this scene, from
+   * `director-sequence-library`. A performer with no entry — or a scene applied
    * before the library has finished generating — falls back to the film's
    * shared sequence.
    */
@@ -30,12 +30,12 @@ interface ApplyDirectorShotOptions {
 }
 
 export function buildDirectorViewerSeed(
-  shot: ResolvedDirectorShot
+  scene: ResolvedDirectorScene
 ): Viewer3DStateSeed {
-  const camera = shot.camera.keyframes[0]!;
+  const camera = scene.camera.keyframes[0]!;
   return {
     renderMode: "3d",
-    environmentId: shot.scene.environmentId,
+    environmentId: scene.location.environmentId,
     camera: {
       position: {
         x: camera.position[0],
@@ -51,7 +51,7 @@ export function buildDirectorViewerSeed(
       fov: camera.fovDeg,
       timestamp: 0,
     },
-    performers: shot.performance.performers.map((performer) => ({
+    performers: scene.performance.performers.map((performer) => ({
       position: { ...performer.position },
       facingAngle: performer.facingAngle,
       customBluePlane: performer.bluePlane,
@@ -65,29 +65,29 @@ export function buildDirectorViewerSeed(
       },
     })),
     selectedPerformerIndex: null,
-    activeFormation: shot.performance.formation,
+    activeFormation: scene.performance.formation,
     defaultProp: PropType.STAFF,
     oceanVariant: "abyss",
     navMode: "orbit",
     activePreset: null,
     activeCameraPreset: "director",
     showGridLabels: false,
-    visiblePlanes: shot.scene.visiblePlanes,
+    visiblePlanes: scene.location.visiblePlanes,
     effectToggles: {},
   };
 }
 
-export function applyDirectorShotToViewer(
+export function applyDirectorSceneToViewer(
   viewer: Viewer3DState,
-  shot: ResolvedDirectorShot,
-  options: ApplyDirectorShotOptions = {}
+  scene: ResolvedDirectorScene,
+  options: ApplyDirectorSceneOptions = {}
 ): void {
   const manager = viewer.performerManager;
   const performerPoolSize = resolveDirectorPerformerPoolSize(
-    shot.performance.performers.length,
+    scene.performance.performers.length,
     options.reservedPerformerCount
   );
-  viewer.setEnvironmentId(shot.scene.environmentId);
+  viewer.setEnvironmentId(scene.location.environmentId);
 
   getSceneUndoManager().withoutUndo(() => {
     manager.ensurePerformerCount(performerPoolSize);
@@ -99,7 +99,7 @@ export function applyDirectorShotToViewer(
     // `ensurePerformerCount` above can create pooled performers that were
     // never part of the sequence load `enter3D` ran at mount (that call only
     // reaches the performers that already existed at that moment - the first
-    // shot's cast). `performer-manager`'s `addPerformer` never calls
+    // scene's cast). `performer-manager`'s `addPerformer` never calls
     // `loadSequence` itself, so without this backfill any such performer's
     // `setStepHandPlane` below would silently no-op forever:
     // `applyBeatPlaneOverrides` bails out whenever `loadedSequence` is null.
@@ -112,14 +112,14 @@ export function applyDirectorShotToViewer(
     }
 
     // Wipe every pooled performer's leftover per-step overrides before this
-    // shot's own `stepPlanes` go on below. A performer reused from an
-    // earlier shot - or a pool member that shot never cast - must never
+    // scene's own `stepPlanes` go on below. A performer reused from an
+    // earlier scene - or a pool member that scene never cast - must never
     // carry a stale per-step plane forward onto a cut that doesn't repeat it.
     for (const performer of manager.performers) {
       performer.clearStepPlaneOverrides();
     }
 
-    shot.performance.performers.forEach((directed, index) => {
+    scene.performance.performers.forEach((directed, index) => {
       const performer = manager.performers[index];
       if (!performer) return;
       performer.position.x = directed.position.x;
@@ -136,7 +136,7 @@ export function applyDirectorShotToViewer(
       // step configs from whatever plane assignment is current and wipes their
       // per-step overrides, so a load that lands after `setHandPlane` would
       // discard both. Identity-compared because the library hands back the
-      // same cached object every shot — reloading would reset playback.
+      // same cached object every scene — reloading would reset playback.
       const directedSequence =
         options.sequences?.get(directed.id) ?? sequenceData;
       if (directedSequence && performer.loadedSequence !== directedSequence) {
@@ -151,7 +151,7 @@ export function applyDirectorShotToViewer(
     });
 
     viewer.hideAllPlanes();
-    for (const plane of shot.scene.visiblePlanes) {
+    for (const plane of scene.location.visiblePlanes) {
       viewer.togglePlane(plane);
     }
   });
@@ -159,12 +159,12 @@ export function applyDirectorShotToViewer(
 
 export function applyDirectorEffectPresets(
   state: EffectsConfigState,
-  shot: ResolvedDirectorShot
+  scene: ResolvedDirectorScene
 ): void {
   const config = structuredClone(DEFAULT_EFFECTS_CONFIG) as EffectsConfig;
   const mutable = config as unknown as Record<string, unknown>;
 
-  for (const [effectId, presetId] of Object.entries(shot.effectPresets)) {
+  for (const [effectId, presetId] of Object.entries(scene.effectPresets)) {
     const registration = getRegistration(effectId);
     const preset = registration?.presetGroup.presets.find(
       (candidate) => candidate.id === presetId
@@ -180,7 +180,7 @@ export function applyDirectorEffectPresets(
     ] = presetId;
   }
 
-  for (const [effectId, patch] of Object.entries(shot.effectOverrides)) {
+  for (const [effectId, patch] of Object.entries(scene.effectOverrides)) {
     mutable[effectId] = {
       ...(mutable[effectId] as Record<string, unknown>),
       ...patch,

@@ -21,7 +21,7 @@
     </div>
 
     <p>
-      Paste a version 1 film description. Apply validates every shot before the
+      Paste a version 1 film description. Apply validates every scene before the
       viewer changes.
     </p>
 

@@ -37,10 +37,10 @@ import {
   FilmDirectorInputSchema,
   type DirectorCastInput,
   type DirectorPerformerSequence,
-  type DirectorShotInput,
+  type DirectorSceneInput,
   type FilmDirectorInput,
   type ResolvedDirectorPerformer,
-  type ResolvedDirectorShot,
+  type ResolvedDirectorScene,
   type ResolvedDirectorStepPlane,
   type ResolvedFilmDirectorSpec,
 } from "./film-director-schema";
@@ -50,7 +50,7 @@ const DEFAULT_AVATARS = AVATAR_DEFINITIONS.map(
 ) as AvatarId[];
 
 // Axis catalogs, built once at module scope. `effect` and `avatarId` stay
-// loosely typed as `string` here (see the per-axis comments in resolveShot)
+// loosely typed as `string` here (see the per-axis comments in resolveScene)
 // because their schema fields are un-narrowed `z.string()` refinements —
 // the registry-type cast happens once, on the resolved concrete value, same
 // as this file did before directives existed.
@@ -63,7 +63,7 @@ const EFFORT_CATALOG = [...DIRECTOR_EFFORT_IDS] as EffortId[];
 const ENVIRONMENT_CATALOG = Object.values(SceneEnvironmentId);
 const PLANE_CATALOG = Object.values(Plane) as Plane[];
 // "custom" needs per-performer positions, so an open formation pick never
-// selects it — the count filter below narrows further, per shot.
+// selects it — the count filter below narrows further, per scene.
 const FORMATION_CATALOG = DIRECTOR_FORMATIONS.filter(
   (preset) => preset !== "custom"
 ) as FormationPreset[];
@@ -149,37 +149,37 @@ function buildCastPerformerInputs(cast: DirectorCastInput): PerformerInput[] {
 }
 
 /**
- * Resolves a single shot-scoped directive (formation, environmentId,
+ * Resolves a single scene-scoped directive (formation, environmentId,
  * stepPlanes entries). `sameAs` and `pick: "distinct"` are performer-scoped
- * concepts and have no meaning for a single shot-level value.
+ * concepts and have no meaning for a single scene-level value.
  *
- * `streamKey` defaults to `shotId` (the original, only behavior) — pass a
- * more specific key when several shot-scoped values share the same `axis`
- * name within one shot (e.g. multiple stepPlanes entries all resolve on
+ * `streamKey` defaults to `sceneId` (the original, only behavior) — pass a
+ * more specific key when several scene-scoped values share the same `axis`
+ * name within one scene (e.g. multiple stepPlanes entries all resolve on
  * axis "stepPlane") so each gets its own draw instead of colliding on an
- * identical fresh stream. `shotId` itself stays the real shot id in error
+ * identical fresh stream. `sceneId` itself stays the real scene id in error
  * text regardless of `streamKey`.
  */
-function resolveShotDirective<T extends string>(
+function resolveSceneDirective<T extends string>(
   value: DirectiveValue<T> | undefined,
   axis: string,
   fallback: () => T,
-  shotId: string,
+  sceneId: string,
   seed: FilmSeed,
   catalog: readonly T[],
-  streamKey: string = shotId
+  streamKey: string = sceneId
 ): T {
   if (value === undefined) return fallback();
   if (!isDirectiveExpression(value)) return value;
   if ("sameAs" in value || ("pick" in value && value.pick === "distinct")) {
     throw new Error(
-      `Shot "${shotId}": "${axis}" supports literals, pick:any, oneOf, and not — distinct/sameAs are performer-scoped.`
+      `Scene "${sceneId}": "${axis}" supports literals, pick:any, oneOf, and not — distinct/sameAs are performer-scoped.`
     );
   }
   const [resolved] = resolveCastAxis<T>({
     axis,
-    shotId,
-    performerIds: ["shot"],
+    sceneId,
+    performerIds: ["scene"],
     values: [value],
     catalog,
     random: createAxisStream(seed, streamKey, axis),
@@ -189,7 +189,7 @@ function resolveShotDirective<T extends string>(
 
 /**
  * Resolves one performer's effective stepPlanes list. Each entry's `plane`
- * is a shot-scoped directive (see resolveShotDirective) keyed by axis
+ * is a scene-scoped directive (see resolveSceneDirective) keyed by axis
  * "stepPlane" so a single `seed.axes.stepPlane` reroll reshuffles every
  * stepPlanes entry across the film, while each (performer, step, hand)
  * triple still draws from its own stream via a distinguishing `streamKey`.
@@ -201,33 +201,33 @@ function resolveStepPlanesForPerformer(
     plane: DirectiveValue<Plane>;
   }[],
   performerId: string,
-  shotId: string,
+  sceneId: string,
   seed: FilmSeed
 ): ResolvedDirectorStepPlane[] {
   return entries.map((entry) => ({
     step: entry.step,
     hand: entry.hand,
-    plane: resolveShotDirective<Plane>(
+    plane: resolveSceneDirective<Plane>(
       entry.plane,
       "stepPlane",
       () => {
         throw new Error(
-          `Shot "${shotId}": stepPlanes entry for "${performerId}" at step ${entry.step} is missing a plane.`
+          `Scene "${sceneId}": stepPlanes entry for "${performerId}" at step ${entry.step} is missing a plane.`
         );
       },
-      shotId,
+      sceneId,
       seed,
       PLANE_CATALOG,
       // NUL-separated like createAxisStream's own key: authored ids may
       // contain spaces, so a space-joined key would be ambiguous.
-      `${shotId}\u0000${performerId}\u0000${entry.step}\u0000${entry.hand}`
+      `${sceneId}\u0000${performerId}\u0000${entry.step}\u0000${entry.hand}`
     ),
   }));
 }
 
 function resolveEffectPresets(
   effectPresets: Record<string, string | { pick: "any" }>,
-  shotId: string,
+  sceneId: string,
   seed: FilmSeed
 ): Record<string, string> {
   const resolved: Record<string, string> = {};
@@ -262,12 +262,12 @@ function resolveEffectPresets(
     const picked = presetIds?.length
       ? seededPick(
           presetIds,
-          createAxisStream(seed, shotId, `effectPreset:${effectId}`)
+          createAxisStream(seed, sceneId, `effectPreset:${effectId}`)
         )
       : undefined;
     if (picked === undefined) {
       throw new Error(
-        `Shot "${shotId}": effect "${effectId}" has no registered presets to pick from.`
+        `Scene "${sceneId}": effect "${effectId}" has no registered presets to pick from.`
       );
     }
     resolved[effectId] = picked;
@@ -327,7 +327,7 @@ function buildResolvedPerformers(
     const position = input.position ?? slot!.position;
     // Two conventions collide here. The formation library's "same-direction"
     // default faces +Z, but every director camera fronts the group from -Z
-    // (computeFramingShot's wall-plane eye). A film's default cast must face
+    // (computeFramingScene's wall-plane eye). A film's default cast must face
     // its audience, so same-direction (and slot-less custom rosters) face -Z.
     // Slots with their own facingAngle (circle, back-to-back, ...) and
     // explicit facingDegrees keep their meaning.
@@ -360,20 +360,20 @@ function buildResolvedPerformers(
   });
 }
 
-function resolveShot(
-  shot: DirectorShotInput,
-  shotIndex: number,
+function resolveScene(
+  scene: DirectorSceneInput,
+  sceneIndex: number,
   startSeconds: number,
   aspectRatio: number,
   filmSeed: FilmSeed
-): ResolvedDirectorShot {
-  const durationSeconds = shot.durationSeconds ?? 8;
-  const cast = shot.performance?.cast;
+): ResolvedDirectorScene {
+  const durationSeconds = scene.durationSeconds ?? 8;
+  const cast = scene.performance?.cast;
 
   const rawInputs: PerformerInput[] = cast
     ? buildCastPerformerInputs(cast)
-    : shot.performance?.performers?.length
-      ? shot.performance.performers
+    : scene.performance?.performers?.length
+      ? scene.performance.performers
       : [{}];
 
   const performerIds = rawInputs.map(
@@ -413,35 +413,35 @@ function resolveShot(
   }
   const resolvedAvatarIds = resolveCastAxis<string>({
     axis: "avatarId",
-    shotId: shot.id,
+    sceneId: scene.id,
     performerIds,
     values: avatarIdValues,
     catalog: DEFAULT_AVATARS,
-    random: createAxisStream(filmSeed, shot.id, "avatarId"),
+    random: createAxisStream(filmSeed, scene.id, "avatarId"),
   });
   const resolvedProps = resolveCastAxis<PropType>({
     axis: "prop",
-    shotId: shot.id,
+    sceneId: scene.id,
     performerIds,
     values: propValues,
     catalog: PROP_CATALOG,
-    random: createAxisStream(filmSeed, shot.id, "prop"),
+    random: createAxisStream(filmSeed, scene.id, "prop"),
   });
   const resolvedEffects = resolveCastAxis<string>({
     axis: "effect",
-    shotId: shot.id,
+    sceneId: scene.id,
     performerIds,
     values: effectValues,
     catalog: EFFECT_CATALOG,
-    random: createAxisStream(filmSeed, shot.id, "effect"),
+    random: createAxisStream(filmSeed, scene.id, "effect"),
   });
   const resolvedEfforts = resolveCastAxis<EffortId>({
     axis: "effort",
-    shotId: shot.id,
+    sceneId: scene.id,
     performerIds,
     values: effortValues,
     catalog: EFFORT_CATALOG,
-    random: createAxisStream(filmSeed, shot.id, "effort"),
+    random: createAxisStream(filmSeed, scene.id, "effort"),
   });
 
   // staffLengthCm has no finite catalog (a pick needs an explicit "from"),
@@ -466,18 +466,18 @@ function resolveShot(
     const target = (value as { sameAs: string }).sameAs;
     if (performerIds.includes(target) && !staffStatingIds.has(target)) {
       throw new Error(
-        `Shot "${shot.id}", axis "staffLengthCm": sameAs references "${target}", which has no staff length to copy.`
+        `Scene "${scene.id}", axis "staffLengthCm": sameAs references "${target}", which has no staff length to copy.`
       );
     }
   }
   if (staffIndices.length > 0) {
     const resolved = resolveCastAxis<number>({
       axis: "staffLengthCm",
-      shotId: shot.id,
+      sceneId: scene.id,
       performerIds: staffIndices.map((index) => performerIds[index]!),
       values: staffIndices.map((index) => staffLengthStates[index]!),
       catalog: null,
-      random: createAxisStream(filmSeed, shot.id, "staffLengthCm"),
+      random: createAxisStream(filmSeed, scene.id, "staffLengthCm"),
     });
     staffIndices.forEach((index, cursor) => {
       resolvedStaffLengths[index] = resolved[cursor]!;
@@ -492,19 +492,19 @@ function resolveShot(
   );
   const resolvedBluePlanes = resolveCastAxis<Plane>({
     axis: "bluePlane",
-    shotId: shot.id,
+    sceneId: scene.id,
     performerIds,
     values: bluePlaneValues,
     catalog: PLANE_CATALOG,
-    random: createAxisStream(filmSeed, shot.id, "bluePlane"),
+    random: createAxisStream(filmSeed, scene.id, "bluePlane"),
   });
   const resolvedRedPlanes = resolveCastAxis<Plane>({
     axis: "redPlane",
-    shotId: shot.id,
+    sceneId: scene.id,
     performerIds,
     values: redPlaneValues,
     catalog: PLANE_CATALOG,
-    random: createAxisStream(filmSeed, shot.id, "redPlane"),
+    random: createAxisStream(filmSeed, scene.id, "redPlane"),
   });
 
   // A performer's own stepPlanes list REPLACES cast defaults entirely — it
@@ -517,7 +517,7 @@ function resolveShot(
       return resolveStepPlanesForPerformer(
         entries,
         performerIds[index]!,
-        shot.id,
+        scene.id,
         filmSeed
       );
     }
@@ -537,17 +537,17 @@ function resolveShot(
     const targetIndex = performerIds.indexOf(sequence.mirrorOf);
     if (sequence.mirrorOf === self) {
       throw new Error(
-        `Shot "${shot.id}": performer "${self}" cannot mirror themselves.`
+        `Scene "${scene.id}": performer "${self}" cannot mirror themselves.`
       );
     }
     if (targetIndex < 0) {
       throw new Error(
-        `Shot "${shot.id}": performer "${self}" mirrors "${sequence.mirrorOf}", who is not in this shot.`
+        `Scene "${scene.id}": performer "${self}" mirrors "${sequence.mirrorOf}", who is not in this scene.`
       );
     }
     if ("mirrorOf" in resolvedSequences[targetIndex]!) {
       throw new Error(
-        `Shot "${shot.id}": performer "${self}" mirrors "${sequence.mirrorOf}", who is already a mirror. Mirror the original instead.`
+        `Scene "${scene.id}": performer "${self}" mirrors "${sequence.mirrorOf}", who is already a mirror. Mirror the original instead.`
       );
     }
   });
@@ -571,12 +571,12 @@ function resolveShot(
     })
   );
 
-  const environmentId = resolveShotDirective<SceneEnvironmentId>(
-    shot.scene?.environmentId,
+  const environmentId = resolveSceneDirective<SceneEnvironmentId>(
+    scene.location?.environmentId,
     "environmentId",
     () =>
       contextualEnvironmentFromEffects(resolvedFields.map((f) => f.effect)),
-    shot.id,
+    scene.id,
     filmSeed,
     ENVIRONMENT_CATALOG
   );
@@ -585,34 +585,34 @@ function resolveShot(
   const formationCatalog = FORMATION_CATALOG.filter((preset) =>
     PRESET_VALID_COUNTS[preset].includes(performerCount)
   );
-  const formation = resolveShotDirective<FormationPreset>(
-    shot.performance?.formation,
+  const formation = resolveSceneDirective<FormationPreset>(
+    scene.performance?.formation,
     "formation",
     () => defaultFormation(performerCount),
-    shot.id,
+    scene.id,
     filmSeed,
     formationCatalog
   );
 
   const performers = buildResolvedPerformers(resolvedFields, formation);
 
-  const showStage = shot.scene?.showStage ?? false;
-  const showAudience = shot.scene?.showAudience ?? false;
-  const visiblePlanes = shot.scene?.visiblePlanes ?? [];
+  const showStage = scene.location?.showStage ?? false;
+  const showAudience = scene.location?.showAudience ?? false;
+  const visiblePlanes = scene.location?.visiblePlanes ?? [];
   const sceneFeatures = {
     environment: true,
     stage: showStage,
     audience: showAudience,
     campfire: false,
     tent: false,
-    ...(shot.scene?.sceneFeatures ?? {}),
+    ...(scene.location?.sceneFeatures ?? {}),
   };
   const effectPresets = resolveEffectPresets(
-    shot.effectPresets ?? {},
-    shot.id,
+    scene.effectPresets ?? {},
+    scene.id,
     filmSeed
   );
-  const effectOverrides = { ...(shot.effectOverrides ?? {}) };
+  const effectOverrides = { ...(scene.effectOverrides ?? {}) };
   validateEffectOverrides(effectOverrides);
 
   const rendererKey = getSceneEnvironmentRendererKey(environmentId);
@@ -623,7 +623,7 @@ function resolveShot(
   const stageZOffset = getPerformerStageBounds(
     performers.map((performer) => performer.position)
   ).zOffset;
-  const cameraKeyframes = resolveDirectorCameraTrack(shot.camera, {
+  const cameraKeyframes = resolveDirectorCameraTrack(scene.camera, {
     durationSeconds,
     aspectRatio,
     groundOffset,
@@ -637,24 +637,24 @@ function resolveShot(
   });
 
   return {
-    id: shot.id,
-    title: shot.title,
-    intent: shot.intent ?? null,
+    id: scene.id,
+    title: scene.title,
+    intent: scene.intent ?? null,
     startSeconds,
     durationSeconds,
     transition: {
       kind:
-        shot.transition?.kind ??
-        (shotIndex === 0 ? "cut" : "environment-dissolve"),
+        scene.transition?.kind ??
+        (sceneIndex === 0 ? "cut" : "environment-dissolve"),
       durationSeconds:
-        shot.transition?.durationSeconds ?? (shotIndex === 0 ? 0 : 0.8),
+        scene.transition?.durationSeconds ?? (sceneIndex === 0 ? 0 : 0.8),
     },
-    scene: { environmentId, showStage, showAudience, sceneFeatures, visiblePlanes },
+    location: { environmentId, showStage, showAudience, sceneFeatures, visiblePlanes },
     performance: {
-      bpm: shot.performance?.bpm ?? 90,
+      bpm: scene.performance?.bpm ?? 90,
       sequence: {
         source: "demo",
-        loop: shot.performance?.sequence?.loop ?? true,
+        loop: scene.performance?.sequence?.loop ?? true,
       },
       formation,
       performers,
@@ -663,7 +663,7 @@ function resolveShot(
     effectOverrides,
     camera: {
       preset:
-        shot.camera?.preset ??
+        scene.camera?.preset ??
         (performers.length >= 5 ? "group-orbit" : "hero-dolly-in"),
       keyframes: cameraKeyframes,
     },
@@ -681,14 +681,14 @@ export function resolveFilmDirectorSpec(
   };
   const aspectRatio = format.width / format.height;
   const filmSeed = resolveFilmSeed(input.id, input.seed);
-  const seenShotIds = new Set<string>();
+  const seenSceneIds = new Set<string>();
   let cursorSeconds = 0;
 
-  const shots = input.shots.map((shot, index) => {
-    if (seenShotIds.has(shot.id))
-      throw new Error(`Shot id "${shot.id}" is duplicated.`);
-    seenShotIds.add(shot.id);
-    const resolved = resolveShot(shot, index, cursorSeconds, aspectRatio, filmSeed);
+  const scenes = input.scenes.map((scene, index) => {
+    if (seenSceneIds.has(scene.id))
+      throw new Error(`Scene id "${scene.id}" is duplicated.`);
+    seenSceneIds.add(scene.id);
+    const resolved = resolveScene(scene, index, cursorSeconds, aspectRatio, filmSeed);
     cursorSeconds += resolved.durationSeconds;
     return resolved;
   });
@@ -703,7 +703,7 @@ export function resolveFilmDirectorSpec(
       loop: input.playback?.loop ?? true,
       autoplay: input.playback?.autoplay ?? true,
     },
-    shots,
+    scenes,
     durationSeconds: cursorSeconds,
   };
 }

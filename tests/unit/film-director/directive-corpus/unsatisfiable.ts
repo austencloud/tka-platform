@@ -203,7 +203,7 @@ export const entries: CorpusEntry[] = [
   },
   {
     id: "formation-solo-mismatch-three-performers",
-    utterance: "Three performers, but keep it a solo shot.",
+    utterance: "Three performers, but keep it a solo scene.",
     film: corpusFilm("formation-solo-mismatch-three-performers", {
       performance: { formation: "solo", cast: { count: 3 } },
     }),

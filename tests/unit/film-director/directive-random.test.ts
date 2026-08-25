@@ -42,7 +42,7 @@ describe("resolveFilmSeed", () => {
 describe("createAxisStream", () => {
   const items = ["a", "b", "c", "d", "e", "f", "g", "h"];
 
-  it("is deterministic per (seed, shot, axis)", () => {
+  it("is deterministic per (seed, scene, axis)", () => {
     const seed = resolveFilmSeed("my-film");
     const one = seededShuffle(items, createAxisStream(seed, "shot-1", "prop"));
     const two = seededShuffle(items, createAxisStream(seed, "shot-1", "prop"));
@@ -60,14 +60,14 @@ describe("createAxisStream", () => {
     ).not.toEqual(seededShuffle(items, createAxisStream(after, "shot-1", "prop")));
   });
 
-  it("different shots draw different streams", () => {
+  it("different scenes draw different streams", () => {
     const seed = resolveFilmSeed("my-film");
     expect(
       seededShuffle(items, createAxisStream(seed, "shot-1", "prop"))
     ).not.toEqual(seededShuffle(items, createAxisStream(seed, "shot-2", "prop")));
   });
 
-  it("different axes on the same shot draw different streams by default", () => {
+  it("different axes on the same scene draw different streams by default", () => {
     const seed = resolveFilmSeed("my-film");
     expect(
       seededShuffle(items, createAxisStream(seed, "shot-1", "prop"))
@@ -86,11 +86,11 @@ describe("createAxisStream", () => {
   });
 
   // Golden vector: this permutation IS the determinism contract for
-  // (my-film, shot-1, prop). If a refactor to the key encoding or the PRNG
+  // (my-film, scene-1, prop). If a refactor to the key encoding or the PRNG
   // changes it, every authored film's shuffles reroll. Do not update this
   // literal casually — only when a reroll is an intentional, communicated
   // decision.
-  it("freezes the shuffle for a known (seed, shot, axis) triple (golden vector)", () => {
+  it("freezes the shuffle for a known (seed, scene, axis) triple (golden vector)", () => {
     expect(
       seededShuffle(items, createAxisStream(resolveFilmSeed("my-film"), "shot-1", "prop"))
     ).toEqual(["e", "g", "d", "f", "a", "c", "h", "b"]);

@@ -75,10 +75,10 @@
     <div class="film-preparation" role="status" aria-live="polite">
       <div class="preparation-card">
         <span class="preparation-kicker">Preparing the film</span>
-        <strong>{director.preparation.shotTitle}</strong>
+        <strong>{director.preparation.sceneTitle}</strong>
         <span class="preparation-count">
-          Shot {director.preparation.shotIndex + 1} of {director.preparation
-            .totalShots}
+          Scene {director.preparation.sceneIndex + 1} of {director.preparation
+            .totalScenes}
         </span>
         <div class="preparation-track" aria-hidden="true">
           <span
@@ -92,15 +92,15 @@
   <div class="top-left">
     <div class="titleplate">
       <span class="film-name">{director.film.title}</span>
-      <h1>{director.frame.shot.title}</h1>
+      <h1>{director.frame.scene.title}</h1>
       <p>
-        Shot {director.frame.shotIndex + 1} of {director.film.shots.length}
+        Scene {director.frame.sceneIndex + 1} of {director.film.scenes.length}
         <span aria-hidden="true">·</span>
-        {director.frame.shot.scene.environmentId}
+        {director.frame.scene.location.environmentId}
         <span aria-hidden="true">·</span>
-        {director.frame.shot.performance.performers.length} performers
+        {director.frame.scene.performance.performers.length} performers
         <span aria-hidden="true">·</span>
-        {director.frame.shot.performance.bpm} BPM
+        {director.frame.scene.performance.bpm} BPM
       </p>
     </div>
     <div class="film-picker themed-scrollbar">

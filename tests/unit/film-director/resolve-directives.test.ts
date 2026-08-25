@@ -16,11 +16,11 @@ function axis(
   const ids = values.map((_, index) => `performer-${index + 1}`);
   return resolveCastAxis<string>({
     axis: "prop",
-    shotId: "shot-1",
+    sceneId: "scene-1",
     performerIds: ids,
     values,
     catalog: [...CATALOG],
-    random: createAxisStream(resolveFilmSeed("test-film"), "shot-1", "prop"),
+    random: createAxisStream(resolveFilmSeed("test-film"), "scene-1", "prop"),
     ...overrides,
   });
 }
