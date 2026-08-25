@@ -31,9 +31,9 @@ All items below are verified in the live working tree but are **uncommitted**
   is the fix for the 45-degree pairing that entered box mode while its arrows
   remained at diamond locations.
 - Evidence:
-  `pnpm exec vitest run tests/unit/tunnel-composition.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
-  passed 7/7 on 2026-08-23 as part of the five-file Tunnel run (38/38 tests
-  passed outside the separately configured handoff file).
+  `npm test -- --run tests/unit/tunnel-composition.test.ts`
+  passed 7/7 on 2026-08-23, and again on 2026-08-25 inside the full six-file
+  Tunnel run (40/40).
 - Primary files:
   `src/lib/shared/sequence-viewer/tunnel/tunnel-composition.ts`,
   `src/lib/shared/sequence-viewer/tunnel/tunnel-layer-builder.ts`, and
@@ -57,8 +57,7 @@ All items below are verified in the live working tree but are **uncommitted**
   - `tunnel-creator-draft.test.ts` 4/4 passed.
   - `tunnel-relationship-rule.test.ts` 1/1 passed.
   - `tunnel-creator-state.test.ts` 6/6 passed.
-  - `pnpm exec vitest run tests/unit/tunnel-creator-handoff.test.ts --environment jsdom --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
-    passed 2/2.
+  - `npm test -- --run tests/unit/tunnel-creator-handoff.test.ts` passed 2/2.
 - Primary files: the untracked directory
   `src/lib/features/create/tunnel/`, especially
   `state/tunnel-creator-state.svelte.ts`,
@@ -79,9 +78,9 @@ All items below are verified in the live working tree but are **uncommitted**
   large displays, and becomes the existing Create drawer on smaller displays.
   Tunnel settings and Pairing use the same non-obscuring right-hand track.
 - Loop configuration reconciliation preserves an exact requested length when a
-  selected LOOP rhythm can be fitted. The pure rhythm owner passed 8/8 tests;
-  the 10-step integration test exists but currently hits the protobuf test
-  environment issue recorded under Gotchas before collecting tests.
+  selected LOOP rhythm can be fitted. The pure rhythm owner passed 8/8 tests,
+  and the 10-step integration case passed 5/5 on 2026-08-25 once the suite was
+  run through the project's own Vitest config (see Gotchas).
 - Primary files:
   `src/lib/features/create/generate/components/GeneratePanel.svelte`,
   `src/lib/features/create/generate/state/generate-actions.svelte.ts`,
@@ -192,13 +191,37 @@ All items below are verified in the live working tree but are **uncommitted**
       (or let the next coding edit do it). Confirm the panel, selected performer,
       both sequences, and Previous still exist.
       Do not start Phase 2 until Austen explicitly accepts this phase.
-2. **Resolve or accurately quarantine the Generate config test collector
-   failure.** Running
-   `generate-config-noop-writes.test.ts` currently fails during module import
-   with `TypeError: util.Long.fromNumber is not a function` inside
-   `protobufjs`, before its five tests collect. The pure loop rhythm suite is
-   green, but the exact 10-step `createGenerationConfigState` integration case
-   still needs executable proof.
+
+   **Dry run, 2026-08-25.** All eight steps were driven in Chrome DevTools at
+   `https://localhost:5173/create/tunnel` and each produced its evidence.
+   Notable measurements:
+
+   - Step 3 fired the diagonal reveal inside the Tunnel card with exactly the
+     Generate panel's parameters: animation `stepCascade`, 380ms,
+     `cubic-bezier(0.22, 1, 0.36, 1)`, per-cell delay `(row + col) x 55ms`
+     (top-left 0s through bottom-right 0.33s). The clear-then-reveal timeline
+     ran clearing at 73ms, released at 376ms (the 300ms `clearDuration`), new
+     grid mounted at 551ms.
+   - Step 4: dice Generate moved the word `FBΩ-W-LFΨ` to `Δ-UZΩNY-Ψ-`, and
+     Previous restored the earlier word and step count byte-for-byte.
+   - Step 6 is the strongest result. A 45-degree pairing rewrote every location
+     from cardinal to intercardinal while preserving letters (F, A, Θ-, X-, L),
+     and the rendered grid attribute followed: Performer 1 `data-grid-mode
+     ="diamond"`, Performer 2 `data-grid-mode="box"` with class `box-mode`.
+   - Step 8: state was bit-identical across an HMR of
+     `TunnelPerformerCard.svelte` — panel heading, Linked mode, both sequences,
+     the derived pairing, Previous availability, and Length all held.
+
+   Two visual findings surfaced during the run and are recorded under
+   "Visual findings from the gate dry run" below. Neither blocks the
+   functional gate; both are Austen's call.
+2. ~~**Resolve or accurately quarantine the Generate config test collector
+   failure.**~~ RESOLVED 2026-08-25. The `TypeError: util.Long.fromNumber is
+   not a function` was an artifact of invoking `pnpm exec vitest` directly,
+   which loads the app's `vite.config.ts` instead of the project's test config.
+   `npm test -- --run src/lib/features/create/generate/state/__tests__/generate-config-noop-writes.test.ts`
+   passes 5/5, and the whole Tunnel set is 40/40 across six files. No product
+   code was involved.
 3. **If Phase 1 is accepted, begin Phase 2 from the approved spec:** expose the
    full interactive two-hand Shape Matrix, explicit matrix result and hand-path
    mode, then Build/Adjust/Inspect/Save routes while keeping the selected
@@ -207,6 +230,36 @@ All items below are verified in the live working tree but are **uncommitted**
 4. **Before any feature commit, audit mixed shared-file hunks.** The user asked
    for implementation phases, not a broad shared-checkout commit. Split only
    after ownership is known, and keep all unrelated staged changes intact.
+
+## Visual findings from the gate dry run (2026-08-25)
+
+Measured with per-page DevTools emulation; `innerWidth` was queried every time
+rather than trusted from the emulate call, per the zoom gotcha below.
+
+1. **Performer cards render completely empty at wide-and-short viewports.** At a
+   true CSS 960x412 (Z Fold 7 folded, landscape) the card is 392x156, its header
+   takes 65px, and `.word-rail`, `.live-grid`, `.scroll-wrapper`,
+   `.grid-surface` and all fifteen `.step-cell` elements collapse to 0x0. The
+   steps are in the DOM; they have no box. The user sees two black panels. This
+   is the `grid-template-rows: auto minmax(0, 1fr)` collapse chain —
+   `.source-card` and `.workbench-stage` in
+   `src/lib/features/create/tunnel/components/TunnelPerformerCard.svelte` are
+   both `auto minmax(0, 1fr)`, so once the outer height drops below the header
+   plus a minimum the `1fr` row resolves to zero. Compare
+   `reference_grid_auto_rows_min_contribution_collapse`. 375x667 portrait is
+   fine (cards stack, notation reads at three columns, no horizontal overflow),
+   so this is specific to short landscape.
+
+2. **The surface does not scale up for 4K.** At a 4267px CSS viewport the root
+   font-size is still 16px: the lockstep ramp in `src/app.css` is scoped to
+   `html:has(.mkt-shell)` and `html:has(.legal-container)`, and the Create
+   module is neither. Consequences measured on that frame: card subtitle 16px,
+   card title 18px, recipe level chips 16px, and the notation grid fills 45% of
+   its card (1000x800 inside 1623x1092), leaving the rest black. The generation
+   panel also carries a tall empty band above its first tile row. This is a
+   Create-module-wide condition rather than something Phase 1 introduced —
+   Tunnel inherits it — so fixing it belongs to a Create-wide 4K pass, not to
+   this phase, unless Austen wants it in scope.
 
 ## Decisions already made
 
@@ -246,11 +299,15 @@ All items below are verified in the live working tree but are **uncommitted**
   wording: use Performer 1.
 - Port 5173 is Austen's HTTPS/2 VS Code server. Never start, stop, or kill it;
   use `https://localhost:5173/create/tunnel`.
-- Vitest discovers copies in `.codex-tmp` and `.claude/worktrees` unless both
-  are explicitly excluded. Those copies can fail because they lack generated
-  `.svelte-kit/tsconfig.json` files.
-- `tests/unit/tunnel-creator-handoff.test.ts` needs
-  `--environment jsdom`; default Node mode has no `sessionStorage`.
+- **Always run tests through `npm test` (`vitest --config
+  tests/config/vitest.config.ts`).** A bare `pnpm exec vitest` picks up the
+  app's `vite.config.ts` instead, which loses jsdom, the setup file, and the
+  `$lib`/`$app`/`$shared` aliases. That is what produced the
+  `util.Long.fromNumber is not a function` failure previously attributed to
+  `protobufjs`, and what forced the ad-hoc `--environment jsdom` and
+  `--exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"` flags earlier
+  versions of this document recommended. The real config already handles the
+  environment and the include globs; none of those flags are needed.
 - The shared Chrome debug profile was at 90% page zoom during the last visual
   pass. DevTools emulation values had to be multiplied by 0.9 to obtain exact
   CSS `innerWidth` targets. Always query `innerWidth` rather than trusting the
