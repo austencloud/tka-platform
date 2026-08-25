@@ -1,7 +1,7 @@
 # Community Map: Invitation, Not Interrogation
 
 **Date:** 2026-08-25
-**Status:** Design — round 4, revised after three independent review passes
+**Status:** Design — round 5, revised after four independent review passes
 **Surface:** Creators module (`creators` — live in production)
 
 ## Revision note
@@ -49,6 +49,30 @@ in place: `Home`/`End` interception (ARIA APG makes it optional and the native
 text-cursor behavior is sanctioned — Ground truth 30), and "remove always wins"
 in the mutation queue (the invariant is chronological ordering; a later add is
 a legitimate change of mind).
+
+Round 4 was reviewed. It found **three blockers**, all of them inside the three
+mechanisms round 4 had just introduced — the fourth consecutive round in which
+review found real bugs in exactly that round's new work. Round 5 fixes them:
+
+- **Intent numbers must be stamped at the user gesture, not at enqueue.** A
+  picker selection that begins `fetchFields()` before a Remove, and resolves
+  after it, would otherwise draw a *newer* sequence number than the Remove it
+  lost the race to, and resurrect the user on the map. This is the original
+  round-2 blocker re-entering through asynchronous canonicalization.
+- **The queue cannot cancel a write it has already issued.** Round 4 claimed
+  every in-flight mutation dies at its own check. False: once the request is
+  sent, no generation bump recalls it, and sign-out does not retract an
+  attached token. The contract is narrowed to not-yet-issued work, and the UI
+  disowns outstanding results on an auth change rather than pretending to
+  control them.
+- **Rollback must restore confirmed state, never an optimistic one.** Round 4's
+  "restores the prior state" could render a city that was never persisted.
+
+The review also found a fourth defect: Section 8 reserved band height for an
+open picker whose prediction list is `position: fixed` and therefore out of
+flow, contradicting Section 6. Both of round 4's rejections were sustained on
+review, with the caveat that chronological ordering must be measured in user
+gestures rather than completion order — which is the first fix above.
 
 Errors from all prior rounds are listed at the end. Several were assertions
 about code that had never been read, and that failure mode is worth keeping
@@ -133,6 +157,8 @@ Design section 5. The single existing document remains valid without it.
 | 28 | **Measured:** `Intl.DisplayNames` region conversion returns `"XX"` unchanged for the CF unknown sentinel (no throw) and **throws `RangeError`** on `T1`. Default locale resolution yields `United States` / `Vereinigte Staaten` / `États-Unis` for the same input | `node -e` run, 2026-08-25 |
 | 29 | `UserSearchInput` has **no** `Home`/`End` handling, **no** `isComposing`/`compositionend` handling, and **no** `dir`/RTL handling | grep of `UserSearchInput.svelte`; key handler at `:159-195` |
 | 30 | ARIA APG makes `Home`/`End` **optional** for a combobox, and for an editable one "places the cursor on the first character" is a sanctioned behavior | [APG combobox](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/) |
+| 31 | The loader has an existing test suite asserting **promise identity** across calls and both rejection messages. An `async load()` would break the identity assertion | `tests/unit/google-maps-library-loader.test.ts:27,44,56,60` |
+| 32 | `UserSearchInput` renders its result list `position: fixed` under `useFixedPosition`, so predictions are out of flow and contribute no height to their container | `UserSearchInput.svelte:196-203` |
 
 ## Design
 
@@ -191,26 +217,64 @@ sequence is not the latest is discarded before it issues any Firestore write.
 Two writes for one uid can never be in flight simultaneously, and a superseded
 intent never reaches the network.
 
-Round 3's review found three gaps in that description. All three are real.
+Round 3's review found three gaps in that description, and round 4's review
+found three more — all in the mechanisms round 4 added to close the first
+three. Every one is real. This is the fourth consecutive round in which review
+found genuine bugs in exactly the mechanisms that round introduced.
+
+**Intent numbers are allocated at the user gesture, not at enqueue.** This is
+round 4's sharpest finding and it is the original blocker wearing a new
+disguise. A picker selection begins `fetchFields()`; the user then presses
+Remove; `fetchFields()` resolves afterward and calls `addCity()`, which hands
+it a *newer* sequence number than the remove it lost the race to. The user is
+resurrected on the map after removing themselves — precisely the failure the
+queue exists to prevent, reintroduced through asynchronous canonicalization.
+
+So the sequence number is stamped **at the gesture**, before geocoding, before
+`fetchFields()`, before any await. The completed canonical city carries that
+original number into the queue. An automatic retry reuses its original number;
+only a fresh explicit user action draws a new one. Ordering represents what the
+user did and when, which is the only ordering that means anything.
 
 **Latest-intent is chronological, and remove does not automatically win.** The
-rule is "the last thing the user asked for happens," full stop. For
+rule is "the last thing the user *asked for* happens." For
 `add A → add B → remove`, remove wins because it is last. For
 `remove → add C`, **C wins** — the user removed themselves and then changed
 their mind, and honoring the remove would discard a later explicit choice.
-Round 3 half-implied remove should always win; it should not. The invariant is
-ordering, not operation priority.
+Round 3's review half-implied remove should always win; it should not. The
+invariant is gesture ordering, not operation priority.
 
-**The queue needs auth-generation cancellation, not just uid invalidation.**
-"The module invalidates on uid change" does not cancel work already queued: a
-queued closure captured uid A, and invalidating module state does not reach
-inside it. Sign out plus sign in as B while an add for A is queued would write
-A's document after B is active. Every mutation therefore carries the uid **and**
-the auth generation it was created under, and revalidates both against the live
-values *immediately before* issuing its write, inside the same synchronous step
-as the write call. A mismatch is a discard. Invalidation bumps the generation,
-so every in-flight and queued mutation for the old identity dies at its own
-check rather than depending on a teardown reaching it.
+**The queue guards uid and auth generation, and the promise is narrower than
+round 4 claimed.** Round 4 wrote that every "in-flight and queued mutation"
+dies at its own check. That is false and round 4's review is right to call it a
+blocker. A check can sit in the same synchronous step as the write:
+
+```ts
+if (uid !== liveUid || generation !== liveGeneration) return cancelled;
+return saveLocation(uid, location);   // no await between these two lines
+```
+
+Nothing can interleave there. But once `saveLocation` has issued the request,
+no later generation bump can recall it, and Firebase sign-out does not retract
+an auth token already attached to an in-flight request. The honest contract:
+
+- **Not-yet-issued** mutations are cancelled. This the queue guarantees.
+- An **issued** write may commit under the old uid after sign-out. The queue
+  cannot prevent this, and claiming otherwise is the kind of assertion the
+  earlier rounds of this spec kept getting caught making.
+- On an auth-generation change, the UI **disowns** every outstanding result and
+  reloads the new identity's state from the repository rather than trying to
+  reason about what landed.
+
+A hard "no post-sign-out commit under the old uid" invariant is not achievable
+in a client queue; it needs a server-side session or version precondition. It
+is not a requirement of this feature, and it is recorded here so nobody later
+reads the queue as providing it.
+
+The generation is captured **at enqueue** and compared against the live value
+immediately before the write. Dequeue-time capture would legitimize work
+created under a previous session. Sign-out then sign-in as the *same* uid still
+cancels: the boundary is the session, not the identity.
 
 **A discarded mutation must be visible, not silent.** The user pressed a button;
 it cannot simply do nothing. Every mutation resolves to an explicit
@@ -219,23 +283,37 @@ discriminated result:
 ```ts
 type MutationOutcome =
   | { status: "applied"; intent: number }
-  | { status: "superseded"; intent: number }
+  | { status: "superseded"; intent: number }   // a newer gesture won
+  | { status: "cancelled"; intent: number }    // uid or session changed
   | { status: "failed"; intent: number; error: unknown };
 ```
 
-The slot keys its rendering to the **latest** intent number, not to whichever
-result arrives last. A `superseded` outcome for a stale intent changes nothing
-on screen — correct, because a newer intent already owns the display — while a
-`superseded` outcome for the latest intent is a bug the phase's test asserts
-cannot happen. A `failed` outcome restores the prior state and surfaces a retry.
-Without this, the discard path and the success path are indistinguishable from
-the outside, which is the same class of defect as `getLocation` swallowing
-errors to `null`.
+`cancelled` is separate from `superseded` because round 4's review found a
+contradiction in collapsing them: round 4 asserted a test proving the *latest*
+intent can never be superseded, but auth cancellation can absolutely kill the
+latest intent. With the two separated, the assertion is true as written for
+`superseded` and the auth path has its own honest outcome.
 
-**Lifetime.** The state module is feature-scoped, not component-scoped. Opening
-a creator profile tears down the roster host through the panel's root
-`Crossfade`; a per-mount store would refetch both collections on every back
-navigation. The module invalidates on uid change and on explicit refresh.
+**Rollback restores the confirmed state, never an optimistic one.** Round 4 said
+a failure "restores the prior state" without saying which, and its review built
+the case that breaks it: confirmed state is absent; intent 1 optimistically
+renders city A; intent 2 optimistically renders city B and records A as its
+"prior"; intent 1 is discarded before ever writing; intent 2 fails; the
+rollback renders A — a city that was never persisted and that the user would
+now see as their map entry.
+
+The state owner therefore tracks two things separately: **confirmed** state,
+advanced only by an `applied` outcome or a repository read, and **optimistic**
+state, owned by the latest intent. A `failed` or `cancelled` outcome for the
+latest intent drops the optimistic layer and renders confirmed. When an older
+issued mutation applies while a newer one fails, confirmed advances to the
+older applied result even though its own render was superseded at the time.
+
+The slot keys its rendering to the **latest** intent number, not to whichever
+result arrives last. An outcome for a stale intent updates confirmed state
+where applicable but changes nothing on screen, because a newer intent already
+owns the display.
+
 
 ### 3. The invitation slot — one box, five states
 
@@ -591,6 +669,14 @@ load(apiKey: string): Promise<void> {
 `loadPlaces` has the identical prologue. Both keep returning rejected promises
 for the empty-key and different-key cases, with the same messages.
 
+**Neither entry point becomes `async`.** An `async load()` would wrap the
+memoized promise in a fresh one on every call, so two calls would no longer
+return the *same* promise object. `tests/unit/google-maps-library-loader.test.ts`
+asserts exactly that identity (`expect(first).toBe(second)`, `:27`) alongside
+the two rejection cases (`:44,56,60`). The existing suite is the regression
+guard for this refactor and must pass unmodified except for the additions the
+split requires.
+
 **The shared `apiKey` field cannot couple the two failure paths.** It is only
 ever assigned, never reset, and its assignment does not depend on any library
 actually loading — `ensureConfigured` sets it after `setOptions`, before either
@@ -656,10 +742,34 @@ wrote as if one rule covered both; the review is right that it does not.
   that `unresolved`, `guest`, `suggest`, `pick`, and `member` must not resize
   the band relative to each other.
 
-The band's reserved height is therefore `map height + slot height`, where the
-slot height is the measured maximum across all five states, including
-`pick` with the picker open. The picker is the tallest state, so it sets the
-floor; it does not push the band taller when it opens.
+**The predictions do not participate in slot height at all.** Round 4 said the
+band reserves the maximum across five states with "picker open" as the tallest,
+and round 4's review caught that this contradicts Section 6. The combobox this
+picker composes renders its result list `position: fixed` via `useFixedPosition`
+— that is precisely the property Section 6 cites as answering the clipping risk
+inside `CreatorsPanel`'s `overflow: hidden`. A fixed-position overlay is out of
+flow and contributes **zero** height to its slot.
+
+So "picker-open height" is not a single number and never was. The list varies
+across empty, one through five predictions, loading, a Places failure, and a
+validation rejection. Reserving the tallest of those in every state would leave
+a large dead gap under `guest` and `member` for a list that is not even in
+flow, and would push the band toward the fold at 1080p — a self-inflicted
+version of the exact composition failure `4k-native-layout.md` exists to
+prevent.
+
+The band's reserved height is:
+
+```
+map height  +  closed-slot height
+```
+
+where closed-slot height covers the invitation text, the actions, the input in
+its closed state, and the stable status/attribution row — the parts that are
+in flow in every state. The prediction overlay floats above that and is
+verified **separately**: zero results, five results, loading, and error, each
+checked for clipping and viewport containment at every required viewport
+rather than for height equality.
 
 ### 9. Guests
 
@@ -740,14 +850,32 @@ copy must say the accurate one.
 Per phase, and stated as what would make each check a **false pass**:
 
 1. **State and persistence.** Deferred-promise tests that resolve repository
-   promises in deliberately reversed order, covering `add A / add B / remove`
-   (remove wins) and `remove / add C` (C wins). Assert a mid-flight uid change
-   discards the queued mutation for the old identity, and that every mutation
-   resolves to an explicit `applied` / `superseded` / `failed` outcome.
-   *False pass:* mocks that resolve in call order cannot expose an out-of-order
-   write; the test must control each promise individually. Second false pass:
-   asserting only the final Firestore state, which is identical whether a stale
-   mutation was discarded or simply never scheduled.
+   promises in deliberately reversed order:
+   - `add A / add B / remove` ends absent; `remove / add C` ends at C.
+   - **The gesture-ordering case:** a picker selection whose canonicalization
+     *begins* before a Remove and *resolves* after it must not resurrect the
+     user. This is the round-4 blocker and the single most important assertion
+     in the suite.
+   - An automatic retry reuses its original intent number rather than drawing a
+     newer one.
+   - A `failed` latest intent restores **confirmed** state, never an optimistic
+     snapshot — including the case where an older issued mutation applied while
+     a newer one failed, so confirmed advances to the older result.
+   - Sign-out then sign-in as the same uid cancels unissued old-session work
+     and yields `cancelled`, not `superseded`.
+   - The issued-write-then-auth-change case is tested for what actually
+     happens: the write may land, and the UI disowns the result and reloads.
+   - Every mutation resolves to an explicit `applied` / `superseded` /
+     `cancelled` / `failed` outcome.
+
+   *False passes:* mocks that resolve in call order cannot expose an
+   out-of-order write — each promise must be controlled individually.
+   Asserting only final Firestore state, which is identical whether a stale
+   mutation was discarded or never scheduled. **Allocating intent numbers
+   inside `addCity()` after canonicalization**, which makes the gesture-ordering
+   test pass while shipping the bug. Asserting that the latest intent can never
+   be `superseded` — true for supersession, false once `cancelled` exists, and
+   round 4 wrote it as a universal.
 2. **Loader split.** Assert the exact `importLibrary` calls, **and** assert
    `loadPlaces()`-then-`load()` resolves as well as `load()`-then-`loadPlaces()`.
    *False pass:* mocking only the loader's resolved promise passes while
@@ -770,11 +898,16 @@ Per phase, and stated as what would make each check a **false pass**:
 5. **Composition.** Network trace in a fresh tab: no Maps request before
    intersection, no Places request before the picker opens.
 6. **Visual.** All seven required viewports, measured and screenshotted, with
-   all five slot variants confirmed to share one geometry — including `pick`
-   with the picker open, which is the tallest. Separately confirm the
-   `LazyMount` placeholder reserves map **and** slot: nothing below the band
-   moves when the chunk lands. *False pass:* comparing only the settled states
-   to each other and never observing the placeholder-to-loaded transition.
+   all five slot variants confirmed to share one **closed** geometry. The
+   prediction overlay is verified separately rather than by height equality:
+   zero results, five results, loading, and error, each checked for clipping
+   and viewport containment. Separately confirm the `LazyMount` placeholder
+   reserves map **and** closed slot: nothing below the band moves when the
+   chunk lands. *False passes:* comparing only the settled states and never
+   observing the placeholder-to-loaded transition; screenshots that omit the
+   open overlay entirely; a picker fixture that never renders five results or
+   an error; resizing the browser window instead of emulating the page
+   viewport.
 7. **Deletion.** Zero references to `getCurrentLocation`,
    `LocationSharingConsentSheet`, `showConsentSheet`, `consentTimer`, and each
    removed message key. *False pass:* grep goes green while a dynamic import
@@ -849,3 +982,18 @@ The first round with no blocker. Two genuine bugs, and a set of corrections.
 | 31 | Missed that `UserSearchInput` has no IME composition handling, so the debounce fires on half-composed CJK input. A live bug in seven existing consumers, fixed by the extraction | Codex |
 | 32 | Said the mutation queue's uid invalidation cancels queued work. It does not reach inside a closure that already captured a uid; the mutation must revalidate uid and auth generation at its own write | Codex |
 | 33 | Specified discard-on-supersede with no observable outcome, leaving a pressed button indistinguishable from a no-op | Codex |
+
+### Round 4 (found by review)
+
+Three blockers, all inside the three mechanisms round 4 had just added. Fourth
+consecutive round with real bugs in exactly that round's new work — which is
+why round 5 does not add a new mechanism.
+
+| # | Defect | Found by |
+|---|---|---|
+| 34 | **Blocker:** intent numbers were allocated at enqueue, so a picker selection whose `fetchFields()` began before a Remove and resolved after it drew a newer number and resurrected the user. The round-2 blocker re-entering through asynchronous canonicalization | Codex |
+| 35 | **Blocker:** claimed every in-flight and queued mutation dies at its generation check. An already-issued Firestore write cannot be recalled, and sign-out does not retract an attached token. The guarantee only ever covered not-yet-issued work | Codex |
+| 36 | **Blocker:** "a failure restores the prior state" could restore an optimistic city that was never persisted, when an earlier intent was discarded before writing and a later one failed | Codex |
+| 37 | Reserved band height for an open picker whose prediction list is `position: fixed` and contributes no height — contradicting Section 6, which cites that exact property as the clipping fix. There is no single picker-open height, and reserving one would add dead space under `guest` and `member` | Codex |
+| 38 | Asserted a test proving the latest intent can never be superseded, while auth cancellation can kill the latest intent. Resolved by separating `cancelled` from `superseded` | Codex |
+| 39 | Did not note that an `async load()` would break the loader suite's existing promise-identity assertion | Codex |
