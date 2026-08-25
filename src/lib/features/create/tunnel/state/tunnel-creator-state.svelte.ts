@@ -11,6 +11,7 @@ import {
   configKey,
   type TunnelConfig,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
+import { deriveTunnelName } from "$lib/shared/sequence-viewer/tunnel/tunnel-name";
 import {
   TUNNEL_CREATOR_DRAFT_VERSION,
   type TunnelCreatorDraft,
@@ -393,23 +394,20 @@ export function createTunnelCreatorState(
     const partner = currentPartner();
     if (!lead || !partner || !isReady()) return null;
     const timestamp = now();
-    const leadName =
-      lead.source.kind === "independent"
-        ? lead.source.sequence.name ||
-          lead.source.sequence.word ||
-          "Performer 1"
-        : "Performer 1";
-    const partnerName =
-      partner.source.kind === "independent"
-        ? partner.source.sequence.name ||
-          partner.source.sequence.word ||
-          "Performer 2"
-        : "Linked partner";
+    const performers = activePerformers();
     return {
       version: TUNNEL_COMPOSITION_VERSION,
       id: compositionId,
-      name: initial?.name ?? `${leadName} + ${partnerName}`,
-      performers: activePerformers(),
+      // Same derivation the viewer's save uses, so a tunnel keeps one name
+      // whichever surface it was born on. See tunnel-name.ts.
+      name:
+        initial?.name ??
+        deriveTunnelName({
+          composition: { performers },
+          formation: nextFormation,
+        }) ||
+        "Untitled tunnel",
+      performers,
       formation: {
         ...nextFormation,
         speedOverrides: { ...nextFormation.speedOverrides },
@@ -428,7 +426,10 @@ export function createTunnelCreatorState(
         : {
             version: TUNNEL_COMPOSITION_VERSION,
             id: compositionId,
-            name: initial?.name ?? "Untitled tunnel",
+            name:
+              initial?.name ??
+              (deriveTunnelName({ composition: { performers }, formation }) ||
+                "Untitled tunnel"),
             performers,
             formation: {
               ...formation,

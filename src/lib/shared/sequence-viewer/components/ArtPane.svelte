@@ -34,7 +34,7 @@
   import { capturePosterFromContainer } from "../tunnel/tunnel-poster";
   import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
   import { TUNNEL_AUTO_EXPORT_INTENT_KEY } from "$lib/features/tunnel-collection/services/open-tunnel-in-viewer";
-  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import { deriveTunnelName } from "$lib/shared/sequence-viewer/tunnel/tunnel-name";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import {
     exportDeliveryStage,
@@ -598,10 +598,18 @@
     // Composite ALL stage layers (props + trails + effect overlays), not just the
     // first canvas, so the saved thumbnail matches the live look.
     const poster = capturePosterFromContainer(artBodyEl);
-    const simplifiedWord = simplifyRepeatedWord(seq.word || "");
+    // The name describes the TUNNEL — cast, formation, props, effects, rates —
+    // not just the sequence under it, so two tunnels built on one word are
+    // still telling apart in the collection. An existing save target keeps the
+    // name it already has; this only fills a blank. See tunnel-name.ts.
+    const derivedName = deriveTunnelName({
+      composition: tunnelComposition,
+      snapshot,
+      baseWord: seq.word || "",
+    });
     const name =
       tunnelSaveTarget?.name ||
-      simplifiedWord ||
+      derivedName ||
       `Tunnel #${tunnelCollectionState.count + 1}`;
     try {
       const tunnelData = {
