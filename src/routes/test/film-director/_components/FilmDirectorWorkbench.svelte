@@ -5,9 +5,13 @@
   import { page } from "$app/state";
   import FilmCollectionModule from "$lib/features/film-collection/FilmCollectionModule.svelte";
   import SaveFilmModal from "$lib/features/film-collection/components/SaveFilmModal.svelte";
-  import type { CollectedFilm } from "$lib/features/film-collection/domain/film-collection-types";
+  import type {
+    CollectedFilm,
+    StoredFilmDocument,
+  } from "$lib/features/film-collection/domain/film-collection-types";
   import { captureFilmPoster } from "$lib/features/film-collection/services/capture-film-poster";
   import { filmCollectionState } from "$lib/features/film-collection/state/film-collection-state.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import {
     DEFAULT_FILM_KEY,
@@ -17,7 +21,12 @@
   import { setFilmDirectorContext } from "../_lib/film-director-context";
   import { createFilmDirectorState } from "../_lib/film-director-state.svelte";
   import type { FilmDirectorInput } from "../_lib/film-director-schema";
-  import { parseFilmKey, savedFilmKey } from "../_lib/film-key";
+  import { parseFilmKey } from "../_lib/film-key";
+  import {
+    filmOriginIsSaved,
+    filmOriginUrlKey,
+    type FilmOrigin,
+  } from "../_lib/film-origin";
   import FilmDirectorJsonEditor from "./FilmDirectorJsonEditor.svelte";
   import FilmDirectorScene from "./FilmDirectorScene.svelte";
   import FilmDirectorTransport from "./FilmDirectorTransport.svelte";
@@ -36,7 +45,7 @@
   // A saved film boots to the default library film first, because the
   // collection has to load before its document exists. The saved one replaces
   // it once it arrives.
-  let selectedFilmKey = $state(initialFilmKey);
+  let origin = $state<FilmOrigin>({ kind: "library", key: initialFilmKey });
   // The titleplate, the film picker, and the film actions all paint above the
   // performer dock, so the dock has to start below whichever reaches lowest.
   // Their heights move with the film title, with how the picker wraps, and with
@@ -75,16 +84,18 @@
   }));
 
   function selectFilm(key: string): void {
-    if (key === selectedFilmKey) return;
+    if (origin.kind === "library" && key === origin.key) return;
     if (!director.loadFilm(getLibraryFilm(key))) return;
-    selectedFilmKey = key;
-    syncFilmToUrl(key);
+    origin = { kind: "library", key };
+    syncFilmToUrl(origin);
   }
 
-  function syncFilmToUrl(key: string): void {
+  // Takes the origin rather than a bare key so the URL can never disagree with
+  // what Save will do.
+  function syncFilmToUrl(next: FilmOrigin): void {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
-    url.searchParams.set("film", key);
+    url.searchParams.set("film", filmOriginUrlKey(next));
     replaceState(url, {});
   }
 
@@ -94,9 +105,9 @@
     // Snapshot to a plain object first.
     const doc = $state.snapshot(entry.film) as unknown as FilmDirectorInput;
     if (!director.loadFilm(doc)) return;
-    selectedFilmKey = "";
+    origin = { kind: "saved", id: entry.id, name: entry.name };
     shelfOpen = false;
-    syncFilmToUrl(savedFilmKey(entry.id));
+    syncFilmToUrl(origin);
   }
 
   function openSaveModal(): void {
@@ -107,8 +118,84 @@
   }
 
   function handleSaved(id: string): void {
-    syncFilmToUrl(savedFilmKey(id));
-    selectedFilmKey = "";
+    const entry = filmCollectionState.collection.find((item) => item.id === id);
+    origin = { kind: "saved", id, name: entry?.name ?? director.film.title };
+    syncFilmToUrl(origin);
+  }
+
+  let saveBusy = $state(false);
+
+  /**
+   * The saved entry the stage is editing, or null when the film has never been
+   * saved. Reads `origin` into a const first: TypeScript drops the narrowing
+   * from `filmOriginIsSaved` inside a callback that captures a mutable `let`.
+   */
+  function currentEntry(): CollectedFilm | null {
+    const current = origin;
+    if (!filmOriginIsSaved(current)) return null;
+    return (
+      filmCollectionState.collection.find((entry) => entry.id === current.id) ??
+      null
+    );
+  }
+
+  /** The fields an overwrite replaces. Identity — id, name, createdAt — is
+   *  exactly what it preserves, so a link to this entry survives an edit. */
+  function currentFilmPatch() {
+    return {
+      film: $state.snapshot(director.sourceInput) as unknown as StoredFilmDocument,
+      poster: captureFilmPoster(director.readPosterSource()),
+      durationSeconds: director.film.durationSeconds,
+      sceneCount: director.film.scenes.length,
+    };
+  }
+
+  async function saveFilm(): Promise<void> {
+    const entry = currentEntry();
+    if (!entry) {
+      openSaveModal();
+      return;
+    }
+    if (saveBusy) return;
+    saveBusy = true;
+    try {
+      // previousFilm is always a real document here. Never pass it as
+      // undefined: update() spreads the patch, and Firestore rejects an
+      // explicit undefined field.
+      await filmCollectionState.update(entry.id, {
+        ...currentFilmPatch(),
+        previousFilm: $state.snapshot(entry.film),
+      });
+      toast.success("Film saved");
+    } catch (error) {
+      console.warn("[Director] Overwrite failed:", error);
+      toast.error("Couldn't save the film");
+    } finally {
+      saveBusy = false;
+    }
+  }
+
+  async function restorePreviousFilm(): Promise<void> {
+    if (saveBusy) return;
+    const entry = currentEntry();
+    const restored = entry?.previousFilm;
+    if (!entry || !restored) return;
+    saveBusy = true;
+    try {
+      // Swap rather than drop, so Restore is itself undoable.
+      const document = $state.snapshot(restored) as unknown as StoredFilmDocument;
+      await filmCollectionState.update(entry.id, {
+        film: document,
+        previousFilm: $state.snapshot(entry.film),
+      });
+      director.loadFilm(document as unknown as FilmDirectorInput);
+      toast.success("Previous version restored");
+    } catch (error) {
+      console.warn("[Director] Restore failed:", error);
+      toast.error("Couldn't restore that version");
+    } finally {
+      saveBusy = false;
+    }
   }
 
   // A `saved:` link resolves as soon as the entry exists. Guests hydrate
@@ -132,7 +219,7 @@
     // A link to a film the user cannot see leaves the default film on screen
     // rather than an error, with the URL restamped to match what is showing.
     if (entry) openSavedFilm(entry);
-    else syncFilmToUrl(selectedFilmKey);
+    else syncFilmToUrl(origin);
   });
 
   onMount(() => {
@@ -142,7 +229,7 @@
 
     // Stamp the resolved key when the URL arrived bare or with a key the
     // library no longer has, so the address bar always names what is on screen.
-    if (requestedFilm.kind === "unknown") syncFilmToUrl(selectedFilmKey);
+    if (requestedFilm.kind === "unknown") syncFilmToUrl(origin);
 
     return director.start();
   });
@@ -188,7 +275,7 @@
       <div class="film-picker-track">
         <SegmentedControl
           options={filmOptions}
-          value={selectedFilmKey}
+          value={origin.kind === "library" ? origin.key : ""}
           onchange={selectFilm}
           size="sm"
           color="accent"
@@ -208,9 +295,9 @@
     bind:this={filmActionsEl}
     bind:clientHeight={filmActionsHeight}
   >
-    <button type="button" onclick={openSaveModal}>
+    <button type="button" onclick={saveFilm} disabled={saveBusy}>
       <i class="fas fa-bookmark" aria-hidden="true"></i>
-      Save film
+      {filmOriginIsSaved(origin) ? "Save" : "Save film"}
     </button>
     <button type="button" onclick={() => (shelfOpen = !shelfOpen)} aria-expanded={shelfOpen}>
       <i class="fas fa-clapperboard" aria-hidden="true"></i>
