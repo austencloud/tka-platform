@@ -237,6 +237,10 @@ export class PictographPreparer {
         : "",
       options?.showBlueMotion === false ? "hideBlue" : "",
       options?.showRedMotion === false ? "hideRed" : "",
+      // Chirality changes the beta offset, so a flip must not reuse the
+      // unflipped entry.
+      options?.blueBuugengFlipped ? "bFlip" : "",
+      options?.redBuugengFlipped ? "rFlip" : "",
       pictograph.betaSwapped ? "bs" : "",
       getPictographGeometryRevision(pictograph) ?? "",
       // Visibility is render-relevant: an invisible placeholder hand must not
@@ -286,6 +290,12 @@ export class PictographPreparer {
     const settings = {
       bluePropType: options?.bluePropType ?? DEFAULT_PROP_SETTINGS.bluePropType,
       redPropType: options?.redPropType ?? DEFAULT_PROP_SETTINGS.redPropType,
+      // Chirality decides whether the beta offset fires at all: two
+      // opposite-chirality buugeng nest into an infinity symbol and must share
+      // the hand point. Omitting these here made the beta calc read both props
+      // as unflipped, so the nesting gate never fired in the app.
+      blueBuugengFlipped: options?.blueBuugengFlipped ?? false,
+      redBuugengFlipped: options?.redBuugengFlipped ?? false,
     };
 
     const motions = this.getMotionsWithOverrides(pictograph, settings, options);

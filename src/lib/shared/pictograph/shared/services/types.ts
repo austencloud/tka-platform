@@ -70,5 +70,17 @@ export interface PrepareOptions {
   /** When false, the red prop is hidden at render time - suppresses beta offset
    *  for the blue prop. Undefined/true means visible. */
   showRedMotion?: boolean;
+
+  /**
+   * Chirality of the blue buugeng-family prop (buugeng / bigbuugeng / trigeng).
+   * True = the SVG is mirrored (scaleX(-1)) at render time.
+   * Beta offset reads this: two buugeng of OPPOSITE chirality nest into an
+   * infinity symbol and must stay on the same hand point, so they get no
+   * separation offset. Same chirality does not nest, so the two ends are only
+   * legible when the props are separated.
+   */
+  blueBuugengFlipped?: boolean;
+  /** Chirality of the red buugeng-family prop. See blueBuugengFlipped. */
+  redBuugengFlipped?: boolean;
 }
 

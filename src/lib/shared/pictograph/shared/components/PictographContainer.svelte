@@ -451,6 +451,10 @@ with pre-prepared data for better performance.
       letter: pictographData.letter,
       bluePropType: effectiveBluePropType,
       redPropType: effectiveRedPropType,
+      // Buugeng chirality feeds the beta offset (opposite chirality nests, so
+      // no separation), so a flip has to re-prepare.
+      blueBuugengFlipped: settings.blueBuugengFlipped ?? false,
+      redBuugengFlipped: settings.redBuugengFlipped ?? false,
       darkMode: effectiveDarkMode, // Include effective dark mode for color-correct preparation
       blueMotion: blueFingerprint,
       redMotion: redFingerprint,
@@ -509,6 +513,8 @@ with pre-prepared data for better performance.
           themeMode: currentDarkMode ? ("dark" as const) : ("light" as const),
           bluePropType: effectiveBluePropType,
           redPropType: effectiveRedPropType,
+          blueBuugengFlipped: getSettings().blueBuugengFlipped ?? false,
+          redBuugengFlipped: getSettings().redBuugengFlipped ?? false,
           showBlueMotion: preparationShowBlueMotion,
           showRedMotion: preparationShowRedMotion,
         };
