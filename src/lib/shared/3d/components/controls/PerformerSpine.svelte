@@ -8,11 +8,9 @@
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   interface Props {
-    onInteract?: () => void;
-    hasInteracted?: boolean;
     onSettingChange?: ViewerControlSink;
   }
-  let { onInteract, hasInteracted = false, onSettingChange }: Props = $props();
+  let { onSettingChange }: Props = $props();
 
   const viewer = getViewer3DContext();
   const performers = $derived(viewer.performerManager.performers);
@@ -34,21 +32,18 @@
       previous,
       "all"
     );
-    onInteract?.();
   }
 
   function selectPerformer(i: number): void {
     const previous = scopeValue(selectedIndex);
-    const newIndex = i;
-    viewer.selectPerformerScope(newIndex);
+    viewer.selectPerformerScope(i);
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_performer",
       "scope",
       previous,
-      scopeValue(newIndex)
+      scopeValue(i)
     );
-    onInteract?.();
   }
 
   function addPerformer(): void {
@@ -65,36 +60,19 @@
 </script>
 
 {#if performers.length >= 1}
-  <div class="performer-spine" role="toolbar" aria-label="Performer selection">
-    <button
-      class="spine-chip all-chip"
-      aria-pressed={hasInteracted && selectedIndex === null}
-      aria-label="All performers"
-      title="All performers"
-      onclick={selectAll}
-    >
-      <i class="fas fa-users"></i>
-    </button>
-
-    <div class="separator" aria-hidden="true"></div>
-
-    {#each performers as _, i (i)}
-      {@const color = getPerformerColor(i)}
-      <button
-        class="spine-chip performer-chip"
-        aria-pressed={hasInteracted && selectedIndex === i}
-        aria-label="Performer {i + 1}"
-        title="Performer {i + 1}"
-        style:--performer-color={color}
-        onclick={() => selectPerformer(i)}
-      >
-        <span class="performer-number">{i + 1}</span>
-        <span class="performer-dot"></span>
-      </button>
-    {/each}
-
-    <div class="separator" aria-hidden="true"></div>
-
+  <div
+    class="performer-spine"
+    role="toolbar"
+    aria-label="Performer selection"
+    aria-orientation="horizontal"
+  >
+    <!-- Add leads the row, and the row is anchored by its left edge, so the
+         button you just pressed does not move under your cursor and no
+         existing chip shifts either. Trailing it would drag it one chip-width
+         right on every press — the list only ever grows at its far end — and
+         would eventually scroll it out of reach. It is a command, not another
+         performer to select, so the divider separates it from the scope
+         track rather than joining it. -->
     <button
       class="spine-chip add-chip"
       aria-label="Add performer"
@@ -104,15 +82,58 @@
     >
       <i class="fas fa-plus"></i>
     </button>
+
+    <div class="separator" aria-hidden="true"></div>
+
+    <div class="selection-track">
+      <button
+        class="spine-chip all-chip"
+        aria-pressed={selectedIndex === null}
+        aria-label="All performers"
+        title="All performers"
+        onclick={selectAll}
+      >
+        <i class="fas fa-users"></i>
+      </button>
+
+      {#each performers as _, i (i)}
+        {@const color = getPerformerColor(i)}
+        <button
+          class="spine-chip performer-chip"
+          aria-pressed={selectedIndex === i}
+          aria-label="Performer {i + 1}"
+          title="Performer {i + 1}"
+          style:--performer-color={color}
+          onclick={() => selectPerformer(i)}
+        >
+          <span class="performer-number">{i + 1}</span>
+          <span class="performer-dot"></span>
+        </button>
+      {/each}
+    </div>
   </div>
 {/if}
 
 <style>
   .performer-spine {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     gap: 8px;
+    min-width: 0;
+  }
+
+  .selection-track {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    /* Room for the chips' hover scale and focus ring inside the scroller. */
+    padding: 3px;
+    margin: -3px;
   }
 
   .spine-chip {
@@ -143,6 +164,12 @@
   .spine-chip:disabled {
     opacity: 0.35;
     cursor: not-allowed;
+  }
+
+  /* Add chip */
+  .add-chip {
+    flex: none;
+    border-style: dashed;
   }
 
   /* All chip */
@@ -189,17 +216,12 @@
     box-shadow: 0 0 8px var(--performer-color);
   }
 
-  /* Add chip */
-  .add-chip {
-    border-style: dashed;
-  }
-
   /* Separator */
   .separator {
-    width: 32px;
-    height: 1px;
+    flex: none;
+    width: 1px;
+    height: 2rem;
     background: var(--theme-card-hover-bg);
-    flex-shrink: 0;
   }
 
   /* ─── Focus-visible ─── */

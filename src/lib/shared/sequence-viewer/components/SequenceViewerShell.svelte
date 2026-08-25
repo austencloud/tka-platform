@@ -1173,6 +1173,12 @@
       )
     ) {
     --record-scene-right: calc(1.5rem + 48px);
+    /* Shifting the pill left of the rail parks it over the inspector column
+       instead, where it covers the performer hub's bottom-anchored tab bar.
+       Raise the inspector's floor above the pill (80px inset + 45px pill +
+       12px gap) so the panel ends where the pill begins. Only the inspector
+       reads this var; the rail keeps its own bottom and its own z-index. */
+    --scene-controls-bottom: calc(80px + 45px + 12px);
   }
 
   /* Compact workspaces center the Performer/Scene action bar along the same

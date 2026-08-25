@@ -3,7 +3,7 @@
   import SceneSelectorPopover from "../SceneSelectorPopover.svelte";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import FormationPopover from "./FormationPopover.svelte";
-  import PerformerInspectorContent from "./PerformerInspectorContent.svelte";
+  import PerformerHubDetail from "./PerformerHubDetail.svelte";
   import PresetsPanel from "./PresetsPanel.svelte";
   import type { SceneControlTool } from "../../domain/scene-control-layout";
   import type { ViewerControlSink } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
@@ -37,6 +37,15 @@
     dev: "Developer tools",
   };
 
+  /**
+   * The performer hub is a full editor with its own bottom-anchored tab bar and
+   * its own scrolling pane. It fills the panel and owns the scroll; every other
+   * tool is a short stack of controls the panel scrolls for it. Letting both
+   * scroll nests two scrollers on one axis, which leaves the bottom of the
+   * inner pane unreachable.
+   */
+  const fillsPanel = $derived(tool === "performer");
+
   const icons: Record<SceneControlTool, string> = {
     performer: "fa-user-group",
     formation: "fa-people-arrows-left-right",
@@ -49,6 +58,7 @@
 
 <section
   class="scene-control-inspector"
+  class:fills={fillsPanel}
   data-scene-inspector
   aria-labelledby="scene-control-inspector-title"
 >
@@ -67,9 +77,9 @@
     </button>
   </header>
 
-  <div class="inspector-body">
+  <div class="inspector-body" class:fills={fillsPanel}>
     {#if tool === "performer"}
-      <PerformerInspectorContent {onSettingChange} {onPerformerEdit} />
+      <PerformerHubDetail {onSettingChange} {onPerformerEdit} />
     {:else if tool === "formation"}
       <FormationPopover {onSettingChange} />
     {:else if tool === "camera"}
@@ -169,6 +179,18 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 0.875rem;
+  }
+
+  /* The performer hub is its own editor: a scrolling pane above a
+     bottom-anchored tab bar. It brings its own padding and its own scroller,
+     so the body hands it the space and stops scrolling. The panel still hugs
+     its content and only grows to the column's height when the hub needs it —
+     a tall empty panel over a short tool reads as broken. */
+  .inspector-body.fills {
+    flex: 1 1 auto;
+    display: flex;
+    overflow: hidden;
+    padding: 0;
   }
 
   .inspector-body > :global(*) {

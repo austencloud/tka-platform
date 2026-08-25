@@ -555,6 +555,10 @@
     display: flex;
     flex-direction: column;
     container-type: inline-size;
+    /* Fills whatever surface mounts it — the inspector panel or the mobile
+       sheet — so .tab-content has a bounded height to scroll inside. The hub
+       owns the only scroller on this axis; its host must not add a second. */
+    flex: 1 1 auto;
     max-height: 100%;
     min-height: 0;
   }
@@ -662,10 +666,19 @@
 
   /* ─── Tab content ─── */
   .tab-content {
+    flex: 1 1 auto;
     padding: 12px 14px 14px;
     overflow-y: auto;
     min-height: 0;
     overscroll-behavior: contain;
+  }
+
+  .accent-strip,
+  .header-divider,
+  .tab-divider,
+  .tab-bar,
+  .hub-detail > :global(.header) {
+    flex: none;
   }
 
   .tab-pane {

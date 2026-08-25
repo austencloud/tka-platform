@@ -13,6 +13,7 @@
   import { dockSlide } from "$lib/shared/transitions/dock-slide";
   import { createSheetDismiss } from "./BottomSheet.svelte";
   import SaveSceneModal from "$lib/features/scene-3d-collection/components/SaveSceneModal.svelte";
+  import PerformerSpine from "./PerformerSpine.svelte";
   import SceneControlInspector from "./SceneControlInspector.svelte";
   import SceneControlRail from "./SceneControlRail.svelte";
   import type { PerformerEditSink } from "./performer-hub-types";
@@ -173,6 +174,9 @@
   style:--scene-controls-top={topOffset}
   style:--scene-controls-bottom={bottomOffset}
   style:--scene-inspector-width="{layout.panelWidth}px"
+  style:--scene-right-occupied={activeTool
+    ? `calc(4.75rem + ${layout.panelWidth}px)`
+    : "4.75rem"}
 >
   {#if layout.presentation === "compact"}
     <div class="compact-controls">
@@ -187,6 +191,15 @@
       />
     </div>
   {:else}
+    <!-- Choosing who you are editing changes the 3D scene, not just a panel, so
+         it lives beside the scene and stays put while tools come and go. The
+         canvas already selects performers on click
+         (Viewer3DScene's onPointerDown); this is the same act, reachable
+         without hunting for a performer in the frame. -->
+    <div class="performer-bar-anchor">
+      <PerformerSpine {onSettingChange} />
+    </div>
+
     <SceneControlRail
       renderMode="3d"
       {activeTool}
@@ -235,6 +248,28 @@
   .scene-control-workspace :global([role="dialog"]),
   .inspector-anchor {
     pointer-events: auto;
+  }
+
+  /* Sits opposite the rail, clear of the inspector column when one is open, and
+     content-sized so a solo scene shows two chips rather than an empty strip. */
+  .performer-bar-anchor {
+    position: absolute;
+    top: var(--scene-controls-top, 0.75rem);
+    left: 0.75rem;
+    z-index: 28;
+    display: flex;
+    max-width: calc(100% - 0.75rem - var(--scene-right-occupied, 4.75rem));
+    min-width: 0;
+    padding: 0.5rem;
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.14));
+    border-radius: 1rem;
+    background: var(--theme-panel-bg, #0c0e16);
+    box-shadow: var(--theme-panel-shadow, 0 1.25rem 4rem rgba(0, 0, 0, 0.62));
+    pointer-events: auto;
+  }
+
+  .performer-bar-anchor > :global(*) {
+    min-width: 0;
   }
 
   .inspector-anchor {
