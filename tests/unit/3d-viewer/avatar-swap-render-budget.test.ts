@@ -56,13 +56,21 @@ describe("avatar swap render budget", () => {
     const prepareSelection = hubSource.indexOf(
       "await prepareAvatarSelection(id)"
     );
+    // `46dcf56152` routed the commit through writeParameter so the director can
+    // record the swap as a per-performer parameter. The scope callback that
+    // actually replaces the model is unchanged, and it still sits after the
+    // await, which is the ordering this test exists to hold. Anchor on that
+    // callback so the guard survives the next rename of its wrapper.
     const commitSelection = hubSource.indexOf(
-      "applyToScope((p) => p?.setAvatarModel(id))",
+      "p?.setAvatarModel(id)",
       prepareSelection
     );
 
     expect(prepareSelection).toBeGreaterThan(-1);
     expect(commitSelection).toBeGreaterThan(prepareSelection);
+    expect(hubSource).toContain(
+      'writeParameter({ field: "avatarId", value: id }'
+    );
     expect(hubSource).toContain("pendingAvatarId = id");
     // The pending flag crosses into the picker, which paints the slot it marks.
     expect(hubSource).toContain("{pendingAvatarId}");

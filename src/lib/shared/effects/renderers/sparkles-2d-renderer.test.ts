@@ -148,7 +148,11 @@ describe("Sparkles2DRenderer simulation", () => {
     });
     for (let i = 0; i < 300; i++) r.render(ctx, params, tips, 1 / 60);
     expect((r as any).particles.length).toBeLessThanOrEqual(1500);
-  });
+    // 300 frames against a capped pool is ~3.6M spied draw calls, and vi.fn()
+    // retains every argument list, so this sits near the 5s default and tips
+    // over on a loaded runner. The renderer is not the cost, the recording is;
+    // the frame count is the point of the test, so raise the bound instead.
+  }, 30_000);
 
   it("spawns from tunnel layer emitters (propIndex >= 2)", () => {
     const rBase = new Sparkles2DRenderer();
