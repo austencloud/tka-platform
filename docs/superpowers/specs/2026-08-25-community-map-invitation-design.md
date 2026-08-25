@@ -294,6 +294,19 @@ two documents divergent. That redundancy is unnecessary:
   `features/feedback/services/notification-preferences-manager` — a different
   module and a different document. It is not a consumer.)
 
+**Deleting it removes a latent divergence, not just dead weight.** The
+`userLocations` security rule gates reads on `resource.data.visibility` — the
+**location** document's field (Ground truth 19). The preferences document
+carried its own `visibility` copy (`user-location-repository.ts:129`) that
+nothing enforced against it. Two mutable copies of one privacy setting, with
+the security boundary trusting only one of them, is a bug waiting for a partial
+write. Dropping the mirror leaves exactly one `visibility`, and it is the one
+the rule reads.
+
+The `/settings/{settingId}` rule is generic — only `featureOverrides` is
+special-cased (`firestore.rules:439-448`) — so removing this document needs no
+rules change.
+
 So `savePreferences`, `getPreferences`, `preferencesPath`, `PreferencesSchema`,
 and `LocationSharingPreferences` all become dead with the orchestrator and are
 removed in the deletion phase. The one existing user's orphaned preferences
