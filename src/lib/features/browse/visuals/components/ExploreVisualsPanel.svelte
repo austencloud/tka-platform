@@ -1,33 +1,61 @@
 <!--
   ExploreVisualsPanel.svelte — the public Explore > Visuals destination
-  (Browse Phase 3 vertical slice).
+  (Browse Phase 3 for tunnels, Phase 5A for mandalas).
 
-  Lists approved public artifacts (tunnels first) from the guest-readable
-  projection and opens a live detail view for one. Everything shown here has
-  passed moderation by construction: envelopes exist only while approved, so
-  this panel can never surface private or withdrawn work.
+  Lists approved public artifacts from the guest-readable projection and opens a
+  live detail view for one. Everything shown here has passed moderation by
+  construction: envelopes exist only while approved, so this panel can never
+  surface private or withdrawn work.
+
+  The two types share one list, one detail shell, and one navigation seam; only
+  the preview component and the payload shape differ, and each is loaded lazily
+  because both renderers are heavy.
 -->
 <script lang="ts">
   import type { Component } from "svelte";
   import { getBrowseNavigationContext } from "$lib/shared/browse/context/browse-navigation-context";
+  import type { BrowseVisualType } from "$lib/shared/browse/navigation/browse-route-resolver";
   import {
     listPublicArtifacts,
     getPublicArtifactDetail,
   } from "$lib/shared/artifact-revisions/services/public-artifact-loader";
-  import type { PublicArtifactEnvelope } from "$lib/shared/artifact-revisions/domain/public-artifact";
+  import type {
+    PublicArtifactEnvelope,
+    PublicArtifactType,
+  } from "$lib/shared/artifact-revisions/domain/public-artifact";
   import type { TunnelPublicPayload } from "$lib/features/tunnel-collection/domain/tunnel-public-revision";
+  import type { MandalaPublicPayload } from "$lib/features/mandala/tabs/collection/domain/mandala-public-revision";
   import type { CollectedTunnel } from "$lib/features/tunnel-collection/domain/tunnel-collection-types";
   import PanelSpinner from "$lib/shared/components/panel/PanelSpinner.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
   const browseNavigation = getBrowseNavigationContext();
 
+  // Only the types with a shipped publication adapter appear here. Scenes join
+  // when Phase 5B gives them one.
+  /** The visual types that have a shipped publication adapter today. */
+  type PublishedVisualType = Extract<BrowseVisualType, "tunnels" | "mandalas">;
+
+  const VISUAL_TABS: { value: PublishedVisualType; label: string }[] = [
+    { value: "tunnels", label: "Tunnels" },
+    { value: "mandalas", label: "Mandalas" },
+  ];
+
+  const ARTIFACT_TYPE: Record<PublishedVisualType, PublicArtifactType> = {
+    tunnels: "tunnel",
+    mandalas: "mandala",
+  };
+
   const location = $derived(browseNavigation.currentLocation);
+  const inVisuals = $derived(
+    location?.primary === "explore" && location.section === "visuals"
+  );
+  const visualType: PublishedVisualType = $derived(
+    inVisuals && location?.visualType === "mandalas" ? "mandalas" : "tunnels"
+  );
+  const artifactType = $derived(ARTIFACT_TYPE[visualType]);
   const detailArtifactId = $derived(
-    location?.primary === "explore" &&
-      location.section === "visuals" &&
-      location.view === "detail"
-      ? location.contextId
-      : undefined
+    inVisuals && location?.view === "detail" ? location.contextId : undefined
   );
 
   // ---- list state -----------------------------------------------------------
@@ -37,12 +65,12 @@
   let listError = $state("");
   let listToken = 0;
 
-  async function loadList() {
+  async function loadList(type: PublicArtifactType) {
     const token = ++listToken;
     listLoading = true;
     listError = "";
     try {
-      const loaded = await listPublicArtifacts("tunnel");
+      const loaded = await listPublicArtifacts(type);
       if (token === listToken) envelopes = loaded;
     } catch (cause) {
       console.warn("[ExploreVisuals] List load failed:", cause);
@@ -55,28 +83,38 @@
   }
 
   $effect(() => {
-    void loadList();
+    void loadList(artifactType);
   });
 
   // ---- detail state ---------------------------------------------------------
 
-  // The kaleidoscope renderer is heavy; load it only when a detail opens.
+  // Both preview renderers are heavy; load one only when a detail opens.
   let TunnelDetailPreview = $state<Component<{
     tunnel: CollectedTunnel;
   }> | null>(null);
+  let MandalaDetailPreview = $state<Component<{
+    payload: MandalaPublicPayload;
+  }> | null>(null);
 
   let detailTunnel = $state<CollectedTunnel | null>(null);
+  let detailMandala = $state<MandalaPublicPayload | null>(null);
   let detailEnvelope = $state<PublicArtifactEnvelope | null>(null);
   let detailLoading = $state(false);
   let detailError = $state("");
   let detailToken = 0;
 
+  function clearDetail() {
+    detailTunnel = null;
+    detailMandala = null;
+    detailEnvelope = null;
+  }
+
   $effect(() => {
     const artifactId = detailArtifactId;
+    const type = artifactType;
     const token = ++detailToken;
     if (!artifactId) {
-      detailTunnel = null;
-      detailEnvelope = null;
+      clearDetail();
       detailError = "";
       detailLoading = false;
       return;
@@ -85,6 +123,26 @@
     detailError = "";
     void (async () => {
       try {
+        if (type === "mandala") {
+          const [detail, previewModule] = await Promise.all([
+            getPublicArtifactDetail<MandalaPublicPayload>(artifactId),
+            MandalaDetailPreview
+              ? Promise.resolve(null)
+              : import("./MandalaDetailPreview.svelte"),
+          ]);
+          if (token !== detailToken) return;
+          if (previewModule) MandalaDetailPreview = previewModule.default;
+          if (!detail) {
+            detailError = "This visual is no longer public.";
+            clearDetail();
+            return;
+          }
+          detailEnvelope = detail.envelope;
+          detailTunnel = null;
+          detailMandala = detail.revision.payload;
+          return;
+        }
+
         const [detail, previewModule] = await Promise.all([
           getPublicArtifactDetail<TunnelPublicPayload>(artifactId),
           TunnelDetailPreview
@@ -97,12 +155,12 @@
         if (previewModule) TunnelDetailPreview = previewModule.default;
         if (!detail) {
           detailError = "This visual is no longer public.";
-          detailTunnel = null;
-          detailEnvelope = null;
+          clearDetail();
           return;
         }
         const payload = detail.revision.payload;
         detailEnvelope = detail.envelope;
+        detailMandala = null;
         // TunnelDetailPreview renders a CollectedTunnel; the public payload
         // carries exactly the fields it reads (steps + snapshot), so we shape
         // one around the envelope's identity.
@@ -121,8 +179,7 @@
         console.warn("[ExploreVisuals] Detail load failed:", cause);
         if (token === detailToken) {
           detailError = "This visual couldn't be loaded.";
-          detailTunnel = null;
-          detailEnvelope = null;
+          clearDetail();
         }
       } finally {
         if (token === detailToken) detailLoading = false;
@@ -135,7 +192,7 @@
       primary: "explore",
       section: "visuals",
       view: "detail",
-      visualType: "tunnels",
+      visualType,
       contextId: envelope.artifactId,
     });
   }
@@ -145,7 +202,16 @@
       primary: "explore",
       section: "visuals",
       view: "list",
-      visualType: "tunnels",
+      visualType,
+    });
+  }
+
+  function selectType(next: PublishedVisualType) {
+    browseNavigation.navigateTo({
+      primary: "explore",
+      section: "visuals",
+      view: "list",
+      visualType: next,
     });
   }
 
@@ -163,6 +229,12 @@
       year: "numeric",
     });
   }
+
+  const emptyHint = $derived(
+    visualType === "mandalas"
+      ? "Save a mandala and share it publicly — approved submissions appear here for everyone."
+      : "Save a tunnel and share it publicly — approved submissions appear here for everyone."
+  );
 </script>
 
 <div class="visuals-panel">
@@ -202,11 +274,24 @@
           </div>
         {:else if detailTunnel && TunnelDetailPreview}
           <TunnelDetailPreview tunnel={detailTunnel} />
+        {:else if detailMandala && MandalaDetailPreview}
+          <MandalaDetailPreview payload={detailMandala} />
         {/if}
       </div>
     </div>
   {:else}
     <div class="list-shell themed-scrollbar">
+      <div class="type-switcher">
+        <SegmentedControl
+          options={VISUAL_TABS}
+          value={visualType}
+          onchange={selectType}
+          color="accent"
+          size="sm"
+          ariaLabel="Visual type"
+        />
+      </div>
+
       {#if listLoading}
         <div class="panel-status" role="status">
           <PanelSpinner size={10} />
@@ -218,7 +303,7 @@
           <button
             type="button"
             class="back-btn"
-            onclick={() => void loadList()}
+            onclick={() => void loadList(artifactType)}
           >
             <i class="fas fa-rotate-right" aria-hidden="true"></i>
             <span>Retry</span>
@@ -229,10 +314,7 @@
           <i class="fas fa-wand-magic-sparkles empty-icon" aria-hidden="true"
           ></i>
           <span>No public visuals yet</span>
-          <p class="empty-hint">
-            Save a tunnel and share it publicly — approved submissions appear
-            here for everyone.
-          </p>
+          <p class="empty-hint">{emptyHint}</p>
         </div>
       {:else}
         <div class="visuals-grid">
@@ -316,6 +398,19 @@
     display: flex;
     flex-direction: column;
     padding: clamp(16px, 2cqi, 32px);
+  }
+
+  /* Sized to its own labels — a two-option control must never stretch to the
+     shell (visual-verification-mandatory.md, the 1765px-button failure). */
+  .type-switcher {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: clamp(12px, 1.4cqi, 20px);
+  }
+
+  .type-switcher :global(> *) {
+    width: auto;
+    max-width: max-content;
   }
 
   .visuals-grid {

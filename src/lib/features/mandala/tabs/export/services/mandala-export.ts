@@ -32,13 +32,7 @@ const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
 	pathShape: "arc",
 };
 
-export async function exportMandalaPNG(
-	steps: StepLike[],
-	bluePropType: string | undefined,
-	redPropType: string | undefined,
-	options: Partial<ExportOptions> = {},
-): Promise<Blob> {
-	const opts = { ...DEFAULT_EXPORT_OPTIONS, ...options };
+function drawMandala(opts: ExportOptions, steps: StepLike[], bluePropType: string | undefined, redPropType: string | undefined): HTMLCanvasElement {
 	const tipEnds = pairTipEnds(bluePropType, redPropType);
 	const paths = calculateMandalaGeometry(
 		steps,
@@ -72,6 +66,18 @@ export async function exportMandalaPNG(
 		offsetY: 0,
 	});
 
+	return canvas;
+}
+
+export async function exportMandalaPNG(
+	steps: StepLike[],
+	bluePropType: string | undefined,
+	redPropType: string | undefined,
+	options: Partial<ExportOptions> = {},
+): Promise<Blob> {
+	const opts = { ...DEFAULT_EXPORT_OPTIONS, ...options };
+	const canvas = drawMandala(opts, steps, bluePropType, redPropType);
+
 	return new Promise<Blob>((resolve, reject) => {
 		canvas.toBlob(
 			(blob) => {
@@ -81,4 +87,42 @@ export async function exportMandalaPNG(
 			"image/png",
 		);
 	});
+}
+
+/**
+ * Discovery poster for the public-artifact envelope: a square WebP data URL of
+ * the mandala on an opaque ground, small enough for the storage rule's 200 KB
+ * ceiling. Derived from the same geometry the detail view redraws, so a poster
+ * can never depict something the payload does not.
+ */
+const POSTER_SIZE = 512;
+const POSTER_MAX_BYTES = 200 * 1024;
+const POSTER_QUALITIES = [0.85, 0.7, 0.55] as const;
+
+export function renderMandalaPosterDataUrl(
+	steps: StepLike[],
+	bluePropType: string | undefined,
+	redPropType: string | undefined,
+	options: Partial<Pick<ExportOptions, "show" | "pathShape">> = {},
+): string {
+	const canvas = drawMandala(
+		{
+			...DEFAULT_EXPORT_OPTIONS,
+			size: POSTER_SIZE,
+			background: "black",
+			strokeWidth: 5,
+			...options,
+		},
+		steps,
+		bluePropType,
+		redPropType,
+	);
+
+	let dataUrl = "";
+	for (const quality of POSTER_QUALITIES) {
+		dataUrl = canvas.toDataURL("image/webp", quality);
+		// base64 carries 3 bytes per 4 characters; the header is negligible here.
+		if ((dataUrl.length * 3) / 4 <= POSTER_MAX_BYTES) return dataUrl;
+	}
+	return dataUrl;
 }

@@ -508,3 +508,209 @@ describe("withdrawal, republish, and takedown", () => {
     await assertFails(setDoc(doc(guestDb(), x.envelopePath), envelopeDoc(x)));
   });
 });
+
+/**
+ * Browse Phase 5A. The public boundary was written type-generic from the
+ * start (`artifactType in ['tunnel','mandala','scene']`), so mandalas needed no
+ * rules change there — these cases prove that claim rather than assume it. The
+ * private mandala revisions subcollection IS new, and is covered below.
+ */
+describe("mandala publication (Phase 5A)", () => {
+  /** Same rule-shaped ids, under a mandala artifact id. */
+  function mandalaIds(tag: string) {
+    const base = ids(tag);
+    const artifactId = `mandala-${tag}`;
+    return {
+      ...base,
+      artifactId,
+      requestId: `${artifactId}_${base.revisionId}`,
+      requestPath: `artifactPublicationRequests/${artifactId}_${base.revisionId}`,
+      envelopePath: `publicArtifacts/${artifactId}`,
+      revisionPath: `publicArtifacts/${artifactId}/revisions/${base.revisionId}`,
+    };
+  }
+
+  // The mandala public payload carries geometry, not pixels — the poster is
+  // derived at publish time and lives only in Storage.
+  const MANDALA_PAYLOAD = {
+    steps: [],
+    variant: "both",
+    bluePropType: "staff",
+    redPropType: "staff",
+  };
+
+  function mandalaPublishBatch(
+    db: ReturnType<typeof ownerDb>,
+    x: ReturnType<typeof mandalaIds>
+  ) {
+    const batch = writeBatch(db);
+    batch.set(
+      doc(db, x.requestPath),
+      requestDoc(x, {
+        requestId: x.requestId,
+        artifactId: x.artifactId,
+        artifactType: "mandala",
+        title: "Bloom",
+        payload: MANDALA_PAYLOAD,
+        sourceRevision: {
+          artifactId: x.artifactId,
+          revisionId: `v1_${x.sourceDigest}`,
+          contentDigest: x.sourceDigest,
+          digestAlgorithm: "SHA-256",
+          digestVersion: 1,
+        },
+      })
+    );
+    batch.set(
+      doc(db, x.revisionPath),
+      revisionDoc(x, {
+        artifactId: x.artifactId,
+        artifactType: "mandala",
+        payload: MANDALA_PAYLOAD,
+      })
+    );
+    batch.set(
+      doc(db, x.envelopePath),
+      envelopeDoc(x, {
+        artifactId: x.artifactId,
+        artifactType: "mandala",
+        title: "Bloom",
+        publishedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+    );
+    return batch;
+  }
+
+  it("the owner publish batch succeeds for a mandala and LANDS", async () => {
+    const x = mandalaIds("mandala-ok");
+    await assertSucceeds(mandalaPublishBatch(ownerDb(), x).commit());
+    const landed = await getDoc(doc(guestDb(), x.envelopePath));
+    if (!landed.exists()) throw new Error(`SEED LOST: ${x.envelopePath}`);
+  });
+
+  it("guests read a live mandala envelope and its revision", async () => {
+    const x = mandalaIds("mandala-guest");
+    await assertSucceeds(mandalaPublishBatch(ownerDb(), x).commit());
+    await assertSucceeds(getDoc(doc(guestDb(), x.envelopePath)));
+    await assertSucceeds(getDoc(doc(guestDb(), x.revisionPath)));
+  });
+
+  it("an unknown artifactType is denied at the same boundary", async () => {
+    const x = mandalaIds("mandala-badtype");
+    const db = ownerDb();
+    const batch = writeBatch(db);
+    batch.set(
+      doc(db, x.requestPath),
+      requestDoc(x, {
+        requestId: x.requestId,
+        artifactId: x.artifactId,
+        artifactType: "hologram",
+      })
+    );
+    batch.set(
+      doc(db, x.revisionPath),
+      revisionDoc(x, { artifactId: x.artifactId, artifactType: "hologram" })
+    );
+    batch.set(
+      doc(db, x.envelopePath),
+      envelopeDoc(x, {
+        artifactId: x.artifactId,
+        artifactType: "hologram",
+        publishedAt: serverTimestamp(),
+      })
+    );
+    await assertFails(batch.commit());
+  });
+
+  it("owner withdrawal of a mandala removes it from guest reads", async () => {
+    const x = mandalaIds("mandala-withdraw");
+    await assertSucceeds(mandalaPublishBatch(ownerDb(), x).commit());
+    const db = ownerDb();
+    const batch = writeBatch(db);
+    batch.delete(doc(db, x.envelopePath));
+    batch.update(doc(db, x.requestPath), { status: "withdrawn" });
+    await assertSucceeds(batch.commit());
+    await assertFails(getDoc(doc(guestDb(), x.revisionPath)));
+    await assertSucceeds(getDoc(doc(ownerDb(), x.revisionPath)));
+  });
+});
+
+describe("private mandala revisions (Phase 5A)", () => {
+  const digest = "c".repeat(64);
+  const revisionId = `v1_${digest}`;
+
+  function path(uid: string, mandalaId: string) {
+    return `users/${uid}/mandala-collection/${mandalaId}/revisions/${revisionId}`;
+  }
+
+  function privateRevision(mandalaId: string, overrides = {}) {
+    return {
+      artifactId: mandalaId,
+      artifactType: "mandala",
+      revisionId,
+      contentDigest: digest,
+      digestAlgorithm: "SHA-256",
+      digestVersion: 1,
+      payload: {
+        steps: [],
+        variant: "both",
+        bluePropType: "staff",
+        redPropType: "staff",
+      },
+      createdAt: 123,
+      ...overrides,
+    };
+  }
+
+  it("the owner writes a content-addressed revision", async () => {
+    const id = "mandala-priv-ok";
+    await assertSucceeds(
+      setDoc(doc(ownerDb(), path(OWNER_UID, id)), privateRevision(id))
+    );
+  });
+
+  it("a revision id that does not match its digest is denied", async () => {
+    const id = "mandala-priv-mismatch";
+    await assertFails(
+      setDoc(
+        doc(ownerDb(), path(OWNER_UID, id)),
+        privateRevision(id, { contentDigest: "d".repeat(64) })
+      )
+    );
+  });
+
+  it("a revision naming a different mandala is denied", async () => {
+    const id = "mandala-priv-wrongparent";
+    await assertFails(
+      setDoc(
+        doc(ownerDb(), path(OWNER_UID, id)),
+        privateRevision(id, { artifactId: "some-other-mandala" })
+      )
+    );
+  });
+
+  it("a revision claiming another artifact type is denied", async () => {
+    const id = "mandala-priv-wrongtype";
+    await assertFails(
+      setDoc(
+        doc(ownerDb(), path(OWNER_UID, id)),
+        privateRevision(id, { artifactType: "tunnel" })
+      )
+    );
+  });
+
+  it("revisions are immutable, private to the owner, and not user-deletable", async () => {
+    const id = "mandala-priv-immutable";
+    await assertSucceeds(
+      setDoc(doc(ownerDb(), path(OWNER_UID, id)), privateRevision(id))
+    );
+    await assertFails(
+      updateDoc(doc(ownerDb(), path(OWNER_UID, id)), { createdAt: 999 })
+    );
+    await assertFails(deleteDoc(doc(ownerDb(), path(OWNER_UID, id))));
+    await assertFails(getDoc(doc(otherDb(), path(OWNER_UID, id))));
+    await assertFails(getDoc(doc(guestDb(), path(OWNER_UID, id))));
+    await assertSucceeds(getDoc(doc(adminDb(), path(OWNER_UID, id))));
+  });
+});

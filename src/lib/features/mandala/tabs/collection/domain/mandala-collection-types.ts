@@ -18,6 +18,13 @@ export interface CollectedMandala {
 	 *  its library id. Optional: old entries simply lack them. */
 	sourceWord?: string;
 	sourceSequenceId?: string;
+	/** Stable work id lives in `id`; these fields identify the exact current
+	 * immutable payload. Legacy entries are baselined when they next hydrate. */
+	currentRevisionId?: string;
+	currentContentDigest?: string;
+	currentRevisionCreatedAt?: number;
+	revisionDigestAlgorithm?: "SHA-256";
+	revisionDigestVersion?: 1;
 }
 
 export const CollectedMandalaSchema = z.object({
@@ -33,6 +40,14 @@ export const CollectedMandalaSchema = z.object({
 	source: z.enum(["studio", "sequence", "default"]).optional(),
 	sourceWord: z.string().optional(),
 	sourceSequenceId: z.string().optional(),
+	currentRevisionId: z.string().min(1).optional(),
+	currentContentDigest: z
+		.string()
+		.regex(/^[a-f0-9]{64}$/)
+		.optional(),
+	currentRevisionCreatedAt: z.number().optional(),
+	revisionDigestAlgorithm: z.literal("SHA-256").optional(),
+	revisionDigestVersion: z.literal(1).optional(),
 });
 
 export const MANDALA_COLLECTION_STORAGE_KEY = "tka:mandala-collection";

@@ -26,6 +26,7 @@
   import type { StepLike } from "$lib/shared/mandala/services/types";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import MandalaPublicationControls from "./tabs/collection/components/MandalaPublicationControls.svelte";
   import { openLineageSource, hasLineageSource } from "$lib/shared/collections/open-lineage-source";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { onMount } from "svelte";
@@ -59,6 +60,15 @@
 
   // ── Selected mandala ──
   let selectedMandala = $state<SelectedMandala | null>(null);
+
+  // Publication needs the persisted entry, not the render-shaped selection —
+  // it content-addresses the saved payload. Curated defaults are not in the
+  // collection, so this stays null for them and no sharing UI appears.
+  const selectedCollected = $derived.by(() => {
+    const id = selectedMandala?.id;
+    if (!id) return null;
+    return mandalaCollectionState.collection.find((m) => m.id === id) ?? null;
+  });
 
   const items = $derived.by((): MandalaItem[] => {
     const curated: MandalaItem[] = DEFAULT_MANDALAS.map((m) => ({
@@ -604,6 +614,10 @@
               {/if}
             </button>
           </div>
+
+          {#if selectedCollected && !mandalaCollectionState.isReadOnlyPreview}
+            <MandalaPublicationControls mandala={selectedCollected} />
+          {/if}
 
           {#if !mandalaCollectionState.isReadOnlyPreview}
             <div class="detail-footer">

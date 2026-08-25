@@ -730,6 +730,24 @@ service cloud.firestore {
         allow read: if isOwner(userId) || isAdmin();
         allow create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
+
+        // Content-addressed private history, same contract as the tunnel one
+        // below: the owner may create a revision and retry the identical
+        // batch, but can never rewrite an existing payload in place.
+        match /revisions/{revisionId} {
+          allow read: if isOwner(userId) || isAdmin();
+          allow create: if isOwner(userId)
+            && request.resource.data.artifactType == 'mandala'
+            && request.resource.data.artifactId == mandalaId
+            && request.resource.data.revisionId == revisionId
+            && revisionId == 'v1_' + request.resource.data.contentDigest
+            && request.resource.data.contentDigest.matches('^[a-f0-9]{64}$')
+            && request.resource.data.digestAlgorithm == 'SHA-256'
+            && request.resource.data.digestVersion == 1;
+          allow update: if isOwner(userId)
+            && request.resource.data == resource.data;
+          allow delete: if isAdmin();
+        }
       }
 
       // -------------------------------------------------------------------------
