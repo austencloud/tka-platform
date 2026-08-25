@@ -5,8 +5,17 @@ import {
   computeCameraFraming,
   directorFloorY,
 } from "./camera-language";
+import {
+  fitPresetKeyframes,
+  measureCastGeometry,
+} from "./director-camera-fit";
+import {
+  resolvePresetForFormation,
+  type DirectorFormation,
+} from "./director-camera-presets";
 import type {
   DirectorCameraInput,
+  DirectorCameraPreset,
   DirectorCameraTargetInput,
   DirectorEasing,
   ResolvedDirectorCameraKeyframe,
@@ -51,6 +60,13 @@ interface CameraTrackContext {
   aspectRatio: number;
   groundOffset: number;
   performers: readonly ResolvedDirectorPerformer[];
+  formation: DirectorFormation;
+}
+
+export interface ResolvedDirectorCameraTrack {
+  preset: DirectorCameraPreset;
+  substitutedFor: DirectorCameraPreset | null;
+  keyframes: ResolvedDirectorCameraKeyframe[];
 }
 
 function vec3(value: {
@@ -98,22 +114,10 @@ function keyframe(
   return { atSeconds, position, target, fovDeg, interpolation, easing };
 }
 
-function scaleFromTarget(
-  position: [number, number, number],
-  target: [number, number, number],
-  scale: number
-): [number, number, number] {
-  return [
-    target[0] + (position[0] - target[0]) * scale,
-    target[1] + (position[1] - target[1]) * scale,
-    target[2] + (position[2] - target[2]) * scale,
-  ];
-}
-
 export function resolveDirectorCameraTrack(
   input: DirectorCameraInput | undefined,
   context: CameraTrackContext
-): ResolvedDirectorCameraKeyframe[] {
+): ResolvedDirectorCameraTrack {
   const usesGrammar = Boolean(
     input &&
       (input.shotSize ||
@@ -142,12 +146,6 @@ export function resolveDirectorCameraTrack(
     elevationDeg: 12,
   });
   const groupTarget = vec3(baseShot.target);
-  const target = resolveTarget(
-    input?.target,
-    performers,
-    groupTarget,
-    groundOffset
-  );
 
   if (input?.keyframes?.length) {
     const resolved = input.keyframes
@@ -179,7 +177,7 @@ export function resolveDirectorCameraTrack(
         throw new Error("Camera keyframes cannot share the same time.");
       }
     }
-    return resolved;
+    return { preset: "custom", substitutedFor: null, keyframes: resolved };
   }
 
   if (usesGrammar) {
@@ -192,79 +190,59 @@ export function resolveDirectorCameraTrack(
       },
       context
     );
-    return compileCameraMoves(input!.moves ?? [{ move: "hold" }], framing, context);
-  }
-
-  const baseEye = vec3(baseShot.eye);
-  const preset =
-    input?.preset ?? (performers.length >= 5 ? "group-orbit" : "hero-dolly-in");
-
-  if (preset === "front-lockoff") {
-    return [keyframe(0, baseEye, target, 50, "step", "linear")];
-  }
-
-  if (preset === "hero-dolly-in") {
-    return [
-      keyframe(0, scaleFromTarget(baseEye, target, 1.55), target, 52),
-      keyframe(
-        durationSeconds,
-        scaleFromTarget(baseEye, target, 1.08),
-        target,
-        44
+    return {
+      preset: "custom",
+      substitutedFor: null,
+      keyframes: compileCameraMoves(
+        input!.moves ?? [{ move: "hold" }],
+        framing,
+        context
       ),
-    ];
+    };
   }
 
-  if (preset === "high-reveal") {
-    const distance = Math.hypot(
-      baseEye[0] - target[0],
-      baseEye[1] - target[1],
-      baseEye[2] - target[2]
-    );
-    return [
-      keyframe(
-        0,
-        [
-          target[0] - distance * 0.35,
-          target[1] + distance * 0.92,
-          target[2] - distance * 1.25,
-        ],
-        target,
-        58
-      ),
-      keyframe(
-        durationSeconds,
-        scaleFromTarget(baseEye, target, 1.12),
-        target,
-        48
-      ),
-    ];
-  }
+  const { preset, substitutedFor } = resolvePresetForFormation(
+    input?.preset,
+    context.formation
+  );
+  // orbitDegrees is the one authored dial the library still honors: it says
+  // how far around the cast to travel, which is a directing choice, not a
+  // framing one.
+  const definition =
+    preset.motion.kind === "orbit" && input?.orbitDegrees !== undefined
+      ? {
+          ...preset,
+          motion: { kind: "orbit" as const, degrees: input.orbitDegrees },
+        }
+      : preset;
 
-  const orbitDegrees = input?.orbitDegrees ?? 135;
-  const radius =
-    Math.max(2, Math.hypot(baseEye[0] - target[0], baseEye[2] - target[2])) *
-    1.35;
-  const cameraHeight = baseEye[1];
-  const startAngle = Math.atan2(baseEye[0] - target[0], baseEye[2] - target[2]);
-  const segmentCount = Math.max(3, Math.ceil(Math.abs(orbitDegrees) / 30));
+  const cast = measureCastGeometry(
+    performers.map((performer) => performer.position),
+    groundOffset
+  );
+  const explicitTarget = input?.target
+    ? resolveTarget(input.target, performers, groupTarget, groundOffset)
+    : undefined;
 
-  return Array.from({ length: segmentCount + 1 }, (_, index) => {
-    const progress = index / segmentCount;
-    const angle = startAngle + (orbitDegrees * Math.PI * progress) / 180;
-    return keyframe(
-      durationSeconds * progress,
-      [
-        target[0] + Math.sin(angle) * radius,
-        cameraHeight,
-        target[2] + Math.cos(angle) * radius,
-      ],
-      target,
-      50,
-      "smooth",
-      "linear"
-    );
-  });
+  return {
+    preset: preset.id,
+    substitutedFor,
+    keyframes: fitPresetKeyframes(
+      definition,
+      cast,
+      { aspectRatio, durationSeconds },
+      explicitTarget
+    ).map((frame) =>
+      keyframe(
+        frame.atSeconds,
+        frame.position,
+        frame.target,
+        frame.fovDeg,
+        definition.motion.kind === "hold" ? "step" : "smooth",
+        definition.motion.kind === "orbit" ? "linear" : "ease-in-out"
+      )
+    ),
+  };
 }
 
 function applyEasing(value: number, easing: DirectorEasing): number {

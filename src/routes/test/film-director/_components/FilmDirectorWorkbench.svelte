@@ -145,6 +145,11 @@
     // The URL always names what is on screen, including when the address bar
     // arrived bare and the route picked the film.
     syncFilmToUrl(origin);
+    // Drive seam for scripts/build-film-posters.mjs, which has to seek to a
+    // scene-relative cue and read the canvas back over CDP. Dev only.
+    if (import.meta.env.DEV) {
+      (window as unknown as Record<string, unknown>).__filmDirector = director;
+    }
     return director.start();
   });
   onDestroy(() => director.destroy());

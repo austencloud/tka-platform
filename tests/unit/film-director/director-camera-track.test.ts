@@ -23,6 +23,7 @@ const CONTEXT = {
       position: { x: 1, z: 0 }, facingAngle: 0, beatOffset: 0, staffLengthCm: null,
     },
   ],
+  formation: "line" as const,
 };
 
 const frames: ResolvedDirectorCameraKeyframe[] = [
@@ -74,7 +75,7 @@ describe("director camera sampling", () => {
 
 describe("director camera grammar resolution", () => {
   it("compiles framing + moves into a keyframe track", () => {
-    const frames = resolveDirectorCameraTrack(
+    const track = resolveDirectorCameraTrack(
       {
         subject: { kind: "group" },
         shotSize: "wide",
@@ -86,8 +87,12 @@ describe("director camera grammar resolution", () => {
       },
       CONTEXT
     );
-    expect(frames[0]!.atSeconds).toBe(0);
-    expect(frames.at(-1)!.atSeconds).toBeCloseTo(CONTEXT.durationSeconds, 5);
+    expect(track.preset).toBe("custom");
+    expect(track.keyframes[0]!.atSeconds).toBe(0);
+    expect(track.keyframes.at(-1)!.atSeconds).toBeCloseTo(
+      CONTEXT.durationSeconds,
+      5
+    );
   });
 
   it("rejects mixing keyframes with framing grammar", () => {

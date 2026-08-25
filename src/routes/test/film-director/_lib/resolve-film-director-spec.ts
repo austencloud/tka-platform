@@ -623,10 +623,11 @@ function resolveScene(
   const stageZOffset = getPerformerStageBounds(
     performers.map((performer) => performer.position)
   ).zOffset;
-  const cameraKeyframes = resolveDirectorCameraTrack(scene.camera, {
+  const cameraTrack = resolveDirectorCameraTrack(scene.camera, {
     durationSeconds,
     aspectRatio,
     groundOffset,
+    formation,
     performers: performers.map((performer) => ({
       ...performer,
       position: {
@@ -661,12 +662,7 @@ function resolveScene(
     },
     effectPresets,
     effectOverrides,
-    camera: {
-      preset:
-        scene.camera?.preset ??
-        (performers.length >= 5 ? "group-orbit" : "hero-dolly-in"),
-      keyframes: cameraKeyframes,
-    },
+    camera: cameraTrack,
   };
 }
 

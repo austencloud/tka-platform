@@ -95,6 +95,7 @@ const formationIdSchema = z
 
 export const DIRECTOR_CAMERA_PRESETS = [
   "front-lockoff",
+  "three-quarter",
   "hero-dolly-in",
   "high-reveal",
   "group-orbit",
@@ -512,6 +513,13 @@ export interface ResolvedDirectorScene {
   effectOverrides: Record<string, Record<string, unknown>>;
   camera: {
     preset: DirectorCameraPreset;
+    /**
+     * The preset the scene asked for when it is not approved for this
+     * formation and `preset` is a fallback. Null when nothing was
+     * substituted. The control surface shows it rather than letting the
+     * swap happen silently.
+     */
+    substitutedFor: DirectorCameraPreset | null;
     keyframes: ResolvedDirectorCameraKeyframe[];
   };
 }
