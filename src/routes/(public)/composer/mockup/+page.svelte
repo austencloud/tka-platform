@@ -10,6 +10,7 @@
   import { FALLBACK_DEMO } from "$lib/shared/landing/data/per-visit-demo";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import ComposerGenerateDemo from "../_components/ComposerGenerateDemo.svelte";
+  import "$lib/shared/landing/styles/editorial-measure.css";
 
   let sequence = $state<SequenceData>(FALLBACK_DEMO);
   const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
@@ -307,8 +308,13 @@
 
   <section class="foundation" aria-label="Relationship to The Kinetic Alphabet">
     <p class="foundation-statement">
+      <!-- The non-breaking space is the fallback for the narrowest phones,
+           where the title cannot fit on one line at any readable size: it makes
+           the only legal break "The Kinetic / Alphabet" instead of stranding
+           "The" alone on a line. Above 23rem the CSS keeps the whole title
+           unbroken and this never comes into play. -->
       Composer is an instrument built for <a href="/notation"
-        >The Kinetic Alphabet</a
+        >The&nbsp;Kinetic Alphabet</a
       >.
     </p>
     <div class="foundation-detail">
@@ -342,8 +348,8 @@
     display: grid;
     grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
     align-items: center;
-    gap: clamp(2rem, 5vw, 6rem);
-    padding: clamp(1rem, 2.5vw, 2.5rem) 0 clamp(4rem, 8vw, 7rem);
+    gap: clamp(2rem, 4.5vw, 80px);
+    padding: clamp(1rem, 2.5vw, 36px) 0 clamp(3rem, 6vw, 100px);
   }
 
   .opening-copy {
@@ -372,11 +378,25 @@
     letter-spacing: -0.035em;
   }
 
+  /* Display-type ceilings are in PX, deliberately, and every one of them on this
+     page follows this rule.
+
+     This page renders inside `.mkt-shell`, so `app.css` ramps the root font from
+     16px to 24px between 1680 and 3840 (see `4k-native-layout.md`). That ramp is
+     right for body copy — reading distance grows with the screen — but it means
+     a clamp ceiling written in `rem` is not a ceiling at all: it rides the ramp
+     and grows 1.5x. This h1 read 110px at 1920 and 156px at 3840 for exactly
+     that reason, and the section headings and the foundation statement were
+     120px and 125px beside it. Nothing on a 4K screen needs 156px display type;
+     the screen is bigger, the letterforms are not further away.
+
+     A px ceiling stops the growth where it should stop. The floor stays in rem
+     so a reader who has raised their browser font size still gets it. */
   h1 {
     margin: 0;
     max-width: 10ch;
     color: oklch(0.97 0.012 270);
-    font-size: clamp(3rem, 2rem + 4vw, 6.5rem);
+    font-size: clamp(3rem, 2rem + 4vw, 104px);
     line-height: 0.92;
   }
 
@@ -385,8 +405,11 @@
     color: oklch(0.79 0.15 278);
   }
 
+  /* Measure comes from the shared token, not a local rem cap: a rem ceiling
+     rides the root ramp and grows 1.5x by 3840, so it stops being a ceiling
+     exactly where one is needed. See editorial-measure.css. */
   .opening-lede {
-    max-width: 37rem;
+    max-inline-size: var(--measure-lede);
     margin: 1.55rem 0 0;
     color: oklch(0.79 0.015 270);
     font-size: clamp(1rem, 0.94rem + 0.32vw, 1.28rem);
@@ -462,6 +485,7 @@
   }
 
   .opening-note {
+    max-inline-size: var(--measure-note);
     margin: 0.9rem 0 0;
     color: oklch(0.74 0.018 270);
     font-size: var(--font-size-min, 0.875rem);
@@ -487,16 +511,21 @@
     filter: blur(1.5rem);
   }
 
+  /* px ceilings on section padding and gutters — see the note on h1. Every one
+     of these was a rem ceiling riding the root ramp, so the page banked more
+     empty space the wider the screen got: 216px of padding per section edge and
+     192px between columns at 3840. Section rhythm should be constant once it is
+     generous; it is the CONTENT that gets the extra 4K width. */
   .keeping {
-    padding-block: clamp(4.5rem, 9vw, 9rem);
+    padding-block: clamp(3rem, 7vw, 112px);
   }
 
   .keeping-intro {
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(18rem, 0.9fr);
-    gap: clamp(2rem, 7vw, 8rem);
+    gap: clamp(2rem, 6vw, 96px);
     align-items: end;
-    margin-bottom: clamp(2.5rem, 5vw, 5rem);
+    margin-bottom: clamp(2.5rem, 4.5vw, 80px);
   }
 
   .keeping-lede > p {
@@ -513,7 +542,7 @@
   }
 
   .making {
-    padding-block: clamp(4.5rem, 9vw, 9rem);
+    padding-block: clamp(3rem, 7vw, 112px);
     border-top: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
   }
 
@@ -521,16 +550,23 @@
     max-width: 18ch;
   }
 
+  /* px ceiling — see the note on h1. Was 5rem, which the root ramp turned into
+     120px at 4K; "One sequence, new views." ran 1862px wide as a result. */
   h2 {
     margin: 0;
     color: oklch(0.96 0.012 270);
-    font-size: clamp(2.45rem, 1.8rem + 2.5vw, 5rem);
+    font-size: clamp(2.45rem, 1.8rem + 2.5vw, 74px);
     line-height: 1;
   }
 
+  /* Body copy is capped in characters, not in rem, and is NOT centered: it
+     stays on the same left grid line as the heading above it. A narrow block
+     centered inside a wide section is the stranded-ribbon failure, which is a
+     different bug from this one, not its cure. */
   .changing-intro > p,
   .keeping-lede > p,
   .foundation-detail p {
+    max-inline-size: var(--measure-prose);
     margin: 1.25rem 0 0;
     color: oklch(0.76 0.014 270);
     font-size: clamp(1rem, 0.94rem + 0.24vw, 1.18rem);
@@ -591,7 +627,7 @@
      17rem of nothing between the two sections — most of a screen at 4K, where
      the root ramp scales every rem. The seam is one generous gap, not two. */
   .changing {
-    padding: clamp(2.5rem, 3.5vw, 4rem) 0 clamp(5rem, 10vw, 10rem);
+    padding: clamp(2.5rem, 3.5vw, 56px) 0 clamp(3rem, 8vw, 128px);
   }
 
   /* The tunnel is a square stage that fills its column, so a wide column makes
@@ -697,6 +733,7 @@
 
   .small-screen-3d-note {
     display: none;
+    max-inline-size: var(--measure-note);
     margin: 1.4rem 0 0;
     color: oklch(0.74 0.018 270);
     font-size: var(--font-size-min, 0.875rem);
@@ -765,25 +802,51 @@
     );
   }
 
+  /* px ceilings on the gap and the padding — see the note on h1. In rem these
+     came out at 192px of gutter and 264px of padding above AND below at 3840,
+     so 528px of a 914px section was empty and the sentence that is the whole
+     point of the section was a 386px strip floating in it. */
   .foundation {
     display: grid;
     grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
-    gap: clamp(2rem, 7vw, 8rem);
+    gap: clamp(2rem, 6vw, 96px);
     align-items: center;
-    padding-block: clamp(5rem, 11vw, 11rem);
+    padding-block: clamp(3rem, 8vw, 128px);
   }
 
+  /* px ceiling (was 5.2rem → 124.8px at 4K, which is what forced the phrase
+     "The Kinetic Alphabet" to break across two lines).
+
+     `text-wrap: balance` because this is one sentence set large: without it the
+     browser fills each line greedily and leaves a short widow, and the widow
+     lands on the link. `nowrap` on the link keeps the title atomic — a proper
+     noun is one thing, not three words.
+
+     The floor is 2rem rather than 2.25rem so that nowrap is safe on a phone.
+     "The Kinetic Alphabet" in this face measures 9.45x the font size, and an
+     iPhone SE gives the statement 339px: the old 2.25rem floor bound at that
+     width and forced 36px, which needs 340px and overflowed by a hair. Letting
+     the vw term win there gives 34.9px and 330px, which fits. The nowrap gate
+     at 23rem is the narrowest width where it still fits; below it the markup's
+     non-breaking space takes over. */
   .foundation-statement {
     margin: 0;
     color: oklch(0.94 0.018 270);
-    font-size: clamp(2.25rem, 1.55rem + 2.7vw, 5.2rem);
+    font-size: clamp(2rem, 1.55rem + 2.7vw, 76px);
     line-height: 1.03;
+    text-wrap: balance;
   }
 
   .foundation-statement a {
     color: oklch(0.79 0.15 278);
     text-decoration-color: oklch(0.79 0.15 278 / 0.38);
     text-underline-offset: 0.12em;
+  }
+
+  @media (min-width: 23rem) {
+    .foundation-statement a {
+      white-space: nowrap;
+    }
   }
 
   .foundation-detail .secondary-action {
@@ -883,7 +946,7 @@
     }
 
     .opening-lede {
-      max-width: 33rem;
+      max-inline-size: var(--measure-lede);
       margin: 0.8rem 0 0;
       font-size: var(--font-size-min, 0.875rem);
       line-height: 1.45;
