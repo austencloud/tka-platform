@@ -426,6 +426,11 @@
     displayState.prepareSequenceAnimation(stepCount, "sequential");
   }
 
+  /** Fade this grid instance out ahead of a regeneration reveal. */
+  export function clearGenerationAnimation(): void {
+    displayState.handleClearSequence();
+  }
+
   // Helper to trigger cycle extension animation (only new beats)
   async function triggerCycleExtensionAnimation(startFromIndex: number) {
     if (!containerRef) return;
@@ -554,6 +559,10 @@
     );
   };
 
+  const handleClearSequenceAnimation = () => {
+    displayState.handleClearSequence();
+  };
+
   const handlePrepareSequenceAnimation = (event: Event) => {
     const customEvent = event as CustomEvent;
     displayState.prepareSequenceAnimation(
@@ -573,6 +582,10 @@
   onMount(() => {
     window.addEventListener("animation-mode-change", handleAnimationModeChange);
     window.addEventListener(
+      "clear-sequence-animation",
+      handleClearSequenceAnimation
+    );
+    window.addEventListener(
       "prepare-sequence-animation",
       handlePrepareSequenceAnimation
     );
@@ -585,6 +598,10 @@
       window.removeEventListener(
         "animation-mode-change",
         handleAnimationModeChange
+      );
+      window.removeEventListener(
+        "clear-sequence-animation",
+        handleClearSequenceAnimation
       );
       window.removeEventListener(
         "prepare-sequence-animation",

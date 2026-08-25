@@ -62,11 +62,18 @@
   );
 
   let gridRef:
-    | { prepareGenerationAnimation: (stepCount: number) => void }
+    | {
+        prepareGenerationAnimation: (stepCount: number) => void;
+        clearGenerationAnimation: () => void;
+      }
     | undefined = $state();
 
   export function prepareGenerationAnimation(stepCount: number): void {
     gridRef?.prepareGenerationAnimation(stepCount);
+  }
+
+  export function clearGenerationAnimation(): void {
+    gridRef?.clearGenerationAnimation();
   }
 </script>
 

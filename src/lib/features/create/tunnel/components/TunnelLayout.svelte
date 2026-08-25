@@ -29,12 +29,12 @@
   let syncingGenerationSequence = false;
   let syncedGenerationSource = $state<string | null>(null);
   let generateCurrentRecipe = $state<(() => Promise<void>) | null>(null);
-  let performerOneCard:
-    | { prepareGenerationAnimation: (stepCount: number) => void }
-    | undefined = $state();
-  let performerTwoCard:
-    | { prepareGenerationAnimation: (stepCount: number) => void }
-    | undefined = $state();
+  type GenerationCardRef = {
+    prepareGenerationAnimation: (stepCount: number) => void;
+    clearGenerationAnimation: () => void;
+  };
+  let performerOneCard: GenerationCardRef | undefined = $state();
+  let performerTwoCard: GenerationCardRef | undefined = $state();
   const generationSequenceState = createSequenceState({
     onCurrentSequenceChange(sequence) {
       if (syncingGenerationSequence || !sequence || !creator.generationTargetId)
@@ -115,6 +115,9 @@
     },
   ] as const;
   const generationAnimationTarget: GenerationAnimationTarget = {
+    clear() {
+      generationTargetCard()?.clearGenerationAnimation();
+    },
     prepare(stepCount) {
       generationTargetCard()?.prepareGenerationAnimation(stepCount);
     },

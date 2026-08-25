@@ -10,7 +10,6 @@ import type { SequenceState } from "$lib/features/create/shared/state/sequence-s
 import { setPendingGenerationAnimation } from "$lib/features/create/shared/workspace-panel/sequence-display/state/step-grid-display-state.svelte";
 import { clearArrowPositionCache } from "$lib/shared/pictograph/arrow/rendering/arrow-position-cache";
 import { clearPropPositionCache } from "$lib/shared/pictograph/prop/prop-position-cache";
-import { retargetStepPositionCaches } from "$lib/features/create/shared/services/step-position-cache-retarget";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { GenerationOptions } from "../shared/domain/models/generate-models";
 import { GenerationMode } from "../shared/domain/models/generate-models";
@@ -59,6 +58,7 @@ import { getVariationExplorationOrchestrator } from "$lib/features/create/spell/
 import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-manager";
 
 export interface GenerationAnimationTarget {
+  clear(): void;
   prepare(stepCount: number, isSequential: boolean): void;
 }
 
@@ -715,23 +715,23 @@ export function createGenerationActionsState(
       const sequenceState = getSequenceState?.();
       if (!sequenceState) return;
 
-      const existingSteps = sequenceState.getCurrentSteps();
       const animationTarget = getAnimationTarget?.();
+      const hasExistingSequence = sequenceState.getCurrentSteps().length > 0;
 
-      if (existingSteps.length > 0) {
-        // Regeneration swaps the sequence in place, Fuse-Regenerate style: the
-        // position caches are re-filed under the incoming step identities so
-        // each remounted pictograph starts at its slot's previous prop/arrow
-        // positions and glides to the new ones. No clear-out, no hidden cells,
-        // no reveal wave — those belong to the empty-grid first generation.
-        retargetStepPositionCaches(existingSteps, sequence.steps);
-        sequenceState.setCurrentSequence(sequence);
-        return;
+      // An occupied grid fades out first so the reveal always starts from an
+      // empty stage — the wave reads as the new sequence arriving, not as the
+      // old one being overwritten.
+      if (hasExistingSequence) {
+        if (animationTarget) {
+          animationTarget.clear();
+        } else {
+          window.dispatchEvent(new CustomEvent("clear-sequence-animation"));
+        }
+        await new Promise((resolve) => setTimeout(resolve, 300));
       }
 
-      // First generation into an empty grid has nothing on screen to glide
-      // from. Flush stale positions so the incoming steps render at their
-      // correct locations, then run the cascading reveal.
+      // Flush stale positions so incoming steps render at their correct
+      // locations immediately rather than animating from the old sequence's spots.
       clearArrowPositionCache();
       clearPropPositionCache();
 

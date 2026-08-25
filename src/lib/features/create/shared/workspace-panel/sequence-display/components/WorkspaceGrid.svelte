@@ -588,7 +588,7 @@
     const signature = layoutSignature;
     const epoch = historyTransitionEpoch;
     const plan = historyTransition;
-    const suspended = isClearing;
+    const suspended = isClearing || displayState.isClearingForGeneration;
 
     const previousSignature = lastLayoutSignature;
     const previousEpoch = lastHistoryEpoch;
@@ -792,7 +792,7 @@
     class:standard={!isTimelineMode}
     class:timeline={isTimelineMode}
     class:assemble-surface={activeMode === "assemble"}
-    class:clearing={isClearing}
+    class:clearing={isClearing || displayState.isClearingForGeneration}
     data-arrival-phase={arrivalRequest?.phase}
     style:--cell-size="{cellSize}px"
     style:--grid-center-offset="{standardGridCenterOffset}px"
