@@ -23,6 +23,7 @@ instead of showing an empty shell.
 -->
 <script lang="ts">
   import { onMount, type Component } from "svelte";
+  import { dev } from "$app/environment";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
@@ -34,6 +35,7 @@ instead of showing an empty shell.
   import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
   import { scene3dCollectionState } from "$lib/features/scene-3d-collection/state/scene-3d-collection-state.svelte";
   import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
+  import { filmCollectionState } from "$lib/features/film-collection/state/film-collection-state.svelte";
   import CollectionCard from "./CollectionCard.svelte";
   import CollectionAddTile from "./CollectionAddTile.svelte";
   import CollectionDetailView from "./CollectionDetailView.svelte";
@@ -60,6 +62,19 @@ instead of showing an empty shell.
 
   const signedIn = $derived(!!authState.user);
   const previewReadOnly = $derived(userPreviewState.isActive);
+
+  /**
+   * The Films shelf is the director's, and the director is not public.
+   *
+   * `dev` as well as admin because the director still lives under `/test/`,
+   * which `src/routes/test/+layout.ts` redirects away in production — a Films
+   * card there would list films that cannot be opened. That half comes off when
+   * the director gets a real route.
+   *
+   * Not during a user preview: the film collection is never previewed, so the
+   * shelf would show the admin's own films beside the previewed user's art.
+   */
+  const canSeeFilms = $derived(dev && authState.isAdmin && !previewReadOnly);
   const browseNavigationState = getBrowseNavigationContext();
   const sharedCollectionsState = getSharedCollectionsContext();
   const sharedCollections = $derived(sharedCollectionsState.items);
@@ -79,6 +94,7 @@ instead of showing an empty shell.
       tunnelCollectionState.ensureStarted(signedInUserId);
       scene3dCollectionState.ensureStarted(signedInUserId);
       mandalaCollectionState.ensureStarted(signedInUserId);
+      if (canSeeFilms) filmCollectionState.ensureStarted(signedInUserId);
     }
 
     if (previewReadOnly && effectiveUserId) {
@@ -322,7 +338,12 @@ instead of showing an empty shell.
   // gallery components are the former Playground tabs, lazy-mounted here.
   const ART_DETAIL: Record<
     string,
-    { label: string; load: () => Promise<{ default: Component }> }
+    {
+      label: string;
+      load: () => Promise<{ default: Component }>;
+      /** Hidden, and unresolvable from a stale link, unless `canSeeFilms`. */
+      adminOnly?: boolean;
+    }
   > = {
     art_tunnels: {
       label: "Tunnels",
@@ -338,10 +359,18 @@ instead of showing an empty shell.
       label: "Mandalas",
       load: () => import("$lib/features/mandala/MandalaModule.svelte"),
     },
+    art_films: {
+      label: "Films",
+      adminOnly: true,
+      load: () =>
+        import("$lib/features/film-collection/FilmCollectionGallery.svelte"),
+    },
   };
 
   function isArtId(id: string): boolean {
-    return id in ART_DETAIL;
+    const entry = ART_DETAIL[id];
+    if (!entry) return false;
+    return entry.adminOnly ? canSeeFilms : true;
   }
 
   function isPerformancesId(id: string): boolean {
@@ -353,6 +382,7 @@ instead of showing an empty shell.
       art_tunnels: "tunnel",
       art_scenes: "scene",
       art_mandala: "mandala",
+      art_films: "film",
     };
     const visualType = typeById[id];
     if (visualType) trackBrowseVisualTypeOpened(visualType);
@@ -378,7 +408,7 @@ instead of showing an empty shell.
     id: string,
     name: string,
     icon: string,
-    tabId: string,
+    color: string,
     sequenceCount: number,
     coverImageUrl?: string
   ): LibraryCollection {
@@ -389,7 +419,7 @@ instead of showing an empty shell.
       sequenceIds: [],
       sequenceCount,
       coverImageUrl,
-      color: playgroundTabColor(tabId),
+      color,
       icon,
       isPublic: false,
       sortOrder: 0,
@@ -403,7 +433,7 @@ instead of showing an empty shell.
       "art_tunnels",
       "Tunnels",
       "fa-fan",
-      "tunnels",
+      playgroundTabColor("tunnels"),
       tunnelCollectionState.collection.length,
       tunnelCollectionState.collection[0]?.poster
     )
@@ -413,7 +443,7 @@ instead of showing an empty shell.
       "art_scenes",
       "3D Scenes",
       "fa-cube",
-      "scenes",
+      playgroundTabColor("scenes"),
       scene3dCollectionState.collection.length,
       scene3dCollectionState.collection[0]?.poster
     )
@@ -424,9 +454,21 @@ instead of showing an empty shell.
       "art_mandala",
       "Mandalas",
       "fa-dharmachakra",
-      "mandala",
+      playgroundTabColor("mandala"),
       mandalaCollectionState.collection.length,
       undefined
+    )
+  );
+  const filmsArtCard = $derived(
+    // Films were never a Playground tab, so the amber is declared here rather
+    // than borrowed — it has to stay distinct from tunnels, scenes, mandalas.
+    artCollection(
+      "art_films",
+      "Films",
+      "fa-clapperboard",
+      "#fbbf24",
+      filmCollectionState.collection.length,
+      filmCollectionState.collection[0]?.poster
     )
   );
 
@@ -627,6 +669,15 @@ instead of showing an empty shell.
     countLabel={unitLabel(mandalaArtCard.sequenceCount, "mandala", "mandalas")}
     onOpen={() => openArtDetail("art_mandala")}
   />
+  {#if canSeeFilms}
+    <CollectionCard
+      collection={filmsArtCard}
+      readonly
+      selected={!!sel && !sel.ownerId && sel.id === "art_films"}
+      countLabel={unitLabel(filmsArtCard.sequenceCount, "film", "films")}
+      onOpen={() => openArtDetail("art_films")}
+    />
+  {/if}
 {/snippet}
 
 {#snippet artDetail(artId: string, showBack: boolean)}

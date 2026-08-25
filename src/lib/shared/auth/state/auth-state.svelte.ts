@@ -842,6 +842,18 @@ export async function signOut(): Promise<void> {
     }
 
     try {
+      const [{ scene3dCollectionState }, { filmCollectionState }] =
+        await Promise.all([
+          import("$lib/features/scene-3d-collection/state/scene-3d-collection-state.svelte"),
+          import("$lib/features/film-collection/state/film-collection-state.svelte"),
+        ]);
+      scene3dCollectionState.teardown();
+      filmCollectionState.teardown();
+    } catch {
+      // Scene/film collections may not be loaded - that's ok
+    }
+
+    try {
       const [{ collectionsState }, { followedCollectionsState }] =
         await Promise.all([
           import("$lib/features/library/state/collections-state.svelte"),

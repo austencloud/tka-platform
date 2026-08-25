@@ -2,34 +2,61 @@ import { describe, expect, it } from "vitest";
 
 import {
   parseFilmKey,
+  savedFilmHref,
   savedFilmKey,
-} from "../../../src/routes/test/film-director/_lib/film-key";
+} from "$lib/features/film-director/domain/film-director-link";
+
+import { isLibraryFilmKey } from "../../../src/routes/test/film-director/_films/index";
+
+/** The registry the Director itself passes in. */
+const parse = (raw: string | null) => parseFilmKey(raw, isLibraryFilmKey);
 
 describe("parseFilmKey", () => {
   it("resolves a library key", () => {
-    expect(parseFilmKey("star")).toEqual({ kind: "library", key: "star" });
+    expect(parse("star")).toEqual({ kind: "library", key: "star" });
   });
 
   it("resolves a saved id", () => {
-    expect(parseFilmKey("saved:abc123")).toEqual({ kind: "saved", id: "abc123" });
+    expect(parse("saved:abc123")).toEqual({ kind: "saved", id: "abc123" });
   });
 
   it("treats a key the library does not have as unknown", () => {
-    expect(parseFilmKey("nope")).toEqual({ kind: "unknown" });
+    expect(parse("nope")).toEqual({ kind: "unknown" });
   });
 
   it("treats missing and empty values as unknown", () => {
-    expect(parseFilmKey(null)).toEqual({ kind: "unknown" });
-    expect(parseFilmKey("")).toEqual({ kind: "unknown" });
-    expect(parseFilmKey("saved:")).toEqual({ kind: "unknown" });
+    expect(parse(null)).toEqual({ kind: "unknown" });
+    expect(parse("")).toEqual({ kind: "unknown" });
+    expect(parse("saved:")).toEqual({ kind: "unknown" });
   });
 
   it("keeps a saved id that would otherwise collide with a library key", () => {
     // The prefix is the only thing keeping the two namespaces apart.
-    expect(parseFilmKey("saved:star")).toEqual({ kind: "saved", id: "star" });
+    expect(parse("saved:star")).toEqual({ kind: "saved", id: "star" });
   });
 
   it("round-trips a saved id through the key it builds", () => {
-    expect(parseFilmKey(savedFilmKey("xyz"))).toEqual({ kind: "saved", id: "xyz" });
+    expect(parse(savedFilmKey("xyz"))).toEqual({ kind: "saved", id: "xyz" });
+  });
+});
+
+describe("savedFilmHref", () => {
+  it("round-trips through the URL the Library links to", () => {
+    const url = new URL(savedFilmHref("abc123"), "https://example.test");
+    expect(url.pathname).toBe("/test/film-director");
+    expect(parse(url.searchParams.get("film"))).toEqual({
+      kind: "saved",
+      id: "abc123",
+    });
+  });
+
+  it("encodes an id that would otherwise break the query string", () => {
+    const href = savedFilmHref("a&b=c");
+    expect(href).not.toContain("&b=");
+    const url = new URL(href, "https://example.test");
+    expect(parse(url.searchParams.get("film"))).toEqual({
+      kind: "saved",
+      id: "a&b=c",
+    });
   });
 });

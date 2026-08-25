@@ -7,6 +7,7 @@
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   import type { CollectedFilm } from "./domain/film-collection-types";
+  import { openSavedFilm } from "./services/open-film";
   import { filmCollectionState } from "./state/film-collection-state.svelte";
 
   let {
@@ -16,6 +17,17 @@
     onopen?: (film: CollectedFilm) => void;
     emptyHint?: string;
   } = $props();
+
+  // The Library mounts this shelf with no props, so opening has to work without
+  // a host supplying it. A host already on the Director (the marquee) passes
+  // `onopen` and swaps the stage in place rather than navigating to itself.
+  function openFilm(film: CollectedFilm): void {
+    if (onopen) {
+      onopen(film);
+      return;
+    }
+    void openSavedFilm(film);
+  }
 
   const films = $derived(filmCollectionState.collection);
   const loading = $derived(filmCollectionState.loading);
@@ -96,7 +108,7 @@
           <button
             class="poster-button"
             type="button"
-            onclick={() => onopen?.(film)}
+            onclick={() => openFilm(film)}
             aria-label={`Open ${film.name}`}
           >
             <span class="poster">
@@ -168,6 +180,7 @@
   .film-collection {
     display: grid;
     gap: 0.85rem;
+    container-type: inline-size;
   }
 
   .shelf-head {
@@ -193,25 +206,54 @@
     font-size: var(--font-size-compact, 0.85rem);
   }
 
-  /* Fixed-width tiles that wrap, rather than a column count: the number of
-     saved films is user-driven, so a tile keeps one size and the shelf around
-     it shrink-wraps instead of stretching three tiles across a wide panel. */
+  /* The film count is user-driven, so columns come from auto-fill — but the
+     FLOOR steps up per container tier. A single floor would answer a wider host
+     with more, thinner posters instead of bigger ones. Matches the sibling art
+     galleries (Scene3DCollectionModule), which face the same open-ended count.
+     Tiers are container-relative because this shelf has two very different
+     hosts: the director's marquee and the Library's detail pane. */
   .grid {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    /* auto-FIT, not auto-fill: a five-film shelf on a 3300px pane would
+       otherwise leave three empty tracks of dead rail on the right. The upper
+       bound is what keeps auto-fit honest in the other direction — without it,
+       one saved film becomes a pane-wide billboard. */
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    justify-content: start;
     gap: 0.75rem;
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
+  @container (min-width: 34rem) {
+    .grid {
+      /* No upper bound yet: only two or three columns fit at this size, so a
+         cap would strand a column's worth of rail instead of a billboard. */
+      grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+      gap: 1rem;
+    }
+  }
+
+  @container (min-width: 64rem) {
+    .grid {
+      grid-template-columns: repeat(auto-fit, minmax(19rem, 24rem));
+      gap: 1.25rem;
+    }
+  }
+
+  @container (min-width: 100rem) {
+    .grid {
+      grid-template-columns: repeat(auto-fit, minmax(23rem, 34rem));
+      gap: 1.5rem;
+    }
+  }
+
   .tile {
     position: relative;
     display: grid;
-    /* 13rem normally; on a narrow host, exactly half the row minus the gap so
-       phones always get two-up instead of a single stranded column. */
-    width: min(13rem, calc(50% - 0.375rem));
     gap: 0.4rem;
+    min-width: 0;
   }
 
   .poster-button {
@@ -262,7 +304,9 @@
   .tile-name {
     overflow: hidden;
     color: var(--theme-text, #fff);
-    font-size: var(--font-size-compact, 0.85rem);
+    /* Not --font-size-compact: that resolves to 12px, and the film's name is
+       the tile's essential text, not metadata. */
+    font-size: 0.9rem;
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -285,7 +329,8 @@
     color: var(--theme-text, #fff);
     background: var(--theme-panel-bg, #10111b);
     font: inherit;
-    font-size: var(--font-size-compact, 0.85rem);
+    /* Matches .tile-name, which it replaces in place. */
+    font-size: 0.9rem;
   }
 
   .tile-actions {

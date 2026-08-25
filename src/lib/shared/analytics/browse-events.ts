@@ -19,7 +19,10 @@ export type BrowseCollectionEntry =
   | "shared-card"
   | "performance-shelf";
 
-export type BrowseVisualType = "tunnel" | "mandala" | "scene";
+// Not the same union as the router's BrowseVisualType (browse-route-resolver):
+// that one names the /browse/you/visuals/* segments, and films deliberately have
+// no public visuals route. This one only labels the event.
+export type BrowseVisualType = "tunnel" | "mandala" | "scene" | "film";
 export type TunnelEditEntry = "gallery-card" | "detail";
 
 export function trackBrowseDestinationEntered(

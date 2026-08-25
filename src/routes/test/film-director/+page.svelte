@@ -5,10 +5,10 @@
   import { page } from "$app/state";
   import type { CollectedFilm } from "$lib/features/film-collection/domain/film-collection-types";
   import { filmCollectionState } from "$lib/features/film-collection/state/film-collection-state.svelte";
+  import { parseFilmKey } from "$lib/features/film-director/domain/film-director-link";
   import FilmDirectorMarquee from "./_components/FilmDirectorMarquee.svelte";
-  import { getLibraryFilm } from "./_films/index";
+  import { getLibraryFilm, isLibraryFilmKey } from "./_films/index";
   import type { FilmDirectorInput } from "./_lib/film-director-schema";
-  import { parseFilmKey } from "./_lib/film-key";
   import type { FilmOrigin } from "./_lib/film-origin";
 
   type WorkbenchComponent =
@@ -23,7 +23,10 @@
   // `stage` — entering and leaving replace it whole — so raw loses nothing.
   let stage = $state.raw<Stage | null>(null);
 
-  const requested = parseFilmKey(page.url.searchParams.get("film"));
+  const requested = parseFilmKey(
+    page.url.searchParams.get("film"),
+    isLibraryFilmKey
+  );
 
   // A saved link waits on the marquee while the collection loads rather than
   // booting an unrelated film and swapping it out. A link to an entry the user
