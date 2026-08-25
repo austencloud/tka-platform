@@ -6,10 +6,43 @@
  * an identical result: the seeded axis streams are the only randomness, so
  * two resolutions of the same input must agree bit for bit.
  */
+import { readFileSync, statSync } from "node:fs";
+import { resolve as resolvePath } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { FILM_LIBRARY } from "../../../src/routes/test/film-director/_films/index";
 import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/_lib/resolve-film-director-spec";
+
+/** What scripts/build-film-posters.mjs writes. */
+const POSTER_WIDTH = 960;
+const POSTER_HEIGHT = 540;
+const POSTER_MAX_BYTES = 220 * 1024;
+
+/**
+ * Read a WebP's dimensions from its container header.
+ *
+ * Hand-parsed rather than decoded with sharp: the size is four bytes at a fixed
+ * offset, and a unit test should not pull a native image codec in to read them.
+ */
+function readWebpSize(file: Buffer): { width: number; height: number } {
+  expect(file.subarray(0, 4).toString("ascii")).toBe("RIFF");
+  expect(file.subarray(8, 12).toString("ascii")).toBe("WEBP");
+  const fourcc = file.subarray(12, 16).toString("ascii");
+  if (fourcc === "VP8 ") {
+    return {
+      width: file.readUInt16LE(26) & 0x3fff,
+      height: file.readUInt16LE(28) & 0x3fff,
+    };
+  }
+  if (fourcc === "VP8X") {
+    return {
+      width: (file.readUIntLE(24, 3) & 0xffffff) + 1,
+      height: (file.readUIntLE(27, 3) & 0xffffff) + 1,
+    };
+  }
+  throw new Error(`Unsupported WebP chunk "${fourcc}"`);
+}
 
 describe("film library", () => {
   it("has unique keys and film ids", () => {
@@ -33,6 +66,34 @@ describe("film library", () => {
         const first = resolveFilmDirectorSpec(entry.film);
         const second = resolveFilmDirectorSpec(entry.film);
         expect(second).toEqual(first);
+      });
+
+      it("names a poster cue that still lands inside its scene", () => {
+        const resolved = resolveFilmDirectorSpec(entry.film);
+        const scene = resolved.scenes.find(
+          (candidate) => candidate.id === entry.poster.sceneId
+        );
+        expect(
+          scene,
+          `poster cue names scene "${entry.poster.sceneId}", which this film does not have`
+        ).toBeDefined();
+        expect(entry.poster.offsetSeconds).toBeGreaterThanOrEqual(0);
+        expect(entry.poster.offsetSeconds).toBeLessThan(scene!.durationSeconds);
+      });
+
+      it("has a baked poster at the size the marquee reserves", () => {
+        expect(entry.poster.src).toBe(`/films/posters/${entry.key}.webp`);
+        const path = resolvePath("static", entry.poster.src.slice(1));
+        expect(
+          statSync(path, { throwIfNoEntry: false }),
+          `${path} is missing. Run: node scripts/build-film-posters.mjs --only ${entry.key}`
+        ).toBeDefined();
+        const file = readFileSync(path);
+        expect(file.byteLength).toBeLessThanOrEqual(POSTER_MAX_BYTES);
+        expect(readWebpSize(file)).toEqual({
+          width: POSTER_WIDTH,
+          height: POSTER_HEIGHT,
+        });
       });
     });
   }
