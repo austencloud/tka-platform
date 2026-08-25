@@ -13,6 +13,11 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { consumeSceneStudioHandoff } from "$lib/features/scene-3d-collection/services/open-3d-scene";
+  import Scene3DSetupGuide from "$lib/shared/3d/components/onboarding/Scene3DSetupGuide.svelte";
+  import {
+    isViewer3DIntroReplayRequested,
+    shouldShowSceneStudioSetup,
+  } from "$lib/shared/onboarding/state/viewer3d-intro-state";
 
   import SceneExportModal from "./components/SceneExportModal.svelte";
   import { createSceneVideoExport } from "./services/create-scene-video-export.svelte";
@@ -68,6 +73,15 @@
   let pickerOpen = $state(false);
   let exportOpen = $state(false);
   let loadedSequence = $state<SequenceData | null>(null);
+
+  // The Studio is the one surface where "pick your stage" is a real question:
+  // you arrive with nothing on it and build a scene to record. The guide waits
+  // for choreography, because there is nothing to stage until then.
+  const replaySetupGuide = isViewer3DIntroReplayRequested();
+  let setupGuideUnseen = $state(
+    replaySetupGuide || shouldShowSceneStudioSetup()
+  );
+  const showSetupGuide = $derived(Boolean(sequence) && setupGuideUnseen);
 
   const playback = createPlaybackState({
     persistenceKey: "tka-scene-studio-playback",
@@ -167,6 +181,12 @@
       renderEmptyScene
       contained
     />
+    {#if showSetupGuide}
+      <Scene3DSetupGuide
+        force={replaySetupGuide}
+        onDismiss={() => (setupGuideUnseen = false)}
+      />
+    {/if}
     {#if !sequence}
       <div class="start-prompt" aria-labelledby="start-scene-title">
         <div class="prompt-copy">

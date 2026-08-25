@@ -24,8 +24,10 @@ export interface OnboardingStatus {
   appCompletedAt: string | null;
   /** Last version user has seen in What's New modal */
   lastSeenVersion: string | null;
-  /** Whether the first-ever 3D viewer guided setup has been shown */
+  /** Whether the sequence viewer's first-open rail pointer has been shown */
   viewer3DIntroSeen: boolean;
+  /** Whether the 3D Studio's first-run guided scene setup has been shown */
+  sceneStudioSetupSeen: boolean;
   /** Durable profile-completion choices and reminder policy. */
   accountSetup: AccountSetupProgress;
 }

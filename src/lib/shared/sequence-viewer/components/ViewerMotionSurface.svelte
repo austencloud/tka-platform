@@ -10,7 +10,7 @@
   import ContactViewerRequired from "$lib/shared/3d/components/ContactViewerRequired.svelte";
   import { sceneNeedsContactViewer } from "$lib/shared/3d/domain/prop-motion-discipline";
   import VisualSequenceSaveContextMenuHost from "$lib/shared/library/components/VisualSequenceSaveContextMenuHost.svelte";
-  import Viewer3DIntro from "$lib/shared/3d/components/onboarding/Viewer3DIntro.svelte";
+  import Viewer3DRailHint from "$lib/shared/3d/components/onboarding/Viewer3DRailHint.svelte";
   import {
     isViewer3DIntroReplayRequested,
     shouldShowViewer3DIntro,
@@ -70,8 +70,11 @@
   const loadViewer3DCanvas = () =>
     import("$lib/shared/3d/components/Viewer3DCanvas.svelte");
   let scene3DReady = $state(false);
-  // `?intro=replay` forces the guided card back on a profile that has already
-  // finished it, and `force` keeps that replay from re-marking it seen.
+  // The viewer can never be unconfigured, so its first-open guidance points at
+  // the rail rather than walking a setup it already completed to draw a frame.
+  // Building a scene from nothing lives in the 3D Studio (Scene3DSetupGuide).
+  // `?intro=replay` forces the hint back on a profile that has dismissed it,
+  // and `force` keeps that replay from re-marking it seen.
   const replayViewer3DIntro = isViewer3DIntroReplayRequested();
   let showViewer3DIntro = $state(
     replayViewer3DIntro || shouldShowViewer3DIntro()
@@ -366,7 +369,7 @@
       onLayoutChange={(next) => (sceneControlLayout = next)}
     />
     {#if is3DActive && scene3DReady && showViewer3DIntro}
-      <Viewer3DIntro
+      <Viewer3DRailHint
         onSettingChange={onViewer3DSettingChange}
         force={replayViewer3DIntro}
         onDismiss={() => (showViewer3DIntro = false)}

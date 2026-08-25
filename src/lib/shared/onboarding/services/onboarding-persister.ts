@@ -34,6 +34,7 @@ import {
   ONBOARDING_COMPLETED_AT_KEY,
   ONBOARDING_SKIPPED_KEY,
   VIEWER3D_INTRO_SEEN_KEY,
+  SCENE_STUDIO_SETUP_SEEN_KEY,
 } from "../config/storage-keys";
 import {
   createDefaultAccountSetupProgress,
@@ -78,6 +79,7 @@ export class OnboardingPersister {
       appCompletedAt: null,
       lastSeenVersion: null,
       viewer3DIntroSeen: false,
+      sceneStudioSetupSeen: false,
       accountSetup: createDefaultAccountSetupProgress(),
     };
   }
@@ -100,6 +102,8 @@ export class OnboardingPersister {
     const lastSeenVersion = localStorage.getItem(LAST_SEEN_VERSION_KEY) || null;
     const viewer3DIntroSeen =
       localStorage.getItem(VIEWER3D_INTRO_SEEN_KEY) === "true";
+    const sceneStudioSetupSeen =
+      localStorage.getItem(SCENE_STUDIO_SETUP_SEEN_KEY) === "true";
 
     let accountSetup = createDefaultAccountSetupProgress();
     const storedAccountSetup = localStorage.getItem(ACCOUNT_SETUP_PROGRESS_KEY);
@@ -119,6 +123,7 @@ export class OnboardingPersister {
       appCompletedAt,
       lastSeenVersion,
       viewer3DIntroSeen,
+      sceneStudioSetupSeen,
       accountSetup,
     };
   }
@@ -168,6 +173,12 @@ export class OnboardingPersister {
       removeLocalStorageItem(VIEWER3D_INTRO_SEEN_KEY);
     }
 
+    if (status.sceneStudioSetupSeen) {
+      safeLocalStorageSetItem(SCENE_STUDIO_SETUP_SEEN_KEY, "true");
+    } else {
+      removeLocalStorageItem(SCENE_STUDIO_SETUP_SEEN_KEY);
+    }
+
     safeLocalStorageSetItem(
       ACCOUNT_SETUP_PROGRESS_KEY,
       JSON.stringify(normalizeAccountSetupProgress(status.accountSetup))
@@ -198,6 +209,7 @@ export class OnboardingPersister {
         // Last seen version
         status.lastSeenVersion = data.lastSeenVersion ?? null;
         status.viewer3DIntroSeen = data.viewer3DIntroSeen ?? false;
+        status.sceneStudioSetupSeen = data.sceneStudioSetupSeen ?? false;
         status.accountSetup = normalizeAccountSetupProgress(data.accountSetup);
 
         this.cachedStatus = status;
@@ -298,6 +310,17 @@ export class OnboardingPersister {
   }
 
   /**
+   * Mark the 3D Studio's first-run guided scene setup as seen. Separate from
+   * the viewer's pointer: dismissing a hint is not the same as having been
+   * walked through building a scene.
+   */
+  async markSceneStudioSetupSeen(): Promise<void> {
+    const status = this.cachedStatus || (await this.loadStatus());
+    status.sceneStudioSetupSeen = true;
+    await this.saveStatus(status);
+  }
+
+  /**
    * Stage app-entry's terminal marker and the app-wide status in the caller's
    * batch. The explicit user ID prevents an auth or admin-preview change from
    * splitting the two documents across accounts.
@@ -358,6 +381,7 @@ export class OnboardingPersister {
           // Last seen version
           status.lastSeenVersion = data.lastSeenVersion ?? null;
           status.viewer3DIntroSeen = data.viewer3DIntroSeen ?? false;
+          status.sceneStudioSetupSeen = data.sceneStudioSetupSeen ?? false;
           status.accountSetup = normalizeAccountSetupProgress(
             data.accountSetup
           );
@@ -401,8 +425,15 @@ export class OnboardingPersister {
           localStatus.appSkipped || cloudStatus.appSkipped;
         mergedStatus.appCompletedAt =
           localStatus.appCompletedAt || cloudStatus.appCompletedAt || null;
-        mergedStatus.viewer3DIntroSeen =
-          localStatus.viewer3DIntroSeen || cloudStatus.viewer3DIntroSeen;
+        // Coerced, not just OR-ed: a cloud document written before a flag
+        // existed has no such field, and `false || undefined` is `undefined`,
+        // which setDoc rejects outright.
+        mergedStatus.viewer3DIntroSeen = Boolean(
+          localStatus.viewer3DIntroSeen || cloudStatus.viewer3DIntroSeen
+        );
+        mergedStatus.sceneStudioSetupSeen = Boolean(
+          localStatus.sceneStudioSetupSeen || cloudStatus.sceneStudioSetupSeen
+        );
 
         // Last seen version: keep the higher one (numeric semver compare, so
         // "0.10.0" correctly beats "0.9.0" — a plain string compare gets this

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import Viewer3DIntro from "$lib/shared/3d/components/onboarding/Viewer3DIntro.svelte";
+  import Scene3DSetupGuide from "$lib/shared/3d/components/onboarding/Scene3DSetupGuide.svelte";
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
 
@@ -12,13 +12,13 @@
 </script>
 
 <svelte:head>
-  <title>Viewer 3D intro</title>
+  <title>3D scene setup guide</title>
   <meta name="description" content="Guided setup overlay test surface." />
 </svelte:head>
 
 <main class="stage-stand-in">
   <div class="stage-glow" aria-hidden="true"></div>
-  <Viewer3DIntro force />
+  <Scene3DSetupGuide force />
 </main>
 
 <style>

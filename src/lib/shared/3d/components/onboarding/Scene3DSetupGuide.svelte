@@ -11,7 +11,7 @@
     reportViewerControlChange,
     type ViewerControlSink,
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
-  import { markViewer3DIntroSeen } from "$lib/shared/onboarding/state/viewer3d-intro-state";
+  import { markSceneStudioSetupSeen } from "$lib/shared/onboarding/state/viewer3d-intro-state";
   import { scene3dCollectionState } from "$lib/features/scene-3d-collection/state/scene-3d-collection-state.svelte";
   import { applyScene3DLookLive } from "$lib/features/scene-3d-collection/services/open-3d-scene";
   import type { Collected3DScene } from "$lib/features/scene-3d-collection/domain/scene-3d-collection-types";
@@ -94,7 +94,7 @@
   ): void {
     reportViewerControlChange(
       onSettingChange,
-      "viewer_3d_intro",
+      "scene_studio_setup",
       setting,
       previous,
       next,
@@ -112,7 +112,7 @@
 
   function dismiss(kind: "skip" | "done"): void {
     reportProgress(kind, currentStepId, null);
-    if (!force) markViewer3DIntroSeen();
+    if (!force) markSceneStudioSetupSeen();
     restoreFullFrame();
     onDismiss?.();
   }
@@ -140,7 +140,7 @@
     }
     reportViewerControlChange(
       onSettingChange,
-      "viewer_3d_intro",
+      "scene_studio_setup",
       "preset_apply",
       null,
       scene.id,

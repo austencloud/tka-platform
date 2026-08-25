@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 import {
   isViewer3DIntroReplayRequested,
   shouldShowViewer3DIntro,
+  shouldShowSceneStudioSetup,
   markViewer3DIntroSeenLocal,
+  markSceneStudioSetupSeenLocal,
 } from "../../src/lib/shared/onboarding/state/viewer3d-intro-state";
 
 describe("viewer3d intro state", () => {
@@ -18,6 +20,30 @@ describe("viewer3d intro state", () => {
   it("never shows again after being marked seen", () => {
     markViewer3DIntroSeenLocal();
     expect(shouldShowViewer3DIntro()).toBe(false);
+  });
+});
+
+// The viewer's pointer and the Studio's guided build are different surfaces
+// doing different jobs, so dismissing one must never silence the other.
+describe("3D Studio setup guide state", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("shows on a first-ever Studio setup", () => {
+    expect(shouldShowSceneStudioSetup()).toBe(true);
+  });
+
+  it("never shows again after being marked seen", () => {
+    markSceneStudioSetupSeenLocal();
+    expect(shouldShowSceneStudioSetup()).toBe(false);
+  });
+
+  it("is independent of the viewer's rail pointer", () => {
+    markViewer3DIntroSeenLocal();
+    expect(shouldShowSceneStudioSetup()).toBe(true);
+
+    localStorage.clear();
+    markSceneStudioSetupSeenLocal();
+    expect(shouldShowViewer3DIntro()).toBe(true);
   });
 });
 
@@ -39,12 +65,12 @@ describe("viewer3d intro replay parameter", () => {
   });
 });
 
-// The intro card floats over the 3D pane, whose box runs BEHIND the playback
+// The guide floats over the 3D pane, whose box runs BEHIND the playback
 // transport. Anchoring the card to that box's raw bottom edge laid it on top of
 // the play/BPM controls, which is what shipped. The card must reserve the same
 // transport band SceneControlRail established ("the transport owns the bottom
 // edge of the viewer"), in every size tier it declares.
-describe("3D intro card reserves the transport band", () => {
+describe("3D setup guide reserves the transport band", () => {
   const repoRoot = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
     "../.."
@@ -54,7 +80,7 @@ describe("3D intro card reserves the transport band", () => {
     const css = readFileSync(
       path.join(
         repoRoot,
-        "src/lib/shared/3d/components/onboarding/Viewer3DIntro.svelte"
+        "src/lib/shared/3d/components/onboarding/Scene3DSetupGuide.svelte"
       ),
       "utf8"
     );
