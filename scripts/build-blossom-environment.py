@@ -960,7 +960,7 @@ def garden_ground_height(x, y):
     # real slope. It runs before the path blend so a route beside the river
     # still sits at its authored elevation above the graded bank.
     terrace_weight = (1.0 - smoothstep(0.0, terrace_width, surface_distance)) * 0.85
-    terrace_target = COMPOSITION_PLAN["water"]["surfaceElevation"] + 0.22
+    terrace_target = COMPOSITION_PLAN["water"]["surfaceElevation"] + 0.35
     height = height * (1.0 - terrace_weight) + terrace_target * terrace_weight
 
     path_surface = closest_path_surface(x, y)
@@ -983,15 +983,20 @@ def garden_ground_height(x, y):
         stage_weight = smoothstep(0.0, 1.4, edge_distance)
         height *= 1.0 - stage_weight
 
-    channel_weight = 1.0 - smoothstep(
-        0.0,
-        COMPOSITION_PLAN["water"]["bankTransitionWidth"],
-        surface_distance,
-    )
-    river_floor = (
-        COMPOSITION_PLAN["water"]["surfaceElevation"] - river_bed_depth(x, y)
-    )
-    height = height * (1.0 - channel_weight) + river_floor * channel_weight
+    bank_width = COMPOSITION_PLAN["water"]["bankTransitionWidth"]
+    surface_elevation = COMPOSITION_PLAN["water"]["surfaceElevation"]
+    if surface_distance > 0.0:
+        # Above the waterline, bring the grade down to meet the water exactly at
+        # its edge. Carving straight to bed depth here instead left a metre of
+        # terrain sitting below the water level with no water over it, so every
+        # bank read as a dry trench beside a floating ribbon.
+        bank_weight = 1.0 - smoothstep(0.0, bank_width, surface_distance)
+        height = height * (1.0 - bank_weight) + surface_elevation * bank_weight
+    else:
+        # Below it, a bowl rather than a slab, so the bed is visibly deepest in
+        # the channel and shallows as it approaches either bank.
+        submerged = smoothstep(0.0, bank_width, -surface_distance)
+        height = surface_elevation - river_bed_depth(x, y) * submerged
     return height
 
 
