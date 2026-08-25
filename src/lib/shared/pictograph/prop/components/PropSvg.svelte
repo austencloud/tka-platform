@@ -173,16 +173,37 @@ even when Svelte recreates the component instance.
     Orientation.CENTER_NW,
   ];
 
-  // Initialize with 0, $effect below handles initial and subsequent prop changes
-  let displayedRotation = $state<number>(0);
+  /**
+   * The transform this prop must already carry on its very first paint.
+   *
+   * Initializing to 0 and letting the $effect below correct it puts
+   * `translate(0, 0)` — the SVG origin, i.e. the top-left corner — into the DOM
+   * until that effect flushes, which is visible as a tuck-then-snap when a grid
+   * of pictographs mounts at once. This mirrors the first-run branches of the
+   * two effects below exactly, so the animated paths are unchanged: a cached
+   * entry is the position the effect is about to animate FROM, and without one
+   * the effect sets the target immediately.
+   */
+  function initialPosition(): { x: number; y: number } {
+    const target = { x: propPosition?.x ?? 0, y: propPosition?.y ?? 0 };
+    if (directPositioning) return target;
+    const cacheIdentity = transitionKey ?? cellIndex;
+    if (cacheIdentity === null) return target;
+    return positionCache.get(`${cacheIdentity}-${motionData.color}`) ?? target;
+  }
+
+  const firstFrame = initialPosition();
+
+  // $effect below handles subsequent prop changes
+  let displayedRotation = $state<number>(propPosition?.rotation ?? 0);
   let previousRotation: number | null = null;
   let previousSnapshot: MotionSnapshot | null = null;
 
   // Track displayed position for smooth CSS transitions
   // CSS transitions require the old value to be rendered before the new value
   // We achieve this by deferring position updates by one frame
-  let displayedX = $state<number>(0);
-  let displayedY = $state<number>(0);
+  let displayedX = $state<number>(firstFrame.x);
+  let displayedY = $state<number>(firstFrame.y);
   let pendingPositionFrame: number | null = null;
 
   // Check if this prop should be mirrored (flipped horizontally)

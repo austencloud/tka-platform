@@ -153,17 +153,40 @@ even when Svelte recreates the component instance.
 
   const EPSILON = 0.0001;
 
+  /**
+   * The transform this arrow must already carry on its very first paint.
+   *
+   * Initializing the displayed values to 0 and letting the $effect below correct
+   * them puts `translate(0, 0)` — the SVG origin, i.e. the top-left corner — into
+   * the DOM for however long it takes that effect to flush. A grid of option
+   * pictographs mounting at once made that window visible: every arrow appeared
+   * tucked at the top left before snapping into place.
+   *
+   * This mirrors the first-run branches of the two effects below exactly, so the
+   * animated paths are unchanged. A cached entry means the effect is about to
+   * animate FROM that cached position, so it is the correct first frame; with no
+   * cache entry the effect sets the target immediately, so the target is.
+   */
+  function initialPosition(): { x: number; y: number } {
+    const target = { x: safePosition.x, y: safePosition.y };
+    const cacheIdentity = transitionKey ?? cellIndex;
+    if (cacheIdentity === null) return target;
+    return arrowPositionCache.get(`${cacheIdentity}-${color}`) ?? target;
+  }
+
+  const firstFrame = initialPosition();
+
   // Track rotation state for intelligent animation
-  // Initialize with 0, $effect below handles initial and subsequent prop changes
-  let displayedRotation = $state<number>(0);
+  // $effect below handles subsequent prop changes
+  let displayedRotation = $state<number>(arrowPosition?.rotation ?? 0);
   let previousRotation: number | null = null;
   let previousSnapshot: MotionSnapshot | null = null;
 
   // Track displayed position for smooth CSS transitions
   // CSS transitions require the old value to be rendered before the new value
   // We achieve this by deferring position updates by one frame
-  let displayedX = $state<number>(0);
-  let displayedY = $state<number>(0);
+  let displayedX = $state<number>(firstFrame.x);
+  let displayedY = $state<number>(firstFrame.y);
   let pendingPositionFrame: number | null = null;
 
   // Update displayed position with cache-aware frame deferral for CSS transitions
