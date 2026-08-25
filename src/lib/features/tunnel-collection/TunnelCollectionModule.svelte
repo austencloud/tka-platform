@@ -36,6 +36,7 @@
   } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { saveTunnelCreatorHandoff } from "$lib/features/create/tunnel/services/tunnel-creator-handoff";
+  import TkaLabel from "$lib/shared/components/TkaLabel.svelte";
   import {
     trackTunnelEditStarted,
     type TunnelEditEntry,
@@ -301,7 +302,7 @@
                     <i class="fas fa-fan thumb-fallback" aria-hidden="true"></i>
                   {/if}
                 </div>
-                <span class="card-label">{item.name}</span>
+                <span class="card-label"><TkaLabel text={item.name} darkMode /></span>
               </button>
               {#if !tunnelCollectionState.isReadOnlyPreview}
                 <button
@@ -360,7 +361,7 @@
                 />
               {:else}
                 <h2 class="detail-name" title={selected.name}>
-                  {selected.name}
+                  <TkaLabel text={selected.name} darkMode fitToParent={false} />
                 </h2>
                 {#if !tunnelCollectionState.isReadOnlyPreview}
                   <button
