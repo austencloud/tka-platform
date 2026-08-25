@@ -2,6 +2,7 @@ import { ZodError } from "zod";
 
 import { sampleFilmDirector } from "./sample-film-director";
 import { resolveFilmDirectorSpec } from "./resolve-film-director-spec";
+import { applyPerformerEdit, type PerformerEdit } from "./film-director-edit";
 import type { FilmDirectorInput } from "./film-director-schema";
 import { getFilmDirectorWarmupStepCount } from "./film-director-warmup-plan";
 
@@ -48,6 +49,13 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
   });
   let editorOpen = $state(false);
   let validationError = $state<string | null>(null);
+  /**
+   * Bumped by every in-place document edit. A control-surface edit replaces
+   * the film with a re-resolved copy while the same scene stays on screen, so
+   * the scene's own cut detection — which compares scene ids — cannot see it.
+   */
+  let editRevision = $state(0);
+  let lastEditError = $state<string | null>(null);
   let frameRequest: number | null = null;
   let lastFrameTime: number | null = null;
 
@@ -175,6 +183,35 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
     validationError = null;
   }
 
+  /**
+   * Patches one performer in the authored document and re-resolves.
+   *
+   * Unlike `applyDraft`, the playhead and the warmup are left alone: the same
+   * scene is still on screen and only its cast's parameters moved. Returns
+   * false and leaves the document untouched when the edit would not validate.
+   */
+  function editPerformer(edit: PerformerEdit): boolean {
+    try {
+      // $state.snapshot first: sourceInput is a reactive proxy, and
+      // structuredClone throws on one.
+      const patched = applyPerformerEdit(
+        $state.snapshot(sourceInput) as FilmDirectorInput,
+        film,
+        edit
+      );
+      const nextFilm = resolveFilmDirectorSpec(patched);
+      sourceInput = patched;
+      film = nextFilm;
+      draft = JSON.stringify(patched, null, 2);
+      lastEditError = null;
+      editRevision += 1;
+      return true;
+    } catch (error: unknown) {
+      lastEditError = explainValidationError(error);
+      return false;
+    }
+  }
+
   function loadFilm(input: FilmDirectorInput): boolean {
     try {
       const cloned = structuredClone(input);
@@ -285,6 +322,12 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
     get validationError() {
       return validationError;
     },
+    get editRevision() {
+      return editRevision;
+    },
+    get lastEditError() {
+      return lastEditError;
+    },
     get frame() {
       return frame;
     },
@@ -302,6 +345,7 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
     setDraft,
     applyDraft,
     resetDraft,
+    editPerformer,
     loadFilm,
     toggleEditor,
     setPosterSource,

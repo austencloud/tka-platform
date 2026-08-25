@@ -46,12 +46,19 @@
     /** All-Performers mode: apply every change to this whole group. */
     performers?: AvatarInstanceState[] | null;
     onSettingChange?: ViewerControlSink;
+    /**
+     * Set by a host that owns performer state. Effect changes in either
+     * performer scope go here instead of onto the performers themselves.
+     * Ignored in global scope, which writes the shared EffectsConfig.
+     */
+    onEffectEdit?: (effect: EffectType) => boolean;
     presentation?: "standard" | "performer-hub";
   }
   let {
     performer = null,
     performers = null,
     onSettingChange,
+    onEffectEdit,
     presentation = "standard",
   }: Props = $props();
 
@@ -150,8 +157,12 @@
       const allActive = multi.every(
         (p) => (p.rawEffect ?? inheritedEffect) === key
       );
-      for (const p of multi)
-        p.setEffect(allActive ? "none" : (key as EffectType));
+      const next = (allActive ? "none" : key) as EffectType;
+      if (onEffectEdit) {
+        if (!onEffectEdit(next)) return;
+      } else {
+        for (const p of multi) p.setEffect(next);
+      }
       reportViewerControlChange(
         onSettingChange,
         "viewer_3d_effects",
@@ -165,7 +176,12 @@
       // Radio: clicking the active effect turns it off ("none"); clicking
       // another replaces it. Reset-to-inherit is the CascadeBadge's job.
       const active = performerEffect === key;
-      performer.setEffect(active ? "none" : (key as EffectType));
+      const next = (active ? "none" : key) as EffectType;
+      if (onEffectEdit) {
+        if (!onEffectEdit(next)) return;
+      } else {
+        performer.setEffect(next);
+      }
       reportViewerControlChange(
         onSettingChange,
         "viewer_3d_effects",

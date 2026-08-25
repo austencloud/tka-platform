@@ -37,6 +37,25 @@
   // collection has to load before its document exists. The saved one replaces
   // it once it arrives.
   let selectedFilmKey = $state(initialFilmKey);
+  // The titleplate, the film picker, and the film actions all paint above the
+  // performer dock, so the dock has to start below whichever reaches lowest.
+  // Their heights move with the film title, with how the picker wraps, and with
+  // the narrow layout that drops the actions under the picker, so the band is
+  // measured rather than assumed.
+  let topLeftEl = $state<HTMLElement | null>(null);
+  let topLeftHeight = $state(0);
+  let filmActionsEl = $state<HTMLElement | null>(null);
+  let filmActionsHeight = $state(0);
+  $effect(() => {
+    void topLeftHeight;
+    void filmActionsHeight;
+    const bottomOf = (el: HTMLElement | null) =>
+      el ? el.offsetTop + el.offsetHeight : 0;
+    document.documentElement.style.setProperty(
+      "--director-header-reserve",
+      `${Math.max(bottomOf(topLeftEl), bottomOf(filmActionsEl))}px`
+    );
+  });
   let saveOpen = $state(false);
   let shelfOpen = $state(false);
   let poster = $state("");
@@ -151,7 +170,7 @@
     </div>
   {/if}
 
-  <div class="top-left">
+  <div class="top-left" bind:this={topLeftEl} bind:clientHeight={topLeftHeight}>
     <div class="titleplate">
       <span class="film-name">{director.film.title}</span>
       <h1>{director.frame.scene.title}</h1>
@@ -184,7 +203,11 @@
     {director.sceneReady ? "Scene ready" : "Building scene"}
   </div>
 
-  <div class="film-actions">
+  <div
+    class="film-actions"
+    bind:this={filmActionsEl}
+    bind:clientHeight={filmActionsHeight}
+  >
     <button type="button" onclick={openSaveModal}>
       <i class="fas fa-bookmark" aria-hidden="true"></i>
       Save film
@@ -202,6 +225,13 @@
     <aside class="film-shelf themed-scrollbar">
       <FilmCollectionModule onopen={openSavedFilm} />
     </aside>
+  {/if}
+
+  {#if director.lastEditError}
+    <div class="edit-error" role="alert">
+      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+      {director.lastEditError}
+    </div>
   {/if}
 
   <FilmDirectorTransport />
@@ -464,6 +494,48 @@
     border-radius: 0.9rem;
     background: color-mix(in srgb, var(--theme-panel-bg, #10111b) 96%, transparent);
     box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.45);
+  }
+
+  /* Narrow: the dock fills the stage, so a rejected edit takes the header band
+     and paints over it. The message is the highest-priority thing on screen
+     while it is up, and it clears on the next accepted edit. */
+  .edit-error {
+    position: absolute;
+    top: calc(var(--director-header-reserve, 12rem) + 0.65rem);
+    right: max(0.75rem, env(safe-area-inset-right));
+    left: max(0.75rem, env(safe-area-inset-left));
+    z-index: 72;
+    display: flex;
+    gap: 0.55rem;
+    align-items: center;
+    padding: 0.65rem 0.9rem;
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-danger, #ff6b6b) 55%, transparent);
+    border-radius: 0.7rem;
+    color: var(--theme-text, #fff);
+    background: color-mix(
+      in srgb,
+      var(--semantic-danger, #ff6b6b) 22%,
+      var(--theme-panel-bg, #10111b)
+    );
+    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.42);
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .edit-error i {
+    color: var(--semantic-danger, #ff6b6b);
+  }
+
+  /* Wide enough that the dock's own cap leaves a right column free: the message
+     moves down beside the transport where it covers nothing. 64rem is the width
+     at which a 26rem message clears the dock's 32.5rem floor. */
+  @media (min-width: 64rem) {
+    .edit-error {
+      top: auto;
+      bottom: calc(var(--director-transport-reserve, 9.5rem) + 0.65rem);
+      left: auto;
+      max-width: 26rem;
+    }
   }
 
   .readiness span {

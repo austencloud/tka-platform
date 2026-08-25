@@ -10,11 +10,17 @@
     reportViewerControlChange,
     type ViewerControlSink,
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+  import type { PerformerEditSink } from "./performer-hub-types";
 
   interface Props {
     onSettingChange?: ViewerControlSink;
+    /** Forwarded to the detail panel — see PerformerHubDetail's Props. */
+    onPerformerEdit?: PerformerEditSink;
+    /** Fires when the detail panel opens or closes. */
+    onDetailOpenChange?: (open: boolean) => void;
   }
-  let { onSettingChange }: Props = $props();
+  let { onSettingChange, onPerformerEdit, onDetailOpenChange }: Props =
+    $props();
 
   const viewer = getViewer3DContext();
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
@@ -32,6 +38,7 @@
     const previous = !detailCollapsed;
     hasInteracted = true;
     detailCollapsed = false;
+    if (previous !== true) onDetailOpenChange?.(true);
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_performer",
@@ -45,6 +52,7 @@
   function collapseDetail() {
     const previous = !detailCollapsed;
     detailCollapsed = true;
+    if (previous) onDetailOpenChange?.(false);
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_performer",
@@ -109,7 +117,7 @@
         >
           <i class="fas fa-times"></i>
         </button>
-        <PerformerHubDetail {onSettingChange} />
+        <PerformerHubDetail {onSettingChange} {onPerformerEdit} />
       </div>
     {/if}
   </div>
@@ -157,6 +165,13 @@
       var(--theme-panel-shadow),
       0 1px 0 inset color-mix(in srgb, var(--theme-text) 4%, transparent);
     flex-shrink: 0;
+    /* The spine grows one 48px chip per performer. On a short viewport a full
+       cast is taller than the anchor, and the anchor's flex-end alignment sends
+       the overflow off the top of the screen where the first chips cannot be
+       reached. Scrolling keeps every performer selectable. */
+    max-height: 100%;
+    overflow-y: auto;
+    scrollbar-width: thin;
     pointer-events: auto;
     transition:
       border-radius 220ms ease,

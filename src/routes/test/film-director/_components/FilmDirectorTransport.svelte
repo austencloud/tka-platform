@@ -3,13 +3,36 @@
 
   const director = getFilmDirectorContext();
 
+  // The transport floats over the stage at a height that depends on how its
+  // scene chips wrap, and the performer dock has to sit clear of it. What the
+  // dock needs is not the height but the reserve: the distance from the bottom
+  // of the stage to the top of the transport, which also folds in the
+  // transport's own bottom inset and its borders.
+  let transportEl = $state<HTMLElement | null>(null);
+  let measuredHeight = $state(0);
+  $effect(() => {
+    // measuredHeight is read only to re-run this when the chips rewrap.
+    void measuredHeight;
+    const stage = transportEl?.offsetParent as HTMLElement | null;
+    if (!transportEl || !stage) return;
+    document.documentElement.style.setProperty(
+      "--director-transport-reserve",
+      `${stage.clientHeight - transportEl.offsetTop}px`
+    );
+  });
+
   function formatTime(seconds: number): string {
     const whole = Math.max(0, Math.floor(seconds));
     return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
   }
 </script>
 
-<div class="transport" aria-label="Film playback controls">
+<div
+  class="transport"
+  aria-label="Film playback controls"
+  bind:this={transportEl}
+  bind:clientHeight={measuredHeight}
+>
   <div class="playback-row">
     <div class="button-cluster">
       <button

@@ -27,6 +27,8 @@
   import type { EnvironmentTransitionObservation } from "$lib/shared/3d/environments/domain/environment-transition";
   import type { BackgroundType } from "@austencloud/backgrounds";
   import type { ResolvedDirectorScene } from "../_lib/film-director-schema";
+  import PerformerHub from "$lib/shared/3d/components/controls/PerformerHub.svelte";
+  import type { PerformerHubEdit } from "$lib/shared/3d/components/controls/performer-hub-types";
 
   const director = getFilmDirectorContext();
   const sequence = demoSequenceJson as unknown as SequenceData;
@@ -57,6 +59,7 @@
     // live viewer (camera pose, performer world positions) without UI.
     (window as unknown as Record<string, unknown>).__filmDirectorViewer =
       viewer;
+    (window as unknown as Record<string, unknown>).__filmDirector = director;
   }
 
   setSceneFeatureContext(sceneFeatures);
@@ -66,6 +69,9 @@
   viewer.hideAllPlanes();
 
   let appliedSceneId = "";
+  // Plain let, like appliedSceneId: applyScene reads and writes viewer state,
+  // so an effect that tracked this guard would re-run on its own writes.
+  let appliedEditRevision = director.editRevision;
   let warmupCursor = $state(0);
   let acknowledgedWarmupCursor = $state(-1);
   let initialSceneReady = $state(false);
@@ -357,6 +363,57 @@
     };
   });
 
+  // A control-surface edit re-resolves the film in place, so the scene on
+  // screen keeps its id and the cut effect above cannot see the change. The
+  // revision counter is what moves; re-applying the same scene picks up its
+  // new cast parameters without resetting the playhead or the warmup.
+  $effect(() => {
+    const revision = director.editRevision;
+    if (revision === appliedEditRevision) return;
+    appliedEditRevision = revision;
+
+    const scene = director.film.scenes.find(
+      (candidate) => candidate.id === appliedSceneId
+    );
+    if (scene) applyScene(scene);
+  });
+
+  /**
+   * The control surface's write seam. Edits go to the film document, never to
+   * the performer manager, because the manager is re-populated from that
+   * document on every scene cut.
+   */
+  function handlePerformerEdit(edit: PerformerHubEdit): boolean {
+    const scene = presentedScene;
+    const cast = scene.performance.performers;
+    // The dock lists every reserved performer slot, which can outnumber the
+    // current scene's cast. Naming the missing slot rather than dropping the
+    // edit lets the rejection say which performer this scene does not have.
+    const performerIds =
+      edit.performerIndex === null
+        ? cast.map((performer) => performer.id)
+        : [
+            cast[edit.performerIndex]?.id ??
+              `performer-${edit.performerIndex + 1}`,
+          ];
+
+    return director.editPerformer({
+      sceneId: scene.id,
+      performerIds,
+      field: edit.field,
+      value: edit.value,
+    });
+  }
+
+  /**
+   * Cast edits are scene-scoped, so a running film would move the target out
+   * from under the user between opening the dock and choosing a value. Opening
+   * it stops the film on the scene being edited.
+   */
+  function handleDetailOpenChange(open: boolean): void {
+    if (open) director.pause();
+  }
+
   $effect(() => {
     const camera = director.frame.camera;
     director.sceneReady;
@@ -416,7 +473,47 @@
   ></div>
 </div>
 
+<!-- Outside .director-scene, which is aria-hidden: the hub is the one
+     interactive thing over the stage and has to stay reachable. It renders
+     here rather than in the workbench because it reads the viewer context
+     this component establishes. -->
+{#if director.preparation.complete}
+  <div class="hub-slot">
+    <PerformerHub
+      onPerformerEdit={handlePerformerEdit}
+      onDetailOpenChange={handleDetailOpenChange}
+    />
+  </div>
+{/if}
+
 <style>
+  /* The dock anchors itself to this box, so reserving the transport's footprint
+     here keeps its tab bar clear of the transport without the shared component
+     needing to know a Director-specific offset. The dock's own anchor already
+     holds back 90px for a scene rail this route does not have, so that much is
+     given back and the gap above the transport is what remains. */
+  .hub-slot {
+    position: absolute;
+    /* The anchor adds 12px of its own top padding, so the header reserve gives
+       back that much to land the dock a consistent gap below the titleplate. */
+    inset: max(0px, calc(var(--director-header-reserve, 12rem) - 12px + 0.75rem))
+      0
+      max(0px, calc(var(--director-transport-reserve, 9.5rem) + 0.75rem - 90px))
+      0;
+    pointer-events: none;
+  }
+
+  /* A short viewport cannot hold the titleplate and a usable dock at once —
+     reserving the header band leaves the spine taller than the space left for
+     it. The dock takes that band back and paints over the titleplate, which is
+     the secondary surface while a performer is being edited. */
+  @media (max-height: 34rem) {
+    .hub-slot {
+      inset-block-start: 0;
+      z-index: 66;
+    }
+  }
+
   .director-scene {
     position: absolute;
     inset: 0;

@@ -25,15 +25,26 @@
     reportViewerControlChange,
     type ViewerControlSink,
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
-  import type { PerformerHubTab } from "./performer-hub-types";
+  import type {
+    PerformerEditSink,
+    PerformerHubEdit,
+    PerformerHubTab,
+  } from "./performer-hub-types";
 
   interface Props {
     onSettingChange?: ViewerControlSink;
+    /**
+     * Supplied by a host that owns performer state (the Director, whose
+     * performers are a projection of its film document). When present the hub
+     * routes parameter changes here instead of writing them onto the manager.
+     */
+    onPerformerEdit?: PerformerEditSink;
     activeTab?: PerformerHubTab;
     showTabBar?: boolean;
   }
   let {
     onSettingChange,
+    onPerformerEdit,
     activeTab = $bindable("prop"),
     showTabBar = true,
   }: Props = $props();
@@ -94,7 +105,12 @@
       pendingAvatarId = null;
 
       const previous = currentAvatarId;
-      applyToScope((p) => p?.setAvatarModel(id));
+      if (
+        !writeParameter({ field: "avatarId", value: id }, (p) =>
+          p?.setAvatarModel(id)
+        )
+      )
+        return;
       reportViewerControlChange(
         onSettingChange,
         "viewer_3d_performer",
@@ -236,9 +252,29 @@
     }
   }
 
+  /**
+   * Routes one parameter change to the host when it owns performer state, and
+   * to the manager otherwise. Returns false when the host rejected the edit,
+   * so the caller skips reporting a change that did not happen.
+   */
+  function writeParameter(
+    edit: Omit<PerformerHubEdit, "performerIndex">,
+    applyDirect: (p: typeof performer) => void
+  ): boolean {
+    if (onPerformerEdit) {
+      return onPerformerEdit({
+        ...edit,
+        performerIndex: selectedIndex,
+      } as PerformerHubEdit);
+    }
+    applyToScope(applyDirect);
+    return true;
+  }
+
   function handlePropSelect(propType: PropType): void {
     const previous = currentProp;
-    applyToScope((p) => p?.setProp(propType));
+    if (!writeParameter({ field: "prop", value: propType }, (p) => p?.setProp(propType)))
+      return;
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_performer",
@@ -267,7 +303,12 @@
 
   function handleEffortSelect(effortId: EffortId) {
     const previous = currentEffort;
-    applyToScope((p) => p?.setEffort(effortId));
+    if (
+      !writeParameter({ field: "effort", value: effortId }, (p) =>
+        p?.setEffort(effortId)
+      )
+    )
+      return;
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_performer",
@@ -278,7 +319,9 @@
   }
 
   function handlePropSizeChange(cm: number) {
-    applyToScope((p) => p?.setStaffLengthCm(cm));
+    writeParameter({ field: "staffLengthCm", value: cm }, (p) =>
+      p?.setStaffLengthCm(cm)
+    );
   }
 
   function removePerformer(): void {
@@ -394,11 +437,13 @@
             onSelect={handlePropSelect}
           />
 
-          {#if performer}
-            <PerformerPropSizeSlider {performer} {onSettingChange} />
-          {:else if allPerformers[0]}
+          <!-- The slider reads its displayed size from one performer; in
+               All-Performers mode that is the first. Writing always goes
+               through handlePropSizeChange so the scope and the host sink
+               apply in both modes. -->
+          {#if performer ?? allPerformers[0]}
             <PerformerPropSizeSlider
-              performer={allPerformers[0]}
+              performer={performer ?? allPerformers[0]!}
               onSizeChange={handlePropSizeChange}
               {onSettingChange}
             />
@@ -448,6 +493,10 @@
             performer={isAllMode ? null : performer}
             performers={isAllMode ? allPerformers : null}
             presentation="performer-hub"
+            onEffectEdit={onPerformerEdit
+              ? (effect) =>
+                  writeParameter({ field: "effect", value: effect }, () => {})
+              : undefined}
             {onSettingChange}
           />
         </div>
