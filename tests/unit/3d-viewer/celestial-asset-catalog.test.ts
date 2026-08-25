@@ -94,7 +94,35 @@ describe("Olive Cloudbreak reusable asset catalog", () => {
     expect(reflectorSource).toContain("new ShapeGeometry(shape)");
     expect(cloudbreakLayout.lagoon.outlineXZ.length).toBeGreaterThan(10);
     expect(poolShaderSource).toContain("shorelineDistance( metres )");
-    expect(poolShaderSource).toContain("uShorelineStarts[16]");
+    expect(poolShaderSource).toContain("uShorelineStarts[32]");
+  });
+
+  it("keeps the root-mounted lagoon aligned with and isolated to Celestial", () => {
+    const environmentSource = readFileSync(
+      "src/lib/shared/3d/environments/components/Environment3D.svelte",
+      "utf8"
+    );
+    const celestialSource = readFileSync(
+      "src/lib/shared/3d/environments/scenes/CelestialScene.svelte",
+      "utf8"
+    );
+    const cloudbreakSource = readFileSync(
+      "src/lib/shared/3d/environments/scenes/celestial/OliveCloudbreakSlice.svelte",
+      "utf8"
+    );
+
+    expect(environmentSource).toContain(
+      "worldYOffset={frame.environmentYOffset}"
+    );
+    expect(environmentSource).toContain("worldYOffset={environmentYOffset}");
+    expect(celestialSource).toContain("{worldYOffset}");
+    expect(celestialSource).toContain("{active}");
+    expect(cloudbreakSource).toMatch(
+      /groundY \+ worldYOffset \+ CLOUDBREAK_LAYOUT\.lagoon\.surfaceY \+ 0\.035/
+    );
+    expect(cloudbreakSource).toContain(
+      'active={active && view !== "plan"}'
+    );
   });
 
   it("reviews the same assembly that owns the integrated runtime", () => {

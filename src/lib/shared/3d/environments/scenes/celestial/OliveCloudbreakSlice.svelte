@@ -34,6 +34,10 @@
     view?: CloudbreakAssemblyView;
     groundY?: number;
     stageRadius?: number;
+    /** Parent environment lift, needed by the reflector mounted at scene root. */
+    worldYOffset?: number;
+    /** Retained Celestial worlds stay mounted but must not leak root-owned water. */
+    active?: boolean;
     onReady?: () => void;
     onAssetReady?: (id: string) => void;
   }
@@ -50,6 +54,8 @@
     view = "runtime",
     groundY = userProportionsState.groundY,
     stageRadius = 3,
+    worldYOffset = 0,
+    active = true,
     onReady,
     onAssetReady,
   }: Props = $props();
@@ -333,7 +339,7 @@
     depth={CLOUDBREAK_LAGOON.size[1]}
     position={[
       CLOUDBREAK_LAGOON.center[0],
-      groundY + CLOUDBREAK_LAYOUT.lagoon.surfaceY + 0.035,
+      groundY + worldYOffset + CLOUDBREAK_LAYOUT.lagoon.surfaceY + 0.035,
       CLOUDBREAK_LAGOON.center[1],
     ]}
     outline={CLOUDBREAK_LAGOON_LOCAL_OUTLINE}
@@ -349,6 +355,6 @@
     foamOpacity={0.32}
     shoreFade={1.45}
     flowSpeed={0.34}
-    active={view !== "plan"}
+    active={active && view !== "plan"}
   />
 {/if}

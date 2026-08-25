@@ -24,6 +24,8 @@
     stageDepth?: number;
     stageRadius?: number;
     stageZOffset?: number;
+    /** World-space lift applied by Environment3D to the declarative scene tree. */
+    worldYOffset?: number;
     /** Retained film worlds load while hidden but only the active one owns globals. */
     active?: boolean;
   }
@@ -34,6 +36,7 @@
     stageDepth = 6,
     stageRadius = 3,
     stageZOffset = 0,
+    worldYOffset = 0,
     active = true,
   }: Props = $props();
 
@@ -116,6 +119,8 @@
 <OliveCloudbreakSlice
   {interactionPulse}
   {stageRadius}
+  {worldYOffset}
+  {active}
   onReady={handleCloudbreakReady}
 />
 

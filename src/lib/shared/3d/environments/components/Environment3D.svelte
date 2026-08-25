@@ -376,6 +376,7 @@
         {stageDepth}
         {stageRadius}
         {stageZOffset}
+        worldYOffset={frame.environmentYOffset}
       />
     {/await}
   </T.Group>
@@ -438,6 +439,7 @@
           {stageDepth}
           {stageRadius}
           {stageZOffset}
+          worldYOffset={environmentYOffset}
         />
       {/await}
     {:else if config.scene === "void"}
