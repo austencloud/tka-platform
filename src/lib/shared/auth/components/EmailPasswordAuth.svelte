@@ -310,15 +310,51 @@
   }
 
   .input {
+    box-sizing: border-box;
     width: 100%;
+    min-height: var(--min-touch-target, 44px);
     padding: clamp(8px, 1.5vh, 12px) clamp(10px, 2vw, 14px);
     border-radius: clamp(6px, 1vh, 10px);
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border: 1px solid var(--theme-stroke);
+    background: var(--auth-input-background, var(--theme-card-bg));
+    border: 2px solid var(--auth-input-border, var(--theme-stroke));
     color: var(--theme-text);
     /* WebKit's touch keyboard is reliable at the platform's 16px form-control
        floor. Keep the compact treatment only for a real desktop pointer. */
     font-size: 16px;
+    box-shadow: inset 0 1px 0
+      var(--auth-input-inset-highlight, rgba(255, 255, 255, 0.1));
+    cursor: text;
+    transition:
+      border-color var(--duration-normal, 200ms) ease,
+      box-shadow var(--duration-normal, 200ms) ease,
+      background var(--duration-normal, 200ms) ease;
+  }
+
+  .input::placeholder {
+    color: var(--auth-input-placeholder, var(--theme-text-dim));
+    opacity: 1;
+  }
+
+  .input:hover:not(:disabled) {
+    border-color: var(--auth-input-border-hover, var(--theme-stroke-strong));
+  }
+
+  .input:focus {
+    outline: 3px solid
+      var(--auth-input-focus-outline, var(--theme-accent, #7c6af7));
+    outline-offset: 1px;
+    border-color: var(
+      --auth-input-focus-border,
+      var(--theme-accent-strong, var(--theme-accent, #7c6af7))
+    );
+    background: var(--auth-input-focus-background, var(--theme-card-bg));
+    box-shadow:
+      0 0 0 3px
+        var(
+          --auth-input-focus-shadow,
+          color-mix(in srgb, var(--theme-accent, #7c6af7) 18%, transparent)
+        ),
+      inset 0 1px 0 var(--auth-input-inset-highlight, rgba(255, 255, 255, 0.1));
   }
 
   .password-row {

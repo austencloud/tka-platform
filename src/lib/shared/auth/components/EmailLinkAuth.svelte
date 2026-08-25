@@ -687,7 +687,10 @@
     padding: 0.75rem;
     min-height: var(--min-touch-target, 44px);
     border: 2px solid
-      color-mix(in srgb, var(--theme-text, white) 26%, transparent);
+      var(
+        --auth-input-border,
+        color-mix(in srgb, var(--theme-text, white) 26%, transparent)
+      );
     border-radius: 0.5rem;
     /* Keep touch controls at WebKit's 16px floor so focus does not trigger
        viewport zoom or destabilize the software keyboard. */
@@ -696,45 +699,72 @@
       border-color var(--duration-normal, 200ms) ease,
       box-shadow var(--duration-normal, 200ms) ease,
       background var(--duration-normal, 200ms) ease;
-    background: color-mix(
-      in srgb,
-      var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 88%,
-      var(--theme-text, white) 12%
+    background: var(
+      --auth-input-background,
+      color-mix(
+        in srgb,
+        var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 88%,
+        var(--theme-text, white) 12%
+      )
     );
     color: color-mix(in srgb, var(--theme-text, white) 95%, transparent);
     box-shadow: inset 0 1px 0
-      color-mix(in srgb, var(--theme-text, white) 10%, transparent);
+      var(
+        --auth-input-inset-highlight,
+        color-mix(in srgb, var(--theme-text, white) 10%, transparent)
+      );
     cursor: text;
   }
 
   input::placeholder {
-    color: color-mix(in srgb, var(--theme-text, white) 54%, transparent);
+    color: var(
+      --auth-input-placeholder,
+      color-mix(in srgb, var(--theme-text, white) 54%, transparent)
+    );
     opacity: 1;
   }
 
   input:hover:not(:disabled) {
-    border-color: color-mix(in srgb, var(--theme-text, white) 38%, transparent);
+    border-color: var(
+      --auth-input-border-hover,
+      color-mix(in srgb, var(--theme-text, white) 38%, transparent)
+    );
   }
 
   input:focus {
     outline: 3px solid
-      color-mix(in srgb, var(--theme-accent, #7c6af7) 38%, transparent);
+      var(
+        --auth-input-focus-outline,
+        color-mix(in srgb, var(--theme-accent, #7c6af7) 38%, transparent)
+      );
     outline-offset: 1px;
-    border-color: var(--theme-accent-strong, var(--theme-accent, #7c6af7));
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #7c6af7) 10%,
-      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    border-color: var(
+      --auth-input-focus-border,
+      var(--theme-accent-strong, var(--theme-accent, #7c6af7))
+    );
+    background: var(
+      --auth-input-focus-background,
+      color-mix(
+        in srgb,
+        var(--theme-accent, #7c6af7) 10%,
+        var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+      )
     );
     box-shadow:
       0 0 0 3px
-        color-mix(
-          in srgb,
-          var(--theme-accent-strong, var(--theme-accent, #7c6af7)) 18%,
-          transparent
+        var(
+          --auth-input-focus-shadow,
+          color-mix(
+            in srgb,
+            var(--theme-accent-strong, var(--theme-accent, #7c6af7)) 18%,
+            transparent
+          )
         ),
       inset 0 1px 0
-        color-mix(in srgb, var(--theme-text, white) 10%, transparent);
+        var(
+          --auth-input-inset-highlight,
+          color-mix(in srgb, var(--theme-text, white) 10%, transparent)
+        );
   }
 
   input:disabled {

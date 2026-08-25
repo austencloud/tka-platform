@@ -78,6 +78,51 @@
 
 <style>
   .email-auth-tabs {
+    --auth-input-background: color-mix(
+      in srgb,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 88%,
+      var(--theme-text, white) 12%
+    );
+    --auth-input-border: color-mix(
+      in srgb,
+      var(--theme-text, white) 26%,
+      transparent
+    );
+    --auth-input-border-hover: color-mix(
+      in srgb,
+      var(--theme-text, white) 38%,
+      transparent
+    );
+    --auth-input-placeholder: color-mix(
+      in srgb,
+      var(--theme-text, white) 54%,
+      transparent
+    );
+    --auth-input-inset-highlight: color-mix(
+      in srgb,
+      var(--theme-text, white) 10%,
+      transparent
+    );
+    --auth-input-focus-background: color-mix(
+      in srgb,
+      var(--theme-accent, #7c6af7) 10%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+    --auth-input-focus-border: var(
+      --theme-accent-strong,
+      var(--theme-accent, #7c6af7)
+    );
+    --auth-input-focus-outline: color-mix(
+      in srgb,
+      var(--theme-accent, #7c6af7) 38%,
+      transparent
+    );
+    --auth-input-focus-shadow: color-mix(
+      in srgb,
+      var(--theme-accent-strong, var(--theme-accent, #7c6af7)) 18%,
+      transparent
+    );
+
     display: flex;
     flex-direction: column;
     gap: 0.875rem;
