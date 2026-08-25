@@ -3,7 +3,6 @@
 
   import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
-  import FilmCollectionModule from "$lib/features/film-collection/FilmCollectionModule.svelte";
   import SaveFilmModal from "$lib/features/film-collection/components/SaveFilmModal.svelte";
   import type {
     CollectedFilm,
@@ -27,6 +26,7 @@
     filmOriginUrlKey,
     type FilmOrigin,
   } from "../_lib/film-origin";
+  import FilmDirectorFilmPanel from "./FilmDirectorFilmPanel.svelte";
   import FilmDirectorJsonEditor from "./FilmDirectorJsonEditor.svelte";
   import FilmDirectorScene from "./FilmDirectorScene.svelte";
   import FilmDirectorTransport from "./FilmDirectorTransport.svelte";
@@ -53,20 +53,14 @@
   // measured rather than assumed.
   let topLeftEl = $state<HTMLElement | null>(null);
   let topLeftHeight = $state(0);
-  let filmActionsEl = $state<HTMLElement | null>(null);
-  let filmActionsHeight = $state(0);
   $effect(() => {
     void topLeftHeight;
-    void filmActionsHeight;
-    const bottomOf = (el: HTMLElement | null) =>
-      el ? el.offsetTop + el.offsetHeight : 0;
     document.documentElement.style.setProperty(
       "--director-header-reserve",
-      `${Math.max(bottomOf(topLeftEl), bottomOf(filmActionsEl))}px`
+      `${topLeftEl ? topLeftEl.offsetTop + topLeftEl.offsetHeight : 0}px`
     );
   });
   let saveOpen = $state(false);
-  let shelfOpen = $state(false);
   let poster = $state("");
 
   const FILM_SHORT_LABELS: Record<string, string> = {
@@ -106,7 +100,6 @@
     const doc = $state.snapshot(entry.film) as unknown as FilmDirectorInput;
     if (!director.loadFilm(doc)) return;
     origin = { kind: "saved", id: entry.id, name: entry.name };
-    shelfOpen = false;
     syncFilmToUrl(origin);
   }
 
@@ -124,6 +117,9 @@
   }
 
   let saveBusy = $state(false);
+  const previousVersionAvailable = $derived(
+    Boolean(currentEntry()?.previousFilm)
+  );
 
   /**
    * The saved entry the stage is editing, or null when the film has never been
@@ -290,30 +286,6 @@
     {director.sceneReady ? "Scene ready" : "Building scene"}
   </div>
 
-  <div
-    class="film-actions"
-    bind:this={filmActionsEl}
-    bind:clientHeight={filmActionsHeight}
-  >
-    <button type="button" onclick={saveFilm} disabled={saveBusy}>
-      <i class="fas fa-bookmark" aria-hidden="true"></i>
-      {filmOriginIsSaved(origin) ? "Save" : "Save film"}
-    </button>
-    <button type="button" onclick={() => (shelfOpen = !shelfOpen)} aria-expanded={shelfOpen}>
-      <i class="fas fa-clapperboard" aria-hidden="true"></i>
-      Saved
-      {#if filmCollectionState.count > 0}
-        <span class="badge">{filmCollectionState.count}</span>
-      {/if}
-    </button>
-  </div>
-
-  {#if shelfOpen}
-    <aside class="film-shelf themed-scrollbar">
-      <FilmCollectionModule onopen={openSavedFilm} />
-    </aside>
-  {/if}
-
   {#if director.lastEditError}
     <div class="edit-error" role="alert">
       <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
@@ -321,7 +293,18 @@
     </div>
   {/if}
 
-  <FilmDirectorTransport />
+  <FilmDirectorTransport>
+    {#snippet trailing()}
+      <FilmDirectorFilmPanel
+        {origin}
+        hasPreviousVersion={previousVersionAvailable}
+        busy={saveBusy}
+        onSave={saveFilm}
+        onSaveAsNew={openSaveModal}
+        onRestore={restorePreviousFilm}
+      />
+    {/snippet}
+  </FilmDirectorTransport>
   <FilmDirectorJsonEditor />
 </main>
 
@@ -522,67 +505,6 @@
     font-size: var(--font-size-compact, 0.75rem);
   }
 
-  /* Stacked under the readiness pill, which occupies the top-right corner. */
-  .film-actions {
-    position: absolute;
-    top: calc(max(0.85rem, env(safe-area-inset-top)) + 3.35rem);
-    right: max(0.85rem, env(safe-area-inset-right));
-    z-index: 65;
-    display: flex;
-    gap: 0.4rem;
-  }
-
-  .film-actions button {
-    display: inline-flex;
-    min-height: 2.75rem;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0 0.85rem;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    border-radius: 999px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.8));
-    background: color-mix(in srgb, var(--theme-panel-bg, #10111b) 88%, transparent);
-    font: inherit;
-    font-size: var(--font-size-compact, 0.75rem);
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  .film-actions button:hover {
-    color: var(--theme-text, #fff);
-    border-color: var(--theme-accent, #9d8cff);
-  }
-
-  .film-actions .badge {
-    min-width: 1.25rem;
-    padding: 0 0.3rem;
-    border-radius: 999px;
-    color: #10111b;
-    background: var(--theme-accent, #9d8cff);
-    font-size: 0.7rem;
-    font-variant-numeric: tabular-nums;
-    text-align: center;
-  }
-
-  .film-shelf {
-    position: absolute;
-    top: calc(max(0.85rem, env(safe-area-inset-top)) + 6.6rem);
-    right: max(0.85rem, env(safe-area-inset-right));
-    z-index: 64;
-    /* Shrink-wraps to the tiles it holds, so one saved film does not sit in a
-       46rem box of empty panel. */
-    width: fit-content;
-    min-width: 15rem;
-    max-width: min(46rem, calc(100vw - 1.7rem));
-    max-height: min(60vh, 34rem);
-    overflow-y: auto;
-    padding: 1rem;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    border-radius: 0.9rem;
-    background: color-mix(in srgb, var(--theme-panel-bg, #10111b) 96%, transparent);
-    box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.45);
-  }
-
   /* Narrow: the dock fills the stage, so a rejected edit takes the header band
      and paints over it. The message is the highest-priority thing on screen
      while it is up, and it clears on the next accepted edit. */
@@ -674,17 +596,6 @@
 
     /* The picker spans the width here, so the actions drop below it rather
        than sharing the row and landing on top of the pills. */
-    .film-actions {
-      top: calc(max(0.55rem, env(safe-area-inset-top)) + 8.25rem);
-      right: max(0.55rem, env(safe-area-inset-right));
-    }
-
-    .film-shelf {
-      top: calc(max(0.55rem, env(safe-area-inset-top)) + 11.5rem);
-      right: max(0.55rem, env(safe-area-inset-right));
-      max-width: calc(100vw - 1.1rem);
-      padding: 0.75rem;
-    }
   }
 
   @container (min-width: 1680px) {
