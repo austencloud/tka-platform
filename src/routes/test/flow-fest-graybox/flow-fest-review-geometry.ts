@@ -239,9 +239,9 @@ function buildRibbonGeometry(
   terrain: ImportedTerrainDataV2,
   segment: FlowFestRuntimeSegment
 ): BufferGeometry {
-  const positions: number[] = [];
-  const indices: number[] = [];
-  const halfWidth = segment.widthMeters / 2;
+  const samples: Array<{ x: number; z: number }> = [];
+  const first = segment.points[0];
+  if (first) samples.push({ x: first.x, z: first.z });
   for (
     let pointIndex = 1;
     pointIndex < segment.points.length;
@@ -249,37 +249,51 @@ function buildRibbonGeometry(
   ) {
     const start = segment.points[pointIndex - 1]!;
     const end = segment.points[pointIndex]!;
-    const dx = end.x - start.x;
-    const dz = end.z - start.z;
-    const distance = Math.hypot(dx, dz);
+    const distance = Math.hypot(end.x - start.x, end.z - start.z);
     const steps = Math.max(1, Math.ceil(distance / 2));
+    for (let step = 1; step <= steps; step += 1) {
+      const t = step / steps;
+      samples.push({
+        x: start.x + (end.x - start.x) * t,
+        z: start.z + (end.z - start.z) * t,
+      });
+    }
+  }
+
+  const positions: number[] = [];
+  const indices: number[] = [];
+  const halfWidth = segment.widthMeters / 2;
+  for (let index = 0; index < samples.length; index += 1) {
+    const point = samples[index]!;
+    const previous = samples[Math.max(0, index - 1)]!;
+    const next = samples[Math.min(samples.length - 1, index + 1)]!;
+    const dx = next.x - previous.x;
+    const dz = next.z - previous.z;
+    const distance = Math.hypot(dx, dz);
     const normalX = distance > 0 ? -dz / distance : 0;
     const normalZ = distance > 0 ? dx / distance : 0;
-    for (let step = 0; step < steps; step += 1) {
-      const t0 = step / steps;
-      const t1 = (step + 1) / steps;
-      const x0 = start.x + dx * t0;
-      const z0 = start.z + dz * t0;
-      const x1 = start.x + dx * t1;
-      const z1 = start.z + dz * t1;
-      const y0 = sampleFlowFestTerrainWorldY(terrain, x0, z0) + 0.12;
-      const y1 = sampleFlowFestTerrainWorldY(terrain, x1, z1) + 0.12;
-      const base = positions.length / 3;
-      positions.push(
-        x0 + normalX * halfWidth,
-        y0,
-        z0 + normalZ * halfWidth,
-        x0 - normalX * halfWidth,
-        y0,
-        z0 - normalZ * halfWidth,
-        x1 + normalX * halfWidth,
-        y1,
-        z1 + normalZ * halfWidth,
-        x1 - normalX * halfWidth,
-        y1,
-        z1 - normalZ * halfWidth
+    const y = sampleFlowFestTerrainWorldY(terrain, point.x, point.z) + 0.12;
+    positions.push(
+      point.x + normalX * halfWidth,
+      y,
+      point.z + normalZ * halfWidth,
+      point.x - normalX * halfWidth,
+      y,
+      point.z - normalZ * halfWidth
+    );
+    if (index > 0) {
+      const previousLeft = (index - 1) * 2;
+      const previousRight = previousLeft + 1;
+      const left = index * 2;
+      const right = left + 1;
+      indices.push(
+        previousLeft,
+        previousRight,
+        left,
+        left,
+        previousRight,
+        right
       );
-      indices.push(base, base + 1, base + 2, base + 2, base + 1, base + 3);
     }
   }
   const geometry = new BufferGeometry();
