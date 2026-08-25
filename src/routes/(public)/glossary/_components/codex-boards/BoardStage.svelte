@@ -99,6 +99,7 @@
     min-width: 0;
     --abox-gap: 0.3rem;
     --codex-flow-row-gap: 0.4rem;
+    --codex-flow-justify: center;
     --codex-picto-size: calc((100cqi - 3 * var(--abox-gap)) / 6);
   }
 
@@ -107,9 +108,13 @@
      of what is left of the screen below the page chrome (34rem). */
   @container (min-width: 62rem) {
     .index {
+      /* The subtrahend is the gap budget for one row, not a guess at chrome:
+         ten cells span three or four boxes, so at most four --abox-gap gaps.
+         6.5rem was roughly eight times that and cost the index 90px of width
+         it could have spent on the pictographs. */
       --codex-picto-size: clamp(
         3rem,
-        min(calc((100cqi - 6.5rem) / 10), calc((100dvh - 34rem) / 5)),
+        min(calc((100cqi - 2rem) / 10), calc((100dvh - 34rem) / 5)),
         9rem
       );
     }
@@ -152,7 +157,7 @@
        a stacked column that is the row width the panel actually has. */
     --codex-hero-size: clamp(
       11rem,
-      min(74cqi, calc(100dvh - 46rem)),
+      min(74cqi, calc(100dvh - 40rem)),
       46rem
     );
     --codex-var-cols: 8;

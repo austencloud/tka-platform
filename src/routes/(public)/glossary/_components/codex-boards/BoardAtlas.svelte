@@ -33,6 +33,11 @@
      itself: 3+3+3+3, then 3+3+4+2, and so on down to 47 in four rows. */
   .flow-host {
     --abox-gap: 0.4rem;
+    /* Cells are height-capped (see below), so a full row cannot always consume
+       the whole band - at 1920 twelve of them come up about 190px short. Left
+       aligned that reads as a hole cut out of the right side; centred it reads
+       as the margin around a board. */
+    --codex-flow-justify: center;
     /* Whichever binds first: twelve cells plus gaps across the band, or four
        rows' share of what is left of the screen below the page chrome (34rem,
        measured against a 1440x900 laptop, where the height term is the one that

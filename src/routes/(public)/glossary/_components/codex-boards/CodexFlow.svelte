@@ -47,6 +47,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: stretch;
+    justify-content: var(--codex-flow-justify, flex-start);
     gap: var(--codex-flow-row-gap, 0.4rem) var(--abox-gap, 0.4rem);
   }
 
