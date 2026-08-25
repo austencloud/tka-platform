@@ -31,11 +31,17 @@
     showPositions = false,
     showReversals = false,
     showNonRadialPoints = false,
+    theme = "print",
     dataOverride,
     onSelect,
   }: {
     cell: CodexCellDef;
     propType?: PropType;
+    /** "print" is the canonical ink-on-white sheet every existing caller gets.
+     *  "dark" renders the same cell for a dark host (the public glossary): the
+     *  pictograph flips via GuidePictograph's forceTheme, and the frame/caption
+     *  colours come from the --codex-* tokens below, which the host overrides. */
+    theme?: "print" | "dark";
     showGlyph?: boolean;
     showGrid?: boolean;
     showTKA?: boolean;
@@ -72,6 +78,7 @@
       showNonRadialPoints={showNonRadialPoints}
       printMode={true}
       darkMode={false}
+      forceTheme={theme === "dark" ? "dark" : undefined}
       eager={true}
     />
   </div>
@@ -109,10 +116,14 @@
     min-width: 0;
   }
 
+  /* Every colour below is a token whose DEFAULT is the value this sheet has
+     always printed, so print/card callers are byte-identical. A dark host (the
+     public glossary) redefines the tokens on an ancestor instead of forking the
+     component. */
   .cell-top {
     font-size: 0.62rem;
     font-weight: 600;
-    color: #333;
+    color: var(--codex-caption, #333);
     line-height: 1.1;
   }
 
@@ -128,7 +139,7 @@
     width: var(--codex-picto-size, 110px);
     aspect-ratio: 1;
     box-sizing: border-box;
-    border: 1px solid #2b2b2b;
+    border: 1px solid var(--codex-cell-border, #2b2b2b);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -156,7 +167,7 @@
   .cell-name {
     font-style: italic;
     font-size: 0.6rem;
-    color: #555;
+    color: var(--codex-name, #555);
     line-height: 1.1;
   }
 

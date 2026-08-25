@@ -1,0 +1,45 @@
+/* Dark host tokens for the canonical guide codex primitives.
+ *
+ * CodexSheet / CodexBox / CodexCell print ink-on-white and always have. Every
+ * colour in them is now a `--codex-*` token whose DEFAULT is the print value,
+ * so the print sheets, the poster and Choreo Card printing are untouched. This
+ * file is the only override set: an element carrying `.codex-dark` re-points
+ * those tokens at the glossary's theme, and the primitives render dark without
+ * a single forked line.
+ *
+ * Not a Svelte scoped block, because custom properties have to reach INTO the
+ * child components' shadowless-but-scoped styles. Plain CSS custom properties
+ * inherit; scoped class selectors do not.
+ */
+
+.codex-dark {
+  /* Cell */
+  --codex-cell-border: var(--theme-stroke, oklch(0.42 0.04 270 / 0.42));
+  --codex-caption: var(--theme-text-muted, oklch(0.72 0.015 270));
+  --codex-name: var(--theme-text-muted, oklch(0.72 0.015 270));
+
+  /* Box */
+  --codex-box-bg: var(--theme-panel-bg, oklch(0.16 0.02 270));
+  --codex-transition: var(--theme-text, oklch(0.96 0.01 270));
+  --codex-mode: var(--theme-text-muted, oklch(0.72 0.015 270));
+
+  /* Sheet */
+  --codex-sheet-bg: transparent;
+  --codex-sheet-fg: var(--theme-text, oklch(0.96 0.01 270));
+  --codex-title: var(--theme-text, oklch(0.96 0.01 270));
+  --codex-divider: var(--theme-stroke, oklch(0.42 0.04 270 / 0.35));
+  --codex-type-word: var(--theme-text, oklch(0.96 0.01 270));
+
+  /* The pictograph draws its own dark-mode outline; the cell border is the
+     only frame the codex wants, exactly as in print. */
+  --pictograph-border: none;
+}
+
+/* The type headings are serif italic on paper. On screen they sit next to the
+   glossary's sans editorial voice, so they keep the serif (it is the codex's
+   identity) but drop to a size that does not out-shout the pictographs. */
+.codex-dark {
+  --codex-type-head-size: 1.05rem;
+  --codex-type-head-margin: 0 0 0.35rem;
+  --codex-divider-margin: 0.6rem 0 0.3rem;
+}
