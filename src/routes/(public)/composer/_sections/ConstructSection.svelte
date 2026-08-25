@@ -1352,12 +1352,21 @@
      to four stable columns so cells never resize mid-build, so the grid is a
      fixed-height row block; stretching the frame past it just banked void around
      it, and a small strip floating in a tall box is what read as unfinished. The
-     column ends where its content ends. */
+     column ends where its content ends.
+
+     The height is DEFINITE (`height`, not `height: auto` + `min-height`) and
+     that is load-bearing, not stylistic. StepGrid's container declares
+     `container-type: size` and the arrival card that pops a picked step forward
+     sizes itself in `cqh`. Size containment means the container's own contents
+     cannot supply its block size, so an auto-height ancestor leaves it
+     indefinite: `80cqh` resolves to 0, the card renders zero-wide, and the
+     arrival plays as a bare scrim darkening with nothing flying into the grid.
+     A definite height here is what the whole chain of `height: 100%` resolves
+     against. Same 18rem the min-height produced — stated so it computes. */
   @container (min-width: 1100px) {
     .ws-frame {
       flex: 0 0 auto;
-      height: auto;
-      min-height: 18rem;
+      height: 18rem;
     }
   }
 
