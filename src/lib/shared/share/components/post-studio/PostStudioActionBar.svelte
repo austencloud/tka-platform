@@ -201,7 +201,7 @@
     class:active={composition.safeZonesVisible}
     aria-pressed={composition.safeZonesVisible}
     aria-label="Instagram safe area overlay"
-    title="Instagram safe area — where the app's own controls sit over the post"
+    title="Instagram safe area: where the app's own controls sit over the post"
     onclick={composition.toggleSafeZones}
   >
     <i class="fa-solid fa-border-all" aria-hidden="true"></i>
@@ -222,7 +222,7 @@
       aria-pressed={notationMirrored}
       disabled={notationMirrorPending}
       aria-label="Mirror the notation"
-      title="Mirror the notation — reflects every notation layer, letters intact"
+      title="Mirror the notation: reflects every notation layer, letters intact"
       onclick={onToggleNotationMirror}
     >
       <i class="fa-solid fa-right-left" aria-hidden="true"></i>

@@ -96,7 +96,7 @@ export function createPostHogFlagAdminService(
             const detail = errorData.detail ? ` - ${errorData.detail}` : "";
             const reason =
               errorData.firebaseCode === "auth/id-token-expired" || response.status === 401
-                ? "Session expired — sign in again"
+                ? "Session expired. Sign in again."
                 : errorData.message || `HTTP ${response.status}`;
             throw new Error(reason + detail);
           }

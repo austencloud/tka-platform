@@ -284,7 +284,7 @@
   <title>Endless Spinner | The Kinetic Alphabet</title>
   <meta
     name="description"
-    content="Watch TKA LOOPs chain endlessly — generated on the spot or drawn from the library."
+    content="Watch TKA LOOPs chain endlessly, generated on the spot or drawn from the library."
   />
 </svelte:head>
 

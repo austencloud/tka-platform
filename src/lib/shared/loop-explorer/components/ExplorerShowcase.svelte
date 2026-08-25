@@ -57,7 +57,7 @@
       {:else if state.status === "empty"}
         <div class="stage-status">
           {state.legality.legal
-            ? "Couldn't verify an example for this selection yet — try Refresh."
+            ? "Couldn't verify an example for this selection yet. Try Refresh."
             : (state.legality.reason ?? "Select a legal combination to see an example.")}
         </div>
       {:else if state.example}

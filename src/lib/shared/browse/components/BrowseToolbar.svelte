@@ -611,7 +611,7 @@
       class="zoom-btn"
       onclick={() => engine.zoomIn()}
       disabled={!engine.canZoomIn}
-      aria-label="Zoom out — smaller cards, more columns"
+      aria-label="Zoom out: smaller cards, more columns"
     >
       <i class="fas fa-magnifying-glass-minus" aria-hidden="true"></i>
     </button>
@@ -620,7 +620,7 @@
       class="zoom-btn"
       onclick={() => engine.zoomOut()}
       disabled={!engine.canZoomOut}
-      aria-label="Zoom in — larger cards, fewer columns"
+      aria-label="Zoom in: larger cards, fewer columns"
     >
       <i class="fas fa-magnifying-glass-plus" aria-hidden="true"></i>
     </button>

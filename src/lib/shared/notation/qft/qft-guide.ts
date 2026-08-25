@@ -114,21 +114,21 @@ export const GUIDE_MOVES: GuideMove[] = [
 /** The four sources, ranked by authority in the sourcing archive. */
 export const SOURCES = [
   {
-    label: "Charlie Cushing — QfT Tutorial Series",
+    label: "Charlie Cushing: QfT Tutorial Series",
     href: "https://www.youtube.com/playlist?list=PL45D3844B85CB8D80",
   },
   {
-    label: "Drex — A Beginner's Guide to Prop QFT Notation",
+    label: "Drex: A Beginner's Guide to Prop QFT Notation",
     href: "https://www.homeofpoi.com/en/community/forums/topics/932537/A-Beginner-s-Guide-to-Prop-QFT-Notation",
   },
   {
     /* Named as the image source because it is: these frames were pulled from
 		   here, and this is the copy that still serves them. */
-    label: "Drex — the same guide on his blog, images intact",
+    label: "Drex: the same guide on his blog, images intact",
     href: "https://drexfactor.com/weirdscience/2011/05/18/beginners_guide_poi_qft_notation",
   },
   {
-    label: "Drex — Charlie's QFT instruction videos now easier to watch",
+    label: "Drex: Charlie's QFT instruction videos now easier to watch",
     href: "https://drexfactor.com/weirdscience/2011/11/02/charlies_qft_instruction_videos_now_easier_watch",
   },
 ];

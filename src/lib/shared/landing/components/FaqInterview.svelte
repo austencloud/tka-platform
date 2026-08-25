@@ -20,7 +20,7 @@
 
   let {
     items = FAQ_ITEMS,
-    heading = "Questions spinners actually ask",
+    heading = "Common questions",
     emitSchema = false,
     sectionId = "faq",
   }: {

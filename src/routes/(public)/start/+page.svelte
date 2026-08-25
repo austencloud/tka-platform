@@ -152,7 +152,7 @@
           </div>
 
           <p class="scan-hint">
-            Then point your camera at any card in your pack — the sequence
+            Then point your camera at any card in your pack. The sequence
             plays.
           </p>
         </section>

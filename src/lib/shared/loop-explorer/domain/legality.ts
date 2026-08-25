@@ -75,7 +75,7 @@ export function evaluateSelection(components: ReadonlySet<LOOPComponent>): Selec
     return {
       legal: false,
       loopType: null,
-      reason: `${names} ${soloPicked.length === 1 ? "composes" : "compose"} with nothing else — pick it alone.`,
+      reason: `${names} ${soloPicked.length === 1 ? "composes" : "compose"} with nothing else. Pick it alone.`,
     };
   }
 
@@ -108,7 +108,7 @@ export function evaluateChip(
   if (SOLO_ONLY.has(candidate) && current.size > 0) {
     return {
       canAdd: false,
-      reason: `${formatComponentName(candidate)} composes with nothing else — clear the current selection first.`,
+      reason: `${formatComponentName(candidate)} composes with nothing else. Clear the current selection first.`,
     };
   }
 

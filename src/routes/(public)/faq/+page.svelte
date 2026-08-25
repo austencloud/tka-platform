@@ -56,7 +56,7 @@
 <div class="editorial faq-editorial">
   <header class="editorial-header" style:view-transition-name="launchpad-faq">
     <h1 class="page-title">FAQ</h1>
-    <p class="page-subtitle">Questions spinners actually ask</p>
+    <p class="page-subtitle">Getting started, props, and cost</p>
   </header>
 
   <FaqInterview emitSchema heading="" />

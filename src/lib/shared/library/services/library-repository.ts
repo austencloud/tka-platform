@@ -395,7 +395,7 @@ export class LibraryRepository {
 
     if (isEmptySequence(sequence)) {
       throw new LibraryError(
-        "Nothing to save — this sequence has no steps.",
+        "Nothing to save. This sequence has no steps.",
         "INVALID_DATA",
         sequence.id
       );

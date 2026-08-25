@@ -59,7 +59,7 @@
   <SequenceHeroDemo
     sequence={heroAct.sequence}
     element={heroAct.element}
-    note="played straight from its notation"
+    note="a sequence in TKA notation"
     onReroll={handleReroll}
     rerolling={heroAct.rerolling}
     bluePropType={heroAct.propType}

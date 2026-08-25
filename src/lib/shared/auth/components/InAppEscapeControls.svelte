@@ -250,11 +250,11 @@
       type="text"
       readonly
       value={currentUrl}
-      aria-label="Page link — press and hold to copy"
+      aria-label="Page link, press and hold to copy"
       use:autoselect
       onfocus={(e) => e.currentTarget.select()}
     />
-    <p class="status" aria-live="polite">Couldn't copy automatically — press and hold the link above.</p>
+    <p class="status" aria-live="polite">Couldn't copy automatically. Press and hold the link above.</p>
   {/if}
 </div>
 

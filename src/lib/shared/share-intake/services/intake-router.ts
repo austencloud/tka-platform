@@ -208,8 +208,8 @@ export async function routeIntake(
     if (rest.length > 0) {
       toast.info(
         rest.length === 1
-          ? "1 more image is saved — share again to send it."
-          : `${rest.length} more images are saved — share again to send them.`
+          ? "1 more image is saved. Share again to send it."
+          : `${rest.length} more images are saved. Share again to send them.`
       );
     }
   }

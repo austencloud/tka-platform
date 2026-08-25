@@ -139,7 +139,7 @@ export class LibraryRecycleBin {
         }).catch(() => undefined);
         notifyLibraryMutated(sequenceId);
         this.reportError(
-          "Sequence restored as private — an identical sequence is already in the community gallery.",
+          "Sequence restored as private. An identical sequence is already in the community gallery.",
           error,
           "restore-sequence-public-conflict",
           { sequenceId, claimedBySequenceId: error.claimedBySequenceId },
@@ -261,7 +261,7 @@ export class LibraryRecycleBin {
 
     if (failures.length > 0) {
       this.reportError(
-        `Failed to empty recycle bin — ${failures.length} of ${deleted.length} sequences remain.`,
+        `Failed to empty recycle bin. ${failures.length} of ${deleted.length} sequences remain.`,
         failures[0]!.error,
         "empty-recycle-bin",
         { failedIds: failures.map((f) => f.sequenceId) }

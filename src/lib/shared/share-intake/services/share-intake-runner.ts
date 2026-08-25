@@ -194,7 +194,7 @@ function promptForSignIn(receiptId: string): void {
   prompted.add(receiptId);
 
   authDrawerState.show("signin", "share-image-signin");
-  toast.info("Sign in to send the image you shared — it's saved until you do.");
+  toast.info("Sign in to send the image you shared. It's saved until you do.");
 }
 
 /**

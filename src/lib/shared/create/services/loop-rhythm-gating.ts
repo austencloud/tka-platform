@@ -43,7 +43,7 @@ export function gateRhythm(
   if (seedLength < 2 && specHasExpandInversion(wire)) {
     return {
       ok: false,
-      reason: "Too short — a one-beat seed has nothing for inversion to flip",
+      reason: "Too short. A one-step seed has nothing for inversion to flip",
     };
   }
   return { ok: true, seedLength, multiplier };

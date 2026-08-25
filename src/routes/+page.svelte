@@ -33,7 +33,7 @@
   />
   <meta
     property="og:description"
-    content="A notation system for flow arts, with free software for writing, animating, saving, and sharing choreography."
+    content="A notation system for flow arts, with free software to write, animate, save, and share choreography."
   />
   <meta
     property="og:image"
@@ -41,7 +41,7 @@
   />
   <meta
     property="og:image:alt"
-    content="Flow Arts Composer - Flow arts choreography app showing staff sequence animation"
+    content="Flow Arts Composer animating a staff sequence"
   />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -57,7 +57,7 @@
   />
   <meta
     name="twitter:description"
-    content="A notation system for flow arts, with free software for writing, animating, saving, and sharing choreography."
+    content="A notation system for flow arts, with free software to write, animate, save, and share choreography."
   />
   <meta
     name="twitter:image"
@@ -65,7 +65,7 @@
   />
   <meta
     name="twitter:image:alt"
-    content="Flow Arts Composer - Flow arts notation app showing staff sequence animation"
+    content="Flow Arts Composer animating a staff sequence"
   />
 
   <!-- Canonical URL -->

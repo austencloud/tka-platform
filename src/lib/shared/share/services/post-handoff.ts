@@ -224,7 +224,7 @@ export async function copyImageAndOpenFacebook(
   }
 
   window.open(FACEBOOK_COMPOSER_URL, "_blank", "noopener,noreferrer");
-  return { status: "done", message: "Image copied — paste into your post" };
+  return { status: "done", message: "Image copied. Paste into your post" };
 }
 
 /**
