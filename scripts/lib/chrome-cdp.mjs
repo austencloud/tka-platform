@@ -57,14 +57,23 @@ export async function connect(webSocketDebuggerUrl) {
   };
 }
 
-/** Full-viewport PNG to disk. */
+/**
+ * Full-viewport PNG. Returns the buffer; writes it only when given a path.
+ *
+ * Prefer this over `captureClip` for anything that fills the viewport: an
+ * unclipped capture is exactly the surface Chrome presented, so it is immune to
+ * the browser-zoom mismatch that makes a clip rectangle taken from
+ * `getBoundingClientRect` land in the wrong coordinate space.
+ */
 export async function capture(client, path) {
   const { data } = await client.send("Page.captureScreenshot", {
     format: "png",
     fromSurface: true,
     captureBeyondViewport: false,
   });
-  writeFileSync(path, Buffer.from(data, "base64"));
+  const buffer = Buffer.from(data, "base64");
+  if (path) writeFileSync(path, buffer);
+  return buffer;
 }
 
 /**
