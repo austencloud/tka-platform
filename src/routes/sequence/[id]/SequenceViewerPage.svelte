@@ -52,6 +52,17 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+  import { registerLibraryRepository } from "$lib/shared/composition-root/register-library-repository";
+
+  // Same bare-layout gap /q/[code] wires around: this standalone route never
+  // imports the composition root, so nothing registered the library repository
+  // or the visual save coordinator. SequenceViewerShell's Save then threw
+  // "Visual sequence saving has not been registered" on the first tap, and the
+  // shell's saved/owner sync threw on getLibraryRepository() for signed-in
+  // viewers. Register during component init, before the descendant viewer
+  // mounts, so the first saved-state sync cannot race route bootstrap.
+  // Re-registering is idempotent - app mode supplies the same factories.
+  if (browser) registerLibraryRepository();
 
   interface Props {
     data: {
