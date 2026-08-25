@@ -9,6 +9,7 @@ import type {
   UserLocation,
   UserLocationWithProfile,
   LocationSharingPreferences,
+  OwnLocationResult,
 } from "../domain/models/user-location";
 import { z } from "zod";
 
@@ -52,12 +53,41 @@ export async function saveLocation(
   }
 }
 
+/**
+ * @deprecated Collapses "no document" and "read failed" into the same `null`,
+ * so a caller cannot tell a user who is not on the map from a user whose
+ * document could not be read. Use {@link readOwnLocation}. Retained only for
+ * `location-sharing-orchestrator`, which is being removed; delete this with it.
+ */
 export async function getLocation(userId: string): Promise<UserLocation | null> {
   try {
     return await firestoreGet(LOCATIONS_COLLECTION, userId, UserLocationSchema) as UserLocation | null;
   } catch (error) {
     console.error("❌ [UserLocationRepository] Failed to get location:", error);
     return null;
+  }
+}
+
+/**
+ * Read the signed-in user's own location document, keeping absence and failure
+ * distinguishable.
+ *
+ * Membership on the community map is the existence of this document, and it
+ * cannot be derived from `getPublicLocations()`: that query excludes private
+ * documents, drops any whose profile join returns null, and is limit-bounded,
+ * so a member can be missing from it for three unrelated reasons.
+ */
+export async function readOwnLocation(userId: string): Promise<OwnLocationResult> {
+  try {
+    const location = (await firestoreGet(
+      LOCATIONS_COLLECTION,
+      userId,
+      UserLocationSchema,
+    )) as UserLocation | null;
+    return location ? { status: "found", location } : { status: "absent" };
+  } catch (error) {
+    console.error("❌ [UserLocationRepository] Failed to read own location:", error);
+    return { status: "failed", error };
   }
 }
 
@@ -94,6 +124,11 @@ export async function getPublicLocations(
           userId: location.userId,
           city: location.city,
           country: location.country,
+          // Named explicitly because this join rebuilds its result field by
+          // field. `UserLocationSchema.passthrough()` preserves the key through
+          // validation, but anything not assigned here is dropped before it
+          // reaches a marker.
+          countryCode: location.countryCode,
           cityCenterCoordinates: location.cityCenterCoordinates,
           visibility: location.visibility,
           // Schema-parsed Date vs domain Timestamp don't structurally overlap,

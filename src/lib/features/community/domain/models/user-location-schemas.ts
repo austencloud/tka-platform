@@ -6,6 +6,7 @@ export const UserLocationSchema = z
     userId: z.string(),
     city: z.string(),
     country: z.string(),
+    countryCode: z.string().optional(),
     cityCenterCoordinates: z.object({
       lat: z.number(),
       lng: z.number(),

@@ -314,6 +314,31 @@ result arrives last. An outcome for a stale intent updates confirmed state
 where applicable but changes nothing on screen, because a newer intent already
 owns the display.
 
+**Lifetime, and where the state is created.** Opening a creator profile tears
+down the roster host through the panel's root `Crossfade`
+(`CreatorsPanel.svelte:494`, roster at `:504`), so a store created inside the
+roster would refetch both collections on every back navigation.
+
+Round 4 called the answer "a feature-scoped state module." That collides with
+the `state-management` skill's rule 4 — no module-level singletons — and the
+survival property does not need one. `CreatorsPanel` is the Crossfade's
+**host**, so it already sits above the teardown: the state factory is created
+there and distributed by context, and it outlives profile navigation for an
+ordinary structural reason rather than by living at module scope.
+
+Services are injected as arguments, per the same skill. That is also what makes
+the queue's race tests possible without mocking modules: the tests hand it
+deferred fakes directly.
+
+State invalidates on uid change and on explicit refresh.
+
+**The queue is a plain TypeScript module, not a rune.** Ordering, supersession,
+session cancellation, and serialization live in
+`domain/location-mutation-queue.ts` with no Svelte import. Every bug the last
+three review rounds found was in that logic, so it is tested directly as
+functions with controlled promises rather than through a reactive wrapper.
+`community-map-state.svelte.ts` owns reactive fields and delegates.
+
 
 ### 3. The invitation slot — one box, five states
 
