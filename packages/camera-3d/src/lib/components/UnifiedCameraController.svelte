@@ -26,6 +26,13 @@
     sprintMultiplier?: number;
     jumpForce?: number;
     gravity?: number;
+    /** Camera height above the physics body's centre in first person. */
+    firstPersonCameraOffset?: number;
+    /** Review harnesses can lock locomotion to one measured walking speed. */
+    enableSprint?: boolean;
+    enableJump?: boolean;
+    enableCrouch?: boolean;
+    enableNoclip?: boolean;
     onRotationChange?: (yaw: number, pitch: number) => void;
     initialYaw?: number;
     initialPitch?: number;
@@ -72,6 +79,13 @@
   const sprintMultiplier = $derived(props.sprintMultiplier ?? CAMERA_DEFAULTS.SPRINT_MULTIPLIER);
   const jumpForce = $derived(props.jumpForce ?? CAMERA_DEFAULTS.JUMP_VELOCITY);
   const gravity = $derived(props.gravity ?? Math.abs(CAMERA_DEFAULTS.GRAVITY) * 2.5);
+  const firstPersonCameraOffset = $derived(
+    props.firstPersonCameraOffset ?? CAMERA_DEFAULTS.FIRST_PERSON_CAMERA_OFFSET,
+  );
+  const enableSprint = $derived(props.enableSprint ?? true);
+  const enableJump = $derived(props.enableJump ?? true);
+  const enableCrouch = $derived(props.enableCrouch ?? true);
+  const enableNoclip = $derived(props.enableNoclip ?? true);
   const allowedModes = $derived(props.allowedModes);
 
   const usePhysics = $derived(physicsProvider !== null);
@@ -208,7 +222,9 @@
       maxPitch: 1.2,
     },
     firstPerson: {
-      height: CAMERA_DEFAULTS.FIRST_PERSON_CAMERA_OFFSET,
+      get height() {
+        return firstPersonCameraOffset;
+      },
       forwardOffset: 0.05,
       minPitch: -1.4,
       maxPitch: 1.4,
@@ -245,7 +261,7 @@
       return;
     }
 
-    if (e.code === "KeyG" && isGameMode(mode)) {
+    if (e.code === "KeyG" && enableNoclip && isGameMode(mode)) {
       e.preventDefault();
       if (usePhysics && physicsProvider?.toggleNoclip) {
         noclipEnabled = physicsProvider.toggleNoclip();
@@ -535,9 +551,10 @@
       ? stickStrafe
       : (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) -
         (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
-    const isSprinting = keys.has("ShiftLeft") || keys.has("ShiftRight");
-    const isJumping = keys.has("Space");
-    const isCrouching = keys.has("KeyC");
+    const isSprinting =
+      enableSprint && (keys.has("ShiftLeft") || keys.has("ShiftRight"));
+    const isJumping = enableJump && keys.has("Space");
+    const isCrouching = enableCrouch && keys.has("KeyC");
     const hasMovementInput = forwardInput !== 0 || strafeInput !== 0;
 
     const cam = camera.current;
