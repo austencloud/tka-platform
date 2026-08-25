@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
 	viewerModeOptions,
 	coerce3DContent,
-	coerce3DSplit
+	coerce3DSplit,
+	legacyViewModeFor
 } from './viewer-modes';
 
 const has = (webgl2: boolean, fits3D: boolean) =>
@@ -67,5 +68,18 @@ describe('coerce3DSplit', () => {
 	it('returns the config unchanged when the viewport fits', () => {
 		const cfg = { leftPane: 'animation-3d', rightPane: 'card' } as const;
 		expect(coerce3DSplit(cfg, true)).toBe(cfg);
+	});
+});
+
+describe('legacyViewModeFor', () => {
+	it('keeps a still card still so an autoplay open does not start motion behind it', () => {
+		expect(legacyViewModeFor('card')).toBe('image');
+	});
+
+	it('allows motion on every surface that animates', () => {
+		expect(legacyViewModeFor('animation')).toBe('animation');
+		expect(legacyViewModeFor('animation-3d')).toBe('animation');
+		expect(legacyViewModeFor('split')).toBe('animation');
+		expect(legacyViewModeFor('tunnel')).toBe('animation');
 	});
 });

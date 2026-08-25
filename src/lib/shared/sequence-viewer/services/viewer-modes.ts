@@ -101,3 +101,14 @@ export function coerce3DSplit(config: SplitConfig, fits3D: boolean): SplitConfig
 		rightPane: coerce3DContent(config.rightPane, fits3D)
 	};
 }
+
+/**
+ * Bridge to the viewer's older three-value `ViewMode`
+ * (`sequence-modal-persistence.ts`), which only the autoplay policy still
+ * reads: motion never auto-starts on `'image'`. A restored `card` surface is
+ * a still image, so an autoplay open on it stays still; every other surface
+ * either animates or ignores playback.
+ */
+export function legacyViewModeFor(mode: ViewerMode): 'animation' | 'image' | 'split' {
+	return mode === 'card' ? 'image' : 'animation';
+}

@@ -38,6 +38,7 @@
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { calculateThumbnailAspectRatio } from "$lib/shared/render/services/layout-calculator";
   import { loadViewMode } from "$lib/shared/sequence-viewer/services/sequence-modal-persistence";
+  import { legacyViewModeFor } from "$lib/shared/sequence-viewer/services/viewer-modes";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/cell-pre-warmer";
   import { getScanCardCloudProbe } from "$lib/shared/sequence-viewer/scan-card-cloud-context";
   import { isViewerReadyToAutoplay } from "$lib/shared/sequence-viewer/services/viewer-autoplay-readiness";
@@ -208,23 +209,25 @@
     playback.setOnUrlParamChange(onUrlParamChange);
   });
 
-  let viewMode = $state<ViewMode>(playOnOpen ? "animation" : loadViewMode());
-  $effect.pre(() => {
-    if (playOnOpen) {
-      viewMode = "animation";
-    } else if (initialViewMode) {
-      viewMode = initialViewMode;
-    }
-  });
-
   const viewerState = createViewerState();
   if (initialViewerMode) {
     viewerState.setViewerMode(initialViewerMode);
     viewerState.setExportContext(null);
   }
-  if (playOnOpen) {
-    viewerState.enterExport("animation-export", "animation");
-  }
+  // playOnOpen means "open already moving" - it does NOT choose a surface.
+  // It used to call enterExport("animation-export", "animation"), which both
+  // forced 2D and PERSISTED it, so one open from Create or from a scanned
+  // ?v= code reset the remembered surface back to 2D for every later open.
+  // The surface someone last chose is restored by createViewerState above.
+
+  let viewMode = $state<ViewMode>(
+    playOnOpen ? legacyViewModeFor(viewerState.viewerMode) : loadViewMode()
+  );
+  $effect.pre(() => {
+    if (initialViewMode) {
+      viewMode = initialViewMode;
+    }
+  });
   const practiceViewPrefs = createPracticeViewPrefs();
   playback.setPracticeViewPrefs(practiceViewPrefs);
 
