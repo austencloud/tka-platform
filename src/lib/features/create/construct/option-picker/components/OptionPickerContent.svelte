@@ -18,6 +18,7 @@ Uses organizer and sizer services for section grouping and sizing.
   // CSS animations used instead of Svelte transitions to avoid carousel dimension issues
   import OptionSection from "./OptionSection.svelte";
   import { safe } from "$lib/shared/attract/domain/annotations";
+  import { createRootFontRamp } from "$lib/shared/ui/root-font-ramp.svelte";
   import Option456Row from "./Option456Row.svelte";
   import OptionGrid from "./OptionGrid.svelte";
   import OptionCard from "./OptionCard.svelte";
@@ -331,11 +332,27 @@ Uses organizer and sizer services for section grouping and sizing.
   // ==================== DESKTOP SIZING ====================
   // Desktop uses the sizer service to calculate appropriate card sizes
 
+  // The card bounds are px constants, so on a surface that ramps its root font
+  // for large displays the option pictographs stay 1080p-sized while the panel
+  // around them grows. Scaling the bounds by the same ramp keeps them in
+  // lockstep; the app shell does not ramp, so these resolve to the stock
+  // 60-120 there.
+  const BASE_MIN_CARD_SIZE = 60;
+  const BASE_MAX_CARD_SIZE = 120;
+  const BASE_FALLBACK_CARD_SIZE = 80;
+  const BASE_GRID_GAP = 8;
+  const rootFontRamp = createRootFontRamp();
+
   const desktopSizing = $derived(() => {
     const cols = columns();
+    const fallback = {
+      cardSize: rootFontRamp.scaled(BASE_FALLBACK_CARD_SIZE),
+      columns: cols,
+      gap: "8px",
+    };
     // Use reasonable defaults until stable
     if (!sizingStable || !sizerService) {
-      return { cardSize: 80, columns: cols, gap: "8px" };
+      return fallback;
     }
 
     try {
@@ -348,12 +365,18 @@ Uses organizer and sizer services for section grouping and sizing.
       });
 
       return {
-        cardSize: Math.max(60, Math.min(120, result.pictographSize)),
+        cardSize: Math.max(
+          rootFontRamp.scaled(BASE_MIN_CARD_SIZE),
+          Math.min(
+            rootFontRamp.scaled(BASE_MAX_CARD_SIZE),
+            result.pictographSize
+          )
+        ),
         columns: cols,
         gap: result.gridGap,
       };
     } catch {
-      return { cardSize: 80, columns: cols, gap: "8px" };
+      return fallback;
     }
   });
 
@@ -375,15 +398,22 @@ Uses organizer and sizer services for section grouping and sizing.
     return Math.max(200, height); // Ensure minimum usable height
   });
 
-  const mobileLayoutConfig = $derived(() => ({
-    optionsPerRow: 4,
-    pictographSize: 120, // Consistent max size hint
-    spacing: 8,
-    containerWidth: containerWidth,
-    containerHeight: effectiveSwipeHeight(),
-    gridColumns: `repeat(4, 1fr)`,
-    gridGap: "8px",
-  }));
+  const mobileLayoutConfig = $derived(() => {
+    // Same ramp as the desktop bounds above: the size hint and gap are px
+    // constants, so without this the carousel's pictographs stay 1080p-sized
+    // inside a pane that grew around them on a ramping surface.
+    const size = rootFontRamp.scaled(BASE_MAX_CARD_SIZE);
+    const gap = rootFontRamp.scaled(BASE_GRID_GAP);
+    return {
+      optionsPerRow: 4,
+      pictographSize: size, // Consistent max size hint
+      spacing: gap,
+      containerWidth: containerWidth,
+      containerHeight: effectiveSwipeHeight(),
+      gridColumns: `repeat(4, 1fr)`,
+      gridGap: `${gap}px`,
+    };
+  });
 
   // Simple resize observer - only update after stable
   $effect(() => {

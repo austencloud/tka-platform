@@ -777,10 +777,15 @@
   /* The toy box: one framed panel holds the whole demo, so toolbar, workspace
      and picker read as a single self-contained unit instead of controls
      floating in the section void. */
+  /* Sizes here are rem, not px: this section renders on a marketing surface
+     whose root font ramps 16px -> 24px from 1680 -> 3840 (app.css). A px
+     constant would freeze the toy at its 1080p size while the heading and band
+     around it grew. At root 16 every value below computes to the same pixels it
+     always did. See .claude/rules/4k-native-layout.md. */
   .demo-shell {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 1rem;
     /* Contained toy, not a full-bleed slab: on ultrawide viewports the panel
        caps out and centers, so the controls never drift apart into voids.
        4K-native cap per the shell standard (min(1720px, 92vw)) — 1360 left
@@ -788,8 +793,8 @@
     width: 100%;
     max-width: var(--shell-w, min(1720px, 92vw));
     margin-inline: auto;
-    padding: clamp(16px, 2.2cqw, 28px);
-    border-radius: 24px;
+    padding: clamp(1rem, 2.2cqw, 1.75rem);
+    border-radius: 1.5rem;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: color-mix(
       in srgb,
@@ -805,14 +810,14 @@
   .demo-columns {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 1rem;
     width: 100%;
   }
 
   .demo-col {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 1rem;
     min-width: 0;
   }
 
@@ -1067,9 +1072,9 @@
     .demo-columns {
       display: grid;
       grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-      gap: 0 clamp(24px, 3cqw, 48px);
+      gap: 0 clamp(1.5rem, 3cqw, 3rem);
       align-items: stretch;
-      min-height: calc(clamp(300px, 38vh, 540px) + 108px);
+      min-height: calc(clamp(18.75rem, 38vh, 33.75rem) + 6.75rem);
     }
     .workspace {
       flex: 1;
@@ -1081,7 +1086,7 @@
          the page on every first pick. */
       flex: 1 1 0;
       height: auto;
-      min-height: clamp(300px, 38vh, 540px);
+      min-height: clamp(18.75rem, 38vh, 33.75rem);
       overflow: hidden;
     }
   }
@@ -1091,17 +1096,17 @@
      stage; the same pixels outside one read as accidental void. */
   .workspace,
   .picker-pane {
-    border-radius: 18px;
+    border-radius: 1.125rem;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     background: rgba(255, 255, 255, 0.025);
-    padding: 12px 16px 14px;
+    padding: 0.75rem 1rem 0.875rem;
     box-sizing: border-box;
   }
 
   .workspace {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 0.625rem;
     min-width: 0;
   }
 
@@ -1109,7 +1114,7 @@
      Fixed height so hint ↔ word swaps never shift the grid below. WordLabel
      reads --text-color (its default is a light-theme navy). */
   .demo-status {
-    min-height: 52px;
+    min-height: 3.25rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1127,7 +1132,7 @@
      centered whether or not clear is showing). Height reserved — phase swaps
      never shift the grid above it. */
   .action-slot {
-    min-height: 52px;
+    min-height: 3.25rem;
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
@@ -1170,7 +1175,7 @@
   /* Fixed-height frame reserves the workspace footprint before anything is
      built — the grid appears INSIDE it, so nothing below ever shifts. */
   .ws-frame {
-    height: clamp(180px, 26vh, 320px);
+    height: clamp(11.25rem, 26vh, 20rem);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -1184,7 +1189,7 @@
     .ws-frame {
       flex: 1;
       height: auto;
-      min-height: 240px;
+      min-height: 15rem;
     }
   }
 
@@ -1202,7 +1207,7 @@
      scrolling — the first impression IS the fit. */
   .picker-pane {
     width: 100%;
-    height: clamp(300px, 38vh, 540px);
+    height: clamp(18.75rem, 38vh, 33.75rem);
   }
 
   /* The option grid caps its tile size; in a tall picker it top-aligns because
