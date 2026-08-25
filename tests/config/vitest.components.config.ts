@@ -25,6 +25,7 @@ export default defineConfig({
       "@capacitor/core",
       "@capacitor/haptics",
       "@capacitor/push-notifications",
+      "@googlemaps/js-api-loader",
       "axe-core",
       "bits-ui",
       "canvas",
