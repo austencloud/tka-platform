@@ -165,7 +165,12 @@ const HALF_STEPS_PER_TURN = 4; // one turn is 180 degrees; the cycle steps 45 at
  *
  * Quarter turns (level 6 only) move an odd number of positions and land on the
  * halfway orientations, and that is the one case where which way the prop spins
- * changes the answer.
+ * changes the answer. Turns are ADDITIONAL rotation on top of the base rotation
+ * the motion type already carries, so the added quarter turns follow the prop's
+ * own rotation direction whatever the motion type is. What anti and dash do
+ * differently lives entirely in that base — a zero-turn reversal, four steps
+ * round the cycle — and four steps is a whole lap of the four classes, so it
+ * cannot move the layer.
  */
 export function layerClassDelta(
   motion: LayerMotionInput | null | undefined
@@ -191,13 +196,19 @@ export function layerClassDelta(
   const magnitude = ((steps % 4) + 4) % 4;
   if (magnitude === 0 || magnitude === 2) return magnitude; // direction cannot change this
 
-  // Odd steps only: an anti or dash walks the cycle the same way the prop
-  // spins, a pro or static walks it the other way.
+  // Odd steps only. The cycle runs opposite the SVG angle convention, so a
+  // physical clockwise prop rotation walks it backwards — the same subtraction
+  // the orientation calculator makes, and for the same reason. Motion type does
+  // not enter into it: anti and dash differ only by their four-step base, which
+  // is invisible here. A motion with no rotation direction of its own is read as
+  // clockwise, matching the calculator.
   const rotation = (motion.rotationDirection ?? "cw").toLowerCase();
-  const isClockwise = rotation === "cw" || rotation === "clockwise";
-  const isAntiLike = type === "anti" || type === "dash";
-  const forward = isAntiLike ? isClockwise : !isClockwise;
-  const signed = forward ? magnitude : -magnitude;
+  const spun =
+    rotation === "norotation" || rotation === "none" || rotation === "no_rot"
+      ? "cw"
+      : rotation;
+  const isClockwise = spun === "cw" || spun === "clockwise";
+  const signed = isClockwise ? -magnitude : magnitude;
   return (((signed % 4) + 4) % 4) as 0 | 1 | 2 | 3;
 }
 
