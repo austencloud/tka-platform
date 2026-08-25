@@ -11,7 +11,10 @@
   import { sceneNeedsContactViewer } from "$lib/shared/3d/domain/prop-motion-discipline";
   import VisualSequenceSaveContextMenuHost from "$lib/shared/library/components/VisualSequenceSaveContextMenuHost.svelte";
   import Viewer3DIntro from "$lib/shared/3d/components/onboarding/Viewer3DIntro.svelte";
-  import { shouldShowViewer3DIntro } from "$lib/shared/onboarding/state/viewer3d-intro-state";
+  import {
+    isViewer3DIntroReplayRequested,
+    shouldShowViewer3DIntro,
+  } from "$lib/shared/onboarding/state/viewer3d-intro-state";
 
   let {
     side,
@@ -67,7 +70,12 @@
   const loadViewer3DCanvas = () =>
     import("$lib/shared/3d/components/Viewer3DCanvas.svelte");
   let scene3DReady = $state(false);
-  let showViewer3DIntro = $state(shouldShowViewer3DIntro());
+  // `?intro=replay` forces the guided card back on a profile that has already
+  // finished it, and `force` keeps that replay from re-marking it seen.
+  const replayViewer3DIntro = isViewer3DIntroReplayRequested();
+  let showViewer3DIntro = $state(
+    replayViewer3DIntro || shouldShowViewer3DIntro()
+  );
   let pane2D: HTMLDivElement | undefined = $state();
   let pane3D: HTMLDivElement | undefined = $state();
   let rail2D: HTMLDivElement | undefined = $state();
@@ -360,6 +368,7 @@
     {#if is3DActive && scene3DReady && showViewer3DIntro}
       <Viewer3DIntro
         onSettingChange={onViewer3DSettingChange}
+        force={replayViewer3DIntro}
         onDismiss={() => (showViewer3DIntro = false)}
       />
     {/if}

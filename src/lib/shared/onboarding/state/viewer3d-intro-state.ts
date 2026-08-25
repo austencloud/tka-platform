@@ -33,3 +33,20 @@ export function markViewer3DIntroSeen(): void {
     // Unauthenticated/persister unavailable — local flag stands.
   }
 }
+
+/**
+ * `?intro=replay` reopens the guided setup on a profile that already finished
+ * it — the card renders with `force`, so replaying never re-marks it seen and
+ * never touches the cloud status. This is how the first-run card stays
+ * reviewable after the one time a person actually sees it.
+ */
+export function isViewer3DIntroReplayRequested(search?: string): boolean {
+  if (!VIEWER3D_INTRO_ENABLED) return false;
+  const query =
+    search ?? (typeof location === "undefined" ? "" : location.search);
+  try {
+    return new URLSearchParams(query).get("intro") === "replay";
+  } catch {
+    return false;
+  }
+}
