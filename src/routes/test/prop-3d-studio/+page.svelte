@@ -236,7 +236,14 @@
   const railTopOffset = $derived(
     `${Math.round(titleTop + titleHeight + 14)}px`
   );
-  const railBottomOffset = $derived(`${Math.round(dockHeight + 24)}px`);
+  /** Mirrors `.transport-dock`'s `bottom: clamp(12px, 2.4cqh, 28px)`. The rail
+   *  has to clear the dock's TOP edge, which is that inset plus its height —
+   *  clearing the height alone left the inspector overlapping the dock's
+   *  corner by the inset's own few pixels. */
+  const dockInset = $derived(Math.min(28, Math.max(12, viewportHeight * 0.024)));
+  const railBottomOffset = $derived(
+    `${Math.round(dockHeight + dockInset + 10)}px`
+  );
 
   function syncUrl(): void {
     if (typeof window === "undefined") return;
@@ -933,6 +940,11 @@
       min-width: 64px;
     }
 
+    /* The play button deliberately does NOT shrink with this tier. It carries
+       its own 64px min-width as a touch-target floor, and it is the primary
+       control on the smallest screen the dock renders on — the 12px of dock
+       height a smaller one would return is not worth spending it on. */
+
     .new-loop-button span {
       display: none;
     }
@@ -947,6 +959,18 @@
   @container (max-width: 620px) {
     .transport-dock {
       flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* Wrapped, tempo owns a line to itself and grows into all of it, which
+       left-hugs the BPM stepper against a half-row of empty dock while the
+       transport below is centred — two rows that read as unrelated. Content-
+       sized and centred, the two lines share one axis. */
+    .transport-dock :global(.tempo-wrapper) {
+      flex: 0 0 auto;
+    }
+
+    .transport-dock :global(.tempo-control) {
       justify-content: center;
     }
   }
