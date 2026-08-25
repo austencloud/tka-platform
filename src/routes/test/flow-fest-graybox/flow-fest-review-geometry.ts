@@ -296,6 +296,27 @@ function buildRibbonGeometry(
       );
     }
   }
+  // Fill authored corners with one terrain-conforming disc. A pure miter strip
+  // self-intersects on the route's deliberate reversals (unload, gate return,
+  // then parking), leaving dark triangular holes in the exact places the
+  // review needs to read as continuous.
+  for (const point of segment.points) {
+    const base = positions.length / 3;
+    const y = sampleFlowFestTerrainWorldY(terrain, point.x, point.z) + 0.125;
+    const sides = 12;
+    positions.push(point.x, y, point.z);
+    for (let side = 0; side < sides; side += 1) {
+      const angle = (side / sides) * Math.PI * 2;
+      positions.push(
+        point.x + Math.cos(angle) * halfWidth,
+        y,
+        point.z + Math.sin(angle) * halfWidth
+      );
+    }
+    for (let side = 0; side < sides; side += 1) {
+      indices.push(base, base + 1 + side, base + 1 + ((side + 1) % sides));
+    }
+  }
   const geometry = new BufferGeometry();
   geometry.setAttribute(
     "position",
