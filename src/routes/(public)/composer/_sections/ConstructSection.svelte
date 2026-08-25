@@ -1362,11 +1362,20 @@
      indefinite: `80cqh` resolves to 0, the card renders zero-wide, and the
      arrival plays as a bare scrim darkening with nothing flying into the grid.
      A definite height here is what the whole chain of `height: 100%` resolves
-     against. Same 18rem the min-height produced — stated so it computes. */
+     against.
+
+     The value tracks the grid rather than a flat rem constant. StepGrid lays
+     the 8-step cap plus the start tile out as two rows of square cells across
+     the frame, and the frame is a stable fraction of this container, so the
+     tallest the grid ever gets stays proportional to container width — measured
+     318px at a 1669px container, 420 at 2221, 478 at 2528, i.e. ~19cqw
+     throughout. 19.5cqw clears all three with the pop reserve intact. The rem
+     bounds hold the small end and stop it running away past the 2600px band
+     cap. A flat 18rem cut the last row off by 14px at 1920 and 73 at 2560. */
   @container (min-width: 1100px) {
     .ws-frame {
       flex: 0 0 auto;
-      height: 18rem;
+      height: clamp(18rem, 19.5cqw, 32rem);
     }
   }
 
