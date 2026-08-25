@@ -961,7 +961,7 @@
      a scrollbar rather than a workspace. */
   .compact-layout .sequence-column .ws-frame {
     flex: 0 0 auto;
-    height: clamp(9rem, 26svh, 14rem);
+    height: clamp(11rem, 22cqw, 16rem);
     min-height: 0;
   }
 
