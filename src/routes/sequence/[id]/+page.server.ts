@@ -130,10 +130,26 @@ function isSafeFirestoreDocumentId(value: string): boolean {
   );
 }
 
+/**
+ * The canonical spelling of a sequence id.
+ *
+ * Theta is always uppercase in TKA canon. Seventy published sequences were
+ * created before that was enforced and carried a lowercase theta in their
+ * document id until the ids were migrated; their permalinks are already out in
+ * the world and keep arriving. No live document carries a lowercase theta any
+ * more, so an incoming one can only be a legacy URL - rewriting it here lets
+ * those links keep their real title, description, and card image instead of
+ * falling through to the generic unverified meta.
+ */
+function canonicalSequenceId(sequenceId: string): string {
+  return sequenceId.replace(/θ/g, "Θ");
+}
+
 async function loadPublishedMeta(
-  sequenceId: string,
+  requestedId: string,
   fallback: SequenceRouteMeta
 ): Promise<SequenceRouteMeta> {
+  const sequenceId = canonicalSequenceId(requestedId);
   if (!isSafeFirestoreDocumentId(sequenceId)) return fallback;
 
   try {

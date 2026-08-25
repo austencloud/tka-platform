@@ -2703,7 +2703,7 @@
         {
           "slot": "rotated8",
           "source": "publicSequences",
-          "id": "W-θ-",
+          "id": "W-Θ-",
           "name": "W-Θ-",
           "word": "W-Θ-W-Θ-W-Θ-W-Θ-",
           "level": 2,
@@ -2714,7 +2714,7 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/W-θ-",
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/W-Θ-",
           "turnPattern": "1|0-0|1-1|0-0|1",
           "turnPatternId": "alternating-hands"
         },
@@ -5622,7 +5622,7 @@
         {
           "slot": "rotated8",
           "source": "publicSequences",
-          "id": "W-θ-",
+          "id": "W-Θ-",
           "name": "W-Θ-",
           "word": "W-Θ-W-Θ-W-Θ-W-Θ-",
           "level": 1,
@@ -5633,7 +5633,7 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/W-θ-"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/W-Θ-"
         },
         {
           "slot": "tndBase",
@@ -7149,7 +7149,7 @@
         {
           "slot": "rotated8",
           "source": "publicSequences",
-          "id": "W-θ-",
+          "id": "W-Θ-",
           "name": "W-Θ-",
           "word": "W-Θ-W-Θ-W-Θ-W-Θ-",
           "level": 3,
@@ -7160,7 +7160,7 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/W-θ-",
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/W-Θ-",
           "turnPattern": "0.5|0-0.5|0-0|0.5-0|0.5",
           "turnPatternId": "split-blocks"
         },
