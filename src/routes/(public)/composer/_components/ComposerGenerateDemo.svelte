@@ -3,26 +3,43 @@
 
   The Generate section's interactive demo: a real Generate button wired to the
   real client-side generation engine (generationOrchestrator — the same
-  context-free service the mandala loader pool uses). Tap it and a fresh
-  rotated LOOP lands in the player, with its mandala breathing next to it.
+  context-free service the app's own Generate tab uses). Tap it and a fresh
+  rotated LOOP cascades into the workspace on the left and plays on the right.
 
-  Engine + player + mandala chunks are all dynamically imported so the
-  prerendered page pays nothing until the section is reached (player/mandala
-  mount on idle, seeded with the page's per-visit generated sequence; the
-  engine chunk loads on the first button tap). Stages are fixed aspect-ratio
-  so nothing shifts.
+  The two stages show the sequence's two halves — the notation it IS and the
+  movement it BECOMES. An earlier version paired the player with a mandala, but
+  the player's own trails already draw that figure, so the pair said one thing
+  twice.
+
+  The left stage is the REAL StepGrid, and the reveal is the app's own
+  generation cascade: setPendingGenerationAnimation is the flag the Generate tab
+  raises before a generated sequence reaches the workspace (see
+  generate-actions.svelte.ts), and StepGrid consumes it on its first render.
+  Remounting on the new sequence id gives each draw that first render, so every
+  click cascades exactly as it does in the app.
+
+  Engine, grid, and player chunks are all dynamically imported so the
+  prerendered page pays nothing until the section is reached (grid/player mount
+  on idle, seeded with the page's per-visit generated sequence; the engine chunk
+  loads on the first button tap). Stages are fixed aspect-ratio so nothing
+  shifts.
 -->
 <script lang="ts">
   import { MediaQuery } from "svelte/reactivity";
   import { activateWhenNear } from "$lib/actions/activate-when-near";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import { setPendingGenerationAnimation } from "$lib/features/create/shared/workspace-panel/sequence-display/state/step-grid-display-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import {
     classifyComposerGenerationFailure,
     shouldSyncComposerSequence,
     type ComposerGenerationResult,
   } from "./composer-generation-failure";
+
+  /** Four columns keeps a 16-step LOOP square inside a square stage. */
+  const STEP_COLUMNS = 4;
 
   /** The page's per-visit demo sequence seeds the stages; null while it is
       still generating (the fixed-aspect stages hold the footprint). */
@@ -46,6 +63,10 @@
 
   const word = $derived(
     current ? simplifyRepeatedWord(current.word ?? "") : ""
+  );
+
+  const stepData = $derived<StepData[]>(
+    current ? [...(current.steps ?? [])] : []
   );
 
   function activatePreview(node: HTMLElement) {
@@ -73,7 +94,7 @@
           import("$lib/shared/pictograph/prop/domain/enums/prop-type"),
         ]);
       // This button intentionally exposes one prepared recipe, not the full
-      // generator: 16 beats, intermediate difficulty, smooth constraints, and
+      // generator: 16 steps, intermediate difficulty, smooth constraints, and
       // a rotated quarter-period LOOP. Each draw may change the whole sequence.
       const seq = await generationOrchestrator.generateSequence({
         mode: models.GenerationMode.CIRCULAR,
@@ -86,7 +107,11 @@
         difficulty: models.DifficultyLevel.INTERMEDIATE,
         constraintPreset: "smooth",
       });
-      // Plain-ify reactive proxies before handing to the player/mandala.
+      // Plain-ify reactive proxies before handing to the grid/player.
+      // Raise the app's generation flag first: the remounted StepGrid reads it
+      // on its first render and runs the same staggered reveal the Generate tab
+      // produces. It clears itself once consumed.
+      setPendingGenerationAnimation(true);
       current = JSON.parse(JSON.stringify(seq)) as SequenceData;
       onGenerated?.(current);
       result = "success";
@@ -103,9 +128,33 @@
 
 <div class="generate-demo" use:activatePreview>
   <p class="recipe-note">
-    Each click draws a fresh 16-beat sequence from the same prepared recipe.
+    Each click draws a fresh 16-step sequence from the same prepared recipe.
   </p>
   <div class="stages">
+    <!-- The notation: the real workspace grid, cascading in on each draw.
+         fitAllSteps scales the cells to the box instead of sizing them from the
+         column count alone, which left a 16-step draw occupying the top third of
+         a square stage. No arrivalSequence: it draws a mandala chip into the
+         grid, and the player beside it already traces that same figure. -->
+
+    <div class="stage">
+      {#key current?.id}
+        <LazyMount
+          loader={() =>
+            import("$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte")}
+          active={active && !!current}
+          props={{
+            steps: stepData,
+            startPosition: current?.startPosition ?? null,
+            manualColumnCount: STEP_COLUMNS,
+            activeMode: "generate",
+            fitAllSteps: true,
+            sequenceWord: current?.word ?? "",
+          }}
+        />
+      {/key}
+    </div>
+    <!-- The movement: the same steps, playing. -->
     <div class="stage">
       {#key current?.id}
         <LazyMount
@@ -122,35 +171,11 @@
         />
       {/key}
     </div>
-    <div class="stage">
-      {#key current?.id}
-        <LazyMount
-          loader={() =>
-            import("$lib/shared/mandala/components/SequenceMandala.svelte")}
-          active={active && !!current}
-          props={{
-            sequence: current,
-            size: 420,
-            bluePropType: "staff",
-            redPropType: "staff",
-            pathShape: "arc",
-            strokeWidth: 2.5,
-            animate: !reduceMotion.current,
-            animateEasing: "breathe",
-            animateRotation: 30,
-            animatePeriod: 6,
-            animateMin: 40,
-            animateMax: 250,
-          }}
-        />
-      {/key}
-    </div>
   </div>
 
   <!-- Reserved line; visible once the word is known (no sideways shift). -->
   <div class="caption-row" class:pending={!current}>
     <span class="tka-font caption-word">{word}</span>
-    <span class="caption-note">and its mandala</span>
   </div>
 
   <div class="action-row">
@@ -167,15 +192,20 @@
       <span>{generating ? "Generating..." : "Generate a new one"}</span>
     </button>
     <!-- The line is always reserved so either failure state can arrive without
-         moving the controls or demonstrations around it. -->
-    <span class="retry-note" class:shown={result !== "idle"} aria-live="polite">
+         moving the controls or demonstrations around it. Success says nothing:
+         the grid cascading and the player restarting ARE the confirmation, and
+         narrating them adds a line of copy that tells the visitor what they can
+         already see. -->
+    <span
+      class="retry-note"
+      class:shown={result === "no-result" || result === "error"}
+      aria-live="polite"
+    >
       {result === "no-result"
         ? "That recipe found no valid sequence. Draw again."
         : result === "error"
           ? "The generator couldn't run. Try again."
-          : result === "success"
-            ? "Sequence ready. The examples below now use it."
-            : "Sequence ready."}
+          : ""}
     </span>
   </div>
 </div>
@@ -196,6 +226,10 @@
     gap: 1rem;
   }
 
+  /* Both stages hand their whole square to one component — the grid sizes its
+     cells from the box it is given, and the player fills. `stretch` rather than
+     `center`: a centered grid child sizes to its content, which for StepGrid is
+     zero until it has measured a box it never got. */
   .stage {
     position: relative;
     aspect-ratio: 1;
@@ -204,7 +238,11 @@
     background: oklch(0.16 0.018 270 / 0.45);
     border: 1px solid oklch(0.4 0.04 270 / 0.14);
     display: grid;
-    place-items: center;
+    place-items: stretch;
+  }
+  .stage > :global(*) {
+    min-width: 0;
+    min-height: 0;
   }
 
   .caption-row {
@@ -220,9 +258,6 @@
   .caption-word {
     font-size: clamp(1.05rem, 1rem + 0.15vw, 1.25rem);
     color: oklch(0.88 0.03 270);
-  }
-  .caption-note {
-    font-style: italic;
   }
   .caption-row.pending {
     visibility: hidden;

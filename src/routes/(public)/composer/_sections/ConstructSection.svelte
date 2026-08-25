@@ -46,6 +46,7 @@
   import WordLabel from "$lib/features/create/shared/workspace-panel/sequence-display/components/WordLabel.svelte";
   import ViewSequenceButton from "$lib/features/create/shared/workspace-panel/shared/components/buttons/ViewSequenceButton.svelte";
   import ClearSequenceButton from "$lib/features/create/shared/workspace-panel/shared/components/buttons/ClearSequenceButton.svelte";
+  import UndoGlyph from "$lib/features/create/shared/workspace-panel/shared/components/buttons/UndoGlyph.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { motionDuration } from "$lib/shared/transitions/motion";
@@ -152,6 +153,7 @@
     unsubscribe = startPositionState.onSelectedPositionChange(
       (position, source) => {
         if (source === "user" && position) {
+          recordHistory();
           startPosition = position;
           gridMode = startPositionState.currentGridMode;
           steps = [];
@@ -343,7 +345,78 @@
 
   function handleOptionSelected(option: PictographData) {
     if (steps.length >= MAX_STEPS) return;
+    recordHistory();
     steps = [...steps, option];
+  }
+
+  // ── build history ────────────────────────────────────────────────────────
+  // Composing UndoGlyph in a demo-local history rather than reusing UndoButton:
+  // that button's behavior owner is CreateModuleState + the create undo-manager,
+  // and this prerendered marketing surface deliberately constructs neither (see
+  // the header note on staying out of the shared create singleton). Sharing the
+  // glyph is what keeps the two from ever drawing a different undo arrow.
+  type BuildSnapshot = {
+    startPosition: PictographData | null;
+    steps: PictographData[];
+  };
+
+  /** Deep enough for the 8-step cap plus the start pick, several times over. */
+  const HISTORY_LIMIT = 32;
+
+  let past = $state<BuildSnapshot[]>([]);
+  let future = $state<BuildSnapshot[]>([]);
+  const canUndo = $derived(past.length > 0);
+  const canRedo = $derived(future.length > 0);
+
+  /** The attract act drives these same handlers. Only a person's edits are
+      history, so the act's build never fills the stacks — and a takeover
+      starts from an empty one rather than offering to undo the machine. */
+  function actIsDriving(): boolean {
+    return !!act && !act.dead && !act.paused;
+  }
+
+  function snapshot(): BuildSnapshot {
+    return { startPosition, steps: [...steps] };
+  }
+
+  /** Call BEFORE a mutation: a fresh action invalidates the redo branch. */
+  function recordHistory() {
+    if (actIsDriving()) {
+      past = [];
+      future = [];
+      return;
+    }
+    past = [...past, snapshot()].slice(-HISTORY_LIMIT);
+    future = [];
+  }
+
+  function applySnapshot(target: BuildSnapshot) {
+    startPosition = target.startPosition;
+    steps = [...target.steps];
+    playing = false;
+    playingStepNumber = null;
+    dropPlayerRefs();
+    compactPane = "build";
+    // Put the restored pick back in the picker. setSelectedPosition notifies
+    // with source "sync", which our listener ignores, so this cannot recurse
+    // into the selection branch that wipes the steps we just restored.
+    startPositionState.setSelectedPosition(target.startPosition);
+  }
+
+  function undo() {
+    if (!canUndo) return;
+    const previous = past[past.length - 1];
+    future = [snapshot(), ...future];
+    past = past.slice(0, -1);
+    applySnapshot(previous);
+  }
+
+  function redo() {
+    if (!canRedo) return;
+    const next = future[0];
+    past = [...past, snapshot()];
+    future = future.slice(1);
+    applySnapshot(next);
   }
 
   // ---- Play phase: the built sequence, packaged for the real AnimationPlayer.
@@ -402,6 +475,7 @@
   }
 
   function reset() {
+    recordHistory();
     steps = [];
     startPosition = null;
     playing = false;
@@ -607,7 +681,32 @@
                 {/if}
               {/if}
             </Crossfade>
-            <div class="slot-side" aria-hidden="true"></div>
+            <!-- Right zone: step-by-step history. Always mounted and merely
+             disabled when a direction is empty — the app's own undo button does
+             the same, and a slot that appeared on the first pick would shove
+             the play button sideways mid-build. -->
+            <div class="slot-side history-side">
+              <button
+                type="button"
+                class="history-button"
+                onclick={undo}
+                disabled={!canUndo}
+                title={canUndo ? "Undo the last change" : "Nothing to undo"}
+                aria-label={canUndo ? "Undo the last change" : "Nothing to undo"}
+              >
+                <UndoGlyph size={18} direction="undo" />
+              </button>
+              <button
+                type="button"
+                class="history-button"
+                onclick={redo}
+                disabled={!canRedo}
+                title={canRedo ? "Redo the last change" : "Nothing to redo"}
+                aria-label={canRedo ? "Redo the last change" : "Nothing to redo"}
+              >
+                <UndoGlyph size={18} direction="redo" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -670,15 +769,15 @@
               {phase === "pick-start"
                 ? "Start position"
                 : phase === "add-step"
-                  ? "Next beat"
+                  ? "Next step"
                   : "Sequence ready"}
             </span>
             <strong>
               {phase === "pick-start"
                 ? "Choose where the props begin"
                 : phase === "add-step"
-                  ? `Choose beat ${steps.length + 1}`
-                  : `${steps.length} beats playing`}
+                  ? `Choose step ${steps.length + 1}`
+                  : `${steps.length} steps playing`}
             </strong>
           </div>
         {/if}
@@ -1142,6 +1241,51 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
+  }
+
+  .history-side {
+    justify-content: flex-end;
+    gap: 0.4rem;
+  }
+
+  .history-button {
+    display: grid;
+    place-items: center;
+    width: max(var(--min-touch-target, 44px), 44px);
+    height: max(var(--min-touch-target, 44px), 44px);
+    border-radius: 50%;
+    border: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.28));
+    background: var(--theme-surface-raised, oklch(0.2 0.02 270 / 0.6));
+    color: var(--theme-text, oklch(0.92 0.02 270));
+    cursor: pointer;
+    transition:
+      background var(--duration-fast, 140ms) ease,
+      border-color var(--duration-fast, 140ms) ease,
+      opacity var(--duration-fast, 140ms) ease;
+  }
+  .history-button:hover:not(:disabled) {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b8cff) 22%,
+      var(--theme-surface-raised, oklch(0.2 0.02 270 / 0.6))
+    );
+    border-color: var(--theme-accent, #8b8cff);
+  }
+  .history-button:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b8cff);
+    outline-offset: 2px;
+  }
+  /* Disabled reads as unavailable, not absent: the slot keeps its footprint so
+     nothing beside it moves when history becomes available. */
+  .history-button:disabled {
+    opacity: 0.34;
+    cursor: default;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .history-button {
+      transition: none;
+    }
   }
 
   /* ===== Ghost hover mirror =====

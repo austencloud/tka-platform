@@ -12,6 +12,13 @@
   feature context. This whole stack is heavy WebGL, so the page mounts it
   through LazyMount only when the section nears the viewport.
 
+  Controls are the app's own: SceneControlWorkspace, the same right-hand rail
+  every 3D stage in the product carries (sequence viewer, fullscreen, Director).
+  It overlays the stage and opens the real Performers, Formation, Camera, and
+  Scene tools, so the visitor reaches every environment, count, formation, and
+  prop the app has rather than a hand-picked subset of four scenes and three
+  counts. Save scene is off: this demo has no collection to save into.
+
   The viewer is constructed from a complete, non-persisting demonstration seed.
   Scene choices address its own environment state, so this surface never reads
   or writes the visitor's 2D background or saved 3D setup.
@@ -31,15 +38,9 @@
     type SequenceData,
   } from "$lib/shared/foundation/domain/models/sequence-data";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import {
-    SceneEnvironmentId,
-    type SceneEnvironmentId as SceneEnvironmentIdValue,
-  } from "$lib/shared/3d/environments/domain/scene-environment";
-  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import SceneControlWorkspace from "$lib/shared/3d/components/controls/SceneControlWorkspace.svelte";
   import {
     COMPOSER_3D_DEMO_SEED,
-    COMPOSER_3D_SCENES,
     normalizeComposer3DDemoState,
   } from "./composer-3d-demo-state";
 
@@ -62,45 +63,14 @@
     gridMode: sourceSequence.gridMode,
   });
 
-  // ── scene switcher ────────────────────────────────────────────────────────
-  let scene = $state<SceneEnvironmentIdValue>(SceneEnvironmentId.COSMIC);
-
-  function pickScene(v: string) {
-    scene = v as SceneEnvironmentIdValue;
-    viewer.setEnvironmentId(scene);
-  }
-
-  // ── performer count (solo → ring) ─────────────────────────────────────────
-  const COUNTS = [
-    { value: "1", label: "Solo" },
-    { value: "4", label: "Quartet" },
-    { value: "8", label: "Ring of 8" },
-  ];
-  let count = $state("1");
-
-  function setCount(v: string) {
-    count = v;
-    const n = Number(v);
-    const pm = viewer.performerManager;
-    // Grow with spawnPerformerFromUI (it loads the active sequence onto each
-    // new performer), shrink with removePerformer — no enter3D re-entry, so the
-    // camera and scene stay put. Then arrange: ring for a group, line for solo.
-    while (pm.performers.length < n) viewer.spawnPerformerFromUI();
-    while (pm.performers.length > n) pm.removePerformer();
-    viewer.applyFormationFromUI(n > 1 ? "circle" : "line");
-  }
-
-  const PROPS = [
-    { value: PropType.STAFF, label: "Staffs" },
-    { value: PropType.CLUB, label: "Clubs" },
-  ];
-  let prop = $state<PropType>(PropType.STAFF);
-  const sceneLabel = $derived(
-    COMPOSER_3D_SCENES.find((option) => option.value === scene)?.label ??
-      "selected"
-  );
+  // Scene, performer count, formation, and props are all owned by the rail's
+  // own tools, which write straight onto the viewer state. The label reads that
+  // state rather than shadowing it in local copies that could drift from what
+  // is on stage. Leaving the prop overrides unset (see the canvas below) is what
+  // lets the rail's prop picker reach the performers at all.
+  const performerCount = $derived(viewer.performerManager.performers.length);
   const stageLabel = $derived(
-    `Live 3D performance of ${simplifyRepeatedWord(sequence.word)} with ${count === "1" ? "one performer" : `${count} performers`} using ${prop === PropType.STAFF ? "staffs" : "clubs"} in the ${sceneLabel} scene`
+    `Live 3D performance of ${simplifyRepeatedWord(sequence.word)} with ${performerCount === 1 ? "one performer" : `${performerCount} performers`}`
   );
 
   // ── playback clock ────────────────────────────────────────────────────────
@@ -122,7 +92,7 @@
 
   onMount(() => {
     viewer.enter3D(sequence);
-    normalizeComposer3DDemoState(viewer, scene);
+    normalizeComposer3DDemoState(viewer);
     ready = true;
 
     let last = performance.now();
@@ -145,19 +115,32 @@
   <div class="stage">
     <div class="art" role="img" aria-label={stageLabel}>
       {#if ready}
+        <!-- No blue/red prop override: an override wins over each performer's
+             own prop, which would leave the rail's prop picker with no effect. -->
         <Viewer3DCanvas
           sequenceData={sequence}
           {currentStep}
           {isPlaying}
           bpm={BPM}
-          bluePropType={prop}
-          redPropType={prop}
           hideOverlays
         />
       {:else}
         <div class="stage-curtain" aria-hidden="true"></div>
       {/if}
     </div>
+
+    <!-- The canonical rail, overlaying the stage exactly as it does in the
+         sequence viewer. bottomOffset clears the pause button in the same
+         corner; the app's default is sized for a transport bar this demo has
+         no room for. -->
+    {#if ready}
+      <SceneControlWorkspace
+        allowSaveScene={false}
+        bpm={BPM}
+        bottomOffset="4.75rem"
+      />
+    {/if}
+
     <button
       type="button"
       class="pause-toggle"
@@ -167,42 +150,6 @@
       <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"
       ></i>
     </button>
-  </div>
-
-  <div class="control-rows">
-    <div class="control-row">
-      <span class="control-label">Scene</span>
-      <SegmentedControl
-        options={COMPOSER_3D_SCENES}
-        value={scene}
-        onchange={pickScene}
-        ariaLabel="3D scene"
-        color="accent"
-        size="sm"
-      />
-    </div>
-    <div class="control-row">
-      <span class="control-label">Performers</span>
-      <SegmentedControl
-        options={COUNTS}
-        value={count}
-        onchange={setCount}
-        ariaLabel="3D performers"
-        color="accent"
-        size="sm"
-      />
-    </div>
-    <div class="control-row">
-      <span class="control-label">Props</span>
-      <SegmentedControl
-        options={PROPS}
-        value={prop}
-        onchange={(value) => (prop = value as PropType)}
-        ariaLabel="3D props"
-        color="accent"
-        size="sm"
-      />
-    </div>
   </div>
 </div>
 
@@ -246,8 +193,11 @@
     animation: curtain-pulse 1.6s ease-in-out infinite;
   }
 
+  /* Above the rail's own overlay layer (z-index 20) so it is never covered,
+     and below its inspector (29) so an open tool panel wins. */
   .pause-toggle {
     position: absolute;
+    z-index: 21;
     right: 0.75rem;
     bottom: 0.75rem;
     width: max(var(--min-touch-target, 48px), 48px);
@@ -266,38 +216,6 @@
   .pause-toggle:focus-visible {
     outline: 2px solid var(--theme-accent, #8b8cff);
     outline-offset: 3px;
-  }
-
-  /* Deterministic footprint: all three rows stack instead of wrapping. The
-     page skeleton reserves the same three control rows, so activation does not
-     move the sections below it. */
-  .control-rows {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.8rem;
-    margin-top: 1rem;
-    width: 100%;
-  }
-  .control-row {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    width: min(100%, 30rem);
-  }
-  .control-row :global(.segmented-control) {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-  .control-row :global(.segment) {
-    min-height: max(var(--min-touch-target, 48px), 48px);
-  }
-  .control-label {
-    font-size: var(--font-size-min, 0.875rem);
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: oklch(0.74 0.018 270);
   }
 
   @keyframes curtain-pulse {

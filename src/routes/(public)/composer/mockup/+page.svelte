@@ -93,11 +93,11 @@
       <span class="sr-only" role="status">Loading the live 3D performance.</span
       >
     {/if}
+    <!-- The viewer's controls now live on a rail INSIDE the stage, so the
+         skeleton reserves the stage alone. Reserving control rows under it
+         would leave a gap that collapses on activation. -->
     <div aria-hidden="true">
       <div class="placeholder-wide"></div>
-      <div class="placeholder-control"></div>
-      <div class="placeholder-control short"></div>
-      <div class="placeholder-control short"></div>
     </div>
   </div>
 {/snippet}
@@ -137,7 +137,7 @@
       <p class="opening-line">Write flow arts choreography. See it move.</p>
       <h1 id="composer-title">Flow Arts <span>Composer</span></h1>
       <p class="opening-lede">
-        Build a sequence one beat at a time or generate a starting point. The
+        Build a sequence one step at a time or generate a starting point. The
         pictographs stay beside the animation while you work.
       </p>
 
@@ -169,9 +169,9 @@
 
   <section class="making" aria-labelledby="making-title">
     <div class="making-intro">
-      <h2 id="making-title">Write it beat by beat.</h2>
+      <h2 id="making-title">Write it step by step.</h2>
       <p>
-        Choose a starting position, then add one valid beat at a time. The
+        Choose a starting position, then add one valid step at a time. The
         sequence you build continues into every demonstration below.
       </p>
 
@@ -221,16 +221,18 @@
     aria-labelledby="changing-title"
     use:activateOutputs
   >
-    <div class="changing-intro">
-      <h2 id="changing-title">One sequence, new views.</h2>
-      <p>
-        The mandala beside the generator traces the movement. The same beats can
-        multiply into a tunnel or play in the 3D viewer on supported larger
-        screens.
-      </p>
-    </div>
+    <!-- The tunnel is a square, so it rides beside the heading instead of
+         leaving a rail of empty space there and forcing the 3D viewer to share
+         a row it is too wide for. The viewer then gets the full band below. -->
+    <div class="changing-head">
+      <div class="changing-intro">
+        <h2 id="changing-title">One sequence, new views.</h2>
+        <p>
+          The same steps multiply into a tunnel of copies, or perform in the 3D
+          viewer on supported larger screens.
+        </p>
+      </div>
 
-    <div class="output-composition">
       <figure class="tunnel-output">
         <div class="product-frame square-frame">
           {#key sequence.id}
@@ -252,37 +254,36 @@
           <span>Two, four, or eight copies around the ring.</span>
         </figcaption>
       </figure>
-
-      <figure class="viewer-output">
-        <div class="product-frame wide-frame">
-          {#if webglChecked && !webglAvailable}
-            <div class="viewer-unavailable" role="status">
-              <i class="fas fa-cube" aria-hidden="true"></i>
-              <p>3D is unavailable in this browser.</p>
-            </div>
-          {:else}
-            {#key sequence.id}
-              <LazyMount
-                loader={() =>
-                  import("../_components/Composer3DViewerDemo.svelte")}
-                active={outputsActive && canShow3D}
-                props={{ sequence }}
-                error={viewerLoadError}
-                debugName="composer 3D viewer"
-              >
-                {#snippet placeholder()}
-                  {@render viewerPlaceholder()}
-                {/snippet}
-              </LazyMount>
-            {/key}
-          {/if}
-        </div>
-        <figcaption>
-          <strong>3D viewer</strong>
-          <span>Change the scene, performer count, or props.</span>
-        </figcaption>
-      </figure>
     </div>
+
+    <figure class="viewer-output">
+      <div class="product-frame wide-frame">
+        {#if webglChecked && !webglAvailable}
+          <div class="viewer-unavailable" role="status">
+            <i class="fas fa-cube" aria-hidden="true"></i>
+            <p>3D is unavailable in this browser.</p>
+          </div>
+        {:else}
+          {#key sequence.id}
+            <LazyMount
+              loader={() => import("../_components/Composer3DViewerDemo.svelte")}
+              active={outputsActive && canShow3D}
+              props={{ sequence }}
+              error={viewerLoadError}
+              debugName="composer 3D viewer"
+            >
+              {#snippet placeholder()}
+                {@render viewerPlaceholder()}
+              {/snippet}
+            </LazyMount>
+          {/key}
+        {/if}
+      </div>
+      <figcaption>
+        <strong>3D viewer</strong>
+        <span>Performers, formation, camera, and scene — from the rail.</span>
+      </figcaption>
+    </figure>
 
     <p class="small-screen-3d-note">
       The 3D viewer needs WebGL2 and a screen at least 600px in both directions.
@@ -650,27 +651,28 @@
     background: var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
   }
 
+  /* `.making` already ends on 9rem of padding; a matching 8rem here stacked to
+     17rem of nothing between the two sections — most of a screen at 4K, where
+     the root ramp scales every rem. The seam is one generous gap, not two. */
   .changing {
-    padding: clamp(4.5rem, 8vw, 8rem) 0 clamp(5rem, 10vw, 10rem);
+    padding: clamp(2.5rem, 3.5vw, 4rem) 0 clamp(5rem, 10vw, 10rem);
+  }
+
+  /* The tunnel is a square stage that fills its column, so a wide column makes
+     this row as tall as that column is wide — 676px at 1920 against 133px of
+     heading and one line of copy, which is the dead space this section was
+     called out for. The column ratio, not a cap on the figure, is what sizes
+     the row: the demo measures itself against the box it is given. */
+  .changing-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.3fr);
+    gap: clamp(2rem, 4vw, 4.5rem);
+    align-items: center;
+    margin-bottom: clamp(2.5rem, 4vw, 4rem);
   }
 
   .changing-intro {
-    display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(18rem, 0.9fr);
-    gap: clamp(2rem, 7vw, 8rem);
-    align-items: end;
-    margin-bottom: clamp(2.5rem, 5vw, 5rem);
-  }
-
-  .changing-intro > p {
-    margin: 0;
-  }
-
-  .output-composition {
-    display: grid;
-    grid-template-columns: minmax(0, 0.76fr) minmax(0, 1.24fr);
-    gap: clamp(1.25rem, 3vw, 3.5rem);
-    align-items: center;
+    min-width: 0;
   }
 
   figure {
@@ -733,11 +735,6 @@
     margin: 1rem auto 0;
     border-radius: 0.85rem;
     background: var(--theme-card-bg, oklch(0.2 0.025 270 / 0.75));
-  }
-
-  .placeholder-control.short {
-    width: min(100%, 30rem);
-    margin-top: 0.8rem;
   }
 
   .viewer-unavailable,
@@ -911,24 +908,15 @@
       display: none;
     }
 
-    .changing-intro {
+    .changing-head {
       grid-template-columns: 1fr;
-      gap: 1.25rem;
-    }
-
-    .changing-intro > p {
-      max-width: 48rem;
+      gap: 2.5rem;
     }
   }
 
   @media (max-width: 50rem) {
     .composer-page {
       padding-inline: 0.9rem;
-    }
-
-    .output-composition {
-      grid-template-columns: 1fr;
-      gap: 3rem;
     }
   }
 

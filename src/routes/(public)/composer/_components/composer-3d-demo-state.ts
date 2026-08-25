@@ -10,13 +10,6 @@ import type {
   Viewer3DStateSeed,
 } from "$lib/shared/3d/state/viewer-3d-state.svelte";
 
-export const COMPOSER_3D_SCENES = [
-  { value: SceneEnvironmentId.COSMIC, label: "Cosmic" },
-  { value: SceneEnvironmentId.OCEAN, label: "Ocean" },
-  { value: SceneEnvironmentId.FOREST, label: "Forest" },
-  { value: SceneEnvironmentId.EMBER, label: "Ember" },
-] as const;
-
 const DEMO_SCENE_FEATURES = Object.fromEntries(
   SCENE_FEATURES.map((feature) => [feature.key, feature.defaultEnabled])
 );

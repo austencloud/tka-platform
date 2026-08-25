@@ -64,7 +64,7 @@
     {/each}
   </div>
 
-  <p class="shelf-head">Collections — including Smart Collections that fill themselves</p>
+  <p class="shelf-head">Collections, including Smart Collections that fill themselves</p>
   <div class="shelf">
     {#each collections as c (c.id)}
       <CollectionCard collection={c} readonly onOpen={() => {}} />
