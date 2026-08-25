@@ -226,7 +226,15 @@
       visibility.set(child, child.visible);
       const identity = meshIdentity(child);
       if (hiddenRuntimeOwners.has(child.name)) child.visible = false;
-      if (identity.includes("Moonlit River Mesh")) {
+      // Match the authored NODE name as well as the mesh name. GLTFLoader names
+      // the Object3D after the glTF node and leaves geometry.name empty, so a
+      // check against the mesh name alone never fired and the baked ribbon
+      // stayed in the scene underneath the reflective pool, showing as a rim
+      // wherever the two outlines disagreed.
+      if (
+        identity.includes("Moonlit River Mesh") ||
+        identity.includes("River_Water")
+      ) {
         child.visible = !runtime.effects.reflectiveWater;
       }
 

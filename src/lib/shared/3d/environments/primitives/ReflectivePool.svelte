@@ -39,6 +39,12 @@
     shallowColor?: string | number;
     reflectionTint?: number;
     sunDirection?: [number, number, number];
+    /**
+     * Colour of the specular glint, added on top of the surface.
+     * The default is a daylight white, which on a night scene puts a blown-out
+     * highlight on water that has nothing bright enough to make one.
+     */
+    sunColor?: string | number;
     rippleScale?: number;
     rippleStrength?: number;
     foamWidth?: number;
@@ -114,7 +120,10 @@
     uSunDirection: props.sunDirection
       ? new Vector3(...props.sunDirection).normalize()
       : defaults.sunDirection.clone(),
-    uSunColor: defaults.sunColor.clone(),
+    uSunColor:
+      props.sunColor === undefined
+        ? defaults.sunColor.clone()
+        : new Color(props.sunColor),
     uRippleScale: props.rippleScale ?? defaults.rippleScale,
     uRippleStrength: props.rippleStrength ?? defaults.rippleStrength,
     uFoamWidth: props.foamWidth ?? defaults.foamWidth,

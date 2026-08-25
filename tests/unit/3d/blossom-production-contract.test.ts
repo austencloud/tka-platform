@@ -78,7 +78,17 @@ describe("Blossom R2.1 production contract", () => {
     // longer list is silently truncated into an open arc.
     expect(shoreline.length).toBeLessThanOrEqual(32);
     expect(shoreline.length).toBeGreaterThanOrEqual(3);
-    expect(getBlossomRiverShoreFade()).toBeGreaterThan(3);
+  });
+
+  it("keeps the shore fade narrower than the channel it fringes", () => {
+    // The fade is a smoothstep from the bank inward, so a fade wider than the
+    // half-width never reaches 1 anywhere on the surface and the deep channel
+    // colour simply never appears. At 4.2 m against this 2.7 m half-width the
+    // whole river rendered as one flat sheet of the shallow edge colour.
+    const halfWidth = 5.4 / 2;
+
+    expect(getBlossomRiverShoreFade()).toBeGreaterThan(0.5);
+    expect(getBlossomRiverShoreFade()).toBeLessThan(halfWidth);
   });
 
   it("centres the water footprint so the shader samples its own shoreline", () => {

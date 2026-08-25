@@ -250,36 +250,61 @@ function buildBankedOutline(): PlanPoint[] {
 
 const worldOutline = buildBankedOutline();
 
+/** Station whose arc length is nearest the given distance along the course. */
+function stationAtArc(target: number): number {
+  const { arcLengths } = course;
+  let nearest = 0;
+  for (let index = 1; index < arcLengths.length; index += 1) {
+    if (
+      Math.abs(arcLengths[index]! - target) <
+      Math.abs(arcLengths[nearest]! - target)
+    ) {
+      nearest = index;
+    }
+  }
+  return nearest;
+}
+
 /**
  * Thirty-two points that preserve the river's shape for the shader's fixed
  * shoreline arrays.
  *
- * Sampling the whole 268 m loop evenly would put a station every 17 m, which
- * cuts straight across both koi pools and flattens every bend. All the
- * curvature lives inside the authored reach, and the run-out is a straight
- * taper a single chord reproduces exactly, so the budget goes to the reach and
- * each run-out contributes only its far endpoint.
+ * Sampling the whole loop evenly would put a station every 17 m, which cuts
+ * straight across both koi pools and flattens every bend, so the budget is
+ * placed rather than spread. Most of it goes to the authored reach, where all
+ * the curvature is. Each run-out gets its far endpoint plus the station where
+ * its section finishes opening: a single chord across the whole run-out passes
+ * roughly two metres inside the widening bank, and the shader measures foam and
+ * depth from that chord, which drew a white seam straight down open water.
  */
 function buildCoarseShoreline(): PlanPoint[] {
   const { stations, arcLengths } = course;
+  const lastStation = stations.length - 1;
   const first = arcLengths.findIndex((arc) => arc >= course.authoredStartArc);
   const last = arcLengths.findIndex((arc) => arc >= course.authoredEndArc);
-  const perBank = 14;
-  const reach = (side: PlanPoint[]) =>
-    Array.from({ length: perBank }, (_, index) => {
-      const station = first + Math.round(((last - first) * index) / (perBank - 1));
-      return side[station]!;
-    });
+  const openFrom = plan.water.runOut.openFromMetres;
+  const headOpen = stationAtArc(course.authoredStartArc - openFrom);
+  const tailOpen = stationAtArc(course.authoredEndArc + openFrom);
+
+  const perBank = 12;
+  const bankStations = [
+    0,
+    headOpen,
+    ...Array.from({ length: perBank }, (_, index) =>
+      first + Math.round(((last - first) * index) / (perBank - 1))
+    ),
+    tailOpen,
+    lastStation,
+  ];
 
   const left = bankSides.left;
   const right = bankSides.right;
   return [
-    left[0]!,
-    ...reach(left),
-    left[stations.length - 1]!,
-    right[stations.length - 1]!,
-    ...reach(right).reverse(),
-    right[0]!,
+    ...bankStations.map((station) => left[station]!),
+    ...bankStations
+      .slice()
+      .reverse()
+      .map((station) => right[station]!),
   ];
 }
 

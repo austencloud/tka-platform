@@ -184,6 +184,13 @@ try {
       "--instance true",
       "--flatten false",
       "--join false",
+      // The palette pass folds flat-colour materials into one atlas material.
+      // It rewrote the river into a material with an emissive factor of pure
+      // white, so the water shipped as a glowing white sheet on every tier that
+      // renders the baked ribbon. Authored PBR factors are the contract between
+      // the Blender build and the scene; a draw-call saving is not worth losing
+      // them.
+      "--palette false",
     ].join(" ")
   );
 

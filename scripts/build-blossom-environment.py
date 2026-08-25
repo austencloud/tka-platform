@@ -357,16 +357,18 @@ def enable_vertex_tint(mat):
     if bsdf is None:
         return mat
     base_color = bsdf.inputs["Base Color"]
-    if base_color.links:
-        upstream = base_color.links[0].from_socket
-    else:
-        # A flat-colour material has nothing feeding Base Color, so promote its
-        # constant to an RGB node first. Without this the tint silently does
-        # nothing in Blender's viewport even though glTF still exports COLOR_0.
-        constant = nodes.new("ShaderNodeRGB")
-        constant.name = f"{mat.name} Base Constant"
-        constant.outputs[0].default_value = tuple(base_color.default_value)
-        upstream = constant.outputs[0]
+    if not base_color.links:
+        # A flat-colour material needs no node graph at all, and must not have
+        # one. glTF already multiplies COLOR_0 into the base colour, and the
+        # exporter emits COLOR_0 whether or not a shader node reads it — but it
+        # only writes baseColorFactor from an UNLINKED Base Color socket. Any
+        # wiring here (an RGB node, or the constant parked on a mix input)
+        # exports the factor as white, which is how the river shipped as a
+        # glowing sheet lit only by its own tint. Verified against Blender 5.0:
+        # unlinked and orphan-attribute materials both carry the authored
+        # factor plus COLOR_0; a material whose Base Color is linked loses it.
+        # The cost is that Blender's viewport shows this surface untinted.
+        return mat
     attribute = nodes.new("ShaderNodeVertexColor")
     attribute.name = f"{mat.name} Vertex Tint"
     attribute.layer_name = VERTEX_TINT_LAYER
@@ -374,7 +376,7 @@ def enable_vertex_tint(mat):
     multiply.name = f"{mat.name} Vertex Tint Multiply"
     multiply.blend_type = "MULTIPLY"
     multiply.inputs["Fac"].default_value = 1.0
-    links.new(upstream, multiply.inputs[1])
+    links.new(base_color.links[0].from_socket, multiply.inputs[1])
     links.new(attribute.outputs["Color"], multiply.inputs[2])
     links.new(multiply.outputs["Color"], base_color)
     return mat
@@ -985,6 +987,18 @@ def garden_ground_height(x, y):
 
     bank_width = COMPOSITION_PLAN["water"]["bankTransitionWidth"]
     surface_elevation = COMPOSITION_PLAN["water"]["surfaceElevation"]
+    # Put the terrain's crossing of water level slightly outside the water
+    # polygon rather than exactly on its edge.
+    #
+    # The terrain grid is 1.2 m and the river is 5.4 m wide, so the shoreline
+    # almost never lands on a vertex. With the crossing on the edge itself, the
+    # cell straddling it interpolates ground a centimetre or two above the
+    # surface for part of its span, and that lit sliver shows through the water
+    # as a dashed white line down the bank. Drowning the last third of a metre
+    # keeps the ground strictly under the surface everywhere the water covers
+    # it, and the dry lip left outside is shallower than the grass on it.
+    drowned_margin = 0.35
+    surface_distance -= drowned_margin
     if surface_distance > 0.0:
         # Above the waterline, bring the grade down to meet the water exactly at
         # its edge. Carving straight to bed depth here instead left a metre of
@@ -1015,10 +1029,15 @@ def habitat_weights(x, y):
             weights = [0.88, 0.08, 0.04, 0.0]
             break
 
-    damp_weight = 1.0 - smoothstep(0.2, 3.4, river_surface_distance(x, y))
+    # A damp margin, not a beach. At 3.4 m the silt family reached almost the
+    # river's own width, so from the bank the eye read a broad tan shore with a
+    # dark channel behind it rather than grass running down to water. Holding it
+    # to 1.5 m keeps the pale fringe that separates turf from surface without
+    # letting it become the dominant ground plane at eye level.
+    damp_weight = 1.0 - smoothstep(0.2, 1.5, river_surface_distance(x, y))
     weights = [
-        value * (1.0 - damp_weight * 0.92) + target * damp_weight * 0.92
-        for value, target in zip(weights, (0.0, 0.08, 0.04, 0.88))
+        value * (1.0 - damp_weight * 0.84) + target * damp_weight * 0.84
+        for value, target in zip(weights, (0.0, 0.14, 0.08, 0.78))
     ]
 
     compacted_weight = 1.0 - smoothstep(0.15, 1.55, path_distance(x, y))
