@@ -280,15 +280,57 @@ the app must now own, and this design is not complete without them:
   inside the map canvas, so the picker carries the mark. This was verified
   against Google's policy, not assumed. Source:
   [Places policies](https://developers.google.com/maps/documentation/places/web-service/policies).
-- **Full combobox accessibility.** `role="combobox"`, `aria-expanded`,
-  `aria-controls`, `aria-activedescendant`, `role="listbox"`/`option`, arrow
-  and Home/End/Escape handling, scroll-into-view for the active option, and a
-  live-region announcement of the result count. The widget shipped these; TKA
-  now writes them.
+- **Full combobox accessibility**, which TKA already owns. See below.
 
-Both are accepted deliberately. Attribution is a static mark. The combobox
-semantics are ordinary work the design system already supports, and unlike the
-widget's shadow DOM, they can actually be audited and proven.
+**Primitive discovery: extending, not creating.**
+
+Searched `role="combobox"`, `aria-activedescendant`, `role="listbox"`,
+`*search*.svelte`, `*autocomplete*.svelte`, `*typeahead*.svelte`,
+`*combobox*.svelte`.
+
+`src/lib/shared/user-search/UserSearchInput.svelte` is a complete
+async-suggestion combobox and already implements, correctly, every behavior
+this picker needs:
+
+| Behavior | Where |
+|---|---|
+| Debounced input, minimum query length | `:88-131` |
+| **Sequence-tagged requests, superseded responses discarded** | `:85,113,120,127` |
+| Sequence invalidated on select and on destroy | `:135,257-260` |
+| Arrow up/down with wraparound, Enter, Escape | `:159-195` |
+| `scrollIntoView({ block: "nearest" })` for the active option | `:153-157` |
+| `role="combobox"`, `aria-autocomplete`, `aria-expanded`, `aria-controls`, `aria-activedescendant` | `:260-265` |
+| `role="listbox"` / `role="option"`, roving `tabindex="-1"` | `:299-313` |
+| Live region announcing result count and the empty state | `:285-295` |
+| `useFixedPosition` dropdown that escapes an ancestor's `overflow: hidden` | `:196-203` |
+
+Section 6 of round 3 originally specified all of this as new work. It is not
+new work. The sequence-tagged discard is the same mechanism this spec derived
+from scratch, and `useFixedPosition` directly answers the clipping risk, which
+is not hypothetical: this panel's `overflow: hidden` has already clipped a
+control off its edge once (`CreatorsPanel.svelte:835-836`).
+
+The component hardcodes only two things: its data source
+(`searchUsersService`) and its row rendering.
+
+**Decision: extract, do not create.** `never-hand-roll.md` forbids a fourth
+parallel implementation, and the codebase already carries several
+(`PerformerSearchInput`, `UserSearch`, `AdminSearchBox`, `MediaSearchBar`).
+The generic behavior moves to a shared owner; the data source and row
+rendering become injectable; `CommunityCityPicker` composes it with Places as
+the source.
+
+`UserSearchInput` keeps a **byte-identical public prop signature** and
+delegates internally. Its seven consumers — `AnnouncementForm`,
+`AdminToolbarDesktop`, `AdminToolbarMobile`, `GroupSettingsSheet`,
+`NewMessageSheet`, `SendAttachmentSheet`, `ShareCollectionSheet` — are not
+edited, and their unchanged compilation plus behavior is the extraction's
+verification. A shared owner with one consumer would be Create wearing a
+different label, which is why the migration is part of the same phase rather
+than deferred.
+
+This is recorded in `canonical-capabilities.md` as the owner for
+async-suggestion comboboxes.
 
 **Lifecycle, explicitly:**
 
@@ -362,7 +404,7 @@ UI simply matches the rule instead of failing at the write.
 ### 10. Deletions
 
 The undismissible consent sheet, the browser-geolocation provider, the
-orchestrator, and the 13 `community_consent_*` message keys are removed. They
+orchestrator, and the 14 `community_consent_*` message keys are removed. They
 implement a permission negotiation that the origin's own policy header forbids.
 Deletion happens last, after a fresh reference search.
 
@@ -483,4 +525,5 @@ most were assertions about code that had never been read.
 
 | # | Defect | Found by |
 |---|---|---|
-| 21 | Specified the headless Places path without checking its policy constraints. A "Powered by Google" attribution is mandatory for programmatic use outside a Google-branded map, and the widget's combobox accessibility becomes the app's to write. Neither was mentioned. Corrected in section 6; the decision stands, the accounting was incomplete | author |
+| 21 | Specified the headless Places path without checking its policy constraints. A "Powered by Google" attribution is mandatory for programmatic use outside a Google-branded map. Corrected in section 6; the decision stands, the accounting was incomplete | author |
+| 22 | Then claimed the widget's combobox accessibility "becomes the app's to write" — without searching for it. `UserSearchInput` already implements all of it, including the same sequence-tagged discard this spec derived independently, and a fixed-position dropdown that answers the clipping risk. This is the third consecutive round in which the spec asserted something did not exist without grepping for it (round 2 did it with `LazyMount`) | author |
