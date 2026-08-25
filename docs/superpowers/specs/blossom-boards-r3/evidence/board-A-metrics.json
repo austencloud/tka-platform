@@ -17,6 +17,7 @@
   "stageToToriiMetres": 26.0,
   "stageToBridgeMetres": 18.0,
   "heroTrees": 4,
+  "heroViolations": [],
   "midTrees": 11,
   "horizonTrees": 30,
   "treeVariantsUsed": [
@@ -28,7 +29,7 @@
     8.5,
     16.5
   ],
-  "hero_nearest_to_stage": 13.3,
+  "hero_nearest_to_stage": 15.3,
   "proposedOrbitCapMetres": 30,
   "clearingRadiusMetres": 38.0,
   "worldRadiusMetres": 92.0

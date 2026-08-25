@@ -17,6 +17,7 @@
   "stageToToriiMetres": 25.8,
   "stageToBridgeMetres": 15.6,
   "heroTrees": 4,
+  "heroViolations": [],
   "midTrees": 11,
   "horizonTrees": 30,
   "treeVariantsUsed": [

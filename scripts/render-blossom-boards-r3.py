@@ -82,6 +82,64 @@ def polyline_distance(x, y, pts):
     )
 
 
+# A trunk this far from a path centerline clears the walking surface and its
+# root flare. Canopy OVERHANG above that is wanted — it makes the blossom
+# tunnel — so this bounds the trunk, not the crown.
+PATH_HALF_WIDTH = 0.85
+TRUNK_FLARE_RADIUS = 1.45
+
+
+class Plantability:
+    """Where a trunk may legally stand. Distance is measured to whole
+    polylines, not to their vertices — sampling vertices alone lets a tree
+    land mid-segment, which is exactly how one ended up in a path."""
+
+    def __init__(self, layout):
+        self.paths = layout["paths"]
+        self.river = layout["river"]
+        sx, sy, sw, sd, _ = layout["stage"]
+        self.stage = (sx, sy, max(sw, sd) / 2 + 2.0)
+        tx, ty, _ = layout["torii"]
+        self.torii = (tx, ty, 5.0)
+        bx, by, _, blen, _ = layout["bridge"]
+        self.bridge = (bx, by, blen / 2 + 3.0)
+        # The lawn is an angular SECTOR, not a disc. Treating it as a disc
+        # blocks the whole ring around the stage, including the sides where
+        # the framing heroes are supposed to stand.
+        self.lawn_sectors = layout["audience"]
+
+    def _in_lawn(self, x, y, trunk):
+        for cx, cy, _r0, r1, a0, a1 in self.lawn_sectors:
+            dx, dy = x - cx, y - cy
+            if math.hypot(dx, dy) > r1 + trunk + 1.0:
+                continue
+            a = math.degrees(math.atan2(dx, dy)) % 360
+            lo, hi = a0 % 360, a1 % 360
+            inside = lo <= a <= hi if lo <= hi else (a >= lo or a <= hi)
+            if inside:
+                return True
+        return False
+
+    def blocked_by(self, x, y, scale=1.0):
+        """Return the name of the first thing this trunk would obstruct."""
+        trunk = TRUNK_FLARE_RADIUS * scale
+        for i, pts in enumerate(self.paths):
+            if polyline_distance(x, y, pts) < PATH_HALF_WIDTH + trunk:
+                return f"path{i}"
+        if polyline_distance(x, y, self.river["pts"]) < self.river["half_width"] + trunk * 0.5:
+            return "river"
+        for name, (cx, cy, r) in (
+            ("stage", self.stage),
+            ("torii", self.torii),
+            ("bridge", self.bridge),
+        ):
+            if math.hypot(x - cx, y - cy) < r + trunk:
+                return name
+        if self._in_lawn(x, y, trunk):
+            return "lawn"
+        return None
+
+
 class Site:
     """One board's layout. River carve is part of the height function."""
 
@@ -345,11 +403,13 @@ def place_tree(sources, site, variant, x, y, scale, rot_deg, name):
     bpy.context.scene.collection.objects.link(inst)
 
 
-def scatter_ring(rng, site, sources, count, r0, r1, keep_out, scale_range, tag, gap_sectors=()):
+def scatter_ring(
+    rng, site, sources, plantable, count, r0, r1, keep_out, scale_range, tag, gap_sectors=()
+):
     placed = 0
     attempts = 0
     trees = []
-    while placed < count and attempts < count * 60:
+    while placed < count and attempts < count * 80:
         attempts += 1
         a = rng.uniform(0, 360)
         if any(lo <= a <= hi for lo, hi in gap_sectors):
@@ -357,14 +417,18 @@ def scatter_ring(rng, site, sources, count, r0, r1, keep_out, scale_range, tag, 
         r = rng.uniform(r0, r1)
         # same convention as build_disc: 0 = north, 180 = south
         x, y = r * math.sin(math.radians(a)), r * math.cos(math.radians(a))
+        s = rng.uniform(*scale_range)
+        if plantable.blocked_by(x, y, s):
+            continue
         if any(math.hypot(x - kx, y - ky) < kr for kx, ky, kr in keep_out):
             continue
-        s = rng.uniform(*scale_range)
         v = "s19" if rng.random() < 0.55 else "s71"
         place_tree(sources, site, v, x, y, s, rng.uniform(0, 360), f"{tag}{placed}")
         trees.append((x, y, s))
         keep_out = keep_out + [(x, y, 4.2 * s)]
         placed += 1
+    if placed < count:
+        print(f"WARNING: {tag} ring placed {placed}/{count} — keep-outs too tight")
     return trees
 
 
@@ -398,13 +462,14 @@ def board_layouts():
             ],
             "lanterns": [(11.5, -26), (6.4, -19.6), (-10.3, -13.2), (-13.2, -5.4), (-8.6, 13.4), (-1.6, 24.4), (1.6, 29.6), (22.8, -12.4)],
             "heroes": [
-                ("s19", -12.5, 4.5, 1.32, 40),
+                ("s19", -16.5, 4.0, 1.32, 40),
                 ("s71", 13.0, 8.0, 1.24, 210),
                 ("s19", 7.0, 22.5, 1.12, 120),
                 ("s71", -17.0, 23.0, 1.05, 300),
             ],
             "mid_ring": dict(count=11, r0=21, r1=33, scale=(0.9, 1.15), gaps=[(150, 210)]),
             "horizon_ring": dict(count=30, r0=42, r1=66, scale=(1.15, 1.6), gaps=[]),
+            "tq_camera": ((25, -23, 12.0), (-2, 7, 1.0)),
         },
         "B": {
             "title": "Riverside Diagonal",
@@ -432,7 +497,7 @@ def board_layouts():
                 ("s71", 11.0, 7.5, 1.35, 15),
                 ("s19", -5.5, 12.5, 1.18, 250),
                 ("s19", -24.0, 6.0, 1.1, 90),
-                ("s71", 15.5, -18.0, 1.0, 180),
+                ("s71", 19.5, -15.5, 1.0, 180),
             ],
             "mid_ring": dict(count=11, r0=20, r1=33, scale=(0.9, 1.15), gaps=[(120, 175)]),
             "horizon_ring": dict(count=30, r0=42, r1=66, scale=(1.15, 1.6), gaps=[]),
@@ -463,7 +528,7 @@ def board_layouts():
             "heroes": [
                 ("s19", -7.5, 3.5, 1.38, 65),
                 ("s71", 8.5, 2.0, 1.30, 195),
-                ("s19", -12.0, 12.0, 1.1, 320),
+                ("s19", -13.0, 9.0, 1.1, 320),
                 ("s71", 3.0, 21.5, 1.08, 140),
                 ("s19", 16.0, -6.5, 1.05, 20),
             ],
@@ -589,22 +654,29 @@ def build_and_render(board_key):
         build_lantern(site, lx, ly, mats, i)
 
     sources = import_tree_sources()
-    keep_out = [(sx, sy, 8.5), (tx, ty, 5.0), (bx, by, 6.5)]
-    for cx, cy, r0, r1, a0, a1 in layout["audience"]:
-        keep_out.append((cx, cy - (r0 + r1) / 2 * 0.0, r1 + 2.0))
-    for pts in layout["paths"]:
-        for px, py in pts:
-            keep_out.append((px, py, 2.6))
+    plantable = Plantability(layout)
+
+    # Authored hero positions are checked by the SAME rule as the scattered
+    # rings — a hand-placed trunk in a walkway is still a trunk in a walkway.
+    keep_out = []
     hero_records = []
+    hero_violations = []
     for v, x, y, s, rot in layout["heroes"]:
+        blocker = plantable.blocked_by(x, y, s)
+        if blocker:
+            hero_violations.append(f"hero {v} at ({x}, {y}) obstructs {blocker}")
+            continue
         place_tree(sources, site, v, x, y, s, rot, f"Hero_{v}_{x}_{y}")
         hero_records.append((x, y, s))
         keep_out.append((x, y, 5.0 * s))
+    for violation in hero_violations:
+        print(f"BLOCKED: {violation}")
+
     mid = layout["mid_ring"]
-    mids = scatter_ring(rng, site, sources, mid["count"], mid["r0"], mid["r1"],
+    mids = scatter_ring(rng, site, sources, plantable, mid["count"], mid["r0"], mid["r1"],
                         keep_out, mid["scale"], "Mid", mid["gaps"])
     hz = layout["horizon_ring"]
-    horizon = scatter_ring(rng, site, sources, hz["count"], hz["r0"], hz["r1"],
+    horizon = scatter_ring(rng, site, sources, plantable, hz["count"], hz["r0"], hz["r1"],
                            keep_out + [(x, y, 3.5) for x, y, _ in mids],
                            hz["scale"], "Horizon", hz["gaps"])
 
@@ -619,7 +691,8 @@ def build_and_render(board_key):
         "stageToRiverMetres": round(polyline_distance(sx, sy, river_pts), 1),
         "stageToToriiMetres": round(math.hypot(tx - sx, ty - sy), 1),
         "stageToBridgeMetres": round(math.hypot(bx - sx, by - sy), 1),
-        "heroTrees": len(layout["heroes"]),
+        "heroTrees": len(hero_records),
+        "heroViolations": hero_violations,
         "midTrees": len(mids),
         "horizonTrees": len(horizon),
         "treeVariantsUsed": ["open-crown-s19", "open-crown-s71"],
