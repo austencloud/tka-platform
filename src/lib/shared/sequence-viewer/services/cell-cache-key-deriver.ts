@@ -113,6 +113,9 @@ function mapToVisibility(
   options: PreviewCellRenderOptions,
   isDark: boolean
 ): PictographVisibilityOptions {
+  const handsView =
+    (options.handPathMode ?? false) || options.browseViewMode?.subject === "hands";
+
   return {
     showTKA: options.showTKA ?? true,
     showTnD: options.showTnD ?? false,
@@ -128,6 +131,11 @@ function mapToVisibility(
       : options.bluePropType,
     handPointVisibility: options.handPointVisibility,
     handPathMode: options.handPathMode,
+    // Neutralized in hand-path/hands views for the same reason renderCell
+    // neutralizes it there: both props become HANDs, so chirality cannot
+    // change a pixel and must not fragment the key.
+    blueBuugengFlipped: handsView ? false : options.blueBuugengFlipped,
+    redBuugengFlipped: handsView ? false : options.redBuugengFlipped,
     printMode: false,
     showBlueMotion: options.showBlueMotion,
     showRedMotion: options.showRedMotion,

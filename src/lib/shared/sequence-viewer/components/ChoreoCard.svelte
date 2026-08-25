@@ -27,6 +27,7 @@
   import { resolveInfoCellDisplay } from "../services/info-cell-display";
   import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
   import { getScanCardCloudProbe } from "$lib/shared/sequence-viewer/scan-card-cloud-context";
   import { CANONICAL_CARD_VISIBILITY } from "$lib/shared/render/services/cloud-cell-key";
@@ -482,6 +483,14 @@
     prevEffectiveRows = rws;
   });
 
+  // Buugeng chirality is read from settings here rather than taken as a prop,
+  // for the same reason PropSvg and the 2D animation canvas read it directly:
+  // it is a global handedness preference, not a per-host override. Hosts that
+  // override bluePropType/redPropType are unaffected — chirality only applies
+  // to buugeng-family props.
+  const blueBuugengFlipped = $derived(getSettings().blueBuugengFlipped ?? false);
+  const redBuugengFlipped = $derived(getSettings().redBuugengFlipped ?? false);
+
   /**
    * Build render options from current component state (delegates to extracted pure function)
    */
@@ -491,6 +500,8 @@
       bluePropType,
       redPropType,
       catDogModeEnabled,
+      blueBuugengFlipped,
+      redBuugengFlipped,
       showNonRadial,
       showGrid,
       handPointVis,
@@ -565,6 +576,8 @@
       redPropType,
       browseViewMode,
       catDogModeEnabled,
+      blueBuugengFlipped,
+      redBuugengFlipped,
       showStepNumbers,
       showNonRadial,
       handPointVis,

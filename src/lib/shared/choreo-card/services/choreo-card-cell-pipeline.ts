@@ -190,6 +190,8 @@ export function buildRenderOptions(params: {
   bluePropType: PropType | undefined;
   redPropType: PropType | undefined;
   catDogModeEnabled: boolean;
+  blueBuugengFlipped: boolean;
+  redBuugengFlipped: boolean;
   showNonRadial: boolean;
   showGrid: boolean;
   handPointVis: "all" | "active" | "none";
@@ -209,6 +211,8 @@ export function buildRenderOptions(params: {
     bluePropType: params.bluePropType,
     redPropType: params.redPropType,
     catDogModeEnabled: params.catDogModeEnabled,
+    blueBuugengFlipped: params.blueBuugengFlipped,
+    redBuugengFlipped: params.redBuugengFlipped,
     // Never bake step numbers into the rendered blob - identical pictographs
     // at different beats must share the same cached image. Step numbers are
     // rendered as HTML overlays on top of the <img> instead.

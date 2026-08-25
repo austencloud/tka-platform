@@ -16,6 +16,8 @@ export interface ChoreoCardRenderLifecycleDeps {
   readonly redPropType: PropType | undefined;
   readonly browseViewMode: BrowseViewMode | undefined;
   readonly catDogModeEnabled: boolean;
+  readonly blueBuugengFlipped: boolean;
+  readonly redBuugengFlipped: boolean;
   readonly showStepNumbers: boolean;
   readonly showNonRadial: boolean;
   readonly handPointVis: "all" | "active" | "none";
@@ -66,6 +68,8 @@ export function createChoreoCardRenderLifecycle(
       bluePropType: deps.bluePropType,
       redPropType: deps.redPropType,
       catDogModeEnabled: deps.catDogModeEnabled,
+      blueBuugengFlipped: deps.blueBuugengFlipped,
+      redBuugengFlipped: deps.redBuugengFlipped,
       showStepNumbers: deps.showStepNumbers,
       showNonRadial: deps.showNonRadial,
       handPointVis: deps.handPointVis,

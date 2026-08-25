@@ -461,6 +461,8 @@ export class LayerCompositor {
         showGrid: options.showGrid,
         bluePropType: options.bluePropType,
         redPropType: options.redPropType,
+        blueBuugengFlipped: options.blueBuugengFlipped,
+        redBuugengFlipped: options.redBuugengFlipped,
         showBlueMotion: options.showBlueMotion,
         showRedMotion: options.showRedMotion,
         showTnD: options.showTnD,

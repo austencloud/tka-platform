@@ -205,6 +205,10 @@ export class ImageComposer {
         handPointVisibility: overrides.handPointVisibility,
         bluePropType,
         redPropType,
+        // Locked card path: chirality comes ONLY from explicit overrides so a
+        // printed card never inherits the operator's personal handedness.
+        blueBuugengFlipped: overrides.blueBuugengFlipped,
+        redBuugengFlipped: overrides.redBuugengFlipped,
         handPathMode: overrides.handPathMode,
       };
     }
@@ -235,6 +239,8 @@ export class ImageComposer {
       handPointVisibility: visibilityManager.getHandPointVisibility(),
       bluePropType: appSettings.bluePropType,
       redPropType: appSettings.redPropType,
+      blueBuugengFlipped: appSettings.blueBuugengFlipped ?? false,
+      redBuugengFlipped: appSettings.redBuugengFlipped ?? false,
     };
 
     if (overrides) {
@@ -251,6 +257,10 @@ export class ImageComposer {
         handPointVisibility: overrides.handPointVisibility ?? globalSettings.handPointVisibility,
         bluePropType: overrides.bluePropType ?? globalSettings.bluePropType,
         redPropType: overrides.redPropType ?? globalSettings.redPropType,
+        blueBuugengFlipped:
+          overrides.blueBuugengFlipped ?? globalSettings.blueBuugengFlipped,
+        redBuugengFlipped:
+          overrides.redBuugengFlipped ?? globalSettings.redBuugengFlipped,
         handPathMode: overrides.handPathMode,
       };
     }
@@ -493,6 +503,11 @@ export class ImageComposer {
       bluePropType: blueProp,
       redPropType: redProp,
       catDogModeEnabled,
+      // Write-through into the preview-cell cache: the key MUST carry the same
+      // chirality this blob was rendered with, or an unflipped export would be
+      // served to a flipped card cell.
+      blueBuugengFlipped: visibilitySettings.blueBuugengFlipped ?? false,
+      redBuugengFlipped: visibilitySettings.redBuugengFlipped ?? false,
       showStepNumbers: false,
       showNonRadialPoints: visibilitySettings.showNonRadialPoints ?? true,
       showGrid: visibilitySettings.showGrid ?? true,
@@ -921,6 +936,8 @@ export class ImageComposer {
       handPathMode: visibilitySettings.handPathMode ?? false,
       showBlueMotion: visibilitySettings.showBlueMotion,
       showRedMotion: visibilitySettings.showRedMotion,
+      blueBuugengFlipped: visibilitySettings.blueBuugengFlipped,
+      redBuugengFlipped: visibilitySettings.redBuugengFlipped,
     });
 
     const { options: layerOptions, visibility: layerVisibility } = buildCellLayerOptions(

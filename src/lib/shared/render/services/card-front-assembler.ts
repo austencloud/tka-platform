@@ -301,6 +301,8 @@ export function buildCellLayerOptions(
     handPointVisibility: handVisibility,
     bluePropType: visibility.bluePropType,
     redPropType: visibility.redPropType,
+    blueBuugengFlipped: visibility.blueBuugengFlipped,
+    redBuugengFlipped: visibility.redBuugengFlipped,
     showBlueMotion: visibility.showBlueMotion,
     showRedMotion: visibility.showRedMotion,
     showPositions: visibility.showPositions ?? false,

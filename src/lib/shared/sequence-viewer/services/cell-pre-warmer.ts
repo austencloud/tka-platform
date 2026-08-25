@@ -123,6 +123,8 @@ export class CellPreWarmer {
       bluePropType,
       redPropType,
       catDogModeEnabled,
+      blueBuugengFlipped: settingsService.settings.blueBuugengFlipped ?? false,
+      redBuugengFlipped: settingsService.settings.redBuugengFlipped ?? false,
       showNonRadial: vm.getNonRadialVisibility(),
       showGrid: vm.getGridVisibility(),
       handPointVis: vm.getHandPointVisibility(),

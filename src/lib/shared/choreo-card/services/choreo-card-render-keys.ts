@@ -7,6 +7,8 @@ export interface ChoreoCardRenderKeyInputs {
   bluePropType: PropType | undefined;
   redPropType: PropType | undefined;
   catDogModeEnabled: boolean;
+  blueBuugengFlipped: boolean;
+  redBuugengFlipped: boolean;
   showStepNumbers: boolean;
   showNonRadial: boolean;
   handPointVis: "all" | "active" | "none";
@@ -71,8 +73,12 @@ export function buildChoreoCardRenderKeys(
   const durationKey =
     i.sequence?.steps?.map((s) => s.duration ?? 1).join(",") ?? "";
 
+  // Chirality mirrors the prop and can collapse the beta separation offset, so
+  // it changes prop GEOMETRY — it belongs in the structural key, not the
+  // overlay-only bucket.
+  const ch = `${i.blueBuugengFlipped ? "1" : "0"}${i.redBuugengFlipped ? "1" : "0"}`;
   const gv = `${i.showTnD ? "1" : "0"}${i.showElemental ? "1" : "0"}${i.showPositions ? "1" : "0"}${i.showGrid ? "1" : "0"}`;
-  const imageKey = `${i.sequence?.id ?? ""}-${sequenceContentKey}-${stepCount}-${i.bluePropType}-${i.redPropType}-${i.catDogModeEnabled}-${i.showStepNumbers}-${i.showNonRadial}-${i.handPointVis}-${i.showTKA}-${i.showReversals}-${durationKey}-mv:${i.showBlueMotion ? "1" : "0"}${i.showRedMotion ? "1" : "0"}-gv:${gv}`;
+  const imageKey = `${i.sequence?.id ?? ""}-${sequenceContentKey}-${stepCount}-${i.bluePropType}-${i.redPropType}-${i.catDogModeEnabled}-${i.showStepNumbers}-${i.showNonRadial}-${i.handPointVis}-${i.showTKA}-${i.showReversals}-${durationKey}-mv:${i.showBlueMotion ? "1" : "0"}${i.showRedMotion ? "1" : "0"}-ch:${ch}-gv:${gv}`;
   // startPositionLayout (row vs column) changes where the start cell sits and
   // therefore where every step cell AND the QR cell land. It's in the CONTENT
   // (layout) key but NOT imageKey/gridStableKey/structuralKey: a pure row↔column
@@ -86,7 +92,7 @@ export function buildChoreoCardRenderKeys(
   // Geometry-only subset (see interface docs). Deliberately excludes every
   // overlay-visibility flag so a non-radial / glyph / grid / points toggle
   // leaves it unchanged → crossfade, not swap.
-  const structuralKey = `${i.sequence?.id ?? ""}-${sequenceContentKey}-${stepCount}-${i.bluePropType}-${i.redPropType}-${i.catDogModeEnabled}-${durationKey}-mv:${i.showBlueMotion ? "1" : "0"}${i.showRedMotion ? "1" : "0"}`;
+  const structuralKey = `${i.sequence?.id ?? ""}-${sequenceContentKey}-${stepCount}-${i.bluePropType}-${i.redPropType}-${i.catDogModeEnabled}-${durationKey}-mv:${i.showBlueMotion ? "1" : "0"}${i.showRedMotion ? "1" : "0"}-ch:${ch}`;
   const renderKey = `${contentKey}-${i.darkMode}`;
 
   return { imageKey, contentKey, gridStableKey, structuralKey, renderKey };

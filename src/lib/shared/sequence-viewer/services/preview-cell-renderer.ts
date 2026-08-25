@@ -34,6 +34,15 @@ export interface PreviewCellRenderOptions {
   /** When true, red hand uses redPropType; otherwise uses bluePropType */
   catDogModeEnabled?: boolean;
 
+  /** Buugeng chirality for the blue prop (buugeng-family props only). Mirrors
+   *  the prop and collapses the beta separation offset when the two props end
+   *  up with opposite handedness, exactly as the live SVG pictograph and the
+   *  2D animation canvas do. */
+  blueBuugengFlipped?: boolean;
+
+  /** Buugeng chirality for the red prop. See blueBuugengFlipped. */
+  redBuugengFlipped?: boolean;
+
   /** Whether to render step numbers on the pictograph */
   showStepNumbers?: boolean;
 
@@ -257,6 +266,11 @@ export async function renderCell(
 
   const dataForRender = soloFiltered;
 
+  // Hand-path mode swaps both props for HANDs, so chirality is meaningless
+  // there — passing it would only fragment the cache.
+  const blueFlipped = isHandPath ? false : (options.blueBuugengFlipped ?? false);
+  const redFlipped = isHandPath ? false : (options.redBuugengFlipped ?? false);
+
   const prepared = await pictographPreparer.prepareSingle(dataForRender, {
     themeMode: isDark ? "dark" : "light",
     bluePropType: effectiveBlueProp,
@@ -264,6 +278,8 @@ export async function renderCell(
     handPathMode: isHandPath,
     showBlueMotion: options.showBlueMotion,
     showRedMotion: options.showRedMotion,
+    blueBuugengFlipped: blueFlipped,
+    redBuugengFlipped: redFlipped,
   });
 
   const isMotionSolo =
@@ -280,6 +296,8 @@ export async function renderCell(
     handPointVisibility: options.handPointVisibility ?? "all",
     bluePropType: effectiveBlueProp,
     redPropType: effectiveRedProp,
+    blueBuugengFlipped: blueFlipped,
+    redBuugengFlipped: redFlipped,
     showBlueMotion: options.showBlueMotion,
     showRedMotion: options.showRedMotion,
     showTnD: suppressOverlays ? false : (options.showTnD ?? false),

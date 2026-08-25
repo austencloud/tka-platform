@@ -2,6 +2,7 @@ import type { DrawableImage } from "./svg-image-cache";
 import type { PreparedPictographData } from "../../pictograph/shared/domain/models/prepared-pictograph-data";
 import type { DirectRenderOptions } from "./IDirectRenderer";
 import { buildArrowHaloFilter } from "../../pictograph/arrow/rendering/arrow-halo";
+import { isBuugengFamilyProp } from "../core/constants/prop-classification";
 
 const SVG_OVERFLOW_RATIO = 0.15;
 
@@ -94,6 +95,18 @@ export function shouldMirrorProp(
 
   if (actualPropType?.toLowerCase() === "hand" && color === "red") {
     return true;
+  }
+
+  // Buugeng chirality. This is the raster twin of PropSvg's shouldMirror: an
+  // S-shaped prop is 180-degree-rotation invariant, so the flip setting can
+  // only be honored by mirroring. Without this branch the choreo-card cells
+  // and every other rasterized pictograph rendered the unflipped prop while
+  // the 2D animation canvas (which reads the same setting) rendered the
+  // flipped one.
+  if (actualPropType && isBuugengFamilyProp(actualPropType)) {
+    return color === "blue"
+      ? (options.visibility.blueBuugengFlipped ?? false)
+      : (options.visibility.redBuugengFlipped ?? false);
   }
 
   return false;

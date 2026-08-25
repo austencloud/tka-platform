@@ -85,6 +85,11 @@ export interface LayerRenderOptions {
   bluePropType?: PropType;
   redPropType?: PropType;
 
+  // Buugeng chirality. Mirrors the prop when set (buugeng-family props only),
+  // matching PropSvg in the live DOM and the 2D animation canvas.
+  blueBuugengFlipped?: boolean;
+  redBuugengFlipped?: boolean;
+
   // Per-color motion visibility. When false, renderer skips that color's props+arrows.
   // Default: true (both visible). Affects base layer cache key.
   showBlueMotion?: boolean;

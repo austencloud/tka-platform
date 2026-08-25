@@ -79,6 +79,10 @@ export interface SequenceExportOptions {
     bluePropType?: PropType;
     /** Red prop type override (for cache key consistency) */
     redPropType?: PropType;
+    /** Buugeng chirality (buugeng-family props only). Omitted = unflipped,
+     *  which is the canonical look for locked deck/print cards. */
+    blueBuugengFlipped?: boolean;
+    redBuugengFlipped?: boolean;
     /** Render QR code in empty cell (if available) */
     showQRCode?: boolean;
     /** Render as hand path visualization (HAND props, float arrows, no TKA) */

@@ -15,6 +15,10 @@ export interface BaseLayerKeyComponents {
   motionHash: string;
   bluePropType: string;
   redPropType: string;
+  // Chirality mirrors the prop AND (via the preparer) can collapse the beta
+  // separation offset, so it is base-layer image identity.
+  blueBuugengFlipped: boolean;
+  redBuugengFlipped: boolean;
   darkMode: boolean;
   size: number;
   showBlueMotion: boolean;
@@ -103,6 +107,8 @@ export function getBaseLayerComponents(
     motionHash: deriveMotionHash(pictograph),
     bluePropType: options.bluePropType ?? pictograph.motions?.blue?.propType ?? "staff",
     redPropType: options.redPropType ?? pictograph.motions?.red?.propType ?? "staff",
+    blueBuugengFlipped: options.blueBuugengFlipped ?? false,
+    redBuugengFlipped: options.redBuugengFlipped ?? false,
     darkMode: options.darkMode,
     size: options.size,
     showBlueMotion: options.showBlueMotion ?? true,

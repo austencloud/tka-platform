@@ -6,6 +6,7 @@ import {
   GridLocation,
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { isBuugengFamilyProp } from "$lib/shared/render/core/constants/prop-classification";
 // getSettings loaded dynamically to avoid pulling $app/environment into worker bundle
 
 interface MotionKeyData {
@@ -54,6 +55,11 @@ interface PictographKeyInput {
     printMode: boolean;
     showBlueMotion: boolean;
     showRedMotion: boolean;
+    // Chirality is image identity for buugeng-family props only, and only
+    // when flipped. Present-when-it-matters keeps every unflipped render
+    // byte-identical to the established lsp11/lsp12 key corpus.
+    blueBuugengFlipped?: boolean;
+    redBuugengFlipped?: boolean;
   };
 }
 
@@ -210,6 +216,10 @@ export class PictographKeyHasher {
         printMode: visibility.printMode ?? false,
         showBlueMotion: visibility.showBlueMotion ?? true,
         showRedMotion: visibility.showRedMotion ?? true,
+        ...(isBuugengFamilyProp(resolvedBlueProp) &&
+          visibility.blueBuugengFlipped && { blueBuugengFlipped: true }),
+        ...(isBuugengFamilyProp(resolvedRedProp) &&
+          visibility.redBuugengFlipped && { redBuugengFlipped: true }),
       },
     };
   }

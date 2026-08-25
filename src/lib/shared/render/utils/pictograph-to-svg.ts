@@ -43,6 +43,14 @@ export interface PictographVisibilityOptions {
    */
   redPropType?: PropType;
   /**
+   * Buugeng chirality for the blue prop. An S-shaped prop is rotation-invariant,
+   * so only a mirror changes its handedness — the raster path applies the same
+   * scaleX(-1) that PropSvg applies in the live DOM. Ignored for other props.
+   */
+  blueBuugengFlipped?: boolean;
+  /** Buugeng chirality for the red prop. See blueBuugengFlipped. */
+  redBuugengFlipped?: boolean;
+  /**
    * Hand point visibility setting for grid rendering.
    * "all" shows all hand positions, "active" shows only active ones, "none" hides all.
    */
