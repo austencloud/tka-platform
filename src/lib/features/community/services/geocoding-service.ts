@@ -5,6 +5,20 @@
 
 import type { CityLocation } from "./types";
 
+/**
+ * A forward geocode, with "no such city" kept distinct from "the geocoder
+ * failed".
+ *
+ * The UI must not promise an error message the geocoder cannot produce: a
+ * network failure and a typo need different recovery, and collapsing both to
+ * `null` means telling someone their city does not exist when the request
+ * never arrived.
+ */
+export type ForwardGeocodeResult =
+  | { status: "found"; coords: { lat: number; lng: number } }
+  | { status: "not-found" }
+  | { status: "failed"; error: unknown };
+
 export class Geocoder {
   constructor(private apiKey: string) {}
 
@@ -84,10 +98,57 @@ export class Geocoder {
 
   /**
    * Forward geocode a city + country into lat/lng coordinates.
-   * Delegates to the private getCityCenter helper and surfaces it as a public API.
+   *
+   * @deprecated Collapses "no such city" and "the request failed" into the same
+   * `null`. Use {@link forwardGeocodeCity}. Retained for
+   * `FestivalSubmissionForm`, which treats both the same way today.
    */
   async forwardGeocode(city: string, country: string): Promise<{ lat: number; lng: number } | null> {
-    return this.getCityCenter(city, country);
+    const result = await this.forwardGeocodeCity(city, country);
+    return result.status === "found" ? result.coords : null;
+  }
+
+  /**
+   * City-center coordinates for a named city, keeping a miss and a failure
+   * distinguishable.
+   */
+  async forwardGeocodeCity(
+    city: string,
+    country: string
+  ): Promise<ForwardGeocodeResult> {
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+          `${city}, ${country}`
+        )}&key=${this.apiKey}`
+      );
+
+      if (!response.ok) {
+        return {
+          status: "failed",
+          error: new Error(`Geocoding API error: ${response.status}`),
+        };
+      }
+
+      const data = await response.json();
+
+      if (data.status === "OK" && data.results?.length > 0) {
+        const location = data.results[0].geometry.location;
+        return { status: "found", coords: { lat: location.lat, lng: location.lng } };
+      }
+
+      // ZERO_RESULTS is a real answer: the address does not resolve. Every
+      // other status is the API refusing to answer.
+      if (data.status === "ZERO_RESULTS") return { status: "not-found" };
+
+      return {
+        status: "failed",
+        error: new Error(`Geocoding failed: ${data.status}`),
+      };
+    } catch (error) {
+      console.warn("⚠️ [Geocoder] Forward geocode failed:", error);
+      return { status: "failed", error };
+    }
   }
 
   /**
@@ -97,34 +158,6 @@ export class Geocoder {
     city: string,
     country: string
   ): Promise<{ lat: number; lng: number } | null> {
-    try {
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-          `${city}, ${country}`
-        )}&key=${this.apiKey}`
-      );
-
-      if (!response.ok) {
-        return null;
-      }
-
-      const data = await response.json();
-
-      if (data.status === "OK" && data.results && data.results.length > 0) {
-        const location = data.results[0].geometry.location;
-        return {
-          lat: location.lat,
-          lng: location.lng,
-        };
-      }
-
-      return null;
-    } catch (error) {
-      console.warn(
-        "⚠️ [Geocoder] Failed to get city center, using user coords:",
-        error
-      );
-      return null;
-    }
+    return this.forwardGeocode(city, country);
   }
 }
