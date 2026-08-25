@@ -255,6 +255,40 @@ A saved film's link is therefore shareable and scriptable on exactly the same
 terms as a built-in one, which is the property the `?film=` work established
 and this must not regress.
 
+## The Library is the front door (landed 2026-08-25, `8dd1a602fa`)
+
+The Art rail in `MyCollectionsPanel.svelte` gains a fourth card — Films, amber,
+beside Tunnels, Scenes and Mandalas. Opening it mounts the saved-films shelf in
+the art-detail pane; opening a film navigates to the director with that film
+loaded.
+
+**Gating: `dev && authState.isAdmin && !previewReadOnly`.** Admin because the
+director is not a public surface. `dev` because `src/routes/test/+layout.ts`
+already redirects `/test/*` to `/browse/gallery` in production — a card there
+would list films nobody could open. That redirect is *stricter* than an admin
+guard, which is why no route guard was added to the director itself. The `dev`
+half of the condition comes off when the director gets a real route, and that is
+the only edit the unlock needs.
+
+**Navigation moved out of the route.** `parseFilmKey` / `savedFilmKey` /
+`savedFilmHref` now live in `$lib/features/film-director/domain/film-director-link.ts`,
+so a Library component links to a film without importing from `src/routes/test`.
+`parseFilmKey` takes the library predicate as a parameter, which keeps the route
+owning which keys are built-in and keeps the domain module free of route
+knowledge. `FILM_DIRECTOR_ROUTE` is the single constant that changes when the
+director moves.
+
+**The gallery supplies its own scroll shell.** The Library mounts each art
+gallery as `<ArtGallery />` with no props inside a pane that sets
+`overflow: hidden`. `FilmCollectionGallery.svelte` wraps the shelf in the scroll
+container; the shelf itself stays a flowing block, which is what the director's
+marquee wants.
+
+**Sign-out tears the collection down.** The film and 3D-scene collections both
+held a live Firestore subscription across an account switch, so the next
+signed-in user saw the previous one's items until a reload. Both are now torn
+down in `signOut()` alongside tunnels and collections.
+
 ## Scope boundary: the director route stays in `test/`
 
 The authoring workbench remains at `/test/film-director` in this pass. Only the
