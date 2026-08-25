@@ -78,6 +78,7 @@
 <BaseModal
   bind:open
   size="fit"
+  class="save-film-modal"
   labelledBy="save-film-title"
   closeOnBackdrop={!saving}
   closeOnEscape={!saving}
@@ -144,9 +145,18 @@
 </BaseModal>
 
 <style>
+  /* size="fit" fits HEIGHT; width stays --modal-width-fit's flat 480px. This
+     route ramps the root font from 1680px up, so rem content outgrew that px
+     dialog and got clipped by its overflow:hidden. The dialog owns the width,
+     and in rem so it ramps with what it contains. [data-size] beats the size
+     rule's specificity, mobile rule included. */
+  :global(dialog.base-modal.save-film-modal[data-size]) {
+    width: min(28rem, calc(100vw - 2rem));
+  }
+
   .save-film {
     display: grid;
-    width: min(28rem, calc(100vw - 2rem));
+    width: 100%;
     gap: 0.85rem;
     padding: 1.1rem 1.2rem 1.2rem;
   }
