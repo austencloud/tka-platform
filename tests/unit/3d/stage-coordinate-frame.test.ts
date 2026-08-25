@@ -1,5 +1,8 @@
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { BackgroundType } from "@austencloud/backgrounds";
+import { STAGE } from "@austencloud/scene-3d";
 import {
   CANONICAL_PERFORMER_ANCHOR_Y,
   getNativeStageSurfaceY,
@@ -50,6 +53,46 @@ describe("stage coordinate frame", () => {
       CANONICAL_PERFORMER_ANCHOR_Y
     );
     expect(frame.environmentYOffset).toBe(0);
+  });
+
+  describe("scenes rendering the canonical <Stage3D>", () => {
+    // A scene that renders Stage3D without a `height` prop gets a deck top at
+    // STAGE.STAGE_DECK_HEIGHT. If it declares any other native surface, the
+    // difference offsets the entire environment and the performers' feet end
+    // up inside the deck. Blossom shipped 0.35 here and sank feet by 0.20 m.
+    const SCENES_DIR = "src/lib/shared/3d/environments/scenes";
+    const SCENE_BACKGROUNDS: Record<string, BackgroundType> = {
+      "ForestScene.svelte": BackgroundType.FOREST,
+      "AutumnScene.svelte": BackgroundType.AUTUMN,
+      "BlossomScene.svelte": BackgroundType.BLOSSOM,
+    };
+
+    const rendersStage3D = readdirSync(SCENES_DIR)
+      .filter((file) => file.endsWith("Scene.svelte"))
+      .filter((file) =>
+        /<Stage3D[\s/>]/.test(readFileSync(join(SCENES_DIR, file), "utf8"))
+      );
+
+    it("has a known background mapping for each one", () => {
+      expect(rendersStage3D.sort()).toEqual(
+        Object.keys(SCENE_BACKGROUNDS).sort()
+      );
+    });
+
+    it.each(rendersStage3D)("declares the deck top for %s", (file) => {
+      const source = readFileSync(join(SCENES_DIR, file), "utf8");
+      const tag = source.match(/<Stage3D[^>]*>/)?.[0] ?? "";
+      // A scene passing its own height would need its own declared surface.
+      expect(tag).not.toMatch(/\bheight=/);
+
+      const backgroundType = SCENE_BACKGROUNDS[file];
+      expect(getNativeStageSurfaceY(backgroundType, true)).toBe(
+        STAGE.STAGE_DECK_HEIGHT
+      );
+      expect(
+        getStageCoordinateFrame(backgroundType, true).environmentYOffset
+      ).toBe(0);
+    });
   });
 
   it("moves Cloudbreak's raised terrace under the fixed performer anchor", () => {

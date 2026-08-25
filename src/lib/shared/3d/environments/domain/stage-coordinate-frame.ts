@@ -23,13 +23,13 @@ export function getNativeStageSurfaceY(
   stageEnabled: boolean
 ): number {
   switch (backgroundType) {
+    // Every scene that renders the canonical <Stage3D> belongs on this branch.
+    // Its native performer surface is the deck top, not the terrain underneath
+    // it. Declaring the terrain, or an older platform height, offsets the whole
+    // scene by the difference and leaves the performer's feet in the planks.
     case BackgroundType.FOREST:
-      return STAGE.STAGE_DECK_HEIGHT;
     case BackgroundType.AUTUMN:
-      // Autumn owns the same canonical raised Stage3D as Forest. Its native
-      // performer surface is the deck top, not the terrain underneath it.
-      // Treating the terrain as the support surface shifts the whole scene up
-      // one deck height and leaves the performer's feet inside the planks.
+    case BackgroundType.BLOSSOM:
       return STAGE.STAGE_DECK_HEIGHT;
     case BackgroundType.COSMIC:
       return 0.4;
@@ -39,8 +39,6 @@ export function getNativeStageSurfaceY(
       return stageEnabled ? 2.5 : 1.5;
     case BackgroundType.EMBER:
       return 0.5;
-    case BackgroundType.BLOSSOM:
-      return 0.35;
     case BackgroundType.PRIDE:
       return 0.4;
     case BackgroundType.CELESTIAL:
