@@ -567,12 +567,42 @@ and the `setOptions` call. A synchronous function runs to completion inside one
 task, so the first caller configures and every later caller sees the settled
 state regardless of arrival order.
 
-Each entry point then memoizes independently — `loadPromise` and
-`placesPromise` are separate fields with separate null-on-failure resets, so a
-Places failure never poisons the map's memo and vice versa. Order-independence
-is a stated requirement of the phase, not an accident of the current call
-sites, and it is what the phase's test asserts: `loadPlaces()` first, then
-`load()`, both resolve.
+**`load()`'s existing contract must survive the extraction.** Today both failure
+paths `return Promise.reject(...)` (`GoogleMapsLibraryLoader.ts:10-18`) — the
+method never throws synchronously. A synchronous `ensureConfigured` that throws
+would convert those into synchronous throws, and a consumer written as
+`loader.load(key).catch(...)` would get an uncaught exception instead of a
+handled rejection. That is an observable behavior change for both existing
+consumers, from a refactor that is supposed to leave them untouched.
+
+Each entry point therefore wraps the call and preserves the promise contract:
+
+```ts
+load(apiKey: string): Promise<void> {
+  try {
+    this.ensureConfigured(apiKey);
+  } catch (error) {
+    return Promise.reject(error);
+  }
+  // ... existing memoized importLibrary("maps") + ("marker")
+}
+```
+
+`loadPlaces` has the identical prologue. Both keep returning rejected promises
+for the empty-key and different-key cases, with the same messages.
+
+**The shared `apiKey` field cannot couple the two failure paths.** It is only
+ever assigned, never reset, and its assignment does not depend on any library
+actually loading — `ensureConfigured` sets it after `setOptions`, before either
+import is attempted. So a Places failure and a Maps failure cannot interact
+through it: each entry point nulls only its own promise field on failure.
+
+Each entry point memoizes independently — `loadPromise` and `placesPromise` are
+separate fields with separate null-on-failure resets, so a Places failure never
+poisons the map's memo and vice versa. Order-independence is a stated
+requirement of the phase, not an accident of the current call sites, and it is
+what the phase's test asserts: `loadPlaces()` first, then `load()`, both
+resolve.
 
 ### 8. Sizing and the map mount
 
