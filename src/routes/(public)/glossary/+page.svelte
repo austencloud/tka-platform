@@ -6,6 +6,8 @@
   import GlossaryNav from "./_components/GlossaryNav.svelte";
   import GlossaryTermDetail from "./_components/GlossaryTermDetail.svelte";
   import LetterCodex from "./_components/LetterCodex.svelte";
+  import CodexBoardSwitcher from "./_components/codex-boards/CodexBoardSwitcher.svelte";
+  import { readBoard, type BoardKey } from "./_components/codex-boards/board-choice";
   import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
   import {
     matchesGlossaryTerm,
@@ -203,6 +205,17 @@
   // page is a centered hub with its own search, so the empty rail is gone and
   // the content sits centered instead of shoved right by an 18rem placeholder.
   const landingView = $derived(view === "landing");
+
+  // Which codex board is showing. It lives here, not in LetterCodex, because
+  // its switcher rides in the category header row below rather than claiming a
+  // row of its own - see _components/codex-boards/board-choice.ts. Scaffolding:
+  // this and the switcher come out with the two losing boards.
+  let codexBoard = $state<BoardKey>("atlas");
+  function setCodexBoard(next: BoardKey): void {
+    codexBoard = next;
+    mutateCurrentUrl((url) => url.searchParams.set("board", next));
+  }
+
   const selectedEntry = $derived(
     selected ? (slugToEntry.get(selected) ?? null) : null
   );
@@ -341,6 +354,11 @@
   // the category. It matters most for the codex, whose whole surface lives
   // inside one category and was otherwise unreachable by URL.
   onMount(() => {
+    // URLSearchParams, not new URL(): this module shadows the global URL with
+    // the page's canonical href constant.
+    codexBoard = readBoard(
+      new URLSearchParams(window.location.search).get("board")
+    );
     const slug = window.location.hash.slice(1);
     if (!slug) return;
     const catKey = sectionSlugToKey.get(slug);
@@ -445,7 +463,11 @@
     />
   </aside>
 
-  <div class="editorial" class:compact={!landingShown}>
+  <div
+    class="editorial"
+    class:compact={!landingShown}
+    class:drilled={!landingView}
+  >
     <!-- ── mobile: sticky filter bar + Contents drawer trigger ── -->
     <div class="mobile-bar">
       <div class="mb-search">
@@ -544,6 +566,13 @@
         </button>
         <h2 class="view-title">{viewTitle}</h2>
         <span class="view-count">{viewCountLabel}</span>
+        <!-- A category's own controls ride in this row rather than stacking a
+             second full-width row under it. -->
+        {#if codexView}
+          <div class="view-tools">
+            <CodexBoardSwitcher board={codexBoard} onchange={setCodexBoard} />
+          </div>
+        {/if}
       </div>
     {/if}
 
@@ -591,7 +620,7 @@
     {#if codexView}
       <div class="codex-host">
         {#key codexInitialLetter}
-          <LetterCodex initialLetter={codexInitialLetter} />
+          <LetterCodex initialLetter={codexInitialLetter} board={codexBoard} />
         {/key}
       </div>
     {/if}
@@ -877,6 +906,32 @@
   }
   .editorial.compact .lede {
     display: none;
+  }
+
+  /* ── drilled into a category: give the vertical back to the content ──
+     The landing needs the site's own title block. A category view does not: by
+     then you have the SiteHeader, a "Flow Arts Notation" back link, an h1, a
+     subtitle, a "Categories / <title> / <count>" row and whatever toolbar the
+     category itself renders - six stacked full-width rows, none of which needs
+     a row to itself, before a single pictograph. Together they cost about 200px
+     at 1920, which is a row and a half of Letter Codex cells. The back action
+     already exists twice over (SiteHeader's Back, and Categories here), so the
+     link and the title block come out, .view-head carries the identity, and the
+     category's own controls ride in that same row. */
+  .editorial.drilled .back-link,
+  .editorial.drilled .editorial-header {
+    display: none;
+  }
+  .editorial.drilled .view-head {
+    margin: 0 0 0.6rem;
+  }
+  /* The 88px top padding is clearance for the 65px fixed SiteHeader plus the
+     landing's own breathing room; drilled, 9px of clearance is the whole job.
+     The 80px bottom is worse than dead: a board that ends exactly at the fold
+     still scrolls 80px, so the page reports a scrollbar it does not need. */
+  .editorial.drilled {
+    padding-top: 74px;
+    padding-bottom: 2.5rem;
   }
   .page-title,
   .lede p {
@@ -1220,12 +1275,19 @@
     outline-offset: 2px;
   }
 
-  /* ── drilled view header: back + category title + count ── */
+  /* ── drilled view header: back + category title + count + the category's own
+       controls, all on one line ── */
   .view-head {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 1rem;
+    gap: 0.6rem 1rem;
     margin: 0 0 1.4rem;
+  }
+  /* Pushed to the far end, and allowed to drop to its own line only when the
+     row genuinely runs out of width (narrow phones). */
+  .view-tools {
+    margin-left: auto;
   }
   .back-btn {
     all: unset;

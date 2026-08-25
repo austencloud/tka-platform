@@ -74,3 +74,26 @@ export const CODEX_BOXES: TaggedBox[] = CODEX_TYPES.flatMap((type) =>
 export function cellCount(box: CodexBoxDef): number {
   return box.cells.length;
 }
+
+/** One type and the boxes that belong to it, for boards that keep the sheet's
+ *  organisation by type instead of flowing all 47 as one run. */
+export interface CodexTypeBand {
+  type: CodexTypeDef;
+  boxes: TaggedBox[];
+  cells: number;
+}
+
+export const CODEX_TYPE_BANDS: CodexTypeBand[] = CODEX_TYPES.map((type) => {
+  const boxes = CODEX_BOXES.filter((b) => b.type === type);
+  return {
+    type,
+    boxes,
+    cells: boxes.reduce((n, b) => n + cellCount(b.box), 0),
+  };
+});
+
+/** Types 1-3 carry 8 or more letters each, so each earns a full-width band.
+ *  Types 4-6 carry three apiece - a full-width row for three cells is most of
+ *  a band spent on nothing, so those three share one row. */
+export const MAJOR_TYPE_BANDS = CODEX_TYPE_BANDS.filter((b) => b.cells >= 8);
+export const MINOR_TYPE_BANDS = CODEX_TYPE_BANDS.filter((b) => b.cells < 8);

@@ -23,6 +23,24 @@
   --codex-transition: var(--theme-text, oklch(0.96 0.01 270));
   --codex-mode: var(--theme-text-muted, oklch(0.72 0.015 270));
 
+  /* The transition glyph is two black SVG files (the same letter and arrow
+     assets the pictograph uses), so `color` never touches it - on paper that is
+     correct and on a dark board it is a black mark on a black box. Invert to
+     white, and keep them lightly under full brightness so the caption stays a
+     caption and does not compete with the pictographs beneath it. */
+  --codex-transition-ink: var(--theme-text, oklch(0.96 0.01 270));
+  --codex-glyph-filter: invert(1) brightness(0.92);
+
+  /* Caption floor. The print sheet sets these at 0.6-0.62rem, which is right on
+     paper at its fixed cell size and wrong on a board whose cells grow with the
+     viewport - they land near 10px, under the 12px floor for supplementary text
+     and reading as punctuation rather than words. 0.75rem is 12px even at the
+     unramped 16px root and grows with the ramp above 1680. */
+  --codex-caption-size: 0.75rem;
+  --codex-name-size: 0.75rem;
+  --codex-mode-size: 0.75rem;
+  --codex-glyph-h: 0.85rem;
+
   /* Sheet */
   --codex-sheet-bg: transparent;
   --codex-sheet-fg: var(--theme-text, oklch(0.96 0.01 270));

@@ -11,14 +11,14 @@
   CodexCell's default and where it belongs.
 
   Three boards are mounted at once so the layout direction can be compared in
-  place rather than in a harness. Once one is chosen the other two and the
-  switcher come out.
+  place rather than in a harness. Once one is chosen the other two come out.
+
+  Which board is showing is the page's, not this component's: the switcher rides
+  in the glossary's own category header row rather than claiming a row of its
+  own. See board-choice.ts.
 -->
 <script lang="ts">
   import { onMount, tick } from "svelte";
-  import { page } from "$app/state";
-  import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
-  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
   import {
@@ -32,31 +32,16 @@
   import BoardStage from "./codex-boards/BoardStage.svelte";
   import CodexInspector from "./codex-boards/CodexInspector.svelte";
   import CodexTypeLegend from "./codex-boards/CodexTypeLegend.svelte";
+  import type { BoardKey } from "./codex-boards/board-choice";
   import { CODEX_BY_LABEL, CODEX_LETTERS, type CodexLetterInfo } from "./codex-boards/codex-letters";
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
-  let { initialLetter = "A" }: { initialLetter?: string } = $props();
-
-  type BoardKey = "sheets" | "atlas" | "stage";
-
-  const BOARDS: { value: BoardKey; label: string; ariaLabel: string }[] = [
-    { value: "sheets", label: "Sheets", ariaLabel: "Sheets layout - the guide's two printed pages" },
-    { value: "atlas", label: "Atlas", ariaLabel: "Atlas layout - one continuous run of boxes" },
-    { value: "stage", label: "Stage", ariaLabel: "Stage layout - compact index beside a large inspector" },
-  ];
-
-  function readBoard(value: string | null): BoardKey {
-    return value === "atlas" || value === "stage" || value === "sheets" ? value : "atlas";
-  }
-
-  let board = $state<BoardKey>("atlas");
-
-  function setBoard(next: BoardKey): void {
-    board = next;
-    mutateCurrentUrl((url) => url.searchParams.set("board", next));
-  }
+  let {
+    initialLetter = "A",
+    board = "atlas",
+  }: { initialLetter?: string; board?: BoardKey } = $props();
 
   // Hover/selected ring - the shared primitive the guide's codex cells already
   // use, so the two surfaces highlight identically. CodexCell reads it from
@@ -94,7 +79,6 @@
   }
 
   onMount(() => {
-    board = readBoard(page.url.searchParams.get("board"));
     void load();
   });
 
@@ -120,24 +104,13 @@
 </script>
 
 <div class="codex codex-dark">
-  <!-- One toolbar row, not two stacked ones: the type legend and the layout
-       switcher together cost less height than either did alone, and every
-       pixel here comes out of the letters. -->
-  <div class="toolbar">
-    <div class="switcher">
-      <span class="switcher-label" id="codex-board-label">Layout</span>
-      <SegmentedControl
-        options={BOARDS}
-        value={board}
-        onchange={setBoard}
-        size="sm"
-        ariaLabelledby="codex-board-label"
-      />
-    </div>
-    {#if board !== "sheets"}
-      <CodexTypeLegend />
-    {/if}
-  </div>
+  <!-- Only Stage still flows all 47 as one ungrouped run, so it is the only
+       board where the colours under the boxes need naming somewhere else.
+       Sheets has its type headings and Atlas has its band headings, and neither
+       spends a row on saying so twice. -->
+  {#if board === "stage"}
+    <CodexTypeLegend />
+  {/if}
 
   {#if board === "sheets"}
     <BoardSheets onSelect={select} />
@@ -191,29 +164,6 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-  }
-
-  .toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem 1.5rem;
-  }
-
-  /* Comparison affordance only - it comes out with the two losing boards.
-     fit-content so the control sizes to its three short labels instead of
-     stretching into a progress bar across the band. */
-  .switcher {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    width: fit-content;
-  }
-  .switcher-label {
-    font-size: 0.8rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--theme-text-muted, oklch(0.72 0.015 270));
   }
 
   .overlay-body {

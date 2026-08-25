@@ -116,12 +116,14 @@
     min-width: 0;
   }
 
-  /* Every colour below is a token whose DEFAULT is the value this sheet has
-     always printed, so print/card callers are byte-identical. A dark host (the
-     public glossary) redefines the tokens on an ancestor instead of forking the
-     component. */
+  /* Every colour and caption size below is a token whose DEFAULT is the value
+     this sheet has always printed, so print/card callers are byte-identical. A
+     dark host (the public glossary) redefines the tokens on an ancestor instead
+     of forking the component. Sizes are tokens as well as colours because a
+     screen board sizes its cells off the viewport: at print scale these
+     captions hold ~10px on a 4K board, which reads as punctuation. */
   .cell-top {
-    font-size: 0.62rem;
+    font-size: var(--codex-caption-size, 0.62rem);
     font-weight: 600;
     color: var(--codex-caption, #333);
     line-height: 1.1;
@@ -158,15 +160,24 @@
     height: 100%;
     gap: 0;
   }
+  /* !important, and not for style: GuidePictograph caps a size-sm wrapper at
+     max-width 140px with `.guide-pictograph.size-sm .pictograph-wrapper`, which
+     out-specifies a plain override here. On the printed sheets the cell is
+     ~110px so the cap never bound and nobody noticed. On a screen board sized
+     off the viewport it binds hard: a 247px 4K cell rendered a 140px pictograph
+     floating in 107px of dead box - the letters look tiny and the board looks
+     empty, which is the exact defect the screen boards exist to fix. The two
+     other guide surfaces that size pictographs off their container (TurnStrip,
+     GuideStepStrip) already break the cap the same way. */
   .picto :global(.pictograph-wrapper) {
     width: 100%;
     height: 100%;
-    max-width: none;
+    max-width: none !important;
   }
 
   .cell-name {
     font-style: italic;
-    font-size: 0.6rem;
+    font-size: var(--codex-name-size, 0.6rem);
     color: var(--codex-name, #555);
     line-height: 1.1;
   }

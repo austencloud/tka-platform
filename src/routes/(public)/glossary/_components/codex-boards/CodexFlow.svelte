@@ -11,13 +11,18 @@
 -->
 <script lang="ts">
   import CodexBox from "../../../guide/codex/_components/CodexBox.svelte";
-  import { CODEX_BOXES, typeName, typeColor } from "./codex-letters";
+  import { CODEX_BOXES, typeName, typeColor, type TaggedBox } from "./codex-letters";
 
-  let { onSelect }: { onSelect: (id: string) => void } = $props();
+  let {
+    onSelect,
+    /** Which boxes to flow. Defaults to the whole codex in sheet order; a
+     *  type-banded board passes one type's boxes per band. */
+    boxes = CODEX_BOXES,
+  }: { onSelect: (id: string) => void; boxes?: TaggedBox[] } = $props();
 </script>
 
 <div class="flow">
-  {#each CODEX_BOXES as tagged (tagged.key)}
+  {#each boxes as tagged (tagged.key)}
     <div
       class="abox"
       style:--type-c={typeColor(tagged.type)}
@@ -59,15 +64,15 @@
     height: 1.25rem;
     min-height: 0;
   }
-  /* Types 4-6 caption every cell with its own transition. At the sheet's 0.62rem
-     those glyphs render 13px tall on screen and read as punctuation, so match
-     them to the box-header glyph - the largest that still clears the reserve. */
+  /* Types 4-6 caption every cell with its own transition; the reserve above
+     pins that caption to the same height as a box header so the pictographs of
+     both kinds of box start on one line. Caption SIZE is not set here - it is
+     --codex-caption-size in codex-dark.css, so all three boards agree. */
   .flow :global(.cell-top) {
     display: block;
     height: 1.25rem;
     min-height: 0;
     overflow: hidden;
-    font-size: 0.75rem;
   }
 
   /* The type rule runs under the whole box, so a box belongs to exactly one

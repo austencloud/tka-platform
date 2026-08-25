@@ -117,7 +117,7 @@
 
   .box-mode {
     font-style: italic;
-    font-size: 0.62rem;
+    font-size: var(--codex-mode-size, 0.62rem);
     letter-spacing: 0.1em;
     color: var(--codex-mode, #888);
   }

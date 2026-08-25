@@ -1,25 +1,43 @@
 <!--
-  Direction B - Atlas.
+  Atlas - the codex organised by type, without the printed page's geometry.
 
-  One continuous run of the codex's boxes, wrapped to the band. The sheet's
-  two-column page geometry is what forces six tall rows; drop it and the same 47
-  pictographs land in four rows, which is what buys the largest cells of the
-  three directions.
+  The sheet's two-column letter-paper grid is what forces six tall rows and a
+  scroll. Drop the paper but keep the thing the paper was carrying: each type is
+  its own band, named, with its boxes flowing across the whole width. Types 1-3
+  hold 8 or more letters and earn a full-width band each. Types 4, 5 and 6 hold
+  three apiece, so a full-width row for each would be three rows spent on nine
+  cells - they share one row instead, each still named.
 
-  Type identity, which the page geometry used to carry, is carried instead by
-  the coloured rule CodexFlow draws under each box, named once in the legend the
-  host puts beside the layout switcher - the way a periodic table marks its
-  categories. That is the trade: bigger pictographs, flatter structure.
+  That costs one more row of height than the ungrouped run did (five instead of
+  four at desktop) and buys back the organisation the guide reads by.
 -->
 <script lang="ts">
   import CodexFlow from "./CodexFlow.svelte";
+  import CodexBandHead from "./CodexBandHead.svelte";
+  import { MAJOR_TYPE_BANDS, MINOR_TYPE_BANDS } from "./codex-letters";
 
   let { onSelect }: { onSelect: (id: string) => void } = $props();
 </script>
 
 <div class="board-atlas">
-  <div class="flow-host">
-    <CodexFlow {onSelect} />
+  <div class="bands">
+    {#each MAJOR_TYPE_BANDS as band (band.type.n)}
+      <section class="band" aria-label={band.type.word.replace(/:\s*$/, "")}>
+        <CodexBandHead type={band.type} />
+        <CodexFlow boxes={band.boxes} {onSelect} />
+      </section>
+    {/each}
+
+    <!-- The short types, three across. Each keeps its own heading, so the row
+         reads as three bands sharing a line, not as one mixed band. -->
+    <div class="minor-row">
+      {#each MINOR_TYPE_BANDS as band (band.type.n)}
+        <section class="band minor" aria-label={band.type.word.replace(/:\s*$/, "")}>
+          <CodexBandHead type={band.type} />
+          <CodexFlow boxes={band.boxes} {onSelect} />
+        </section>
+      {/each}
+    </div>
   </div>
 </div>
 
@@ -28,59 +46,76 @@
     container-type: inline-size;
   }
 
-  /* Cells are solved so a full row holds twelve of them plus the gaps between
-     boxes. Because boxes are atomic the wrap then lands on box boundaries by
-     itself: 3+3+3+3, then 3+3+4+2, and so on down to 47 in four rows. */
-  .flow-host {
+  .bands {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+
     --abox-gap: 0.4rem;
-    /* Cells are height-capped (see below), so a full row cannot always consume
-       the whole band - at 1920 twelve of them come up about 190px short. Left
-       aligned that reads as a hole cut out of the right side; centred it reads
-       as the margin around a board. */
     --codex-flow-justify: center;
-    /* Whichever binds first: twelve cells plus gaps across the band, or four
-       rows' share of what is left of the screen below the page chrome (34rem,
-       measured against a 1440x900 laptop, where the height term is the one that
-       binds). The height term is what keeps that laptop from spilling the last
-       row below the fold - this direction's whole claim is one screen. */
+
+    /* Five rows of cells at desktop: Type 1 wraps to two (its boxes are 3+3+3+3
+       then 3+3+4), Types 2 and 3 are one each, and the short types share one.
+       Whichever binds first - twelve cells across the band, or those five rows'
+       share of the screen left under the page chrome. The subtrahend is the
+       measured chrome plus the four band headings and the type rules; it is why
+       this board lands inside the fold from the top of the page instead of
+       needing a scroll. */
+    --band-rows: 5;
     --codex-picto-size: min(
-      calc((100cqi - 8rem) / 12),
-      calc((100dvh - 34rem) / 4)
+      calc((100cqi - 3rem) / 12),
+      calc((100dvh - var(--codex-atlas-chrome, 28.5rem)) / var(--band-rows))
     );
   }
 
+  .band {
+    min-width: 0;
+  }
+
+  .minor-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 0.75rem 2.5rem;
+  }
+
   /* A true 4K canvas (2350px of band and up, which no 1080p or 1440p screen
-     reaches) is also 2160px TALL. Twelve across leaves the bottom third of it
-     empty, so drop to nine - Type 1's boxes are three cells wide, so nine is the
-     next packing down from twelve - and spend the height on much larger cells.
-     Container queries in px on purpose: the root ramp changes what a rem is
-     between these screens, which is exactly what this tier must not follow. */
+     reaches) is also 2160px tall. Twelve across leaves the bottom third empty,
+     so drop to nine - Type 1's boxes are three cells wide, so nine is the next
+     packing down - which puts Type 1 on three rows and the board on six, and
+     spends the height on much larger cells. Container queries in px on purpose:
+     the root ramp changes what a rem is between these screens, which is exactly
+     what this tier must not follow. */
   @container (min-width: 2350px) {
-    .flow-host {
+    .bands {
       --abox-gap: 0.5rem;
-      /* Nine across packs the 47 into five rows plus a short one, so the height
-         term divides by six here, not four. */
+      --band-rows: 6;
       --codex-picto-size: min(
-        calc((100cqi - 4rem) / 9),
-        calc((100dvh - 34rem) / 6)
+        calc((100cqi - 2rem) / 9),
+        calc((100dvh - var(--codex-atlas-chrome, 28.5rem)) / var(--band-rows))
       );
     }
   }
 
-  /* Fewer columns as the band narrows - twelve across on a phone is a row of
-     25px thumbnails. The divisor is the only thing that changes. */
+  /* Below desktop the board scrolls, so the height term comes off entirely and
+     the divisor is the only thing that changes. Twelve across on a phone is a
+     row of 25px thumbnails. */
   @container (max-width: 69.999rem) {
-    .flow-host {
+    .bands {
       --codex-picto-size: calc((100cqi - 3rem) / 8);
     }
   }
   @container (max-width: 47.999rem) {
-    .flow-host {
+    .bands {
       --codex-picto-size: calc((100cqi - 2rem) / 6);
+    }
+    .minor-row {
+      gap: 0.75rem 1.5rem;
     }
   }
   @container (max-width: 29.999rem) {
-    .flow-host {
+    .bands {
       --codex-picto-size: calc((100cqi - 1.2rem) / 4);
     }
   }

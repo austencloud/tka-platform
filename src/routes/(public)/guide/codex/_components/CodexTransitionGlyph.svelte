@@ -40,19 +40,24 @@
     gap: 4px;
     font-size: 0.8rem;
     font-weight: 700;
-    color: #1a1a1a;
+    /* Only the unrenderable fallback branch is text; the normal branch is two
+       black SVGs, which no colour reaches. --codex-glyph-filter is how a dark
+       host lights those up - see codex-dark.css. */
+    color: var(--codex-transition-ink, #1a1a1a);
     line-height: 1;
   }
 
   .letter {
-    height: 13px;
+    height: var(--codex-glyph-h, 13px);
     width: auto;
     display: block;
+    filter: var(--codex-glyph-filter, none);
   }
 
   .arrow {
-    width: 14px;
+    width: calc(var(--codex-glyph-h, 13px) * 14 / 13);
     height: auto;
     display: block;
+    filter: var(--codex-glyph-filter, none);
   }
 </style>
