@@ -123,9 +123,15 @@ describe("avatar swap render budget", () => {
     expect(avatarSource).toContain(
       "skeletonService!.loadModel(url, preparedRoot ?? undefined)"
     );
-    expect(skeletonSource).toContain(
-      "preparedRoot ?? cloneSharedSkinnedScene(gltf.scene)"
+    // loadModel split the old `preparedRoot ?? clone(...)` ternary into an
+    // if/else so the cold path can time its clone. Same contract: a prepared
+    // root is handed straight through, and cloning happens only without one.
+    const usesPrepared = skeletonSource.indexOf("root = preparedRoot;");
+    const coldClone = skeletonSource.indexOf(
+      "root = cloneSharedSkinnedScene(gltf.scene);"
     );
+    expect(usesPrepared).toBeGreaterThan(-1);
+    expect(coldClone).toBeGreaterThan(usesPrepared);
     expect(cacheSource).toContain("context.renderer.initTexture(texture)");
   });
 

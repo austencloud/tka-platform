@@ -37,7 +37,7 @@ describe("gateRhythm", () => {
     );
     expect(r).toEqual({
       ok: false,
-      reason: "Too short — a one-beat seed has nothing for inversion to flip",
+      reason: "Too short. A one-step seed has nothing for inversion to flip",
     });
   });
 

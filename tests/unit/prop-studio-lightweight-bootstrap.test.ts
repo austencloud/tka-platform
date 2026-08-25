@@ -129,9 +129,23 @@ describe("Prop Studio bootstrap", () => {
       "utf8"
     );
 
+    // The studio mounts the canonical rail instead of a bespoke band, so the
+    // "previews ignore the viewer's saved prop overrides" guarantee now lives
+    // in ScenePropPicker — the component every host shares.
+    const pickerSource = readFileSync(
+      resolve("src/lib/shared/3d/components/controls/ScenePropPicker.svelte"),
+      "utf8"
+    );
+
     expect(studioSource).toContain("enableEffects={false}");
-    expect(studioSource).toContain("useSavedOverrides={false}");
-    expect(studioSource).not.toContain("createEffectsConfigState");
+    expect(pickerSource).toContain("useSavedOverrides={false}");
+    // The canonical rail needs an effects *config* context to render, so the
+    // studio builds one — but non-persisting, so a review session never writes
+    // back into the visitor's saved effect setup. The heavyweight effects
+    // runtime stays barred by the orchestrator/manager assertions below.
+    expect(studioSource).toContain(
+      "createEffectsConfigState(undefined, { persist: false })"
+    );
     expect(studioSource).not.toMatch(
       /import\s+\{[^}]*DifficultyLevel[^}]*\}\s+from\s+"\$lib\/shared\/foundation\/domain\/models\/generation\/generate-models"/s
     );

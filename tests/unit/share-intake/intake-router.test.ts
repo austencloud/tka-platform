@@ -152,13 +152,19 @@ describe("routeIntake", () => {
     });
 
     const result = await routeIntake(
-      classification({ items: [{ kind: "card", code: "AB12", file: png("c.png") }] }),
+      classification({
+        items: [{ kind: "card", code: "AB12", file: png("c.png") }],
+      }),
       "user-1",
       CONTEXT
     );
 
     expect(resolveForImport).toHaveBeenCalledWith("AB12", "user-1");
-    expect(result.cards[0]).toMatchObject({ code: "AB12", docBacked: true, targetId: "s1" });
+    expect(result.cards[0]).toMatchObject({
+      code: "AB12",
+      docBacked: true,
+      targetId: "s1",
+    });
     expect(saveSequence).not.toHaveBeenCalled();
     expect(openSendAttachmentSheet).not.toHaveBeenCalled();
   });
@@ -172,7 +178,9 @@ describe("routeIntake", () => {
     });
 
     const result = await routeIntake(
-      classification({ items: [{ kind: "card", code: "AB12", file: png("c.png") }] }),
+      classification({
+        items: [{ kind: "card", code: "AB12", file: png("c.png") }],
+      }),
       "user-1",
       CONTEXT
     );
@@ -188,8 +196,14 @@ describe("routeIntake", () => {
 
   it("opens one viewer and reports the rest when a share carries several cards", async () => {
     resolveForImport
-      .mockResolvedValueOnce({ sequence: { id: "s1", word: "A" }, docBacked: true })
-      .mockResolvedValueOnce({ sequence: { id: "s2", word: "B" }, docBacked: true });
+      .mockResolvedValueOnce({
+        sequence: { id: "s1", word: "A" },
+        docBacked: true,
+      })
+      .mockResolvedValueOnce({
+        sequence: { id: "s2", word: "B" },
+        docBacked: true,
+      });
 
     await routeIntake(
       classification({
@@ -216,7 +230,9 @@ describe("routeIntake", () => {
     saveSequence.mockResolvedValue({ sequenceId: "lib-9", persisted: true });
 
     const result = await routeIntake(
-      classification({ items: [{ kind: "card", code: "AB12", file: png("c.png") }] }),
+      classification({
+        items: [{ kind: "card", code: "AB12", file: png("c.png") }],
+      }),
       "user-1",
       CONTEXT
     );
@@ -273,7 +289,9 @@ describe("routeIntake", () => {
     resolveForImport.mockResolvedValue(null);
 
     const result = await routeIntake(
-      classification({ items: [{ kind: "card", code: "BAD1", file: png("c.png") }] }),
+      classification({
+        items: [{ kind: "card", code: "BAD1", file: png("c.png") }],
+      }),
       null,
       CONTEXT
     );
@@ -290,7 +308,10 @@ describe("routeIntake", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     resolveForImport
       .mockRejectedValueOnce(new Error("offline"))
-      .mockResolvedValueOnce({ sequence: { id: "s2", word: "B" }, docBacked: true });
+      .mockResolvedValueOnce({
+        sequence: { id: "s2", word: "B" },
+        docBacked: true,
+      });
 
     const result = await routeIntake(
       classification({
@@ -313,11 +334,15 @@ describe("routeIntake", () => {
   it("records resolve-failed when the manager itself is unconfigured", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     getShortCodeManager.mockImplementation(() => {
-      throw new Error("getShortCodeManager(): call configureShortCodeManager() first");
+      throw new Error(
+        "getShortCodeManager(): call configureShortCodeManager() first"
+      );
     });
 
     const result = await routeIntake(
-      classification({ items: [{ kind: "card", code: "AB12", file: png("c.png") }] }),
+      classification({
+        items: [{ kind: "card", code: "AB12", file: png("c.png") }],
+      }),
       null,
       CONTEXT
     );
@@ -327,7 +352,10 @@ describe("routeIntake", () => {
   });
 
   it("resolves a code found in shared text", async () => {
-    resolveForImport.mockResolvedValue({ sequence: { id: "s2", word: "B" }, docBacked: true });
+    resolveForImport.mockResolvedValue({
+      sequence: { id: "s2", word: "B" },
+      docBacked: true,
+    });
 
     const result = await routeIntake(
       classification({ textCode: "XY99" }),
@@ -340,7 +368,10 @@ describe("routeIntake", () => {
   });
 
   it("dedupes a code that appears in both an image and the text", async () => {
-    resolveForImport.mockResolvedValue({ sequence: { id: "s1", word: "A" }, docBacked: true });
+    resolveForImport.mockResolvedValue({
+      sequence: { id: "s1", word: "A" },
+      docBacked: true,
+    });
 
     const result = await routeIntake(
       classification({
@@ -413,7 +444,7 @@ describe("routeIntake", () => {
     );
 
     expect(toast.info).toHaveBeenCalledWith(
-      "2 more images are saved — share again to send them."
+      "2 more images are saved. Share again to send them."
     );
   });
 
