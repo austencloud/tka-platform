@@ -28,11 +28,27 @@ export function getArtifactPublicationRequestPath(requestId: string): string {
   return `${ARTIFACT_PUBLICATION_REQUESTS_COLLECTION}/${requestId}`;
 }
 
-/** Storage object for the world-readable discovery poster (webp, ≤200KB). */
+/**
+ * Bumped whenever the poster RENDERERS change in a way that should invalidate
+ * already-uploaded images. Posters are served `immutable, max-age=1y`, so a
+ * re-render has to land on a new path or cached clients keep the old picture
+ * forever. Version 2 raised both the tunnel and mandala posters to 1024px —
+ * version 1 tunnels were 200px thumbnails upscaled ~4.8x on a 4K Explore card.
+ */
+export const ARTIFACT_POSTER_RENDER_VERSION = 2;
+
+/**
+ * Storage object for the world-readable discovery poster (webp, ≤200KB).
+ * Keyed by render version as well as revision, so re-rendering the same content
+ * with the same renderer overwrites in place (no orphans) while a renderer bump
+ * writes a genuinely new URL.
+ */
 export function publicArtifactPosterStoragePath(
   ownerId: string,
   artifactId: string,
-  publicRevisionId: string
+  publicRevisionId: string,
+  posterVersion: number = ARTIFACT_POSTER_RENDER_VERSION
 ): string {
-  return `public-artifacts/${ownerId}/${artifactId}/${publicRevisionId}.webp`;
+  const suffix = posterVersion > 1 ? `_p${posterVersion}` : "";
+  return `public-artifacts/${ownerId}/${artifactId}/${publicRevisionId}${suffix}.webp`;
 }

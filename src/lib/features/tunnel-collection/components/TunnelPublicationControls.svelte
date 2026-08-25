@@ -64,24 +64,36 @@
     }
   }
 
-  async function publish() {
+  /**
+   * `share` publishes; `preview` re-runs the same publish purely to re-render
+   * the Explore poster. Publishing already re-renders it, so the two differ only
+   * in what they tell the owner — without the second entry point the only way to
+   * replace a stale public preview is to unpublish the tunnel.
+   */
+  async function publish(intent: "share" | "preview" = "share") {
     if (!owner || busy) return;
     busy = true;
     try {
       const result = await publishTunnel(tunnel, owner);
-      if (result.status === "published") {
-        toast.success("Now public in Explore");
-      } else if (result.status === "already-live") {
-        toast.info("This version is already public");
-      } else {
+      if (result.status === "removed") {
         toast.error(
           "This version was removed by moderation — edit the tunnel to share it"
         );
+      } else if (intent === "preview") {
+        toast.success("Explore preview updated");
+      } else if (result.status === "published") {
+        toast.success("Now public in Explore");
+      } else {
+        toast.info("This version is already public");
       }
       await refresh();
     } catch (cause) {
       console.warn("[TunnelPublication] Publish failed:", cause);
-      toast.error("Couldn't share the tunnel — try again");
+      toast.error(
+        intent === "preview"
+          ? "Couldn't update the preview — try again"
+          : "Couldn't share the tunnel — try again"
+      );
     } finally {
       busy = false;
     }
@@ -159,6 +171,15 @@
         <p class="publication-hint">
           This tunnel is visible to everyone in Explore.
         </p>
+        <button
+          type="button"
+          class="pub-btn secondary"
+          disabled={busy}
+          onclick={() => void publish("preview")}
+        >
+          <i class="fas fa-arrows-rotate" aria-hidden="true"></i>
+          <span>Refresh preview</span>
+        </button>
       {/if}
       <button
         type="button"

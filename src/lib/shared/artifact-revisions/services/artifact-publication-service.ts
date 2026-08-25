@@ -153,24 +153,34 @@ export async function publishArtifact<P>(
     ? ((envelopeSnap.data() as { currentRevisionId?: string })
         .currentRevisionId ?? undefined)
     : undefined;
-  if (
+  const alreadyLive =
     existingStatus === "published" &&
-    liveRevisionId === publicRevision.revisionId
-  ) {
-    return { status: "already-live", revisionId: publicRevision.revisionId };
-  }
+    liveRevisionId === publicRevision.revisionId;
 
+  // A publish is always an explicit owner action, so the poster is re-rendered
+  // every time rather than reused off the ledger. That is what lets an improved
+  // renderer heal an already-public preview; reuse meant the only way to replace
+  // a bad poster was to unpublish the work. The Storage path carries the render
+  // version, so re-rendering identical content with the same renderer overwrites
+  // in place and costs one upload.
   const existingPosterUrl = existing.exists()
     ? ((existing.data() as { posterUrl?: string }).posterUrl ?? undefined)
     : undefined;
   let posterUrl = existingPosterUrl;
-  if (posterUrl === undefined && input.posterDataUrl) {
-    posterUrl = await uploadPublicPoster(
-      owner,
-      artifactId,
-      publicRevision.revisionId,
-      await input.posterDataUrl()
-    );
+  if (input.posterDataUrl) {
+    const posterDataUrl = await input.posterDataUrl();
+    if (posterDataUrl) {
+      posterUrl = await uploadPublicPoster(
+        owner,
+        artifactId,
+        publicRevision.revisionId,
+        posterDataUrl
+      );
+    }
+  }
+
+  if (alreadyLive && posterUrl === existingPosterUrl) {
+    return { status: "already-live", revisionId: publicRevision.revisionId };
   }
 
   const batch = writeBatch(firestore);
@@ -248,7 +258,10 @@ export async function publishArtifact<P>(
   batch.set(envelopeRef, stripUndefined({ ...envelope }));
 
   await batch.commit();
-  return { status: "published", revisionId: publicRevision.revisionId };
+  return {
+    status: alreadyLive ? "already-live" : "published",
+    revisionId: publicRevision.revisionId,
+  };
 }
 
 async function loadOwnerRequests(

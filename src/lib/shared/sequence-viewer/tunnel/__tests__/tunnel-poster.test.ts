@@ -40,7 +40,7 @@ describe("capturePosterFromContainer", () => {
     // Props layer + trail layer + a zero-size layer that must be skipped.
     const container = fakeContainer([fakeSource(800, 800), fakeSource(800, 800), fakeSource(0, 0)]);
 
-    const url = capturePosterFromContainer(container, () => target);
+    const url = capturePosterFromContainer(container, { makeCanvas: () => target });
 
     expect(target.width).toBe(POSTER_SIZE);
     expect(drawImage).toHaveBeenCalledTimes(2); // two drawable layers, the 0×0 skipped

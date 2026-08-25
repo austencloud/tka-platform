@@ -95,7 +95,14 @@ export async function exportMandalaPNG(
  * ceiling. Derived from the same geometry the detail view redraws, so a poster
  * can never depict something the payload does not.
  */
-const POSTER_SIZE = 512;
+// Explore hangs artwork on a plinth that reaches ~950 CSS px on a 4K canvas, so
+// the poster is sized to cover that 1:1 rather than be upscaled. Thin strokes on
+// black compress hard — this stays well inside POSTER_MAX_BYTES at 0.85.
+const POSTER_SIZE = 1024;
+/** Stroke weight is absolute pixels, so it has to track POSTER_SIZE or the
+ *  figure thins out every time the poster grows. 5px at the original 512 is the
+ *  weight this was tuned at. */
+const POSTER_STROKE_RATIO = 5 / 512;
 const POSTER_MAX_BYTES = 200 * 1024;
 const POSTER_QUALITIES = [0.85, 0.7, 0.55] as const;
 
@@ -110,7 +117,7 @@ export function renderMandalaPosterDataUrl(
 			...DEFAULT_EXPORT_OPTIONS,
 			size: POSTER_SIZE,
 			background: "black",
-			strokeWidth: 5,
+			strokeWidth: POSTER_SIZE * POSTER_STROKE_RATIO,
 			...options,
 		},
 		steps,
