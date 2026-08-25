@@ -17,9 +17,15 @@
   import ChoreoCardThumbnail from "$lib/shared/browse/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
   import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { pickShelfSequences } from "./composer-gallery-shelf-curation";
+  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import {
+    pickShelfSequences,
+    SHELF_CARD_ASPECT_RATIO,
+  } from "./composer-gallery-shelf-curation";
 
-  const SHELF_COUNT = 7;
+  // Nine leaves the widest tier (5 columns) with two completely full rows once
+  // the carried card is counted. Narrower tiers hide the tail in CSS.
+  const SHELF_COUNT = 9;
 
   const {
     sequence,
@@ -37,7 +43,12 @@
     galleryStatus = "loading";
     try {
       const all = await getBrowseLoader().loadSequenceMetadata();
-      shelf = pickShelfSequences(all, SHELF_COUNT);
+      // The card resolves its own start-position layout from this manager, so
+      // curation reads the same source rather than assuming a layout.
+      const composition = getImageCompositionManager();
+      shelf = pickShelfSequences(all, SHELF_COUNT, (steps) =>
+        composition.getStartPositionLayoutForStepCount(steps)
+      );
       galleryStatus = "ready";
     } catch {
       galleryStatus = "error";
@@ -87,12 +98,20 @@
         </div>
       {/each}
     {:else if galleryStatus === "loading"}
-      <span class="sr-only" role="status">Loading public gallery sequences.</span>
       {#each Array.from({ length: SHELF_COUNT }, (_, i) => i) as i (i)}
-        <div class="skeleton-cell" aria-hidden="true" style:--stagger={i}></div>
+        <div
+          class="skeleton-cell"
+          aria-hidden="true"
+          style:--stagger={i}
+          style:aspect-ratio={SHELF_CARD_ASPECT_RATIO}
+        ></div>
       {/each}
     {/if}
   </div>
+
+  {#if galleryStatus === "loading"}
+    <span class="sr-only" role="status">Loading public gallery sequences.</span>
+  {/if}
 
   {#if galleryStatus === "error"}
     <div class="shelf-error" role="alert">
@@ -110,8 +129,9 @@
     min-width: 0;
   }
 
-  /* Column counts mirror the real gallery grid's breakpoints. Eight cards
-     (carried + seven) leave no single-item row at any tier. */
+  /* Column counts mirror the real gallery grid's breakpoints. Each tier shows
+     exactly two full rows (carried card + gallery cards); the tail is hidden
+     rather than left stranding a part-row against dead rail. */
   .shelf-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -119,9 +139,19 @@
     align-items: start;
   }
 
+  .shelf-grid > :nth-child(n + 5) {
+    display: none;
+  }
+
   @container (min-width: 800px) {
     .shelf-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .shelf-grid > :nth-child(n + 5) {
+      display: block;
+    }
+    .shelf-grid > :nth-child(n + 7) {
+      display: none;
     }
   }
 
@@ -129,11 +159,20 @@
     .shelf-grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
+    .shelf-grid > :nth-child(n + 7) {
+      display: block;
+    }
+    .shelf-grid > :nth-child(n + 9) {
+      display: none;
+    }
   }
 
   @container (min-width: 1600px) {
     .shelf-grid {
       grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+    .shelf-grid > :nth-child(n + 9) {
+      display: block;
     }
   }
 
@@ -155,8 +194,10 @@
       0 0 0 4px oklch(0.72 0.15 278 / 0.85);
   }
 
+  /* Grid (not inline-grid) so the tag is bounded by its column and wraps
+     instead of running under the neighbouring card at phone widths. */
   .carried-tag {
-    display: inline-grid;
+    display: grid;
     margin-top: 0.55rem;
     color: oklch(0.85 0.1 278);
     font-size: var(--font-size-compact, 0.75rem);
@@ -165,10 +206,12 @@
     text-transform: uppercase;
   }
 
+  /* The hidden sizer holds the longest label, so the cell already reserves the
+     height that label needs — wrapped or not — and swapping labels never
+     reflows the shelf. */
   .tag-sizer,
   .tag-live {
     grid-area: 1 / 1;
-    white-space: nowrap;
   }
 
   .tag-sizer {
@@ -176,7 +219,8 @@
   }
 
   .skeleton-cell {
-    aspect-ratio: 2.07;
+    /* aspect-ratio comes from SHELF_CARD_ASPECT_RATIO inline, so the skeleton
+       reserves the shape the real cards render at. */
     border-radius: 0.9rem;
     background: linear-gradient(
       100deg,

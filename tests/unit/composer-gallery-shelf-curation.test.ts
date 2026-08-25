@@ -44,6 +44,40 @@ describe("pickShelfSequences", () => {
     expect(words.filter((w) => w === "AB" || w === "ABAB")).toHaveLength(1);
   });
 
+  it("draws the whole shelf from one card aspect ratio", () => {
+    const eightBeat = [0, 1, 2].map((i) =>
+      publicEntry({ id: `eight-${i}`, word: `E${i}`, sequenceLength: 8 })
+    );
+    const picked = pickShelfSequences(
+      [
+        publicEntry({ id: "odd-one", word: "ZZ", sequenceLength: 4 }),
+        ...eightBeat,
+      ],
+      3
+    );
+    expect(picked.map((s) => s.id)).toEqual([
+      "eight-0",
+      "eight-1",
+      "eight-2",
+    ]);
+  });
+
+  it("fills from the nearest ratio when no cohort can fill the shelf", () => {
+    const picked = pickShelfSequences(
+      [
+        publicEntry({ id: "eight-a", word: "EA", sequenceLength: 8 }),
+        publicEntry({ id: "eight-b", word: "EB", sequenceLength: 8 }),
+        publicEntry({ id: "four", word: "FR", sequenceLength: 4 }),
+      ],
+      3
+    );
+    expect(picked).toHaveLength(3);
+    expect(picked.slice(0, 2).map((s) => s.id)).toEqual([
+      "eight-a",
+      "eight-b",
+    ]);
+  });
+
   it("ranks thumbnail-backed popular work first and respects the count", () => {
     const picked = pickShelfSequences(
       [

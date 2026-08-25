@@ -118,7 +118,7 @@
 
 {#snippet shelfPlaceholder()}
   <div class="shelf-placeholder" aria-hidden="true">
-    {#each Array.from({ length: 8 }, (_, i) => i) as i (i)}
+    {#each Array.from({ length: 10 }, (_, i) => i) as i (i)}
       <div class="placeholder-card"></div>
     {/each}
   </div>
@@ -292,12 +292,18 @@
   <section class="keeping" aria-labelledby="keeping-title" use:activateShelf>
     <div class="keeping-intro">
       <h2 id="keeping-title">Your sequence, next to theirs.</h2>
-      <p>
-        The sequence carried through this page renders as a gallery card below,
-        shelved with real public work from the community. Guests save up to
-        three sequences on this device. A full account adds downloads,
-        publishing, and creators to follow.
-      </p>
+      <div class="keeping-lede">
+        <p>
+          The sequence carried through this page renders as a gallery card
+          below, shelved with real public work from the community. Guests save
+          up to three sequences on this device. A full account adds downloads,
+          publishing, and creators to follow.
+        </p>
+        <div class="keeping-actions">
+          <a href="/browse" class="secondary-action">Open the Gallery</a>
+          <a href="/browse/library" class="secondary-action">Open the Library</a>
+        </div>
+      </div>
     </div>
 
     <div class="keeping-shelf">
@@ -312,11 +318,6 @@
           {@render shelfPlaceholder()}
         {/snippet}
       </LazyMount>
-    </div>
-
-    <div class="keeping-actions">
-      <a href="/browse" class="secondary-action">Open the Gallery</a>
-      <a href="/browse/library" class="secondary-action">Open the Library</a>
     </div>
   </section>
 
@@ -514,8 +515,12 @@
     margin-bottom: clamp(2.5rem, 5vw, 5rem);
   }
 
-  .keeping-intro > p {
+  .keeping-lede > p {
     margin: 0;
+  }
+
+  .keeping-intro .keeping-actions {
+    margin-top: 1.35rem;
   }
 
   .keeping-shelf {
@@ -550,7 +555,7 @@
 
   .making-intro > p,
   .changing-intro > p,
-  .keeping-intro > p,
+  .keeping-lede > p,
   .foundation-detail p {
     margin: 1.25rem 0 0;
     color: oklch(0.76 0.014 270);
@@ -778,9 +783,19 @@
     gap: clamp(0.8rem, 1.4vw, 1.4rem);
   }
 
+  .shelf-placeholder > :nth-child(n + 5) {
+    display: none;
+  }
+
   @container (min-width: 800px) {
     .shelf-placeholder {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .shelf-placeholder > :nth-child(n + 5) {
+      display: block;
+    }
+    .shelf-placeholder > :nth-child(n + 7) {
+      display: none;
     }
   }
 
@@ -788,16 +803,27 @@
     .shelf-placeholder {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
+    .shelf-placeholder > :nth-child(n + 7) {
+      display: block;
+    }
+    .shelf-placeholder > :nth-child(n + 9) {
+      display: none;
+    }
   }
 
   @container (min-width: 1600px) {
     .shelf-placeholder {
       grid-template-columns: repeat(5, minmax(0, 1fr));
     }
+    .shelf-placeholder > :nth-child(n + 9) {
+      display: block;
+    }
   }
 
   .placeholder-card {
-    aspect-ratio: 2.07;
+    /* Matches SHELF_CARD_ASPECT_RATIO — the shape a gallery card actually
+       renders at, so the shelf does not resize when the cards arrive. */
+    aspect-ratio: 0.73;
     border-radius: 0.9rem;
     background: radial-gradient(
       circle at 50% 42%,
