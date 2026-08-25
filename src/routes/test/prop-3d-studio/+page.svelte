@@ -13,10 +13,14 @@
   } from "$lib/shared/3d/domain/camera-url-pose";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
+  import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
+  import SceneControlWorkspace from "$lib/shared/3d/components/controls/SceneControlWorkspace.svelte";
+  import type { SceneControlLayout } from "$lib/shared/3d/domain/scene-control-layout";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-  import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
+  import HorizontalTransportRow from "$lib/shared/sequence-viewer/components/HorizontalTransportRow.svelte";
   import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import {
     LOOPType,
@@ -30,7 +34,6 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { SCENE_PROP_TYPES } from "$lib/shared/3d/domain/scene-prop-catalog";
-  import ScenePropPicker from "$lib/shared/3d/components/controls/ScenePropPicker.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import { isEffectPreviewLoop } from "$lib/shared/effects/domain/effect-preview-loop-policy";
@@ -158,9 +161,15 @@
   viewer.hideAllPlanes();
   setViewer3DContext(viewer);
 
+  // The standalone-host recipe the composer demo established: this route has no
+  // app shell, so it provides the contexts the rail's tools expect itself. The
+  // effects config is non-persisting on purpose — a review session must not
+  // write back into the visitor's saved effect setup.
+  setEffectsConfigContext(
+    createEffectsConfigState(undefined, { persist: false })
+  );
   setScene3DRenderContext(createScene3DRenderState());
 
-  let selectedProp = $state<PropType>(initialProp);
   let activeAngle = $state<ReviewAngle>(initialCamera.id);
   /**
    * Set the moment the user grabs the scene. While it is set, nothing on this
@@ -201,8 +210,33 @@
   const currentStep = $derived(animation.currentStep);
   const playing = $derived(animation.isPlaying);
 
+  /**
+   * The prop on stage, read from the performer the rail actually edits rather
+   * than shadowed in a local copy. Nothing on this page sets a prop override on
+   * the canvas any more, so the picker inside the Performers tool is the single
+   * writer and this is its mirror — the title and the `?prop=` deep link follow
+   * the scene instead of racing it.
+   */
+  const selectedProp = $derived<PropType>(
+    viewer.performerManager.performers[0]?.effectiveProp ??
+      viewer.defaultSettings.prop ??
+      initialProp
+  );
   const selectedLabel = $derived(getPropTypeDisplayInfo(selectedProp).label);
-  const compactPlayback = $derived(viewportWidth < 1800);
+
+  /** Which presentation the shared rail resolved to, so the transport dock
+   *  knows whether a right-hand rail is occupying the stage edge. */
+  let controlPresentation = $state<SceneControlLayout["presentation"]>("docked");
+  /** Measured so the rail and its inspector stop exactly above the dock. */
+  let dockHeight = $state(96);
+  let titleHeight = $state(52);
+  /** Mirrors `.title-block`'s `top: clamp(18px, 3cqh, 34px)` — `.studio` is
+   *  fixed to the viewport, so cqh and vh are the same number here. */
+  const titleTop = $derived(Math.min(34, Math.max(18, viewportHeight * 0.03)));
+  const railTopOffset = $derived(
+    `${Math.round(titleTop + titleHeight + 14)}px`
+  );
+  const railBottomOffset = $derived(`${Math.round(dockHeight + 24)}px`);
 
   function syncUrl(): void {
     if (typeof window === "undefined") return;
@@ -274,11 +308,6 @@
 
   function sceneDragEnd(): void {
     dragOrigin = null;
-  }
-
-  function chooseProp(prop: PropType): void {
-    selectedProp = prop;
-    syncUrl();
   }
 
   async function generateRotatedLoop(): Promise<SequenceData> {
@@ -422,6 +451,20 @@
     playback?.setSpeed(bpm / 60);
   });
 
+  /**
+   * The shareable link follows whatever prop the rail put on stage. Guarded on
+   * an actual change, not merely on the effect running: the first pass happens
+   * during mount, when the value still matches the URL it was read from and
+   * `replaceState` would throw for being called before the router initializes.
+   */
+  let lastSyncedProp: PropType = initialProp;
+  $effect(() => {
+    const prop = selectedProp;
+    if (prop === lastSyncedProp) return;
+    lastSyncedProp = prop;
+    untrack(syncUrl);
+  });
+
   function handleBpmChange(nextBpm: number): void {
     bpm = nextBpm;
   }
@@ -510,7 +553,7 @@
     {#if sequence && ViewerCanvasComponent}
       <!--
         The wrapper exists so a drag or wheel on the SCENE marks the camera as
-        the user's, while clicks on the deck overlay below do not.
+        the user's, while the rail and dock layered over it do not.
       -->
       <div
         class="canvas-holder"
@@ -520,16 +563,14 @@
         onpointercancel={sceneDragEnd}
         onwheel={() => (cameraIsFree = true)}
       >
+        <!-- No blue/red prop override: an override wins over each performer's
+             own prop, which would leave the rail's prop picker with no effect. -->
         <ViewerCanvasComponent
           sequenceData={sequence}
           {currentStep}
           isPlaying={playing}
           {bpm}
-          bluePropType={selectedProp}
-          redPropType={selectedProp}
           hideOverlays
-          hideSceneMarkers
-          hidePerformerBadges
           enableEffects={false}
           initialRevealDeferredFeatures={INITIAL_REVEAL_DEFERRED_FEATURES}
           onSceneReadyChange={handleSceneReady}
@@ -540,7 +581,7 @@
 
     <div class="stage-shade" aria-hidden="true"></div>
 
-    <header class="title-block">
+    <header class="title-block" bind:clientHeight={titleHeight}>
       <Crossfade key={selectedLabel} duration={DURATION.normal}>
         <h1>{selectedLabel}</h1>
       </Crossfade>
@@ -561,46 +602,60 @@
       </div>
     {/if}
 
-    <aside class="review-deck" aria-label="Prop review controls">
-      <div class="picker-column">
-        <ScenePropPicker
-          currentProp={selectedProp}
-          onSelect={chooseProp}
-          showBareHands={false}
-        />
-      </div>
+    <!--
+      The same right-hand rail every other 3D stage carries. Props are chosen
+      inside its Performers tool, which is the whole point: the studio reaches
+      the app's real Performers, Formation, Camera, and Scene tools instead of
+      owning a second, differently-shaped prop deck across the bottom of a 4K
+      screen. Save scene is off — this harness has no collection to save into.
+    -->
+    {#if sequence && ViewerCanvasComponent}
+      <SceneControlWorkspace
+        allowSaveScene={false}
+        {bpm}
+        isPlaying={playing}
+        onPlaybackToggle={() => playback?.togglePlayback()}
+        onStepForward={() => playback?.stepFullBeatForward()}
+        onStepBackward={() => playback?.stepFullBeatBackward()}
+        topOffset={railTopOffset}
+        bottomOffset={railBottomOffset}
+        onLayoutChange={(layout) =>
+          (controlPresentation = layout.presentation)}
+      />
+    {/if}
 
-        <div
-          class="control-group playback-group"
-          class:compact={compactPlayback}
-        >
-          <span class="control-label">Playback</span>
-          <div class="transport-row">
-            <div class="transport-cell">
-              <TransportControls
-                isPlaying={playing}
-                onPlaybackToggle={() => playback?.togglePlayback()}
-              />
-            </div>
-            <div class="tempo-cell">
-              <TempoControl
-                {bpm}
-                onBpmChange={handleBpmChange}
-                showPractice={false}
-                presetsMode={compactPlayback ? "popover" : "inline"}
-              />
-            </div>
-            <button
-              class="new-loop-button"
-              type="button"
-              onclick={() => void advanceLoop()}
-            >
-              <i class="fas fa-rotate" aria-hidden="true"></i>
-              <span>New LOOP</span>
-            </button>
-          </div>
-        </div>
-    </aside>
+    <!--
+      Content-sized, so it stays a cluster rather than a band: the canonical
+      viewer transport with the studio's own tempo and LOOP swap beside it.
+      `rail-clear` keeps it out from under the docked rail; in the compact
+      presentation the rail is a bottom bar that sits above this dock instead.
+    -->
+    <div
+      class="transport-dock"
+      class:rail-clear={controlPresentation !== "compact"}
+      bind:clientHeight={dockHeight}
+    >
+      <TempoControl
+        {bpm}
+        onBpmChange={handleBpmChange}
+        showPractice={false}
+        presetsMode="popover"
+      />
+      <HorizontalTransportRow
+        isPlaying={playing}
+        onPlaybackToggle={() => playback?.togglePlayback()}
+        onRestartToStart={() => playback?.jumpToStep(0)}
+        onStepFullFwd={() => playback?.stepFullBeatForward()}
+      />
+      <button
+        class="new-loop-button"
+        type="button"
+        onclick={() => void advanceLoop()}
+      >
+        <i class="fas fa-rotate" aria-hidden="true"></i>
+        <span>New LOOP</span>
+      </button>
+    </div>
   </section>
 </main>
 
@@ -653,58 +708,45 @@
     letter-spacing: -0.035em;
   }
 
-  .review-deck {
+  /*
+    A cluster, not a band. It sizes to its three controls and centres in the
+    stage area the rail leaves free, so a 3840px screen shows the same dock a
+    1440px one does rather than a strip of empty panel stretched wall to wall.
+  */
+  .transport-dock {
     --studio-control-size: 50px;
-    --studio-transport-size: 68px;
     position: absolute;
-    right: clamp(12px, 2.2cqw, 30px);
+    right: 0.75rem;
     bottom: clamp(12px, 2.4cqh, 28px);
-    left: clamp(12px, 2.2cqw, 30px);
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
-    padding: 14px;
+    left: 0.75rem;
+    z-index: 21;
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 1.5cqw, 28px);
+    width: max-content;
+    max-width: calc(100% - 1.5rem);
+    margin-inline: auto;
+    padding: 12px 16px;
     border: 1px solid var(--studio-stroke);
     border-radius: var(--settings-border-radius-lg, 16px);
     background: var(--studio-panel);
     box-shadow: 0 18px 50px rgba(0, 0, 0, 0.36);
   }
 
-  /*
-    The picker gets the deck's full width and the transport sits under it. Side
-    by side looks tempting at 1920 and is worse: the transport is a 93px-tall
-    cluster, so a column of its own leaves a 700x230 hole in the panel while
-    squeezing the prop grid down a column tier.
-  */
-  .picker-column {
-    min-width: 0;
+  /* The docked rail owns 4.75rem of the right edge; the dock centres in what
+     is left rather than sliding underneath it. */
+  .transport-dock.rail-clear {
+    right: 5.5rem;
+    max-width: calc(100% - 6.25rem);
   }
 
-  .control-group {
-    min-width: 0;
+  .transport-dock :global(.tempo-control) {
+    --min-touch-target: var(--studio-control-size);
+    justify-content: flex-start;
   }
 
-  .playback-group {
-    width: max-content;
-    max-width: 100%;
-    min-width: 0;
-    justify-self: end;
-  }
-
-  .control-label {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    margin-bottom: 7px;
-    color: rgba(255, 255, 255, 0.55);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .playback-group .control-label {
-    color: color-mix(in srgb, var(--studio-accent) 78%, white);
+  .transport-dock :global(.horizontal-transport-row) {
+    flex: 0 0 auto;
   }
 
   button {
@@ -740,120 +782,33 @@
     outline-offset: 2px;
   }
 
-  .transport-row {
-    display: grid;
-    grid-template-areas: "tempo transport next";
-    grid-template-columns: max-content auto max-content;
-    align-items: center;
-    gap: clamp(12px, 1.5cqw, 28px);
+  /* The BPM editor opens upward: this dock is pinned to the bottom edge, so a
+     popover that grows downward would be off-screen. */
+  .transport-dock :global(.tempo-wrapper) {
+    position: relative;
   }
 
-  /* At laptop widths the complete BPM editor lives behind its BPM button.
-     That preserves every tempo action without letting three preset chips drift
-     underneath the primary play control. */
-  .playback-group.compact .transport-row {
-    grid-template-columns: max-content auto max-content;
+  .transport-dock :global(.bpm-popover) {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    left: 0;
+    z-index: 2;
+    min-width: 280px;
   }
 
-  @container (min-width: 761px) and (min-height: 621px) {
-    .playback-group.compact .tempo-cell :global(.tempo-wrapper) {
-      position: relative;
-    }
-
-    .playback-group.compact .tempo-cell :global(.bpm-popover) {
-      position: absolute;
-      right: 0;
-      bottom: calc(100% + 12px);
-      left: 0;
-      z-index: 2;
-      min-width: 280px;
-    }
-  }
-
-  .transport-cell {
-    grid-area: transport;
-    justify-self: center;
-    --min-touch-target: var(--studio-control-size);
-  }
-
-  .transport-cell :global(.transport-controls) {
-    margin: 0;
-  }
-
-  .transport-cell :global(.play-pause-btn.large) {
-    width: var(--studio-transport-size);
-    height: var(--studio-transport-size);
-    border: 2px solid color-mix(in srgb, var(--studio-accent) 70%, white);
-    background: linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--studio-accent) 92%, white),
-      var(--studio-accent)
-    );
-    color: #06101c;
-    font-size: 1.35rem;
-    box-shadow:
-      0 10px 28px color-mix(in srgb, var(--studio-accent) 38%, transparent),
-      0 0 0 5px color-mix(in srgb, var(--studio-accent) 12%, transparent),
-      inset 0 1px 0 rgba(255, 255, 255, 0.48);
-  }
-
-  .transport-cell :global(.play-pause-btn.large.playing) {
-    border-color: color-mix(
-      in srgb,
-      var(--semantic-success, #4fd79d) 78%,
-      white
-    );
-    background: linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--semantic-success, #4fd79d) 86%, white),
-      var(--semantic-success, #4fd79d)
-    );
-    color: #06150f;
-    box-shadow:
-      0 10px 28px
-        color-mix(in srgb, var(--semantic-success, #4fd79d) 34%, transparent),
-      0 0 0 5px
-        color-mix(in srgb, var(--semantic-success, #4fd79d) 12%, transparent),
-      inset 0 1px 0 rgba(255, 255, 255, 0.48);
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .transport-cell :global(.play-pause-btn.large:hover:not(:disabled)) {
-      transform: translateY(-2px) scale(1.04);
-      filter: saturate(1.12) brightness(1.06);
-    }
-  }
-
-  .tempo-cell {
-    grid-area: tempo;
-    min-width: 0;
-    --min-touch-target: var(--studio-control-size);
-  }
-
-  .tempo-cell :global(.tempo-control) {
-    justify-content: flex-start;
-  }
-
-  .tempo-cell :global(.adjust-btn) {
+  .transport-dock :global(.adjust-btn) {
     border-color: color-mix(in srgb, var(--studio-accent) 30%, transparent);
     background: color-mix(in srgb, var(--studio-accent) 8%, var(--studio-card));
     color: rgba(255, 255, 255, 0.82);
   }
 
-  .tempo-cell :global(.bpm-display) {
+  .transport-dock :global(.bpm-display) {
     min-width: 82px;
     min-height: calc(var(--studio-control-size) + 4px);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 
-  .tempo-cell :global(.preset-btn) {
-    min-height: var(--studio-control-size);
-    border-color: color-mix(in srgb, var(--studio-stroke) 82%, transparent);
-  }
-
   .new-loop-button {
-    grid-area: next;
-    justify-self: end;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -932,18 +887,14 @@
   }
 
   /*
-    At 4K@100% nothing is scaling for you, so the deck and the controls step up
-    together. The first row keeps using the full width instead of collapsing
-    into a narrow controls column beside the prop grid.
+    At 4K@100% nothing is scaling for you, so the dock steps up with the stage.
     Placed after the base `button` rule on purpose — a container query carries no
     extra specificity, so an earlier block would simply lose to it.
   */
   @container (min-width: 2600px) {
-    .review-deck {
+    .transport-dock {
       --studio-control-size: 60px;
-      --studio-transport-size: 84px;
-      padding: 22px;
-      gap: 18px;
+      padding: 18px 24px;
     }
 
     button {
@@ -952,62 +903,51 @@
       font-size: 18px;
     }
 
-    .control-label {
-      font-size: 15px;
+    .transport-dock :global(.play-btn) {
+      width: 84px;
+      height: 84px;
     }
 
-    .transport-cell :global(.play-pause-btn.large) {
-      font-size: 1.65rem;
-    }
-
-  }
-
-  @container (max-width: 1360px) {
-    .playback-group {
-      justify-self: stretch;
-    }
-
-    .transport-row {
-      grid-template-columns: max-content minmax(0, 1fr) max-content;
+    /* 3cqw would have carried the title here on its own, but the clamp ceiling
+       lands first; on a 3840px canvas 52px reads as a caption. */
+    h1 {
+      font-size: 78px;
     }
   }
 
+  /* Narrow or short: the LOOP swap keeps its icon and drops its word, and the
+     dock stops reserving the rail's edge because the rail is a bottom bar
+     there. Two lines of controls in a 412px-tall window is not a dock. */
   @container (max-width: 760px), (max-height: 620px) {
     .title-block {
       max-width: calc(100% - 36px);
     }
 
-    .review-deck {
-      gap: 12px;
-      max-height: 58cqh;
-      overflow-y: auto;
+    .transport-dock {
+      --studio-control-size: 44px;
+      gap: 8px 10px;
+      padding: 8px 10px;
     }
 
-    .transport-row {
-      grid-template-areas:
-        "transport next"
-        "tempo tempo";
-      grid-template-columns: auto minmax(0, 1fr);
+    .transport-dock :global(.bpm-display) {
+      min-width: 64px;
     }
 
-    .transport-cell {
-      justify-self: start;
-    }
-
-    .tempo-cell :global(.tempo-control) {
-      justify-content: center;
-    }
-
-    .new-loop-button {
-      width: auto;
+    .new-loop-button span {
+      display: none;
     }
   }
 
-  @container (max-height: 620px) {
-    .review-deck {
-      --studio-control-size: 44px;
-      --studio-transport-size: 58px;
-      padding: 10px;
+  /* Tempo plus a three-button transport plus the swap is ~410px of controls.
+     Narrower than that the dock wraps rather than pushing its last two buttons
+     off the right edge — every control stays reachable, and the rail's own bar
+     rides up because it follows the measured dock height. Keyed to width only:
+     a folded phone in landscape is short but 960px wide, and wrapping there
+     would spend two rows of a 412px-tall window for nothing. */
+  @container (max-width: 620px) {
+    .transport-dock {
+      flex-wrap: wrap;
+      justify-content: center;
     }
   }
 

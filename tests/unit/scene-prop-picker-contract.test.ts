@@ -8,9 +8,14 @@
  * no finish or fan-appearance controls at all, so a build reachable in the
  * studio was unreachable in the actual 3D environment.
  *
- * This test locks the shape that fixed it: both hosts render the shared
- * picker, neither host reaches past it into its parts, and the picker's own
- * choices come from the catalog rather than a private list.
+ * This test locks the shape that fixed it: every host renders the shared
+ * picker, no host reaches past it into its parts, and the picker's own choices
+ * come from the catalog rather than a private list.
+ *
+ * The Prop Studio was the second host and is now none: it mounts
+ * SceneControlWorkspace, the rail every other 3D stage carries, so its props
+ * are chosen inside the performer inspector like everywhere else. It stays
+ * below as a NON_HOST — it must never grow its own picker back.
  *
  * If this test fails, fix the host — do not loosen the assertions.
  */
@@ -33,6 +38,14 @@ const HOSTS: Record<string, string> = {
   "performer inspector": path.join(
     "src/lib/shared/3d/components/controls/PerformerHubDetail.svelte"
   ),
+};
+
+/**
+ * Surfaces that reach prop choice through the shared rail instead of hosting a
+ * picker. They must stay that way: mounting a picker here would put a second
+ * prop surface back on screen beside the inspector's.
+ */
+const NON_HOSTS: Record<string, string> = {
   "prop studio": "src/routes/test/prop-3d-studio/+page.svelte",
 };
 
@@ -69,8 +82,25 @@ describe("scene prop picker contract", () => {
     }
   });
 
+  it("keeps rail-driven surfaces from growing their own picker", () => {
+    for (const [name, surfacePath] of Object.entries(NON_HOSTS)) {
+      const source = read(surfacePath);
+      expect(
+        source.includes("<ScenePropPicker"),
+        `${name} renders its own ScenePropPicker; it reaches prop choice through SceneControlWorkspace`
+      ).toBe(false);
+      expect(
+        source,
+        `${name} must mount SceneControlWorkspace to reach the shared picker`
+      ).toContain("SceneControlWorkspace");
+    }
+  });
+
   it("keeps hosts out of the picker's internals", () => {
-    for (const [name, hostPath] of Object.entries(HOSTS)) {
+    for (const [name, hostPath] of Object.entries({
+      ...HOSTS,
+      ...NON_HOSTS,
+    })) {
       const source = read(hostPath);
       for (const internal of PICKER_INTERNALS) {
         expect(
