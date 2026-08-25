@@ -4,6 +4,7 @@
   import MobileScenePerformerSheet from "./MobileScenePerformerSheet.svelte";
   import MobileSceneEverythingSheet from "./MobileSceneEverythingSheet.svelte";
   import type { ViewerControlSink } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+  import type { PerformerEditSink } from "./controls/performer-hub-types";
 
   interface Props {
     showPlayback?: boolean;
@@ -12,6 +13,8 @@
     onStepForward?: () => void;
     onStepBackward?: () => void;
     onSettingChange?: ViewerControlSink;
+    /** Forwarded to the performer sheet — see PerformerHubDetail's Props. */
+    onPerformerEdit?: PerformerEditSink;
   }
   let {
     showPlayback = true,
@@ -20,6 +23,7 @@
     onStepForward = () => {},
     onStepBackward = () => {},
     onSettingChange,
+    onPerformerEdit,
   }: Props = $props();
 
   type Sheet = "performer" | "everything" | null;
@@ -36,7 +40,7 @@
   title="Performer"
   onClose={() => (openSheet = null)}
 >
-  <MobileScenePerformerSheet {onSettingChange} />
+  <MobileScenePerformerSheet {onSettingChange} {onPerformerEdit} />
 </BottomSheet>
 
 <BottomSheet
@@ -97,7 +101,12 @@
   .bar-cluster {
     position: absolute;
     right: 0;
-    bottom: max(4.75rem, calc(env(safe-area-inset-bottom) + 4.75rem));
+    /* The workspace publishes the host's bottom chrome band when the host owns
+       one taller than the viewer's own bar. */
+    bottom: var(
+      --scene-controls-bottom,
+      max(4.75rem, calc(env(safe-area-inset-bottom) + 4.75rem))
+    );
     left: 0;
     display: flex;
     justify-content: center;

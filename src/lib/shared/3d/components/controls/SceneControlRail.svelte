@@ -17,6 +17,8 @@
     onOpenSaveScene: () => void;
     /** Leaves room for host-owned close/fullscreen controls above the rail. */
     topOffset?: string;
+    /** Leaves room for host-owned chrome below the rail, such as a transport. */
+    bottomOffset?: string;
   }
 
   let {
@@ -26,6 +28,7 @@
     onToolSelect,
     onOpenSaveScene,
     topOffset = "12px",
+    bottomOffset = "max(5rem, calc(5rem + env(safe-area-inset-bottom)))",
   }: Props = $props();
 
   const viewer = getViewer3DContext();
@@ -80,6 +83,7 @@
   <div
     class="scene-control-rail"
     style:--scene-control-rail-top={topOffset}
+    style:--scene-control-rail-bottom={bottomOffset}
     role="toolbar"
     aria-label="Scene controls"
   >
@@ -157,8 +161,13 @@
     position: absolute;
     top: var(--scene-control-rail-top, 0.75rem);
     right: 0.75rem;
-    /* The transport owns the bottom edge of the viewer. */
-    bottom: max(5rem, calc(5rem + env(safe-area-inset-bottom)));
+    /* The host's transport owns the bottom edge; how much it takes varies by
+       host, so the default is the sequence viewer's and the Director passes its
+       own measured band. */
+    bottom: var(
+      --scene-control-rail-bottom,
+      max(5rem, calc(5rem + env(safe-area-inset-bottom)))
+    );
     z-index: 30;
     display: flex;
     flex-direction: column;

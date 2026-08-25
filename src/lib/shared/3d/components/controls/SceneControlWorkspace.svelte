@@ -15,6 +15,7 @@
   import SaveSceneModal from "$lib/features/scene-3d-collection/components/SaveSceneModal.svelte";
   import SceneControlInspector from "./SceneControlInspector.svelte";
   import SceneControlRail from "./SceneControlRail.svelte";
+  import type { PerformerEditSink } from "./performer-hub-types";
 
   interface Props {
     bpm?: number;
@@ -28,6 +29,16 @@
     onStepBackward?: () => void;
     /** Leaves room for host-owned close/fullscreen controls above the rail. */
     topOffset?: string;
+    /**
+     * Leaves room for host-owned chrome below the rail, such as a transport.
+     * Left unset, each surface keeps its own default sized for the sequence
+     * viewer's bar.
+     */
+    bottomOffset?: string;
+    /** Forwarded to the performer tool — see PerformerHubDetail's Props. */
+    onPerformerEdit?: PerformerEditSink;
+    /** Fires with the tool being inspected, or null when the inspector closes. */
+    onInspectorChange?: (tool: SceneControlTool | null) => void;
   }
 
   let {
@@ -41,6 +52,9 @@
     onStepForward,
     onStepBackward,
     topOffset = "12px",
+    bottomOffset,
+    onPerformerEdit,
+    onInspectorChange,
   }: Props = $props();
 
   let workspaceWidth = $state(0);
@@ -85,6 +99,17 @@
     () => panelEl,
     isModalTarget
   );
+
+  // activeTool moves from four places (rail selection, close, save-scene, and
+  // the compact reset below), so the notification hangs off the value rather
+  // than off each mutation site.
+  let lastReportedTool: SceneControlTool | null = null;
+  $effect(() => {
+    const current = activeTool;
+    if (current === lastReportedTool) return;
+    lastReportedTool = current;
+    onInspectorChange?.(current);
+  });
 
   let lastLayoutSignature = "";
   $effect(() => {
@@ -138,6 +163,7 @@
   data-presentation={layout.presentation}
   data-open={activeTool !== null || undefined}
   style:--scene-controls-top={topOffset}
+  style:--scene-controls-bottom={bottomOffset}
   style:--scene-inspector-width="{layout.panelWidth}px"
 >
   {#if layout.presentation === "compact"}
@@ -149,6 +175,7 @@
         {onStepForward}
         {onStepBackward}
         {onSettingChange}
+        {onPerformerEdit}
       />
     </div>
   {:else}
@@ -157,6 +184,7 @@
       {activeTool}
       {onSettingChange}
       {topOffset}
+      {bottomOffset}
       onToolSelect={(tool) => (activeTool = tool)}
       onOpenSaveScene={openSaveScene}
     />
@@ -172,6 +200,7 @@
           tool={activeTool}
           onClose={closeInspector}
           {onSettingChange}
+          {onPerformerEdit}
           onOpenSaveScene={openSaveScene}
         />
       </div>
@@ -202,7 +231,7 @@
     position: absolute;
     top: var(--scene-controls-top, 0.75rem);
     right: 4.75rem;
-    bottom: 5.5rem;
+    bottom: var(--scene-controls-bottom, 5.5rem);
     z-index: 29;
     width: var(--scene-inspector-width);
     min-width: 0;

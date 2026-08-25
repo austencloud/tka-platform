@@ -7,15 +7,24 @@
   import PresetsPanel from "./PresetsPanel.svelte";
   import type { SceneControlTool } from "../../domain/scene-control-layout";
   import type { ViewerControlSink } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+  import type { PerformerEditSink } from "./performer-hub-types";
 
   interface Props {
     tool: SceneControlTool;
     onClose: () => void;
     onSettingChange?: ViewerControlSink;
     onOpenSaveScene?: () => void;
+    /** Forwarded to the performer tool — see PerformerHubDetail's Props. */
+    onPerformerEdit?: PerformerEditSink;
   }
 
-  let { tool, onClose, onSettingChange, onOpenSaveScene }: Props = $props();
+  let {
+    tool,
+    onClose,
+    onSettingChange,
+    onOpenSaveScene,
+    onPerformerEdit,
+  }: Props = $props();
 
   const loadDevTools = () => import("./DevToolsPopover.svelte");
 
@@ -60,7 +69,7 @@
 
   <div class="inspector-body">
     {#if tool === "performer"}
-      <PerformerInspectorContent {onSettingChange} />
+      <PerformerInspectorContent {onSettingChange} {onPerformerEdit} />
     {:else if tool === "formation"}
       <FormationPopover {onSettingChange} />
     {:else if tool === "camera"}

@@ -27,8 +27,9 @@
   import type { EnvironmentTransitionObservation } from "$lib/shared/3d/environments/domain/environment-transition";
   import type { BackgroundType } from "@austencloud/backgrounds";
   import type { ResolvedDirectorScene } from "../_lib/film-director-schema";
-  import PerformerHub from "$lib/shared/3d/components/controls/PerformerHub.svelte";
+  import SceneControlWorkspace from "$lib/shared/3d/components/controls/SceneControlWorkspace.svelte";
   import type { PerformerHubEdit } from "$lib/shared/3d/components/controls/performer-hub-types";
+  import type { SceneControlTool } from "$lib/shared/3d/domain/scene-control-layout";
 
   const director = getFilmDirectorContext();
   const sequence = demoSequenceJson as unknown as SequenceData;
@@ -406,12 +407,12 @@
   }
 
   /**
-   * Cast edits are scene-scoped, so a running film would move the target out
-   * from under the user between opening the dock and choosing a value. Opening
-   * it stops the film on the scene being edited.
+   * Every inspector edits the scene on screen, so a running film would move the
+   * target out from under the user between opening a tool and choosing a value.
+   * Opening one stops the film on the scene being edited.
    */
-  function handleDetailOpenChange(open: boolean): void {
-    if (open) director.pause();
+  function handleInspectorChange(tool: SceneControlTool | null): void {
+    if (tool) director.pause();
   }
 
   $effect(() => {
@@ -473,47 +474,21 @@
   ></div>
 </div>
 
-<!-- Outside .director-scene, which is aria-hidden: the hub is the one
-     interactive thing over the stage and has to stay reachable. It renders
-     here rather than in the workbench because it reads the viewer context
-     this component establishes. -->
+<!-- Outside .director-scene, which is aria-hidden: the control workspace is the
+     one interactive thing over the stage and has to stay reachable. It renders
+     here rather than in the workbench because it reads the viewer context this
+     component establishes. The two offsets are the measured bands the Director's
+     own chrome occupies — the titleplate above, the transport below. -->
 {#if director.preparation.complete}
-  <div class="hub-slot">
-    <PerformerHub
-      onPerformerEdit={handlePerformerEdit}
-      onDetailOpenChange={handleDetailOpenChange}
-    />
-  </div>
+  <SceneControlWorkspace
+    topOffset="calc(var(--director-header-reserve, 12rem) + 0.75rem)"
+    bottomOffset="calc(var(--director-transport-reserve, 9.5rem) + 0.75rem)"
+    onPerformerEdit={handlePerformerEdit}
+    onInspectorChange={handleInspectorChange}
+  />
 {/if}
 
 <style>
-  /* The dock anchors itself to this box, so reserving the transport's footprint
-     here keeps its tab bar clear of the transport without the shared component
-     needing to know a Director-specific offset. The dock's own anchor already
-     holds back 90px for a scene rail this route does not have, so that much is
-     given back and the gap above the transport is what remains. */
-  .hub-slot {
-    position: absolute;
-    /* The anchor adds 12px of its own top padding, so the header reserve gives
-       back that much to land the dock a consistent gap below the titleplate. */
-    inset: max(0px, calc(var(--director-header-reserve, 12rem) - 12px + 0.75rem))
-      0
-      max(0px, calc(var(--director-transport-reserve, 9.5rem) + 0.75rem - 90px))
-      0;
-    pointer-events: none;
-  }
-
-  /* A short viewport cannot hold the titleplate and a usable dock at once —
-     reserving the header band leaves the spine taller than the space left for
-     it. The dock takes that band back and paints over the titleplate, which is
-     the secondary surface while a performer is being edited. */
-  @media (max-height: 34rem) {
-    .hub-slot {
-      inset-block-start: 0;
-      z-index: 66;
-    }
-  }
-
   .director-scene {
     position: absolute;
     inset: 0;

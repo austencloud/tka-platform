@@ -3,14 +3,19 @@
   import type { ViewerControlSink } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
   import PerformerHubDetail from "./PerformerHubDetail.svelte";
   import PerformerSpine from "./PerformerSpine.svelte";
-  import type { PerformerHubTab } from "./performer-hub-types";
+  import type {
+    PerformerEditSink,
+    PerformerHubTab,
+  } from "./performer-hub-types";
 
   interface Props {
     compact?: boolean;
     onSettingChange?: ViewerControlSink;
+    /** Forwarded to the detail panel — see PerformerHubDetail's Props. */
+    onPerformerEdit?: PerformerEditSink;
   }
 
-  let { compact = false, onSettingChange }: Props = $props();
+  let { compact = false, onSettingChange, onPerformerEdit }: Props = $props();
 
   const viewer = getViewer3DContext();
   const isAllMode = $derived(viewer.selectedPerformerIndex === null);
@@ -121,6 +126,7 @@
           activeTab={activeCategory}
           showTabBar={false}
           {onSettingChange}
+          {onPerformerEdit}
         />
       </div>
     {:else}
@@ -181,6 +187,7 @@
           activeTab={desktopCategory}
           showTabBar={false}
           {onSettingChange}
+          {onPerformerEdit}
         />
       </div>
     </div>

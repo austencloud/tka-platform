@@ -90,28 +90,37 @@ it with a toast. The document is never allowed into an invalid state, because
 
 ### 3.1 Reuse, not rebuild
 
-`PerformerHub` (`src/lib/shared/3d/components/controls/PerformerHub.svelte`)
-already is this surface. `PerformerHubDetail` carries exactly the tabs Phase 1
-needs: Avatar, Sequence, Prop, Planes, Effort, Effects
-(`performer-hub-types.ts`). It reads `getViewer3DContext()`, which
+`SceneControlWorkspace`
+(`src/lib/shared/3d/components/controls/SceneControlWorkspace.svelte`) already is
+this surface. It is the right-edge rail plus inspector, and it resolves three
+presentations — docked, overlay, and compact — from its own measured box. Its
+performer tool reaches `PerformerHubDetail`, which carries exactly the tabs Phase
+1 needs: Avatar, Sequence, Prop, Planes, Effort, Effects
+(`performer-hub-types.ts`). Everything reads `getViewer3DContext()`, which
 `FilmDirectorScene.svelte:64` establishes, so it works inside the Director
 without modification to its read path.
 
 Per `never-hand-roll.md`, this is **extend**, not create. The owner of
-per-performer editing is `PerformerHub`. The Director composes it.
+per-performer editing is the workspace. The Director composes it, passing the
+bands its own chrome occupies as `topOffset` and `bottomOffset`.
 
 Grep record: searched `performer`, `PerformerHub`, `performer-hub`, `setProp`,
-`setEffect`, `setEffort`, `setAvatarModel` across `src/lib` and `src/routes`.
-Closest and only match is the hub family in `shared/3d/components/controls/`,
-whose other consumer is `MobileScenePerformerSheet.svelte`.
+`setEffect`, `setEffort`, `setAvatarModel` across `src/lib` and `src/routes`,
+then checked each match for live consumers. That second step is the one that
+matters here: the name search alone surfaced three generations of this surface —
+`PerformerRail` (bottom-center), `PerformerHub` (left edge), and the workspace —
+of which only the workspace still had consumers. The other two were deleted with
+this work. Searching by capability finds candidates; only the consumer check
+identifies the owner.
 
 ### 3.2 The write seam
 
-The hub's detail panel writes to `viewer.performerManager` performers directly.
-Phase 1 adds one optional prop to `PerformerHubDetail`: a **performer edit
-sink**. When absent, the hub behaves exactly as it does today for every existing
-consumer. When provided, the hub calls the sink instead of mutating the manager,
-and the sink owns applying the change.
+The detail panel writes to `viewer.performerManager` performers directly. Phase 1
+adds one optional prop, a **performer edit sink**, threaded from
+`SceneControlWorkspace` down both of its branches — the desktop inspector and the
+compact bottom sheet — to `PerformerHubDetail`. When absent, the panel behaves
+exactly as it does today for every existing consumer. When provided, it calls the
+sink instead of mutating the manager, and the sink owns applying the change.
 
 The sink receives the performer's identity and the field and value that changed.
 It does not receive the manager. This keeps the hub ignorant of documents and
