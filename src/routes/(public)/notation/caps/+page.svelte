@@ -436,18 +436,6 @@
       </li>
     </ol>
   </section>
-
-  <section class="editorial-section">
-    <div class="cta-card">
-      <div class="prose">
-        <p>
-          See how TKA turns complete two-hand steps into cycles through
-          composable transformations.
-        </p>
-      </div>
-      <a class="cta-button" href="/notation/loops">Explore the LOOP algebra</a>
-    </div>
-  </section>
 </div>
 
 <style>

@@ -3,7 +3,7 @@
   live CAP demo centered and square, six compact destination tiles framing it,
   height-locked to one viewport (minus the 64px SiteHeader) so the depth
   sections start below the fold. Tiles anchor-scroll to those sections; the
-  "CAPs and LOOPs" tile crosses to /notation/loops. Verified at 1920/2350/3840.
+  "CAPs and LOOPs" tile scrolls to #relationship. Verified at 1920/2350/3840.
   No em dashes. No background fill: the cosmic BackgroundHost shows through.
 -->
 <script lang="ts">
@@ -44,7 +44,7 @@
     },
     {
       id: "relationship",
-      href: "/notation/loops",
+      href: "#relationship",
       heading: "CAPs and LOOPs",
       descriptor: "Parallel systems, different base units.",
       span: "1x1",

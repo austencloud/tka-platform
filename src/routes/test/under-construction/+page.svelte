@@ -15,7 +15,6 @@
   note="This overview is being rebuilt from scratch. Everything it linked to is still here and still works."
   destinations={[
     { label: "Shape Matrix", href: "/notation/shape-matrix", icon: "fa-diagram-project" },
-    { label: "The LOOP algebra", href: "/notation/loops", icon: "fa-rotate" },
     { label: "CAPs", href: "/notation/caps", icon: "fa-circle-nodes" },
   ]}
 />

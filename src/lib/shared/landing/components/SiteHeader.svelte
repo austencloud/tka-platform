@@ -194,7 +194,7 @@
           label: "History",
           href: "/notation",
           icon: "fa-language",
-          desc: "How flow arts notation developed, 2009–2022",
+          desc: "How flow arts notation developed, 2009 to 2022",
         },
         {
           label: "Shape Matrix",
@@ -219,7 +219,7 @@
           label: "Interactive lessons",
           href: "/learn/concepts",
           icon: "fa-graduation-cap",
-          desc: "Learn TKA one idea at a time",
+          desc: "Learn TKA one concept at a time",
         },
         {
           label: "Read the Guide",
@@ -232,12 +232,6 @@
           href: "/glossary",
           icon: "fa-spell-check",
           desc: "Every TKA term, defined",
-        },
-        {
-          label: "The LOOP Algebra",
-          href: "/notation/loops",
-          icon: "fa-rotate",
-          desc: "TKA's own theory of sequences that return",
         },
         {
           label: "FAQ",

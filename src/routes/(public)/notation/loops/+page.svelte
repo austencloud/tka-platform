@@ -1,3 +1,16 @@
+<!--
+  /notation/loops - GATED. Production returns 404 via +page.server.ts;
+  development renders the full page so it can be finished at its canonical URL.
+
+  The LOOP algebra page is not ready to be seen: it is filed with the other
+  withdrawn public pages (/learn/staff-spinning-choreography, /roots/software)
+  until it earns its place.
+
+  To un-gate: delete +page.server.ts, re-add "notation/loops" to
+  src/routes/sitemap.xml/+server.ts, restore the SiteHeader "Learn" entry and
+  the /notation/caps cross-links, and update
+  tests/unit/withdrawn-public-pages-contract.test.ts.
+-->
 <script lang="ts">
   import Seo from "$lib/shared/components/Seo.svelte";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
@@ -50,7 +63,7 @@
     { name: "DrexFactor", role: "documented it" },
     {
       name: "Charlie Cushing",
-      role: "extended it — 8-step CAP, 9-Square Theory",
+      role: "extended it with the 8-step CAP and 9-Square Theory",
     },
   ];
 
@@ -125,7 +138,7 @@
     <p>
       A LOOP is a sequence built to come back around: run it out, and the second half
       (or third, or fourth) answers the first under one of six transformations. Mirror
-      it, flip it, swap the hands, invert the motions, rewind it, rotate it forward —
+      it, flip it, swap the hands, invert the motions, rewind it, rotate it forward,
       or stack several at once. The chips below build any combination TKA has verified
       and show you a real example, worked out.
     </p>
@@ -139,7 +152,7 @@
       <p>
         Toggle any combination the alphabet supports. Illegal combinations disable with
         the reason why. Every example on screen passed the same detector the app uses to
-        classify a LOOP — nothing here is staged.
+        classify a LOOP. Nothing here is staged.
       </p>
     </div>
     <div class="explorer-wrap" use:activateExplorerWhenNear>
@@ -175,18 +188,18 @@
     <div class="prose">
       <p>
         The picker composes transforms in one of two ways. A slash, as in
-        <code class="inline-tok">Mirrored/Inverted</code>, applies both simultaneously —
+        <code class="inline-tok">Mirrored/Inverted</code>, applies both simultaneously as
         one compound operation. A plus, as in
         <code class="inline-tok">Swapped + Mirrored/Inverted</code>, applies them in
         order: build the inner pattern first, then transform the whole thing with the
-        outer one. Order matters —
+        outer one. Order matters:
         <code class="inline-tok">Swapped + Mirrored/Inverted</code> and
         <code class="inline-tok">Mirrored/Inverted + Swapped</code> are different
         sequences, valid from different starting positions.
       </p>
       <p>
         That constraint has a name: the fixed-point theorem. Say the inner pattern runs
-        from position S back to S — that's what makes it circular on its own. The outer
+        from position S back to S. That's what makes it circular on its own. The outer
         transform then has to take that closed loop and double it without breaking the
         seam, which means the outer transform has to leave S exactly where it is.
         <strong>The starting position has to be a fixed point of the outer transform.</strong>
@@ -195,7 +208,7 @@
 
     <div class="table-scroll">
       <table class="theorem-table">
-        <caption>Fixed points by transform — where each one can sit outermost</caption>
+        <caption>Fixed points by transform: where each one can sit outermost</caption>
         <thead>
           <tr>
             <th scope="col">Transform</th>
@@ -215,7 +228,7 @@
 
     <div class="prose">
       <p>
-        Rotated has no fixed point anywhere on the L1-L4 grid — every standard position
+        Rotated has no fixed point anywhere on the L1-L4 grid. Every standard position
         moves when the pattern rotates 180 degrees. That's not a design choice; it's the
         reason rotation can never sit outermost. It only ever works as the innermost
         layer, the thing everything else gets built on top of.
@@ -224,14 +237,14 @@
         Beta is the one position every transform agrees on: it's a fixed point for
         Swapped by construction (swapping two hands standing at the same spot changes
         nothing), and it overlaps Mirrored's and Flipped's fixed sets too. That overlap
-        is what makes beta the position where the most compositions become legal —
+        is what makes beta the position where the most compositions become legal. It is
         the universal connector between components.
       </p>
     </div>
 
     <div class="table-scroll">
       <table class="theorem-table">
-        <caption>Composability from a starting position — order changes the answer</caption>
+        <caption>Composability from a starting position: order changes the answer</caption>
         <thead>
           <tr>
             <th scope="col">Composition</th>
@@ -254,7 +267,7 @@
     <div class="prose">
       <p>
         Length is a separate question from shape. A LOOP's position period is set by its
-        outer transform — two passes for a halved rotation, four for a quartered one. But
+        outer transform: two passes for a halved rotation, four for a quartered one. But
         the props also carry an orientation, and orientation has its own period: every
         anti, dash, or hash motion flips it at the base, and turns step it further. If a
         hand's orientation hasn't cycled back to its start by the time the positions have,
@@ -262,13 +275,13 @@
       </p>
       <p>
         Realized length is the seed multiplied by the least common multiple of those two
-        periods — position and orientation. That's why one LOOP type can render at two
+        periods, position and orientation. That's why one LOOP type can render at two
         different lengths: same skeleton, but a seed heavy on anti and dash motions
         drifts in orientation even at zero turns, and needs more passes to close the loop
         than a plainer one does.
       </p>
       <p>
-        None of this is a new symmetry — mirror, flip, rotate, swap are old moves. What's
+        None of this is a new symmetry. Mirror, flip, rotate, swap are old moves. What's
         unformalized is applying them to this particular movement space, and the
         orientation-period structure in particular: TKA hasn't found this worked out
         anywhere else.
@@ -284,21 +297,21 @@
       <p>
         Continuous Assembly Patterns are the poi community's answer to the same problem:
         a pattern that closes back on itself. The lineage runs through the Home of Poi
-        forums and out into the wider community —
+        forums and out into the wider community:
       </p>
     </div>
     <ul class="bullet-list cap-credits">
       {#each CAP_CREDITS as credit (credit.name)}
-        <li><strong>{credit.name}</strong> — {credit.role}</li>
+        <li><strong>{credit.name}</strong>: {credit.role}</li>
       {/each}
     </ul>
     <div class="prose">
       <p>
         The two ideas overlap in what they're for but not in how they're built. A CAP
-        composes per-hand trajectories — lay the left hand's path over the right hand's
-        and see how they interlock. A LOOP composes per-beat snapshots — one letter
+        composes per-hand trajectories: lay the left hand's path over the right hand's
+        and see how they interlock. A LOOP composes per-step snapshots: one letter
         already holds both hands, so the composition works on the whole picture at once,
-        beat by beat. Parallel concepts, not one contained in the other. CAPs get their
+        step by step. Parallel concepts, not one contained in the other. CAPs get their
         own full treatment on a dedicated page.
       </p>
     </div>
@@ -307,7 +320,7 @@
   <!-- 4. The Deck — product woven in -->
   <section class="editorial-section" style="--accent: #34d399">
     <span class="section-kicker">On the cards</span>
-    <h2 class="section-title">The icon strip on every card back — now readable</h2>
+    <h2 class="section-title">Reading the icon strip on every card back</h2>
     <div class="prose">
       <p>
         Every physical Choreo Card carries a small icon strip on its back, one glyph per
@@ -322,7 +335,7 @@
             <LOOPIconStrip activeComponents={new Set([entry.component])} size={20} />
           </span>
           <span class="legend-text">
-            <strong>{entry.label}</strong> — {entry.description}
+            <strong>{entry.label}</strong>: {entry.description}
           </span>
         </li>
       {/each}
@@ -330,7 +343,7 @@
     <div class="prose">
       <p>
         A card carrying more than one icon is running them together, same rules as the
-        picker above — a strip reading Rotated and Mirrored is a
+        picker above. A strip reading Rotated and Mirrored is a
         <code class="inline-tok">Mirrored/Rotated</code> LOOP, built the same way you just
         built one.
       </p>

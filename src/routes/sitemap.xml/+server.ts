@@ -35,7 +35,8 @@ const pages: SitemapEntry[] = [
   { url: "notation/buugeng" },
   { url: "notation/poi" },
   { url: "notation/shape-matrix" },
-  { url: "notation/loops" },
+  // /notation/loops is gated in production (404 via its +page.server.ts) while
+  // the LOOP algebra page gets rebuilt. Un-gate before re-listing it.
   { url: "notation/caps" },
   { url: "glossary" },
   // The staff choreography article is deliberately absent while it awaits
