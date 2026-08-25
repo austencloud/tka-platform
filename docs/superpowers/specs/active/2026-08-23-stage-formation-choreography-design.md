@@ -225,6 +225,13 @@ mutations use today).
       derived formation track samples identically to the mark sampler at beats
       0/2/4/7.5/8/12; `npm run check` 0 errors 0 warnings.
 - [ ] **Phase 2 — State.** Formation CRUD, invariant clamping, selection.
+      **Resequenced:** the phase list above says Phase 2 removes mark CRUD. It
+      does not. `FormationOverlay.svelte` and `MarkProperties.svelte` still call
+      `addMark`/`updateMarkPosition`/`updateMarkBeats`/`updateMarkWalkStyle` and
+      are not rewritten until Phase 4, so removing it here would leave the app
+      broken between commits — against this section's own promise that each
+      phase is independently verifiable. Formation CRUD is added alongside the
+      mark model; removal moves to the end of Phase 4.
       Carry-ins: `snapshotHistory`/`restoreHistory` in
       `stage-choreography-state.svelte.ts` do not include `formations`, so
       undo/redo must be extended before formation editing lands. Crab travel
@@ -232,6 +239,9 @@ mutations use today).
       rather than a true carried facing — acceptable default, revisit if
       chained crab sets need to hold an angled facing.
 - [ ] **Phase 3 — Timeline UI.**
-- [ ] **Phase 4 — Overlay UI.**
+- [ ] **Phase 4 — Overlay UI.** Ends by deleting mark CRUD (`addMark`,
+      `updateMarkPosition`, `updateMarkBeats`, `updateMarkWalkStyle`,
+      `updateMarkEasing`, `deleteMark`, `Performer.marks`) once no component
+      calls it — the removal deferred from Phase 2.
 - [ ] **Phase 5 — Proof pass.** Visual verification is the main session's job,
       never a subagent's.
