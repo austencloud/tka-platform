@@ -26,7 +26,6 @@ function performer(id: string): Performer {
     index: 0,
     label: id,
     color: "#fff",
-    marks: [],
     sequenceClips: [],
   };
 }

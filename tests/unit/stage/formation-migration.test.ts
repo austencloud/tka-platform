@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { marksToFormations } from "$lib/features/stage/domain/formation-migration";
-import type {
-  Formation,
-  Mark,
-  Performer,
-} from "$lib/features/stage/domain/stage-types";
+import {
+  marksToFormations,
+  type LegacyPerformer,
+  type Mark,
+} from "$lib/features/stage/domain/formation-migration";
+import type { Formation } from "$lib/features/stage/domain/stage-types";
 
 const CHOREOGRAPHY = { bpm: 120, stageWidth: 10, stageDepth: 8 };
 
@@ -13,13 +13,13 @@ function mark(id: string, x: number, beats: number): Mark {
   return { id, x, z: 4, beats, walkStyle: "direct", easing: "linear" };
 }
 
-function performer(id: string, marks: Mark[]): Performer {
-  return { id, index: 0, label: id, color: "#fff", marks, sequenceClips: [] };
+function performer(id: string, marks: Mark[]): LegacyPerformer {
+  return { id, marks };
 }
 
 function expectMigrationInvariants(
   formations: Formation[],
-  performers: Performer[]
+  performers: LegacyPerformer[]
 ): void {
   expect(formations[0]).toMatchObject({ atBeat: 0, transitionBeats: 0 });
   expect(new Set(formations.map((formation) => formation.atBeat)).size).toBe(

@@ -1,7 +1,6 @@
 import type {
   EasingType,
-  Mark,
-  Performer,
+  FormationSpot,
   StageChoreography,
 } from "./stage-types";
 
@@ -63,34 +62,9 @@ export function stageToWorld(
   };
 }
 
-function totalBeats(performer: Performer): number {
-  return performer.marks.reduce((sum, mark) => sum + mark.beats, 0);
-}
-
-function stationaryFrame(
-  performer: Performer,
-  mark: Mark,
-  markIndex: number,
-  choreography: Pick<StageChoreography, "stageWidth" | "stageDepth">
-): StagePerformanceFrame {
-  const stagePosition = { x: mark.x, z: mark.z };
-  return {
-    performerId: performer.id,
-    stagePosition,
-    worldPosition: stageToWorld(stagePosition, choreography),
-    bodyFacing: mark.facingAngle ?? 0,
-    travelDirection: { x: 0, z: 0 },
-    moveDirection: { x: 0, z: 0 },
-    speedMetersPerSecond: 0,
-    isMoving: false,
-    activeMarkIndex: markIndex,
-    transitionProgress: 1,
-  };
-}
-
 export function segmentFacing(
-  from: Pick<Mark, "facingAngle">,
-  to: Pick<Mark, "facingAngle" | "walkStyle">,
+  from: Pick<FormationSpot, "facingAngle">,
+  to: Pick<FormationSpot, "facingAngle" | "walkStyle">,
   worldDx: number,
   worldDz: number
 ): number {
@@ -111,109 +85,6 @@ export function worldToBodyDirection(
     x: worldDirection.x * cos - worldDirection.z * sin,
     z: worldDirection.x * sin + worldDirection.z * cos,
   };
-}
-
-export function samplePerformerPerformance(
-  performer: Performer,
-  choreography: Pick<StageChoreography, "bpm" | "stageWidth" | "stageDepth">,
-  beat: number
-): StagePerformanceFrame {
-  const first = performer.marks[0];
-  if (!first) {
-    const center: Mark = {
-      id: "empty-stage-center",
-      x: choreography.stageWidth / 2,
-      z: choreography.stageDepth / 2,
-      beats: 0,
-      walkStyle: "direct",
-      easing: "linear",
-    };
-    return stationaryFrame(performer, center, 0, choreography);
-  }
-  if (performer.marks.length === 1 || beat <= 0) {
-    return stationaryFrame(performer, first, 0, choreography);
-  }
-
-  const performerTotalBeats = totalBeats(performer);
-  if (beat >= performerTotalBeats) {
-    const lastIndex = performer.marks.length - 1;
-    const last = performer.marks[lastIndex]!;
-    const previous = performer.marks[lastIndex - 1] ?? last;
-    const worldFrom = stageToWorld(previous, choreography);
-    const worldTo = stageToWorld(last, choreography);
-    return {
-      ...stationaryFrame(performer, last, lastIndex, choreography),
-      bodyFacing: segmentFacing(
-        previous,
-        last,
-        worldTo.x - worldFrom.x,
-        worldTo.z - worldFrom.z
-      ),
-    };
-  }
-
-  let accumulatedBeats = 0;
-  for (let index = 1; index < performer.marks.length; index += 1) {
-    const to = performer.marks[index]!;
-    const from = performer.marks[index - 1]!;
-    const segmentStart = accumulatedBeats;
-    accumulatedBeats += to.beats;
-    if (beat > accumulatedBeats && index < performer.marks.length - 1) continue;
-
-    const rawProgress =
-      to.beats > 0
-        ? Math.max(0, Math.min(1, (beat - segmentStart) / to.beats))
-        : 1;
-    const transitionProgress = applyStageEasing(rawProgress, to.easing);
-    const stagePosition = {
-      x: from.x + (to.x - from.x) * transitionProgress,
-      z: from.z + (to.z - from.z) * transitionProgress,
-    };
-    const worldFrom = stageToWorld(from, choreography);
-    const worldTo = stageToWorld(to, choreography);
-    const worldDx = worldTo.x - worldFrom.x;
-    const worldDz = worldTo.z - worldFrom.z;
-    const distance = Math.hypot(worldDx, worldDz);
-    const travelDirection =
-      distance > MOVEMENT_EPSILON
-        ? { x: worldDx / distance, z: worldDz / distance }
-        : { x: 0, z: 0 };
-    const bodyFacing = segmentFacing(from, to, worldDx, worldDz);
-    const durationSeconds =
-      to.beats > 0 ? (to.beats * 60) / choreography.bpm : 0;
-    const averageSpeed = durationSeconds > 0 ? distance / durationSeconds : 0;
-    const speedMetersPerSecond =
-      averageSpeed * easingDerivative(rawProgress, to.easing);
-
-    return {
-      performerId: performer.id,
-      stagePosition,
-      worldPosition: stageToWorld(stagePosition, choreography),
-      bodyFacing,
-      travelDirection,
-      moveDirection: worldToBodyDirection(travelDirection, bodyFacing),
-      speedMetersPerSecond,
-      isMoving: speedMetersPerSecond > MOVEMENT_EPSILON,
-      activeMarkIndex: index,
-      transitionProgress,
-    };
-  }
-
-  return stationaryFrame(
-    performer,
-    performer.marks.at(-1) ?? first,
-    performer.marks.length - 1,
-    choreography
-  );
-}
-
-export function sampleStagePerformance(
-  choreography: StageChoreography,
-  beat: number
-): StagePerformanceFrame[] {
-  return choreography.performers.map((performer) =>
-    samplePerformerPerformance(performer, choreography, beat)
-  );
 }
 
 /**

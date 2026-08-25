@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { createStageChoreographyState } from "$lib/features/stage/state/stage-choreography-state.svelte";
-import { sampleStagePerformance } from "$lib/features/stage/domain/stage-performance-sampler";
 import { sampleStageFormations } from "$lib/features/stage/domain/stage-formation-sampler";
+import { generatePresetPositions } from "$lib/features/stage/state/formation-presets";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { SceneEnvironmentId } from "$lib/shared/3d/environments/domain/scene-environment";
 
@@ -86,35 +86,45 @@ describe("stage choreography state", () => {
     state.destroy();
   });
 
-  it("derives a formation track that samples identically to the marks", () => {
+  it("creates the default line-to-v formation track", () => {
     const state = createStageChoreographyState();
-    const { formations } = state.choreography;
-
-    expect(formations.length).toBeGreaterThan(0);
-    expect(formations[0]!.atBeat).toBe(0);
-    expect(formations[0]!.transitionBeats).toBe(0);
-    for (let i = 1; i < formations.length; i += 1) {
-      const previous = formations[i - 1]!;
-      const formation = formations[i]!;
-      expect(formation.atBeat).toBeGreaterThan(previous.atBeat);
-      expect(formation.transitionBeats).toBeLessThanOrEqual(
-        formation.atBeat - previous.atBeat
+    const { formations, performers, stageWidth, stageDepth } =
+      state.choreography;
+    const line = generatePresetPositions("line", 4, stageWidth, stageDepth);
+    const vShape = generatePresetPositions(
+      "v-shape",
+      4,
+      stageWidth,
+      stageDepth
+    );
+    const spotsFor = (positions: typeof line) =>
+      Object.fromEntries(
+        performers.map((performer, index) => [
+          performer.id,
+          {
+            ...positions[index]!,
+            walkStyle: "direct",
+            easing: "linear",
+          },
+        ])
       );
-      for (const performer of state.choreography.performers) {
-        expect(formation.spots[performer.id]).toBeDefined();
-      }
-    }
 
-    for (const beat of [0, 2, 4, 7.5, 8, 12]) {
-      const viaMarks = sampleStagePerformance(state.choreography, beat);
-      const viaFormations = sampleStageFormations(state.choreography, beat);
-      viaFormations.forEach((frame, index) => {
-        const expected = viaMarks[index]!;
-        expect(frame.stagePosition.x).toBeCloseTo(expected.stagePosition.x, 6);
-        expect(frame.stagePosition.z).toBeCloseTo(expected.stagePosition.z, 6);
-        expect(frame.bodyFacing).toBeCloseTo(expected.bodyFacing, 6);
-      });
-    }
+    expect(formations).toEqual([
+      {
+        id: "default-formation-0",
+        atBeat: 0,
+        transitionBeats: 0,
+        spots: spotsFor(line),
+        presetId: "line",
+      },
+      {
+        id: "default-formation-8",
+        atBeat: 8,
+        transitionBeats: 8,
+        spots: spotsFor(vShape),
+        presetId: "v-shape",
+      },
+    ]);
 
     state.destroy();
   });
@@ -127,7 +137,10 @@ describe("stage choreography state", () => {
       performer.sequenceClips = [];
     }
     state.seek(6 / state.maxTotalBeats);
-    const beforeMove = state.interpolatedPositions.map(({ x, z }) => ({ x, z }));
+    const beforeMove = state.interpolatedPositions.map(({ x, z }) => ({
+      x,
+      z,
+    }));
 
     state.moveFormation(secondFormation.id, 12);
     state.seek(6 / state.maxTotalBeats);

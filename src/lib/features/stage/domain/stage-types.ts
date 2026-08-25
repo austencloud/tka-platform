@@ -18,7 +18,6 @@ export interface Performer {
   index: number;
   label: string;
   color: string;
-  marks: Mark[];
   sequenceClips: StageSequenceClip[];
 }
 
@@ -34,17 +33,6 @@ export interface StageSequenceClip {
   durationBeats: number;
   sourceBeatCount: number;
   loop: boolean;
-}
-
-export interface Mark {
-  id: string;
-  x: number;
-  z: number;
-  beats: number;
-  walkStyle: WalkStyle;
-  easing: EasingType;
-  /** Explicit performance-facing yaw. Undefined keeps the legacy walk-style default. */
-  facingAngle?: number;
 }
 
 export interface Formation {

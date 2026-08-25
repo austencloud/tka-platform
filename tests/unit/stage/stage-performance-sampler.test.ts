@@ -1,14 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { sampleSequencePlayback } from "$lib/features/stage/domain/stage-performance-sampler";
 import {
   samplePerformerPerformance,
-  sampleSequencePlayback,
-} from "$lib/features/stage/domain/stage-performance-sampler";
-import type {
-  Mark,
-  Performer,
-  StageChoreography,
-} from "$lib/features/stage/domain/stage-types";
+  type LegacyPerformer,
+  type Mark,
+} from "$lib/features/stage/domain/formation-migration";
+import type { StageChoreography } from "$lib/features/stage/domain/stage-types";
 
 const CHOREOGRAPHY = {
   bpm: 120,
@@ -34,14 +32,10 @@ function mark(
   };
 }
 
-function performer(marks: Mark[]): Performer {
+function performer(marks: Mark[]): LegacyPerformer {
   return {
     id: "performer-a",
-    index: 0,
-    label: "A",
-    color: "#fff",
     marks,
-    sequenceClips: [],
   };
 }
 

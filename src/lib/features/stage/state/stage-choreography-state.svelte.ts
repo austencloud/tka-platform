@@ -1,7 +1,6 @@
 import type {
   StageChoreography,
   Performer,
-  Mark,
   StageSequenceClip,
   Formation,
   FormationPresetId,
@@ -18,11 +17,7 @@ import {
 } from "../domain/stage-types";
 import { generatePresetPositions } from "./formation-presets";
 import type { UnifiedPlaybackContext } from "$lib/shared/timeline/unified-playback-context";
-import {
-  samplePerformerPerformance,
-  type StagePerformanceFrame,
-} from "../domain/stage-performance-sampler";
-import { marksToFormations } from "../domain/formation-migration";
+import type { StagePerformanceFrame } from "../domain/stage-performance-sampler";
 import { normalizeFormations } from "../domain/formation-invariants";
 import {
   sampleFormationPerformance,
@@ -92,18 +87,7 @@ export interface StageChoreographyState extends UnifiedPlaybackContext {
     facingAngle: number | undefined
   ): void;
   applyPresetToFormation(formationId: string, preset: FormationPresetId): void;
-  applyPreset(preset: FormationPresetId): void;
-  insertFormationAtPlayhead(
-    preset: FormationPresetId,
-    transitionBeats?: number
-  ): void;
-  addMark(performerId: string, x: number, z: number, beats?: number): void;
   beginDrag(): void;
-  updateMarkPosition(markId: string, x: number, z: number): void;
-  updateMarkBeats(markId: string, beats: number): void;
-  updateMarkWalkStyle(markId: string, walkStyle: WalkStyle): void;
-  updateMarkEasing(markId: string, easing: EasingType): void;
-  deleteMark(markId: string): void;
   addSequenceClip(
     performerId: string,
     sequence: SequenceData,
@@ -125,7 +109,6 @@ function createPerformer(index: number): Performer {
     index,
     label: PERFORMER_LABELS[index] ?? `P${index}`,
     color: PERFORMER_COLORS[index] ?? "#888",
-    marks: [],
     sequenceClips: [
       createSequenceClip({
         sequenceId: DEFAULT_STAGE_SEQUENCE_ID,
@@ -153,24 +136,6 @@ function createSequenceClip(
   return { id: crypto.randomUUID(), ...input };
 }
 
-function createMark(x: number, z: number, beats = 0): Mark {
-  return {
-    id: crypto.randomUUID(),
-    x,
-    z,
-    beats,
-    walkStyle: "direct",
-    easing: "linear",
-  };
-}
-
-function totalBeatsForPerformer(performer: Performer): number {
-  return Math.max(
-    performer.marks.reduce((sum, m) => sum + m.beats, 0),
-    getPerformerSequenceEndBeat(performer)
-  );
-}
-
 export interface StageChoreographyStateOptions {
   initialEnvironmentId?: SceneEnvironmentId;
 }
@@ -194,7 +159,7 @@ export function createStageChoreographyState(
 
   // The Stage opens on a real authored move, so the first press of Play proves
   // the same thing users came here to build: performers travel while their TKA
-  // sequence continues. Both formations still use the ordinary mark model.
+  // sequence continues.
   const defaultPositions = generatePresetPositions(
     "line",
     DEFAULT_PERFORMER_COUNT,
@@ -207,23 +172,38 @@ export function createStageChoreographyState(
     DEFAULT_STAGE_WIDTH,
     DEFAULT_STAGE_DEPTH
   );
-  choreography.performers.forEach((performer, i) => {
-    const pos = defaultPositions[i];
-    const target = defaultTargetPositions[i];
-    if (pos && target) {
-      performer.marks = [
-        createMark(pos.x, pos.z, 0),
-        createMark(target.x, target.z, 8),
-      ];
-    }
-  });
-
-  // A choreography always has a formation at beat 0, so derive the formation
-  // track from the marks that were just authored rather than starting empty.
-  choreography.formations = marksToFormations(
-    choreography.performers,
-    choreography
-  );
+  const defaultSpots = (
+    positions: Array<{ x: number; z: number }>
+  ): Formation["spots"] =>
+    Object.fromEntries(
+      choreography.performers.map((performer, index) => [
+        performer.id,
+        {
+          ...(positions[index] ?? {
+            x: choreography.stageWidth / 2,
+            z: choreography.stageDepth / 2,
+          }),
+          walkStyle: "direct" as const,
+          easing: "linear" as const,
+        },
+      ])
+    );
+  choreography.formations = [
+    {
+      id: "default-formation-0",
+      atBeat: 0,
+      transitionBeats: 0,
+      spots: defaultSpots(defaultPositions),
+      presetId: "line",
+    },
+    {
+      id: "default-formation-8",
+      atBeat: 8,
+      transitionBeats: 8,
+      spots: defaultSpots(defaultTargetPositions),
+      presetId: "v-shape",
+    },
+  ];
 
   const MAX_UNDO_STACK = 50;
   // $state, not plain arrays: canUndo/canRedo are read through getters by the
@@ -240,7 +220,6 @@ export function createStageChoreographyState(
         index: p.index,
         label: p.label,
         color: p.color,
-        marks: p.marks.map((m) => ({ ...m })),
         sequenceClips: p.sequenceClips.map((clip) => ({ ...clip })),
       })),
       formations: choreography.formations.map((formation) => ({
@@ -329,9 +308,7 @@ export function createStageChoreographyState(
     return 0;
   });
 
-  const totalSteps = $derived(
-    Math.max(1, choreography.formations.length - 1)
-  );
+  const totalSteps = $derived(Math.max(1, choreography.formations.length - 1));
 
   const beatMarkerPositions = $derived.by((): readonly number[] => {
     if (maxTotalBeats <= 0) return [];
@@ -561,7 +538,7 @@ export function createStageChoreographyState(
     const spot = formation?.spots[performerId];
     if (!formation || !spot) return;
     // Dragging calls this on every pointermove, so history is pushed once by
-    // beginDrag() the way mark dragging already does it. Pushing here would
+    // beginDrag(). Pushing here would
     // spend the whole undo stack on one drag.
     spot.x = x;
     spot.z = z;
@@ -628,148 +605,8 @@ export function createStageChoreographyState(
     normalizeFormationTrack();
   }
 
-  function positionAtBeat(
-    performer: Performer,
-    targetBeat: number
-  ): { x: number; z: number } {
-    return samplePerformerPerformance(performer, choreography, targetBeat)
-      .stagePosition;
-  }
-
-  function insertFormationAtPlayhead(
-    preset: FormationPresetId,
-    transitionBeats = 4
-  ) {
-    pushUndo();
-    const currentBeat = overallProgress * maxTotalBeats;
-    const positions = generatePresetPositions(
-      preset,
-      choreography.performers.length,
-      choreography.stageWidth,
-      choreography.stageDepth
-    );
-
-    choreography.performers.forEach((performer, i) => {
-      const targetPos = positions[i];
-      if (!targetPos) return;
-
-      const totalPerformerBeats = totalBeatsForPerformer(performer);
-
-      if (currentBeat <= 0 && performer.marks.length <= 1) {
-        performer.marks = [createMark(targetPos.x, targetPos.z, 0)];
-        return;
-      }
-
-      if (currentBeat >= totalPerformerBeats) {
-        performer.marks.push(
-          createMark(targetPos.x, targetPos.z, transitionBeats)
-        );
-      } else {
-        const currentPos = positionAtBeat(performer, currentBeat);
-        let accumulated = 0;
-        let insertIdx = performer.marks.length;
-        for (let j = 1; j < performer.marks.length; j++) {
-          accumulated += performer.marks[j]!.beats;
-          if (accumulated > currentBeat) {
-            const remaining = accumulated - currentBeat;
-            performer.marks[j]!.beats = Math.round(
-              currentBeat - (accumulated - performer.marks[j]!.beats)
-            );
-            const splitMark = createMark(currentPos.x, currentPos.z, 0);
-            performer.marks.splice(j + 1, 0, splitMark);
-            insertIdx = j + 2;
-            const targetMark = createMark(
-              targetPos.x,
-              targetPos.z,
-              transitionBeats
-            );
-            performer.marks.splice(insertIdx, 0, targetMark);
-            if (insertIdx + 1 < performer.marks.length) {
-              performer.marks[insertIdx + 1]!.beats = Math.max(
-                1,
-                Math.round(remaining)
-              );
-            }
-            return;
-          }
-        }
-        performer.marks.push(
-          createMark(targetPos.x, targetPos.z, transitionBeats)
-        );
-      }
-    });
-  }
-
-  function applyPreset(preset: FormationPresetId) {
-    insertFormationAtPlayhead(preset);
-  }
-
-  function addMark(performerId: string, x: number, z: number, beats = 4) {
-    pushUndo();
-    const performer = choreography.performers.find((p) => p.id === performerId);
-    if (!performer) return;
-    const clampedX = Math.max(0, Math.min(choreography.stageWidth, x));
-    const clampedZ = Math.max(0, Math.min(choreography.stageDepth, z));
-    performer.marks.push(createMark(clampedX, clampedZ, beats));
-  }
-
   function beginDrag() {
     pushUndo();
-  }
-
-  function updateMarkPosition(markId: string, x: number, z: number) {
-    for (const performer of choreography.performers) {
-      const mark = performer.marks.find((m) => m.id === markId);
-      if (mark) {
-        mark.x = Math.max(0, Math.min(choreography.stageWidth, x));
-        mark.z = Math.max(0, Math.min(choreography.stageDepth, z));
-        return;
-      }
-    }
-  }
-
-  function updateMarkBeats(markId: string, beats: number) {
-    pushUndo();
-    for (const performer of choreography.performers) {
-      const mark = performer.marks.find((m) => m.id === markId);
-      if (mark) {
-        mark.beats = Math.max(1, Math.min(32, beats));
-        return;
-      }
-    }
-  }
-
-  function updateMarkWalkStyle(markId: string, walkStyle: WalkStyle) {
-    pushUndo();
-    for (const performer of choreography.performers) {
-      const mark = performer.marks.find((m) => m.id === markId);
-      if (mark) {
-        mark.walkStyle = walkStyle;
-        return;
-      }
-    }
-  }
-
-  function updateMarkEasing(markId: string, easing: EasingType) {
-    pushUndo();
-    for (const performer of choreography.performers) {
-      const mark = performer.marks.find((m) => m.id === markId);
-      if (mark) {
-        mark.easing = easing;
-        return;
-      }
-    }
-  }
-
-  function deleteMark(markId: string) {
-    pushUndo();
-    for (const performer of choreography.performers) {
-      const idx = performer.marks.findIndex((m) => m.id === markId);
-      if (idx > 0) {
-        performer.marks.splice(idx, 1);
-        return;
-      }
-    }
   }
 
   function addSequenceClip(
@@ -934,15 +771,7 @@ export function createStageChoreographyState(
     updateSpotEasing,
     updateSpotFacing,
     applyPresetToFormation,
-    applyPreset,
-    insertFormationAtPlayhead,
-    addMark,
     beginDrag,
-    updateMarkPosition,
-    updateMarkBeats,
-    updateMarkWalkStyle,
-    updateMarkEasing,
-    deleteMark,
     addSequenceClip,
     removeSequenceClip,
     moveSequenceClip,

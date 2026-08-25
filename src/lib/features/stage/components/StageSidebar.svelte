@@ -146,6 +146,15 @@
     padding: 8px;
   }
 
+  /* A column flex child shrinks below its content before the container agrees to
+     scroll, and CollapsibleSection clips its own overflow — so the sections were
+     squeezed until the performer chips were cut in half and the count stepper
+     disappeared entirely. Keep every section at its natural height and let the
+     sidebar scroll, which is what overflow-y is there for. */
+  .stage-sidebar > :global(*) {
+    flex: none;
+  }
+
   .performer-buttons {
     display: flex;
     flex-wrap: wrap;

@@ -34,7 +34,6 @@ function performer(sequenceClips: StageSequenceClip[]): Performer {
     index: 0,
     label: "A",
     color: "#fff",
-    marks: [],
     sequenceClips,
   };
 }
