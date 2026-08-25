@@ -105,7 +105,9 @@
 
   /* Side by side: ten across, five rows, all 47 on the screen with no scroll.
      Whichever binds first - the index column's width, or the five rows' share
-     of what is left of the screen below the page chrome (34rem). */
+     of what is left of the screen below the page chrome (20rem; it was 34rem
+     when the drilled view still stacked a back link, an h1, a subtitle and a
+     toolbar above the board). At desktop the width term binds either way. */
   @container (min-width: 62rem) {
     .index {
       /* The subtrahend is the gap budget for one row, not a guess at chrome:
@@ -114,7 +116,7 @@
          it could have spent on the pictographs. */
       --codex-picto-size: clamp(
         3rem,
-        min(calc((100cqi - 2rem) / 10), calc((100dvh - 34rem) / 5)),
+        min(calc((100cqi - 2rem) / 10), calc((100dvh - 20rem) / 5)),
         9rem
       );
     }
@@ -152,12 +154,18 @@
        fold; without the width term a narrow panel overflows sideways. The floor
        keeps a 1440x900 laptop's hero meaningfully larger than its index cells.
 
+       The subtrahend is 26rem, not the 40rem this started at: 40rem was
+       measured against the old drilled chrome - a back link, an h1, a subtitle
+       and a toolbar row that no longer exist. With 234px of that returned to
+       the page the old constant left the hero at 400px inside a panel with room
+       for 500, and a quarter of the screen empty under the board.
+
        Eight variation columns, not four: a letter carries 8 or 16 variations,
        so eight lands them in one clean row or two with nothing stranded, and in
        a stacked column that is the row width the panel actually has. */
     --codex-hero-size: clamp(
       11rem,
-      min(74cqi, calc(100dvh - 40rem)),
+      min(74cqi, calc(100dvh - 26rem)),
       46rem
     );
     --codex-var-cols: 8;
