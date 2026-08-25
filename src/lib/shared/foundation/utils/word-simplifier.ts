@@ -10,6 +10,13 @@
  * - "HELLO" → "HELLO" (no pattern, returns original)
  */
 
+import { Letter } from "../domain/models/letter";
+
+/** Every canonical letter value, for {@link isTkaWord}'s membership test. */
+const TKA_LETTER_UNITS: ReadonlySet<string> = new Set<string>(
+  Object.values(Letter),
+);
+
 /**
  * Check if a string can be formed by repeating a pattern
  */
@@ -117,7 +124,7 @@ function simplifyPalindromicWord(word: string): string {
  * - "Φ-Ψ-Ω-" → ["Φ-", "Ψ-", "Ω-"] (3 letters)
  * - "A-B-C" → ["A-", "B-", "C"] (3 letters)
  */
-function splitIntoLetterUnits(word: string): string[] {
+export function splitIntoLetterUnits(word: string): string[] {
   const units: string[] = [];
   let i = 0;
 
@@ -266,4 +273,25 @@ export function compressedToDisplayString(segments: CompressedSegment[]): string
       return seg.repeat > 1 ? `(${inner})×${seg.repeat}` : inner;
     })
     .join("");
+}
+
+/**
+ * True when `text` is a Kinetic Alphabet word — a single unbroken run of
+ * canonical TKA letters, dash letters included ("BBBA", "ΩORZ", "AW-B", "Φ-").
+ *
+ * The question this answers is a display one: only a real TKA word may be drawn
+ * with the alphabet's glyphs. Anything a person typed as a name ("Sunrise",
+ * "Tunnel #3", "Mandala Duo") has to stay text, so the test is deliberately
+ * strict on both ends — no whitespace, no punctuation, and every unit has to be
+ * an actual member of {@link Letter}. Lowercase Latin fails on membership
+ * (`Letter.ALPHA` is "α", never "a"), which is what keeps ordinary English words
+ * out even though the tokenizer happily splits them.
+ */
+export function isTkaWord(text: string): boolean {
+  if (!text) return false;
+  const units = splitIntoLetterUnits(text);
+  // The tokenizer skips characters it does not recognize; rejoining proves that
+  // nothing was dropped, so "A B" and "A!" fail here rather than passing as "AB".
+  if (units.length === 0 || units.join("") !== text) return false;
+  return units.every((unit) => TKA_LETTER_UNITS.has(unit));
 }

@@ -30,6 +30,7 @@
   import type { MandalaPublicPayload } from "$lib/features/mandala/tabs/collection/domain/mandala-public-revision";
   import type { CollectedTunnel } from "$lib/features/tunnel-collection/domain/tunnel-collection-types";
   import PanelSpinner from "$lib/shared/components/panel/PanelSpinner.svelte";
+  import TkaLabel from "$lib/shared/components/TkaLabel.svelte";
 
   const browseNavigation = getBrowseNavigationContext();
 
@@ -300,7 +301,7 @@
         </button>
         {#if detailEnvelope}
           <div class="detail-title">
-            <h2>{detailEnvelope.title}</h2>
+            <h2><TkaLabel text={detailEnvelope.title} darkMode fitToParent={false} /></h2>
             <p class="detail-byline">
               By {detailEnvelope.ownerDisplayName}
               {#if formatPublished(detailEnvelope.publishedAt)}
@@ -406,7 +407,9 @@
                         {/if}
                       </span>
                       <span class="art-meta">
-                        <span class="art-title">{envelope.title}</span>
+                        <span class="art-title">
+                          <TkaLabel text={envelope.title} darkMode />
+                        </span>
                         <span class="art-byline"
                           >By {envelope.ownerDisplayName}</span
                         >
