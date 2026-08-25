@@ -65,20 +65,22 @@ function readFlagValue(flag) {
  * The stage chrome — back button, performer rail, transport — floats over the
  * canvas, and the screenshot takes whatever Chrome presented.
  *
- * A stylesheet rather than a pass of inline styles: Svelte replaces transport
- * nodes as the playhead settles, and a replacement node carries no inline style
- * of its own. A rule keeps hiding whatever appears next. Inline `!important` on
- * the spine outranks the sheet, and `visibility` rather than `display` so
- * nothing relayouts the canvas mid-capture.
+ * Zeroed opacity, not `visibility` or `display`. `display` would relayout the
+ * page and resize the canvas mid-capture, and `visibility` is overridable by a
+ * descendant — TransportControls' own buttons re-declare it and stayed on
+ * screen. Opacity applies to the subtree as a group, so nothing inside a hidden
+ * branch can paint itself back in, including nodes Svelte creates afterwards.
  */
 const HIDE_CHROME = `(() => {
   const canvas = document.querySelector("[data-film-director-workbench] canvas");
   if (!canvas) return false;
-  const sheet = document.createElement("style");
-  sheet.textContent = "body * { visibility: hidden !important; }";
-  document.head.append(sheet);
-  for (let node = canvas; node && node !== document.documentElement; node = node.parentElement) {
-    node.style.setProperty("visibility", "visible", "important");
+  const spine = new Set();
+  for (let node = canvas; node; node = node.parentElement) spine.add(node);
+  for (const node of spine) {
+    for (const child of node.children) {
+      if (spine.has(child)) continue;
+      child.style.setProperty("opacity", "0", "important");
+    }
   }
   return true;
 })()`;
