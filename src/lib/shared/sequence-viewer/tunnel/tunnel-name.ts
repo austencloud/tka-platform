@@ -120,7 +120,12 @@ function describeFormation(config: TunnelConfig | null | undefined): {
   isPreset: boolean;
 } {
   if (!config) return { label: "", isPreset: false };
-  const presetId = matchPreset(config);
+  // Match on SHAPE only. `matchPreset` compares speed overrides too, which is
+  // right for the preset picker (a retuned Duo is no longer the Duo you tapped)
+  // and wrong here: a Duo running one arm at 2x is still visibly a Duo, and the
+  // rate already gets its own "multi-speed" qualifier. Without this, changing a
+  // speed silently downgrades a good name to "2-arm".
+  const presetId = matchPreset({ ...config, speedOverrides: {} });
   const preset = presetId ? getPreset(presetId) : undefined;
   if (preset) return { label: preset.name, isPreset: true };
   return {
