@@ -53,9 +53,57 @@ export interface CanonicalCity {
  * withholding the suggestion until a network call finished.
  */
 export interface CitySuggestion {
+  /**
+   * Identity within one list of suggestions. A prediction's place id on the
+   * Places path; a constant on the edge path, which only ever offers one.
+   * Present because a keyed list needs it — city plus region is not unique.
+   */
+  readonly id: string;
+
+  /** Primary label. The city on its own, so copy can read "Practicing in X?". */
   readonly city: string;
-  readonly country: string;
-  readonly countryCode: CountryCode;
-  /** Resolves the coordinates the write needs. */
+
+  /**
+   * Secondary label. The country name on the edge path; whatever a prediction
+   * offers to disambiguate on the Places path, which is often region plus
+   * country ("IL, USA"). Display only — never persisted, and never parsed.
+   */
+  readonly region: string;
+
+  /**
+   * Resolves the suggestion into something writable.
+   *
+   * Rejects with a {@link CityResolutionError} when the city cannot be placed.
+   * The two failures are kept apart on purpose: a geocoder that returns no
+   * result and a geocoder that never answered need different recovery, and
+   * telling someone their city does not exist because a request timed out is
+   * the kind of wrong message that makes people stop trusting the rest.
+   */
   readonly canonicalize: () => Promise<CanonicalCity>;
+}
+
+/** Why a suggestion could not become a {@link CanonicalCity}. */
+export type CityResolutionReason =
+  /** The geocoder answered, and there is no such place. */
+  | "not-found"
+  /** The request did not complete. Retrying is meaningful. */
+  | "failed"
+  /** A result came back and did not describe a city. */
+  | "rejected";
+
+/**
+ * A resolution failure carrying copy the UI can show as-is.
+ *
+ * The message is built by whoever knows what went wrong rather than mapped
+ * from a code at the render site, so there is one place per failure that
+ * decides what the user is told.
+ */
+export class CityResolutionError extends Error {
+  constructor(
+    readonly reason: CityResolutionReason,
+    message: string,
+  ) {
+    super(message);
+    this.name = "CityResolutionError";
+  }
 }

@@ -84,8 +84,89 @@ declare global {
         PinElement: typeof marker.PinElement;
       }
 
+      interface LatLng {
+        lat(): number;
+        lng(): number;
+      }
+
+      interface PlacesLibrary {
+        AutocompleteSessionToken: typeof places.AutocompleteSessionToken;
+        AutocompleteSuggestion: typeof places.AutocompleteSuggestion;
+        Place: typeof places.Place;
+      }
+
       function importLibrary(name: "maps"): Promise<MapsLibrary>;
       function importLibrary(name: "marker"): Promise<MarkerLibrary>;
+      function importLibrary(name: "places"): Promise<PlacesLibrary>;
+
+      /**
+       * Places (New) — the Autocomplete DATA API only.
+       *
+       * Declared by hand alongside the rest of this namespace rather than by
+       * installing `@types/google.maps`: that package declares the whole
+       * `google.maps` namespace and would collide with the declarations above,
+       * so adopting it means deleting these and re-checking every existing map
+       * consumer. That is a separate change from adding a city picker.
+       *
+       * Only the members this app calls are declared. Shapes follow the
+       * published reference for `AutocompleteSuggestion` / `PlacePrediction` /
+       * `FormattableText` / `AddressComponent`.
+       */
+      namespace places {
+        /** Groups a session's keystrokes with its terminating details call. */
+        class AutocompleteSessionToken {}
+
+        interface FormattableText {
+          readonly text: string;
+          toString(): string;
+        }
+
+        interface AddressComponent {
+          readonly longText: string | null;
+          readonly shortText: string | null;
+          readonly types: string[];
+        }
+
+        interface FetchFieldsRequest {
+          fields: string[];
+        }
+
+        class Place {
+          readonly id: string;
+          readonly addressComponents?: AddressComponent[] | null;
+          readonly location?: LatLng | null;
+          fetchFields(request: FetchFieldsRequest): Promise<{ place: Place }>;
+        }
+
+        interface PlacePrediction {
+          readonly placeId: string;
+          readonly text: FormattableText;
+          readonly mainText?: FormattableText;
+          readonly secondaryText?: FormattableText;
+          readonly types: string[];
+          /** Needs a `fetchFields` call before any detail field is readable. */
+          toPlace(): Place;
+        }
+
+        interface AutocompleteRequest {
+          input: string;
+          /** `(cities)` is a type COLLECTION and cannot be combined with a type. */
+          includedPrimaryTypes?: string[];
+          language?: string;
+          region?: string;
+          sessionToken?: AutocompleteSessionToken;
+        }
+
+        interface AutocompleteSuggestion {
+          readonly placePrediction: PlacePrediction | null;
+        }
+
+        namespace AutocompleteSuggestion {
+          function fetchAutocompleteSuggestions(
+            request: AutocompleteRequest
+          ): Promise<{ suggestions: AutocompleteSuggestion[] }>;
+        }
+      }
 
       namespace marker {
         class AdvancedMarkerElement extends EventTarget {

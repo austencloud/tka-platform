@@ -26,6 +26,9 @@
 -->
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
+  import { browser } from "$app/environment";
+  import { page } from "$app/state";
+  import { PUBLIC_GOOGLE_MAPS_API_KEY } from "$env/static/public";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -36,6 +39,12 @@
   } from "$lib/shared/community/services/user-repository";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import LazyMount from "$lib/shared/components/LazyMount.svelte";
+  import { setCommunityMapContext } from "$lib/features/community/context/community-map-context";
+  import { createCommunityMapState } from "$lib/features/community/state/community-map-state.svelte";
+  import { createFirestoreCommunityMapPort } from "$lib/features/community/services/community-map-port";
+  import { createEdgeCitySuggestion } from "$lib/features/community/services/edge-city-suggestion";
+  import { getGeocodingService } from "$lib/features/community/get-geocoding-service";
   import PanelSearch from "$lib/shared/components/panel/PanelSearch.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
@@ -80,6 +89,38 @@
   // query would pick the wrong tier. Column counts are computed from these.
   let boxWidth = $state(0);
   let boxHeight = $state(0);
+
+  // ── the community map band ──────────────────────────────────────────────
+  //
+  // The map lives in the roster rather than in its own tab: the people on the
+  // map and the people in the roster are the same people, and a map nobody
+  // navigates to is the state this feature exists to end.
+  //
+  // The state is created here, not in the band, because the band is behind
+  // LazyMount and an IntersectionObserver — it may never mount, and the
+  // invitation still has to know whose identity it is talking about the moment
+  // it does.
+  const communityMapState = createCommunityMapState({
+    port: createFirestoreCommunityMapPort(),
+    getSuggestion: () => edgeCitySuggestion,
+  });
+
+  setCommunityMapContext({
+    state: communityMapState,
+    getApiKey: () => PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
+  });
+
+  // The edge names a city on every request, for free, with no permission
+  // prompt. `getGeocodingService()` is browser-only by contract, so this stays
+  // null through SSR and resolves on hydration.
+  const edgeCitySuggestion = $derived(
+    browser
+      ? createEdgeCitySuggestion(page.data.geo, getGeocodingService())
+      : null
+  );
+
+  let mapBandHost = $state<HTMLDivElement | null>(null);
+  let mapBandActive = $state(false);
 
   const currentUserId = $derived(authState.user?.uid);
   const canFollow = $derived(authState.isFullAccount);
@@ -161,6 +202,56 @@
     boxHeight > 0 && boxHeight <= 600 && boxWidth / boxHeight > 1.7
   );
 
+
+  // `LazyMount` governs when the chunk is fetched, not visibility, and does
+  // not observe intersection. One local observer flips it, following the
+  // LaunchpadGrid cleanup/fallback pattern rather than inventing a shared
+  // observer owner for a single consumer.
+  $effect(() => {
+    const host = mapBandHost;
+    if (!host || mapBandActive) return;
+
+    if (typeof IntersectionObserver === "undefined") {
+      // Never let a browser without viewport observation lose the band
+      // entirely; it just pays for the chunk up front.
+      mapBandActive = true;
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        mapBandActive = true;
+        observer.disconnect();
+      },
+      // The band is the first thing in the scroller, so it is almost always
+      // already intersecting; the margin only matters on a short viewport
+      // where it starts just below the fold.
+      { rootMargin: "200px" }
+    );
+    observer.observe(host);
+    return () => observer.disconnect();
+  });
+
+  // Identity is pushed only once the band is live. Before that nothing renders
+  // it, and pushing it early would spend a Firestore read on a band a visitor
+  // may never scroll to.
+  $effect(() => {
+    if (!mapBandActive) return;
+
+    if (!authState.initialized) {
+      communityMapState.setIdentity({ status: "pending" });
+      return;
+    }
+
+    const uid = authState.user?.uid;
+    communityMapState.setIdentity(
+      authState.isFullAccount && uid
+        ? { status: "user", uid }
+        : { status: "guest" }
+    );
+  });
+
   // Columns come from a TARGET CELL WIDTH, not a tier table. Hand-picked
   // caps were the redesign's worst visual bug: a 6-column cap at a 1870px
   // panel produced ~296px cells holding a ~93px face, which reads as a
@@ -178,6 +269,28 @@
    */
   const unitPx = $derived(
     Math.min(24, Math.max(16, 16 + ((boxWidth || 1616) - 1616) * (8 / 2160)))
+  );
+
+  // ── map band geometry ───────────────────────────────────────────────────
+  // The stage takes a share of the panel's measured height rather than a tier,
+  // for the same reason the column counts do: the module box is inset by the
+  // app sidebar, so a viewport media query picks the wrong number. Floored so
+  // it stays a map and capped so it stays a band — at 412px tall it is 8.5em
+  // beside the slot, at 4K it is 18em of a surface that has the room for it.
+  const MAP_STAGE_SHARE = 0.26;
+  const MAP_STAGE_MIN_EM = 8.5;
+  const MAP_STAGE_MAX_EM = 18;
+
+  const mapStageEm = $derived(
+    Math.round(
+      Math.min(
+        MAP_STAGE_MAX_EM,
+        Math.max(
+          MAP_STAGE_MIN_EM,
+          ((boxHeight || 900) * MAP_STAGE_SHARE) / unitPx
+        )
+      ) * 100
+    ) / 100
   );
 
   // This is the cell's MINIMUM, not its target: it decides how many fit on a
@@ -488,6 +601,7 @@
 <div
   class="creators-panel"
   class:short-landscape={isShortLandscape}
+  style:--map-band-stage-h="{mapStageEm}em"
   bind:clientWidth={boxWidth}
   bind:clientHeight={boxHeight}
 >
@@ -537,6 +651,23 @@
         </header>
 
         <div class="scroller">
+          <!-- Before the error/skeleton/empty chain, so the invitation is
+               reachable even when the roster itself failed to load, and a
+               sibling BEFORE `.bands` so the column math's `bind:clientWidth`
+               is unaffected. -->
+          <div class="map-band-slot" bind:this={mapBandHost}>
+            <LazyMount
+              loader={() =>
+                import(
+                  "$lib/features/community/components/CommunityMapBand.svelte"
+                )}
+              active={mapBandActive}
+              props={{ compact: isShortLandscape }}
+              placeholder={mapBandPlaceholder}
+              debugName="CommunityMapBand"
+            />
+          </div>
+
           {#if activeError}
             <PanelState
               type="error"
@@ -624,6 +755,21 @@
   </Crossfade>
 </div>
 
+<!-- Reserves the WHOLE band — stage and closed slot — not just the map. The
+     deferred chunk contains both, so a map-only reserve collapses the slot's
+     height until the chunk lands and then shoves every band below it down.
+     Both numbers come from the same custom properties the band consumes, so
+     the two cannot drift apart. -->
+{#snippet mapBandPlaceholder()}
+  <div class="map-band-ph" class:compact={isShortLandscape} aria-hidden="true">
+    <span class="ph-header"></span>
+    <div class="ph-body">
+      <span class="ph-stage"></span>
+      <span class="ph-slot"></span>
+    </div>
+  </div>
+{/snippet}
+
 <style>
   .creators-panel {
     /* Establishes the query container ONLY. The ramp below cannot live on
@@ -666,6 +812,16 @@
        defaults at the 16px floor, so nothing changes below 1616. */
     --font-size-sm: 0.875em;
     --font-size-compact: 0.75em;
+
+    /* The community band's in-flow slot height: two touch-target rows and
+       their gap, the reserved status line, and the privacy line. Declared here
+       so the band and the LazyMount placeholder below read the same number,
+       and in `em` so it rides the ramp above with everything else. The
+       prediction overlay is `position: fixed` and out of flow, so it
+       contributes nothing to this. */
+    --map-band-slot-h: calc(
+      var(--min-touch-target) * 2 + 0.5em + 0.4em + 2.2em + 0.35em + 2.2em
+    );
 
     display: flex;
     flex-direction: column;
@@ -779,6 +935,46 @@
 
   .wall-slot {
     margin-bottom: 2.25em;
+  }
+
+  /* ── community map band ───────────────────────────────────────────────── */
+  /* Geometry mirrors CommunityMapBand.svelte exactly. Both halves read the
+     same two custom properties, so the only numbers repeated here are the
+     structural gaps — change one of those and the other file moves with it. */
+  .map-band-ph {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75em;
+    margin-bottom: 2.25em;
+  }
+
+  .ph-header {
+    height: 1.25em;
+  }
+
+  .ph-body {
+    display: grid;
+    gap: 1em;
+  }
+
+  .ph-stage {
+    height: var(--map-band-stage-h, 15em);
+    border-radius: 0.75em;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  }
+
+  .ph-slot {
+    min-height: var(--map-band-slot-h);
+  }
+
+  .map-band-ph.compact {
+    margin-bottom: 1.25em;
+  }
+
+  .map-band-ph.compact .ph-body {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    align-items: center;
   }
 
   .bands {

@@ -47,9 +47,22 @@
     isSelected?: (item: T) => boolean;
     /** Fired when the clear button empties the input. */
     onClear?: () => void;
-    /** Replaces the default "nothing found" block. */
-    empty?: Snippet;
+    /**
+     * Replaces the default "nothing found" block. Receives the last search
+     * error, or null when the search succeeded and simply matched nothing, so
+     * a caller can tell "no such city" apart from "Places is unreachable".
+     */
+    empty?: Snippet<[unknown]>;
+    /**
+     * Rendered inside the results panel, below the scrolling list and outside
+     * the listbox. Exists for marks that must accompany the data they describe
+     * — a data provider's required attribution is hidden by the panel if it
+     * lives in the caller's own layout, because the panel is drawn over it.
+     */
+    listFooter?: Snippet;
     emptyMessage?: string;
+    /** Announced and shown when the search itself failed. */
+    errorMessage?: string;
     /** Live-region text once results land. */
     announceCount?: (count: number) => string;
     listLabel?: string;
@@ -75,7 +88,9 @@
     isSelected = () => false,
     onClear,
     empty,
+    listFooter,
     emptyMessage = "No results found",
+    errorMessage = "Search failed. Try again.",
     announceCount = (count: number) =>
       `${count} result${count === 1 ? "" : "s"} found`,
     listLabel = "Search results",
@@ -103,6 +118,10 @@
   let searchTimeout: number | null = null;
   let searchRequestId = 0;
   let wasCleared = $state(false);
+  // The last search's failure, or null. Rendering a failed search as "nothing
+  // found" tells the user their query matched nothing when in fact nobody
+  // looked, which sends them off editing a query that was never the problem.
+  let searchError = $state<unknown>(null);
   // Held while an IME is mid-composition. `event.isComposing` covers the input
   // events, but a keystroke that ends composition can arrive without it.
   let isComposing = $state(false);
@@ -146,6 +165,7 @@
 
     if (!q || q.length < minQueryLength) {
       searchResults = [];
+      searchError = null;
       showResults = false;
       activeIndex = -1;
       isSearching = false;
@@ -157,6 +177,7 @@
       try {
         const results = await search(q);
         if (requestId !== searchRequestId) return;
+        searchError = null;
         searchResults = results;
         showResults = true;
         activeIndex = -1;
@@ -166,7 +187,13 @@
       } catch (error) {
         if (requestId !== searchRequestId) return;
         console.error("Suggestion search failed:", error);
+        searchError = error;
         searchResults = [];
+        showResults = true;
+        activeIndex = -1;
+        if (!inlineResults) {
+          updateDropdownPosition();
+        }
       } finally {
         if (requestId === searchRequestId) {
           isSearching = false;
@@ -313,14 +340,12 @@
 
 {#snippet resultsPanel()}
   <div
-    id={resultsId}
     class="search-results"
     class:fixed-position={useFixedPosition}
     class:inline={inlineResults}
     style={inlineResults ? "" : dropdownStyle}
-    role="listbox"
-    aria-label={listLabel}
   >
+  <div id={resultsId} class="results-list" role="listbox" aria-label={listLabel}>
     {#if searchResults.length > 0}
       {#each searchResults as item, index (getKey(item))}
         <button
@@ -347,12 +372,21 @@
     {:else}
       <div class="no-results">
         {#if empty}
-          {@render empty()}
+          {@render empty(searchError)}
+        {:else if searchError}
+          <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+          {errorMessage}
         {:else}
           <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
           {emptyMessage}
         {/if}
       </div>
+    {/if}
+  </div>
+    {#if listFooter}
+      <!-- Outside the listbox: a listbox's children are options, and a mark
+           announced as one would be selectable. -->
+      <div class="results-footer">{@render listFooter()}</div>
     {/if}
   </div>
 {/snippet}
@@ -406,7 +440,7 @@
     {:else if showResults && searchResults.length > 0}
       {announceCount(searchResults.length)}
     {:else if showResults && searchResults.length === 0 && searchQuery.length >= minQueryLength}
-      {emptyMessage}
+      {searchError ? errorMessage : emptyMessage}
     {/if}
   </div>
 
@@ -537,6 +571,8 @@
     position: absolute;
     top: calc(100% + 8px);
     inset-inline: 0;
+    display: flex;
+    flex-direction: column;
     background: var(
       --theme-panel-bg,
       linear-gradient(135deg, #2d2d3a 0%, #25252f 100%)
@@ -546,30 +582,45 @@
     overflow: hidden;
     z-index: 100;
     box-shadow: var(--theme-shadow, 0 8px 24px rgba(0, 0, 0, 0.5));
+  }
+
+  /* The scroll lives on the list, not the panel, so a footer stays put while
+     the options move under it. */
+  .results-list {
     max-height: 320px;
     overflow-y: auto;
   }
 
-  .search-results:not(.inline) {
+  .search-results:not(.inline) .results-list {
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
-  .search-results:not(.inline)::-webkit-scrollbar {
+  .search-results:not(.inline) .results-list::-webkit-scrollbar {
     width: 8px;
   }
 
-  .search-results:not(.inline)::-webkit-scrollbar-track {
+  .search-results:not(.inline) .results-list::-webkit-scrollbar-track {
     background: var(--scrollbar-track, transparent);
   }
 
-  .search-results:not(.inline)::-webkit-scrollbar-thumb {
+  .search-results:not(.inline) .results-list::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
     border-radius: 4px;
   }
 
-  .search-results:not(.inline)::-webkit-scrollbar-thumb:hover {
+  .search-results:not(.inline) .results-list::-webkit-scrollbar-thumb:hover {
     background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.35));
+  }
+
+  .results-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 8px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.15);
   }
 
   .search-results.fixed-position {
