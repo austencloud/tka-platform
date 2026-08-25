@@ -37,6 +37,22 @@
   const director = createFilmDirectorState(film);
   setFilmDirectorContext(director);
 
+  // The scene's performer bar pins itself to the stage's top-left corner,
+  // which is exactly where the back-to-Films button sits. Publish how far in
+  // the button reaches so the bar can start clear of it rather than render
+  // underneath — same arrangement the transport uses for the rail below.
+  let workbenchEl = $state<HTMLElement | null>(null);
+  let exitButtonEl = $state<HTMLElement | null>(null);
+  let exitButtonWidth = $state(0);
+  $effect(() => {
+    void exitButtonWidth;
+    if (!workbenchEl || !exitButtonEl) return;
+    workbenchEl.style.setProperty(
+      "--director-exit-reserve",
+      `${exitButtonEl.offsetLeft + exitButtonEl.offsetWidth}px`
+    );
+  });
+
   let origin = $state<FilmOrigin>(initialOrigin);
   let saveOpen = $state(false);
   let poster = $state("");
@@ -155,7 +171,11 @@
   onDestroy(() => director.destroy());
 </script>
 
-<main class="director-workbench" data-film-director-workbench>
+<main
+  class="director-workbench"
+  data-film-director-workbench
+  bind:this={workbenchEl}
+>
   <FilmDirectorScene />
 
   {#if !director.preparation.complete}
@@ -176,7 +196,13 @@
     </div>
   {/if}
 
-  <button type="button" class="exit-button" onclick={onExit}>
+  <button
+    type="button"
+    class="exit-button"
+    onclick={onExit}
+    bind:this={exitButtonEl}
+    bind:clientWidth={exitButtonWidth}
+  >
     <i class="fas fa-arrow-left" aria-hidden="true"></i>
     Films
   </button>

@@ -483,6 +483,7 @@
 {#if director.preparation.complete}
   <SceneControlWorkspace
     bottomOffset="calc(var(--director-transport-reserve, 9.5rem) + 0.75rem)"
+    leftOffset="calc(var(--director-exit-reserve, 8rem) + 0.75rem)"
     allowSaveScene={false}
     onPerformerEdit={handlePerformerEdit}
     onInspectorChange={handleInspectorChange}

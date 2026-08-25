@@ -37,6 +37,12 @@
      */
     bottomOffset?: string;
     /**
+     * Leaves room for host-owned chrome in the stage's top-left corner, where
+     * the performer bar sits. The Film Director's back-to-Films button lands
+     * there; without this the bar renders underneath it.
+     */
+    leftOffset?: string;
+    /**
      * Whether this host offers saving the live viewer state as a reusable look.
      * The Director turns it off: its artifact is the film document, and a
      * viewer snapshot taken there records one instant of a playing film with no
@@ -61,6 +67,7 @@
     onStepBackward,
     topOffset = "12px",
     bottomOffset,
+    leftOffset = "0.75rem",
     allowSaveScene = true,
     onPerformerEdit,
     onInspectorChange,
@@ -173,6 +180,7 @@
   data-open={activeTool !== null || undefined}
   style:--scene-controls-top={topOffset}
   style:--scene-controls-bottom={bottomOffset}
+  style:--scene-controls-left={leftOffset}
   style:--scene-inspector-width="{layout.panelWidth}px"
   style:--scene-right-occupied={activeTool
     ? `calc(4.75rem + ${layout.panelWidth}px)`
@@ -255,10 +263,13 @@
   .performer-bar-anchor {
     position: absolute;
     top: var(--scene-controls-top, 0.75rem);
-    left: 0.75rem;
+    left: var(--scene-controls-left, 0.75rem);
     z-index: 28;
     display: flex;
-    max-width: calc(100% - 0.75rem - var(--scene-right-occupied, 4.75rem));
+    max-width: calc(
+      100% - var(--scene-controls-left, 0.75rem) -
+        var(--scene-right-occupied, 4.75rem)
+    );
     min-width: 0;
     padding: 0.5rem;
     border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.14));
