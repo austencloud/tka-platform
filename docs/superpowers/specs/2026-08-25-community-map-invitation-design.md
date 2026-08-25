@@ -1,17 +1,34 @@
 # Community Map: Invitation, Not Interrogation
 
 **Date:** 2026-08-25
-**Status:** Design — round 2, revised after independent review
+**Status:** Design — round 3, revised after two independent review passes
 **Surface:** Creators module (`creators` — live in production)
 
 ## Revision note
 
-Round 1 was reviewed by Codex (gpt-5.6-sol) against the source, and separately
-re-checked by the author. Between them they found one blocker, six major
-defects, and four stale citations in round 1. This document is the corrected
-design. Round 1's errors are listed in "What round 1 got wrong" at the end,
-because several of them were assertions about code that had never been read,
-and that failure mode is worth keeping visible rather than quietly patching.
+Round 1 was reviewed by Codex (gpt-5.6-sol) and separately by the author: one
+blocker, six major defects, four stale citations. Round 2 fixed those and was
+reviewed again. Round 2 confirmed nine of ten fixes but found one still-broken
+model, four new majors, and a shared primitive the spec had claimed did not
+exist.
+
+Round 3 corrects those and changes three mechanisms:
+
+- **The picker is now headless.** Round 2 specified Google's
+  `PlaceAutocompleteElement` custom element. Round 2's review correctly showed
+  that a Google-rendered element inside a themed panel cannot be themed,
+  contrast-proofed, focus-proofed, touch-target-proofed, or kept from being
+  clipped. The Places **Data API** returns the same predictions as plain data,
+  which TKA renders in its own markup. That deletes the entire class of problem
+  rather than mitigating it.
+- **Membership no longer derives from the public locations list.** It could
+  never have worked; see Ground truth row 8.
+- **Places loads separately from Maps.** Adding it to the shared loader would
+  have made every map mount, in two features, pay for Places.
+
+Errors from both prior rounds are listed at the end. Several were assertions
+about code that had never been read, and that failure mode is worth keeping
+visible rather than quietly patching.
 
 ## Problem
 
@@ -37,6 +54,10 @@ add/update/remove flows. None of it ships, and none of it would work if it did:
    deliberately navigated to, then presents three benefit bullets and a
    five-item privacy list before it will move.
 
+The census confirms the consequence: `userLocations` holds **exactly one
+document**, created 2026-01-18. In seven months the feature has produced one
+record, because no user could reach it.
+
 The feature's actual pitch is small and light: it is fun to see where people
 are, and it is easy to leave. The current surface asks for a browser permission
 it cannot obtain, in a modal that cannot be closed, to deliver a dot on a map.
@@ -47,337 +68,392 @@ Ship the map inside Creators with a one-tap, no-permission opt-in that a user
 can ignore forever without ever being blocked.
 
 **Non-goals:** enabling the Social module; the Connect / nearby-spinner-sync
-tab; changing the `userLocations` document shape or its Firestore rules;
-following/feed behavior; browser geolocation of any kind; loosening the
-origin's `Permissions-Policy`.
+tab; changing the `userLocations` Firestore rules; following/feed behavior;
+browser geolocation of any kind; loosening the origin's `Permissions-Policy`.
+
+**Scope change from round 2:** the document shape gains one additive optional
+field, `countryCode` (ISO-2). Round 2 listed the shape as a non-goal. See
+Design section 5. The single existing document remains valid without it.
 
 ## Ground truth (verified 2026-08-25)
 
-| Fact | Source |
-|---|---|
-| `social: false`, `creators: true` in production modules | `src/lib/shared/environment/environment-features.ts:146` and PRODUCTION_MODULES |
-| `geolocation=()` blocks the Geolocation API origin-wide | `src/hooks.server.ts:144-147` |
-| Consent drawer auto-opens on a 2s timer, undismissible | `Community.svelte:61-67`; `LocationSharingConsentSheet.svelte:33-38` |
-| Cloudflare geo (`city`, `country`, `lat`, `lng`) resolved server-side every request | `src/routes/+layout.server.ts`; `parseCloudflareGeo` at `presence-models.ts:31-51` |
-| `geo` is `null` when no CF headers (localhost/dev) | `presence-models.ts:49-50` (`hasGeo` guard) |
-| `forwardGeocode(city, country)` is public, takes **two** args, returns coords only | `geocoding-service.ts:87-89` |
-| `forwardGeocode` collapses every failure mode to `null` | `geocoding-service.ts:96-121` |
-| `getCurrentLocation()`: **4 calls**, 2 imports, all inside `features/community` | calls at `Community.svelte:88,127`, `location-sharing-orchestrator.ts:36,68`; imports at `Community.svelte:11`, `orchestrator.ts:13` |
-| **Pin click already routes into Creators** | `GlobalUserMap.svelte:11` imports `openCreatorProfile`, calls it at `:160`, bound at `:255` |
-| Google Maps loads via a shared lazy loader inside `onMount` | `GlobalUserMap.svelte:12,51-66`; `getGoogleMapsLibraryLoader.ts` |
-| Loader uses `@googlemaps/js-api-loader@2.1.1` `importLibrary`, currently `maps` + `marker` | `GoogleMapsLibraryLoader.ts:1,42-43`; `package.json:306` |
-| `GlobalUserMap` has a `size="embedded"` variant at hard `height: 260px`, **zero consumers** | `GlobalUserMap.svelte:40-41,278-279`; grep for `size="embedded"` returns nothing |
-| `userLocations` rules: public read, owner+`isFullUser()` write, owner/admin delete | `firestore.rules:2001-2014` |
-| Locations at `userLocations/{uid}`; preferences at `users/{uid}/settings/locationSharing` | `user-location-repository.ts:15,36-38,134,145` |
-| `page.data.geo` is the in-component access path (`$app/state`) | `src/routes/+layout.svelte:211` |
-| `authState` exposes `initialized`, `loading`, `user`, `isAnonymous`, `isFullAccount` | `auth-state.svelte.ts:990-998` |
-| CreatorsPanel ramps its own root `font-size`; descendants must size in `em` | `CreatorsPanel.svelte:14-25` (doc), `:646-668` (impl) |
-| CreatorsPanel band is deliberately NOT `--shell-w` (fluid, uncapped) | `CreatorsPanel.svelte:20-25` |
-| Insertion region `wall-slot` → `bands` → `denominator` | `CreatorsPanel.svelte:578-619` |
-| Add-key notice pattern | `Community.svelte:172-191` |
-| Maps key read from `$env/static/public` (**baked at build time**) | `Community.svelte:16` |
-| Creators directory is 56-58 people; page size 200 | `creators-data-state.svelte.ts:26-40` |
-| No shared in-view/lazy-mount primitive exists; IntersectionObserver is hand-rolled in ~7 places | grep across `src/lib/shared` |
+| # | Fact | Source |
+|---|---|---|
+| 1 | `geolocation=()` disables the Geolocation API origin-wide | `src/hooks.server.ts:144-147` |
+| 2 | Cloudflare geo is resolved server-side and exposed on every route | `src/routes/+layout.server.ts:5-9` |
+| 3 | `parseCloudflareGeo` returns city, country, lat, lng; `country` is **ISO-2** and documented as such | `presence-models.ts:18-21,31-52` |
+| 4 | `social: false`, `creators: true` | `environment-features.ts:146` |
+| 5 | The consent sheet is undismissible and timer-triggered | `Community.svelte:61-67`; `LocationSharingConsentSheet.svelte:33-38` |
+| 6 | Pin click already routes to the creator profile. This is wired today | `GlobalUserMap.svelte:11,160,255` |
+| 7 | `getLocation(userId)` reads the owner's document directly, and has **exactly one caller**, in the orchestrator this design deletes | `user-location-repository.ts:53-61`; `location-sharing-orchestrator.ts:100` |
+| 8 | `getPublicLocations()` filters `visibility == "public"` **and drops any location whose `users/{uid}` profile join returns null**. It throws on failure rather than returning empty | `user-location-repository.ts:73-113` |
+| 9 | `getLocation` swallows all errors to `null`, making "no document" and "read failed" indistinguishable | `user-location-repository.ts:57-60` |
+| 10 | Preferences live at `users/{uid}/settings/locationSharing` | `user-location-repository.ts:36-38,134` |
+| 11 | The shared loader imports `maps` + `marker` together behind one memoized promise | `GoogleMapsLibraryLoader.ts:41-56` |
+| 12 | The loader has **two** consumers, not one: the community map and `FestivalMap` | `GlobalUserMap.svelte:51`; `FestivalMap.svelte:30` |
+| 13 | `LazyMount` is a shared primitive for deferred chunk loading with an SSR-rendered same-footprint `placeholder`, `prefetch`, and error/retry | `src/lib/shared/components/LazyMount.svelte` |
+| 14 | No shared IntersectionObserver / in-view owner exists. `LazyMount` governs *when code is fetched*, not visibility, and does not observe intersection | `LazyMount.svelte:15-19` |
+| 15 | `GlobalUserMap` has an unused `size="embedded"` variant at a hard `height: 260px` | `GlobalUserMap.svelte:40-41,278-279` |
+| 16 | `country` is rendered directly to users as "city, country" | `UserProfileMarker.svelte:59-64`; `GlobalUserMap.svelte:138` |
+| 17 | `CreatorsPanel` ramps its own `font-size`; descendants must size in `em`, never `rem` | `CreatorsPanel.svelte:14-25` |
+| 18 | `forwardGeocode(city, country)` takes two arguments and returns coordinates only; every failure collapses to `null` | `geocoding-service.ts:87-89,96-121` |
+| 19 | `userLocations`: public read, `isOwner && isFullUser` write, owner/admin delete | `firestore.rules:2001-2014` |
+| 20 | **Census:** `userLocations` contains exactly one document — Chicago, `country: "United States"` (long name), `visibility: "public"`, created 2026-01-18 | Firestore query, 2026-08-25 |
+| 21 | The `(cities)` type collection is valid for `includedPrimaryTypes` in Autocomplete (New) and maps to `locality` or `administrative_area_level_3`. A type collection **cannot** be combined with any other type; doing so returns `INVALID_REQUEST` | [Place Types (New)](https://developers.google.com/maps/documentation/places/web-service/place-types) |
+| 22 | `AutocompleteSuggestion.fetchAutocompleteSuggestions()` returns predictions as data, for a caller-rendered UI. `AutocompleteSessionToken` is created and refreshed manually on this path | [Autocomplete Data API](https://developers.google.com/maps/documentation/javascript/place-autocomplete-data) |
+| 23 | `addressComponents` and `location` are **Place Details Essentials** fields. `displayName` is **Pro** | [Place data fields](https://developers.google.com/maps/documentation/javascript/place-class-data-fields) |
 
 ## Design
 
 ### 1. One behavior owner, two hosts
 
-Round 1 proposed a shared invitation slot with each host composing its own map,
-loading, and mutations around it. That is insufficient: the hosts would still
-each own public-location loading, error handling, membership, add/remove
-orchestration, key handling, the count, and refresh-after-write. That is
-precisely the host-level duplication that `sequence-viewer-shell.md` exists to
-forbid, and it is how the /q page and the viewer drawer drifted for days.
-
-**`CommunityMapExperience.svelte`** is the single owner of the whole
-experience: map, count, invitation slot, picker, and every mutation. Hosts are
-thin and pass only layout intent.
-
 ```
-CommunityMapExperience.svelte      <- owns everything below
-  ├─ community-map-state.svelte.ts <- locations, membership, mutations, async
-  ├─ GlobalUserMap.svelte          <- unchanged except sizing (see §6)
-  ├─ CommunityInvitationSlot.svelte
-  └─ CommunityCityPicker.svelte
+CommunityMapExperience.svelte        <- owns everything below
+  |- community-map-state.svelte.ts   <- module-scoped; survives host teardown
+  |- GlobalUserMap.svelte            <- unchanged except sizing
+  |- CommunityInvitationSlot.svelte
+  |- CommunityCityPicker.svelte      <- TKA-rendered, Places as a data source
 ```
 
-| Host | Role |
-|---|---|
-| `CreatorsPanel.svelte` | Renders the experience as a band between `wall-slot` and `bands`. |
-| `Community.svelte` | Renders the same experience as the Social-module page. Loses its own loading, consent, mutation, and map composition entirely. |
+Hosts render `<CommunityMapExperience />` and nothing else map-related. The
+Creators band and the Community tab cannot drift because there is only one
+implementation, per the `sequence-viewer-shell.md` precedent.
 
-Host-specific differences travel as props (a layout variant and the surrounding
-heading), never as forked markup. If a host needs something the experience does
-not expose, the prop is added to the experience.
+Round 2's review was right that a shared *slot* alone would not have prevented
+drift while hosts still owned loading, membership, mutation, and composition.
+The owner boundary is drawn around all of it.
 
 ### 2. State model
 
-Round 1 named `(geo, hasSharedLocation, authState)` without defining ownership,
-loading states, or async safety. Specified now.
+Two independent status machines. Conflating them was round 2's blocker.
 
-**Membership comes from the locations array, not from consent.**
-`hasConsented()` reads `users/{uid}/settings/locationSharing` while the visible
-pin lives in `userLocations/{uid}`, and the add flow writes both independently.
-Either write can fail alone, so consent is not a reliable proxy for "on the
-map." The already-loaded public `locations` array answers the question directly
-and cannot disagree with what the user sees on the map.
+| Concern | Source | Drives |
+|---|---|---|
+| `locations` / `locationsStatus` | `getPublicLocations()` | Map markers, the count |
+| `ownLocation` / `ownStatus` | `getLocation(uid)` | Membership, the member's city |
 
-`community-map-state.svelte.ts` owns:
+**Membership derives only from `ownLocation`.** It cannot derive from
+`locations`, because `getPublicLocations()` excludes private documents, drops
+public documents whose profile join fails, and is limit-bounded (Ground truth
+8). A user could be on the map and absent from that array for three separate
+reasons.
+
+`getLocation` is changed to a discriminated result so absence and failure are
+distinguishable (Ground truth 9). Its only caller is deleted by this work
+(Ground truth 7), so the change is free:
 
 ```ts
-type LocationsStatus = "unresolved" | "loading" | "present" | "error";
+type OwnLocationResult =
+  | { status: "found"; location: UserLocation }
+  | { status: "absent" }
+  | { status: "failed"; error: unknown };
 ```
 
-- Public locations, their status, and the count.
-- Current-user membership, derived from `locations` and the effective uid.
-- `addCity`, `removeCity`, and refresh-after-write.
-- Async safety: every request captures the uid and a request generation;
-  results from a superseded generation are discarded. This prevents user A's
-  in-flight read from landing after user B signs in.
-- The effect must not depend on state it writes.
+**Mutation ordering.** A generation counter guards *reads*; it cannot unwind an
+out-of-order *write*. The failing sequence round 2's review named is real: add
+starts, remove is activated, delete lands first, the earlier save lands second,
+and the user is silently back on the map after removing themselves.
 
-**Auth resolution is a first-class state.** The existing check runs once in
-`onMount` reading `auth.currentUser` (`Community.svelte:29-32,55-60`), so if
-Firebase resolves afterward it never re-runs. The new state keys on
-`authState.initialized` and `authState.user?.uid`, and re-runs on uid change and
-sign-out.
+Mutations therefore run through a **per-uid serial queue**. Each enqueued
+mutation is tagged with an intent sequence number; on dequeue, a mutation whose
+sequence is not the latest is discarded before it issues any Firestore write.
+Two writes for one uid can never be in flight simultaneously, and a superseded
+intent never reaches the network.
 
-**Slot state is a pure function** in `community-invitation-state.ts`, taking
-`(authInitialized, isFullAccount, uid, locationsStatus, isOnMap, geoCity)` and
-returning one variant. It is unit-tested without any reactive singleton.
-
-Treating an unresolved read as "not on the map" would flash "Add Chicago" at a
-user who is already on it. `unresolved` renders the slot's reserved space with
-no action, never a wrong action.
+**Lifetime.** The state module is feature-scoped, not component-scoped. Opening
+a creator profile tears down the roster host through the panel's root
+`Crossfade`; a per-mount store would refetch both collections on every back
+navigation. The module invalidates on uid change and on explicit refresh.
 
 ### 3. The invitation slot — one box, five states
 
-| Variant | Contents |
-|---|---|
-| `unresolved` | Reserved space, no action. Never a spinner that shifts. |
-| `guest` | `Sign in to add your city.` · **[Sign in]** |
-| `suggest` (geo city known, not on map) | `Looks like you're in {City}.` · **[Add {City}]** · **[Not right?]** |
-| `pick` (no geo city, not on map) | **[Pick your city]** |
-| `member` (on map) | 📍 `{City}` · **[Remove]** |
+| State | When | Shows |
+|---|---|---|
+| `unresolved` | auth or `ownStatus` still pending | Reserved space, no text |
+| `guest` | not a full account | "Sign in to add your city" |
+| `suggest` | full account, `ownStatus: absent`, CF city present | "Practicing in Chicago? Add yourself to the map." plus Add and Pick another city |
+| `pick` | no CF city, or user chose another city | The picker |
+| `member` | `ownStatus: found` | "You're on the map in Chicago." plus Change city and Remove |
 
-Fine print, one line, always present: **`City only. Remove it whenever you want.`**
+`ownStatus: "failed"` renders `suggest` with the Add action disabled and a retry
+affordance. It never renders as `absent`, because offering "add yourself" to
+someone already on the map is the visible symptom of the round-2 blocker.
 
-Same box in every variant, sized to the widest so nothing below moves
-(`no-layout-shift.md`: ghost-sizer or explicit `min-height`, never intrinsic
-sizing). No dismiss control and no dismissal state to persist — the slot covers
-nothing, so there is nothing to wave away. It never re-prompts and never appears
-outside this experience.
+All five variants occupy identical measured geometry. Round 2's review was right
+that reserving height is insufficient unless loading, error, key-warning,
+picker-open, and invitation variants all live inside the same box
+(`no-layout-shift.md`).
 
-`Not right?` and `Pick your city` open the same picker. Both are real buttons
-with visible affordances (`clickables-look-like-buttons.md`).
-
-**Copy:** no em dashes, no superlatives, no first person. New `community_*` keys
-in `messages/en.json`.
+The slot is never modal, never timed, and never blocks the map.
 
 ### 4. Two entry paths, one write
 
 ```
-CF path:      page.data.geo.{city,country} → forwardGeocode() → coords
-Picker path:  Places Autocomplete → canonical {city, country, coords}
-                                  ↓
-                        addCity({city, country, coords})
-                                  ↓
-     saveLocation(uid, …)  +  savePreferences(uid, …)
+CF path:      page.data.geo city/country/lat/lng
+                    -> Intl.DisplayNames for the country name
+                    -> forwardGeocode(city, country) for city-center coords
+Picker path:  Places Data API -> addressComponents + location
+                    |
+                    v
+              CanonicalCity { city, country, countryCode, coords }
+                    |
+                    v
+              addCity(canonical)
+                    |
+                    v
+     saveLocation(uid, ...)  plus  savePreferences(uid, ...)
 ```
 
-`addCity` is the only write path. `updateLocation` collapses into it and takes
-the same input; it no longer requires prior consent or browser coordinates.
-`removeCity` wraps the existing `removeLocation`.
+There is one write path. "Change city" is `addCity` with a different canonical
+input, not a separate `updateLocation`.
 
-**Partial-write handling.** The two writes are independent and non-atomic. If
-`saveLocation` succeeds and `savePreferences` fails, the user IS on the map,
-membership is derived from locations, and the UI is therefore correct. The
-preference write is best-effort and its failure is logged, not surfaced as a
-failed add. If `saveLocation` itself fails, nothing is written and the slot
-reports it.
+`forwardGeocode` gains a discriminated return so "city not found" and "geocoder
+failed" are distinguishable (Ground truth 18). The UI must not promise an error
+message the geocoder cannot produce.
 
-**No browser geolocation anywhere.** No permission prompt, no
-`Permissions-Policy` change.
+**Coordinates written are always city-center coordinates from the geocoder or
+from Places `location`.** The CF `lat`/`lng` are never written. They are
+IP-derived and more precise than the stated privacy model allows.
 
-### 5. The city picker — Places Autocomplete
+### 5. City canonicalization
 
-Round 1 proposed one free-text field feeding `forwardGeocode`. That is
-unimplementable: `forwardGeocode(city, country)` requires both arguments and
-returns coordinates only, so it can neither accept one string nor canonicalize
-what gets stored.
+Round 2 said "restricted to cities", which is not an implementation contract.
 
-`PlaceAutocompleteElement` from `importLibrary("places")` returns a canonical
-locality, country, and coordinates from a single control:
+**Request:** the `(cities)` type collection for `includedPrimaryTypes`, alone —
+the collection is rejected if combined with any other type (Ground truth 21).
+
+**Fields fetched:** `addressComponents` and `location` only. Both are Place
+Details Essentials. `displayName` is Pro and is deliberately not requested
+(Ground truth 23); the city label is built from components instead.
+
+**City label, first match wins:**
+
+1. `locality`
+2. `postal_town` (UK)
+3. `administrative_area_level_3`
+4. `administrative_area_level_2`
+5. `administrative_area_level_1`
+
+No match is a rejection with an actionable message, not a silent write.
+
+**Country.** Round 2's review caught a real inconsistency: CF supplies ISO-2
+(`"US"`), the legacy reverse-geocoder wrote a long name (`"United States"`), and
+`country` is rendered directly to users (Ground truth 16). "Chicago, US" is a
+worse marker label than "Chicago, United States".
+
+Both are kept, and both paths produce both:
+
+- `country` — long display name. Places: the country component's `longText`.
+  CF: `Intl.DisplayNames` with `type: "region"`, falling back to the raw code if
+  it throws.
+- `countryCode` — ISO-2, additive and optional. Places: the country component's
+  `shortText`. CF: the value as given.
+
+The one existing document (Ground truth 20) already carries a long-name
+`country` and simply lacks `countryCode`. The schema addition is optional, so
+that document stays valid and no migration is required.
+
+### 6. The picker — Places as a data source, not as a widget
+
+`CommunityCityPicker.svelte` is TKA markup: a text input and a result list
+built from existing primitives. Predictions come from
+`AutocompleteSuggestion.fetchAutocompleteSuggestions()` (Ground truth 22).
+
+This is the round-3 mechanism change. The widget path would have injected a
+Google-owned custom element into a themed, font-ramped panel, and round 2's
+review correctly listed what that costs: no supported theming surface, contrast
+and focus rings that cannot be proven, a 44px touch target that cannot be
+verified by inspecting the Svelte subtree, `em` compliance that stops at the
+element boundary, and a prediction overlay whose geometry can escape the panel
+or be clipped by the panel's `overflow: hidden`.
+
+None of that applies to markup TKA owns. The `em` rule, the design system, the
+touch-target floor, and the contrast tokens apply to the picker the same way
+they apply to every other control in the panel.
+
+**Lifecycle, explicitly:**
+
+- Places is imported on picker open, never before.
+- `AutocompleteSessionToken` is created on open, sent with every keystroke
+  request, and refreshed immediately after a selection resolves.
+- Requests are sequence-tagged; a superseded response is discarded rather than
+  rendered.
+- Input is debounced. Empty input issues no request.
+- Close, unmount, or uid change invalidates the in-flight sequence, so a late
+  `fetchFields` cannot write after the picker is gone.
+- No custom element is injected, so there is nothing to remove on destroy.
+- Focus enters the input on open and returns to the trigger on close.
+
+**Cost.** Round 2 stated Autocomplete sessions were unlimited and free, which
+was wrong. Correctly: Autocomplete Requests and Place Details Essentials each
+carry a 10,000-event monthly free allowance, and session pricing groups a
+session's keystrokes with its terminating details call. At the current scale —
+one existing record, a creators directory in the tens — this is free with four
+orders of magnitude of headroom. The conclusion survives; the explanation was
+wrong and is corrected here.
+
+### 7. Loading: Maps and Places are separate capabilities
+
+The shared loader imports `maps` and `marker` behind one memoized promise, and
+has **two** consumers (Ground truth 11, 12). Adding `places` to that
+`Promise.all` would make every mount of both the community map and `FestivalMap`
+download Places even when no picker is ever opened.
+
+The contract gains a separately-memoized capability, and `load()` keeps its
+exact current signature so neither existing consumer changes:
 
 ```ts
-const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
-el.addEventListener("gmp-select", async ({ placePrediction }) => {
-  const place = placePrediction.toPlace();
-  await place.fetchFields({ fields: ["location", "addressComponents"] });
-  // locality + country from addressComponents; lat/lng from location
-});
+export interface IGoogleMapsLibraryLoader {
+  load(apiKey: string): Promise<void>;        // maps + marker, unchanged
+  loadPlaces(apiKey: string): Promise<void>;  // places, separately memoized
+}
 ```
 
-Restricted to cities. `GoogleMapsLibraryLoader.load()` gains `"places"`
-alongside `"maps"` and `"marker"` — an extension of the existing owner, not a
-new loader.
+Both share one bootstrap/API-key owner, preserving the existing different-key
+rejection.
 
-**Cost, verified 2026-08-25 against Google's pricing page.** Autocomplete
-Session Usage is unlimited and free. Place Details Essentials — which covers the
-`location` and `addressComponents` fields — is free for the first 10,000 events
-per month, then $5.00 per 1,000. Only a completed pick bills. Against a 56-58
-person directory on a fallback path, this is free by roughly two orders of
-magnitude; exceeding the free tier would take more than 10,000 city picks in a
-month, and past that it is half a cent per person, once.
+### 8. Sizing and the map mount
 
-**The real cost is operational:** the Places API must be enabled on the
-production key with correct referrer restrictions. Pre-ship gate, §9.
+`GlobalUserMap`'s unused `size="embedded"` variant is a hard `260px`
+(Ground truth 15), which is frozen at 1080p proportions inside a panel that
+ramps its own font size (Ground truth 17). The experience owns its height in
+`em`; the unused variant is converted rather than left as a trap.
 
-**Geocoder error handling.** `forwardGeocode` currently returns `null` for
-"city not found", HTTP failure, quota exhaustion, key restriction, and network
-error alike, so the UI cannot honestly explain what went wrong. It gains a
-discriminated result distinguishing `not-found` from `operational-failure`. The
-CF path needs this because a silent `null` there would otherwise present as
-"we couldn't find Chicago."
+**Viewport gating.** `LazyMount` is the shared owner for deferring the chunk and
+for the SSR-rendered same-footprint placeholder (Ground truth 13). Round 2
+claimed no such primitive existed; it does, and this uses it.
 
-### 6. Sizing and the map mount
+`LazyMount` governs *when code is fetched*, not visibility, and does not observe
+intersection (Ground truth 14). A feature-local IntersectionObserver flips
+`active`, following the established `LaunchpadGrid` cleanup/fallback pattern. No
+shared observer owner is invented for a single consumer.
 
-**`em` throughout.** CreatorsPanel scales by ramping its own `font-size` with
-descendants in `em` (`:14-25`, `:646-668`). Every measure in the new subtree is
-`em`. The 44px touch floor is expressed as `2.75em` at the 16px base. A single
-`rem` freezes the subtree at 1080p proportions and breaks the panel's 4K
-strategy.
+Round 2's review confirmed the layout mechanics: a default-root observer works
+inside the panel's nested `.scroller` because ancestor clipping participates in
+intersection, and the `bands` `bind:clientWidth` column math is unaffected as
+long as the band is a sibling *before* `.bands`. The map must not introduce its
+own vertical scroller.
 
-**`size="embedded"` is unusable as-is.** It hardcodes `height: 260px`. It has
-zero consumers, so it is free to change: it becomes an `em`-based height driven
-by the experience rather than a fixed pixel value.
+### 9. Guests
 
-**Viewport-gated mount.** The shared loader defers the Google script until
-`GlobalUserMap` mounts — that is module laziness, not viewport laziness. If the
-band renders immediately, every Creators visitor fetches Google Maps right after
-hydration on a page that never previously loaded it. The experience therefore
-reserves the band's full height and mounts `GlobalUserMap` only when the
-reserved shell approaches the viewport, via IntersectionObserver.
+Guests see the map and the count, and a sign-in invitation in the slot. The
+Firestore rules already require `isFullUser()` to write (Ground truth 19); the
+UI simply matches the rule instead of failing at the write.
 
-No shared in-view primitive exists; IntersectionObserver is hand-rolled in about
-seven places under `src/lib/shared`. Per `never-hand-roll.md` this is recorded as
-**compose, with a reason**: extracting a shared primitive across seven existing
-consumers is its own refactor and must not ride along on this feature. The
-experience follows the existing local pattern (`LaunchpadGrid.svelte:148-160`)
-and the extraction is flagged separately.
+### 10. Deletions
 
-### 7. Guests
+The undismissible consent sheet, the browser-geolocation provider, the
+orchestrator, and the 13 `community_consent_*` message keys are removed. They
+implement a permission negotiation that the origin's own policy header forbids.
+Deletion happens last, after a fresh reference search.
 
-`firestore.rules:2001-2014` already gates writes behind
-`isOwner(uid) && isFullUser()` while public locations are world-readable. Guests
-see the map and the count; the slot shows the `guest` variant. No rules change.
+### 11. Privacy — stated accurately
 
-### 8. Deletions
+Stored: city name, country name, ISO-2 country code, city-center coordinates,
+visibility, timestamp. Not stored: any device-derived position, and not the
+Cloudflare IP-derived `lat`/`lng`, which are read but never written.
 
-- `consentTimer` / `showConsentSheet` and their handlers in `Community.svelte`.
-- `components/LocationSharingConsentSheet.svelte`.
-- `services/location-provider.ts` — four calls and two imports, all replaced.
-  **Re-verify with a fresh grep immediately before deleting.**
-- The three-benefit list and five-bullet privacy notice, replaced by the single
-  fine-print line.
-- Orphaned `community_consent_*` keys (13 of them). Remove only keys with zero
-  remaining references, proven by grep.
-
-### 9. Privacy — stated accurately
-
-Round 1 claimed "nothing more precise than a city is ever obtained." That is
-false: `+layout.server.ts` returns Cloudflare's geo object including `lat`/`lng`,
-and it is exposed in page data on every route. The accurate statement:
-
-- The app never requests browser geolocation, and cannot — the origin blocks it.
-- Cloudflare's coordinates are IP-derived and already city-or-region level. They
-  are not a device position.
-- The write path stores city, country, and **city-center** coordinates from
-  geocoding. Cloudflare's coordinates are never stored.
-- The stored document is world-readable by design and the user can delete it.
-
-The one-line fine print is accurate as written. This section exists so nobody
-later repeats the stronger claim, which is not.
+The claim is "we store your city, not your location," and the code must make
+that literally true rather than approximately true. Round 1 asserted nothing
+more precise than a city is ever *obtained*, which was false — `page.data.geo`
+carries IP-derived coordinates on every request. Obtained is not stored, and the
+copy must say the accurate one.
 
 ## Edge cases
 
 | Case | Behavior |
 |---|---|
-| `page.data.geo` is `null` (localhost, no CF headers) | `pick` variant. Dev is a first-class path, not an error. |
-| VPN / proxy exit node | CF reports the exit node's city. `Not right?` is the remedy; this is why the picker is not optional. |
-| `cf-ipcountry` sentinels (`XX`, `T1`) | Treated as a value. Missing `city` falls to `pick`. |
-| Auth still resolving | `unresolved`. Never a wrong action. |
-| Sign-out mid-session, or uid change | State resets, stale in-flight results discarded, slot re-renders. |
-| Maps key missing at build | Existing add-key notice (`Community.svelte:172-191`), never a blank rectangle. |
-| Places not enabled on the key | Picker reports an operational failure and stays open. The CF path still works, so the feature degrades rather than breaking. |
-| `forwardGeocode` not-found vs operational failure | Distinct messages. Neither writes anything. |
-| Existing location from the old flow | `member` variant. No migration; stored shape unchanged. |
-| Zero public locations | Band renders with an honest empty map and the invitation. Count reads `0`. Never hidden. |
-| `wallItems` empty | The band must not sit inside the wall's conditional. Verify placement is independent of it. |
+| CF geo absent (local dev, VPN, privacy proxy) | Slot renders `pick` directly |
+| CF city present, geocoder finds nothing | Actionable message, falls through to `pick` |
+| CF city present, geocoder fails | Distinct retry message; does not claim the city is unknown |
+| `ownStatus: failed` | `suggest` with Add disabled plus retry; never `absent` |
+| Own document is private | `member`. Public list absence is not evidence |
+| Own public document, profile join fails | `member`. Marker may be missing from the map; membership is unaffected |
+| `getPublicLocations` throws | Map shows an error state; membership resolves independently |
+| Add then Remove, reversed completion | Serial queue; the later intent wins; no resurrection |
+| Add A then Add B, reversed completion | Serial queue; B is the final state |
+| No Places match for a typed city | Rejection with a message; no write |
+| Place has no accepted city component | Rejection with a message; no write |
+| API key missing | Existing `community_api_key_required` path; the slot still renders |
+| Sign out while member | State invalidates on uid change; slot returns to `guest` |
+| Creators roster empty | The band still renders |
 
 ## Risks
 
-1. **`PUBLIC_GOOGLE_MAPS_API_KEY` is `$env/static/public`** — baked at build
-   time. If absent from the Cloudflare Pages build environment, the band ships
-   the add-key notice to a live production page.
-2. **Places API enablement and referrer restrictions** on the production key.
-   New API surface for this codebase.
-3. **Map weight on production traffic.** Mitigated by the viewport gate; must be
-   proven, not assumed (§10).
-4. **`em` discipline.** One `rem` silently breaks the 4K ramp. Grep the diff.
-5. **`getPublicLocations()` joins a user profile per location.** Fine at 56-58.
-   Flag, do not pre-optimize.
+| Risk | Mitigation |
+|---|---|
+| Places billing surprise | Two SKUs, 10k free events each per month; current scale is one record. Verify actual SKUs in billing after one real session |
+| `PUBLIC_GOOGLE_MAPS_API_KEY` missing from the Pages **build** environment | Pre-ship gate; it is baked at build time, not read at runtime |
+| Key not enabled for Places, or referrer-restricted incorrectly | Pre-ship gate against the real restricted key, not a permissive dev key |
+| Eager Maps/Places load hidden by a warm cache | Verify in a fresh tab with request logs cleared; assert the absence-to-presence transition by URL |
+| The band pushes Creators content below the fold at 1080p | Visual gate with Austen before finalizing height |
 
 ## Verification
 
-**Non-visual:**
-- `npm run check` green; unit tests green.
-- Unit: slot-variant pure function across all five variants and every auth /
-  locations-status combination.
-- Unit: `addCity` performs both writes on success; performs zero writes when
-  resolution fails; surfaces `saveLocation` failure; tolerates `savePreferences`
-  failure without reporting a failed add.
-- Unit: stale-result discarding — a superseded uid's response is ignored.
-- Unit: `forwardGeocode` distinguishes not-found from operational failure.
-- Runtime: **no Google Maps network request before the band nears the
-  viewport**, proven from the network panel, not asserted.
-- Grep: no `type="checkbox"`; no `rem` in the new subtree; zero references to
-  `getCurrentLocation`, `location-provider`, `LocationSharingConsentSheet`,
-  `showConsentSheet`, `consentTimer`; each deleted i18n key has zero consumers.
+Per phase, and stated as what would make each check a **false pass**:
 
-**Visual (all seven, per `visual-verification-mandatory.md`):**
-1920×1080, 2560×1440, 3840×2160, 1440×900, 820×1180, 960×412, 375×667.
-
-Measurement pass (`evaluate_script`) first — slot button widths, band height as
-a fraction of viewport, computed font sizes — then screenshots for composition.
-At each: buttons size to their labels rather than stretching; slot variants move
-nothing below them; the map is not a thin strip; no dead rail at 4K; the page
-does not dead-end; fine print stays legible (12px supplementary floor).
+1. **State and persistence.** Deferred-promise tests that resolve repository
+   promises in deliberately reversed order. *False pass:* mocks that resolve in
+   call order cannot expose an out-of-order write; the test must control each
+   promise individually.
+2. **Loader split.** Assert the exact `importLibrary` calls. *False pass:*
+   mocking only the loader's resolved promise passes while `places` still
+   imports eagerly.
+3. **Canonicalization.** Fixtures for US `locality`, UK `postal_town`,
+   administrative fallback, missing country, missing coordinates, ISO-2
+   normalization, and the no-accepted-component rejection.
+4. **Picker.** Keyboard-only selection issues exactly one canonical add; closing
+   mid-`fetchFields` cannot write; superseded responses are discarded.
+5. **Composition.** Network trace in a fresh tab: no Maps request before
+   intersection, no Places request before the picker opens.
+6. **Visual.** All seven required viewports, measured and screenshotted, with
+   all five slot variants confirmed to share one geometry.
+7. **Deletion.** Zero references to `getCurrentLocation`,
+   `LocationSharingConsentSheet`, `showConsentSheet`, `consentTimer`, and each
+   removed message key. *False pass:* grep goes green while a dynamic import
+   string still reaches geolocation; confirm at runtime that no geolocation
+   access occurs.
 
 ## Pre-ship gates (human)
 
-1. `PUBLIC_GOOGLE_MAPS_API_KEY` present in the Cloudflare Pages **build**
-   environment.
-2. Places API enabled on that key, with referrer restrictions permitting the
-   production origins.
-3. Band placement, tier heights, and count placement confirmed against real
-   frames.
+1. Confirm `PUBLIC_GOOGLE_MAPS_API_KEY` is present in the Cloudflare Pages
+   **build** environment.
+2. Enable the Places API on that key with correct referrer restrictions, and
+   verify against the restricted key rather than a permissive one.
+3. Visual gate: band height and position within the Creators page, brought with
+   frames at 1920 / 2560 / 3840.
 
-## What round 1 got wrong
+## What the earlier rounds got wrong
 
-Kept deliberately. Most of these were assertions about code that was never
-opened.
+Kept visible because the pattern matters more than the individual defects:
+most were assertions about code that had never been read.
+
+### Round 1
 
 | # | Defect | Found by |
 |---|---|---|
-| 1 | Claimed the pin's profile handoff "has nowhere to go." It was already wired in `GlobalUserMap.svelte:11,160,255`. Cited the child component, never read the parent that binds it. | both |
-| 2 | Hand-waved "load lazily" when a shared loader already existed — and missed that it is not viewport-lazy. | both |
-| 3 | Missed that `size="embedded"` exists at a hard 260px, colliding with the `em` requirement. | author |
-| 4 | **Blocker:** a one-field picker cannot feed `forwardGeocode(city, country)` or canonicalize what is stored. | Codex |
-| 5 | Used consent as the proxy for map membership across two independent writes that can diverge. | Codex |
-| 6 | Claimed "nothing more precise than a city is ever obtained" while `page.data.geo` carries lat/lng. | Codex |
-| 7 | Promised a specific geocoding error message the geocoder cannot produce, since it collapses all failures to `null`. | Codex |
-| 8 | Left `updateLocation` "collapses to the same path" undesigned. | Codex |
-| 9 | Assumed a shared slot prevents host drift when the hosts still own everything else. | Codex |
-| 10 | Said "5 call sites" for what is 4 calls and 2 imports; understated the preferences path; three stale line ranges. | Codex |
+| 1 | Claimed the pin's profile handoff "has nowhere to go". It was already wired. Cited the child component, never read the parent that binds it | both |
+| 2 | Hand-waved "load lazily" when a shared loader existed | both |
+| 3 | Missed `size="embedded"` at a hard 260px colliding with the `em` requirement | author |
+| 4 | **Blocker:** a one-field picker cannot feed `forwardGeocode(city, country)` | Codex |
+| 5 | Used consent as a proxy for membership across two writes that can diverge | Codex |
+| 6 | Claimed nothing more precise than a city is ever obtained, while `page.data.geo` carries lat/lng | Codex |
+| 7 | Promised a geocoder error message the geocoder cannot produce | Codex |
+| 8 | Left `updateLocation` undesigned | Codex |
+| 9 | Assumed a shared slot prevents drift while hosts own everything else | Codex |
+| 10 | Miscounted call sites; three stale line ranges | Codex |
+
+### Round 2
+
+| # | Defect | Found by |
+|---|---|---|
+| 11 | **Blocker:** derived membership from `getPublicLocations()`, which excludes private documents, drops documents whose profile join fails, and is limit-bounded. Membership could disagree with Firestore three different ways | Codex |
+| 12 | Generation counters guard reads, not writes. Add-then-remove could resurrect a removed user | Codex |
+| 13 | Adding `places` to the shared loader would have made every map mount in **two** features download it. Round 2 also counted one consumer where there are two | Codex |
+| 14 | "Restricted to cities" was written without verification and is not an implementation contract. No component-extraction order, no country representation, no rejection behavior | Codex and author |
+| 15 | Claimed Autocomplete sessions are unlimited and free. Both SKUs carry 10k monthly free events; the scale conclusion held, the explanation did not | Codex |
+| 16 | Specified a Google-rendered custom element inside a themed panel with no supported theming, contrast, focus, touch-target, or clipping story | Codex |
+| 17 | Claimed no shared lazy-mount primitive existed. `LazyMount` exists, with exactly the placeholder contract the design needed | Codex |
+| 18 | Did not choose a state lifetime, so the panel's root `Crossfade` would have refetched on every profile back-navigation | Codex |
+| 19 | Cited a 56-58 person directory census from a July code comment as current ground truth | Codex |
+| 20 | Never censused `userLocations`. It holds exactly one document, which makes the country-representation change free | author |
