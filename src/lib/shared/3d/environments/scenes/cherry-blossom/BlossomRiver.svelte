@@ -32,13 +32,13 @@
   {shoreFade}
   textureWidth={1024}
   textureHeight={512}
-  deepColor="#123044"
-  shallowColor="#4f97a0"
-  reflectionTint={0x9fb2c4}
+  deepColor="#0b1f2e"
+  shallowColor="#2a5560"
+  reflectionTint={0x6f8496}
   sunDirection={[-0.42, 0.58, -0.7]}
   rippleScale={2.4}
   rippleStrength={0.16}
-  foamWidth={0.18}
-  foamOpacity={0.3}
+  foamWidth={0.12}
+  foamOpacity={0.22}
   flowSpeed={0.28}
 />

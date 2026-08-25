@@ -393,11 +393,11 @@ RIVER_BED = material(
 # edges, which is what made the ribbon read as one flat navy band.
 WATER = material(
     "Moonlit River",
-    (0.085, 0.235, 0.275),
+    (0.055, 0.148, 0.176),
     roughness=0.12,
     metallic=0.08,
-    emission=(0.016, 0.046, 0.088),
-    emission_strength=0.26,
+    emission=(0.012, 0.034, 0.066),
+    emission_strength=0.14,
 )
 enable_vertex_tint(WATER)
 WATER_EDGE_TINT = (1.0, 1.0, 1.0)
