@@ -114,12 +114,23 @@
   .tka-label.glyphs {
     display: flex;
     align-items: center;
-    justify-content: center;
+    /* Left by default, because that is where the text this replaces sat, and a
+       title that centers itself over a left-aligned byline reads as a mistake.
+       Callers that want it centered say so with --tka-label-justify: center. */
+    justify-content: var(--tka-label-justify, flex-start);
     /* The gap stands in for the whitespace the token split removed. */
     gap: 0.3em;
     /* TKAWordGlyph clips and centers itself when fitToParent is on; a second
        text-overflow here would do nothing but confuse the layout. */
     text-overflow: clip;
+  }
+
+  /* fitToParent makes TKAWordGlyph a full-width flex row that centers its own
+     content. That is its default for standalone use; here the label owns
+     alignment, so the same knob drives both and one word cannot end up centered
+     while its neighbour is not. */
+  .tka-label.glyphs :global(.tka-word-glyph.fit-to-parent) {
+    justify-content: var(--tka-label-justify, flex-start);
   }
 
   .text-token {
