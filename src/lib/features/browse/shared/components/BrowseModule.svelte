@@ -597,18 +597,18 @@
                     if (section === "collections") {
                       browseNavigationState.viewExploreCollections();
                     } else if (section === "visuals") {
+                      // No visualType: Explore > Visuals shows every type on
+                      // one wall. A type in the URL is a deep-link filter.
                       browseNavigationState.navigateTo({
                         primary: "explore",
                         section: "visuals",
                         view: "list",
-                        visualType: "tunnels",
                       });
                     } else {
                       browseNavigationState.viewExploreSequences();
                     }
                   }}
                   color="accent"
-                  size="sm"
                   semantics="tabs"
                   ariaLabel="Explore content type"
                 />
@@ -721,7 +721,7 @@
     display: block;
     margin-bottom: 2px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
-    font-size: var(--font-size-xs, 12px);
+    font-size: clamp(12px, 0.22vw + 8px, 20px);
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -731,15 +731,17 @@
     margin: 0;
     overflow: hidden;
     color: var(--theme-text, #fff);
-    font-size: clamp(18px, 2.1cqi, 26px);
+    font-size: clamp(18px, 0.9vw + 8px, 44px);
     line-height: 1.15;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
+  /* Three short labels, so the box grows with the canvas but never stretches
+     into a progress bar (visual-verification-mandatory.md). */
   .explore-switcher {
-    width: min(360px, 46cqi);
-    min-width: 248px;
+    width: clamp(260px, 20vw, 560px);
+    min-width: 260px;
   }
 
   .explore-body {

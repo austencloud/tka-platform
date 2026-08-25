@@ -118,10 +118,14 @@ collections have stable URLs and ordinary browser back/forward behavior.
     padding: clamp(12px, 3cqi, 28px);
     /* A handful of collections on a narrow panel otherwise huddles in the
 		   top-left corner — cap the column and center it so the page reads composed
-		   at any count. */
+		   at any count. The cap GROWS with the canvas (unchanged at 1080p, wider
+		   above it) rather than freezing the page at 880px forever, and `safe
+		   center` seats a short list on the canvas instead of dead-ending it in
+		   the first third — without clipping once the list outgrows the panel. */
     width: 100%;
-    max-width: 880px;
+    max-width: clamp(55rem, 46vw, 120rem);
     margin-inline: auto;
+    justify-content: safe center;
   }
 
   .list-header {
@@ -134,15 +138,18 @@ collections have stable URLs and ordinary browser back/forward behavior.
 
   .list-title {
     margin: 0;
-    font-size: clamp(17px, 2.6cqi, 22px);
+    font-size: clamp(17px, 0.7vw + 8px, 34px);
     font-weight: 700;
     color: var(--theme-text, white);
   }
 
   .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(min(100%, clamp(15rem, 13vw, 26rem)), 1fr)
+    );
+    gap: clamp(10px, 0.6vw, 22px);
     align-content: start;
   }
 

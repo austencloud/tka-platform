@@ -34,7 +34,8 @@ Search terms used: `publishTunnel`, `artifactPublicationRequests`,
   its existing `calculateMandalaGeometry` + `renderMandalaToCanvas` path
   (factored out as a private `drawMandala`). No parallel mandala renderer.
 - **Extending** `ExploreVisualsPanel.svelte` to be visual-type aware rather than
-  adding a second Explore panel.
+  adding a second Explore panel. It renders one titled shelf per artifact type on
+  a single wall — no type picker; see "The type picker is gone" below.
 - **Creating** the mandala adapter files — private revision, public revision,
   repository, publication service, publication controls, detail preview — as the
   mandala feature's owned payload builders, which is exactly the adapter
@@ -91,11 +92,40 @@ derived from the persisted collection, so a default resolves to `null` and no
 sharing UI appears. Publication content-addresses a _saved_ payload, and a
 default has nothing to address.
 
+### The type picker is gone; shelves replaced it
+
+The first cut put a Tunnels | Mandalas segmented control above a fixed-column
+grid. With three published artifacts that meant a two-option picker floating over
+a mostly empty canvas, and clicking either side showed one or two cards stranded
+in the top-left corner. Austen's read was that it matched no pattern in the app.
+
+It doesn't. The gallery's language is a titled shelf per group with the artwork
+itself carrying the page — `GalleryLanding` and Explore > Sequences both do this.
+`ExploreVisualsPanel` now renders one shelf per type (heading, count pill,
+artwork on a plinth) stacked on one centered wall, so every published visual is
+visible at once with no picker and no click. A named-type deep link
+(`/browse/explore/visuals/mandalas`) still resolves — it narrows to that shelf and
+the artwork takes the canvas rather than sitting in the middle of it as a
+thumbnail.
+
+Composition rules that make it hold at every width, all in the panel's own CSS:
+
+- Artwork size ramps continuously (`clamp(22rem, 25vw, 60rem)`), so a 4K canvas
+  gets bigger pieces instead of more thin columns. No step tier.
+- `repeat(auto-fit, minmax(min(100%, --art-card-min), 1fr))` — the repetition
+  count is computed against the **max** track size when that max is definite, so
+  the previous `minmax(min, 60rem)` collapsed a 1936px wall to a single column.
+  The cap moved to the wall (`max-width: card-max × --wall-cols + gaps`).
+- When two shelves sit side by side the band binds to the artwork it holds and
+  centers, so free `fr` tracks can't push shelves to opposite edges of a 4K canvas.
+- Posters are bright strokes on black, so the plinth uses `mix-blend-mode: screen`
+  rather than letting a black square read as a hole.
+
 ### Scenes are not in this phase
 
-`ExploreVisualsPanel`'s type switcher lists only the types with a shipped
-publication adapter (`PublishedVisualType`). Scenes (5B) stay unscheduled
-pending 3D Studio schema stability, per the charter.
+Only types with a shipped publication adapter (`PublishedVisualType`) get a
+shelf. Scenes (5B) stay unscheduled pending 3D Studio schema stability, per the
+charter.
 
 ## Ledger
 
@@ -115,7 +145,8 @@ pending 3D Studio schema stability, per the charter.
 - [x] `firestore.rules` — private `users/{uid}/mandala-collection/{id}/revisions`
       subcollection: content-addressed, immutable, admin-delete-only
 - [x] `MandalaPublicationControls.svelte` in the mandala detail rail
-- [x] `ExploreVisualsPanel` visual-type aware, Tunnels | Mandalas switcher
+- [x] `ExploreVisualsPanel` visual-type aware — one titled shelf per type on a
+      single centered wall, no type picker (see "The type picker is gone")
 - [x] `MandalaDetailPreview.svelte` — live redraw, WCAG 2.2.2 pause control,
       reduced motion honored
 - [x] Unit suite (16 tests) — digest determinism, private/public divergence,
@@ -143,17 +174,42 @@ pending 3D Studio schema stability, per the charter.
 | Phase 3 regression               | Tunnels tab still lists both published tunnels; tunnel detail still mounts its canvas                              |
 | Viewports                        | 1920 (4 col), 2560 (5), 3840 (5), 1440 (3), 820 (2), 960×412, 375 (1). No horizontal overflow at any width.        |
 
-## Known finding, deliberately out of scope
+## The 4K pass, no longer out of scope
 
-At 4K@100% (3840 CSS px) the Explore Visuals chrome does not scale: the type
-switcher stays 148px and card titles stay 14px in a 4267px client viewport, and
-the content sits in a small island. This is **not** introduced by this phase.
-Explore > Sequences next door shows the same fixed-size switcher and the same
-fixed-size cards in the same dead space at the same viewport — verified by direct
-comparison. The Browse app shell is not on the root ramp that
-`4k-native-layout.md` governs for public pages. Fixing it is a Browse-wide
-app-shell change, and fixing it only in this panel would make it inconsistent
-with every sibling surface. Flagged for a Browse-wide 4K pass, not patched here.
+An earlier revision of this plan recorded the 4K dead space as a Browse-wide
+app-shell problem and deferred it. That was the wrong call — the panel shipped
+looking like output, and deferring the fix meant shipping it that way. It is
+fixed here, in three places rather than one panel:
+
+- `ExploreVisualsPanel` — the composition described above.
+- `BrowseModule` — the Explore switcher (Sequences | Collections | Visuals) lost
+  `size="sm"`, which was rendering 32px targets and 12px labels below the 44px
+  touch floor. Its eyebrow, heading, and box width now ramp with the canvas,
+  bounded so three short labels never stretch into a progress bar.
+- `CommunityCollectionsPanel` — one click away and carrying the identical island
+  defect: a fixed `880px` list frozen at 1080p proportions, `auto-fill` against a
+  240px floor emitting more/thinner tiles as the canvas grew, and a short list
+  dead-ending in the top third. Band ramps, grid floor ramps, `safe center` seats
+  the list.
+
+`cqi` units were part of the original cause: with no query container declared they
+resolve against the small viewport, so `clamp(18px, 2.1cqi, 26px)` hit its cap
+around 1240px and froze. The ramping values here use `vw`.
+
+Measured after (CSS px, page zoom compensated):
+
+| Viewport | Result |
+| --- | --- |
+| 3840×2160 | band 2976 of a 4192 shell, cards 952/952/960, one row, no vertical overflow |
+| 2560×1440 | composed, fills the band |
+| 1920×1080 | band 1536, cards 476/476/480, h2 30.88px, title 20.48px, byline 15.68px |
+| 1440×900 | three across, composed |
+| 820×1180 | shelves stack, Tunnels two across, Mandala centered |
+| 960×412 | whole card fits (272 tall in a 340 shell) after the short-landscape plinth cap |
+| 375×667 | single column, legible, no horizontal overflow |
+| `/visuals/mandalas` | solo view: card 670×743, "All visuals" pill, no overflow |
+| Explore switcher @1920 | 384px wide, 44px targets, 14px labels |
+| Collections @1920 | band 883, 3 × 268 columns, grid vertically centered |
 
 ## Rollback
 

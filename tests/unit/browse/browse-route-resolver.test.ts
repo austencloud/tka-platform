@@ -103,4 +103,82 @@ describe("Browse route resolver", () => {
       currentIndex: 1,
     });
   });
+  // Explore > Visuals shows every artifact type on one wall, so the type
+  // segment is a deep-link filter rather than a required part of the route.
+  describe("Explore > Visuals type segment", () => {
+    it("resolves the bare visuals list with no type filter", () => {
+      const resolved = resolveBrowsePathname("/browse/explore/visuals");
+      expect(resolved.location).toEqual({
+        primary: "explore",
+        section: "visuals",
+        view: "list",
+        contextId: undefined,
+      });
+      expect(resolved.location.visualType).toBeUndefined();
+    });
+
+    it("keeps a named type as a filter", () => {
+      const resolved = resolveBrowsePathname("/browse/explore/visuals/mandalas");
+      expect(resolved.location).toMatchObject({
+        primary: "explore",
+        section: "visuals",
+        view: "list",
+        visualType: "mandalas",
+      });
+    });
+
+    it("reads an untyped detail id directly under /visuals", () => {
+      const resolved = resolveBrowsePathname(
+        "/browse/explore/visuals/8ec63a11-3076-4a3c-8b55-a9e372b1c59e"
+      );
+      expect(resolved.location).toEqual({
+        primary: "explore",
+        section: "visuals",
+        view: "detail",
+        contextId: "8ec63a11-3076-4a3c-8b55-a9e372b1c59e",
+      });
+    });
+
+    it("reads a typed detail id after the type segment", () => {
+      const resolved = resolveBrowsePathname(
+        "/browse/explore/visuals/tunnels/tunnel-9"
+      );
+      expect(resolved.location).toMatchObject({
+        view: "detail",
+        visualType: "tunnels",
+        contextId: "tunnel-9",
+      });
+    });
+
+    it("round-trips every visuals shape through buildBrowsePath", () => {
+      expect(
+        buildBrowsePath({ primary: "explore", section: "visuals", view: "list" })
+      ).toBe("/browse/explore/visuals");
+      expect(
+        buildBrowsePath({
+          primary: "explore",
+          section: "visuals",
+          view: "list",
+          visualType: "mandalas",
+        })
+      ).toBe("/browse/explore/visuals/mandalas");
+      expect(
+        buildBrowsePath({
+          primary: "explore",
+          section: "visuals",
+          view: "detail",
+          contextId: "abc-1",
+        })
+      ).toBe("/browse/explore/visuals/abc-1");
+      expect(
+        buildBrowsePath({
+          primary: "explore",
+          section: "visuals",
+          view: "detail",
+          visualType: "tunnels",
+          contextId: "abc-1",
+        })
+      ).toBe("/browse/explore/visuals/tunnels/abc-1");
+    });
+  });
 });

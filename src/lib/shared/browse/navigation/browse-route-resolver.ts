@@ -90,8 +90,14 @@ export function buildBrowsePath(location: BrowseLocation): string {
       return "/browse/explore/collections";
     }
 
-    if (location.section === "visuals" && location.visualType) {
-      const base = `/browse/explore/visuals/${location.visualType}`;
+    // The type segment is OPTIONAL: Explore > Visuals shows every type at
+    // once, and a named type is a deep-link filter. A detail id can therefore
+    // sit directly under /visuals — ids never collide with the type names
+    // because asVisualType() only matches the fixed set.
+    if (location.section === "visuals") {
+      const base = location.visualType
+        ? `/browse/explore/visuals/${location.visualType}`
+        : "/browse/explore/visuals";
       return location.contextId
         ? `${base}/${encodeURIComponent(location.contextId)}`
         : base;
@@ -227,19 +233,19 @@ export function resolveBrowsePathname(
     }
     if (section === "visuals") {
       const visualType = asVisualType(parts[3]);
-      if (visualType) {
-        const publicationId = safeDecode(parts[4]);
-        return resolved(
-          {
-            primary: "explore",
-            section: "visuals",
-            view: publicationId ? "detail" : "list",
-            visualType,
-            contextId: publicationId,
-          },
-          normalized
-        );
-      }
+      // With a type segment the id follows it; without one the id (if any)
+      // takes its place, and the destination shows every type.
+      const publicationId = safeDecode(visualType ? parts[4] : parts[3]);
+      return resolved(
+        {
+          primary: "explore",
+          section: "visuals",
+          view: publicationId ? "detail" : "list",
+          ...(visualType && { visualType }),
+          contextId: publicationId,
+        },
+        normalized
+      );
     }
     return resolved(DEFAULT_LOCATION, normalized);
   }
