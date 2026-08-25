@@ -477,12 +477,13 @@
 <!-- Outside .director-scene, which is aria-hidden: the control workspace is the
      one interactive thing over the stage and has to stay reachable. It renders
      here rather than in the workbench because it reads the viewer context this
-     component establishes. The two offsets are the measured bands the Director's
-     own chrome occupies — the titleplate above, the transport below. -->
+     component establishes. The offset is the measured band the transport
+     occupies. Save scene is off: the film panel owns saving here, and two save
+     buttons that write different things is the confusion this replaced. -->
 {#if director.preparation.complete}
   <SceneControlWorkspace
-    topOffset="calc(var(--director-header-reserve, 12rem) + 0.75rem)"
     bottomOffset="calc(var(--director-transport-reserve, 9.5rem) + 0.75rem)"
+    allowSaveScene={false}
     onPerformerEdit={handlePerformerEdit}
     onInspectorChange={handleInspectorChange}
   />

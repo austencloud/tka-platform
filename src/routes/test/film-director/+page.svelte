@@ -1,13 +1,75 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
+  import { replaceState } from "$app/navigation";
+  import { page } from "$app/state";
+  import type { CollectedFilm } from "$lib/features/film-collection/domain/film-collection-types";
+  import { filmCollectionState } from "$lib/features/film-collection/state/film-collection-state.svelte";
+  import FilmDirectorMarquee from "./_components/FilmDirectorMarquee.svelte";
+  import { getLibraryFilm } from "./_films/index";
+  import type { FilmDirectorInput } from "./_lib/film-director-schema";
+  import { parseFilmKey } from "./_lib/film-key";
+  import type { FilmOrigin } from "./_lib/film-origin";
+
   type WorkbenchComponent =
     typeof import("./_components/FilmDirectorWorkbench.svelte").default;
 
+  type Stage = { film: FilmDirectorInput; origin: FilmOrigin };
+
   let Workbench = $state<WorkbenchComponent | null>(null);
   let loadError = $state<string | null>(null);
+  let stage = $state<Stage | null>(null);
+
+  const requested = parseFilmKey(page.url.searchParams.get("film"));
+
+  // A saved link waits on the marquee while the collection loads rather than
+  // booting an unrelated film and swapping it out. A link to an entry the user
+  // cannot see simply stays on the marquee.
+  let pendingSavedId = $state<string | null>(
+    requested.kind === "saved" ? requested.id : null
+  );
+
+  if (requested.kind === "library") {
+    stage = {
+      film: getLibraryFilm(requested.key),
+      origin: { kind: "library", key: requested.key },
+    };
+  }
+
+  $effect(() => {
+    const id = pendingSavedId;
+    if (!id || filmCollectionState.loading) return;
+    const entry = filmCollectionState.collection.find((item) => item.id === id);
+    pendingSavedId = null;
+    if (entry) openSavedFilm(entry);
+  });
+
+  function openLibraryFilm(key: string): void {
+    stage = { film: getLibraryFilm(key), origin: { kind: "library", key } };
+  }
+
+  function openSavedFilm(entry: CollectedFilm): void {
+    // The entry is a $state proxy and the director structuredClones its input,
+    // which throws on a proxy. Snapshot to a plain object first.
+    stage = {
+      film: $state.snapshot(entry.film) as unknown as FilmDirectorInput,
+      origin: { kind: "saved", id: entry.id, name: entry.name },
+    };
+  }
+
+  function exitToMarquee(): void {
+    stage = null;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("film");
+    replaceState(url, {});
+  }
 
   onMount(() => {
+    // This route owns starting the collection: the marquee's saved-films list
+    // and the ?film=saved: resolution both read it, and FilmCollectionModule
+    // does not start it itself.
+    filmCollectionState.initLocal();
+
     let active = true;
     void import("./_components/FilmDirectorWorkbench.svelte")
       .then(({ default: component }) => {
@@ -32,8 +94,21 @@
   />
 </svelte:head>
 
-{#if Workbench}
-  <Workbench />
+{#if !stage}
+  <FilmDirectorMarquee
+    onOpenLibraryFilm={openLibraryFilm}
+    onOpenSavedFilm={openSavedFilm}
+  />
+{:else if Workbench}
+  <!-- createFilmDirectorState runs once per instance, so switching films has to
+       remount the workbench. -->
+  {#key stage.origin}
+    <Workbench
+      film={stage.film}
+      initialOrigin={stage.origin}
+      onExit={exitToMarquee}
+    />
+  {/key}
 {:else}
   <main class="loading-shell">
     <section
