@@ -6,12 +6,15 @@ export interface StageEditMode {
   readonly cameraMode: CameraMode;
   readonly selectedPerformerId: string | null;
   readonly selectedMarkId: string | null;
+  readonly selectedFormationId: string | null;
   readonly selectedClipId: string | null;
   readonly multiSelectedPerformerIds: Set<string>;
   isDragging: boolean;
   toggleCameraMode(): void;
   selectPerformer(id: string, addToSelection?: boolean): void;
   selectMark(performerId: string, markId: string): void;
+  selectFormation(formationId: string | null): void;
+  selectSpot(formationId: string, performerId: string): void;
   selectClip(performerId: string, clipId: string): void;
   clearSelection(): void;
 }
@@ -20,6 +23,7 @@ export function createStageEditMode(): StageEditMode {
   let cameraMode = $state<CameraMode>("orbit");
   let selectedPerformerId = $state<string | null>(null);
   let selectedMarkId = $state<string | null>(null);
+  let selectedFormationId = $state<string | null>(null);
   let selectedClipId = $state<string | null>(null);
   let multiSelectedPerformerIds = $state<Set<string>>(new Set());
   let isDragging = $state(false);
@@ -40,19 +44,38 @@ export function createStageEditMode(): StageEditMode {
       selectedPerformerId = id;
     }
     selectedMarkId = null;
+    selectedFormationId = null;
     selectedClipId = null;
   }
 
   function selectMark(performerId: string, markId: string) {
     selectedPerformerId = performerId;
     selectedMarkId = markId;
+    selectedFormationId = null;
     multiSelectedPerformerIds = new Set([performerId]);
     selectedClipId = null;
+  }
+
+  function selectFormation(formationId: string | null) {
+    selectedFormationId = formationId;
+    selectedPerformerId = null;
+    selectedMarkId = null;
+    selectedClipId = null;
+    multiSelectedPerformerIds = new Set();
+  }
+
+  function selectSpot(formationId: string, performerId: string) {
+    selectedFormationId = formationId;
+    selectedPerformerId = performerId;
+    selectedMarkId = null;
+    selectedClipId = null;
+    multiSelectedPerformerIds = new Set([performerId]);
   }
 
   function selectClip(performerId: string, clipId: string) {
     selectedPerformerId = performerId;
     selectedMarkId = null;
+    selectedFormationId = null;
     selectedClipId = clipId;
     multiSelectedPerformerIds = new Set([performerId]);
   }
@@ -60,6 +83,7 @@ export function createStageEditMode(): StageEditMode {
   function clearSelection() {
     selectedPerformerId = null;
     selectedMarkId = null;
+    selectedFormationId = null;
     selectedClipId = null;
     multiSelectedPerformerIds = new Set();
   }
@@ -73,6 +97,9 @@ export function createStageEditMode(): StageEditMode {
     },
     get selectedMarkId() {
       return selectedMarkId;
+    },
+    get selectedFormationId() {
+      return selectedFormationId;
     },
     get selectedClipId() {
       return selectedClipId;
@@ -89,6 +116,8 @@ export function createStageEditMode(): StageEditMode {
     toggleCameraMode,
     selectPerformer,
     selectMark,
+    selectFormation,
+    selectSpot,
     selectClip,
     clearSelection,
   };

@@ -3,6 +3,7 @@ import type {
   Performer,
   Mark,
   StageSequenceClip,
+  Formation,
   FormationPresetId,
   WalkStyle,
   EasingType,
@@ -23,6 +24,8 @@ import {
   type StagePerformanceFrame,
 } from "../domain/stage-performance-sampler";
 import { marksToFormations } from "../domain/formation-migration";
+import { normalizeFormations } from "../domain/formation-invariants";
+import { sampleFormationPerformance } from "../domain/stage-formation-sampler";
 import { DEFAULT_STAGE_SEQUENCE_ID } from "../services/stage-sequence-loader";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { getPerformerSequenceEndBeat } from "../domain/stage-sequence-timeline";
@@ -60,6 +63,33 @@ export interface StageChoreographyState extends UnifiedPlaybackContext {
   onBpmChange(bpm: number): void;
   getPerformer(id: string): Performer | undefined;
   setPerformerCount(count: number): void;
+  addFormation(atBeat: number, presetId?: FormationPresetId): Formation | null;
+  removeFormation(formationId: string): void;
+  moveFormation(formationId: string, atBeat: number): void;
+  setFormationTransitionBeats(formationId: string, beats: number): void;
+  setFormationLabel(formationId: string, label: string): void;
+  updateSpotPosition(
+    formationId: string,
+    performerId: string,
+    x: number,
+    z: number
+  ): void;
+  updateSpotWalkStyle(
+    formationId: string,
+    performerId: string,
+    walkStyle: WalkStyle
+  ): void;
+  updateSpotEasing(
+    formationId: string,
+    performerId: string,
+    easing: EasingType
+  ): void;
+  updateSpotFacing(
+    formationId: string,
+    performerId: string,
+    facingAngle: number | undefined
+  ): void;
+  applyPresetToFormation(formationId: string, preset: FormationPresetId): void;
   applyPreset(preset: FormationPresetId): void;
   insertFormationAtPlayhead(
     preset: FormationPresetId,
@@ -152,8 +182,7 @@ export function createStageChoreographyState(
     bpm: DEFAULT_BPM,
     stageWidth: DEFAULT_STAGE_WIDTH,
     stageDepth: DEFAULT_STAGE_DEPTH,
-    environmentId:
-      options.initialEnvironmentId ?? DEFAULT_SCENE_ENVIRONMENT_ID,
+    environmentId: options.initialEnvironmentId ?? DEFAULT_SCENE_ENVIRONMENT_ID,
     performers: Array.from({ length: DEFAULT_PERFORMER_COUNT }, (_, i) =>
       createPerformer(i)
     ),
@@ -209,6 +238,15 @@ export function createStageChoreographyState(
         marks: p.marks.map((m) => ({ ...m })),
         sequenceClips: p.sequenceClips.map((clip) => ({ ...clip })),
       })),
+      formations: choreography.formations.map((formation) => ({
+        ...formation,
+        spots: Object.fromEntries(
+          Object.entries(formation.spots).map(([performerId, spot]) => [
+            performerId,
+            { ...spot },
+          ])
+        ),
+      })),
     });
   }
 
@@ -222,12 +260,19 @@ export function createStageChoreographyState(
     const restored = JSON.parse(json) as {
       environmentId?: string;
       performers: Performer[];
+      formations: Formation[];
     };
     choreography.environmentId = normalizeSceneEnvironmentId(
       restored.environmentId,
       choreography.environmentId
     );
     choreography.performers = restored.performers;
+    choreography.formations = normalizeFormations(
+      restored.formations,
+      restored.performers.map((performer) => performer.id),
+      choreography.stageWidth,
+      choreography.stageDepth
+    );
   }
 
   function undo() {
@@ -360,16 +405,236 @@ export function createStageChoreographyState(
   }
 
   function setPerformerCount(count: number) {
-    pushUndo();
     const clamped = Math.max(2, Math.min(8, count));
     const current = choreography.performers.length;
+    if (clamped === current) return;
+    pushUndo();
     if (clamped > current) {
+      const defaultPositions = generatePresetPositions(
+        "line",
+        clamped,
+        choreography.stageWidth,
+        choreography.stageDepth
+      );
       for (let i = current; i < clamped; i++) {
-        choreography.performers.push(createPerformer(i));
+        const performer = createPerformer(i);
+        choreography.performers.push(performer);
+        const position = defaultPositions[i] ?? {
+          x: choreography.stageWidth / 2,
+          z: choreography.stageDepth / 2,
+        };
+        choreography.formations = choreography.formations.map((formation) => ({
+          ...formation,
+          spots: {
+            ...formation.spots,
+            [performer.id]: {
+              ...position,
+              walkStyle: "direct",
+              easing: "linear",
+            },
+          },
+        }));
       }
     } else if (clamped < current) {
       choreography.performers = choreography.performers.slice(0, clamped);
     }
+    normalizeFormationTrack();
+  }
+
+  function normalizeFormationTrack() {
+    choreography.formations = normalizeFormations(
+      choreography.formations,
+      choreography.performers.map((performer) => performer.id),
+      choreography.stageWidth,
+      choreography.stageDepth
+    );
+  }
+
+  function findFormation(formationId: string): Formation | undefined {
+    return choreography.formations.find(
+      (formation) => formation.id === formationId
+    );
+  }
+
+  function addFormation(
+    atBeat: number,
+    presetId?: FormationPresetId
+  ): Formation | null {
+    const snappedBeat = Number.isFinite(atBeat)
+      ? Math.max(0, Math.round(atBeat))
+      : 0;
+    if (
+      choreography.formations.some(
+        (formation) => formation.atBeat === snappedBeat
+      )
+    ) {
+      return null;
+    }
+
+    const presetPositions = presetId
+      ? generatePresetPositions(
+          presetId,
+          choreography.performers.length,
+          choreography.stageWidth,
+          choreography.stageDepth
+        )
+      : null;
+    const spots: Formation["spots"] = {};
+    choreography.performers.forEach((performer, index) => {
+      const sampled = sampleFormationPerformance(
+        choreography,
+        performer.id,
+        snappedBeat
+      ).stagePosition;
+      const position = presetPositions?.[index] ?? sampled;
+      spots[performer.id] = {
+        x: position.x,
+        z: position.z,
+        walkStyle: "direct",
+        easing: "linear",
+      };
+    });
+
+    pushUndo();
+    const formation: Formation = {
+      id: crypto.randomUUID(),
+      atBeat: snappedBeat,
+      transitionBeats: 8,
+      spots,
+      presetId,
+    };
+    choreography.formations = [...choreography.formations, formation];
+    normalizeFormationTrack();
+    return findFormation(formation.id) ?? null;
+  }
+
+  function removeFormation(formationId: string) {
+    const index = choreography.formations.findIndex(
+      (formation) => formation.id === formationId
+    );
+    if (index <= 0) return;
+    pushUndo();
+    choreography.formations = choreography.formations.filter(
+      (formation) => formation.id !== formationId
+    );
+    normalizeFormationTrack();
+  }
+
+  function moveFormation(formationId: string, atBeat: number) {
+    const index = choreography.formations.findIndex(
+      (formation) => formation.id === formationId
+    );
+    if (index <= 0) return;
+    const formation = choreography.formations[index];
+    if (!formation) return;
+    const snappedBeat = Number.isFinite(atBeat)
+      ? Math.max(1, Math.round(atBeat))
+      : 1;
+    if (
+      choreography.formations.some(
+        (candidate) =>
+          candidate.id !== formationId && candidate.atBeat === snappedBeat
+      )
+    ) {
+      return;
+    }
+    pushUndo();
+    formation.atBeat = snappedBeat;
+    normalizeFormationTrack();
+  }
+
+  function setFormationTransitionBeats(formationId: string, beats: number) {
+    const formation = findFormation(formationId);
+    if (!formation) return;
+    pushUndo();
+    formation.transitionBeats = beats;
+    normalizeFormationTrack();
+  }
+
+  function setFormationLabel(formationId: string, label: string) {
+    const formation = findFormation(formationId);
+    if (!formation) return;
+    pushUndo();
+    const trimmed = label.trim();
+    formation.label = trimmed || undefined;
+    normalizeFormationTrack();
+  }
+
+  function updateSpotPosition(
+    formationId: string,
+    performerId: string,
+    x: number,
+    z: number
+  ) {
+    const formation = findFormation(formationId);
+    const spot = formation?.spots[performerId];
+    if (!formation || !spot) return;
+    // Dragging calls this on every pointermove, so history is pushed once by
+    // beginDrag() the way mark dragging already does it. Pushing here would
+    // spend the whole undo stack on one drag.
+    spot.x = x;
+    spot.z = z;
+    formation.presetId = "custom";
+    normalizeFormationTrack();
+  }
+
+  function updateSpotWalkStyle(
+    formationId: string,
+    performerId: string,
+    walkStyle: WalkStyle
+  ) {
+    const spot = findFormation(formationId)?.spots[performerId];
+    if (!spot) return;
+    pushUndo();
+    spot.walkStyle = walkStyle;
+    normalizeFormationTrack();
+  }
+
+  function updateSpotEasing(
+    formationId: string,
+    performerId: string,
+    easing: EasingType
+  ) {
+    const spot = findFormation(formationId)?.spots[performerId];
+    if (!spot) return;
+    pushUndo();
+    spot.easing = easing;
+    normalizeFormationTrack();
+  }
+
+  function updateSpotFacing(
+    formationId: string,
+    performerId: string,
+    facingAngle: number | undefined
+  ) {
+    const spot = findFormation(formationId)?.spots[performerId];
+    if (!spot) return;
+    pushUndo();
+    spot.facingAngle = facingAngle;
+    normalizeFormationTrack();
+  }
+
+  function applyPresetToFormation(
+    formationId: string,
+    preset: FormationPresetId
+  ) {
+    const formation = findFormation(formationId);
+    if (!formation) return;
+    const positions = generatePresetPositions(
+      preset,
+      choreography.performers.length,
+      choreography.stageWidth,
+      choreography.stageDepth
+    );
+    pushUndo();
+    choreography.performers.forEach((performer, index) => {
+      const position = positions[index];
+      const spot = formation.spots[performer.id];
+      if (!position || !spot) return;
+      formation.spots[performer.id] = { ...spot, ...position };
+    });
+    formation.presetId = preset;
+    normalizeFormationTrack();
   }
 
   function positionAtBeat(
@@ -668,6 +933,16 @@ export function createStageChoreographyState(
     onBpmChange: setBpm,
     getPerformer,
     setPerformerCount,
+    addFormation,
+    removeFormation,
+    moveFormation,
+    setFormationTransitionBeats,
+    setFormationLabel,
+    updateSpotPosition,
+    updateSpotWalkStyle,
+    updateSpotEasing,
+    updateSpotFacing,
+    applyPresetToFormation,
     applyPreset,
     insertFormationAtPlayhead,
     addMark,

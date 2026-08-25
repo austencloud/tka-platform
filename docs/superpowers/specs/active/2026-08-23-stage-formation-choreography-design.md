@@ -224,7 +224,18 @@ mutations use today).
       `tests/config/vitest.config.ts`, including an equivalence test that the
       derived formation track samples identically to the mark sampler at beats
       0/2/4/7.5/8/12; `npm run check` 0 errors 0 warnings.
-- [ ] **Phase 2 — State.** Formation CRUD, invariant clamping, selection.
+- [x] **Phase 2 — State.** Formation CRUD (`addFormation`, `removeFormation`,
+      `moveFormation`, `setFormationTransitionBeats`, `setFormationLabel`,
+      `updateSpot{Position,WalkStyle,Easing,Facing}`, `applyPresetToFormation`),
+      a pure `normalizeFormations` in `domain/formation-invariants.ts` that every
+      mutation routes through, formations in undo/redo snapshots,
+      `setPerformerCount` keeping every formation complete, and
+      `selectFormation`/`selectSpot` in `stage-edit-mode.svelte.ts`. Evidence: 59
+      stage tests green under the CI config; `npm run check` 0 errors 0 warnings.
+      **Carry-in for Phase 4:** every mutation calls `normalizeFormationTrack()`,
+      which replaces the whole `formations` array with fresh objects — a
+      component holding a `formation` or `spot` reference across a mutation gets
+      a stale object, so drag handlers must re-find by id each frame.
       **Resequenced:** the phase list above says Phase 2 removes mark CRUD. It
       does not. `FormationOverlay.svelte` and `MarkProperties.svelte` still call
       `addMark`/`updateMarkPosition`/`updateMarkBeats`/`updateMarkWalkStyle` and

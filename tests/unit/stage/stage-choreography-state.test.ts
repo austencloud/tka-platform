@@ -124,18 +124,130 @@ describe("stage choreography state", () => {
       initialEnvironmentId: SceneEnvironmentId.BLOSSOM,
     });
 
-    expect(state.choreography.environmentId).toBe(
-      SceneEnvironmentId.BLOSSOM
-    );
+    expect(state.choreography.environmentId).toBe(SceneEnvironmentId.BLOSSOM);
     state.setEnvironmentId(SceneEnvironmentId.OCEAN);
     expect(state.choreography.environmentId).toBe(SceneEnvironmentId.OCEAN);
 
     state.undo();
-    expect(state.choreography.environmentId).toBe(
-      SceneEnvironmentId.BLOSSOM
-    );
+    expect(state.choreography.environmentId).toBe(SceneEnvironmentId.BLOSSOM);
     state.redo();
     expect(state.choreography.environmentId).toBe(SceneEnvironmentId.OCEAN);
+    state.destroy();
+  });
+
+  it("adds a complete formation without moving anyone at that beat", () => {
+    const state = createStageChoreographyState();
+    const beat = 4;
+    const before = sampleStageFormations(state.choreography, beat);
+
+    const added = state.addFormation(beat);
+
+    expect(added).not.toBeNull();
+    for (const frame of before) {
+      expect(added?.spots[frame.performerId]?.x).toBeCloseTo(
+        frame.stagePosition.x,
+        6
+      );
+      expect(added?.spots[frame.performerId]?.z).toBeCloseTo(
+        frame.stagePosition.z,
+        6
+      );
+    }
+    expect(state.addFormation(beat)).toBeNull();
+    state.destroy();
+  });
+
+  it("clamps transitions against the previous formation", () => {
+    const state = createStageChoreographyState();
+    const formation = state.addFormation(12);
+    expect(formation).not.toBeNull();
+
+    state.setFormationTransitionBeats(formation!.id, 20.7);
+
+    expect(
+      state.choreography.formations.find(
+        (candidate) => candidate.id === formation!.id
+      )?.transitionBeats
+    ).toBe(4);
+    state.destroy();
+  });
+
+  it("does not remove or retime the opening formation", () => {
+    const state = createStageChoreographyState();
+    const opening = state.choreography.formations[0]!;
+
+    state.removeFormation(opening.id);
+    state.moveFormation(opening.id, 6);
+
+    expect(state.choreography.formations[0]).toMatchObject({
+      id: opening.id,
+      atBeat: 0,
+      transitionBeats: 0,
+    });
+    state.destroy();
+  });
+
+  it("re-sorts a moved formation", () => {
+    const state = createStageChoreographyState();
+    const later = state.addFormation(16);
+    expect(later).not.toBeNull();
+
+    state.moveFormation(later!.id, 4);
+
+    expect(
+      state.choreography.formations.map((formation) => formation.atBeat)
+    ).toEqual([0, 4, 8]);
+    expect(state.choreography.formations[1]?.id).toBe(later!.id);
+    state.destroy();
+  });
+
+  it("round-trips a formation edit through undo and redo", () => {
+    const state = createStageChoreographyState();
+    const formation = state.choreography.formations[1]!;
+    const performer = state.choreography.performers[0]!;
+    const originalX = formation.spots[performer.id]!.x;
+
+    // A spot drag is one history entry: beginDrag() pushes it, and the moves
+    // that follow do not, exactly as mark dragging works.
+    state.beginDrag();
+    state.updateSpotPosition(formation.id, performer.id, originalX + 1, 2);
+    state.updateSpotPosition(formation.id, performer.id, originalX + 1, 2);
+    expect(state.choreography.formations[1]!.spots[performer.id]!.x).toBe(
+      originalX + 1
+    );
+
+    state.undo();
+    expect(state.choreography.formations[1]!.spots[performer.id]!.x).toBe(
+      originalX
+    );
+    state.redo();
+    expect(state.choreography.formations[1]!.spots[performer.id]!.x).toBe(
+      originalX + 1
+    );
+    state.destroy();
+  });
+
+  it("keeps every formation complete when performer count changes", () => {
+    const state = createStageChoreographyState();
+    state.addFormation(16, "circle");
+
+    state.setPerformerCount(6);
+    const sixIds = state.choreography.performers.map(
+      (performer) => performer.id
+    );
+    expect(
+      state.choreography.formations.every((formation) =>
+        sixIds.every((performerId) => formation.spots[performerId])
+      )
+    ).toBe(true);
+
+    const removedIds = sixIds.slice(2);
+    state.setPerformerCount(2);
+    expect(
+      state.choreography.formations.every((formation) =>
+        removedIds.every((performerId) => !formation.spots[performerId])
+      )
+    ).toBe(true);
     state.destroy();
   });
 });
