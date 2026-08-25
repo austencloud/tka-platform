@@ -113,11 +113,26 @@ schema rejects it rather than guessing.
 
 Directive resolution seeds per-(unit, axis). `chance-suite` resolves its random
 picks off those seeds, and the adversarial directive corpus asserts exact
-resolved values — 488 assertions across 8 categories
+resolved values — 244 assertions across 8 categories
 (`tests/unit/film-director/directive-corpus/`), with a coverage bar of ≥200
-entries and ≥30% rejection cases. The rename must not change any seed input:
-`scenes[i]` must seed identically to `shots[i]`. If seed derivation reads the
-array field name, that derivation is pinned to a stable constant.
+entries and ≥30% rejection cases.
+
+**Verified 2026-08-24: the rename cannot perturb seeds.** `createAxisStream` in
+`_lib/directive-random.ts:40` derives its stream from
+`hashString(\`${seed.base}\0${salt}\0${shotId}\0${axis}\`)`, where `seed.base`
+is `hashString(filmId)`. The inputs are the film id, the per-axis salt, the
+**unit's own `id` string**, and the **axis name**. Neither the array field name
+nor the array index participates. Renaming `shots[]` → `scenes[]` is therefore
+seed-neutral by construction.
+
+Two things that WOULD shift seeds, and are consequently forbidden in this work:
+
+- changing any unit's `id` in the five film files;
+- renaming an axis string. `environmentId` keeps its name even though it moves
+  from `scene` to `location` — the axis name is hashed.
+
+`createAxisStream`'s `shotId` parameter may be renamed to `sceneId`; it is a
+parameter name, not a hashed value.
 
 **The corpus suite passing unchanged is the acceptance test for the rename.**
 
@@ -256,7 +271,7 @@ already be a real module by then.
 
 | Area | Test |
 |---|---|
-| Rename correctness | The existing directive corpus (488 assertions), unchanged, passing |
+| Rename correctness | The existing directive corpus (244 assertions), unchanged, passing |
 | Seed stability | Corpus expected values unchanged — this is the proof |
 | Normalizer | v1/v2 documents upgrade; both-fields rejected |
 | Schema | `CollectedFilmSchema` round-trips a real saved film |
@@ -269,23 +284,22 @@ domain test follows `scene-3d-collection/domain/__tests__/` convention.
 ## Risks
 
 **The rename is broad.** 34 files, ~340 references. Mitigated by the corpus
-suite: it asserts exact resolved output across 488 directive assertions, so a
+suite: it asserts exact resolved output across 244 directive assertions, so a
 rename that changes behaviour cannot pass it.
 
-**One film-director suite is red before this work starts.**
-`tests/unit/film-director/director-viewer-adapter.test.ts` fails at import on
-the `document.createElement` mock (see the `reference_vitest_createelement_mock`
-note), and vitest additionally collects a stale copy of it from a nested
-worktree at `.claude/worktrees/optimistic-shaw-af2caf/`. Everything else is
-green: 724 tests pass, 0 assertion failures. Since that suite is the one that
-covers the adapter this rename touches, it must be repaired *before* the rename
-lands, or the rename ships without its closest test coverage.
+**Baseline is green.** All 15 film-director suites pass — 372 tests — verified
+2026-08-24 immediately before implementation. Run them with the project config:
+`npx vitest run --config tests/config/vitest.config.ts tests/unit/film-director/`.
+A bare `npx vitest run` uses a different default config that supplies no jsdom
+environment and does not exclude `.claude/worktrees/`, which manufactures both a
+phantom `document is not defined` failure in `director-viewer-adapter.test.ts`
+and duplicate collection of every test file. Neither is real.
 
-**Seed drift is the one silent failure mode.** If seed derivation depends on the
-field name, `chance-suite` would resolve to a different cast and the corpus
-would fail loudly — which is the good outcome. The bad outcome is seeds being
-derived somewhere the corpus does not cover. Verify seed derivation explicitly
-before running the rename, rather than trusting the suite alone.
+**Seed drift — retired.** This was the spec's original headline risk. Reading
+`directive-random.ts:40` closed it: seeds hash the unit's `id`, not the array
+field name or index, so the rename is seed-neutral by construction. What
+survives is the narrower constraint recorded above — do not change unit `id`s,
+do not rename axis strings.
 
 **Poster capture can silently return `""`.** `preserveDrawingBuffer` is enabled
 on the renderer so the buffer is readable, but a capture attempted before first
