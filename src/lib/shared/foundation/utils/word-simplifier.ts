@@ -132,8 +132,10 @@ export function splitIntoLetterUnits(word: string): string[] {
     const char = word[i];
     if (!char) break;
 
-    // Check if current character is a letter
-    if (/[a-zA-Z\u0370-\u03FF\u1F00-\u1FFF]/.test(char)) {
+    // Check if current character is a letter. \u2295 is \u2295 (Terra, a Type 6
+    // letter): without it the tokenizer silently DROPS the glyph, so a word
+    // containing Terra compressed and simplified as if it were not there.
+    if (/[a-zA-Z\u0370-\u03FF\u1F00-\u1FFF\u2295]/.test(char)) {
       // Check if next character is a dash
       const nextChar = word[i + 1];
       if (i + 1 < word.length && nextChar === "-") {
