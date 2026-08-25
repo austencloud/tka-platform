@@ -7,10 +7,10 @@ index 1932bc5d43760364c07f78486b3066538a38753b..3746fe0932aa81df143f9c61c5ad9c80
 -//# sourceMappingURL=index.d.ts.map
 \ No newline at end of file
 diff --git a/dist/lib/components/Avatar3D.svelte b/dist/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df819736416e7fb 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..75f9ba4096d3f2a88e4dcdf573f30c528d506b6c 100644
 --- a/dist/lib/components/Avatar3D.svelte
 +++ b/dist/lib/components/Avatar3D.svelte
-@@ -16,26 +16,30 @@
+@@ -16,26 +16,34 @@
     */
  
    import { onMount, onDestroy, untrack } from "svelte";
@@ -41,6 +41,10 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
 +    schedulePerformerInitialization,
 +    takePreparedAvatarRoot,
 +  } from "../services/shared-gltf-cache";
++  import {
++    nextAvatarInstrumentationSequence,
++    recordAvatarLoadSpan,
++  } from "../debug/avatar-load-instrumentation";
  
    import { userProportionsState } from "../state/user-proportions-state.svelte";
    import IKFigure3D from "./IKFigure3D.svelte";
@@ -48,7 +52,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
    const toast = { warning(_msg: string) {} };
  
    import type { ILocomotionAnimator } from "../services/contracts/ILocomotionAnimator";
-@@ -51,7 +55,11 @@
+@@ -51,7 +59,11 @@
    import { createAvatarServices } from "../services/implementations/AvatarServicesFactory";
    import { GripType } from "../domain/models/GripPose";
    import { CollisionDetector } from "../services/implementations/CollisionDetector";
@@ -61,7 +65,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
    import { tryGetViewer3DContext } from "../context/viewer-3d-context";
    import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
    import {
-@@ -74,6 +82,17 @@
+@@ -74,6 +86,17 @@
    const blueVisible = $derived(viewerVisibility?.blueMotion ?? true);
    const redVisible = $derived(viewerVisibility?.redMotion ?? true);
  
@@ -79,7 +83,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
    // Default Z position for avatars
    // Placing avatar at z=0 (same as grid plane) so hands are exactly at prop positions
    // The avatar's body is thin enough that it won't clip through the grid
-@@ -115,11 +134,36 @@
+@@ -115,11 +138,36 @@
      enableRootMotion?: boolean;
      /** Called each frame with the world-space XZ delta from root motion.
       *  The parent applies this to physics for collision-aware movement. */
@@ -117,7 +121,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
      /** Disable spine twist (dual-wheel: wide lateral targets twist the torso/feet) */
      disableSpineTwist?: boolean;
      /** Current beat index for collision detection logging */
-@@ -175,6 +219,11 @@
+@@ -175,6 +223,11 @@
      onRootMotion,
      bluePropAnchorRef,
      redPropAnchorRef,
@@ -129,7 +133,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
      disableSpineTwist = false,
      stepNumber = 0,
      beatProgress = 0,
-@@ -195,7 +244,7 @@
+@@ -195,7 +248,7 @@
    // Services (manually instantiated to ensure shared skeleton instance)
    let skeletonService: IAvatarSkeletonBuilder | null = $state(null);
    let ikSolver: IIKSolver | null = $state(null);
@@ -138,7 +142,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
    let locomotionAnimator: ILocomotionAnimator | null = $state(null);
    let stateMachine: IAnimationStateMachine | null = null;
    let rootMotionExtractor: IRootMotionExtractor | null = null;
-@@ -210,11 +259,18 @@
+@@ -210,11 +263,18 @@
    // Collision detection - logs when props/arms clip through the avatar body
    const collisionDetector = new CollisionDetector();
    const _boneVecs = {
@@ -162,7 +166,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
    };
    // Scratch vectors for deriving the face center from the shoulder line.
    // The Mixamo Head bone is at the base of the skull, so we push the face
-@@ -224,7 +280,7 @@
+@@ -224,7 +284,7 @@
    const _faceRight = new Vector3();
    const _faceForward = new Vector3();
    const FACE_FORWARD_OFFSET = 0.08; // 8 cm forward from head bone
@@ -171,7 +175,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
  
    /**
     * Base rotation from the staff's local-Y axis to the "horizontal" axis
-@@ -278,9 +334,157 @@
+@@ -278,9 +338,157 @@
  
    const _unitY = new Vector3(0, 1, 0);
  
@@ -330,7 +334,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
    let currentLoadedAvatarId = $state<string | null>(null);
    let isLoading = $state(false);
    let hasShownFallbackToast = $state(false);
-@@ -302,14 +506,46 @@
+@@ -302,14 +510,46 @@
    // feetOffset adjusts so feet touch the ground (it's negative)
    const baseGroupY = $derived(
      position.y !== undefined && position.y !== 0
@@ -379,20 +383,31 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
    // Load a GLTF model for a specific avatar
    // Uses hot-swap pattern: keeps old avatar visible until new one is ready
    async function loadAvatar(targetAvatarId: string) {
-@@ -324,7 +560,11 @@
+@@ -319,12 +559,22 @@
+     if (currentLoadedAvatarId === targetAvatarId) return;
+ 
+     const url = getAvatarModelPath(targetAvatarId);
++    const loadLabel = `${targetAvatarId}@${nextAvatarInstrumentationSequence()}`;
++    const loadStart = performance.now();
++    let rendererPreparedForSpan = false;
++    let hadPreparedRootForSpan = false;
+ 
+     isLoading = true;
  
      try {
        // Load new model (skeleton service handles internal swap)
 -      await skeletonService.loadModel(url);
 +      const rendererPrepared = isAvatarPreparedForRenderer(url, renderer);
 +      const preparedRoot = takePreparedAvatarRoot(url, renderer);
++      rendererPreparedForSpan = rendererPrepared;
++      hadPreparedRootForSpan = preparedRoot != null;
 +      const loadModel = () => skeletonService!.loadModel(url, preparedRoot ?? undefined);
 +      if (preparedRoot) await loadModel();
-+      else await schedulePerformerInitialization(loadModel);
++      else await schedulePerformerInitialization(loadModel, loadLabel);
  
        // Scale model to match user's height
        // setHeight() calculates proper scale and stores feet offset
-@@ -333,19 +573,35 @@
+@@ -333,19 +583,43 @@
        // Get the feet offset for positioning (negative value)
        feetOffset = skeletonService.getFeetOffset();
  
@@ -411,6 +426,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
 -        cachedRoot.traverse((child: any) => {
 -          if (child.isMesh) {
 -            child.castShadow = true;
++        const compileStart = performance.now();
 +        try {
 +          // The outgoing avatar stays alive through both preparations so Three
 +          // can reuse compatible programs. Swaps fade through a transparent
@@ -425,6 +441,13 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
 -        });
 +        } catch (error) {
 +          console.warn("[Avatar3D] avatar shader warmup failed:", error);
++        } finally {
++          recordAvatarLoadSpan(
++            loadLabel,
++            "shader-compile",
++            compileStart,
++            opacity < 1 ? "opaque+transparent" : "opaque"
++          );
 +        }
        }
  
@@ -437,7 +460,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
        currentLoadedAvatarId = targetAvatarId;
        modelLoaded = true;
        useProceduralFallback = false;
-@@ -363,8 +619,14 @@
+@@ -363,8 +637,14 @@
        const rightUpLeg = skState.bones.get("RightUpLeg");
        if (leftUpLeg && rightUpLeg) {
          const stanceAngle = (8 * Math.PI) / 180; // 8° outward each side
@@ -454,7 +477,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
          leftUpLeg.quaternion.multiply(leftTilt);
          rightUpLeg.quaternion.multiply(rightTilt);
          leftUpLeg.updateMatrixWorld(true);
-@@ -398,7 +660,11 @@
+@@ -398,7 +678,11 @@
          locomotionAnimator.initialize(cachedRoot);
  
          // Initialize root motion extractor with the Hips bone
@@ -467,7 +490,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
            const hipsBone = locomotionAnimator.getHipsBone();
            if (hipsBone) {
              rootMotionExtractor.initialize(hipsBone);
-@@ -418,9 +684,15 @@
+@@ -418,9 +702,15 @@
              backward: `${animBase}walk-backward${rmSuffix}.glb`,
              strafeLeft: `${animBase}strafe-left${rmSuffix}.glb`,
              strafeRight: `${animBase}strafe-right${rmSuffix}.glb`,
@@ -486,7 +509,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
              crouch: "/animations/crouch-idle.glb",
            })
            .catch((err) => {
-@@ -444,18 +716,35 @@
+@@ -444,18 +734,35 @@
          const turnsBase = "/animations/turns/";
          const probeUrl = `${turnsBase}turn-left-90.glb`;
          const rootForTurns = cachedRoot;
@@ -531,7 +554,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
                ])
                .then(() => {
                  // Register turn clip contact curves so FootPlanter can query them
-@@ -476,7 +765,13 @@
+@@ -476,7 +783,13 @@
        // ikSolver, which is still used by arm IK elsewhere in this file).
        // Gated on enableFootPlanting - off by default so the museum FPS player
        // (which wants responsive code-driven movement) isn't affected.
@@ -546,7 +569,24 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
          footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
        }
  
-@@ -587,7 +882,7 @@
+@@ -502,6 +815,16 @@
+       }
+     } finally {
+       isLoading = false;
++      recordAvatarLoadSpan(
++        loadLabel,
++        "load-total",
++        loadStart,
++        rendererPreparedForSpan
++          ? "renderer-prepared"
++          : hadPreparedRootForSpan
++            ? "prepared-root"
++            : "cold"
++      );
+     }
+   }
+ 
+@@ -587,7 +910,7 @@
  
      // Disable spine twist in dual-wheel mode - wide lateral IK targets
      // twist the torso and shift the feet on the ground.
@@ -555,7 +595,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
        (animationService as any).setSpineTwistEnabled(!disableSpineTwist);
      }
  
-@@ -596,16 +891,19 @@
+@@ -596,16 +919,19 @@
      if (enableLocomotion && locomotionAnimator) {
        if (stateMachine) {
          // State machine decides what state we're in based on physics signals
@@ -585,7 +625,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
  
          // Feed state to LocomotionAnimator for clip selection
          locomotionAnimator.setActiveState?.(stateOutput.state);
-@@ -642,7 +940,9 @@
+@@ -642,7 +968,9 @@
  
          // Apply bone rotations - overwrite animation pose for lower body
          for (const [boneName, quat] of sample.boneRotations) {
@@ -596,7 +636,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
            if (bone) {
              bone.quaternion.copy(quat);
            }
-@@ -681,7 +981,11 @@
+@@ -681,7 +1009,11 @@
        // displacement needs the same conversion.
        if (rootMotionExtractor?.isReady() && onRootMotion) {
          const localDelta = rootMotionExtractor.extract();
@@ -609,7 +649,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
            // Convert Mixamo centimeters to scene units.
            // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
            // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
-@@ -716,20 +1020,26 @@
+@@ -716,20 +1048,26 @@
            currentClipPhase: currentTurnPhase,
          });
        }
@@ -639,7 +679,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
      }
  
      if (redPropAnchorRef && redPropState) {
-@@ -737,6 +1047,10 @@
+@@ -737,6 +1075,10 @@
        redPropAnchorRef.getWorldPosition(redIKTarget);
      } else if (redPropState) {
        redIKTarget.copy(redPropState.worldPosition);
@@ -650,7 +690,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
      }
  
      const blueWorldProp = bluePropState
-@@ -746,15 +1060,74 @@
+@@ -746,15 +1088,74 @@
        ? { ...redPropState, worldPosition: redIKTarget }
        : null;
  
@@ -725,7 +765,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
      // 2b. Collision detection - run after IK so bones are at final positions
      if (collisionDetector.enabled && skeletonService) {
        const state = skeletonService.getState();
-@@ -867,20 +1240,15 @@
+@@ -867,20 +1268,15 @@
    // transparent with depth-write off so the fade blends correctly.
    $effect(() => {
      if (!cachedRoot) return;
@@ -752,7 +792,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
      // Dispose locomotion animator, state machine, and foot planter
      if (locomotionAnimator) {
        locomotionAnimator.dispose();
-@@ -913,13 +1281,19 @@
+@@ -913,13 +1309,19 @@
  </script>
  
  {#if visible}
@@ -849,7 +889,7 @@ index 1f3ab826ccfc49a3616646d516cf71e1af08bf7a..c4ff09a5a2f290c1eca1936187a057ab
 -//# sourceMappingURL=LimbSegment.svelte.d.ts.map
 \ No newline at end of file
 diff --git a/dist/lib/components/PerformerRig.svelte b/dist/lib/components/PerformerRig.svelte
-index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500c7e2ba4a 100644
+index 99a40cd26b35183a5e71c93105e0704084dbf9e9..c0f871c47c9772ee3a38f128206baec1f9e3f0f7 100644
 --- a/dist/lib/components/PerformerRig.svelte
 +++ b/dist/lib/components/PerformerRig.svelte
 @@ -16,7 +16,7 @@
@@ -861,15 +901,16 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
    import type { Snippet } from "svelte";
    import type { Group } from "three";
    import Avatar3D from "./Avatar3D.svelte";
-@@ -36,6 +36,7 @@
+@@ -36,6 +36,8 @@
    import type { TurnRequest } from "../services/contracts/ITurnAnimator";
    import { derivePlaneModeFromHands } from "../domain/utils/plane-mode-utils";
    import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
 +  import { schedulePerformerMount } from "../services/shared-gltf-cache";
++  import { nextAvatarInstrumentationSequence } from "../debug/avatar-load-instrumentation";
  
    // Constant sets to avoid allocating new Set objects on every reactive update.
    const WHEEL_ONLY = new Set([Plane.WHEEL]);
-@@ -119,17 +120,33 @@
+@@ -119,17 +121,33 @@
       * effect orchestrator can place tip-tracking effects (trails, LED, etc.)
       * in the correct rig-root-local frame without duplicating rig internals.
       */
@@ -914,7 +955,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
      /** Avatar mesh opacity 0-1, forwarded to Avatar3D for swap cross-fades.
       *  1 = fully opaque (default). */
      avatarOpacity?: number;
-@@ -167,6 +184,9 @@
+@@ -167,6 +185,9 @@
      enableRootMotion = false,
      enableFootPlanting = false,
      turnRequestOverride,
@@ -924,7 +965,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
      avatarOpacity = 1,
      onAvatarSwapped,
      gridSlot,
-@@ -174,7 +194,8 @@
+@@ -174,7 +195,8 @@
    }: Props = $props();
  
    const staffHalfLength = $derived(
@@ -934,7 +975,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
    );
  
    // Animation-driven yaw accumulator. When animationDrivenYaw is true, the
-@@ -185,8 +206,12 @@
+@@ -185,8 +207,12 @@
    let accumulatedYaw = $state(untrack(() => facingAngle));
  
    // Resolve prop states: use overrides (for dual-wheel swap) or avatarState defaults
@@ -949,7 +990,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
  
    // Derive mode config and grid offset from the current plane mode
    const modeConfig = $derived(PLANE_MODE_CONFIGS[planeMode]);
-@@ -247,7 +272,9 @@
+@@ -247,7 +273,9 @@
  
    // When a turn is active, enable animation-driven yaw so the rig
    // rotates from the turn clip's root motion rather than snapping.
@@ -960,7 +1001,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
  
    // Turn completion snap: when turnRequest goes null after being active,
    // snap avatarState to the post-turn heading so the sync effect below
-@@ -291,9 +318,54 @@
+@@ -291,9 +319,55 @@
    let bluePropAnchorRef = $state<Group | undefined>(undefined);
    let redPropAnchorRef = $state<Group | undefined>(undefined);
  
@@ -987,23 +1028,24 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
 +
 +  onMount(() => {
 +    let cancelled = false;
++    const rigLabel = `${avatarId ?? "rig"}@${nextAvatarInstrumentationSequence()}`;
 +
-+    const mountStage = (mount: () => void) =>
++    const mountStage = (stage: string, mount: () => void) =>
 +      schedulePerformerMount(() => {
 +        if (!cancelled) mount();
-+      });
++      }, `${rigLabel}:${stage}`);
 +
 +    void (async () => {
-+      await mountStage(() => {
++      await mountStage("avatar", () => {
 +        avatarMounted = true;
 +      });
-+      await mountStage(() => {
++      await mountStage("props", () => {
 +        propsMounted = true;
 +      });
-+      await mountStage(() => {
++      await mountStage("grid", () => {
 +        gridMounted = true;
 +      });
-+      await mountStage(() => {
++      await mountStage("effects", () => {
 +        effectsMounted = true;
 +      });
 +    })();
@@ -1015,7 +1057,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
  </script>
  
  <!-- Root: position in world space, apply facing rotation -->
-@@ -305,14 +377,14 @@
+@@ -305,14 +379,14 @@
  >
    <!-- Avatar3D uses groundY (~-1.56) internally to position its mesh,
         so shoulders end up near y=0 in rig space. -->
@@ -1033,7 +1075,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
        facingAngle={0}
        position={{ x: 0, z: 0 }}
        isActive={false}
-@@ -321,9 +393,14 @@
+@@ -321,9 +395,14 @@
        {enableLocomotion}
        {enableRootMotion}
        {enableFootPlanting}
@@ -1051,7 +1093,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
        disableSpineTwist={isDualWheel}
        stepNumber={avatarState.currentStepIndex}
        beatProgress={avatarState.progress}
-@@ -339,15 +416,12 @@
+@@ -339,15 +418,12 @@
    {/if}
  
    <!-- Grid (consumer-provided via gridSlot) -->
@@ -1069,7 +1111,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
      {#if bluePropState && blueVisible}
        <T.Group
          bind:ref={bluePropAnchorRef}
-@@ -355,23 +429,22 @@
+@@ -355,23 +431,22 @@
          position.y={bluePropState.worldPosition.y}
          position.z={bluePropState.worldPosition.z}
        >
@@ -1104,7 +1146,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
      {#if redPropState && redVisible}
        <T.Group
          bind:ref={redPropAnchorRef}
-@@ -379,20 +452,22 @@
+@@ -379,20 +454,22 @@
          position.y={redPropState.worldPosition.y}
          position.z={redPropState.worldPosition.z}
        >
@@ -6625,6 +6667,193 @@ index db7cfcea8497fdd89b80bbf7b37364aae2d345ed..476f0b1ee0da5d6ea88d252ead169c2b
  export {};
 -//# sourceMappingURL=avatar-debug-hooks.d.ts.map
 \ No newline at end of file
+diff --git a/dist/lib/debug/avatar-load-instrumentation.d.ts b/dist/lib/debug/avatar-load-instrumentation.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..c59ad15e57a6fb2462235f7c79c894a95e373038
+--- /dev/null
++++ b/dist/lib/debug/avatar-load-instrumentation.d.ts
+@@ -0,0 +1,54 @@
++/**
++ * Avatar load instrumentation.
++ *
++ * Records how long each phase of bringing a performer's avatar on screen
++ * takes - global queue waits, paint yields, GLB parse, texture downscale,
++ * skinned clone, skeleton build, shader compile, texture upload - so a slow
++ * scene can be diagnosed from a per-performer, per-phase breakdown instead
++ * of a feeling. Recording is always on and costs one array push per span.
++ *
++ * Read the data from DevTools:
++ *   __avatarLoadReport()  - per-label phase table + wall-clock window
++ *   __avatarLoadEvents()  - raw spans in record order
++ *   __avatarLoadClear()   - reset between measurements
++ *
++ * Every span is also emitted as a performance.measure entry named
++ * "avatar:<phase>:<label>", so the DevTools Performance timeline shows the
++ * same story alongside frames and GC.
++ */
++export interface AvatarLoadSpan {
++    /** Which performer or asset this span belongs to. */
++    label: string;
++    /** Pipeline phase, e.g. "init-queue-wait", "shader-compile". */
++    phase: string;
++    /** performance.now() when the phase began. */
++    start: number;
++    durationMs: number;
++    /** Optional context: cache-hit/cold, texture counts, and similar. */
++    detail?: string;
++}
++/** Distinguish rigs that share one avatar model: "hoodie@3", "hoodie@4". */
++export declare function nextAvatarInstrumentationSequence(): number;
++/** "https://host/models/avatars/hoodie.glb" -> "hoodie.glb" */
++export declare function avatarAssetLabel(url: string): string;
++export declare function recordAvatarLoadSpan(label: string, phase: string, start: number, detail?: string): number;
++/** Time an async or sync phase and record it even when it throws. */
++export declare function timeAvatarLoadPhase<T>(label: string, phase: string, run: () => Promise<T> | T, detail?: string): Promise<T>;
++export declare function getAvatarLoadSpans(): readonly AvatarLoadSpan[];
++export declare function clearAvatarLoadSpans(): void;
++export interface AvatarLoadSummaryRow {
++    label: string;
++    phase: string;
++    count: number;
++    totalMs: number;
++    maxMs: number;
++    detail?: string;
++}
++export interface AvatarLoadSummary {
++    rows: AvatarLoadSummaryRow[];
++    /** Wall-clock from the first span's start to the last span's end. */
++    windowMs: number;
++    /** Summed span durations; exceeds windowMs when phases overlap. */
++    busyMs: number;
++}
++export declare function summarizeAvatarLoadSpans(): AvatarLoadSummary;
+diff --git a/dist/lib/debug/avatar-load-instrumentation.js b/dist/lib/debug/avatar-load-instrumentation.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..3da407076bbad414d93cdac0dd1f84ba44abfb56
+--- /dev/null
++++ b/dist/lib/debug/avatar-load-instrumentation.js
+@@ -0,0 +1,121 @@
++/**
++ * Avatar load instrumentation.
++ *
++ * Records how long each phase of bringing a performer's avatar on screen
++ * takes - global queue waits, paint yields, GLB parse, texture downscale,
++ * skinned clone, skeleton build, shader compile, texture upload - so a slow
++ * scene can be diagnosed from a per-performer, per-phase breakdown instead
++ * of a feeling. Recording is always on and costs one array push per span.
++ *
++ * Read the data from DevTools:
++ *   __avatarLoadReport()  - per-label phase table + wall-clock window
++ *   __avatarLoadEvents()  - raw spans in record order
++ *   __avatarLoadClear()   - reset between measurements
++ *
++ * Every span is also emitted as a performance.measure entry named
++ * "avatar:<phase>:<label>", so the DevTools Performance timeline shows the
++ * same story alongside frames and GC.
++ */
++const spans = [];
++let instanceSequence = 0;
++/** Distinguish rigs that share one avatar model: "hoodie@3", "hoodie@4". */
++export function nextAvatarInstrumentationSequence() {
++    return ++instanceSequence;
++}
++/** "https://host/models/avatars/hoodie.glb" -> "hoodie.glb" */
++export function avatarAssetLabel(url) {
++    return url.slice(url.lastIndexOf("/") + 1) || url;
++}
++export function recordAvatarLoadSpan(label, phase, start, detail) {
++    const durationMs = performance.now() - start;
++    spans.push({ label, phase, start, durationMs, detail });
++    try {
++        performance.measure(`avatar:${phase}:${label}`, {
++            start,
++            end: start + durationMs,
++        });
++    }
++    catch {
++        // Older measure() signatures reject the options object; the table and
++        // raw spans still carry the data.
++    }
++    return durationMs;
++}
++/** Time an async or sync phase and record it even when it throws. */
++export async function timeAvatarLoadPhase(label, phase, run, detail) {
++    const start = performance.now();
++    try {
++        return await run();
++    }
++    finally {
++        recordAvatarLoadSpan(label, phase, start, detail);
++    }
++}
++export function getAvatarLoadSpans() {
++    return spans;
++}
++export function clearAvatarLoadSpans() {
++    spans.length = 0;
++}
++export function summarizeAvatarLoadSpans() {
++    const byKey = new Map();
++    let windowStart = Infinity;
++    let windowEnd = -Infinity;
++    let busyMs = 0;
++    for (const span of spans) {
++        windowStart = Math.min(windowStart, span.start);
++        windowEnd = Math.max(windowEnd, span.start + span.durationMs);
++        busyMs += span.durationMs;
++        const key = `${span.label} ${span.phase}`;
++        const row = byKey.get(key);
++        if (row) {
++            row.count++;
++            row.totalMs += span.durationMs;
++            row.maxMs = Math.max(row.maxMs, span.durationMs);
++            if (span.detail)
++                row.detail = span.detail;
++        }
++        else {
++            byKey.set(key, {
++                label: span.label,
++                phase: span.phase,
++                count: 1,
++                totalMs: span.durationMs,
++                maxMs: span.durationMs,
++                detail: span.detail,
++            });
++        }
++    }
++    return {
++        rows: [...byKey.values()],
++        windowMs: spans.length ? windowEnd - windowStart : 0,
++        busyMs,
++    };
++}
++function reportAvatarLoad() {
++    const summary = summarizeAvatarLoadSpans();
++    const round = (value) => Math.round(value * 10) / 10;
++    console.table(summary.rows.map((row) => ({
++        label: row.label,
++        phase: row.phase,
++        count: row.count,
++        totalMs: round(row.totalMs),
++        maxMs: round(row.maxMs),
++        detail: row.detail ?? "",
++    })));
++    const phaseTotals = new Map();
++    for (const row of summary.rows) {
++        phaseTotals.set(row.phase, (phaseTotals.get(row.phase) ?? 0) + row.totalMs);
++    }
++    console.table([...phaseTotals]
++        .sort((a, b) => b[1] - a[1])
++        .map(([phase, totalMs]) => ({ phase, totalMs: round(totalMs) })));
++    console.log(`avatar load window ${round(summary.windowMs)}ms, summed phases ${round(summary.busyMs)}ms, spans ${spans.length}`);
++    return summary;
++}
++if (typeof window !== "undefined") {
++    const w = window;
++    w.__avatarLoadReport = reportAvatarLoad;
++    w.__avatarLoadEvents = () => spans.slice();
++    w.__avatarLoadClear = clearAvatarLoadSpans;
++}
 diff --git a/dist/lib/debug/mocap-debug.d.ts b/dist/lib/debug/mocap-debug.d.ts
 index 8f358dd26698c8bb31f0a9645202f7f3f3613ae2..2e831b9cb18a03a2a41b30dc1d1e61f268dc0407 100644
 --- a/dist/lib/debug/mocap-debug.d.ts
@@ -8187,20 +8416,21 @@ index 6f6a49b79156198141ac54620228b885cb8425fd..7c36c44fa9d9fa557b0c27b03467ab2a
 -//# sourceMappingURL=AvatarSkeletonBuilder.d.ts.map
 \ No newline at end of file
 diff --git a/dist/lib/services/implementations/AvatarSkeletonBuilder.js b/dist/lib/services/implementations/AvatarSkeletonBuilder.js
-index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..ae3238f20c60786fa0d381fb2e293ddb75ef276e 100644
+index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..92caa4814ef6fd8af7e54fbd4b4d4bf3636c982c 100644
 --- a/dist/lib/services/implementations/AvatarSkeletonBuilder.js
 +++ b/dist/lib/services/implementations/AvatarSkeletonBuilder.js
-@@ -5,8 +5,8 @@
+@@ -5,8 +5,9 @@
   * Provides access to bones for IK solving and animation.
   */
  import { Vector3, Box3 } from "three";
 -import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
  import { FINGER_BONES, } from "../../domain/models/GripPose";
 +import { cloneSharedSkinnedScene, getSharedGltfBounds, loadSharedGltf, } from "../shared-gltf-cache";
++import { avatarAssetLabel, recordAvatarLoadSpan, } from "../../debug/avatar-load-instrumentation";
  /**
   * Mapping of standard bone names to common variations
   * GLTF models from different sources use different naming conventions
-@@ -84,25 +84,25 @@ export class AvatarSkeletonBuilder {
+@@ -84,25 +85,36 @@ export class AvatarSkeletonBuilder {
          rightLegChain: null,
          fingerChains: null,
      };
@@ -8223,10 +8453,21 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..ae3238f20c60786fa0d381fb2e293ddb
 -            });
 -        });
 +    async loadModel(url, preparedRoot) {
++        const label = avatarAssetLabel(url);
 +        try {
 +            const gltf = await loadSharedGltf(url);
-+            const root = preparedRoot ?? cloneSharedSkinnedScene(gltf.scene);
++            let root;
++            if (preparedRoot) {
++                root = preparedRoot;
++            }
++            else {
++                const cloneStart = performance.now();
++                root = cloneSharedSkinnedScene(gltf.scene);
++                recordAvatarLoadSpan(label, "skinned-clone", cloneStart);
++            }
++            const buildStart = performance.now();
 +            this.processGLTF(root, getSharedGltfBounds(url));
++            recordAvatarLoadSpan(label, "skeleton-build", buildStart, preparedRoot ? "prepared-root" : "cold");
 +        }
 +        catch (error) {
 +            console.error("Failed to load avatar model:", error);
@@ -8238,7 +8479,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..ae3238f20c60786fa0d381fb2e293ddb
          // Hot-swap: keep old arm chains valid until new ones are ready
          // This ensures animation continues smoothly during the swap
          const oldRoot = this.state.root;
-@@ -111,7 +111,7 @@ export class AvatarSkeletonBuilder {
+@@ -111,7 +123,7 @@ export class AvatarSkeletonBuilder {
          const newBones = new Map();
          let newSkeleton = null;
          // Find all skinned meshes and bones in the new model
@@ -8247,7 +8488,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..ae3238f20c60786fa0d381fb2e293ddb
              if (child.isSkinnedMesh) {
                  const skinnedMesh = child;
                  newMeshes.push(skinnedMesh);
-@@ -129,38 +129,30 @@ export class AvatarSkeletonBuilder {
+@@ -129,38 +141,30 @@ export class AvatarSkeletonBuilder {
          });
          // Compute original bounding box of new model (before any transforms)
          // This is done ONCE at load time, before the model is added to the scene
@@ -8302,7 +8543,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..ae3238f20c60786fa0d381fb2e293ddb
      }
      /**
       * Map a bone to a bones map (used during hot-swap)
-@@ -452,23 +444,37 @@ export class AvatarSkeletonBuilder {
+@@ -452,23 +456,37 @@ export class AvatarSkeletonBuilder {
          // The model is already positioned with feet at Y=0
          return 0;
      }
@@ -9155,7 +9396,7 @@ index 1fc0eaee116ab6d3c606a3ea5acb3673257dcd2c..911e49e51de6255eed139bbb4010593e
 \ No newline at end of file
 diff --git a/dist/lib/services/shared-gltf-cache.d.ts b/dist/lib/services/shared-gltf-cache.d.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..4bca70b6c9b4d8ef6ae09a40cd70669d6ff66852
+index 0000000000000000000000000000000000000000..542b1462224a88f72e7380d8f79ba0ce702d75b3
 --- /dev/null
 +++ b/dist/lib/services/shared-gltf-cache.d.ts
 @@ -0,0 +1,60 @@
@@ -9209,8 +9450,8 @@ index 0000000000000000000000000000000000000000..4bca70b6c9b4d8ef6ae09a40cd70669d
 +export declare function loadSharedAnimation(url: string): Promise<AnimationClip>;
 +/** Share existence probes used before optional animation packs are loaded. */
 +export declare function checkSharedAssetAvailability(url: string): Promise<boolean>;
-+export declare function schedulePerformerInitialization<T>(initialize: () => Promise<T>): Promise<T>;
-+export declare function schedulePerformerMount(mount: () => void): Promise<void>;
++export declare function schedulePerformerInitialization<T>(initialize: () => Promise<T>, label?: string): Promise<T>;
++export declare function schedulePerformerMount(mount: () => void, label?: string): Promise<void>;
 +/**
 + * Give one performer an independently animatable skeleton while sharing the
 + * immutable geometry and textures from the parsed model. Materials are cloned
@@ -9221,13 +9462,14 @@ index 0000000000000000000000000000000000000000..4bca70b6c9b4d8ef6ae09a40cd70669d
 +export declare function clearSharedGltfCache(): void;
 diff --git a/dist/lib/services/shared-gltf-cache.js b/dist/lib/services/shared-gltf-cache.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..05462eb708ffedd23a2919320a1afad3eb32a10f
+index 0000000000000000000000000000000000000000..f110292508ed1650839c4b2daa75bba109334783
 --- /dev/null
 +++ b/dist/lib/services/shared-gltf-cache.js
-@@ -0,0 +1,358 @@
+@@ -0,0 +1,382 @@
 +import { Box3 } from "three";
 +import { GLTFLoader, } from "three/examples/jsm/loaders/GLTFLoader.js";
 +import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
++import { avatarAssetLabel, recordAvatarLoadSpan, } from "../debug/avatar-load-instrumentation";
 +const loader = new GLTFLoader();
 +const loads = new Map();
 +const animationLoads = new Map();
@@ -9257,8 +9499,12 @@ index 0000000000000000000000000000000000000000..05462eb708ffedd23a2919320a1afad3
 +    const existing = loads.get(url);
 +    if (existing)
 +        return existing;
++    const parseStart = performance.now();
 +    const pending = loader.loadAsync(url).then(async (gltf) => {
++        recordAvatarLoadSpan(avatarAssetLabel(url), "gltf-fetch-parse", parseStart);
++        const fitStart = performance.now();
 +        await fitAvatarTexturesToDisplayBudget(gltf.scene);
++        recordAvatarLoadSpan(avatarAssetLabel(url), "texture-downscale", fitStart);
 +        const box = new Box3().setFromObject(gltf.scene);
 +        avatarBounds.set(url, {
 +            height: box.max.y - box.min.y,
@@ -9398,18 +9644,23 @@ index 0000000000000000000000000000000000000000..05462eb708ffedd23a2919320a1afad3
 +    });
 +    skeletons.forEach((skeleton) => skeleton.dispose());
 +}
-+async function warmAvatarForRenderer(context, root) {
++async function warmAvatarForRenderer(context, root, label) {
 +    const camera = context.getCamera();
 +    if (!camera)
 +        return;
++    const compileStart = performance.now();
 +    await context.renderer.compileAsync(root, camera, context.scene);
++    recordAvatarLoadSpan(label, "intent-shader-compile", compileStart);
 +    // Upload one decoded texture per painted frame. WebGLRenderer.initTexture()
 +    // leaves the live framebuffer, viewport, and scene untouched, so moving
 +    // across avatar choices cannot flash a one-pixel target onto the stage.
-+    for (const texture of collectTextures(root)) {
++    const uploadStart = performance.now();
++    const textures = collectTextures(root);
++    for (const texture of textures) {
 +        context.renderer.initTexture(texture);
 +        await yieldToNextFrame();
 +    }
++    recordAvatarLoadSpan(label, "intent-texture-upload", uploadStart, `${textures.length} textures`);
 +}
 +/**
 + * Parse and upload an avatar when pointer or keyboard intent is known.
@@ -9427,7 +9678,7 @@ index 0000000000000000000000000000000000000000..05462eb708ffedd23a2919320a1afad3
 +            if (mesh.isMesh)
 +                mesh.castShadow = true;
 +        });
-+        const pending = warmAvatarForRenderer(context, preparedRoot)
++        const pending = warmAvatarForRenderer(context, preparedRoot, avatarAssetLabel(url))
 +            .then(() => {
 +            context.preparedRoots.set(url, preparedRoot);
 +            context.preparedUrls.add(url);
@@ -9511,16 +9762,26 @@ index 0000000000000000000000000000000000000000..05462eb708ffedd23a2919320a1afad3
 + * the light state change and formation motion remain immediate.
 + */
 +let performerInitializationQueue = Promise.resolve();
-+export async function schedulePerformerInitialization(initialize) {
++export async function schedulePerformerInitialization(initialize, label = "performer") {
 +    const predecessor = performerInitializationQueue;
 +    let release;
 +    performerInitializationQueue = new Promise((resolve) => {
 +        release = resolve;
 +    });
 +    try {
++        const queuedAt = performance.now();
 +        await predecessor;
++        recordAvatarLoadSpan(label, "init-queue-wait", queuedAt);
++        const yieldStart = performance.now();
 +        await yieldUntilAfterPaint();
-+        return await initialize();
++        recordAvatarLoadSpan(label, "init-paint-yield", yieldStart);
++        const workStart = performance.now();
++        try {
++            return await initialize();
++        }
++        finally {
++            recordAvatarLoadSpan(label, "init-work", workStart);
++        }
 +    }
 +    finally {
 +        release();
@@ -9536,15 +9797,19 @@ index 0000000000000000000000000000000000000000..05462eb708ffedd23a2919320a1afad3
 + * subtree per painted frame.
 + */
 +let performerMountQueue = Promise.resolve();
-+export async function schedulePerformerMount(mount) {
++export async function schedulePerformerMount(mount, label = "performer") {
 +    const predecessor = performerMountQueue;
 +    let release;
 +    performerMountQueue = new Promise((resolve) => {
 +        release = resolve;
 +    });
 +    try {
++        const queuedAt = performance.now();
 +        await predecessor;
++        recordAvatarLoadSpan(label, "mount-queue-wait", queuedAt);
++        const yieldStart = performance.now();
 +        await yieldUntilAfterPaint();
++        recordAvatarLoadSpan(label, "mount-paint-yield", yieldStart);
 +        mount();
 +    }
 +    finally {
@@ -9711,10 +9976,10 @@ index f18ca9b67211f249b0b65867abedc535d776db81..1c12e5a0ff1c4f1cbd2b3564041d49b3
 -//# sourceMappingURL=user-proportions-state.svelte.d.ts.map
 \ No newline at end of file
 diff --git a/src/lib/components/Avatar3D.svelte b/src/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df819736416e7fb 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..75f9ba4096d3f2a88e4dcdf573f30c528d506b6c 100644
 --- a/src/lib/components/Avatar3D.svelte
 +++ b/src/lib/components/Avatar3D.svelte
-@@ -16,26 +16,30 @@
+@@ -16,26 +16,34 @@
     */
  
    import { onMount, onDestroy, untrack } from "svelte";
@@ -9745,6 +10010,10 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
 +    schedulePerformerInitialization,
 +    takePreparedAvatarRoot,
 +  } from "../services/shared-gltf-cache";
++  import {
++    nextAvatarInstrumentationSequence,
++    recordAvatarLoadSpan,
++  } from "../debug/avatar-load-instrumentation";
  
    import { userProportionsState } from "../state/user-proportions-state.svelte";
    import IKFigure3D from "./IKFigure3D.svelte";
@@ -9752,7 +10021,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
    const toast = { warning(_msg: string) {} };
  
    import type { ILocomotionAnimator } from "../services/contracts/ILocomotionAnimator";
-@@ -51,7 +55,11 @@
+@@ -51,7 +59,11 @@
    import { createAvatarServices } from "../services/implementations/AvatarServicesFactory";
    import { GripType } from "../domain/models/GripPose";
    import { CollisionDetector } from "../services/implementations/CollisionDetector";
@@ -9765,7 +10034,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
    import { tryGetViewer3DContext } from "../context/viewer-3d-context";
    import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
    import {
-@@ -74,6 +82,17 @@
+@@ -74,6 +86,17 @@
    const blueVisible = $derived(viewerVisibility?.blueMotion ?? true);
    const redVisible = $derived(viewerVisibility?.redMotion ?? true);
  
@@ -9783,7 +10052,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
    // Default Z position for avatars
    // Placing avatar at z=0 (same as grid plane) so hands are exactly at prop positions
    // The avatar's body is thin enough that it won't clip through the grid
-@@ -115,11 +134,36 @@
+@@ -115,11 +138,36 @@
      enableRootMotion?: boolean;
      /** Called each frame with the world-space XZ delta from root motion.
       *  The parent applies this to physics for collision-aware movement. */
@@ -9821,7 +10090,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
      /** Disable spine twist (dual-wheel: wide lateral targets twist the torso/feet) */
      disableSpineTwist?: boolean;
      /** Current beat index for collision detection logging */
-@@ -175,6 +219,11 @@
+@@ -175,6 +223,11 @@
      onRootMotion,
      bluePropAnchorRef,
      redPropAnchorRef,
@@ -9833,7 +10102,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
      disableSpineTwist = false,
      stepNumber = 0,
      beatProgress = 0,
-@@ -195,7 +244,7 @@
+@@ -195,7 +248,7 @@
    // Services (manually instantiated to ensure shared skeleton instance)
    let skeletonService: IAvatarSkeletonBuilder | null = $state(null);
    let ikSolver: IIKSolver | null = $state(null);
@@ -9842,7 +10111,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
    let locomotionAnimator: ILocomotionAnimator | null = $state(null);
    let stateMachine: IAnimationStateMachine | null = null;
    let rootMotionExtractor: IRootMotionExtractor | null = null;
-@@ -210,11 +259,18 @@
+@@ -210,11 +263,18 @@
    // Collision detection - logs when props/arms clip through the avatar body
    const collisionDetector = new CollisionDetector();
    const _boneVecs = {
@@ -9866,7 +10135,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
    };
    // Scratch vectors for deriving the face center from the shoulder line.
    // The Mixamo Head bone is at the base of the skull, so we push the face
-@@ -224,7 +280,7 @@
+@@ -224,7 +284,7 @@
    const _faceRight = new Vector3();
    const _faceForward = new Vector3();
    const FACE_FORWARD_OFFSET = 0.08; // 8 cm forward from head bone
@@ -9875,7 +10144,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
  
    /**
     * Base rotation from the staff's local-Y axis to the "horizontal" axis
-@@ -278,9 +334,157 @@
+@@ -278,9 +338,157 @@
  
    const _unitY = new Vector3(0, 1, 0);
  
@@ -10034,7 +10303,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
    let currentLoadedAvatarId = $state<string | null>(null);
    let isLoading = $state(false);
    let hasShownFallbackToast = $state(false);
-@@ -302,14 +506,46 @@
+@@ -302,14 +510,46 @@
    // feetOffset adjusts so feet touch the ground (it's negative)
    const baseGroupY = $derived(
      position.y !== undefined && position.y !== 0
@@ -10083,20 +10352,31 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
    // Load a GLTF model for a specific avatar
    // Uses hot-swap pattern: keeps old avatar visible until new one is ready
    async function loadAvatar(targetAvatarId: string) {
-@@ -324,7 +560,11 @@
+@@ -319,12 +559,22 @@
+     if (currentLoadedAvatarId === targetAvatarId) return;
+ 
+     const url = getAvatarModelPath(targetAvatarId);
++    const loadLabel = `${targetAvatarId}@${nextAvatarInstrumentationSequence()}`;
++    const loadStart = performance.now();
++    let rendererPreparedForSpan = false;
++    let hadPreparedRootForSpan = false;
+ 
+     isLoading = true;
  
      try {
        // Load new model (skeleton service handles internal swap)
 -      await skeletonService.loadModel(url);
 +      const rendererPrepared = isAvatarPreparedForRenderer(url, renderer);
 +      const preparedRoot = takePreparedAvatarRoot(url, renderer);
++      rendererPreparedForSpan = rendererPrepared;
++      hadPreparedRootForSpan = preparedRoot != null;
 +      const loadModel = () => skeletonService!.loadModel(url, preparedRoot ?? undefined);
 +      if (preparedRoot) await loadModel();
-+      else await schedulePerformerInitialization(loadModel);
++      else await schedulePerformerInitialization(loadModel, loadLabel);
  
        // Scale model to match user's height
        // setHeight() calculates proper scale and stores feet offset
-@@ -333,19 +573,35 @@
+@@ -333,19 +583,43 @@
        // Get the feet offset for positioning (negative value)
        feetOffset = skeletonService.getFeetOffset();
  
@@ -10115,6 +10395,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
 -        cachedRoot.traverse((child: any) => {
 -          if (child.isMesh) {
 -            child.castShadow = true;
++        const compileStart = performance.now();
 +        try {
 +          // The outgoing avatar stays alive through both preparations so Three
 +          // can reuse compatible programs. Swaps fade through a transparent
@@ -10129,6 +10410,13 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
 -        });
 +        } catch (error) {
 +          console.warn("[Avatar3D] avatar shader warmup failed:", error);
++        } finally {
++          recordAvatarLoadSpan(
++            loadLabel,
++            "shader-compile",
++            compileStart,
++            opacity < 1 ? "opaque+transparent" : "opaque"
++          );
 +        }
        }
  
@@ -10141,7 +10429,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
        currentLoadedAvatarId = targetAvatarId;
        modelLoaded = true;
        useProceduralFallback = false;
-@@ -363,8 +619,14 @@
+@@ -363,8 +637,14 @@
        const rightUpLeg = skState.bones.get("RightUpLeg");
        if (leftUpLeg && rightUpLeg) {
          const stanceAngle = (8 * Math.PI) / 180; // 8° outward each side
@@ -10158,7 +10446,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
          leftUpLeg.quaternion.multiply(leftTilt);
          rightUpLeg.quaternion.multiply(rightTilt);
          leftUpLeg.updateMatrixWorld(true);
-@@ -398,7 +660,11 @@
+@@ -398,7 +678,11 @@
          locomotionAnimator.initialize(cachedRoot);
  
          // Initialize root motion extractor with the Hips bone
@@ -10171,7 +10459,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
            const hipsBone = locomotionAnimator.getHipsBone();
            if (hipsBone) {
              rootMotionExtractor.initialize(hipsBone);
-@@ -418,9 +684,15 @@
+@@ -418,9 +702,15 @@
              backward: `${animBase}walk-backward${rmSuffix}.glb`,
              strafeLeft: `${animBase}strafe-left${rmSuffix}.glb`,
              strafeRight: `${animBase}strafe-right${rmSuffix}.glb`,
@@ -10190,7 +10478,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
              crouch: "/animations/crouch-idle.glb",
            })
            .catch((err) => {
-@@ -444,18 +716,35 @@
+@@ -444,18 +734,35 @@
          const turnsBase = "/animations/turns/";
          const probeUrl = `${turnsBase}turn-left-90.glb`;
          const rootForTurns = cachedRoot;
@@ -10235,7 +10523,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
                ])
                .then(() => {
                  // Register turn clip contact curves so FootPlanter can query them
-@@ -476,7 +765,13 @@
+@@ -476,7 +783,13 @@
        // ikSolver, which is still used by arm IK elsewhere in this file).
        // Gated on enableFootPlanting - off by default so the museum FPS player
        // (which wants responsive code-driven movement) isn't affected.
@@ -10250,7 +10538,24 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
          footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
        }
  
-@@ -587,7 +882,7 @@
+@@ -502,6 +815,16 @@
+       }
+     } finally {
+       isLoading = false;
++      recordAvatarLoadSpan(
++        loadLabel,
++        "load-total",
++        loadStart,
++        rendererPreparedForSpan
++          ? "renderer-prepared"
++          : hadPreparedRootForSpan
++            ? "prepared-root"
++            : "cold"
++      );
+     }
+   }
+ 
+@@ -587,7 +910,7 @@
  
      // Disable spine twist in dual-wheel mode - wide lateral IK targets
      // twist the torso and shift the feet on the ground.
@@ -10259,7 +10564,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
        (animationService as any).setSpineTwistEnabled(!disableSpineTwist);
      }
  
-@@ -596,16 +891,19 @@
+@@ -596,16 +919,19 @@
      if (enableLocomotion && locomotionAnimator) {
        if (stateMachine) {
          // State machine decides what state we're in based on physics signals
@@ -10289,7 +10594,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
  
          // Feed state to LocomotionAnimator for clip selection
          locomotionAnimator.setActiveState?.(stateOutput.state);
-@@ -642,7 +940,9 @@
+@@ -642,7 +968,9 @@
  
          // Apply bone rotations - overwrite animation pose for lower body
          for (const [boneName, quat] of sample.boneRotations) {
@@ -10300,7 +10605,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
            if (bone) {
              bone.quaternion.copy(quat);
            }
-@@ -681,7 +981,11 @@
+@@ -681,7 +1009,11 @@
        // displacement needs the same conversion.
        if (rootMotionExtractor?.isReady() && onRootMotion) {
          const localDelta = rootMotionExtractor.extract();
@@ -10313,7 +10618,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
            // Convert Mixamo centimeters to scene units.
            // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
            // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
-@@ -716,20 +1020,26 @@
+@@ -716,20 +1048,26 @@
            currentClipPhase: currentTurnPhase,
          });
        }
@@ -10343,7 +10648,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
      }
  
      if (redPropAnchorRef && redPropState) {
-@@ -737,6 +1047,10 @@
+@@ -737,6 +1075,10 @@
        redPropAnchorRef.getWorldPosition(redIKTarget);
      } else if (redPropState) {
        redIKTarget.copy(redPropState.worldPosition);
@@ -10354,7 +10659,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
      }
  
      const blueWorldProp = bluePropState
-@@ -746,15 +1060,74 @@
+@@ -746,15 +1088,74 @@
        ? { ...redPropState, worldPosition: redIKTarget }
        : null;
  
@@ -10429,7 +10734,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
      // 2b. Collision detection - run after IK so bones are at final positions
      if (collisionDetector.enabled && skeletonService) {
        const state = skeletonService.getState();
-@@ -867,20 +1240,15 @@
+@@ -867,20 +1268,15 @@
    // transparent with depth-write off so the fade blends correctly.
    $effect(() => {
      if (!cachedRoot) return;
@@ -10456,7 +10761,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
      // Dispose locomotion animator, state machine, and foot planter
      if (locomotionAnimator) {
        locomotionAnimator.dispose();
-@@ -913,13 +1281,19 @@
+@@ -913,13 +1309,19 @@
  </script>
  
  {#if visible}
@@ -10484,7 +10789,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..c7f1fd7d7c596ec670f8aef00df81973
        name={`PERFORMER_${id}`}
        position={[position.x, position.y ?? 0, position.z]}
 diff --git a/src/lib/components/PerformerRig.svelte b/src/lib/components/PerformerRig.svelte
-index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500c7e2ba4a 100644
+index 99a40cd26b35183a5e71c93105e0704084dbf9e9..c0f871c47c9772ee3a38f128206baec1f9e3f0f7 100644
 --- a/src/lib/components/PerformerRig.svelte
 +++ b/src/lib/components/PerformerRig.svelte
 @@ -16,7 +16,7 @@
@@ -10496,15 +10801,16 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
    import type { Snippet } from "svelte";
    import type { Group } from "three";
    import Avatar3D from "./Avatar3D.svelte";
-@@ -36,6 +36,7 @@
+@@ -36,6 +36,8 @@
    import type { TurnRequest } from "../services/contracts/ITurnAnimator";
    import { derivePlaneModeFromHands } from "../domain/utils/plane-mode-utils";
    import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
 +  import { schedulePerformerMount } from "../services/shared-gltf-cache";
++  import { nextAvatarInstrumentationSequence } from "../debug/avatar-load-instrumentation";
  
    // Constant sets to avoid allocating new Set objects on every reactive update.
    const WHEEL_ONLY = new Set([Plane.WHEEL]);
-@@ -119,17 +120,33 @@
+@@ -119,17 +121,33 @@
       * effect orchestrator can place tip-tracking effects (trails, LED, etc.)
       * in the correct rig-root-local frame without duplicating rig internals.
       */
@@ -10549,7 +10855,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
      /** Avatar mesh opacity 0-1, forwarded to Avatar3D for swap cross-fades.
       *  1 = fully opaque (default). */
      avatarOpacity?: number;
-@@ -167,6 +184,9 @@
+@@ -167,6 +185,9 @@
      enableRootMotion = false,
      enableFootPlanting = false,
      turnRequestOverride,
@@ -10559,7 +10865,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
      avatarOpacity = 1,
      onAvatarSwapped,
      gridSlot,
-@@ -174,7 +194,8 @@
+@@ -174,7 +195,8 @@
    }: Props = $props();
  
    const staffHalfLength = $derived(
@@ -10569,7 +10875,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
    );
  
    // Animation-driven yaw accumulator. When animationDrivenYaw is true, the
-@@ -185,8 +206,12 @@
+@@ -185,8 +207,12 @@
    let accumulatedYaw = $state(untrack(() => facingAngle));
  
    // Resolve prop states: use overrides (for dual-wheel swap) or avatarState defaults
@@ -10584,7 +10890,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
  
    // Derive mode config and grid offset from the current plane mode
    const modeConfig = $derived(PLANE_MODE_CONFIGS[planeMode]);
-@@ -247,7 +272,9 @@
+@@ -247,7 +273,9 @@
  
    // When a turn is active, enable animation-driven yaw so the rig
    // rotates from the turn clip's root motion rather than snapping.
@@ -10595,7 +10901,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
  
    // Turn completion snap: when turnRequest goes null after being active,
    // snap avatarState to the post-turn heading so the sync effect below
-@@ -291,9 +318,54 @@
+@@ -291,9 +319,55 @@
    let bluePropAnchorRef = $state<Group | undefined>(undefined);
    let redPropAnchorRef = $state<Group | undefined>(undefined);
  
@@ -10622,23 +10928,24 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
 +
 +  onMount(() => {
 +    let cancelled = false;
++    const rigLabel = `${avatarId ?? "rig"}@${nextAvatarInstrumentationSequence()}`;
 +
-+    const mountStage = (mount: () => void) =>
++    const mountStage = (stage: string, mount: () => void) =>
 +      schedulePerformerMount(() => {
 +        if (!cancelled) mount();
-+      });
++      }, `${rigLabel}:${stage}`);
 +
 +    void (async () => {
-+      await mountStage(() => {
++      await mountStage("avatar", () => {
 +        avatarMounted = true;
 +      });
-+      await mountStage(() => {
++      await mountStage("props", () => {
 +        propsMounted = true;
 +      });
-+      await mountStage(() => {
++      await mountStage("grid", () => {
 +        gridMounted = true;
 +      });
-+      await mountStage(() => {
++      await mountStage("effects", () => {
 +        effectsMounted = true;
 +      });
 +    })();
@@ -10650,7 +10957,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
  </script>
  
  <!-- Root: position in world space, apply facing rotation -->
-@@ -305,14 +377,14 @@
+@@ -305,14 +379,14 @@
  >
    <!-- Avatar3D uses groundY (~-1.56) internally to position its mesh,
         so shoulders end up near y=0 in rig space. -->
@@ -10668,7 +10975,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
        facingAngle={0}
        position={{ x: 0, z: 0 }}
        isActive={false}
-@@ -321,9 +393,14 @@
+@@ -321,9 +395,14 @@
        {enableLocomotion}
        {enableRootMotion}
        {enableFootPlanting}
@@ -10686,7 +10993,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
        disableSpineTwist={isDualWheel}
        stepNumber={avatarState.currentStepIndex}
        beatProgress={avatarState.progress}
-@@ -339,15 +416,12 @@
+@@ -339,15 +418,12 @@
    {/if}
  
    <!-- Grid (consumer-provided via gridSlot) -->
@@ -10704,7 +11011,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
      {#if bluePropState && blueVisible}
        <T.Group
          bind:ref={bluePropAnchorRef}
-@@ -355,23 +429,22 @@
+@@ -355,23 +431,22 @@
          position.y={bluePropState.worldPosition.y}
          position.z={bluePropState.worldPosition.z}
        >
@@ -10739,7 +11046,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..a60b6bc91040b6f1e6c4eb77cf56d500
      {#if redPropState && redVisible}
        <T.Group
          bind:ref={redPropAnchorRef}
-@@ -379,20 +452,22 @@
+@@ -379,20 +454,22 @@
          position.y={redPropState.worldPosition.y}
          position.z={redPropState.worldPosition.z}
        >
@@ -15429,6 +15736,193 @@ index 0000000000000000000000000000000000000000..e78e9296e60edb2d417b43b47b32edff
 +  ];
 +  return shape;
 +}
+diff --git a/src/lib/debug/avatar-load-instrumentation.ts b/src/lib/debug/avatar-load-instrumentation.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..7533d55eb9587dc3eda6ea149de226fc48749af5
+--- /dev/null
++++ b/src/lib/debug/avatar-load-instrumentation.ts
+@@ -0,0 +1,181 @@
++/**
++ * Avatar load instrumentation.
++ *
++ * Records how long each phase of bringing a performer's avatar on screen
++ * takes - global queue waits, paint yields, GLB parse, texture downscale,
++ * skinned clone, skeleton build, shader compile, texture upload - so a slow
++ * scene can be diagnosed from a per-performer, per-phase breakdown instead
++ * of a feeling. Recording is always on and costs one array push per span.
++ *
++ * Read the data from DevTools:
++ *   __avatarLoadReport()  - per-label phase table + wall-clock window
++ *   __avatarLoadEvents()  - raw spans in record order
++ *   __avatarLoadClear()   - reset between measurements
++ *
++ * Every span is also emitted as a performance.measure entry named
++ * "avatar:<phase>:<label>", so the DevTools Performance timeline shows the
++ * same story alongside frames and GC.
++ */
++
++export interface AvatarLoadSpan {
++  /** Which performer or asset this span belongs to. */
++  label: string;
++  /** Pipeline phase, e.g. "init-queue-wait", "shader-compile". */
++  phase: string;
++  /** performance.now() when the phase began. */
++  start: number;
++  durationMs: number;
++  /** Optional context: cache-hit/cold, texture counts, and similar. */
++  detail?: string;
++}
++
++const spans: AvatarLoadSpan[] = [];
++let instanceSequence = 0;
++
++/** Distinguish rigs that share one avatar model: "hoodie@3", "hoodie@4". */
++export function nextAvatarInstrumentationSequence(): number {
++  return ++instanceSequence;
++}
++
++/** "https://host/models/avatars/hoodie.glb" -> "hoodie.glb" */
++export function avatarAssetLabel(url: string): string {
++  return url.slice(url.lastIndexOf("/") + 1) || url;
++}
++
++export function recordAvatarLoadSpan(
++  label: string,
++  phase: string,
++  start: number,
++  detail?: string
++): number {
++  const durationMs = performance.now() - start;
++  spans.push({ label, phase, start, durationMs, detail });
++  try {
++    performance.measure(`avatar:${phase}:${label}`, {
++      start,
++      end: start + durationMs,
++    });
++  } catch {
++    // Older measure() signatures reject the options object; the table and
++    // raw spans still carry the data.
++  }
++  return durationMs;
++}
++
++/** Time an async or sync phase and record it even when it throws. */
++export async function timeAvatarLoadPhase<T>(
++  label: string,
++  phase: string,
++  run: () => Promise<T> | T,
++  detail?: string
++): Promise<T> {
++  const start = performance.now();
++  try {
++    return await run();
++  } finally {
++    recordAvatarLoadSpan(label, phase, start, detail);
++  }
++}
++
++export function getAvatarLoadSpans(): readonly AvatarLoadSpan[] {
++  return spans;
++}
++
++export function clearAvatarLoadSpans(): void {
++  spans.length = 0;
++}
++
++export interface AvatarLoadSummaryRow {
++  label: string;
++  phase: string;
++  count: number;
++  totalMs: number;
++  maxMs: number;
++  detail?: string;
++}
++
++export interface AvatarLoadSummary {
++  rows: AvatarLoadSummaryRow[];
++  /** Wall-clock from the first span's start to the last span's end. */
++  windowMs: number;
++  /** Summed span durations; exceeds windowMs when phases overlap. */
++  busyMs: number;
++}
++
++export function summarizeAvatarLoadSpans(): AvatarLoadSummary {
++  const byKey = new Map<string, AvatarLoadSummaryRow>();
++  let windowStart = Infinity;
++  let windowEnd = -Infinity;
++  let busyMs = 0;
++
++  for (const span of spans) {
++    windowStart = Math.min(windowStart, span.start);
++    windowEnd = Math.max(windowEnd, span.start + span.durationMs);
++    busyMs += span.durationMs;
++
++    const key = `${span.label} ${span.phase}`;
++    const row = byKey.get(key);
++    if (row) {
++      row.count++;
++      row.totalMs += span.durationMs;
++      row.maxMs = Math.max(row.maxMs, span.durationMs);
++      if (span.detail) row.detail = span.detail;
++    } else {
++      byKey.set(key, {
++        label: span.label,
++        phase: span.phase,
++        count: 1,
++        totalMs: span.durationMs,
++        maxMs: span.durationMs,
++        detail: span.detail,
++      });
++    }
++  }
++
++  return {
++    rows: [...byKey.values()],
++    windowMs: spans.length ? windowEnd - windowStart : 0,
++    busyMs,
++  };
++}
++
++function reportAvatarLoad(): AvatarLoadSummary {
++  const summary = summarizeAvatarLoadSpans();
++  const round = (value: number) => Math.round(value * 10) / 10;
++
++  console.table(
++    summary.rows.map((row) => ({
++      label: row.label,
++      phase: row.phase,
++      count: row.count,
++      totalMs: round(row.totalMs),
++      maxMs: round(row.maxMs),
++      detail: row.detail ?? "",
++    }))
++  );
++
++  const phaseTotals = new Map<string, number>();
++  for (const row of summary.rows) {
++    phaseTotals.set(row.phase, (phaseTotals.get(row.phase) ?? 0) + row.totalMs);
++  }
++  console.table(
++    [...phaseTotals]
++      .sort((a, b) => b[1] - a[1])
++      .map(([phase, totalMs]) => ({ phase, totalMs: round(totalMs) }))
++  );
++  console.log(
++    `avatar load window ${round(summary.windowMs)}ms, summed phases ${round(summary.busyMs)}ms, spans ${spans.length}`
++  );
++  return summary;
++}
++
++if (typeof window !== "undefined") {
++  const w = window as typeof window & {
++    __avatarLoadReport?: () => AvatarLoadSummary;
++    __avatarLoadEvents?: () => AvatarLoadSpan[];
++    __avatarLoadClear?: () => void;
++  };
++  w.__avatarLoadReport = reportAvatarLoad;
++  w.__avatarLoadEvents = () => spans.slice();
++  w.__avatarLoadClear = clearAvatarLoadSpans;
++}
 diff --git a/src/lib/domain/enums/PropType.ts b/src/lib/domain/enums/PropType.ts
 index a6a29aa9b928eb98fc102f572da1ed2035c658ba..08994c5b2a1f5816db497d58a030af04668333bb 100644
 --- a/src/lib/domain/enums/PropType.ts
@@ -16492,7 +16986,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
    togglePoleVectors(): boolean {
      this._poleVectorsEnabled = !this._poleVectorsEnabled;
 diff --git a/src/lib/services/implementations/AvatarSkeletonBuilder.ts b/src/lib/services/implementations/AvatarSkeletonBuilder.ts
-index d2f43b6b63eacb247573543f3d15c29118926882..9a1a4df967d1fb3857ba91fe94a2537d3ac09cd9 100644
+index d2f43b6b63eacb247573543f3d15c29118926882..26b5ef66259e918e4542fe8d40afd45d65e70a05 100644
 --- a/src/lib/services/implementations/AvatarSkeletonBuilder.ts
 +++ b/src/lib/services/implementations/AvatarSkeletonBuilder.ts
 @@ -5,9 +5,8 @@
@@ -16506,7 +17000,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..9a1a4df967d1fb3857ba91fe94a2537d
  import type {
    IAvatarSkeletonBuilder,
    BoneName,
-@@ -19,6 +18,11 @@ import {
+@@ -19,6 +18,15 @@ import {
    type FingerBoneName,
    type FingerChains,
  } from "../../domain/models/GripPose";
@@ -16515,10 +17009,14 @@ index d2f43b6b63eacb247573543f3d15c29118926882..9a1a4df967d1fb3857ba91fe94a2537d
 +  getSharedGltfBounds,
 +  loadSharedGltf,
 +} from "../shared-gltf-cache";
++import {
++  avatarAssetLabel,
++  recordAvatarLoadSpan,
++} from "../../debug/avatar-load-instrumentation";
  
  /**
   * Mapping of standard bone names to common variations
-@@ -101,9 +105,9 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -101,9 +109,9 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      fingerChains: null,
    };
  
@@ -16529,7 +17027,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..9a1a4df967d1fb3857ba91fe94a2537d
  
    /** Offset from model origin to feet (negative value - feet are below origin) */
    private feetOffset: number = 0;
-@@ -111,24 +115,21 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -111,24 +119,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
    /** Original bounding box min Y (in unscaled model space) - computed once at load time */
    private originalMinY: number = 0;
  
@@ -16546,13 +17044,27 @@ index d2f43b6b63eacb247573543f3d15c29118926882..9a1a4df967d1fb3857ba91fe94a2537d
 -          console.error("Failed to load avatar model:", error);
 -          reject(error);
 -        }
--      );
--    });
 +  async loadModel(url: string, preparedRoot?: Object3D): Promise<void> {
++    const label = avatarAssetLabel(url);
 +    try {
 +      const gltf = await loadSharedGltf(url);
-+      const root = preparedRoot ?? cloneSharedSkinnedScene(gltf.scene);
++      let root: Object3D;
++      if (preparedRoot) {
++        root = preparedRoot;
++      } else {
++        const cloneStart = performance.now();
++        root = cloneSharedSkinnedScene(gltf.scene);
++        recordAvatarLoadSpan(label, "skinned-clone", cloneStart);
++      }
++      const buildStart = performance.now();
 +      this.processGLTF(root, getSharedGltfBounds(url));
++      recordAvatarLoadSpan(
++        label,
++        "skeleton-build",
++        buildStart,
++        preparedRoot ? "prepared-root" : "cold"
+       );
+-    });
 +    } catch (error) {
 +      console.error("Failed to load avatar model:", error);
 +      throw error;
@@ -16567,7 +17079,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..9a1a4df967d1fb3857ba91fe94a2537d
      // Hot-swap: keep old arm chains valid until new ones are ready
      // This ensures animation continues smoothly during the swap
      const oldRoot = this.state.root;
-@@ -139,7 +140,7 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -139,7 +159,7 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      let newSkeleton: Skeleton | null = null;
  
      // Find all skinned meshes and bones in the new model
@@ -16576,7 +17088,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..9a1a4df967d1fb3857ba91fe94a2537d
        if ((child as SkinnedMesh).isSkinnedMesh) {
          const skinnedMesh = child as SkinnedMesh;
          newMeshes.push(skinnedMesh);
-@@ -160,12 +161,17 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -160,12 +180,17 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
  
      // Compute original bounding box of new model (before any transforms)
      // This is done ONCE at load time, before the model is added to the scene
@@ -16598,7 +17110,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..9a1a4df967d1fb3857ba91fe94a2537d
      this.state.meshes = newMeshes;
      this.state.bones = newBones;
      this.skeleton = newSkeleton;
-@@ -173,28 +179,14 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -173,28 +198,14 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      // Build IK chains (uses the new bones map)
      this.buildArmChains();
      this.buildLegChains();
@@ -16632,7 +17144,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..9a1a4df967d1fb3857ba91fe94a2537d
    }
  
    /**
-@@ -535,22 +527,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -535,22 +546,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      return 0;
    }
  
@@ -17388,10 +17900,10 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..6106a21ee445534768e8fff7992facbb
    }
 diff --git a/src/lib/services/shared-gltf-cache.ts b/src/lib/services/shared-gltf-cache.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..812243e7d2e1bb545800d21c6b6411a7b3c1e62d
+index 0000000000000000000000000000000000000000..f0954ba714626612592fc2b166f1f9a75417b658
 --- /dev/null
 +++ b/src/lib/services/shared-gltf-cache.ts
-@@ -0,0 +1,420 @@
+@@ -0,0 +1,460 @@
 +import type {
 +  AnimationClip,
 +  Camera,
@@ -17409,6 +17921,10 @@ index 0000000000000000000000000000000000000000..812243e7d2e1bb545800d21c6b6411a7
 +  type GLTF,
 +} from "three/examples/jsm/loaders/GLTFLoader.js";
 +import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
++import {
++  avatarAssetLabel,
++  recordAvatarLoadSpan,
++} from "../debug/avatar-load-instrumentation";
 +
 +const loader = new GLTFLoader();
 +const loads = new Map<string, Promise<GLTF>>();
@@ -17452,8 +17968,12 @@ index 0000000000000000000000000000000000000000..812243e7d2e1bb545800d21c6b6411a7
 +  const existing = loads.get(url);
 +  if (existing) return existing;
 +
++  const parseStart = performance.now();
 +  const pending = loader.loadAsync(url).then(async (gltf) => {
++    recordAvatarLoadSpan(avatarAssetLabel(url), "gltf-fetch-parse", parseStart);
++    const fitStart = performance.now();
 +    await fitAvatarTexturesToDisplayBudget(gltf.scene);
++    recordAvatarLoadSpan(avatarAssetLabel(url), "texture-downscale", fitStart);
 +    const box = new Box3().setFromObject(gltf.scene);
 +    avatarBounds.set(url, {
 +      height: box.max.y - box.min.y,
@@ -17607,20 +18127,31 @@ index 0000000000000000000000000000000000000000..812243e7d2e1bb545800d21c6b6411a7
 +
 +async function warmAvatarForRenderer(
 +  context: AvatarRenderWarmupContext,
-+  root: Object3D
++  root: Object3D,
++  label: string
 +): Promise<void> {
 +  const camera = context.getCamera();
 +  if (!camera) return;
 +
++  const compileStart = performance.now();
 +  await context.renderer.compileAsync(root, camera, context.scene);
++  recordAvatarLoadSpan(label, "intent-shader-compile", compileStart);
 +
 +  // Upload one decoded texture per painted frame. WebGLRenderer.initTexture()
 +  // leaves the live framebuffer, viewport, and scene untouched, so moving
 +  // across avatar choices cannot flash a one-pixel target onto the stage.
-+  for (const texture of collectTextures(root)) {
++  const uploadStart = performance.now();
++  const textures = collectTextures(root);
++  for (const texture of textures) {
 +    context.renderer.initTexture(texture);
 +    await yieldToNextFrame();
 +  }
++  recordAvatarLoadSpan(
++    label,
++    "intent-texture-upload",
++    uploadStart,
++    `${textures.length} textures`
++  );
 +}
 +
 +/**
@@ -17639,7 +18170,11 @@ index 0000000000000000000000000000000000000000..812243e7d2e1bb545800d21c6b6411a7
 +        const mesh = child as Mesh;
 +        if (mesh.isMesh) mesh.castShadow = true;
 +      });
-+      const pending = warmAvatarForRenderer(context, preparedRoot)
++      const pending = warmAvatarForRenderer(
++        context,
++        preparedRoot,
++        avatarAssetLabel(url)
++      )
 +        .then(() => {
 +          context.preparedRoots.set(url, preparedRoot);
 +          context.preparedUrls.add(url);
@@ -17735,7 +18270,8 @@ index 0000000000000000000000000000000000000000..812243e7d2e1bb545800d21c6b6411a7
 +let performerInitializationQueue: Promise<void> = Promise.resolve();
 +
 +export async function schedulePerformerInitialization<T>(
-+  initialize: () => Promise<T>
++  initialize: () => Promise<T>,
++  label = "performer"
 +): Promise<T> {
 +  const predecessor = performerInitializationQueue;
 +  let release!: () => void;
@@ -17744,9 +18280,18 @@ index 0000000000000000000000000000000000000000..812243e7d2e1bb545800d21c6b6411a7
 +  });
 +
 +  try {
++    const queuedAt = performance.now();
 +    await predecessor;
++    recordAvatarLoadSpan(label, "init-queue-wait", queuedAt);
++    const yieldStart = performance.now();
 +    await yieldUntilAfterPaint();
-+    return await initialize();
++    recordAvatarLoadSpan(label, "init-paint-yield", yieldStart);
++    const workStart = performance.now();
++    try {
++      return await initialize();
++    } finally {
++      recordAvatarLoadSpan(label, "init-work", workStart);
++    }
 +  } finally {
 +    release();
 +  }
@@ -17763,7 +18308,10 @@ index 0000000000000000000000000000000000000000..812243e7d2e1bb545800d21c6b6411a7
 + */
 +let performerMountQueue: Promise<void> = Promise.resolve();
 +
-+export async function schedulePerformerMount(mount: () => void): Promise<void> {
++export async function schedulePerformerMount(
++  mount: () => void,
++  label = "performer"
++): Promise<void> {
 +  const predecessor = performerMountQueue;
 +  let release!: () => void;
 +  performerMountQueue = new Promise<void>((resolve) => {
@@ -17771,8 +18319,12 @@ index 0000000000000000000000000000000000000000..812243e7d2e1bb545800d21c6b6411a7
 +  });
 +
 +  try {
++    const queuedAt = performance.now();
 +    await predecessor;
++    recordAvatarLoadSpan(label, "mount-queue-wait", queuedAt);
++    const yieldStart = performance.now();
 +    await yieldUntilAfterPaint();
++    recordAvatarLoadSpan(label, "mount-paint-yield", yieldStart);
 +    mount();
 +  } finally {
 +    release();
