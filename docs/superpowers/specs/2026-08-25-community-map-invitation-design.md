@@ -271,6 +271,25 @@ None of that applies to markup TKA owns. The `em` rule, the design system, the
 touch-target floor, and the contrast tokens apply to the picker the same way
 they apply to every other control in the panel.
 
+**What the headless path costs, stated up front.** The widget provided things
+the app must now own, and this design is not complete without them:
+
+- **A "Powered by Google" attribution is mandatory.** Using the Data API
+  programmatically requires the UI to display the attribution unless the
+  predictions appear inside a Google-branded map. The prediction list is not
+  inside the map canvas, so the picker carries the mark. This was verified
+  against Google's policy, not assumed. Source:
+  [Places policies](https://developers.google.com/maps/documentation/places/web-service/policies).
+- **Full combobox accessibility.** `role="combobox"`, `aria-expanded`,
+  `aria-controls`, `aria-activedescendant`, `role="listbox"`/`option`, arrow
+  and Home/End/Escape handling, scroll-into-view for the active option, and a
+  live-region announcement of the result count. The widget shipped these; TKA
+  now writes them.
+
+Both are accepted deliberately. Attribution is a static mark. The combobox
+semantics are ordinary work the design system already supports, and unlike the
+widget's shadow DOM, they can actually be audited and proven.
+
 **Lifecycle, explicitly:**
 
 - Places is imported on picker open, never before.
@@ -403,7 +422,9 @@ Per phase, and stated as what would make each check a **false pass**:
    administrative fallback, missing country, missing coordinates, ISO-2
    normalization, and the no-accepted-component rejection.
 4. **Picker.** Keyboard-only selection issues exactly one canonical add; closing
-   mid-`fetchFields` cannot write; superseded responses are discarded.
+   mid-`fetchFields` cannot write; superseded responses are discarded; the
+   "Powered by Google" attribution is present whenever predictions are shown;
+   combobox roles and `aria-activedescendant` track the active option.
 5. **Composition.** Network trace in a fresh tab: no Maps request before
    intersection, no Places request before the picker opens.
 6. **Visual.** All seven required viewports, measured and screenshotted, with
@@ -457,3 +478,9 @@ most were assertions about code that had never been read.
 | 18 | Did not choose a state lifetime, so the panel's root `Crossfade` would have refetched on every profile back-navigation | Codex |
 | 19 | Cited a 56-58 person directory census from a July code comment as current ground truth | Codex |
 | 20 | Never censused `userLocations`. It holds exactly one document, which makes the country-representation change free | author |
+
+### Round 3 (self-caught, before review returned)
+
+| # | Defect | Found by |
+|---|---|---|
+| 21 | Specified the headless Places path without checking its policy constraints. A "Powered by Google" attribution is mandatory for programmatic use outside a Google-branded map, and the widget's combobox accessibility becomes the app's to write. Neither was mentioned. Corrected in section 6; the decision stands, the accounting was incomplete | author |
