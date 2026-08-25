@@ -1,6 +1,5 @@
 import {
   BASE_ALPHABET_LETTERS,
-  EXTENDED_ALPHABET_LETTERS,
   GLOSSARY,
   TERM_ALIASES,
   resolveTermAlias,
@@ -48,6 +47,8 @@ const DISPLAY_OVERRIDES: Record<string, string> = {
   "type-6": "Type 6: Static",
   "quarter-opposite": "Quarter-Opposite",
   "quarter-same": "Quarter-Same",
+  // The "-" suffix is the letter-naming convention, not a word separator.
+  "tau-dash": "Tau-Dash",
 };
 
 function displayName(key: string): string {
@@ -69,12 +70,12 @@ function slugify(key: string, i: number): string {
 }
 
 export const load: PageServerLoad = () => {
-  // Tau-Dash remains in the domain glossary for MCP and alias resolution, but
-  // the public glossary presents it through the visual Codex extension state.
-  // This is the boundary that prevents one individual letter from masquerading
-  // as either a glossary category or a seventh letter type.
+  // Individual dataframe letters are drawn by the Codex, not defined in prose,
+  // so their entries stay out of the term list. Tau-Dash is NOT one of them:
+  // it is outside the Level 1 dataframe, so the Codex cannot draw it and it
+  // stays where it belongs — a written term among the core concepts.
   const entries = Object.entries(GLOSSARY).filter(
-    ([key]) => key !== "tau-dash" && !INDIVIDUAL_LETTER_ENTRY_PATTERN.test(key)
+    ([key]) => !INDIVIDUAL_LETTER_ENTRY_PATTERN.test(key)
   );
 
   // Slugs derive from the raw KEY (not the display name) so existing #anchors
@@ -134,8 +135,9 @@ export const load: PageServerLoad = () => {
       key: "letter",
       label: "Letter Codex",
       sectionSlug: "cat-letter",
+      // The two canonical guide sheets, and nothing else: the Codex is a
+      // pictorial index of the Level 1 dataframe.
       letters: [...BASE_ALPHABET_LETTERS],
-      extensions: [...EXTENDED_ALPHABET_LETTERS],
     },
   };
 };

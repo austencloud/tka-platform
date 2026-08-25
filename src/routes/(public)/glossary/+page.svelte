@@ -5,7 +5,7 @@
   import { DURATION } from "$lib/shared/transitions/transitions";
   import GlossaryNav from "./_components/GlossaryNav.svelte";
   import GlossaryTermDetail from "./_components/GlossaryTermDetail.svelte";
-  import CodexExplorer from "$lib/features/learn/codex/components/CodexExplorer.svelte";
+  import LetterCodex from "./_components/LetterCodex.svelte";
   import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
   import {
     matchesGlossaryTerm,
@@ -127,7 +127,7 @@
     label: data.codex.label,
     sectionSlug: data.codex.sectionSlug,
     terms: [],
-    countLabel: `${data.codex.letters.length}+${data.codex.extensions.length}`,
+    countLabel: `${data.codex.letters.length}`,
   };
 
   function insertCodexGroup(groups: GlossaryGroup[]): NavigationGroup[] {
@@ -156,8 +156,10 @@
 
   const normalizedQuery = $derived(normalizeGlossarySearchText(query));
   const filtering = $derived(normalizedQuery.length > 0);
+  // The Codex draws the canonical dataframe letters only, so search offers it
+  // for those. Letters outside the dataframe stay text terms in the glossary.
   const codexSearchLetter = $derived(
-    resolveCodexLetterQuery(query, data.codex.letters, data.codex.extensions)
+    resolveCodexLetterQuery(query, data.codex.letters)
   );
 
   // Search always looks everywhere, regardless of the current drill.
@@ -191,6 +193,11 @@
   );
 
   const landingShown = $derived(!filtering && view === "landing");
+  // The Codex replaces the master-detail split with two letter-paper pages.
+  // Two 8.5x11 pages need real width, so this view also releases the 18rem
+  // category rail (the view header's back button is the way out) — the same
+  // trade the landing hub already makes when its content wants the full band.
+  const codexView = $derived(view === data.codex.key && !filtering);
   // The category rail (left sidebar) only earns its column once a drill-down
   // destination is chosen. On the landing view — even while filtering — the
   // page is a centered hub with its own search, so the empty rail is gone and
@@ -208,7 +215,7 @@
   );
   const viewCountLabel = $derived(
     view === data.codex.key
-      ? `${data.codex.letters.length} pictographs + ${data.codex.extensions.length} extension${data.codex.extensions.length === 1 ? "" : "s"}`
+      ? `${data.codex.letters.length} pictographs`
       : `${
           view === "all"
             ? data.total
@@ -409,7 +416,7 @@
   {@html `<script type="application/ld+json">${jsonLd}</script>`}
 </svelte:head>
 
-<div class="glossary-shell" class:landing-hub={landingView}>
+<div class="glossary-shell" class:landing-hub={landingView} class:codex-view={codexView}>
   <!-- ── desktop sidebar: search + category nav (terms render once, in the
        master list — the rail never repeats them). Hidden on the landing view
        (no drill-down destination yet), where the hub's own centered search
@@ -569,10 +576,10 @@
       </div>
     {/if}
 
-    {#if view === data.codex.key && !filtering}
+    {#if codexView}
       <div class="codex-host">
         {#key codexInitialLetter}
-          <CodexExplorer initialLetter={codexInitialLetter} />
+          <LetterCodex initialLetter={codexInitialLetter} />
         {/key}
       </div>
     {/if}
@@ -582,8 +589,7 @@
       <div
         class="split"
         class:single-column={codexOnlySearch}
-        class:sec-hidden={landingShown ||
-          (view === data.codex.key && !filtering)}
+        class:sec-hidden={landingShown || codexView}
       >
         <div class="term-index">
           {#if filtering && codexSearchLetter}
@@ -804,6 +810,16 @@
     .glossary-shell.landing-hub .editorial {
       margin-left: auto;
       margin-right: auto;
+    }
+    /* Codex view: same one-column release as the hub. Two letter-paper pages
+       side by side need ~1700px; with the 22rem rail in the way a 1920 screen
+       leaves 1279px and both pages render at ~0.8x. Releasing the rail puts
+       them at native size or better from 1920 up. */
+    .glossary-shell.codex-view {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .glossary-shell.codex-view .glossary-sidebar {
+      display: none;
     }
   }
   /* ── big-screen tier ──
@@ -1247,20 +1263,14 @@
     color: oklch(0.72 0.015 270);
   }
 
-  /* The Codex is a reference tool, not a term-detail card. It gets the full
-     article column and supplies its own two-pane layout inside this host. */
+  /* The Codex is a reference tool, not a term-detail card: it gets the full
+     article column and lays out its own board and detail panel inside. No
+     frame and no fixed height — it is page content like every other section,
+     so it reflows with the band and the PAGE scrolls, rather than a scroller
+     nested inside a scroller. */
   .codex-host {
     min-width: 0;
     margin: 0 0 3rem;
-    overflow: clip;
-    background: var(--theme-panel-bg, oklch(0.14 0.02 270));
-    border: 1px solid var(--theme-stroke, oklch(0.42 0.04 270 / 0.22));
-    border-radius: 1.25rem;
-  }
-  @media (min-width: 1440px) {
-    .codex-host {
-      height: clamp(48rem, 76vh, 76rem);
-    }
   }
 
   .codex-search-result {

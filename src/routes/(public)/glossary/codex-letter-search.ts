@@ -32,7 +32,7 @@ function normalizeLetterQuery(value: string): string {
 export function resolveCodexLetterQuery(
   value: string,
   dataframeLetters: readonly string[],
-  extensions: readonly string[]
+  extensions: readonly string[] = []
 ): string | null {
   const normalized = normalizeLetterQuery(value);
   if (!normalized) return null;

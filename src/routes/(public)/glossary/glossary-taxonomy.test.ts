@@ -17,7 +17,6 @@ interface GlossaryData {
     label: string;
     sectionSlug: string;
     letters: string[];
-    extensions: string[];
   };
 }
 
@@ -42,17 +41,28 @@ describe("public glossary taxonomy", () => {
 
   it("keeps the alphabet in the visual Codex instead of DefinedTerms", async () => {
     const { codex, groups } = await getGlossaryData();
-    const letterTypes = groups.find((group) => group.key === "letterType");
     const publicTerms = groups.flatMap((group) => group.terms);
 
     expect(groups.find((group) => group.key === "letter")).toBeUndefined();
     expect(codex.label).toBe("Letter Codex");
+    // The Codex draws the Level 1 dataframe and only that.
     expect(codex.letters).toHaveLength(47);
-    expect(codex.extensions).toEqual(["τ-"]);
-    expect(publicTerms.map(({ term }) => term)).not.toContain("Tau-Dash (τ-)");
-    expect(letterTypes?.terms.map(({ term }) => term)).not.toContain(
-      "Tau-Dash (τ-)"
-    );
+    expect(codex.letters).not.toContain("τ-");
+    expect(publicTerms.map(({ term }) => term)).not.toContain("A");
+  });
+
+  it("defines Tau-Dash as a term, since the Codex cannot draw it", async () => {
+    const { groups } = await getGlossaryData();
+    const letterTypes = groups.find((group) => group.key === "letterType");
+    const tauDash = groups
+      .flatMap((group) => group.terms)
+      .find(({ term }) => term === "Tau-Dash");
+
+    // Outside the Level 1 dataframe, so it has no pictograph to show — it
+    // stays a written entry rather than disappearing from the public glossary.
+    expect(tauDash).toBeDefined();
+    // Still an individual letter, never a seventh letter type.
+    expect(letterTypes?.terms.map(({ term }) => term)).not.toContain("Tau-Dash");
   });
 
   it("places every public glossary term exactly once", async () => {
