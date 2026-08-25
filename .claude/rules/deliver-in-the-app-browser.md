@@ -21,8 +21,33 @@ work whatsoever is to use the In App Browser."*
 **In the desktop app (the `mcp__Claude_Browser__*` tools are present), any
 message that announces work for Austen to review MUST open the destination in
 the in-app Browser pane in the same turn.** `preview_start({url})` for a new
-pane, `navigate` if one is already open. A markdown link may accompany the
-pane; it never substitutes for it.
+pane, `navigate` if one is already open.
+
+**AND that message MUST end with the clickable link.** Both, every time. They
+are not alternatives — they serve different moments, and each fails where the
+other works:
+
+| | The pane | The link |
+|---|---|---|
+| Serves | right now, in his face | 30 minutes later, on review |
+| Fails when | the transcript card expires — "Open" stops working and the card goes dead | never; it is plain text in the message |
+
+Austen runs **10-15 agents concurrently** and reviews an agent's work well
+after the turn ends. By then the pane card has decayed, so a message with a
+pane and no link leaves him scrolling the transcript hunting for the last time
+that agent tried to link him — which is the cost this rule exists to remove.
+Put the link at the **end** of the message so it is findable at a glance.
+
+Austen (2026-08-24): *"eventually that expires even if they were in it before
+... even if I click the open button that's in the chat it doesn't appear to
+open up that link anymore ... Not only do you need to fervently remember to
+always open it in the in app browser but also it's very important that you
+remember to always give me a clickable link every single chance you get."*
+
+**This supersedes the narrower reading of the 2026-08-17 "no hyperlinks"
+correction.** That correction was aimed at links used *instead of* the pane, and
+it still stands in that form: a link never substitutes for the pane. It never
+meant omit the link.
 
 "Announces work to review" means every shape of it: "done, take a look",
 "here's the page", "the four frames show…", "your critique is the next input",
@@ -74,9 +99,13 @@ done without saying so.
 ## Self-check (run before sending any completion message)
 
 Grep your own draft for URLs and "take a look" phrasing. If the message
-contains a route, page, or artifact Austen would open — did a
-`mcp__Claude_Browser__` call happen this turn? If no, make it happen before
-sending.
+contains a route, page, or artifact Austen would open, both of these must be
+true before sending:
+
+1. A `mcp__Claude_Browser__` call happened this turn, pointed at the real
+   surface. If not, make it happen.
+2. The message **ends** with the clickable `https://` link to that surface. If
+   not, add it. No code fence, no bare host:port — see `clickable-links.md`.
 
 ## Scope and precedence
 
@@ -99,6 +128,9 @@ sending.
 
 - Ending a completion/review message with only a link, file path, or screenshot
   when the Browser pane tools are available.
+- Ending it with only the pane and no link — the card expires; he cannot get
+  back to the work.
+- Burying the link mid-message instead of closing on it.
 - Telling Austen to navigate somewhere the pane could have been pointed.
 - Treating one failed pane call as license to fall back to links or DevTools
   screenshots.
