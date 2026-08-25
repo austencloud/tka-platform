@@ -89,11 +89,11 @@
   },
   "4": {
     "name": "Dash",
-    "description": "One hand dashes (moves to opposite point) while the other stays static.",
+    "description": "One hand follows the dash hand-path family while the other stays static.",
     "characteristics": [
       "Creates dramatic position changes",
       "Uses Greek letters Phi, Psi, Lambda",
-      "Only 3 letters in this type",
+      "3 Level 1 letters, plus the Level 4 Tau-Dash extension",
       "Phi = diverging (angular separation increases): beta→alpha, or eta→zeta on 8-point grid",
       "Psi = converging (angular separation decreases): alpha→beta, or zeta→eta on 8-point grid",
       "Lambda = angle preserved (gamma→gamma). Cannot be skewed (gamma requires both hands on same grid)"
