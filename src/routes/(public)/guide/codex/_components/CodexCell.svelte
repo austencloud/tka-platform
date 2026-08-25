@@ -31,6 +31,7 @@
     showPositions = false,
     showReversals = false,
     showNonRadialPoints = false,
+    showName = true,
     theme = "print",
     dataOverride,
     onSelect,
@@ -48,6 +49,13 @@
     showPositions?: boolean;
     showReversals?: boolean;
     showNonRadialPoints?: boolean;
+    /** The spelled-out Greek name under the cell (Sigma, Alpha). On paper it is
+     *  a reader's aid at a fixed cell size. On a screen board it is the only
+     *  thing that varies the cell's height, so a row mixing named and unnamed
+     *  cells lands its type rules on two different lines - and the name repeats
+     *  a glyph the pictograph already draws. Boards pass false and surface the
+     *  name through the cell's accessible label and the inspector instead. */
+    showName?: boolean;
     /** Live-transformed pictograph (rotate/mirror/color-swap) to render instead
      *  of the canonical dataset. Only the interactive reader supplies this. */
     dataOverride?: PictographData | null;
@@ -82,7 +90,7 @@
       eager={true}
     />
   </div>
-  {#if cell.name}
+  {#if cell.name && showName}
     <span class="cell-name">{cell.name}</span>
   {/if}
 {/snippet}
@@ -97,7 +105,7 @@
     <SelectionHit
       groupId={cell.id}
       isGroupStart
-      label={`Animate ${cell.label}`}
+      label={`Animate ${cell.label}${cell.name ? `, ${cell.name}` : ""}`}
       onselect={() => onSelect(cell.id)}
     />
   </div>

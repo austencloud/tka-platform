@@ -67,8 +67,29 @@ export interface TaggedBox {
   key: string;
 }
 
+/** A printed box is one of two things: a GROUP that shares one transition (one
+ *  header over A-B-C), or a STRIP whose cells each carry their own - the Type
+ *  4/5/6 rows, where Φ, Ψ and Λ are three unrelated transitions that happen to
+ *  sit side by side on the page.
+ *
+ *  On paper the strip's shared walls are the sheet's geometry and the reader
+ *  takes them as such. On a flat board they read as a group, so three separate
+ *  labels appear to caption one connected thing - and they attach differently
+ *  than every label in Types 1-3, which sits over a box that IS one transition.
+ *  Splitting a strip into one box per cell gives the whole board a single
+ *  grammar: one box, one transition, one rule. The sheets board and print are
+ *  untouched - they render CodexSheet, not this list. */
+function splitStrip(tagged: TaggedBox): TaggedBox[] {
+  if (!tagged.box.cells.some((cell) => cell.top)) return [tagged];
+  return tagged.box.cells.map((cell, i) => ({
+    type: tagged.type,
+    key: `${tagged.key}-${i}`,
+    box: { cells: [cell] },
+  }));
+}
+
 export const CODEX_BOXES: TaggedBox[] = CODEX_TYPES.flatMap((type) =>
-  type.boxes.map((box, i) => ({ box, type, key: `${type.n}-${i}` }))
+  type.boxes.flatMap((box, i) => splitStrip({ box, type, key: `${type.n}-${i}` }))
 );
 
 export function cellCount(box: CodexBoxDef): number {

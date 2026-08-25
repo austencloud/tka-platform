@@ -28,14 +28,16 @@
       style:--type-c={typeColor(tagged.type)}
       aria-label={typeName(tagged.type)}
     >
-      <!-- A box captions itself one of two ways: one header for the whole box
-           (Types 1-3) or one caption per cell (Types 4-6). Reserve the header
-           row only for the first kind, so both land their pictographs at the
-           same height instead of one sitting 20px high and the other 20px low. -->
+      <!-- A box captions itself one of two ways: one header above the box, or
+           one caption inside the single cell a split strip leaves behind.
+           Reserve the header row only for the first kind, so both land their
+           pictographs at the same height instead of one sitting 20px high and
+           the other 20px low. -->
       <CodexBox
         box={tagged.box}
         theme="dark"
         reserveHead={!tagged.box.cells.some((cell) => cell.top)}
+        showName={false}
         onCellSelect={onSelect}
       />
     </div>

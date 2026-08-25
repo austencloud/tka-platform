@@ -11,6 +11,7 @@
     side,
     reserveHead = false,
     theme = "print",
+    showName = true,
     propType,
     visibility,
     getData,
@@ -31,6 +32,9 @@
      *  sides, so without it an unlabeled box (P-Q-R, S-V) would start its cells
      *  higher than the labeled box beside it. */
     reserveHead?: boolean;
+    /** Forwarded to every CodexCell - see its own docs. Boards pass false so a
+     *  named cell is exactly as tall as an unnamed one. */
+    showName?: boolean;
     /** Interactive-reader overrides - undefined for print/card callers, which
      *  keeps this component's default (canonical) rendering untouched. */
     propType?: PropType;
@@ -56,6 +60,7 @@
       <CodexCell
         {cell}
         {theme}
+        {showName}
         {propType}
         showGlyph={visibility?.showGlyph}
         showGrid={visibility?.showGrid}
