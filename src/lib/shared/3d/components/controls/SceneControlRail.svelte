@@ -14,7 +14,9 @@
     activeTool?: SceneControlTool | null;
     onSettingChange?: ViewerControlSink;
     onToolSelect?: (tool: SceneControlTool | null) => void;
-    onOpenSaveScene: () => void;
+    /** Omit to leave Save scene off the rail — see SceneControlWorkspace's
+     *  allowSaveScene. */
+    onOpenSaveScene?: () => void;
     /** Leaves room for host-owned close/fullscreen controls above the rail. */
     topOffset?: string;
     /** Leaves room for host-owned chrome below the rail, such as a transport. */
@@ -75,7 +77,7 @@
       false,
       true
     );
-    onOpenSaveScene();
+    onOpenSaveScene?.();
   }
 </script>
 
@@ -134,12 +136,14 @@
         onclick={() => chooseTool("presets")}
       />
 
-      <SceneChromeButton
-        icon="fa-bookmark"
-        label="Save scene"
-        data-save-shortcut
-        onclick={openSaveScene}
-      />
+      {#if onOpenSaveScene}
+        <SceneChromeButton
+          icon="fa-bookmark"
+          label="Save scene"
+          data-save-shortcut
+          onclick={openSaveScene}
+        />
+      {/if}
 
       {#if authState.isAdmin}
         <div class="rail-separator" aria-hidden="true"></div>

@@ -35,6 +35,13 @@
      * viewer's bar.
      */
     bottomOffset?: string;
+    /**
+     * Whether this host offers saving the live viewer state as a reusable look.
+     * The Director turns it off: its artifact is the film document, and a
+     * viewer snapshot taken there records one instant of a playing film with no
+     * relationship to what is being authored.
+     */
+    allowSaveScene?: boolean;
     /** Forwarded to the performer tool — see PerformerHubDetail's Props. */
     onPerformerEdit?: PerformerEditSink;
     /** Fires with the tool being inspected, or null when the inspector closes. */
@@ -53,6 +60,7 @@
     onStepBackward,
     topOffset = "12px",
     bottomOffset,
+    allowSaveScene = true,
     onPerformerEdit,
     onInspectorChange,
   }: Props = $props();
@@ -186,7 +194,7 @@
       {topOffset}
       {bottomOffset}
       onToolSelect={(tool) => (activeTool = tool)}
-      onOpenSaveScene={openSaveScene}
+      onOpenSaveScene={allowSaveScene ? openSaveScene : undefined}
     />
 
     {#if activeTool}
@@ -201,14 +209,16 @@
           onClose={closeInspector}
           {onSettingChange}
           {onPerformerEdit}
-          onOpenSaveScene={openSaveScene}
+          onOpenSaveScene={allowSaveScene ? openSaveScene : undefined}
         />
       </div>
     {/if}
   {/if}
 </div>
 
-<SaveSceneModal bind:open={saveSceneOpen} {bpm} {onSettingChange} {onAction} />
+{#if allowSaveScene}
+  <SaveSceneModal bind:open={saveSceneOpen} {bpm} {onSettingChange} {onAction} />
+{/if}
 
 <style>
   .scene-control-workspace {
