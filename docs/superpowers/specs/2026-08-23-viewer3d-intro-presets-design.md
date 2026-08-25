@@ -48,9 +48,37 @@ Collections → "3D Scenes", which nobody discovers.
    composing shared owners so the Stage module can adopt a guided setup later
    without forking them.
 
+6. **Relocation (2026-08-25, after Austen saw the built card):** the guided
+   flow shipped into the sequence viewer and immediately read false — it asked
+   "pick your stage" over a populated Forest scene with an avatar and props
+   already standing on it. Root cause: the viewer's 3D pane *cannot be
+   unconfigured*. It cannot draw a frame without a scene, performers, and a
+   formation already resolved, so every question the wizard asked had been
+   answered before it was asked. Decision 5 named the Stage module as the
+   surface that would adopt a guided setup; this is that adoption, moved up.
+   - The four-step build is now **`Scene3DSetupGuide`**, mounted by
+     `src/lib/features/stage/scene/SceneStudio.svelte` and gated on
+     choreography being chosen (`Boolean(sequence)`). The Studio opens with
+     nothing on the stage, so the question is real there.
+   - The viewer keeps **`Viewer3DRailHint`** instead: one card beside the
+     scene rail naming Scene / Performers / Presets, dismissed in one action,
+     suppressed on compact viewports where `MobileSceneControls` replaces the
+     rail. Guidance points at what can be changed rather than walking a setup
+     the pane already completed to render.
+   - Two independent flags: `VIEWER3D_INTRO_SEEN_KEY` and
+     `SCENE_STUDIO_SETUP_SEEN_KEY`. Dismissing a hint is not the same as
+     having been walked through building a scene, so neither silences the
+     other. `?intro=replay` forces either back without re-marking it seen.
+   - Test route renamed `test/viewer3d-intro` → `test/scene-setup-guide`.
+
 ## Components
 
 ### 1. `Viewer3DIntro` — first-open guided flow
+
+> **Superseded by decision 6.** This component is now
+> `Scene3DSetupGuide.svelte` and lives in the 3D Studio. The steps, live-scene
+> behavior, reframing, and dismissal below are unchanged; only the host and the
+> completion flag moved.
 
 Location: `src/lib/shared/3d/components/onboarding/` (new folder), mounted by
 the 3D pane host (`ViewerMotionSurface` / `Viewer3DCanvas` seam).
