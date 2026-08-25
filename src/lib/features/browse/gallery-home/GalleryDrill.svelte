@@ -28,7 +28,7 @@
     getDrillSection,
     setDrillSection,
   } from "$lib/features/browse/shared/services/gallery-view-persister";
-  import { getBrowseNavigationContext } from "$lib/shared/browse/context/browse-navigation-context";
+  import { tryGetBrowseNavigationContext } from "$lib/shared/browse/context/browse-navigation-context";
   import type { FilterConnective } from "$lib/shared/browse/services/multi-filter";
   import GalleryLanding from "./GalleryLanding.svelte";
   import GalleryWorkspace from "./GalleryWorkspace.svelte";
@@ -182,7 +182,10 @@
     showAllPane = $bindable(false),
   }: Props = $props();
 
-  const browseNavigation = getBrowseNavigationContext();
+  // Null inside the shared sequence picker, which composes this drill in a
+  // modal with no Browse screen behind it. Only the Collections tile needs it,
+  // and that tile is a `page`-variant affordance.
+  const browseNavigation = tryGetBrowseNavigationContext();
 
   const shouldPersistSection = persistSection ?? variant === "page";
   const shouldShowCollections = showCollections ?? variant === "page";
@@ -494,7 +497,7 @@
     } else if (entry.apply) {
       onApply(entry.apply.type, entry.apply.value, entry.apply.label);
     } else if (entry.navigate === "collections") {
-      browseNavigation.viewExploreCollections();
+      browseNavigation?.viewExploreCollections();
     }
   }
 

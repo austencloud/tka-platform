@@ -11,11 +11,19 @@ export function setBrowseNavigationContext(
 }
 
 export function getBrowseNavigationContext(): BrowseNavigationState {
-  const navigation = getContext<BrowseNavigationState>(
-    BROWSE_NAVIGATION_CONTEXT
-  );
+  const navigation = tryGetBrowseNavigationContext();
   if (!navigation) {
     throw new Error("Browse navigation context is not available");
   }
   return navigation;
+}
+
+/**
+ * The same context for components that legitimately mount outside the Browse
+ * module — the shared sequence picker composes gallery filtering inside a
+ * modal, where there is no Browse screen to route to. Those components degrade
+ * the navigation action rather than crashing their host.
+ */
+export function tryGetBrowseNavigationContext(): BrowseNavigationState | null {
+  return getContext<BrowseNavigationState>(BROWSE_NAVIGATION_CONTEXT) ?? null;
 }
