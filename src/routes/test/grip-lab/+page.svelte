@@ -20,13 +20,15 @@
   import { Box3, Quaternion, Vector3 } from "three";
   import type { Group, Object3D } from "three";
   import {
+    AVATAR_DEFINITIONS,
+    DEFAULT_AVATAR_ID,
     PerformerRig,
     Plane,
     PlaneMode,
     STAGE,
     userProportionsState,
   } from "@austencloud/scene-3d";
-  import type { PropState3D } from "@austencloud/scene-3d";
+  import type { AvatarId, PropState3D } from "@austencloud/scene-3d";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import Grid3D from "$lib/shared/3d/components/Grid3D.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
@@ -146,6 +148,7 @@
     weavePhaseDeg: number;
     weaveDwellDeg: number;
     torsoAssistDeg: number;
+    avatarId: AvatarId;
   }
 
   function loadPersisted(): PersistedState {
@@ -163,6 +166,7 @@
       weavePhaseDeg: 0,
       weaveDwellDeg: WEAVE_DWELL_DEFAULT_DEG,
       torsoAssistDeg: TORSO_ASSIST_DEFAULT_DEG,
+      avatarId: DEFAULT_AVATAR_ID,
     };
     if (typeof localStorage === "undefined") return fallback;
     try {
@@ -218,6 +222,9 @@
           parsed.torsoAssistDeg !== TORSO_ASSIST_PREVIOUS_DEFAULT_DEG
             ? Math.max(0, Math.min(TORSO_ASSIST_DEFAULT_DEG, parsed.torsoAssistDeg))
             : fallback.torsoAssistDeg,
+        avatarId: AVATAR_DEFINITIONS.some((a) => a.id === parsed.avatarId)
+          ? (parsed.avatarId as AvatarId)
+          : fallback.avatarId,
       };
     } catch {
       return fallback;
@@ -238,6 +245,11 @@
   let weavePhaseDeg = $state(initial.weavePhaseDeg);
   let weaveDwellDeg = $state(initial.weaveDwellDeg);
   let torsoAssistDeg = $state(initial.torsoAssistDeg);
+  let avatarId = $state<AvatarId>(initial.avatarId);
+  let avatarMenuOpen = $state(false);
+  const avatarName = $derived(
+    AVATAR_DEFINITIONS.find((a) => a.id === avatarId)?.name ?? avatarId
+  );
 
   $effect(() => {
     const snapshot: PersistedState = {
@@ -254,6 +266,7 @@
       weavePhaseDeg,
       weaveDwellDeg,
       torsoAssistDeg,
+      avatarId,
     };
     if (typeof localStorage !== "undefined") {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -1348,6 +1361,7 @@
           enableLocomotion={true}
           enableFootPlanting={true}
           stanceYaw={stanceYawRad + (autoYawDeg * Math.PI) / 180}
+          {avatarId}
           weldGrip={true}
           headDodge={true}
         >
@@ -1410,6 +1424,40 @@
         />
       </div>
       <span class="visually-hidden" id="grip-lab-point-label">Hand point</span>
+
+      <FilterChipBase
+        label={avatarName}
+        mode="dropdown"
+        size="sm"
+        chipColor="#ef5350"
+        icon="fa-solid fa-person"
+        expanded={avatarMenuOpen}
+        active={avatarMenuOpen}
+        ariaLabel={`Avatar: ${avatarName}`}
+        onclick={() => (avatarMenuOpen = !avatarMenuOpen)}
+      >
+        {#snippet children()}
+          <ul class="avatar-menu">
+            {#each AVATAR_DEFINITIONS as definition (definition.id)}
+              <li>
+                <button
+                  type="button"
+                  class="avatar-option"
+                  class:selected={definition.id === avatarId}
+                  aria-current={definition.id === avatarId ? "true" : undefined}
+                  onclick={() => {
+                    avatarId = definition.id as AvatarId;
+                    avatarMenuOpen = false;
+                  }}
+                >
+                  <span class="avatar-option-name">{definition.name}</span>
+                  <span class="avatar-option-id">{definition.id}</span>
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {/snippet}
+      </FilterChipBase>
 
       <div class="phase-chips" role="group" aria-label="Freeze staff at quarter phase">
         {#each PHASE_ANGLES as phaseAngle (phaseAngle)}
@@ -1553,6 +1601,52 @@
      the bar (a row of short labels must not become a progress bar). */
   .point-control {
     inline-size: clamp(16rem, 26vw, 22rem);
+  }
+
+  .avatar-menu {
+    list-style: none;
+    margin: 0;
+    padding: 0.25rem;
+    display: grid;
+    gap: 0.125rem;
+    max-height: 22rem;
+    overflow-y: auto;
+    min-width: 12rem;
+  }
+
+  .avatar-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-height: 44px;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 0.875rem;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .avatar-option:hover,
+  .avatar-option:focus-visible {
+    background: rgba(239, 83, 80, 0.14);
+  }
+
+  /* Selection marks the WHOLE tile (accent ring + tint), never one edge. */
+  .avatar-option.selected {
+    border-color: #ef5350;
+    background: rgba(239, 83, 80, 0.22);
+  }
+
+  .avatar-option-id {
+    opacity: 0.6;
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
   }
 
   .phase-chips {
