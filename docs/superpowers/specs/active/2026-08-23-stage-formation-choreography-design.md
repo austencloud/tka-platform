@@ -213,3 +213,25 @@ mutations use today).
    `StageSidebar.svelte` preset picker rewire.
 5. **Proof pass:** author the reverse-triangle demo, full visual verification
    sweep, evidence, ship.
+
+## Ledger
+
+- [x] **Phase 1 — Domain.** `Formation`/`FormationSpot` in `stage-types.ts`;
+      shared sampling math exported from `stage-performance-sampler.ts`; new
+      `stage-formation-sampler.ts` and `formation-migration.ts`; new state
+      seeds `formations` from the default marks so the beat-0 invariant holds
+      from birth. Evidence: 50 stage tests green under
+      `tests/config/vitest.config.ts`, including an equivalence test that the
+      derived formation track samples identically to the mark sampler at beats
+      0/2/4/7.5/8/12; `npm run check` 0 errors 0 warnings.
+- [ ] **Phase 2 — State.** Formation CRUD, invariant clamping, selection.
+      Carry-ins: `snapshotHistory`/`restoreHistory` in
+      `stage-choreography-state.svelte.ts` do not include `formations`, so
+      undo/redo must be extended before formation editing lands. Crab travel
+      whose previous spot has no `facingAngle` resolves to 0 (audience-facing)
+      rather than a true carried facing — acceptable default, revisit if
+      chained crab sets need to hold an angled facing.
+- [ ] **Phase 3 — Timeline UI.**
+- [ ] **Phase 4 — Overlay UI.**
+- [ ] **Phase 5 — Proof pass.** Visual verification is the main session's job,
+      never a subagent's.

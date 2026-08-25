@@ -8,6 +8,7 @@ export interface StageChoreography {
   stageDepth: number;
   environmentId: SceneEnvironmentId;
   performers: Performer[];
+  formations: Formation[];
   /** Used when opening older Stage projects that predate performer clip lanes. */
   sharedSequenceId: string | null;
 }
@@ -44,6 +45,23 @@ export interface Mark {
   easing: EasingType;
   /** Explicit performance-facing yaw. Undefined keeps the legacy walk-style default. */
   facingAngle?: number;
+}
+
+export interface Formation {
+  id: string;
+  label?: string;
+  atBeat: number;
+  transitionBeats: number;
+  spots: Record<string, FormationSpot>;
+  presetId?: FormationPresetId;
+}
+
+export interface FormationSpot {
+  x: number;
+  z: number;
+  facingAngle?: number;
+  walkStyle: WalkStyle;
+  easing: EasingType;
 }
 
 export type WalkStyle = "crab" | "direct";

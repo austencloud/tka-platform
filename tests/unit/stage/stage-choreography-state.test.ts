@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { createStageChoreographyState } from "$lib/features/stage/state/stage-choreography-state.svelte";
+import { sampleStagePerformance } from "$lib/features/stage/domain/stage-performance-sampler";
+import { sampleStageFormations } from "$lib/features/stage/domain/stage-formation-sampler";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { SceneEnvironmentId } from "$lib/shared/3d/environments/domain/scene-environment";
 
@@ -81,6 +83,39 @@ describe("stage choreography state", () => {
         (clip) => clip.id === target.id
       )
     ).toBe(true);
+    state.destroy();
+  });
+
+  it("derives a formation track that samples identically to the marks", () => {
+    const state = createStageChoreographyState();
+    const { formations } = state.choreography;
+
+    expect(formations.length).toBeGreaterThan(0);
+    expect(formations[0]!.atBeat).toBe(0);
+    expect(formations[0]!.transitionBeats).toBe(0);
+    for (let i = 1; i < formations.length; i += 1) {
+      const previous = formations[i - 1]!;
+      const formation = formations[i]!;
+      expect(formation.atBeat).toBeGreaterThan(previous.atBeat);
+      expect(formation.transitionBeats).toBeLessThanOrEqual(
+        formation.atBeat - previous.atBeat
+      );
+      for (const performer of state.choreography.performers) {
+        expect(formation.spots[performer.id]).toBeDefined();
+      }
+    }
+
+    for (const beat of [0, 2, 4, 7.5, 8, 12]) {
+      const viaMarks = sampleStagePerformance(state.choreography, beat);
+      const viaFormations = sampleStageFormations(state.choreography, beat);
+      viaFormations.forEach((frame, index) => {
+        const expected = viaMarks[index]!;
+        expect(frame.stagePosition.x).toBeCloseTo(expected.stagePosition.x, 6);
+        expect(frame.stagePosition.z).toBeCloseTo(expected.stagePosition.z, 6);
+        expect(frame.bodyFacing).toBeCloseTo(expected.bodyFacing, 6);
+      });
+    }
+
     state.destroy();
   });
 

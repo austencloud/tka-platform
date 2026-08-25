@@ -38,7 +38,7 @@ export function applyStageEasing(t: number, easing: EasingType): number {
   }
 }
 
-function easingDerivative(t: number, easing: EasingType): number {
+export function easingDerivative(t: number, easing: EasingType): number {
   switch (easing) {
     case "linear":
       return 1;
@@ -51,7 +51,7 @@ function easingDerivative(t: number, easing: EasingType): number {
   }
 }
 
-function stageToWorld(
+export function stageToWorld(
   position: { x: number; z: number },
   choreography: Pick<StageChoreography, "stageWidth" | "stageDepth">
 ): { x: number; z: number } {
@@ -88,9 +88,9 @@ function stationaryFrame(
   };
 }
 
-function segmentFacing(
-  from: Mark,
-  to: Mark,
+export function segmentFacing(
+  from: Pick<Mark, "facingAngle">,
+  to: Pick<Mark, "facingAngle" | "walkStyle">,
   worldDx: number,
   worldDz: number
 ): number {
@@ -101,7 +101,7 @@ function segmentFacing(
     : (from.facingAngle ?? 0);
 }
 
-function worldToBodyDirection(
+export function worldToBodyDirection(
   worldDirection: { x: number; z: number },
   bodyFacing: number
 ): { x: number; z: number } {

@@ -22,6 +22,7 @@ import {
   sampleStagePerformance,
   type StagePerformanceFrame,
 } from "../domain/stage-performance-sampler";
+import { marksToFormations } from "../domain/formation-migration";
 import { DEFAULT_STAGE_SEQUENCE_ID } from "../services/stage-sequence-loader";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { getPerformerSequenceEndBeat } from "../domain/stage-sequence-timeline";
@@ -156,6 +157,7 @@ export function createStageChoreographyState(
     performers: Array.from({ length: DEFAULT_PERFORMER_COUNT }, (_, i) =>
       createPerformer(i)
     ),
+    formations: [],
     sharedSequenceId: DEFAULT_STAGE_SEQUENCE_ID,
   });
 
@@ -184,6 +186,13 @@ export function createStageChoreographyState(
       ];
     }
   });
+
+  // A choreography always has a formation at beat 0, so derive the formation
+  // track from the marks that were just authored rather than starting empty.
+  choreography.formations = marksToFormations(
+    choreography.performers,
+    choreography
+  );
 
   const MAX_UNDO_STACK = 50;
   let undoStack: string[] = [];
