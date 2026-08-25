@@ -267,13 +267,23 @@ def textured_material(
     if tint is None:
         links.new(diffuse.outputs["Color"], bsdf.inputs["Base Color"])
     else:
-        tint_multiply = nodes.new("ShaderNodeMixRGB")
+        # This must be ShaderNodeMix, never the legacy ShaderNodeMixRGB. The
+        # glTF exporter recognises exactly one tinted-texture form and folds its
+        # constant into baseColorFactor; anything else exports a white factor and
+        # the authored tint vanishes without a warning. Probed against Blender
+        # 5.0 with all four wirings: a direct texture link and a MixRGB multiply
+        # both shipped factor [1,1,1,1], while ShaderNodeMix in MULTIPLY mode
+        # shipped the authored colour with either input ordering. Both path
+        # materials had been tinted through MixRGB since the first build, so the
+        # garden's walks were rendering as raw untinted sand.
+        tint_multiply = nodes.new("ShaderNodeMix")
         tint_multiply.name = f"{name} Tint"
+        tint_multiply.data_type = "RGBA"
         tint_multiply.blend_type = "MULTIPLY"
-        tint_multiply.inputs["Fac"].default_value = 1.0
-        tint_multiply.inputs[1].default_value = (*tint, 1.0)
-        links.new(diffuse.outputs["Color"], tint_multiply.inputs[2])
-        links.new(tint_multiply.outputs["Color"], bsdf.inputs["Base Color"])
+        tint_multiply.inputs["Factor"].default_value = 1.0
+        links.new(diffuse.outputs["Color"], tint_multiply.inputs[6])
+        tint_multiply.inputs[7].default_value = (*tint, 1.0)
+        links.new(tint_multiply.outputs[2], bsdf.inputs["Base Color"])
 
     normal = nodes.new("ShaderNodeTexImage")
     normal.name = f"{name} Normal"
@@ -323,22 +333,52 @@ GRASS_MATERIALS = {
 TORII = material("Torii Vermilion", (0.57, 0.055, 0.038), roughness=0.66)
 TORII_DARK = material("Torii Lacquer Shadow", (0.16, 0.018, 0.025), roughness=0.58)
 STONE = material("Lantern Stone", (0.30, 0.29, 0.34), roughness=0.98)
-PATH_PUBLIC = textured_material(
-    "Blossom Compacted Stone Fines",
-    os.path.join(TERRAIN_TEXTURE_DIR, "sand", "diffuse.jpg"),
-    os.path.join(TERRAIN_TEXTURE_DIR, "sand", "normal.jpg"),
-    os.path.join(TERRAIN_TEXTURE_DIR, "sand", "roughness.jpg"),
-    0.99,
-    tint=(0.82, 0.76, 0.68),
+
+
+# Every walking surface is crushed stone, because the sand set these used before
+# is a single flat mud-brown with no grain at any scale. Tiled across a path it
+# resolved to one uniform colour, which is what made the walks read as smears
+# painted on the lawn rather than a built surface. The rock set carries visible
+# aggregate, so at a walking-scale repeat the eye gets something to hold on to.
+#
+# The albedo is the rock set lifted out of wet-slate darkness by
+# scripts/build-blossom-path-albedo.mjs; its normal and roughness are reused
+# unchanged. Raw `rock` is a mean of about sRGB 0.31 with an olive-blue cast, so
+# a walk cut through this lawn rendered darker than the turf beside it and read
+# as asphalt. baseColorFactor cannot undo that — glTF clamps it to one, so it
+# only ever darkens — which is why the lift happens once, offline, in texture
+# space. What is left here is the per-surface differentiation: a hint of warmth
+# on the public fines, grey and slightly darker for service routes, cooler and
+# flatter for the nobedan paving.
+BLOSSOM_FLOOR_TEXTURE_DIR = os.path.join(
+    PROJECT_ROOT, "static", "textures", "blossom-floor"
 )
-PATH_SERVICE = textured_material(
-    "Blossom Service Gravel",
-    os.path.join(TERRAIN_TEXTURE_DIR, "sand", "diffuse.jpg"),
-    os.path.join(TERRAIN_TEXTURE_DIR, "sand", "normal.jpg"),
-    os.path.join(TERRAIN_TEXTURE_DIR, "sand", "roughness.jpg"),
-    0.99,
-    tint=(0.46, 0.44, 0.42),
+PATH_ALBEDO = os.path.join(BLOSSOM_FLOOR_TEXTURE_DIR, "path-fines-albedo.jpg")
+PATH_NORMAL = os.path.join(TERRAIN_TEXTURE_DIR, "rock", "normal.jpg")
+PATH_ROUGHNESS = os.path.join(TERRAIN_TEXTURE_DIR, "rock", "roughness.jpg")
+
+
+def path_material(name, roughness_value, tint):
+    return textured_material(
+        name, PATH_ALBEDO, PATH_NORMAL, PATH_ROUGHNESS, roughness_value, tint=tint
+    )
+
+
+PATH_PUBLIC = path_material(
+    "Blossom Compacted Stone Fines", 0.99, (0.92, 0.89, 0.82)
 )
+# Back-of-house at half the value of the public walks. Service routes and the
+# operations pads carry the same aggregate, but a technical position that reads
+# as brightly as the promenade puts the loudest surface in the garden behind the
+# audience. Held down here, it recedes to what it is: gravel you stand equipment
+# on.
+PATH_SERVICE = path_material("Blossom Service Gravel", 0.99, (0.50, 0.50, 0.48))
+PATH_EDGING = path_material("Blossom Path Edging Stone", 0.93, (0.80, 0.79, 0.78))
+PATH_PAVING = path_material("Blossom Nobedan Paving", 0.88, (0.84, 0.84, 0.87))
+PATH_FINES_REPEAT = 1.15
+PATH_SERVICE_REPEAT = 1.7
+PATH_PAVING_REPEAT = 2.0
+PATH_EDGING_REPEAT = 0.9
 
 
 def enable_vertex_tint(mat):
@@ -382,8 +422,12 @@ def enable_vertex_tint(mat):
     return mat
 
 
-enable_vertex_tint(PATH_PUBLIC)
-enable_vertex_tint(PATH_SERVICE)
+# The path materials deliberately skip enable_vertex_tint. Wrapping their tint
+# node in a second multiply puts a MixRGB at the Base Color socket, which is the
+# one wiring the glTF exporter refuses to read a factor from, so the tint would
+# be lost again. Nothing is given up: the exporter writes COLOR_0 from the mesh
+# colour attribute regardless of the node graph, and glTF multiplies it into the
+# base colour natively. Only Blender's own viewport misses the per-vertex shade.
 RIVER_BED = material(
     "Blossom River Bed",
     (0.075, 0.11, 0.115),
@@ -1040,7 +1084,14 @@ def habitat_weights(x, y):
         for value, target in zip(weights, (0.0, 0.14, 0.08, 0.78))
     ]
 
-    compacted_weight = 1.0 - smoothstep(0.15, 1.55, path_distance(x, y))
+    # path_distance is signed from the built edge, so a 1.55 m falloff painted a
+    # compacted band 3.1 m wider than the walk itself — on a 2.2 m route, more
+    # than twice the surface, with a metre and a half of gradient on each side.
+    # That band, not the ribbon, was what the eye actually read as "the path",
+    # and it is why the walks looked like stains with no edges. Holding it to
+    # 0.45 m leaves the wear a real path scuffs into the turf beside it and
+    # hands the boundary back to the geometry and the edging stones.
+    compacted_weight = 1.0 - smoothstep(-0.30, 0.45, path_distance(x, y))
     weights = [
         value * (1.0 - compacted_weight * 0.9) + target * compacted_weight * 0.9
         for value, target in zip(weights, (0.94, 0.04, 0.02, 0.0))
@@ -1169,7 +1220,16 @@ def densify_outline(polygon, spacing=SURFACE_SAMPLE_SPACING):
     return dense
 
 
-def create_surface_polygon(name, polygon, surface_material, role):
+def create_surface_polygon(
+    name,
+    polygon,
+    surface_material,
+    role,
+    metres_per_repeat=2.8,
+    core_tint=None,
+    edge_tint=None,
+    edge_drop=SURFACE_FRINGE_DROP,
+):
     """Build a terrain-conforming surface patch as a polar grid.
 
     Fanning straight from the centroid to each corner leaves spokes many metres
@@ -1177,6 +1237,8 @@ def create_surface_polygon(name, polygon, surface_material, role):
     through every rise between them. Densifying the outline and stepping outward
     in rings samples the graded terrain across the whole patch instead.
     """
+    core_tint = PATH_CORE_TINT if core_tint is None else core_tint
+    edge_tint = PATH_SKIRT_TINT if edge_tint is None else edge_tint
     outline = densify_outline(polygon)
     center_x = sum(point[0] for point in outline) / len(outline)
     center_y = sum(point[1] for point in outline) / len(outline)
@@ -1193,12 +1255,12 @@ def create_surface_polygon(name, polygon, surface_material, role):
     vertices = [
         (center_x, center_y, garden_ground_height(center_x, center_y) + SURFACE_LIFT)
     ]
-    tints = [PATH_CORE_TINT]
+    tints = [core_tint]
     for ring in range(1, rings + 1):
         amount = ring / rings
         is_edge = ring == rings
-        lift = SURFACE_FRINGE_DROP if is_edge else SURFACE_LIFT
-        tint = PATH_FRINGE_TINT if is_edge else PATH_CORE_TINT
+        lift = edge_drop if is_edge else SURFACE_LIFT
+        tint = edge_tint if is_edge else core_tint
         for x, y in outline:
             sample_x = center_x + (x - center_x) * amount
             sample_y = center_y + (y - center_y) * amount
@@ -1230,23 +1292,46 @@ def create_surface_polygon(name, polygon, surface_material, role):
                 make_mesh(
                     f"{name} Mesh", vertices, faces, [surface_material], smooth=True
                 ),
-                metres_per_repeat=2.8,
+                metres_per_repeat=metres_per_repeat,
             ),
             tints,
         ),
     )
     surface["tka_role"] = role
     surface.visible_shadow = False
+    return surface
 
 
 PATH_STATION_SPACING = 0.45
-PATH_CORE_FRACTION = 0.60
-PATH_CROWN_LIFT = 0.055
-PATH_CORE_LIFT = 0.038
-PATH_FRINGE_DROP = -0.014
+
+# A built walk is full-brightness surface right out to a defined edge, and only
+# then gives way to turf. The five-column section this replaces spent the outer
+# forty per cent of every path fading to a mossy green, so a 2.2 m walk showed a
+# 1.3 m core and two soft green ramps — no edge anywhere, at any distance. Here
+# the crushed stone holds its value to the built edge and the handover to grass
+# happens in a skirt a quarter of a metre wide, tucked below grade so turf laps
+# over it the way it does against real edging.
+PATH_CORE_FRACTION = 0.78
+PATH_SKIRT_WIDTH = 0.26
+PATH_CROWN_LIFT = 0.045
+PATH_CORE_LIFT = 0.036
+PATH_EDGE_LIFT = 0.020
+PATH_SKIRT_DROP = -0.020
 PATH_CORE_TINT = (1.0, 1.0, 1.0)
-PATH_SHOULDER_TINT = (0.86, 0.86, 0.80)
-PATH_FRINGE_TINT = (0.46, 0.52, 0.38)
+PATH_SHOULDER_TINT = (0.93, 0.92, 0.89)
+PATH_EDGE_TINT = (0.76, 0.75, 0.70)
+PATH_SKIRT_TINT = (0.42, 0.46, 0.34)
+
+# Edging stones (fuchi-ishi) set along both sides of every public walk. They are
+# what makes a path read as laid rather than worn: a hard silhouette at the
+# boundary that survives being seen from across the garden, where a colour
+# gradient does not. Service routes get none, which is also how the eye tells
+# the two apart without reading a label.
+PATH_EDGING_SPACING = 0.82
+PATH_EDGING_LENGTH = 0.34
+PATH_EDGING_WIDTH = 0.20
+PATH_EDGING_RISE = 0.085
+PATH_EDGING_BURIAL = 0.11
 
 
 def resample_centerline(centerline, spacing=PATH_STATION_SPACING):
@@ -1278,23 +1363,63 @@ def resample_centerline(centerline, spacing=PATH_STATION_SPACING):
 def path_edge_offset(arc_length, side_seed):
     """Low-frequency wander applied to a ribbon's outer edge.
 
-    A garden path worn into turf never has a ruled edge. Three octaves keyed to
-    arc length keep both sides independent and keep the result deterministic, so
-    a rebuild produces the same garden.
+    Hand-laid edging is never ruled, but it is also not a desire line. Three
+    octaves reaching sixteen per cent of the half-width gave a 2.2 m walk a
+    boundary that visibly breathed in and out over every few paces, which reads
+    as erosion rather than construction. Two octaves at a third of that keep the
+    variance a mason would leave. Keying both to arc length keeps the sides
+    independent and the result deterministic, so a rebuild produces the same
+    garden.
     """
-    return (
-        0.088 * math.sin(arc_length * 0.83 + side_seed * 11.37)
-        + 0.047 * math.sin(arc_length * 2.17 + side_seed * 4.11 + 1.3)
-        + 0.025 * math.sin(arc_length * 4.93 + side_seed * 7.71 + 2.6)
+    return 0.035 * math.sin(arc_length * 0.61 + side_seed * 11.37) + 0.018 * math.sin(
+        arc_length * 1.73 + side_seed * 4.11 + 1.3
     )
 
 
-def create_path_ribbon(path):
-    stations = resample_centerline(path["centerline"])
+LANDING_RIBBON_TUCK = 0.30
+
+
+def trim_stations_at_landings(stations, landings):
+    """Stop a ribbon under the pad that receives it.
+
+    A ribbon that runs to its authored endpoint crosses every other ribbon
+    arriving at the same node, and the crossing is what produced the raised
+    cross-shaped scar in the middle of the lawn. Ending each one a little inside
+    the landing rim lets the pad cover all of them at once.
+    """
+    if not landings:
+        return stations
+    kept = [
+        index
+        for index, point in enumerate(stations)
+        if all(
+            math.dist(point, position[:2]) > radius - LANDING_RIBBON_TUCK
+            for radius, position in landings
+        )
+    ]
+    if len(kept) < 2:
+        return stations
+
+    # Keep the longest unbroken run, so a pad sitting across the middle of a
+    # route cannot silently split it into two disconnected ribbons.
+    best = run = [kept[0]]
+    for index in kept[1:]:
+        run = run + [index] if index == run[-1] + 1 else [index]
+        if len(run) > len(best):
+            best = run
+    return stations[best[0] : best[-1] + 1] if len(best) >= 2 else stations
+
+
+def create_path_ribbon(path, edging_sink, landings):
+    stations = trim_stations_at_landings(
+        resample_centerline(path["centerline"]), landings
+    )
     half_width = path["width"] * 0.5
+    is_service = path["kind"] == "restricted-service"
     vertices = []
     tints = []
     arc_length = 0.0
+    next_edging_arc = PATH_EDGING_SPACING * 0.5
 
     for index, point in enumerate(stations):
         if index > 0:
@@ -1309,7 +1434,12 @@ def create_path_ribbon(path):
 
         # Offsetting every station by half the width along its own normal pinches
         # the ribbon on the inside of a corner. Dividing by the cosine of the
-        # half-turn restores the authored width through the bend.
+        # half-turn restores the authored width through the bend. The cap used to
+        # sit at 2.4, which let a tight bend balloon a 2.2 m walk to more than
+        # five metres and produced the lumpy widenings that showed from overhead
+        # as blobs. A real path does not fatten into a turn; it turns, and where
+        # several turns coincide a landing absorbs them. 1.3 keeps the width
+        # honest and leaves the junction pads to do that work.
         incoming_x, incoming_y = point[0] - previous[0], point[1] - previous[1]
         outgoing_x, outgoing_y = following[0] - point[0], following[1] - point[1]
         incoming_length = math.hypot(incoming_x, incoming_y)
@@ -1318,18 +1448,20 @@ def create_path_ribbon(path):
             alignment = (incoming_x * outgoing_x + incoming_y * outgoing_y) / (
                 incoming_length * outgoing_length
             )
-            miter = min(1.0 / math.sqrt(max(0.08, 0.5 * (1.0 + alignment))), 2.4)
+            miter = min(1.0 / math.sqrt(max(0.08, 0.5 * (1.0 + alignment))), 1.3)
         else:
             miter = 1.0
 
         left_edge = half_width * miter * (1.0 + path_edge_offset(arc_length, 0.0))
         right_edge = half_width * miter * (1.0 + path_edge_offset(arc_length, 5.0))
         cross_section = (
-            (-left_edge, PATH_FRINGE_TINT, PATH_FRINGE_DROP),
+            (-left_edge - PATH_SKIRT_WIDTH, PATH_SKIRT_TINT, PATH_SKIRT_DROP),
+            (-left_edge, PATH_EDGE_TINT, PATH_EDGE_LIFT),
             (-left_edge * PATH_CORE_FRACTION, PATH_SHOULDER_TINT, PATH_CORE_LIFT),
             (0.0, PATH_CORE_TINT, PATH_CROWN_LIFT),
             (right_edge * PATH_CORE_FRACTION, PATH_SHOULDER_TINT, PATH_CORE_LIFT),
-            (right_edge, PATH_FRINGE_TINT, PATH_FRINGE_DROP),
+            (right_edge, PATH_EDGE_TINT, PATH_EDGE_LIFT),
+            (right_edge + PATH_SKIRT_WIDTH, PATH_SKIRT_TINT, PATH_SKIRT_DROP),
         )
 
         for offset, tint, lift in cross_section:
@@ -1340,7 +1472,22 @@ def create_path_ribbon(path):
             vertices.append((x, y, garden_ground_height(x, y) + lift))
             tints.append(tint)
 
-    columns = 5
+        if not is_service and arc_length >= next_edging_arc:
+            next_edging_arc += PATH_EDGING_SPACING
+            heading = math.atan2(tangent_y, tangent_x)
+            for side, edge in ((-1.0, left_edge), (1.0, right_edge)):
+                lateral = edge * side
+                edging_sink.append(
+                    (
+                        point[0] + normal_x * lateral,
+                        point[1] + normal_y * lateral,
+                        heading,
+                        arc_length,
+                        side,
+                    )
+                )
+
+    columns = 7
     faces = []
     for index in range(len(stations) - 1):
         base = index * columns
@@ -1353,7 +1500,6 @@ def create_path_ribbon(path):
                     base + columns + column,
                 )
             )
-    is_service = path["kind"] == "restricted-service"
     path_object = link_object(
         f"Path_{path['id']}",
         add_vertex_tint(
@@ -1365,7 +1511,9 @@ def create_path_ribbon(path):
                     [PATH_SERVICE if is_service else PATH_PUBLIC],
                     smooth=True,
                 ),
-                metres_per_repeat=2.2,
+                metres_per_repeat=(
+                    PATH_SERVICE_REPEAT if is_service else PATH_FINES_REPEAT
+                ),
             ),
             tints,
         ),
@@ -1378,21 +1526,181 @@ def create_path_ribbon(path):
     path_object.visible_shadow = False
 
 
-def create_rectangle_surface(name, rectangle, surface_material, role):
+def create_rectangle_surface(name, rectangle, surface_material, role, **options):
     polygon = [
         (rectangle["minX"], rectangle["minY"]),
         (rectangle["maxX"], rectangle["minY"]),
         (rectangle["maxX"], rectangle["maxY"]),
         (rectangle["minX"], rectangle["maxY"]),
     ]
-    create_surface_polygon(name, polygon, surface_material, role)
+    return create_surface_polygon(name, polygon, surface_material, role, **options)
+
+
+# Nodes that deserve a paved landing. Every one of these is a place where two or
+# more routes arrive, or where a route meets something built, and until now each
+# was rendered by simply letting the ribbons overlap: two crowned surfaces
+# crossing at a shallow angle, which showed from overhead as the cross-shaped
+# blot at the centre of the lawn. Laying a nobedan pad there makes the meeting
+# deliberate, gives the walker somewhere to stand while choosing a direction,
+# and hides every ribbon end underneath cut stone.
+# bridge-landing is absent on purpose: the bridge already lays its own rectangle
+# at each abutment, and a second pad on top of it would z-fight.
+LANDING_NODE_MARGINS = {
+    "junction": 0.6,
+    "public-entry": 0.5,
+    "service-entry": 0.4,
+    "stage-access": 0.5,
+    "destination": 0.5,
+    "audience-access": 0.3,
+}
+LANDING_SIDES = 12
+LANDING_SNAP_RADIUS = 1.2
+
+
+def landing_polygon(center, radius):
+    return [
+        (
+            center[0] + radius * math.cos(math.tau * index / LANDING_SIDES),
+            center[1] + radius * math.sin(math.tau * index / LANDING_SIDES),
+        )
+        for index in range(LANDING_SIDES)
+    ]
+
+
+def resolve_junction_landings():
+    """Choose every node that earns a paved landing, sized to its widest route.
+
+    Node positions and route endpoints are authored independently and disagree by
+    up to half a metre in several places, so this matches by proximity rather
+    than by an exact coordinate key. Keying exactly would have silently skipped
+    the stage-west, central-lawn and overlook nodes, which are three of the
+    places a landing matters most.
+    """
+    candidates = []
+    for node in MASTERPLAN["circulation"]["nodes"]:
+        margin = LANDING_NODE_MARGINS.get(node["kind"])
+        if margin is None:
+            continue
+        position = node["position"]
+        width = 0.0
+        for path in MASTERPLAN["circulation"]["paths"]:
+            for end in (path["centerline"][0], path["centerline"][-1]):
+                if math.dist(position[:2], end[:2]) <= LANDING_SNAP_RADIUS:
+                    width = max(width, path["width"])
+        if width <= 0.0:
+            continue
+        candidates.append((width * 0.5 + margin, node, position))
+
+    # Largest first, then drop any landing whose centre already falls inside one
+    # that has been laid. Two overlapping pads a metre apart read as a single
+    # lumpy blot, which is the artefact these are here to remove.
+    accepted = []
+    for radius, node, position in sorted(candidates, key=lambda item: -item[0]):
+        if any(
+            math.dist(position[:2], other[:2]) < other_radius
+            for other_radius, other, _ in accepted
+        ):
+            continue
+        accepted.append((radius, position, node))
+    return accepted
+
+
+def create_junction_landings(landings):
+    for radius, position, node in landings:
+        service = node["kind"] == "service-entry"
+        create_surface_polygon(
+            f"Landing_{node['id']}",
+            landing_polygon(position, radius),
+            PATH_SERVICE if service else PATH_PAVING,
+            f"circulation-landing-{node['kind']}",
+            metres_per_repeat=(
+                PATH_SERVICE_REPEAT if service else PATH_PAVING_REPEAT
+            ),
+            core_tint=PATH_CORE_TINT,
+            edge_tint=PATH_SHOULDER_TINT if service else PATH_EDGE_TINT,
+        )
+
+
+def create_path_edging(placements):
+    """Merge every set edging stone into one mesh.
+
+    Four hundred separate objects would each carry a node, a draw call and an
+    optimizer pass for eighteen triangles of geometry. One mesh costs a single
+    node and still reads as individual stones, because what the eye resolves at
+    this size is the broken silhouette along the boundary rather than any one
+    stone.
+    """
+    if not placements:
+        return
+    vertices = []
+    faces = []
+    tints = []
+    sides = 6
+    for index, (x, y, heading, arc_length, side) in enumerate(placements):
+        wobble = math.sin(arc_length * 3.7 + side * 2.3 + index * 0.9)
+        length = PATH_EDGING_LENGTH * (1.0 + 0.22 * wobble)
+        width = PATH_EDGING_WIDTH * (1.0 - 0.18 * wobble)
+        rise = PATH_EDGING_RISE * (1.0 + 0.3 * math.sin(index * 1.7))
+        angle = heading + 0.14 * math.sin(index * 2.11)
+        base = garden_ground_height(x, y) - PATH_EDGING_BURIAL
+        first = len(vertices)
+        for ring, height in ((0, base), (1, base + PATH_EDGING_BURIAL + rise)):
+            taper = 1.0 if ring == 0 else 0.82
+            for step in range(sides):
+                theta = math.tau * step / sides
+                local_x = math.cos(theta) * length * 0.5 * taper
+                local_y = math.sin(theta) * width * 0.5 * taper
+                vertices.append(
+                    (
+                        x + local_x * math.cos(angle) - local_y * math.sin(angle),
+                        y + local_x * math.sin(angle) + local_y * math.cos(angle),
+                        height,
+                    )
+                )
+                tints.append((0.74, 0.74, 0.72) if ring else (0.42, 0.44, 0.40))
+        for step in range(sides):
+            following = (step + 1) % sides
+            faces.append(
+                (
+                    first + step,
+                    first + following,
+                    first + sides + following,
+                    first + sides + step,
+                )
+            )
+        faces.append(tuple(first + sides + step for step in range(sides)))
+
+    edging = link_object(
+        "Path_Edging_Stones",
+        add_vertex_tint(
+            add_planar_uv(
+                make_mesh(
+                    "Blossom Path Edging Mesh",
+                    vertices,
+                    faces,
+                    [PATH_EDGING],
+                    smooth=False,
+                ),
+                metres_per_repeat=PATH_EDGING_REPEAT,
+            ),
+            tints,
+        ),
+    )
+    edging["tka_role"] = "path-edging"
+    edging["tka_edging_stone_count"] = len(placements)
 
 
 def create_site_surfaces():
+    landings = resolve_junction_landings()
+    trim_zones = [(radius, position) for radius, position, _ in landings]
+    edging_placements = []
     for path in MASTERPLAN["circulation"]["paths"]:
         if path["id"] == "bridge-crossing":
             continue
-        create_path_ribbon(path)
+        create_path_ribbon(path, edging_placements, trim_zones)
+
+    create_junction_landings(landings)
+    create_path_edging(edging_placements)
 
     operations = MASTERPLAN["stage"]["operations"]
     create_rectangle_surface(
@@ -1400,18 +1708,21 @@ def create_site_surfaces():
         operations["backstageStagingArea"],
         PATH_SERVICE,
         "backstage-staging",
+        metres_per_repeat=PATH_SERVICE_REPEAT,
     )
     create_rectangle_surface(
         "Operations_Prop_Storage",
         operations["propStorageArea"],
         PATH_SERVICE,
         "prop-storage",
+        metres_per_repeat=PATH_SERVICE_REPEAT,
     )
     create_rectangle_surface(
         "Operations_Technical_Position",
         operations["technicalPosition"],
         PATH_SERVICE,
         "technical-position",
+        metres_per_repeat=PATH_SERVICE_REPEAT,
     )
 
     for landing_name, landing in (
@@ -1421,8 +1732,11 @@ def create_site_surfaces():
         create_rectangle_surface(
             f"Bridge_{landing_name}_Landing",
             landing,
-            PATH_PUBLIC,
+            PATH_PAVING,
             "bridge-landing",
+            metres_per_repeat=PATH_PAVING_REPEAT,
+            core_tint=PATH_CORE_TINT,
+            edge_tint=PATH_EDGE_TINT,
         )
 
 

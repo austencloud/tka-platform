@@ -161,8 +161,19 @@
               ),
               maskSize: new Vector2(bounds.size[0], bounds.size[1]),
               worldAxisSign: new Vector2(1, 1),
+              /**
+               * Compacted, meadow, litter, damp — in mask channel order.
+               *
+               * The compacted family is the ground under and beside every walk,
+               * and it was authored at a dark olive that sat below the meadow
+               * beside it in every channel. Crushed stone under a moon is the
+               * brightest thing on a garden floor, not the darkest, so the walks
+               * rendered as dark stains and the wear beside them widened the
+               * stain rather than explaining it. This is a pale warm grey that
+               * reads as stone the moment it catches any light.
+               */
               familyBaselines: [
-                new Color(0.36, 0.38, 0.25),
+                new Color(0.58, 0.56, 0.49),
                 new Color(0.44, 0.62, 0.29),
                 new Color(0.36, 0.44, 0.25),
                 new Color(0.27, 0.31, 0.23),

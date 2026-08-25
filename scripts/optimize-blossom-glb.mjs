@@ -178,9 +178,18 @@ try {
       "--compress false",
       "--texture-compress webp",
       "--texture-size 1536",
-      "--simplify true",
-      "--simplify-ratio 0",
-      "--simplify-error 0.001",
+      // meshoptimizer's error budget is relative to each mesh's own extent, so
+      // 0.001 on a thirty-metre path ribbon allowed three and a half centimetres
+      // of deviation — more than the whole cross-section. Every walk in the
+      // garden came out of this pass as a flat strip of a few dozen triangles
+      // with its crown, its edge columns and its per-vertex shading collapsed
+      // away, which is a large part of why the paths read as smears rather than
+      // surfaces. Blender already authors the real level-of-detail work here
+      // (decimate_wood, reduce_foliage_cards, and a baked LOD per grove tier),
+      // so this was a second, blind decimation on top of a deliberate one.
+      // Turning it off costs about 420k rendered triangles against a 4.2M cap
+      // and returns the authored geometry intact.
+      "--simplify false",
       "--instance true",
       "--flatten false",
       "--join false",
