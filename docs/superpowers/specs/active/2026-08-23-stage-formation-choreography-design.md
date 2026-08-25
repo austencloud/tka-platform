@@ -249,7 +249,29 @@ mutations use today).
       whose previous spot has no `facingAngle` resolves to 0 (audience-facing)
       rather than a true carried facing — acceptable default, revisit if
       chained crab sets need to hold an angled facing.
-- [ ] **Phase 3 — Timeline UI.**
+- [x] **Phase 3 — Timeline UI.** `1b32c668ff`. A SETS row above the performer
+      lanes in `StageTimeline.svelte`: a set renders as a marker anchored on its
+      count and sized by its own label, with a hairline rail for the hold and a
+      tapered arrowheaded bar for the walk into it. Drag to retime a set, drag
+      its leading edge to resize the walk, keyboard equivalents on the block.
+      Evidence: 59 stage tests green under the CI config; `npm run check`
+      0 errors 0 warnings; screenshots read at 1920, 2560, 3840, 1440, 820,
+      960x412 and 375.
+      **Findings the screenshots caught that the numbers did not:** the set was
+      first sized by its hold, which is legitimately 0 in the default document,
+      so Set 1 collapsed to a 54px stub reading "S… 0"; `--theme-accent`
+      resolves to pink here and made the spine read as a fifth performer lane;
+      the ramp read as a divider until it got an arrowhead; and a 44px in-flow
+      resize handle outweighed the label on a 72px marker.
+      **Carry-in for Phase 4:** the track's `--formation-accent` is a hardcoded
+      cool cyan for the reason above — the overlay's ghosts and arrows should
+      consume the same variable rather than the theme accent, so the two
+      surfaces agree on what "a set" looks like.
+      **Noted, out of scope:** at 3840 the whole Stage editor chrome is small,
+      because the root font ramp in `app.css` is scoped to `html:has(.mkt-shell)`
+      / `html:has(.legal-container)` and app modules are a different regime. The
+      formation row matches `.clip-name` exactly, so it is no worse than its
+      siblings; ramping app modules is a cross-cutting change for its own task.
 - [ ] **Phase 4 — Overlay UI.** Ends by deleting mark CRUD (`addMark`,
       `updateMarkPosition`, `updateMarkBeats`, `updateMarkWalkStyle`,
       `updateMarkEasing`, `deleteMark`, `Performer.marks`) once no component
