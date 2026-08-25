@@ -36,6 +36,12 @@ export interface CollectedFilm extends CollectionEntry {
    * JSON editor round-trips, so save → open → edit is lossless.
    */
   film: StoredFilmDocument;
+  /**
+   * The document this entry held before the last overwrite, so a bad save can
+   * be undone. One deep, deliberately: enough to reverse a mistake, not a
+   * version history. Absent until the entry has been overwritten once.
+   */
+  previousFilm?: StoredFilmDocument;
   /** Denormalized off the resolved spec so the gallery renders meta chips
    *  without resolving every entry it lists. */
   durationSeconds: number;
@@ -59,6 +65,7 @@ export const CollectedFilmSchema = z.object({
   createdAt: z.number(),
   poster: z.string(),
   film: StoredFilmDocumentSchema,
+  previousFilm: StoredFilmDocumentSchema.optional(),
   durationSeconds: z.number().nonnegative(),
   sceneCount: z.number().int().nonnegative(),
 });
