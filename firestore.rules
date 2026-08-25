@@ -772,6 +772,16 @@ service cloud.firestore {
       }
 
       // -------------------------------------------------------------------------
+      // FILM COLLECTION (Saved film-director documents — scenes, cast, camera)
+      // -------------------------------------------------------------------------
+      match /film-collection/{filmId} {
+        // Admin reads support user preview. Creates and updates stay owner-only.
+        allow read: if isOwner(userId) || isAdmin();
+        allow create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
       // FCM PUSH TOKENS (Device registration for push notifications)
       // -------------------------------------------------------------------------
       match /fcmTokens/{tokenId} {

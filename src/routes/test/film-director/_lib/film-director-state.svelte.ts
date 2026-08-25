@@ -234,9 +234,26 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
     frameRequest = null;
   }
 
+  // The WebGL canvas belongs to the scene, which is a child of the workbench,
+  // so context cannot carry it upward. The scene registers a getter here and
+  // the workbench reads it when the user saves a poster.
+  let posterSource: (() => HTMLCanvasElement | null) | null = null;
+
+  function setPosterSource(getter: (() => HTMLCanvasElement | null) | null): void {
+    posterSource = getter;
+  }
+
+  function readPosterSource(): HTMLCanvasElement | null {
+    return posterSource?.() ?? null;
+  }
+
   return {
     get film() {
       return film;
+    },
+    /** The authored document, which is what gets saved — not the resolved spec. */
+    get sourceInput() {
+      return sourceInput;
     },
     get draft() {
       return draft;
@@ -287,6 +304,8 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
     resetDraft,
     loadFilm,
     toggleEditor,
+    setPosterSource,
+    readPosterSource,
     start,
     destroy,
   };

@@ -292,6 +292,7 @@
 
   onMount(() => {
     transitionProfiler.start();
+    director.setPosterSource(() => viewer.webglCanvas);
     const observer = new ResizeObserver(([entry]) => {
       if (!entry || entry.contentRect.height <= 0) return;
       viewportAspectRatio = entry.contentRect.width / entry.contentRect.height;
@@ -300,6 +301,7 @@
     return () => {
       observer.disconnect();
       transitionProfiler.destroy();
+      director.setPosterSource(null);
     };
   });
 

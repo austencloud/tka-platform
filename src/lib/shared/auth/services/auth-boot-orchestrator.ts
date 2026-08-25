@@ -188,4 +188,16 @@ export async function initializeChildServices(
     .catch((error) => {
       console.warn("⚠️ [authState] 3D scene collection sync failed:", error);
     });
+
+  // Initialize film collection Firebase sync (non-blocking)
+  import("$lib/features/film-collection/state/film-collection-state.svelte")
+    .then(async ({ filmCollectionState }) => {
+      const { getFirestoreInstance } =
+        await import("$lib/shared/auth/firebase");
+      await getFirestoreInstance();
+      await filmCollectionState.init(user.uid);
+    })
+    .catch((error) => {
+      console.warn("⚠️ [authState] Film collection sync failed:", error);
+    });
 }

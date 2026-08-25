@@ -7,6 +7,48 @@ type CanvasFactory = () => HTMLCanvasElement;
 const defaultFactory: CanvasFactory = () => document.createElement("canvas");
 
 /**
+ * Downscale a rendered canvas to a WebP data URL of the requested size,
+ * cover-fitting (center-crop to the target's aspect ratio) so the poster is
+ * fully covered with no letterboxing. Returns "" if the source is empty or a 2D
+ * context can't be obtained.
+ *
+ * Square is the default because a tunnel's roughly-circular pattern fills one.
+ * Widescreen callers pass their own box: a film is 16:9, and center-cropping its
+ * frame to a square removes the left and right thirds — exactly where the outer
+ * performers stand in a group reveal.
+ */
+export function capturePosterFrame(
+  source: HTMLCanvasElement,
+  {
+    width = POSTER_SIZE,
+    height = POSTER_SIZE,
+    makeCanvas = defaultFactory,
+  }: { width?: number; height?: number; makeCanvas?: CanvasFactory } = {},
+): string {
+  const sw = source.width;
+  const sh = source.height;
+  if (!sw || !sh || width <= 0 || height <= 0) return "";
+
+  const target = makeCanvas();
+  target.width = width;
+  target.height = height;
+  const ctx = target.getContext("2d");
+  if (!ctx) return "";
+
+  // Cover fit: take the largest centered source rect matching the target's
+  // aspect ratio, then scale it to fill.
+  const targetAspect = width / height;
+  const cropWidth = Math.min(sw, sh * targetAspect);
+  const cropHeight = Math.min(sh, sw / targetAspect);
+  const sx = (sw - cropWidth) / 2;
+  const sy = (sh - cropHeight) / 2;
+  ctx.clearRect(0, 0, width, height);
+  ctx.drawImage(source, sx, sy, cropWidth, cropHeight, 0, 0, width, height);
+
+  return target.toDataURL("image/webp", 0.8);
+}
+
+/**
  * Downscale a rendered tunnel canvas to a POSTER_SIZE² WebP data URL. Cover-fits
  * (center-crop) so the roughly-circular pattern fills the square. Returns "" if
  * the source is empty or a 2D context can't be obtained.
@@ -15,24 +57,7 @@ export function captureTunnelPoster(
   source: HTMLCanvasElement,
   makeCanvas: CanvasFactory = defaultFactory,
 ): string {
-  const sw = source.width;
-  const sh = source.height;
-  if (!sw || !sh) return "";
-
-  const target = makeCanvas();
-  target.width = POSTER_SIZE;
-  target.height = POSTER_SIZE;
-  const ctx = target.getContext("2d");
-  if (!ctx) return "";
-
-  // Cover fit: crop the source to a centered square, scale into the poster.
-  const side = Math.min(sw, sh);
-  const sx = (sw - side) / 2;
-  const sy = (sh - side) / 2;
-  ctx.clearRect(0, 0, POSTER_SIZE, POSTER_SIZE);
-  ctx.drawImage(source, sx, sy, side, side, 0, 0, POSTER_SIZE, POSTER_SIZE);
-
-  return target.toDataURL("image/webp", 0.8);
+  return capturePosterFrame(source, { makeCanvas });
 }
 
 /**
