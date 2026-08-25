@@ -271,7 +271,11 @@
     container-type: inline-size;
     position: absolute;
     left: clamp(0.75rem, 2cqw, 1.5rem);
-    bottom: clamp(0.75rem, 2cqh, 1.5rem);
+    /* The transport owns the bottom edge of the viewer — the same
+       reservation SceneControlRail and the Record Scene pill make.
+       Anchoring to the raw bottom laid the card over the play/BPM
+       controls, because the workspace runs behind the transport. */
+    bottom: max(5rem, calc(5rem + env(safe-area-inset-bottom)));
     display: flex;
     flex-direction: column;
     width: min(28rem, calc(100% - 1.5rem));
@@ -428,7 +432,8 @@
 
   @container (max-height: 29rem) {
     .intro-card {
-      bottom: 0.5rem;
+      /* Still clears the transport; only the card's own padding tightens. */
+      bottom: max(5rem, calc(5rem + env(safe-area-inset-bottom)));
     }
 
     .intro-header {

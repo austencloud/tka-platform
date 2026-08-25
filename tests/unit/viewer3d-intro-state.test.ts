@@ -1,4 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   shouldShowViewer3DIntro,
   markViewer3DIntroSeenLocal,
@@ -14,5 +17,39 @@ describe("viewer3d intro state", () => {
   it("never shows again after being marked seen", () => {
     markViewer3DIntroSeenLocal();
     expect(shouldShowViewer3DIntro()).toBe(false);
+  });
+});
+
+// The intro card floats over the 3D pane, whose box runs BEHIND the playback
+// transport. Anchoring the card to that box's raw bottom edge laid it on top of
+// the play/BPM controls, which is what shipped. The card must reserve the same
+// transport band SceneControlRail established ("the transport owns the bottom
+// edge of the viewer"), in every size tier it declares.
+describe("3D intro card reserves the transport band", () => {
+  const repoRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../.."
+  );
+
+  it("declares no bottom anchor that sits over the transport", () => {
+    const css = readFileSync(
+      path.join(
+        repoRoot,
+        "src/lib/shared/3d/components/onboarding/Viewer3DIntro.svelte"
+      ),
+      "utf8"
+    );
+    const bottoms = [...css.matchAll(/^\s*bottom:\s*(.+);$/gm)].map((m) =>
+      m[1].trim()
+    );
+    expect(bottoms.length).toBeGreaterThan(0);
+    for (const value of bottoms) {
+      expect(
+        /max\(\s*5rem,\s*calc\(\s*5rem \+ env\(safe-area-inset-bottom\)\s*\)\s*\)/.test(
+          value
+        ),
+        `.intro-card bottom "${value}" does not reserve the transport band`
+      ).toBe(true);
+    }
   });
 });
