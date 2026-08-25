@@ -167,7 +167,7 @@
           null}
         activeMode={null}
         isTimelineMode={false}
-        stableColumnCount={4}
+        fitAllSteps={true}
         narrowMaxColumns={3}
         preferWidthSizingOnNarrow={true}
         bluePropTypeOverride={bluePropType}

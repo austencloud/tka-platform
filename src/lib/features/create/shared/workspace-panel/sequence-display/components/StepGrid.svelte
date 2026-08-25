@@ -16,6 +16,7 @@
     MandalaRenderOptions,
   } from "$lib/shared/mandala/domain/mandala-types";
   import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
+  import { createRootFontRamp } from "$lib/shared/ui/root-font-ramp.svelte";
   import { onMount } from "svelte";
   import {
     createStepGridDisplayState,
@@ -73,6 +74,7 @@
     stableColumnCount = null,
     narrowMaxColumns = null,
     preferWidthSizingOnNarrow = false,
+    fitAllSteps = false,
     selectedStepNumbers = new Set<number>(),
     isMultiSelectMode = false,
     onStartLongPress,
@@ -114,6 +116,8 @@
     stableColumnCount?: number | null;
     narrowMaxColumns?: number | null;
     preferWidthSizingOnNarrow?: boolean;
+    /** Fit the whole sequence in the container instead of scrolling it. */
+    fitAllSteps?: boolean;
     selectedStepNumbers?: Set<number>;
     isMultiSelectMode?: boolean;
     onStartLongPress?: () => void;
@@ -199,6 +203,14 @@
   // sized to the wrapper's content box so they don't spill into it.
   const POP_RESERVE = 16;
 
+  // The cell cap is a px constant, so on a surface that ramps its root font for
+  // large displays every rem around the grid grows while the pictographs stay
+  // 1080p-sized. Scaling the cap by the same ramp keeps them in lockstep. The
+  // app shell does not ramp, so this resolves to the stock cap there.
+  const BASE_MAX_CELL_SIZE = 200;
+  const rootFontRamp = createRootFontRamp();
+  const rampedMaxCellSize = $derived(rootFontRamp.scaled(BASE_MAX_CELL_SIZE));
+
   function calculateResponsiveGridLayout(stepCount: number) {
     const isNarrowAssemble =
       activeMode === "assemble" && containerWidth > 0 && containerWidth < 650;
@@ -215,6 +227,7 @@
       Math.max(0, containerHeight - 2 * POP_RESERVE),
       deviceDetector,
       {
+        maxCellSize: rampedMaxCellSize,
         isSideBySideLayout,
         heightSizingRowThreshold,
         manualColumnCount,
@@ -223,6 +236,7 @@
         narrowMaxColumns: responsiveNarrowMaxColumns,
         preferWidthSizingOnNarrow:
           isNarrowAssemble || preferWidthSizingOnNarrow,
+        fitAllSteps,
       }
     );
   }

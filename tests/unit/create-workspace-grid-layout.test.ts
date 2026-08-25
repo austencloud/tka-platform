@@ -95,6 +95,117 @@ describe("calculateGridLayout workspace column selection", () => {
     expect(fiveRows.cellSize).toBe(fourRows.cellSize);
   });
 
+  it("fits a sixteen-step sequence in a wide short preview pane without scrolling", () => {
+    // The Tunnel performer card: a fixed-height box holding a finished
+    // sequence. Four pinned columns sized every cell from width and pushed
+    // rows 3 and 4 below the fold.
+    const containerWidth = 1051;
+    const containerHeight = 444;
+    const layout = calculateGridLayout(
+      16,
+      containerWidth,
+      containerHeight,
+      null,
+      { fitAllSteps: true }
+    );
+    const pinnedLayout = calculateGridLayout(
+      16,
+      containerWidth,
+      containerHeight,
+      null,
+      { stableColumnCount: 4 }
+    );
+
+    expect(layout.rows * layout.cellSize).toBeLessThanOrEqual(containerHeight);
+    expect(layout.totalColumns * layout.cellSize).toBeLessThanOrEqual(
+      containerWidth
+    );
+    expect(pinnedLayout.rows * pinnedLayout.cellSize).toBeGreaterThan(
+      containerHeight
+    );
+  });
+
+  it("spends leftover width on bigger cells rather than the fewest rows", () => {
+    const layout = calculateGridLayout(16, 1051, 444, null, {
+      fitAllSteps: true,
+    });
+    const twoRowLayout = calculateGridLayout(16, 1051, 444, null, {
+      fitAllSteps: true,
+      narrowMaxColumns: null,
+      manualColumnCount: 8,
+    });
+
+    expect(layout.cellSize).toBeGreaterThan(twoRowLayout.cellSize);
+  });
+
+  it("does not strand the last row when height caps several column counts", () => {
+    // 810x321 preview pane: height pins the cell at the same size for six and
+    // seven step columns, and seven only empties the last row.
+    const layout = calculateGridLayout(16, 810 - 32, 321 - 32, null, {
+      fitAllSteps: true,
+    });
+
+    expect(layout.columns).toBe(6);
+    expect(layout.rows).toBe(3);
+  });
+
+  it("keeps a two-step preview on one row", () => {
+    const layout = calculateGridLayout(2, 900, 600, null, {
+      fitAllSteps: true,
+    });
+
+    expect(layout.rows).toBe(1);
+    expect(layout.columns).toBe(2);
+  });
+
+  it("ignores the narrow column cap, which can only shrink a fitted grid", () => {
+    // 583x247 preview pane. Capped at three columns it clamps to minCellSize
+    // and scrolls; free to spread it fits at well above the floor.
+    const containerWidth = 583 - 32;
+    const containerHeight = 247 - 32;
+    const layout = calculateGridLayout(
+      16,
+      containerWidth,
+      containerHeight,
+      null,
+      { fitAllSteps: true, narrowMaxColumns: 3 }
+    );
+
+    expect(layout.columns).toBeGreaterThan(3);
+    expect(layout.rows * layout.cellSize).toBeLessThanOrEqual(containerHeight);
+    expect(layout.totalColumns * layout.cellSize).toBeLessThanOrEqual(
+      containerWidth
+    );
+  });
+
+  it("keeps phone cells readable instead of fitting sixteen dots", () => {
+    // A phone card can afford about 32px a cell for sixteen steps. Squeezing
+    // them all in costs more than the scrollbar it saves, so fitting yields to
+    // the ordinary policy and the pane keeps its big pictographs.
+    const narrowPreview = {
+      narrowMaxColumns: 2,
+      preferWidthSizingOnNarrow: true,
+    };
+    const fitted = calculateGridLayout(16, 308, 101, null, {
+      ...narrowPreview,
+      fitAllSteps: true,
+    });
+    const ordinary = calculateGridLayout(16, 308, 101, null, narrowPreview);
+
+    expect(fitted).toEqual(ordinary);
+    expect(fitted.cellSize).toBeGreaterThan(60);
+  });
+
+  it("leaves every non-preview caller on the existing sizing policy", () => {
+    const before = calculateGridLayout(16, 900, 250, null);
+    const after = calculateGridLayout(16, 900, 250, null, {
+      fitAllSteps: false,
+    });
+
+    expect(after).toEqual(before);
+    expect(after.columns).toBe(8);
+  });
+
   it("puts a four-step non-LOOP sequence on one wide row", () => {
     const layout = calculateGridLayout(4, 900, 450, null, {
       stableColumnCount: 4,

@@ -39,6 +39,24 @@ export interface GridSizingConfig {
   narrowMaxColumns?: number | null;
   /** Let a narrow grid scroll vertically instead of shrinking cells to its height. */
   preferWidthSizingOnNarrow?: boolean;
+  /**
+   * Fit every step inside the container instead of holding a column count.
+   *
+   * A preview pane receives a finished sequence in a box it cannot grow, so
+   * scrolling to reach step 13 of 16 is a defect, not an overflow. This mode
+   * searches the column counts the container can afford and keeps whichever
+   * one yields the largest cell that still fits BOTH dimensions — a 16-step
+   * sequence in a wide, short card lands on 6x3, not the 4x4 that scrolls.
+   *
+   * Yields to legibility: when no column count fits the pane at minCellSize —
+   * a phone card can afford roughly 32px a cell for sixteen steps — the
+   * ordinary sizing policy comes back, so the reader gets big pictographs to
+   * scroll instead of sixteen unreadable dots.
+   *
+   * Mutually exclusive with stableColumnCount by construction: pinning a
+   * column count is for a workspace the user builds into one step at a time.
+   */
+  fitAllSteps?: boolean;
 }
 
 const DEFAULT_SIZING: Omit<
@@ -60,7 +78,15 @@ const DEFAULT_SIZING: Omit<
   stableColumnCount: null,
   narrowMaxColumns: null,
   preferWidthSizingOnNarrow: false,
+  fitAllSteps: false,
 };
+
+/**
+ * Widest step-column count the fit-all search will consider. Matches the wide
+ * layout table's ceiling; past it the +1 start column eats more width than the
+ * extra column returns.
+ */
+const FIT_ALL_MAX_COLUMNS = 8;
 
 /**
  * Calculate responsive grid layout
@@ -91,10 +117,34 @@ export function calculateGridLayout(
     sizing.stableColumnCount > 0
       ? Math.max(1, Math.floor(sizing.stableColumnCount))
       : null;
+  const fitSearch =
+    sizing.fitAllSteps === true &&
+    stepCount > 0 &&
+    containerWidth > 0 &&
+    containerHeight > 0
+      ? findFitColumns()
+      : null;
+  // Fitting is worth having only while the cells stay legible. A pane too
+  // small for the whole sequence at minCellSize gets the ordinary policy back:
+  // big pictographs the reader scrolls, not sixteen unreadable dots. A phone
+  // card offers 32px a cell — that is the fallback's case, not a fit.
+  const fitAllSteps =
+    fitSearch !== null && fitSearch.affordable >= sizing.minCellSize;
   const useWidthSizing =
-    stableWideColumnCount !== null ||
-    isMobileFewSteps ||
-    (isNarrowContainer && sizing.preferWidthSizingOnNarrow);
+    !fitAllSteps &&
+    (stableWideColumnCount !== null ||
+      isMobileFewSteps ||
+      (isNarrowContainer && sizing.preferWidthSizingOnNarrow));
+  // The start-position-only cell may ignore its container height and overflow
+  // into the scroller, but ONLY where that trade was designed: a narrow, short
+  // container where height sizing would shrink the lone pictograph to nothing.
+  // A wide desktop container reaching this path through stableColumnCount sized
+  // the cell at 65% of a 1230px workspace — 759px inside a 497px wrapper, which
+  // clipped the start pictograph and left the rest of the cell empty.
+  const useUnboundedWidthSizing =
+    !fitAllSteps &&
+    (isMobileFewSteps ||
+      (isNarrowContainer && sizing.preferWidthSizingOnNarrow));
   const narrowMaxColumns =
     isNarrowContainer &&
     sizing.narrowMaxColumns !== null &&
@@ -115,7 +165,7 @@ export function calculateGridLayout(
       const availableWidth = containerWidth * sizing.widthPaddingRatio;
       const availableHeight = containerHeight * sizing.heightPaddingRatio;
 
-      if (useWidthSizing) {
+      if (useUnboundedWidthSizing) {
         // Mobile: size by width only (65% of container), ignore height constraint.
         // The scroll container handles overflow if the cell is taller than the workspace.
         cellSize = Math.max(
@@ -142,29 +192,97 @@ export function calculateGridLayout(
     };
   }
 
-  function calculateCandidate(maxColumns: number): GridLayout {
-    const columns = Math.min(stepCount, maxColumns);
+  /**
+   * The size each axis can afford for a given step-column count, before any
+   * min/max clamp. One owner for the gap and padding arithmetic so the fit
+   * search and the sizing branches below can never drift apart.
+   */
+  function candidateGeometry(columns: number) {
     const rows = Math.ceil(stepCount / columns);
     const totalColumns = columns + 1; // +1 for start position
+    // These values mirror WorkspaceGrid's gap and scroll-wrapper padding.
+    const gridGap = 1;
+    const scrollContainerPadding = 8;
+    const availableWidth =
+      containerWidth * sizing.widthPaddingRatio -
+      (totalColumns - 1) * gridGap -
+      scrollContainerPadding;
+    const availableHeight =
+      containerHeight * sizing.heightPaddingRatio -
+      (rows - 1) * gridGap -
+      scrollContainerPadding;
+
+    return {
+      rows,
+      totalColumns,
+      maxCellWidth: availableWidth / totalColumns,
+      maxCellHeight: availableHeight / rows,
+    };
+  }
+
+  /**
+   * The step-column count that shows every step at the largest cell the
+   * container can afford. Pure geometry, so it can run before the sizing mode
+   * is chosen — its verdict is what decides that mode.
+   *
+   * narrowMaxColumns deliberately does NOT cap this search. That cap exists to
+   * stop width sizing from shrinking cells on a narrow screen; here the search
+   * already maximizes cell size, so capping columns can only make them smaller
+   * — on a 583x247 card it turned a 3x6 that fits into a scrolling 2x8.
+   */
+  function findFitColumns(): { columns: number; affordable: number } {
+    // The affordable size is measured BEFORE minCellSize clamps it. Once the
+    // pane is too small for the whole sequence every column count reports the
+    // floor, and only the pre-clamp size still tells them apart. It has to: the
+    // scroll wrapper hides horizontal overflow outright, so a layout that
+    // spills sideways loses its last columns instead of gaining a scrollbar.
+    const measure = (columns: number) => {
+      const { rows, maxCellWidth, maxCellHeight } = candidateGeometry(columns);
+      return {
+        columns,
+        rows,
+        affordable: Math.min(maxCellWidth, maxCellHeight),
+        // Empty step slots left in the last row. The start column is always
+        // full — start position first, then mandalas — so it does not count.
+        emptySlots: columns * rows - stepCount,
+      };
+    };
+
+    let best = measure(1);
+    const columnCap = Math.min(stepCount, FIT_ALL_MAX_COLUMNS);
+    for (let columns = 2; columns <= columnCap; columns++) {
+      const candidate = measure(columns);
+      // Size decides; a tie goes to the shortest grid, then to the one that
+      // strands the fewest cells in its last row.
+      const better =
+        candidate.affordable > best.affordable ||
+        (candidate.affordable === best.affordable &&
+          (candidate.rows < best.rows ||
+            (candidate.rows === best.rows &&
+              candidate.emptySlots < best.emptySlots)));
+      if (better) best = candidate;
+    }
+    return { columns: best.columns, affordable: best.affordable };
+  }
+
+  function calculateCandidate(maxColumns: number): GridLayout {
+    const columns = Math.min(stepCount, maxColumns);
+    const { rows, totalColumns, maxCellWidth, maxCellHeight } =
+      candidateGeometry(columns);
     let cellSize = 160;
 
     if (containerWidth > 0 && containerHeight > 0) {
-      // These values mirror WorkspaceGrid's gap and scroll-wrapper padding.
-      const gridGap = 1;
-      const scrollContainerPadding = 8;
-      const totalWidthGaps = (totalColumns - 1) * gridGap;
-      const totalHeightGaps = (rows - 1) * gridGap;
-      const availableWidth =
-        containerWidth * sizing.widthPaddingRatio -
-        totalWidthGaps -
-        scrollContainerPadding;
-      const availableHeight =
-        containerHeight * sizing.heightPaddingRatio -
-        totalHeightGaps -
-        scrollContainerPadding;
-      const maxCellWidth = availableWidth / totalColumns;
-
-      if (useWidthSizing) {
+      if (fitAllSteps) {
+        // Both dimensions bind, at any row count: the caller asked for the
+        // whole sequence on screen, so the row budget never releases height.
+        cellSize = Math.max(
+          sizing.minCellSize,
+          Math.min(
+            sizing.maxCellSize,
+            Math.floor(Math.min(maxCellWidth, maxCellHeight))
+          )
+        );
+      } else if (useWidthSizing) {
         // A short mobile workspace may scroll. When readability owns the
         // sizing decision, use available width instead of crushing cells to
         // fit the workspace's shallow height.
@@ -173,7 +291,6 @@ export function calculateGridLayout(
           Math.min(sizing.maxCellSize, Math.floor(maxCellWidth))
         );
       } else if (rows <= sizing.heightSizingRowThreshold) {
-        const maxCellHeight = availableHeight / rows;
         cellSize = Math.max(
           sizing.minCellSize,
           Math.min(
@@ -199,6 +316,10 @@ export function calculateGridLayout(
     // readability cap for a narrow workspace.
     const mobileCap = isNarrowContainer ? (narrowMaxColumns ?? 4) : 8;
     return calculateCandidate(Math.min(sizing.manualColumnCount, mobileCap));
+  }
+
+  if (fitAllSteps && fitSearch !== null) {
+    return calculateCandidate(fitSearch.columns);
   }
 
   if (stableWideColumnCount !== null) {
