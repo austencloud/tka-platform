@@ -402,11 +402,11 @@ export function createTunnelCreatorState(
       // whichever surface it was born on. See tunnel-name.ts.
       name:
         initial?.name ??
-        deriveTunnelName({
+        (deriveTunnelName({
           composition: { performers },
           formation: nextFormation,
         }) ||
-        "Untitled tunnel",
+          "Untitled tunnel"),
       performers,
       formation: {
         ...nextFormation,
