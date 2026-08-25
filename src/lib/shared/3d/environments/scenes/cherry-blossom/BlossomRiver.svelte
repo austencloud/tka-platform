@@ -4,6 +4,8 @@
   import {
     getBlossomRiverBounds,
     getBlossomRiverOutline,
+    getBlossomRiverShoreFade,
+    getBlossomRiverShoreline,
     getBlossomRiverSurfaceElevation,
   } from "./blossom-water";
 
@@ -15,25 +17,28 @@
   let { groundY, stageZOffset }: Props = $props();
 
   const outline = getBlossomRiverOutline();
-  const { width, depth } = getBlossomRiverBounds();
+  const shoreline = getBlossomRiverShoreline();
+  const { width, depth, centerX, centerZ } = getBlossomRiverBounds();
   const surfaceElevation = getBlossomRiverSurfaceElevation();
+  const shoreFade = getBlossomRiverShoreFade();
 </script>
 
 <ReflectivePool
   {width}
   {depth}
-  position={[0, groundY + surfaceElevation + 0.012, stageZOffset]}
+  position={[centerX, groundY + surfaceElevation + 0.012, stageZOffset + centerZ]}
   {outline}
-  textureWidth={512}
+  {shoreline}
+  {shoreFade}
+  textureWidth={1024}
   textureHeight={512}
-  deepColor="#071b2c"
-  shallowColor="#397f89"
-  reflectionTint={0x6d8397}
+  deepColor="#123044"
+  shallowColor="#4f97a0"
+  reflectionTint={0x9fb2c4}
   sunDirection={[-0.42, 0.58, -0.7]}
-  rippleScale={3.6}
-  rippleStrength={0.12}
-  foamWidth={0.055}
-  foamOpacity={0.12}
-  shoreFade={1.45}
+  rippleScale={2.4}
+  rippleStrength={0.16}
+  foamWidth={0.18}
+  foamOpacity={0.3}
   flowSpeed={0.28}
 />

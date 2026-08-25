@@ -213,10 +213,12 @@ function halfWidthAt(point: PlanPoint, arcLength: number): number {
   return halfWidth;
 }
 
+const bankSides = { left: [] as PlanPoint[], right: [] as PlanPoint[] };
+
 function buildBankedOutline(): PlanPoint[] {
   const { stations, arcLengths } = course;
-  const left: PlanPoint[] = [];
-  const right: PlanPoint[] = [];
+  const left = bankSides.left;
+  const right = bankSides.right;
 
   for (let index = 0; index < stations.length; index += 1) {
     const current = stations[index]!;
@@ -243,10 +245,45 @@ function buildBankedOutline(): PlanPoint[] {
     );
   }
 
-  return [...left, ...right.reverse()];
+  return [...left, ...right.slice().reverse()];
 }
 
 const worldOutline = buildBankedOutline();
+
+/**
+ * Thirty-two points that preserve the river's shape for the shader's fixed
+ * shoreline arrays.
+ *
+ * Sampling the whole 268 m loop evenly would put a station every 17 m, which
+ * cuts straight across both koi pools and flattens every bend. All the
+ * curvature lives inside the authored reach, and the run-out is a straight
+ * taper a single chord reproduces exactly, so the budget goes to the reach and
+ * each run-out contributes only its far endpoint.
+ */
+function buildCoarseShoreline(): PlanPoint[] {
+  const { stations, arcLengths } = course;
+  const first = arcLengths.findIndex((arc) => arc >= course.authoredStartArc);
+  const last = arcLengths.findIndex((arc) => arc >= course.authoredEndArc);
+  const perBank = 14;
+  const reach = (side: PlanPoint[]) =>
+    Array.from({ length: perBank }, (_, index) => {
+      const station = first + Math.round(((last - first) * index) / (perBank - 1));
+      return side[station]!;
+    });
+
+  const left = bankSides.left;
+  const right = bankSides.right;
+  return [
+    left[0]!,
+    ...reach(left),
+    left[stations.length - 1]!,
+    right[stations.length - 1]!,
+    ...reach(right).reverse(),
+    right[0]!,
+  ];
+}
+
+const worldShoreline = buildCoarseShoreline();
 
 const worldBounds = {
   minX: Math.min(...worldOutline.map((point) => point[0])),
@@ -265,10 +302,13 @@ const outlineCenter = {
   depth: (worldBounds.minDepth + worldBounds.maxDepth) / 2,
 };
 
-const localOutline: PlanPoint[] = worldOutline.map(([x, depth]) => [
+const toLocal = ([x, depth]: PlanPoint): PlanPoint => [
   x - outlineCenter.x,
   depth - outlineCenter.depth,
-]);
+];
+
+const localOutline: PlanPoint[] = worldOutline.map(toLocal);
+const localShoreline: PlanPoint[] = worldShoreline.map(toLocal);
 
 export function getBlossomRiverSurfaceElevation(): number {
   return plan.water.surfaceElevation;
@@ -287,9 +327,14 @@ export function getBlossomRiverCenterline(): PlanPoint[] {
   return course.stations.map(toReflectorPoint);
 }
 
-/** Local XY shoreline, centred on its own bounding box. */
+/** Local XY water footprint, centred on its own bounding box. */
 export function getBlossomRiverOutline(): PlanPoint[] {
   return localOutline;
+}
+
+/** The same footprint reduced to the 32 segments the pool shader carries. */
+export function getBlossomRiverShoreline(): PlanPoint[] {
+  return localShoreline;
 }
 
 export function getBlossomRiverBounds(): {
@@ -301,7 +346,9 @@ export function getBlossomRiverBounds(): {
   return {
     width: worldBounds.maxX - worldBounds.minX,
     depth: worldBounds.maxDepth - worldBounds.minDepth,
+    // World placement for the recentred outline. The pool's -90 degree X
+    // rotation sends local +Y to world -Z, so the depth centre flips sign.
     centerX: outlineCenter.x,
-    centerZ: outlineCenter.depth,
+    centerZ: -outlineCenter.depth,
   };
 }

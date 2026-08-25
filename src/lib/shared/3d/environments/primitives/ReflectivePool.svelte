@@ -26,6 +26,13 @@
     position: [number, number, number];
     /** Local XY shoreline in metres for a non-rectangular body of water. */
     outline?: Array<[number, number]>;
+    /**
+     * Optional coarse stand-in for `outline` when measuring the shore.
+     * The shader carries a fixed 32-segment shoreline, so a caller whose
+     * outline is denser than that can supply the 32 points that best preserve
+     * its shape rather than accept an even sample of the whole loop.
+     */
+    shoreline?: Array<[number, number]>;
     textureWidth?: number;
     textureHeight?: number;
     deepColor?: string | number;
@@ -58,8 +65,20 @@
   const MAX_SHORELINE_SEGMENTS = 32;
 
   function resolveShoreline(): Array<[number, number]> {
+    if (props.shoreline && props.shoreline.length >= 3) {
+      return props.shoreline.slice(0, MAX_SHORELINE_SEGMENTS);
+    }
     if (props.outline && props.outline.length >= 3) {
-      return props.outline.slice(0, MAX_SHORELINE_SEGMENTS);
+      if (props.outline.length <= MAX_SHORELINE_SEGMENTS) return props.outline;
+      // The shader's shoreline arrays are fixed at 32 segments. Taking the
+      // first 32 points of a denser outline keeps one fragment of the bank and
+      // throws the rest away, so foam and depth get measured against a stray
+      // open arc. Sampling evenly keeps a closed, correctly-shaped loop.
+      return Array.from({ length: MAX_SHORELINE_SEGMENTS }, (_, index) => {
+        const source =
+          (index * props.outline!.length) / MAX_SHORELINE_SEGMENTS;
+        return props.outline![Math.floor(source)]!;
+      });
     }
 
     const halfWidth = props.width / 2;

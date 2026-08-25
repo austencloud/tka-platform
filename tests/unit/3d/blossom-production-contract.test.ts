@@ -14,6 +14,8 @@ import {
 import {
   getBlossomRiverBounds,
   getBlossomRiverOutline,
+  getBlossomRiverShoreFade,
+  getBlossomRiverShoreline,
   getBlossomRiverSurfaceElevation,
 } from "$lib/shared/3d/environments/scenes/cherry-blossom/blossom-water";
 
@@ -52,14 +54,42 @@ describe("Blossom R2.1 production contract", () => {
     }
   });
 
-  it("keeps the widened water body broad enough to read as a river", () => {
-    const outline = getBlossomRiverOutline();
+  it("runs the water off both ends of the site instead of capping it mid-field", () => {
     const bounds = getBlossomRiverBounds();
+    const terrain = getBlossomTerrainBounds();
 
-    expect(outline).toHaveLength(20);
-    expect(bounds.width).toBeGreaterThan(84);
+    // The authored centerline only spans 85 m. Anything at or near that width
+    // means the run-out is gone and the river ends in open ground again.
+    expect(bounds.width).toBeGreaterThan(terrain.maxX - terrain.minX);
     expect(bounds.depth).toBeGreaterThan(8);
     expect(getBlossomRiverSurfaceElevation()).toBe(-0.15);
+  });
+
+  it("carries a resampled bank the pool shader can still measure", () => {
+    const outline = getBlossomRiverOutline();
+    const shoreline = getBlossomRiverShoreline();
+
+    // Ten authored control points give nine faceted segments per bank. The
+    // resampled course has to be far denser than that for the water's edge to
+    // read as a curve.
+    expect(outline.length).toBeGreaterThan(120);
+    expect(outline.length % 2).toBe(0);
+    // ReflectivePoolShader's shoreline arrays are fixed at 32 segments; a
+    // longer list is silently truncated into an open arc.
+    expect(shoreline.length).toBeLessThanOrEqual(32);
+    expect(shoreline.length).toBeGreaterThanOrEqual(3);
+    expect(getBlossomRiverShoreFade()).toBeGreaterThan(3);
+  });
+
+  it("centres the water footprint so the shader samples its own shoreline", () => {
+    const outline = getBlossomRiverOutline();
+    const x = outline.map((point) => point[0]);
+    const depth = outline.map((point) => point[1]);
+
+    // ReflectivePool reconstructs shoreline coordinates as (uv - 0.5) * size,
+    // which only matches the outline when it is centred on the origin.
+    expect(Math.abs(Math.max(...x) + Math.min(...x))).toBeLessThan(0.001);
+    expect(Math.abs(Math.max(...depth) + Math.min(...depth))).toBeLessThan(0.001);
   });
 
   it("keeps stage operations outside the performance envelope", () => {

@@ -131,6 +131,8 @@ COMPOSITION_PLAN = {
         "surfaceElevation": MASTERPLAN["water"]["surfaceElevation"],
         "bedDepth": MASTERPLAN["water"]["bedDepth"],
         "bankTransitionWidth": MASTERPLAN["water"]["bankTransitionWidth"],
+        "bankTerraceWidth": MASTERPLAN["water"]["bankTerraceWidth"],
+        "runOut": MASTERPLAN["water"]["runOut"],
     },
     "bridge": MASTERPLAN["bridge"],
     "torii": MASTERPLAN["torii"],
@@ -355,10 +357,16 @@ def enable_vertex_tint(mat):
     if bsdf is None:
         return mat
     base_color = bsdf.inputs["Base Color"]
-    if not base_color.links:
-        return mat
-
-    upstream = base_color.links[0].from_socket
+    if base_color.links:
+        upstream = base_color.links[0].from_socket
+    else:
+        # A flat-colour material has nothing feeding Base Color, so promote its
+        # constant to an RGB node first. Without this the tint silently does
+        # nothing in Blender's viewport even though glTF still exports COLOR_0.
+        constant = nodes.new("ShaderNodeRGB")
+        constant.name = f"{mat.name} Base Constant"
+        constant.outputs[0].default_value = tuple(base_color.default_value)
+        upstream = constant.outputs[0]
     attribute = nodes.new("ShaderNodeVertexColor")
     attribute.name = f"{mat.name} Vertex Tint"
     attribute.layer_name = VERTEX_TINT_LAYER
@@ -379,13 +387,34 @@ RIVER_BED = material(
     (0.075, 0.11, 0.115),
     roughness=0.94,
 )
+# Authored at the shallow bank colour, not the deep one. Vertex tint can only
+# darken, so the section reaches its deep channel colour by tinting inward from
+# this. Authoring the deep colour instead would leave no way to lighten the
+# edges, which is what made the ribbon read as one flat navy band.
 WATER = material(
     "Moonlit River",
-    (0.022, 0.09, 0.17),
-    roughness=0.14,
+    (0.085, 0.235, 0.275),
+    roughness=0.12,
     metallic=0.08,
-    emission=(0.012, 0.035, 0.075),
-    emission_strength=0.22,
+    emission=(0.016, 0.046, 0.088),
+    emission_strength=0.26,
+)
+enable_vertex_tint(WATER)
+WATER_EDGE_TINT = (1.0, 1.0, 1.0)
+WATER_SHALLOW_TINT = (0.72, 0.74, 0.82)
+WATER_MID_TINT = (0.42, 0.44, 0.60)
+WATER_DEEP_TINT = (0.26, 0.24, 0.40)
+# Columns across the half-section, as a fraction of the local half width. The
+# outer pair sits marginally below the waterline so the surface tucks under the
+# graded bank instead of ending on a visible cut line.
+WATER_SECTION = (
+    (-1.0, WATER_EDGE_TINT, -0.055),
+    (-0.74, WATER_SHALLOW_TINT, -0.012),
+    (-0.36, WATER_MID_TINT, 0.0),
+    (0.0, WATER_DEEP_TINT, 0.0),
+    (0.36, WATER_MID_TINT, 0.0),
+    (0.74, WATER_SHALLOW_TINT, -0.012),
+    (1.0, WATER_EDGE_TINT, -0.055),
 )
 LANTERN_GLOW = material(
     "Lantern Glow",
@@ -678,44 +707,161 @@ def catmull_rom_point(first, second, third, fourth, amount):
     )
 
 
-_RIVER_CENTERLINE_SAMPLES = None
+RIVER_RUN_OUT_SPACING = 4.0
 
 
-def river_centerline_samples():
-    global _RIVER_CENTERLINE_SAMPLES
-    if _RIVER_CENTERLINE_SAMPLES is not None:
-        return _RIVER_CENTERLINE_SAMPLES
+def river_run_out_stations(anchor, inward):
+    """Stations continuing an end tangent until the water has left the site.
+
+    The authored centerline spans 85 m inside a 256 m field, so stopping at its
+    last control point leaves the river ending in a square cap in open ground.
+    Extending both end tangents past the terrain boundary is what lets it read
+    as arriving from the hills rather than beginning nowhere.
+    """
+    dx = anchor[0] - inward[0]
+    dy = anchor[1] - inward[1]
+    length = math.hypot(dx, dy) or 1.0
+    bounds = MASTERPLAN["site"]["terrainBounds"]
+    margin = COMPOSITION_PLAN["water"]["runOut"]["marginMetres"]
+    stations = []
+    distance = RIVER_RUN_OUT_SPACING
+    while distance < 400.0:
+        point = (
+            anchor[0] + dx / length * distance,
+            anchor[1] + dy / length * distance,
+        )
+        stations.append(point)
+        if (
+            point[0] < bounds["minX"] - margin
+            or point[0] > bounds["maxX"] + margin
+            or point[1] < bounds["minY"] - margin
+            or point[1] > bounds["maxY"] + margin
+        ):
+            break
+        distance += RIVER_RUN_OUT_SPACING
+    return stations
+
+
+_RIVER_COURSE = None
+
+
+def river_course():
+    """Resampled centerline, cumulative arc lengths, and the authored span.
+
+    Everything downstream — the channel carve, the bank terrace, the water
+    ribbon, habitat damping and grove clearance — reads this one course, so the
+    terrain and the surface can never disagree about where the river is.
+    """
+    global _RIVER_COURSE
+    if _RIVER_COURSE is not None:
+        return _RIVER_COURSE
 
     control_points = COMPOSITION_PLAN["water"]["centerline"]
     subdivisions = GROUND_PLAN["terrain"]["riverSplineSubdivisions"]
-    samples = []
+    authored = []
     for segment in range(len(control_points) - 1):
         first = control_points[max(0, segment - 1)]
         second = control_points[segment]
         third = control_points[segment + 1]
         fourth = control_points[min(len(control_points) - 1, segment + 2)]
         for step in range(subdivisions):
-            samples.append(
+            authored.append(
                 catmull_rom_point(first, second, third, fourth, step / subdivisions)
             )
-    samples.append(tuple(control_points[-1]))
-    _RIVER_CENTERLINE_SAMPLES = tuple(samples)
-    return _RIVER_CENTERLINE_SAMPLES
+    authored.append(tuple(control_points[-1]))
+
+    head = river_run_out_stations(authored[0], authored[1])
+    head.reverse()
+    tail = river_run_out_stations(authored[-1], authored[-2])
+    stations = [*head, *authored, *tail]
+
+    arcs = [0.0]
+    for index in range(1, len(stations)):
+        arcs.append(arcs[-1] + math.dist(stations[index - 1], stations[index]))
+
+    _RIVER_COURSE = {
+        "stations": tuple(stations),
+        "arcs": tuple(arcs),
+        "authoredStartArc": arcs[len(head)],
+        "authoredEndArc": arcs[len(head) + len(authored) - 1],
+    }
+    return _RIVER_COURSE
+
+
+def river_centerline_samples():
+    return river_course()["stations"]
+
+
+def river_run_out_amount(arc_length):
+    """0 across the authored reach, 1 once the run-out section is fully open."""
+    course = river_course()
+    open_from = COMPOSITION_PLAN["water"]["runOut"]["openFromMetres"]
+    if arc_length < course["authoredStartArc"]:
+        return smoothstep(0.0, open_from, course["authoredStartArc"] - arc_length)
+    if arc_length > course["authoredEndArc"]:
+        return smoothstep(0.0, open_from, arc_length - course["authoredEndArc"])
+    return 0.0
+
+
+def river_half_width(arc_length):
+    run_out = COMPOSITION_PLAN["water"]["runOut"]
+    open_amount = river_run_out_amount(arc_length)
+    width = COMPOSITION_PLAN["water"]["width"] + (
+        run_out["surfaceWidth"] - COMPOSITION_PLAN["water"]["width"]
+    ) * open_amount
+    return width * 0.5
+
+
+def river_bank_terrace_width(arc_length):
+    run_out = COMPOSITION_PLAN["water"]["runOut"]
+    open_amount = river_run_out_amount(arc_length)
+    terrace = COMPOSITION_PLAN["water"]["bankTerraceWidth"]
+    return terrace + (run_out["bankTerraceWidth"] - terrace) * open_amount
+
+
+def river_projection(x, y):
+    """Distance to the centerline and how far along it the closest point lies."""
+    course = river_course()
+    stations = course["stations"]
+    arcs = course["arcs"]
+    best_distance = None
+    best_arc = 0.0
+    for index in range(len(stations) - 1):
+        first = stations[index]
+        second = stations[index + 1]
+        dx = second[0] - first[0]
+        dy = second[1] - first[1]
+        length_squared = dx * dx + dy * dy
+        if length_squared <= 1e-8:
+            amount = 0.0
+        else:
+            amount = clamp(((x - first[0]) * dx + (y - first[1]) * dy) / length_squared)
+        distance = math.hypot(x - (first[0] + dx * amount), y - (first[1] + dy * amount))
+        if best_distance is None or distance < best_distance:
+            best_distance = distance
+            best_arc = arcs[index] + math.sqrt(length_squared) * amount
+    return best_distance, best_arc
 
 
 def river_distance(x, y):
-    return polyline_distance(x, y, river_centerline_samples())
+    return river_projection(x, y)[0]
 
 
-def river_surface_distance(x, y):
-    signed_distance = river_distance(x, y) - COMPOSITION_PLAN["water"]["width"] * 0.5
+def river_bank_profile(x, y):
+    """Signed distance to the water's edge, and the terrace width in force there."""
+    distance, arc_length = river_projection(x, y)
+    signed_distance = distance - river_half_width(arc_length)
     for widening in COMPOSITION_PLAN["water"]["localWidenings"]:
         signed_distance = min(
             signed_distance,
             math.hypot(x - widening["center"][0], y - widening["center"][1])
             - widening["surfaceRadius"],
         )
-    return signed_distance
+    return signed_distance, river_bank_terrace_width(arc_length)
+
+
+def river_surface_distance(x, y):
+    return river_bank_profile(x, y)[0]
 
 
 def river_bed_depth(x, y):
@@ -805,6 +951,18 @@ def garden_ground_height(x, y):
         height = target
         break
 
+    surface_distance, terrace_width = river_bank_profile(x, y)
+
+    # Grade the ground down toward the waterline before the channel itself
+    # cuts. The 1.4 m bank transition is barely wider than one 1.2 m terrain
+    # cell, so on its own the shoreline resolves as a single polygonal step and
+    # the water reads as a decal. The terrace gives the bank several cells of
+    # real slope. It runs before the path blend so a route beside the river
+    # still sits at its authored elevation above the graded bank.
+    terrace_weight = (1.0 - smoothstep(0.0, terrace_width, surface_distance)) * 0.85
+    terrace_target = COMPOSITION_PLAN["water"]["surfaceElevation"] + 0.22
+    height = height * (1.0 - terrace_weight) + terrace_target * terrace_weight
+
     path_surface = closest_path_surface(x, y)
     if path_surface:
         signed_distance, path_elevation = path_surface
@@ -828,7 +986,7 @@ def garden_ground_height(x, y):
     channel_weight = 1.0 - smoothstep(
         0.0,
         COMPOSITION_PLAN["water"]["bankTransitionWidth"],
-        river_surface_distance(x, y),
+        surface_distance,
     )
     river_floor = (
         COMPOSITION_PLAN["water"]["surfaceElevation"] - river_bed_depth(x, y)
@@ -1994,12 +2152,12 @@ def create_river_and_bridge():
     # this height, so the ribbon reads as water contained by banks from every
     # orbit instead of a blue mesh laid over unrelated terrain.
     water_height = GROUND_PLAN["terrain"]["riverWaterHeight"]
-    centerline = [
-        Vector((x, y, water_height)) for x, y in river_centerline_samples()
-    ]
+    course = river_course()
+    centerline = [Vector((x, y, water_height)) for x, y in course["stations"]]
+    arcs = course["arcs"]
 
-    def water_half_width(point):
-        half_width = water_plan["width"] * 0.5
+    def water_half_width(point, arc_length):
+        half_width = river_half_width(arc_length)
         for widening in water_plan["localWidenings"]:
             distance = math.hypot(
                 point.x - widening["center"][0],
@@ -2012,26 +2170,37 @@ def create_river_and_bridge():
         return half_width
 
     vertices = []
+    tints = []
     for index, point in enumerate(centerline):
         previous = centerline[max(0, index - 1)]
         following = centerline[min(len(centerline) - 1, index + 1)]
         tangent = (following - previous).normalized()
         normal = Vector((-tangent.y, tangent.x, 0))
         edge_softening = 0.94 + 0.06 * math.sin(index * 1.73 + 0.35)
-        half_width = water_half_width(point)
-        vertices.extend(
-            (
-                tuple(point + normal * half_width * edge_softening),
-                tuple(point - normal * half_width * edge_softening),
+        half_width = water_half_width(point, arcs[index]) * edge_softening
+        for offset, tint, drop in WATER_SECTION:
+            vertices.append(tuple(point + normal * half_width * offset + Vector((0, 0, drop))))
+            tints.append(tint)
+
+    columns = len(WATER_SECTION)
+    faces = []
+    for index in range(len(centerline) - 1):
+        base = index * columns
+        for column in range(columns - 1):
+            faces.append(
+                (
+                    base + column,
+                    base + column + 1,
+                    base + columns + column + 1,
+                    base + columns + column,
+                )
             )
-        )
-    faces = [
-        (index * 2, index * 2 + 1, index * 2 + 3, index * 2 + 2)
-        for index in range(len(centerline) - 1)
-    ]
     water = link_object(
         "River_Water",
-        make_mesh("Moonlit River Mesh", vertices, faces, [WATER], smooth=True),
+        add_vertex_tint(
+            make_mesh("Moonlit River Mesh", vertices, faces, [WATER], smooth=True),
+            tints,
+        ),
     )
     water.visible_shadow = False
     water["tka_role"] = "blossom-water-surface"
@@ -2296,10 +2465,10 @@ def grass_position_allowed(x, y):
         return False
     if path_distance(x, y) <= exclusions["pathMargin"]:
         return False
-    if river_distance(x, y) <= (
-        COMPOSITION_PLAN["water"]["width"] * 0.5
-        + exclusions["waterMargin"]
-        + exclusions["grassFootprintRadius"]
+    # Measured from the water's edge, so the run-out's wider section and the
+    # koi pools push grass back the same way the authored reach does.
+    if river_surface_distance(x, y) <= (
+        exclusions["waterMargin"] + exclusions["grassFootprintRadius"]
     ):
         return False
 
@@ -2536,7 +2705,7 @@ def create_grass_ecosystem():
             "grassTierCounts": tier_counts,
             "grassPatchCounts": patch_counts,
             "minimumGrassRootWaterClearance": min(
-                river_distance(x, y) - COMPOSITION_PLAN["water"]["width"] * 0.5
+                river_surface_distance(x, y)
                 for _tier, _palette, _form, _patch_id, x, y in positions
             ),
         }
