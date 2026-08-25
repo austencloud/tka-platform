@@ -953,9 +953,15 @@
     min-height: var(--compact-stage-height);
   }
 
+  /* Definite height for the same reason the wide tier has one: StepGrid's
+     container is a `container-type: size` query container and the arrival card
+     sizes in `cqh`, so an auto-height ancestor collapses that unit to 0 and the
+     picked step never pops forward. Stretching to the leftover flex space also
+     left the stage 57px tall here — shorter than one grid cell, so the grid was
+     a scrollbar rather than a workspace. */
   .compact-layout .sequence-column .ws-frame {
-    flex: 1;
-    height: auto;
+    flex: 0 0 auto;
+    height: clamp(9rem, 26svh, 14rem);
     min-height: 0;
   }
 
