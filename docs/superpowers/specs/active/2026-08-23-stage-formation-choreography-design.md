@@ -312,12 +312,41 @@ mutations use today).
       getter never notified `EditHistoryShortcutBridge` and its
       `disabled={!canUndo}` kept Ctrl+Z inert regardless of edit count. They are
       `$state` now. Found while verifying that the new chip drag was undoable.
-- [ ] **Phase 4d — Delete mark CRUD.** `addMark`, `updateMarkPosition`,
-      `updateMarkBeats`, `updateMarkWalkStyle`, `updateMarkEasing`,
-      `deleteMark`, `Performer.marks`, `createMark`, the `Mark` type,
-      `totalBeatsForPerformer`, and `selectMark`/`selectedMarkId` — the removal
-      deferred from Phase 2, now unblocked because nothing reads them.
-      `formation-migration.ts` stays as the loader for persisted documents.
-      Mechanical, test-verifiable and non-visual: a good Codex candidate.
+- [x] **Phase 4d — Retire the mark model.** `b80d793708` (Codex, then corrected
+      and extended by the main session). The legacy model has one home:
+      `formation-migration.ts` owns `Mark`, `LegacyPerformer` and
+      `samplePerformerPerformance`, so persisted pre-formation documents still
+      load and nothing else in the module can reach marks by accident. That also
+      broke the circular import the first split created, and let `segmentFacing`
+      type against `FormationSpot` — what its only live caller actually passes.
+      The default document authors its two formations directly instead of
+      authoring marks and migrating them, which additionally lets it set
+      `presetId`; the Shape picker had been showing "custom" for a document that
+      is plainly a line. Deleted: the six mark mutators, `createMark`,
+      `totalBeatsForPerformer`, `Performer.marks`, `selectedMarkId`/`selectMark`,
+      `sampleStagePerformance`, and `formation-interpolator.ts`.
+      **Two corrections to the Codex pass, both caused by a loose brief:** it was
+      told to keep `insertFormationAtPlayhead`'s "formation half", but that
+      function was pure mark mutation with zero callers — it rewired a dead
+      function onto live `addFormation` behaviour, which is worse than leaving it
+      inert, because the next caller would get behaviour nobody designed or
+      verified. Both it and `applyPreset` are deleted. It also kept the default
+      formation ids as `migrated-formation-*` when nothing migrates them any
+      more. Lesson for future briefs: say "delete if unreferenced", not "keep
+      behaviour identical", when the behaviour under discussion may itself be
+      dead.
+      **Found while verifying in the browser (not by any test):** `.stage-sidebar`
+      is a column flex container with `overflow-y: auto`, so its sections shrank
+      below their content instead of the sidebar scrolling, and
+      `CollapsibleSection`'s `overflow: hidden` clipped the remainder. The
+      performer chips were cut in half, the `CountStepper` was gone entirely, and
+      the "Reseeds Set 1." caption was laid out 78px below the bottom of the box
+      that contained it. Fixed with `flex: none` on the sidebar's children. This
+      was invisible to the Phase 4b/4c sweep because that sweep screenshotted the
+      drill chart and never opened the Stage setup popover — a reminder that
+      "seven viewports" only covers the surfaces actually on screen.
+      Evidence: 58/58 stage tests; `npm run check` 0 errors 0 warnings; the
+      default track still renders line → v-shape at count 8; sidebar scrolls with
+      full-size sections at 1920 and 960x412.
 - [ ] **Phase 5 — Proof pass.** Visual verification is the main session's job,
       never a subagent's.
