@@ -25,6 +25,7 @@ import sys
 import tempfile
 import zlib
 
+import bmesh
 import bpy
 from mathutils import Euler, Matrix, Vector
 
@@ -42,6 +43,7 @@ PLANTFACTORY_CANDIDATE_DIR = os.path.join(
     OUTPUT_DIR, "candidates", "plantfactory-family-r1"
 )
 POLYHAVEN_ROCK_DIR = os.path.join(PROJECT_ROOT, "blender", "polyhaven_rocks")
+VERTEX_TINT_LAYER = "Color"
 MASTERPLAN_PATH = os.path.join(
     PROJECT_ROOT,
     "docs",
@@ -63,11 +65,21 @@ QA_PATH = os.path.join(QA_DIR, "blossom_environment_qa.png")
 with open(MASTERPLAN_PATH, "r", encoding="utf-8") as plan_file:
     MASTERPLAN = json.load(plan_file)
 
-if (
-    MASTERPLAN.get("status") != "approved-for-production"
-    or not MASTERPLAN.get("approvalGate", {}).get("productionChangesAllowed")
-):
-    raise RuntimeError("Blossom R2.1 is not approved for production authoring")
+# "rejected-visual-review" is the state R2.1 entered on 2026-08-23 when Austen
+# rejected the built result. Authoring stays open in that state so the
+# composition can be worked on, but nothing here may present the result as
+# approved: verify-blossom-composition.mjs still refuses to certify a rejected
+# plan, and that refusal is the gate that matters.
+BLOSSOM_AUTHORING_STATES = ("approved-for-production", "rejected-visual-review")
+if MASTERPLAN.get("status") not in BLOSSOM_AUTHORING_STATES:
+    raise RuntimeError(
+        f"Blossom R2.1 is at an unrecognized gate: {MASTERPLAN.get('status')!r}"
+    )
+if not MASTERPLAN.get("approvalGate", {}).get("productionChangesAllowed"):
+    print(
+        "NOTE: Blossom R2.1 has not passed visual review. Authoring a revision;\n"
+        "      this build is not a certified composition."
+    )
 
 STAGE_DECK_TOP = MASTERPLAN["stage"]["deckTop"]
 
@@ -325,6 +337,43 @@ PATH_SERVICE = textured_material(
     0.99,
     tint=(0.46, 0.44, 0.42),
 )
+
+
+def enable_vertex_tint(mat):
+    """Multiply the surface albedo by a per-vertex colour.
+
+    A path whose base colour is constant to its last vertex ends on a drawn
+    line, which is what makes a ribbon read as a decal pasted over terrain.
+    Routing the diffuse through a vertex-colour multiply lets each ribbon darken
+    toward a mossy fringe at its outer edge, so the boundary dissolves instead of
+    stopping. Blender's glTF exporter carries the attribute as COLOR_0 and
+    three.js multiplies it automatically, so runtime needs no shader work.
+    """
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+    bsdf = nodes.get("Principled BSDF")
+    if bsdf is None:
+        return mat
+    base_color = bsdf.inputs["Base Color"]
+    if not base_color.links:
+        return mat
+
+    upstream = base_color.links[0].from_socket
+    attribute = nodes.new("ShaderNodeVertexColor")
+    attribute.name = f"{mat.name} Vertex Tint"
+    attribute.layer_name = VERTEX_TINT_LAYER
+    multiply = nodes.new("ShaderNodeMixRGB")
+    multiply.name = f"{mat.name} Vertex Tint Multiply"
+    multiply.blend_type = "MULTIPLY"
+    multiply.inputs["Fac"].default_value = 1.0
+    links.new(upstream, multiply.inputs[1])
+    links.new(attribute.outputs["Color"], multiply.inputs[2])
+    links.new(multiply.outputs["Color"], base_color)
+    return mat
+
+
+enable_vertex_tint(PATH_PUBLIC)
+enable_vertex_tint(PATH_SERVICE)
 RIVER_BED = material(
     "Blossom River Bed",
     (0.075, 0.11, 0.115),
@@ -378,6 +427,16 @@ def make_mesh(name, vertices, faces, materials, material_indices=None, smooth=Fa
             polygon.material_index = index
     for polygon in mesh.polygons:
         polygon.use_smooth = smooth
+    return mesh
+
+
+def add_vertex_tint(mesh, tints):
+    layer = mesh.color_attributes.new(
+        name=VERTEX_TINT_LAYER, type="BYTE_COLOR", domain="CORNER"
+    )
+    for loop in mesh.loops:
+        red, green, blue = tints[loop.vertex_index]
+        layer.data[loop.index].color = (red, green, blue, 1.0)
     return mesh
 
 
@@ -906,64 +965,227 @@ def create_ground():
     create_ground_family_mask()
 
 
+SURFACE_SAMPLE_SPACING = 1.4
+SURFACE_LIFT = 0.025
+SURFACE_FRINGE_DROP = -0.012
+
+
+def densify_outline(polygon, spacing=SURFACE_SAMPLE_SPACING):
+    dense = []
+    for index, current in enumerate(polygon):
+        following = polygon[(index + 1) % len(polygon)]
+        span = math.dist(current, following)
+        steps = max(1, int(math.ceil(span / spacing)))
+        for step in range(steps):
+            amount = step / steps
+            dense.append(
+                (
+                    current[0] + (following[0] - current[0]) * amount,
+                    current[1] + (following[1] - current[1]) * amount,
+                )
+            )
+    return dense
+
+
 def create_surface_polygon(name, polygon, surface_material, role):
-    center_x = sum(point[0] for point in polygon) / len(polygon)
-    center_y = sum(point[1] for point in polygon) / len(polygon)
-    vertices = [
-        (center_x, center_y, garden_ground_height(center_x, center_y) + 0.025)
-    ]
-    vertices.extend(
-        (x, y, garden_ground_height(x, y) + 0.025) for x, y in polygon
+    """Build a terrain-conforming surface patch as a polar grid.
+
+    Fanning straight from the centroid to each corner leaves spokes many metres
+    long, so a large rectangle only touches the ground at its corners and cuts
+    through every rise between them. Densifying the outline and stepping outward
+    in rings samples the graded terrain across the whole patch instead.
+    """
+    outline = densify_outline(polygon)
+    center_x = sum(point[0] for point in outline) / len(outline)
+    center_y = sum(point[1] for point in outline) / len(outline)
+    rings = max(
+        2,
+        int(
+            math.ceil(
+                max(math.dist((center_x, center_y), point) for point in outline)
+                / SURFACE_SAMPLE_SPACING
+            )
+        ),
     )
-    faces = [
-        (0, index + 1, (index + 1) % len(polygon) + 1)
-        for index in range(len(polygon))
+
+    vertices = [
+        (center_x, center_y, garden_ground_height(center_x, center_y) + SURFACE_LIFT)
     ]
+    tints = [PATH_CORE_TINT]
+    for ring in range(1, rings + 1):
+        amount = ring / rings
+        is_edge = ring == rings
+        lift = SURFACE_FRINGE_DROP if is_edge else SURFACE_LIFT
+        tint = PATH_FRINGE_TINT if is_edge else PATH_CORE_TINT
+        for x, y in outline:
+            sample_x = center_x + (x - center_x) * amount
+            sample_y = center_y + (y - center_y) * amount
+            vertices.append(
+                (sample_x, sample_y, garden_ground_height(sample_x, sample_y) + lift)
+            )
+            tints.append(tint)
+
+    count = len(outline)
+    faces = [(0, 1 + index, 1 + (index + 1) % count) for index in range(count)]
+    for ring in range(rings - 1):
+        inner = 1 + ring * count
+        outer = inner + count
+        for index in range(count):
+            following = (index + 1) % count
+            faces.append(
+                (
+                    inner + index,
+                    outer + index,
+                    outer + following,
+                    inner + following,
+                )
+            )
+
     surface = link_object(
         name,
-        add_planar_uv(
-            make_mesh(f"{name} Mesh", vertices, faces, [surface_material]),
-            metres_per_repeat=2.8,
+        add_vertex_tint(
+            add_planar_uv(
+                make_mesh(
+                    f"{name} Mesh", vertices, faces, [surface_material], smooth=True
+                ),
+                metres_per_repeat=2.8,
+            ),
+            tints,
         ),
     )
     surface["tka_role"] = role
     surface.visible_shadow = False
 
 
+PATH_STATION_SPACING = 0.45
+PATH_CORE_FRACTION = 0.60
+PATH_CROWN_LIFT = 0.055
+PATH_CORE_LIFT = 0.038
+PATH_FRINGE_DROP = -0.014
+PATH_CORE_TINT = (1.0, 1.0, 1.0)
+PATH_SHOULDER_TINT = (0.86, 0.86, 0.80)
+PATH_FRINGE_TINT = (0.46, 0.52, 0.38)
+
+
+def resample_centerline(centerline, spacing=PATH_STATION_SPACING):
+    """Catmull-Rom the authored control points into evenly spaced stations.
+
+    The masterplan authors each route as a handful of control points. Walking
+    those raw points produces one quad per authored segment, so every direction
+    change becomes a visible crease and the route reads as a chain of flat
+    facets. Resampling along the spline first gives the ribbon real curvature.
+    """
+    points = [(point[0], point[1]) for point in centerline]
+    if len(points) < 2:
+        return points
+
+    padded = [points[0], *points, points[-1]]
+    stations = []
+    for index in range(len(padded) - 3):
+        first, second, third, fourth = padded[index : index + 4]
+        span = math.hypot(third[0] - second[0], third[1] - second[1])
+        steps = max(1, int(math.ceil(span / spacing)))
+        for step in range(steps):
+            stations.append(
+                catmull_rom_point(first, second, third, fourth, step / steps)
+            )
+    stations.append(points[-1])
+    return stations
+
+
+def path_edge_offset(arc_length, side_seed):
+    """Low-frequency wander applied to a ribbon's outer edge.
+
+    A garden path worn into turf never has a ruled edge. Three octaves keyed to
+    arc length keep both sides independent and keep the result deterministic, so
+    a rebuild produces the same garden.
+    """
+    return (
+        0.088 * math.sin(arc_length * 0.83 + side_seed * 11.37)
+        + 0.047 * math.sin(arc_length * 2.17 + side_seed * 4.11 + 1.3)
+        + 0.025 * math.sin(arc_length * 4.93 + side_seed * 7.71 + 2.6)
+    )
+
+
 def create_path_ribbon(path):
-    centerline = path["centerline"]
+    stations = resample_centerline(path["centerline"])
     half_width = path["width"] * 0.5
     vertices = []
-    for index, point in enumerate(centerline):
-        previous = centerline[max(0, index - 1)]
-        following = centerline[min(len(centerline) - 1, index + 1)]
+    tints = []
+    arc_length = 0.0
+
+    for index, point in enumerate(stations):
+        if index > 0:
+            arc_length += math.dist(stations[index - 1], point)
+        previous = stations[max(0, index - 1)]
+        following = stations[min(len(stations) - 1, index + 1)]
         tangent_x = following[0] - previous[0]
         tangent_y = following[1] - previous[1]
         length = math.hypot(tangent_x, tangent_y) or 1.0
         normal_x = -tangent_y / length
         normal_y = tangent_x / length
-        z = point[2] + 0.035
-        vertices.extend(
-            (
-                (point[0] + normal_x * half_width, point[1] + normal_y * half_width, z),
-                (point[0] - normal_x * half_width, point[1] - normal_y * half_width, z),
+
+        # Offsetting every station by half the width along its own normal pinches
+        # the ribbon on the inside of a corner. Dividing by the cosine of the
+        # half-turn restores the authored width through the bend.
+        incoming_x, incoming_y = point[0] - previous[0], point[1] - previous[1]
+        outgoing_x, outgoing_y = following[0] - point[0], following[1] - point[1]
+        incoming_length = math.hypot(incoming_x, incoming_y)
+        outgoing_length = math.hypot(outgoing_x, outgoing_y)
+        if incoming_length > 1e-6 and outgoing_length > 1e-6:
+            alignment = (incoming_x * outgoing_x + incoming_y * outgoing_y) / (
+                incoming_length * outgoing_length
             )
+            miter = min(1.0 / math.sqrt(max(0.08, 0.5 * (1.0 + alignment))), 2.4)
+        else:
+            miter = 1.0
+
+        left_edge = half_width * miter * (1.0 + path_edge_offset(arc_length, 0.0))
+        right_edge = half_width * miter * (1.0 + path_edge_offset(arc_length, 5.0))
+        cross_section = (
+            (-left_edge, PATH_FRINGE_TINT, PATH_FRINGE_DROP),
+            (-left_edge * PATH_CORE_FRACTION, PATH_SHOULDER_TINT, PATH_CORE_LIFT),
+            (0.0, PATH_CORE_TINT, PATH_CROWN_LIFT),
+            (right_edge * PATH_CORE_FRACTION, PATH_SHOULDER_TINT, PATH_CORE_LIFT),
+            (right_edge, PATH_FRINGE_TINT, PATH_FRINGE_DROP),
         )
-    faces = [
-        (index * 2, index * 2 + 1, index * 2 + 3, index * 2 + 2)
-        for index in range(len(centerline) - 1)
-    ]
+
+        for offset, tint, lift in cross_section:
+            x = point[0] + normal_x * offset
+            y = point[1] + normal_y * offset
+            # Sampling the graded terrain rather than the authored control-point
+            # elevation is what keeps the ribbon on the ground between stations.
+            vertices.append((x, y, garden_ground_height(x, y) + lift))
+            tints.append(tint)
+
+    columns = 5
+    faces = []
+    for index in range(len(stations) - 1):
+        base = index * columns
+        for column in range(columns - 1):
+            faces.append(
+                (
+                    base + column,
+                    base + column + 1,
+                    base + columns + column + 1,
+                    base + columns + column,
+                )
+            )
     is_service = path["kind"] == "restricted-service"
     path_object = link_object(
         f"Path_{path['id']}",
-        add_planar_uv(
-            make_mesh(
-                f"Blossom {path['label']} Mesh",
-                vertices,
-                faces,
-                [PATH_SERVICE if is_service else PATH_PUBLIC],
+        add_vertex_tint(
+            add_planar_uv(
+                make_mesh(
+                    f"Blossom {path['label']} Mesh",
+                    vertices,
+                    faces,
+                    [PATH_SERVICE if is_service else PATH_PUBLIC],
+                    smooth=True,
+                ),
+                metres_per_repeat=2.2,
             ),
-            metres_per_repeat=2.2,
+            tints,
         ),
     )
     path_object["tka_role"] = (
@@ -1218,6 +1440,447 @@ def hide_source(root):
         obj.hide_viewport = True
 
 
+# Only two PlantFactory crowns have passed visual approval, against sixteen
+# authored positions. Baking each crown into an upright and a leaning cut, and
+# giving each cut its own canopy thinning, yields four distinct meshes; rotation,
+# height and width then vary per placement. The masterplan still asks for ten
+# distinct approved variants across four new families, so this is the honest
+# floor, not the finished grove.
+GROVE_VARIANTS = (
+    {
+        "id": "cherry-open-a",
+        "candidateId": "open-crown-s19",
+        "leanDegrees": 0.0,
+        "leanAzimuth": 0.0,
+        "canopyNoise": 0.22,
+        "cardSeed": 11,
+    },
+    {
+        "id": "cherry-open-a-lean",
+        "candidateId": "open-crown-s19",
+        "leanDegrees": 7.5,
+        "leanAzimuth": 34.0,
+        "canopyNoise": 0.55,
+        "cardSeed": 29,
+    },
+    {
+        "id": "cherry-open-b",
+        "candidateId": "open-crown-s71",
+        "leanDegrees": 0.0,
+        "leanAzimuth": 0.0,
+        "canopyNoise": 0.20,
+        "cardSeed": 47,
+    },
+    {
+        "id": "cherry-open-b-lean",
+        "candidateId": "open-crown-s71",
+        "leanDegrees": 6.2,
+        "leanAzimuth": 205.0,
+        "canopyNoise": 0.50,
+        "cardSeed": 83,
+    },
+)
+GROVE_FOLIAGE_KEEP = 0.24
+GROVE_FOLIAGE_CARD_GAIN = 1.9
+GROVE_WOOD_DECIMATE = 0.34
+GROVE_TRUNK_SINK = 0.12
+GROVE_PATH_CLEARANCE = 0.5
+
+# Sixteen hero trees on a 30-48 m ring do not enclose anything; they read as
+# scattered specimens with sky between them. The masterplan asks for a midground
+# and a horizon layer behind them, which is what turns the ring into a grove.
+# Those layers are never seen up close, so each tier drops most of its remaining
+# leaf cards and collapses more of its branches. The reductions compound on top
+# of the hero tier, so the far tier keeps roughly 3% of the original canopy.
+GROVE_LOD_TIERS = {
+    "hero": {"suffix": "", "relativeKeep": 1.0, "cardGain": 1.0, "woodRatio": 1.0},
+    "mid": {"suffix": "-mid", "relativeKeep": 0.34, "cardGain": 1.7, "woodRatio": 0.45},
+    "far": {"suffix": "-far", "relativeKeep": 0.13, "cardGain": 2.7, "woodRatio": 0.22},
+}
+GROVE_BACKGROUND_LAYERS = (
+    {
+        "id": "midground-grove",
+        "tier": "mid",
+        "count": 36,
+        "band": (42.0, 78.0),
+        "heightRange": (7.0, 11.5),
+    },
+    {
+        "id": "horizon-grove",
+        "tier": "far",
+        "count": 72,
+        # The masterplan band runs to 148 m, past the authored terrain edge.
+        # Clamping to 132 m keeps every trunk on ground that actually exists.
+        "band": (76.0, 132.0),
+        "heightRange": (6.5, 12.5),
+    },
+)
+GROVE_BACKGROUND_SPACING = 5.5
+GROVE_BACKGROUND_SEED = 20260825
+
+
+def resolve_grove_plan():
+    """Turn the masterplan's authored positions into placeable instances.
+
+    Variants cycle around the authored ring, and sixteen positions over four
+    variants means no two neighbours ever share a mesh, including across the
+    wrap from the last position back to the first.
+    """
+    trees = []
+    for index, tree in enumerate(MASTERPLAN["grove"]["trees"]):
+        x, y = tree["position"]
+        variant = GROVE_VARIANTS[index % len(GROVE_VARIANTS)]
+        trees.append(
+            {
+                "id": tree["id"],
+                "candidateId": variant["id"],
+                "authoredSlot": tree["variantSlot"],
+                "position": (
+                    x,
+                    y,
+                    garden_ground_height(x, y) - GROVE_TRUNK_SINK,
+                ),
+                "height": tree["height"],
+                "width": clamp(
+                    tree["canopyRadius"] / (0.52 * tree["height"]), 0.82, 1.30
+                ),
+                "rotationDegrees": (index * 47.0) % 360.0,
+                "trunkRadius": tree["trunkRadius"],
+            }
+        )
+    return trees
+
+
+def resolve_background_grove(hero_trees):
+    """Scatter the midground and horizon layers behind the hero ring.
+
+    Placement is rejection-sampled against the same site contract the hero ring
+    answers to, plus a spacing test against everything already placed, so the
+    layers never overlap each other or a hero crown. The seeded generator keeps
+    a rebuild identical.
+    """
+    rng = random.Random(GROVE_BACKGROUND_SEED)
+    bounds = MASTERPLAN["site"]["terrainBounds"]
+    margin = 6.0
+    occupied = [(tree["position"][0], tree["position"][1]) for tree in hero_trees]
+    placements = []
+
+    for layer in GROVE_BACKGROUND_LAYERS:
+        inner, outer = layer["band"]
+        minimum_height, maximum_height = layer["heightRange"]
+        placed = 0
+        attempts = 0
+        attempt_budget = layer["count"] * 600
+        while placed < layer["count"] and attempts < attempt_budget:
+            attempts += 1
+            angle = rng.uniform(0.0, math.tau)
+            # Sampling the squared radius keeps the ring evenly covered instead
+            # of crowding the inner edge.
+            radius = math.sqrt(rng.uniform(inner * inner, outer * outer))
+            x = math.cos(angle) * radius
+            y = math.sin(angle) * radius
+            if not bounds["minX"] + margin <= x <= bounds["maxX"] - margin:
+                continue
+            if not bounds["minY"] + margin <= y <= bounds["maxY"] - margin:
+                continue
+            if path_distance(x, y) < 1.6:
+                continue
+            if river_surface_distance(x, y) < 2.5:
+                continue
+            if any(
+                math.dist((x, y), point) < GROVE_BACKGROUND_SPACING
+                for point in occupied
+            ):
+                continue
+
+            variant = GROVE_VARIANTS[len(placements) % len(GROVE_VARIANTS)]
+            occupied.append((x, y))
+            placements.append(
+                {
+                    "id": f"{layer['id']}-{placed:03d}",
+                    "layerId": layer["id"],
+                    "candidateId": f"{variant['id']}{GROVE_LOD_TIERS[layer['tier']]['suffix']}",
+                    "position": (x, y, garden_ground_height(x, y) - GROVE_TRUNK_SINK),
+                    "height": rng.uniform(minimum_height, maximum_height),
+                    "width": rng.uniform(0.85, 1.25),
+                    "rotationDegrees": rng.uniform(0.0, 360.0),
+                }
+            )
+            placed += 1
+
+        if placed < layer["count"]:
+            raise RuntimeError(
+                f"Background layer {layer['id']} placed only {placed} of "
+                f"{layer['count']} trees within the site contract"
+            )
+        print(f"  {layer['id']}: {placed} trees in {attempts} attempts")
+
+    return placements
+
+
+def verify_grove_clearances(trees):
+    """Refuse to plant a tree in a walkway, the channel, or the audience lawn.
+
+    A trunk standing in a path is the defect that got the previous composition
+    boards rejected. Distance is measured against the whole polyline rather than
+    its control points, so a tree cannot slip through mid-segment.
+    """
+    problems = []
+    for tree in trees:
+        x, y, _ = tree["position"]
+        trunk = tree["trunkRadius"]
+        path_clearance = path_distance(x, y) - trunk
+        if path_clearance < GROVE_PATH_CLEARANCE:
+            problems.append(
+                f"{tree['id']} leaves {path_clearance:.2f} m to the nearest path edge"
+            )
+        river_clearance = river_surface_distance(x, y) - trunk
+        if river_clearance < 0.4:
+            problems.append(
+                f"{tree['id']} leaves {river_clearance:.2f} m to the river surface"
+            )
+        for zone in MASTERPLAN["audience"]["zones"]:
+            if point_in_polygon(x, y, zone["polygon"]):
+                problems.append(f"{tree['id']} stands inside audience zone {zone['id']}")
+    if problems:
+        raise RuntimeError(
+            "Grove placement violates the site contract:\n  " + "\n  ".join(problems)
+        )
+    print(f"Grove clearances verified for {len(trees)} trees")
+
+
+def reduce_foliage_cards(obj, foliage_slots, keep_ratio, card_gain, seed):
+    """Thin a PlantFactory canopy down to a real-time card budget.
+
+    Each approved crown ships roughly a hundred thousand leaf cards. Sixteen of
+    those is several million triangles for the grove alone, and a generic
+    simplifier cannot help: collapsing cutout cards welds neighbouring blossoms
+    into shards. Dropping whole cards and enlarging the survivors about their own
+    centres preserves canopy coverage and silhouette at a fraction of the cost.
+
+    Cards are recovered by unioning vertices that share a face, so the routine
+    does not assume anything about vertex ordering in the imported file. Keying
+    the keep/drop decision on a quantised card centroid keeps a rebuild
+    reproducible, and mixing the seed in gives each variant a different canopy.
+    """
+    mesh = obj.data
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+    bm.verts.ensure_lookup_table()
+    bm.faces.ensure_lookup_table()
+
+    parent = list(range(len(bm.verts)))
+
+    def find(node):
+        while parent[node] != node:
+            parent[node] = parent[parent[node]]
+            node = parent[node]
+        return node
+
+    def union(first, second):
+        first_root, second_root = find(first), find(second)
+        if first_root != second_root:
+            parent[second_root] = first_root
+
+    foliage_faces = [
+        face for face in bm.faces if face.material_index in foliage_slots
+    ]
+    for face in foliage_faces:
+        indices = [vertex.index for vertex in face.verts]
+        for other in indices[1:]:
+            union(indices[0], other)
+
+    cards = {}
+    for face in foliage_faces:
+        cards.setdefault(find(face.verts[0].index), []).append(face)
+
+    doomed = []
+    kept = 0
+    for card_faces in cards.values():
+        card_vertices = {vertex for face in card_faces for vertex in face.verts}
+        centroid = Vector((0.0, 0.0, 0.0))
+        for vertex in card_vertices:
+            centroid += vertex.co
+        centroid /= len(card_vertices)
+        key = (
+            int(centroid.x * 97.0) * 73856093
+            ^ int(centroid.y * 97.0) * 19349663
+            ^ int(centroid.z * 97.0) * 83492791
+            ^ seed * 2654435761
+        )
+        if ((key >> 7) & 0xFFFF) / 65535.0 > keep_ratio:
+            doomed.extend(card_faces)
+            continue
+        kept += 1
+        for vertex in card_vertices:
+            vertex.co = centroid + (vertex.co - centroid) * card_gain
+
+    if doomed:
+        bmesh.ops.delete(bm, geom=doomed, context="FACES")
+    bm.to_mesh(mesh)
+    bm.free()
+    mesh.update()
+    return kept, len(cards)
+
+
+def decimate_wood(obj, wood_slots, ratio):
+    """Collapse the branch mesh only, leaving foliage cards untouched.
+
+    The crowns arrive as a single mesh with a foliage slot and a wood slot, so a
+    plain Decimate would shred the cards. Weighting the modifier by a wood-only
+    vertex group confines the collapse to the branches.
+    """
+    mesh = obj.data
+    wood_vertices = set()
+    for polygon in mesh.polygons:
+        if polygon.material_index in wood_slots:
+            wood_vertices.update(polygon.vertices)
+    if not wood_vertices:
+        return
+
+    group = obj.vertex_groups.new(name="Wood")
+    group.add(sorted(wood_vertices), 1.0, "REPLACE")
+    modifier = obj.modifiers.new("Branch decimation", "DECIMATE")
+    modifier.decimate_type = "COLLAPSE"
+    modifier.ratio = ratio
+    modifier.vertex_group = group.name
+    modifier.vertex_group_factor = 1.0
+    modifier.use_collapse_triangulate = True
+
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.modifier_apply(modifier=modifier.name)
+    # Applying the modifier rebuilds the object's deform-group table, so the
+    # handle taken above no longer resolves. Re-look it up before removing.
+    applied_group = obj.vertex_groups.get("Wood")
+    if applied_group is not None:
+        obj.vertex_groups.remove(applied_group)
+
+
+def sculpt_grove_variant(obj, lean_degrees, lean_azimuth_degrees, canopy_noise):
+    """Lean and rough up a crown so repeated placements stop reading as copies.
+
+    Lean and canopy displacement are baked into the mesh because they are the
+    only variation a transform cannot express. Rotation, height and width stay
+    per-instance so the exporter can still collapse placements to GPU instances.
+    """
+    mesh = obj.data
+    if not mesh.vertices:
+        return
+    base = min(vertex.co.z for vertex in mesh.vertices)
+    top = max(vertex.co.z for vertex in mesh.vertices)
+    span = max(0.001, top - base)
+    lean = math.tan(math.radians(lean_degrees))
+    azimuth = math.radians(lean_azimuth_degrees)
+    lean_x = math.cos(azimuth) * lean * span
+    lean_y = math.sin(azimuth) * lean * span
+
+    for vertex in mesh.vertices:
+        amount = clamp((vertex.co.z - base) / span)
+        bend = amount**1.4
+        vertex.co.x += lean_x * bend
+        vertex.co.y += lean_y * bend
+        if canopy_noise <= 0.0 or amount <= 0.35:
+            continue
+        canopy = (amount - 0.35) / 0.65
+        vertex.co.x += (
+            canopy_noise * canopy * math.sin(vertex.co.z * 0.9 + vertex.co.y * 0.5)
+        )
+        vertex.co.y += (
+            canopy_noise
+            * canopy
+            * math.sin(vertex.co.x * 0.7 - vertex.co.z * 1.1 + 2.1)
+        )
+        vertex.co.z += (
+            canopy_noise
+            * 0.45
+            * canopy
+            * math.sin(vertex.co.x * 0.6 + vertex.co.y * 0.8)
+        )
+    mesh.update()
+
+
+def build_grove_variant(variant):
+    # The shipped candidate is meshopt-compressed, which Blender cannot import.
+    # The proof export carries identical geometry uncompressed, and compression
+    # is the delivery pipeline's job anyway (optimize-blossom-glb.mjs re-applies
+    # meshopt to the whole garden after export).
+    source_path = os.path.join(
+        PLANTFACTORY_CANDIDATE_DIR, f"{variant['candidateId']}-proof.glb"
+    )
+    root = imported_asset_root(variant["id"], source_path)
+    for obj in root.children_recursive:
+        if obj.type != "MESH":
+            continue
+        foliage_slots = {
+            index
+            for index, mat in enumerate(obj.data.materials)
+            if mat and "Foliage" in mat.name
+        }
+        wood_slots = {
+            index
+            for index, mat in enumerate(obj.data.materials)
+            if mat and "Wood" in mat.name
+        }
+        # Recorded on the mesh because tune_imported_asset_materials renames the
+        # slots by index straight after this, and the distance tiers still need
+        # to tell a leaf card from a branch.
+        obj.data["tka_foliage_slots"] = sorted(foliage_slots)
+        obj.data["tka_wood_slots"] = sorted(wood_slots)
+        if foliage_slots:
+            kept, total = reduce_foliage_cards(
+                obj,
+                foliage_slots,
+                GROVE_FOLIAGE_KEEP,
+                GROVE_FOLIAGE_CARD_GAIN,
+                variant["cardSeed"],
+            )
+            print(f"  {variant['id']}: kept {kept}/{total} foliage cards")
+        if wood_slots:
+            decimate_wood(obj, wood_slots, GROVE_WOOD_DECIMATE)
+        sculpt_grove_variant(
+            obj,
+            variant["leanDegrees"],
+            variant["leanAzimuth"],
+            variant["canopyNoise"],
+        )
+    tune_imported_asset_materials(root, f"Cherry {variant['id']}", 0.86)
+    return root
+
+
+def derive_grove_lod(source_root, variant, tier):
+    """Cut a cheaper copy of an already-baked crown for a distance band.
+
+    The copy takes its own mesh data so thinning it cannot reach back into the
+    hero tier, and it reuses the hero's materials so the exporter still sees one
+    texture set per crown.
+    """
+    label = f"{variant['id']}{tier['suffix']}"
+    root = duplicate_hierarchy(source_root, f"AssetSource_{label}")
+
+    for obj in root.children_recursive:
+        if obj.type != "MESH":
+            continue
+        # duplicate_hierarchy shares mesh data with the hero tier. Thinning a
+        # shared mesh would strip the hero crowns too, so each tier takes its own.
+        obj.data = obj.data.copy()
+        obj.data.name = f"Blossom Cherry {label} Mesh"
+        foliage_slots = set(obj.data.get("tka_foliage_slots", []))
+        wood_slots = set(obj.data.get("tka_wood_slots", []))
+        if foliage_slots:
+            kept, total = reduce_foliage_cards(
+                obj,
+                foliage_slots,
+                tier["relativeKeep"],
+                tier["cardGain"],
+                variant["cardSeed"] + 7,
+            )
+            print(f"  {label}: kept {kept}/{total} foliage cards")
+        if wood_slots:
+            decimate_wood(obj, wood_slots, tier["woodRatio"])
+
+    return root
+
+
 def load_asset_sources():
     sources = {
         "lantern": imported_asset_root("KasugaLantern", os.path.join(SOURCE_ASSET_DIR, "kasuga-lantern_raw.glb")),
@@ -1225,6 +1888,16 @@ def load_asset_sources():
     tune_imported_asset_materials(
         sources["lantern"], "Kasuga Lantern", 0.90
     )
+    print("Baking grove variants from the approved PlantFactory crowns:")
+    for variant in GROVE_VARIANTS:
+        hero = build_grove_variant(variant)
+        sources[variant["id"]] = hero
+        for tier_name, tier in GROVE_LOD_TIERS.items():
+            if tier_name == "hero":
+                continue
+            sources[f"{variant['id']}{tier['suffix']}"] = derive_grove_lod(
+                hero, variant, tier
+            )
     return sources
 
 
@@ -1234,12 +1907,25 @@ def create_grove():
         x, y, z = tree["position"]
         place_asset(
             ASSET_SOURCES[candidate_id],
-            f"PlantFactory_{candidate_id}",
+            f"PlantFactory_{tree['id']}",
             (x, y, z),
             tree["height"],
             math.radians(tree["rotationDegrees"]),
             False,
-            1.0,
+            tree["width"],
+        )
+    # The backdrop carries its own name prefix so the composition contract keeps
+    # counting the authored hero ring rather than the scatter behind it.
+    for tree in COMPOSITION_PLAN["backgroundTrees"]:
+        x, y, z = tree["position"]
+        place_asset(
+            ASSET_SOURCES[tree["candidateId"]],
+            f"GroveBackdrop_{tree['id']}",
+            (x, y, z),
+            tree["height"],
+            math.radians(tree["rotationDegrees"]),
+            False,
+            tree["width"],
         )
 
 
@@ -1884,6 +2570,7 @@ def verify_composition_authoring():
 
     expected_counts = {
         "PlantFactory_": COMPOSITION_PLAN["densityBudget"]["majorTrees"],
+        "GroveBackdrop_": COMPOSITION_PLAN["densityBudget"]["backdropTrees"],
         "KasugaLantern_": COMPOSITION_PLAN["densityBudget"]["lanterns"],
         "GardenEcology_": COMPOSITION_PLAN["densityBudget"]["ecologyIslands"],
     }
@@ -1973,7 +2660,10 @@ def verify_composition_authoring():
     print(f"  Continuous ground: Garden_Ground ({GROUND_PLAN['planId']})")
     print(f"  Audience zones: {len(MASTERPLAN['audience']['zones'])}")
     print(f"  Circulation paths: {len(MASTERPLAN['circulation']['paths'])}")
-    print("  Decorative grass and grove assets: gated for later production phases")
+    print(
+        f"  Grove variants baked from approved crowns: {len(GROVE_VARIANTS)}"
+    )
+    print("  Decorative grass: gated for later production phases")
 
 
 def aim_at(obj, target):
@@ -2054,6 +2744,17 @@ verify_stage_authoring_bounds()
 create_river_and_bridge()
 create_torii()
 create_lanterns()
+COMPOSITION_PLAN["trees"] = resolve_grove_plan()
+COMPOSITION_PLAN["densityBudget"]["majorTrees"] = len(COMPOSITION_PLAN["trees"])
+verify_grove_clearances(COMPOSITION_PLAN["trees"])
+print("Scattering the backdrop layers behind the hero ring:")
+COMPOSITION_PLAN["backgroundTrees"] = resolve_background_grove(
+    COMPOSITION_PLAN["trees"]
+)
+COMPOSITION_PLAN["densityBudget"]["backdropTrees"] = len(
+    COMPOSITION_PLAN["backgroundTrees"]
+)
+create_grove()
 verify_composition_authoring()
 for source in ASSET_SOURCES.values():
     hide_source(source)

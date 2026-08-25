@@ -18,8 +18,11 @@ import {
 } from "$lib/shared/3d/environments/scenes/cherry-blossom/blossom-water";
 
 describe("Blossom R2.1 production contract", () => {
-  it("ships only the approved site-systems phase", () => {
-    expect(getBlossomActiveProductionPhase()).toBe(2);
+  it("ships the grove phase without unlocking life and atmosphere", () => {
+    // Phase 4 establishes the perimeter grove. Phase 5 is what turns on petals,
+    // koi, and moonlight, so BlossomScene's decorative atmosphere must stay off.
+    expect(getBlossomActiveProductionPhase()).toBe(4);
+    expect(getBlossomActiveProductionPhase()).toBeLessThan(5);
   });
 
   it("keeps the validated camera envelope inside the authored terrain", () => {
