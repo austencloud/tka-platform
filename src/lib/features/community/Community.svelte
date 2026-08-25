@@ -1,136 +1,80 @@
 <!--
   Community.svelte
 
-  Global TKA user map - shows where practitioners are located worldwide
+  The full-page community map: where TKA practitioners are, worldwide.
+
+  It used to own its own opt-in — a consent sheet that popped itself open two
+  seconds after mount and, on accept, called `navigator.geolocation`. That call
+  cannot succeed here: `hooks.server.ts` sends
+  `Permissions-Policy: geolocation=()`, so the browser rejects it with
+  PERMISSION_DENIED before any prompt is drawn. The sheet asked, the user
+  agreed, and the write always failed.
+
+  The opt-in now goes through `CommunityInvitationSlot`, the same one the
+  Creators band uses: a city named by the Cloudflare edge, correctable by
+  search, written with city-center coordinates and no permission prompt at all.
+  This host owns the page composition; the slot owns the opt-in, and the state
+  factory owns the write.
 -->
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onMount } from "svelte";
+  import { browser } from "$app/environment";
+  import { page } from "$app/state";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { auth } from "$lib/shared/auth/firebase";
-  import { getLocationSharingOrchestrator } from "./get-location-sharing-orchestrator";
-  import { getCurrentLocation } from "./services/location-provider";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import GlobalUserMap from "./components/GlobalUserMap.svelte";
-  import LocationSharingConsentSheet from "./components/LocationSharingConsentSheet.svelte";
-  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import type { UserLocationWithProfile } from "./domain/models/user-location";
+  import CommunityInvitationSlot from "./components/CommunityInvitationSlot.svelte";
+  import { setCommunityMapContext } from "./context/community-map-context";
+  import { createCommunityMapState } from "./state/community-map-state.svelte";
+  import { createFirestoreCommunityMapPort } from "./services/community-map-port";
+  import { createEdgeCitySuggestion } from "./services/edge-city-suggestion";
+  import { getGeocodingService } from "./get-geocoding-service";
   import { PUBLIC_GOOGLE_MAPS_API_KEY } from "$env/static/public";
 
-  let locations: UserLocationWithProfile[] = $state([]);
-  let userLocation: { lat: number; lng: number } | null = $state(null);
-  let showConsentSheet = $state(false);
-  let isLoading = $state(true);
-  let loadError = $state(false);
-  let hasSharedLocation = $state(false);
-
-  const orchestrator = getLocationSharingOrchestrator();
-
-  let consentTimer: ReturnType<typeof setTimeout> | null = null;
-
-  onMount(async () => {
-    await loadLocations();
-    await checkUserLocationStatus();
+  // Not named `state`: a variable of that name in scope turns every
+  // `$state(...)` in this module into a store subscription.
+  const mapState = createCommunityMapState({
+    port: createFirestoreCommunityMapPort(),
+    getSuggestion: () => edgeCitySuggestion,
   });
 
-  onDestroy(() => {
-    if (consentTimer !== null) {
-      clearTimeout(consentTimer);
-      consentTimer = null;
-    }
+  setCommunityMapContext({
+    state: mapState,
+    getApiKey: () => PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
   });
 
-  async function loadLocations() {
-    loadError = false;
-    isLoading = true;
-    try {
-      locations = await orchestrator.getPublicLocations();
-    } catch (error) {
-      console.error("Failed to load locations:", error);
-      loadError = true;
-      toast.error(t("community_error_load_map"));
-    } finally {
-      isLoading = false;
-    }
-  }
+  // The edge names a city on every request, for free, with no permission
+  // prompt. `getGeocodingService()` is browser-only by contract, so this stays
+  // null through SSR and resolves on hydration.
+  const edgeCitySuggestion = $derived(
+    browser
+      ? createEdgeCitySuggestion(page.data.geo, getGeocodingService())
+      : null,
+  );
 
-  async function checkUserLocationStatus() {
-    const userId = auth.currentUser?.uid;
-    if (!userId) return;
+  const locations = $derived(mapState.locations);
+  const status = $derived(mapState.locationsStatus);
+  const configured = $derived(
+    Boolean(PUBLIC_GOOGLE_MAPS_API_KEY) &&
+      PUBLIC_GOOGLE_MAPS_API_KEY !== "your-google-maps-api-key",
+  );
 
-    const hasConsent = await orchestrator.hasConsented(userId);
-    hasSharedLocation = hasConsent;
-
-    // If user hasn't shared yet, show consent sheet after a delay
-    if (!hasConsent) {
-      consentTimer = setTimeout(() => {
-        showConsentSheet = true;
-        consentTimer = null;
-      }, 2000);
-    }
-  }
-
-  async function handleAcceptSharing() {
-    const userId = auth.currentUser?.uid;
-    if (!userId) {
-      toast.error(t("community_error_sign_in"));
+  $effect(() => {
+    if (!authState.initialized) {
+      mapState.setIdentity({ status: "pending" });
       return;
     }
+    const uid = authState.user?.uid;
+    mapState.setIdentity(
+      authState.isFullAccount && uid
+        ? { status: "user", uid }
+        : { status: "guest" },
+    );
+  });
 
-    try {
-      await orchestrator.requestLocationSharing(userId);
-
-      toast.success(t("community_success_city_added"));
-      hasSharedLocation = true;
-
-      // Reload locations to show the new marker
-      await loadLocations();
-
-      // Get user's location for map centering (city center will be shown)
-      const position = await getCurrentLocation();
-      userLocation = { lat: position.lat, lng: position.lng };
-    } catch (error) {
-      console.error("Location sharing error:", error);
-      // Surface the specific failure reason rather than a generic sentinel.
-      const message = error instanceof Error ? error.message : "";
-      toast.error(message || t("community_error_add_city"));
-    }
-  }
-
-  function handleDeclineSharing() {
-    // User declined - they can share later via settings
-  }
-
-  async function handleRemoveLocation() {
-    const userId = auth.currentUser?.uid;
-    if (!userId) return;
-
-    try {
-      await orchestrator.removeLocation(userId);
-      toast.success(t("community_success_city_removed"));
-      hasSharedLocation = false;
-      await loadLocations();
-    } catch (error) {
-      console.error("Failed to remove city:", error);
-      toast.error(t("community_error_remove_city"));
-    }
-  }
-
-  async function handleUpdateLocation() {
-    const userId = auth.currentUser?.uid;
-    if (!userId) return;
-
-    try {
-      await orchestrator.updateLocation(userId);
-      toast.success(t("community_success_city_updated"));
-      await loadLocations();
-
-      // Get user's location for map centering
-      const position = await getCurrentLocation();
-      userLocation = { lat: position.lat, lng: position.lng };
-    } catch (error) {
-      console.error("Failed to update city:", error);
-      toast.error(t("community_error_update_city"));
-    }
-  }
+  onMount(() => {
+    if (configured) void mapState.loadLocations();
+  });
 </script>
 
 <div class="community-container">
@@ -141,36 +85,27 @@
         {t("community_title")}
       </h1>
       <p class="subtitle">
-        {t("community_practitioners_count", { count: locations.length })}
+        {locations.length === 1
+          ? t("community_practitioners_count_one")
+          : t("community_practitioners_count_other", {
+              count: locations.length,
+            })}
       </p>
     </div>
 
-    {#if auth.currentUser}
-      <div class="location-controls">
-        {#if hasSharedLocation}
-          <button class="control-btn update-btn" onclick={handleUpdateLocation}>
-            <i class="fas fa-sync-alt" aria-hidden="true"></i>
-            {t("community_update_city")}
-          </button>
-          <button class="control-btn remove-btn" onclick={handleRemoveLocation}>
-            <i class="fas fa-trash" aria-hidden="true"></i>
-            {t("community_remove")}
-          </button>
-        {:else}
-          <button
-            class="control-btn share-btn"
-            onclick={() => (showConsentSheet = true)}
-          >
-            <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
-            {t("community_share_city")}
-          </button>
-        {/if}
-      </div>
-    {/if}
+    <div class="location-controls">
+      <CommunityInvitationSlot />
+      <!-- The accurate distinction is city-center coordinates versus device
+           coordinates, not city versus coordinates: a lat/lng IS stored. This
+           sentence has to survive someone opening the Firestore document. -->
+      <p class="privacy">
+        We store your city and its map point, never your device location.
+      </p>
+    </div>
   </div>
 
   <div class="map-section">
-    {#if !PUBLIC_GOOGLE_MAPS_API_KEY || PUBLIC_GOOGLE_MAPS_API_KEY === "your-google-maps-api-key"}
+    {#if !configured}
       <div class="api-key-warning">
         <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
         <h2>{t("community_api_key_required")}</h2>
@@ -189,36 +124,36 @@
           </a>
         </p>
       </div>
-    {:else if isLoading}
+    {:else if status === "loading" || status === "idle"}
       <div class="loading-state">
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
         <p>{t("community_loading_map")}</p>
       </div>
-    {:else if loadError}
+    {:else if status === "failed"}
       <div class="error-state" role="alert">
         <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
         <h2>{t("community_error_map_title")}</h2>
         <p>{t("community_error_map_body")}</p>
-        <button class="control-btn share-btn" onclick={loadLocations}>
+        <button
+          class="control-btn share-btn"
+          onclick={() => void mapState.loadLocations()}
+        >
           <i class="fas fa-rotate-right" aria-hidden="true"></i>
           {t("community_error_retry")}
         </button>
       </div>
     {:else}
+      <!-- Framed to the pins rather than to a fixed world view: with one
+           marker the default centres on the Atlantic and puts it off-screen. -->
       <GlobalUserMap
         {locations}
-        {userLocation}
+        userLocation={null}
         apiKey={PUBLIC_GOOGLE_MAPS_API_KEY}
+        frame="markers"
       />
     {/if}
   </div>
 </div>
-
-<LocationSharingConsentSheet
-  bind:isOpen={showConsentSheet}
-  onAccept={handleAcceptSharing}
-  onDecline={handleDeclineSharing}
-/>
 
 <style>
   .community-container {
@@ -259,10 +194,24 @@
     margin: 0;
   }
 
+  /* The slot and the privacy line stack. The slot owns its own two rows and
+     their reserved heights, so this adds no geometry of its own; the floor
+     keeps the header from squeezing the slot's action row onto two lines. */
   .location-controls {
     display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 0.35em;
+    min-width: min(17em, 100%);
+  }
+
+  .privacy {
+    margin: 0;
+    /* Two lines' worth, reserved. The sentence is one line on a laptop and two
+       on a phone; letting it grow would move the map edge under it. */
+    min-height: 2.2em;
+    font-size: var(--font-size-compact);
+    line-height: 1.35;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
   }
 
   .control-btn {
@@ -292,31 +241,6 @@
 
   .share-btn:hover {
     opacity: 0.9;
-  }
-
-  .update-btn {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    color: var(--theme-text, #ffffff);
-  }
-
-  .update-btn:hover {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-  }
-
-  .remove-btn {
-    background: transparent;
-    border: 1px solid var(--semantic-error, #ef4444);
-    color: var(--semantic-error, #ef4444);
-  }
-
-  .remove-btn:hover {
-    background: color-mix(
-      in srgb,
-      var(--semantic-error, #ef4444) 10%,
-      transparent
-    );
   }
 
   .map-section {
@@ -426,8 +350,42 @@
     }
 
     .control-btn {
-      flex: 1;
+      width: 100%;
       justify-content: center;
+    }
+  }
+
+  /*
+   * Short landscape (Z Fold 7 folded is 960x412). Stacked, the slot and the
+   * privacy line make a 202px header — half the viewport — and the map, which
+   * is the only thing on this page, was left 210px. Side by side the pair is as
+   * tall as the slot alone and the header drops to ~149px, without touching the
+   * slot's own reserved rows: those are the no-layout-shift contract it keeps
+   * with the Creators band, and they are not this page's to shorten.
+   *
+   * The thresholds are CreatorsPanel's `isShortLandscape` (height <= 600, aspect
+   * > 1.7) written as CSS, so both surfaces agree on what short landscape means.
+   * `min-width: 769px` keeps this clear of the phone rule above, which stacks
+   * the whole header instead.
+   */
+  @media (min-width: 769px) and (max-height: 600px) and (min-aspect-ratio: 17 / 10) {
+    .header {
+      padding: 10px 24px;
+    }
+
+    .location-controls {
+      flex-direction: row;
+      align-items: center;
+      gap: 0.75em;
+    }
+
+    .privacy {
+      /* Shrinks before the header runs out of room, and drops its reserved
+         height: in a row the slot sets the height, so a wrapping sentence can
+         no longer move the map edge. */
+      flex: 0 1 14em;
+      min-width: 0;
+      min-height: 0;
     }
   }
 

@@ -1,20 +1,4 @@
 // --- From ILocationProvider ---
-/**
- * Location Provider Interface
- * Handles browser geolocation API access
- */
-
-export interface GeolocationPosition {
-  lat: number;
-  lng: number;
-  accuracy: number;
-}
-
-export interface GeolocationError {
-  code: number;
-  message: string;
-}
-
 // --- From IFollowingFeedProvider ---
 /**
  * IFollowingFeedProvider - Following Feed Service Contract

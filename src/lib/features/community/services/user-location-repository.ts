@@ -8,21 +8,12 @@ import { UserLocationSchema } from "../domain/models/user-location-schemas";
 import type {
   UserLocation,
   UserLocationWithProfile,
-  LocationSharingPreferences,
   OwnLocationResult,
 } from "../domain/models/user-location";
+
 import { z } from "zod";
 
 const LOCATIONS_COLLECTION = "userLocations";
-
-/** Passthrough schema for preferences - no strict validation needed */
-const PreferencesSchema = z
-  .object({
-    hasConsented: z.boolean(),
-    consentedAt: z.unknown().optional(),
-    visibility: z.enum(["public", "private"]),
-  })
-  .passthrough();
 
 /** Passthrough schema for user profiles used in the join */
 const UserProfileJoinSchema = z
@@ -33,10 +24,6 @@ const UserProfileJoinSchema = z
     sequenceCount: z.number().nullish(),
   })
   .passthrough();
-
-function preferencesPath(userId: string): string {
-  return `users/${userId}/settings`;
-}
 
 export async function saveLocation(
   userId: string,
@@ -50,21 +37,6 @@ export async function saveLocation(
   } catch (error) {
     console.error("❌ [UserLocationRepository] Failed to save location:", error);
     throw new Error("Failed to save location. Please try again.");
-  }
-}
-
-/**
- * @deprecated Collapses "no document" and "read failed" into the same `null`,
- * so a caller cannot tell a user who is not on the map from a user whose
- * document could not be read. Use {@link readOwnLocation}. Retained only for
- * `location-sharing-orchestrator`, which is being removed; delete this with it.
- */
-export async function getLocation(userId: string): Promise<UserLocation | null> {
-  try {
-    return await firestoreGet(LOCATIONS_COLLECTION, userId, UserLocationSchema) as UserLocation | null;
-  } catch (error) {
-    console.error("❌ [UserLocationRepository] Failed to get location:", error);
-    return null;
   }
 }
 
@@ -151,35 +123,5 @@ export async function getPublicLocations(
     // Rethrow so the caller can distinguish a load failure from a genuine
     // zero-users result (an empty map should not look like a broken one).
     throw new Error("Failed to load community locations. Please try again.");
-  }
-}
-
-export async function savePreferences(
-  userId: string,
-  preferences: LocationSharingPreferences,
-): Promise<void> {
-  try {
-    const data: Record<string, unknown> = {
-      hasConsented: preferences.hasConsented,
-      visibility: preferences.visibility,
-    };
-    if (preferences.consentedAt !== undefined) {
-      data.consentedAt = preferences.consentedAt;
-    }
-    await firestoreSet(preferencesPath(userId), "locationSharing", data);
-  } catch (error) {
-    console.error("❌ [UserLocationRepository] Failed to save preferences:", error);
-    throw new Error("Failed to save location preferences. Please try again.");
-  }
-}
-
-export async function getPreferences(
-  userId: string,
-): Promise<LocationSharingPreferences | null> {
-  try {
-    return await firestoreGet(preferencesPath(userId), "locationSharing", PreferencesSchema) as LocationSharingPreferences | null;
-  } catch (error) {
-    console.error("❌ [UserLocationRepository] Failed to get preferences:", error);
-    return null;
   }
 }

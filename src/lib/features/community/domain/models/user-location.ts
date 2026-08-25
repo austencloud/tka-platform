@@ -51,12 +51,3 @@ export type OwnLocationResult =
   | { status: "found"; location: UserLocation }
   | { status: "absent" }
   | { status: "failed"; error: unknown };
-
-/**
- * Location sharing consent state
- */
-export interface LocationSharingPreferences {
-  hasConsented: boolean;
-  consentedAt?: Timestamp;
-  visibility: "public" | "private";
-}
