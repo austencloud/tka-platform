@@ -1,3 +1,10 @@
+import type {
+  FanBuild,
+  FanCover,
+  FanFrameColor,
+  PropFinish,
+} from "@austencloud/scene-3d";
+
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 export interface ScenePropVariant {
@@ -126,4 +133,108 @@ export function findScenePropFamilyByRepresentative(
   prop: PropType
 ): ScenePropFamily | undefined {
   return SCENE_PROP_FAMILIES.find((family) => family.representative === prop);
+}
+
+/* -------------------------------------------------------------------------
+   Build previews
+   -------------------------------------------------------------------------
+   Every build choice a prop offers — which member of its family, which
+   finish, which fan configuration — is pictured by a real render of the real
+   3D model, captured through /test/prop-3d-studio/capture. The pictures live
+   with the catalog because they answer the same question it does: what is
+   this prop, and what builds of it exist. A picker that showed a different
+   set of pictures would be a second catalog.
+   ------------------------------------------------------------------------- */
+
+export interface PropBuildPreviewOption<T extends string> {
+  id: T;
+  label: string;
+  image: string;
+  imageScale?: number;
+}
+
+const PREVIEW_ROOT = "/images/props/build-previews";
+
+const PROP_PREVIEW_IMAGES: Partial<Record<PropType, string>> = {
+  [PropType.STAFF]: "staff.webp",
+  [PropType.CAPSULE_BATON]: "capsule-baton.webp",
+  [PropType.FIRE_DOUBLE_STAFF]: "fire-double-staff.webp",
+  [PropType.CHICKEN]: "chicken.webp",
+  [PropType.BIGCHICKEN]: "big-chicken.webp",
+  [PropType.CLUB]: "club.webp",
+  [PropType.TORCH]: "torch.webp",
+  [PropType.GUITAR]: "guitar.webp",
+  [PropType.UKULELE]: "ukulele.webp",
+  [PropType.TRIQUETRA]: "triquetra.webp",
+  [PropType.TRIQUETRA2]: "triquetra-2.webp",
+  [PropType.TRIAD]: "triad-fire.webp",
+  [PropType.TRIGENG]: "trigeng.webp",
+  [PropType.SWORD]: "sword.webp",
+  [PropType.SICKLES]: "sickles.webp",
+};
+
+function previewImage(file: string): string {
+  return `${PREVIEW_ROOT}/${file}`;
+}
+
+export function propBuildPreviewImage(prop: PropType): string {
+  return previewImage(PROP_PREVIEW_IMAGES[prop] ?? "triad-fire.webp");
+}
+
+export function finishPreviewOptions(
+  prop: PropType
+): readonly PropBuildPreviewOption<PropFinish>[] {
+  const stem = prop === PropType.QUIAD ? "quiad" : "triad";
+  return [
+    { id: "fire", label: "Fire", image: previewImage(`${stem}-fire.webp`) },
+    { id: "day", label: "Day", image: previewImage(`${stem}-day.webp`) },
+  ];
+}
+
+function fanImage(
+  build: FanBuild,
+  frame: FanFrameColor,
+  cover: FanCover
+): string {
+  if (build === "pictograph") return previewImage("fan-pictograph-front.webp");
+  if (build === "fire") return previewImage(`fan-fire-${cover}-complete.webp`);
+  return previewImage(`fan-day-${frame}-${cover}-complete.webp`);
+}
+
+export function fanBuildPreviewOptions(
+  frame: FanFrameColor,
+  cover: FanCover
+): readonly PropBuildPreviewOption<FanBuild>[] {
+  return [
+    {
+      id: "pictograph",
+      label: "Pictograph",
+      image: fanImage("pictograph", frame, cover),
+    },
+    { id: "fire", label: "Fire", image: fanImage("fire", frame, cover) },
+    { id: "day", label: "Day", image: fanImage("day", frame, cover) },
+  ];
+}
+
+export function fanFramePreviewOptions(
+  cover: FanCover
+): readonly PropBuildPreviewOption<FanFrameColor>[] {
+  return [
+    { id: "black", label: "Black", image: fanImage("day", "black", cover) },
+    { id: "white", label: "White", image: fanImage("day", "white", cover) },
+  ];
+}
+
+export function fanCoverPreviewOptions(
+  build: Exclude<FanBuild, "pictograph">,
+  frame: FanFrameColor
+): readonly PropBuildPreviewOption<FanCover>[] {
+  return [
+    { id: "bare", label: "Bare", image: fanImage(build, frame, "bare") },
+    {
+      id: "covered",
+      label: "Covered",
+      image: fanImage(build, frame, "covered"),
+    },
+  ];
 }

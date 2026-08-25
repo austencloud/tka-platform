@@ -2,7 +2,7 @@
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { popIn } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
-  import type { PropBuildPreviewOption } from "./prop-build-previews";
+  import type { PropBuildPreviewOption } from "../../domain/scene-prop-catalog";
 
   interface Props {
     label: string;
@@ -86,8 +86,15 @@
 </section>
 
 <style>
+  /*
+    Deliberately NOT a container itself. Container-relative units resolve
+    against the nearest ancestor container, so declaring one here would size
+    every build card against its own width -- a 600px card and a 300px card
+    would both land on the same 14px label. Sizes below ramp against the
+    picker as a whole, which is the thing that actually differs between an
+    inspector panel and a 4K review deck.
+  */
   .picker {
-    container-type: inline-size;
     min-width: 0;
   }
 
@@ -95,7 +102,10 @@
     display: block;
     margin-bottom: 7px;
     color: rgba(255, 255, 255, 0.58);
-    font-size: var(--font-size-compact, 12px);
+    /* Ramps with the container instead of stepping at a breakpoint, so a
+       3840px review deck and a 300px inspector panel are the same design at
+       two sizes rather than two designs. */
+    font-size: clamp(12px, 0.5cqi, 18px);
     font-weight: 750;
     letter-spacing: 0.07em;
     text-transform: uppercase;
@@ -117,7 +127,7 @@
     min-height: 44px;
     padding: 0;
     overflow: hidden;
-    border: 1px solid var(--studio-stroke);
+    border: 1px solid var(--prop-picker-stroke);
     border-radius: var(--settings-border-radius-lg, 16px);
     background: #070911;
     color: rgba(255, 255, 255, 0.8);
@@ -132,15 +142,30 @@
     position: relative;
     display: grid;
     place-items: center;
-    height: clamp(92px, 9cqi, 112px);
+    /* Every render is 640x240, so the frame takes the image's own shape and
+       the picture fills the card exactly at any width -- a guessed height
+       stranded a small image inside a wide black bar. `width: 100%` is load
+       bearing: without a definite width, a min-height would drive the ratio
+       backwards and blow the frame out past the card, cropping the render. */
+    aspect-ratio: 8 / 3;
+    width: 100%;
     overflow: hidden;
-    background:
-      radial-gradient(
-        circle at 50% 42%,
-        rgba(111, 132, 176, 0.14),
-        transparent 62%
-      ),
-      #070911;
+    /* Flat, and exactly the colour the renders were captured on. */
+    background: #070911;
+  }
+
+  /*
+    A folded phone in landscape is 960x412: wide, with almost no vertical
+    budget, and the host caps its panel around 240px. Full-height previews
+    there push the prop grid below the fold of the panel's own scroller, so
+    the picture is what yields -- the labels and the grid do not.
+  */
+  @media (max-height: 560px) {
+    .preview-frame {
+      aspect-ratio: auto;
+      height: 54px;
+      min-height: 0;
+    }
   }
 
   .preview-frame img {
@@ -152,7 +177,6 @@
     object-fit: contain;
     pointer-events: none;
     transform: scale(var(--preview-scale));
-    filter: saturate(1.04) contrast(1.04);
     transition: transform var(--duration-fast, 150ms) ease;
   }
 
@@ -165,12 +189,12 @@
     z-index: 1;
     display: flex;
     align-items: center;
-    min-height: 36px;
-    padding: 8px 12px 9px;
+    min-height: clamp(36px, 1.5cqi, 54px);
+    padding: clamp(8px, 0.42cqi, 14px) clamp(12px, 0.62cqi, 22px);
     overflow: hidden;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
     background: rgba(3, 4, 9, 0.96);
-    font-size: var(--font-size-min, 14px);
+    font-size: clamp(14px, 0.62cqi, 24px);
     font-weight: 760;
     line-height: 1.2;
     text-align: left;
@@ -183,16 +207,16 @@
   }
 
   .option.selected {
-    border-color: color-mix(in srgb, var(--studio-accent) 82%, white);
+    border-color: color-mix(in srgb, var(--prop-picker-accent) 82%, white);
     color: #fff;
     box-shadow:
-      0 9px 24px color-mix(in srgb, var(--studio-accent) 24%, transparent),
-      inset 0 0 0 2px color-mix(in srgb, var(--studio-accent) 46%, transparent);
+      0 9px 24px color-mix(in srgb, var(--prop-picker-accent) 24%, transparent),
+      inset 0 0 0 2px color-mix(in srgb, var(--prop-picker-accent) 46%, transparent);
   }
 
   .option.selected .option-label {
-    border-top-color: color-mix(in srgb, var(--studio-accent) 24%, transparent);
-    background: color-mix(in srgb, var(--studio-accent) 11%, #030409);
+    border-top-color: color-mix(in srgb, var(--prop-picker-accent) 24%, transparent);
+    background: color-mix(in srgb, var(--prop-picker-accent) 11%, #030409);
   }
 
   .selected-badge {
@@ -202,21 +226,21 @@
     z-index: 2;
     display: grid;
     place-items: center;
-    width: 22px;
-    height: 22px;
-    border: 1px solid color-mix(in srgb, var(--studio-accent) 70%, white);
+    width: clamp(22px, 0.95cqi, 34px);
+    height: clamp(22px, 0.95cqi, 34px);
+    border: 1px solid color-mix(in srgb, var(--prop-picker-accent) 70%, white);
     border-radius: 50%;
-    background: color-mix(in srgb, var(--studio-accent) 82%, #090b13);
+    background: color-mix(in srgb, var(--prop-picker-accent) 82%, #090b13);
     box-shadow: 0 0 14px
-      color-mix(in srgb, var(--studio-accent) 74%, transparent);
+      color-mix(in srgb, var(--prop-picker-accent) 74%, transparent);
     color: #fff;
-    font-size: 13px;
+    font-size: clamp(13px, 0.56cqi, 20px);
     font-weight: 900;
     line-height: 1;
   }
 
   .option:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--studio-accent) 72%, white);
+    outline: 2px solid color-mix(in srgb, var(--prop-picker-accent) 72%, white);
     outline-offset: 2px;
   }
 
@@ -226,7 +250,7 @@
 
   @media (hover: hover) and (pointer: fine) {
     .option:hover {
-      border-color: color-mix(in srgb, var(--studio-accent) 54%, white);
+      border-color: color-mix(in srgb, var(--prop-picker-accent) 54%, white);
       transform: translateY(-2px);
     }
 
@@ -239,39 +263,29 @@
     --build-option-count: 2;
   }
 
-  .picker.secondary .preview-frame {
-    height: clamp(84px, 8cqi, 100px);
-  }
-
   /* Modifiers are deliberately quieter than the primary build choice. The
      check stays unambiguous, but the card no longer competes with Build for
      the strongest accent treatment. */
   .picker.secondary .option.selected {
-    border-color: color-mix(in srgb, var(--studio-accent) 44%, white);
+    border-color: color-mix(in srgb, var(--prop-picker-accent) 44%, white);
     box-shadow:
-      0 6px 18px color-mix(in srgb, var(--studio-accent) 14%, transparent),
-      inset 0 0 0 1px color-mix(in srgb, var(--studio-accent) 28%, transparent);
+      0 6px 18px color-mix(in srgb, var(--prop-picker-accent) 14%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--prop-picker-accent) 28%, transparent);
   }
 
   .picker.secondary .option.selected .option-label {
-    border-top-color: color-mix(in srgb, var(--studio-accent) 16%, transparent);
-    background: color-mix(in srgb, var(--studio-accent) 6%, #030409);
+    border-top-color: color-mix(in srgb, var(--prop-picker-accent) 16%, transparent);
+    background: color-mix(in srgb, var(--prop-picker-accent) 6%, #030409);
   }
 
   .picker.secondary .selected-badge {
-    width: 19px;
-    height: 19px;
-    border-color: color-mix(in srgb, var(--studio-accent) 42%, white);
-    background: color-mix(in srgb, var(--studio-accent) 46%, #090b13);
+    width: clamp(19px, 0.78cqi, 28px);
+    height: clamp(19px, 0.78cqi, 28px);
+    border-color: color-mix(in srgb, var(--prop-picker-accent) 42%, white);
+    background: color-mix(in srgb, var(--prop-picker-accent) 46%, #090b13);
     box-shadow: 0 0 9px
-      color-mix(in srgb, var(--studio-accent) 34%, transparent);
-    font-size: 11px;
-  }
-
-  @container (max-width: 330px) {
-    .picker.secondary .option-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+      color-mix(in srgb, var(--prop-picker-accent) 34%, transparent);
+    font-size: clamp(11px, 0.46cqi, 16px);
   }
 
   @media (prefers-reduced-motion: reduce) {

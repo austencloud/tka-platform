@@ -18,7 +18,7 @@
   import EffortPalette from "$lib/shared/phrase-effort-lab/components/EffortPalette.svelte";
   import EffectsSettingsPanel from "./EffectsSettingsPanel.svelte";
   import PlanesPopover from "../PlanesPopover.svelte";
-  import PropFamilyPicker from "./PropFamilyPicker.svelte";
+  import ScenePropPicker from "./ScenePropPicker.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { EffortId } from "$lib/shared/effort/domain/effort-types";
   import {
@@ -431,7 +431,7 @@
         aria-labelledby="hub-tab-prop"
       >
         <div class="prop-section">
-          <PropFamilyPicker
+          <ScenePropPicker
             {currentProp}
             accentColor={performerColor}
             onSelect={handlePropSelect}

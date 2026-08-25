@@ -627,8 +627,8 @@ export function toggleBigVariant(propType: PropType): PropType {
  * Single source of truth for the FLAT prop grid (`BentoPropGrid`): every listed
  * prop renders as its own button under one of three section headers — no
  * popover, no variant-drill. This is intentionally separate from the shared
- * `category` taxonomy + variant maps above (consumed by PropPopover,
- * MyPropsDrawer, composition recipes, …), which are left untouched.
+ * `category` taxonomy + variant maps above (consumed by MyPropsDrawer,
+ * composition recipes, …), which are left untouched.
  *
  * Curation: props NOT listed here are simply absent from the picker. Simple
  * Staff (backend thumb-orientation prop), Staff V2, and Hand (hand-path teaching

@@ -11,7 +11,7 @@ import {
   finishPreviewOptions,
   propBuildPreviewImage,
   type PropBuildPreviewOption,
-} from "./prop-build-previews";
+} from "./scene-prop-catalog";
 
 function expectAssets(
   options: readonly PropBuildPreviewOption<string>[]
