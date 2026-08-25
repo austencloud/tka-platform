@@ -47,9 +47,20 @@ function makeOrchestrator() {
     blob: new Blob(["x"], { type: "image/webp" }),
     qrConsistent: true,
   }));
+  // Mirrors ThumbnailRenderQueue.enqueue: the task receives BOTH an abort
+  // signal and a reportActivity callback (the real queue uses the latter to
+  // refresh its inactivity deadline). Dropping the second argument makes every
+  // render throw "reportActivity is not a function" instead of exercising the
+  // tiers under test.
+  const reportActivity = vi.fn();
   const queue = {
-    enqueue: (_hash: string, task: (signal: AbortSignal) => Promise<unknown>) =>
-      task(new AbortController().signal),
+    enqueue: (
+      _hash: string,
+      task: (
+        signal: AbortSignal,
+        reportActivity: () => void
+      ) => Promise<unknown>
+    ) => task(new AbortController().signal, reportActivity),
     getStats: () => ({ queued: 0, active: 0 }),
     cancel: () => {},
   };

@@ -1,10 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+// onboarding-events routes through captureWhenReady, not captureEvent: these
+// prompts are rare and load-bearing, so they wait for the PostHog ready hook
+// instead of dropping silently when a capture lands before init (e2298a5d1d).
 vi.mock("../posthog", () => ({
-  captureEvent: vi.fn(),
+  captureWhenReady: vi.fn(),
 }));
 
-import { captureEvent } from "../posthog";
+import { captureWhenReady } from "../posthog";
 import {
   logOnboardingGuestFirstSavePromptShown,
   logOnboardingGuestFirstSavePromptAccepted,
@@ -14,13 +17,13 @@ import {
 
 describe("onboarding-events: guest first-save prompt (SP3 Part B)", () => {
   beforeEach(() => {
-    vi.mocked(captureEvent).mockClear();
+    vi.mocked(captureWhenReady).mockClear();
   });
 
   it("logOnboardingGuestFirstSavePromptShown captures onboarding_guest_first_save_prompt_shown", () => {
     logOnboardingGuestFirstSavePromptShown({ source: "app_entry" });
-    expect(captureEvent).toHaveBeenCalledTimes(1);
-    expect(captureEvent).toHaveBeenCalledWith(
+    expect(captureWhenReady).toHaveBeenCalledTimes(1);
+    expect(captureWhenReady).toHaveBeenCalledWith(
       "onboarding_guest_first_save_prompt_shown",
       { source: "app_entry" }
     );
@@ -28,8 +31,8 @@ describe("onboarding-events: guest first-save prompt (SP3 Part B)", () => {
 
   it("logOnboardingGuestFirstSavePromptAccepted captures onboarding_guest_first_save_prompt_accepted", () => {
     logOnboardingGuestFirstSavePromptAccepted();
-    expect(captureEvent).toHaveBeenCalledTimes(1);
-    expect(captureEvent).toHaveBeenCalledWith(
+    expect(captureWhenReady).toHaveBeenCalledTimes(1);
+    expect(captureWhenReady).toHaveBeenCalledWith(
       "onboarding_guest_first_save_prompt_accepted",
       {}
     );
@@ -37,8 +40,8 @@ describe("onboarding-events: guest first-save prompt (SP3 Part B)", () => {
 
   it("logOnboardingGuestFirstSavePromptDeclined captures onboarding_guest_first_save_prompt_declined", () => {
     logOnboardingGuestFirstSavePromptDeclined();
-    expect(captureEvent).toHaveBeenCalledTimes(1);
-    expect(captureEvent).toHaveBeenCalledWith(
+    expect(captureWhenReady).toHaveBeenCalledTimes(1);
+    expect(captureWhenReady).toHaveBeenCalledWith(
       "onboarding_guest_first_save_prompt_declined",
       {}
     );
@@ -46,8 +49,8 @@ describe("onboarding-events: guest first-save prompt (SP3 Part B)", () => {
 
   it("logOnboardingGuestFirstSavePromptLogin captures onboarding_guest_first_save_prompt_login", () => {
     logOnboardingGuestFirstSavePromptLogin();
-    expect(captureEvent).toHaveBeenCalledTimes(1);
-    expect(captureEvent).toHaveBeenCalledWith(
+    expect(captureWhenReady).toHaveBeenCalledTimes(1);
+    expect(captureWhenReady).toHaveBeenCalledWith(
       "onboarding_guest_first_save_prompt_login",
       {}
     );

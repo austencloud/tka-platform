@@ -103,7 +103,14 @@ describe("SequenceFuser", () => {
 		expect(result.id).toBeDefined();
 		expect(typeof result.id).toBe("string");
 		expect(result.isFavorite).toBe(false);
-		expect(result.isCircular).toBe(false);
+		// This fixture is genuinely a seamless loop: makeHandPath(4) cycles the 4
+		// cardinal directions exactly once (N→E→S→W→N), so the last step's end
+		// location matches the first step's start location, and every step's
+		// orientation is Orientation.IN (buildMinimalSteps default) so the
+		// orientation cycle matches too. isCircular is computed by the canonical
+		// isSeamlesslyLoopable() detector (wired in b5de6e0355) rather than
+		// hardcoded, and correctly detects this fixture as circular.
+		expect(result.isCircular).toBe(true);
 		expect(result.tags).toEqual([]);
 		expect(result.metadata).toHaveProperty("fusedFrom");
 	});

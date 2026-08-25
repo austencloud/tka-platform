@@ -92,24 +92,37 @@ describe("Forest ground detail", () => {
     expect(material.color.getHexString()).toBe("ffffff");
     material.onBeforeCompile(shader, {} as never);
 
-    expect(shader.uniforms.uForestGroundNeutralMap.value).toBe(detailMap);
-    expect(shader.uniforms.uForestGroundFamilyMask.value).toBe(familyMask);
-    expect(shader.uniforms.uForestGroundDetailStrength.value).toBe(0.9);
-    expect(shader.uniforms.uForestGroundNormalResponse.value).toBe(0.14);
-    expect(shader.uniforms.uForestGroundRoughnessFloor.value).toBe(0.96);
-    expect(shader.vertexShader).toContain("vForestGroundWorldPosition");
-    expect(shader.fragmentShader).toContain("forestGroundPoint / 2.8");
+    // Forest delegates to the shared masked-ground-detail primitive
+    // (6a5556bc96), so the uniforms carry the generic `uMaskedGround*` names
+    // and the Forest family→channel mapping is what this guards.
+    expect(shader.uniforms.uMaskedGroundRedMap.value).toBe(detailMap);
+    expect(shader.uniforms.uMaskedGroundGreenMap.value).toBe(
+      detailMaps.meadow
+    );
+    expect(shader.uniforms.uMaskedGroundBlueMap.value).toBe(detailMaps.litter);
+    expect(shader.uniforms.uMaskedGroundFourthMap.value).toBe(detailMaps.damp);
+    expect(shader.uniforms.uMaskedGroundFamilyMask.value).toBe(familyMask);
+    expect(shader.uniforms.uMaskedGroundDetailStrength.value).toBe(0.9);
+    expect(shader.uniforms.uMaskedGroundNormalResponse.value).toBe(0.14);
+    expect(shader.uniforms.uMaskedGroundRoughnessFloor.value).toBe(0.96);
+    // The primary detail scale used to be inlined as `/ 2.8`; it is now a
+    // uniform the Forest caller supplies, so both halves are asserted.
+    expect(shader.uniforms.uMaskedGroundPrimaryScale.value).toBe(2.8);
+    expect(shader.vertexShader).toContain("vMaskedGroundWorldPosition");
+    expect(shader.fragmentShader).toContain(
+      "maskedGroundPoint / uMaskedGroundPrimaryScale"
+    );
     expect(shader.fragmentShader).toContain("secondaryUv");
     expect(shader.fragmentShader).toContain("familyFeather");
-    expect(shader.fragmentShader).toContain("forestSurfaceGradient");
+    expect(shader.fragmentShader).toContain("maskedGroundSurfaceGradient");
     expect(shader.fragmentShader).toContain(
-      "0.18 * uForestGroundDetailStrength"
+      "0.18 * uMaskedGroundDetailStrength"
     );
     expect(shader.fragmentShader).toContain(
-      "clamp(uForestGroundNormalResponse, 0.0, 0.32)"
+      "clamp(uMaskedGroundNormalResponse, 0.0, 0.32)"
     );
     expect(shader.fragmentShader).toContain(
-      "roughnessFactor,\n            uForestGroundRoughnessFloor"
+      "roughnessFactor,\n            uMaskedGroundRoughnessFloor"
     );
 
     const clone = material.clone();

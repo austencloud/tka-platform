@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createDefaultCelestialConfig } from "../../../src/lib/shared/3d/environments/domain/models/scene-configs/celestial-scene-config";
+import { CLOUDBREAK_LAYOUT } from "../../../src/lib/shared/3d/environments/scenes/celestial/cloudbreak-layout";
 
 const sceneSource = readFileSync(
   resolve("src/lib/shared/3d/environments/scenes/CelestialScene.svelte"),
@@ -65,7 +66,22 @@ describe("Olive Cloudbreak production contract", () => {
     );
     expect(sliceSource).toContain("groundY = userProportionsState.groundY");
     expect(sliceSource).toContain("position.y={groundY}");
-    expect(spatialSource).toContain("position={[0, 0.225, -1]}");
-    expect(spatialSource).toContain("position={[0, 0.11, -1]}");
+
+    // `ba5f762e3d` moved the terrace's ground plane out of these literals and
+    // into the authored layout, so the study now reads centerXZ instead of
+    // repeating [0, -1]. Assert both halves: the study defers to the constant,
+    // and the constant still resolves to the anchored spot. Checking only the
+    // expression would let the layout drift the terrace off the feet plane
+    // without a single test noticing.
+    expect(spatialSource).toContain(
+      "terraceCenter = CLOUDBREAK_LAYOUT.performanceTerrace.centerXZ"
+    );
+    expect(spatialSource).toContain(
+      "position={[terraceCenter[0], 0.225, terraceCenter[1]]}"
+    );
+    expect(spatialSource).toContain(
+      "position={[terraceCenter[0], 0.11, terraceCenter[1]]}"
+    );
+    expect(CLOUDBREAK_LAYOUT.performanceTerrace.centerXZ).toEqual([0, -1]);
   });
 });

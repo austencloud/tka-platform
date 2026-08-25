@@ -27,10 +27,6 @@ vi.mock("$lib/shared/library/get-library-repository", () => ({
   }),
 }));
 
-vi.mock("$lib/features/library/get-library-save-service", () => ({
-  getLibrarySaveService: () => ({ saveSequence: mocks.saveSequence }),
-}));
-
 vi.mock("$lib/shared/foundation/domain/models/sequence-data", () => ({
   createSequenceData: (sequence: unknown) => sequence,
 }));
@@ -74,6 +70,8 @@ vi.mock(
 
 import { createLibraryActionHandler } from "$lib/shared/sequence-viewer/state/library-action-handler.svelte";
 import { LibraryError } from "$lib/shared/library/domain/library-error";
+import { registerVisualSequenceSaveCoordinatorFactory } from "$lib/shared/library/get-visual-sequence-save-coordinator";
+import { VisualSequenceSaveCoordinator } from "$lib/features/library/services/implementations/VisualSequenceSaveCoordinator";
 
 const sequence = {
   id: "sequence-1",
@@ -105,6 +103,18 @@ describe("sequence viewer library action feedback", () => {
     mocks.hasMatchingContent.mockReset().mockResolvedValue(false);
     mocks.getSequence.mockReset().mockResolvedValue(null);
     mocks.computeHash.mockReset().mockResolvedValue("content-hash-1");
+
+    // 8f74d8edd9 moved the pending toast, duplicate handling and in-flight
+    // dedupe out of this handler and into VisualSequenceSaveCoordinator, which
+    // the handler now reaches through a registered async factory. The
+    // guarantees below are still the viewer's guarantees, so they are proven
+    // through the real coordinator over the mocked persistence boundary rather
+    // than against a stub that could drift from it. Re-registering also drops
+    // the memoized instance, so each test gets a fresh in-flight map.
+    registerVisualSequenceSaveCoordinatorFactory(
+      async () =>
+        new VisualSequenceSaveCoordinator({ saveSequence: mocks.saveSequence })
+    );
   });
 
   it("shows pending feedback immediately and settles as saved once persistence resolves", async () => {
@@ -122,16 +132,25 @@ describe("sequence viewer library action feedback", () => {
 
     const save = handler.handleSave();
 
+    // Save flips to its in-flight state on the same tick the user clicks, so
+    // the button never sits there looking untouched while the coordinator is
+    // resolved and the content hashed.
     expect(handler.isSaving).toBe(true);
     expect(handler.isSaved).toBe(false);
+
+    await vi.waitFor(() => expect(mocks.saveSequence).toHaveBeenCalledOnce());
+
+    // Pending feedback is on screen BEFORE persistence resolves - the save
+    // promise below is still unsettled at this point.
     expect(mocks.showToast).toHaveBeenCalledWith({
       message: "Saving to library…",
       type: "info",
       duration: 0,
       announcement: "polite",
     });
+    expect(handler.isSaving).toBe(true);
+    expect(mocks.removeToast).not.toHaveBeenCalled();
 
-    await vi.waitFor(() => expect(mocks.saveSequence).toHaveBeenCalledOnce());
     await handler.handleSave();
     expect(mocks.saveSequence).toHaveBeenCalledOnce();
 

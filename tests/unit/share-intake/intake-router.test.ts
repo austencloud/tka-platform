@@ -223,7 +223,18 @@ describe("routeIntake", () => {
 
     expect(saveSequence).toHaveBeenCalledWith(
       expect.objectContaining({ id: "inline" }),
-      { name: "ABC", visibility: "public", tags: [], notes: "" }
+      {
+        name: "ABC",
+        visibility: "public",
+        tags: [],
+        notes: "",
+        // Every save entry point stamps the UI path it came from so the
+        // lifecycle funnel can break saves down by origin
+        // (SaveToLibraryOptions.analyticsSource). Printed-card intake is
+        // "share_intake" - dropping it would silently strand this path in the
+        // funnel's unattributed bucket.
+        analyticsSource: "share_intake",
+      }
     );
     expect(result.cards[0].targetId).toBe("lib-9");
   });

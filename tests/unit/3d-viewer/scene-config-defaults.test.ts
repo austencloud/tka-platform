@@ -39,8 +39,10 @@ const factories = {
 const expectedHashes: Record<keyof typeof factories, string> = {
   createDefaultAutumnConfig:
     "b88ab85d316bced0090b141fc2510505fa2e3e4bf1c177cf49b4c49c2b7fd955",
+  // Re-baselined 2026-08-23 by 7f67e5c785 (feat(blossom): preserve the
+  // site-system review build) — the approved sky/fog/petal/moonlight retune.
   createDefaultBlossomConfig:
-    "3383f8c98507979b92b92c71c2287a362090ae1b5e90f1e8f3eb64862b484fbb",
+    "274413fe4beee2e13a89a5192a082329156353912f5291376ea87fd9b73d570a",
   createDefaultCelestialConfig:
     "e9a9024f696ca5d692eececc3625d01914e5e99690b91356ebd7aa04f10fe164",
   createDefaultCosmicAuroraConfig:

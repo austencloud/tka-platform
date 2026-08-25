@@ -67,8 +67,22 @@ describe("scene-level particle batching contract", () => {
     ];
     for (const root of roots) {
       const source = readFileSync(resolve(root), "utf8");
-      expect(source, root).toContain("setSceneEffectsContext");
-      expect(source, root).toContain("<SceneEffectsCoordinator3D");
+      // A root delivers its single manager to the orchestrators below it
+      // through one of two sanctioned seams: Svelte context (synchronous
+      // roots) or the explicit `sceneEffectsManagerOverride` prop, which
+      // Viewer3DScene uses because 21335f9da9 made the manager stream in
+      // behind a dynamic import and it therefore cannot exist at init.
+      const suppliesManager =
+        source.includes("setSceneEffectsContext") ||
+        source.includes("sceneEffectsManagerOverride");
+      expect(suppliesManager, `${root} supplies a SceneEffectsManager3D`).toBe(
+        true
+      );
+      // Exactly one coordinator — two would batch the same tips twice.
+      expect(
+        source.match(/<SceneEffectsCoordinator3D/g) ?? [],
+        root
+      ).toHaveLength(1);
     }
   });
 

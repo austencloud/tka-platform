@@ -9,8 +9,9 @@
  *
  * The legacy reference below is a frozen copy of the pre-consolidation
  * production algorithm (rotation-only, loop-wrap, blank-transparent) — kept
- * here verbatim so the comparison is against the real shipped behavior, not a
- * reimagining of it.
+ * here so the comparison is against the real shipped behavior, not a
+ * reimagining of it. It is verbatim apart from the seam condition, which
+ * carries its own note at `legacyProcessReversals`.
  *
  * The engine's `handReversal` channel (hand retraces, prop continues) is a
  * separate NON-DISPLAY signal retained for future consumers; its corpus
@@ -65,7 +66,18 @@ function legacyIsReversal(last: string | null, current: string | null): boolean 
 }
 
 function legacyProcessReversals(sequence: SequenceData): Array<{ blue: boolean; red: boolean }> {
-  const isLoop = !!sequence.loopType;
+  // A sequence crosses its seam when the user says it is circular, not only
+  // when it carries a two-hand LOOP label. The original detector wrapped on
+  // `loopType` alone, so a circular sequence with no label never compared its
+  // first step against its tail and lost the dot there — 12 cells across the
+  // published corpus, e.g. ΘZFLΘZFLΘZFLΘZFL and JIECJIECJIECJIEC, both
+  // unmistakable loops whose prop flips direction at the wrap. Each of those
+  // 12 was checked against the engine's channels: all are `propReversal`, none
+  // arrive through `handReversal`, so the prop-only display policy above still
+  // holds and the baseline is what was wrong. `b5de6e0355` widened production
+  // to `isCircular || loopType`; the reference has to sit at the same seam or
+  // this parity check measures the old miss instead of the current contract.
+  const isLoop = sequence.isCircular || !!sequence.loopType;
   const steps = sequence.steps;
   const out: Array<{ blue: boolean; red: boolean }> = [];
 
