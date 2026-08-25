@@ -694,7 +694,7 @@
                 title={canUndo ? "Undo the last change" : "Nothing to undo"}
                 aria-label={canUndo ? "Undo the last change" : "Nothing to undo"}
               >
-                <UndoGlyph size={18} direction="undo" />
+                <UndoGlyph size={20} direction="undo" />
               </button>
               <button
                 type="button"
@@ -704,7 +704,7 @@
                 title={canRedo ? "Redo the last change" : "Nothing to redo"}
                 aria-label={canRedo ? "Redo the last change" : "Nothing to redo"}
               >
-                <UndoGlyph size={18} direction="redo" />
+                <UndoGlyph size={20} direction="redo" />
               </button>
             </div>
           </div>
@@ -761,17 +761,13 @@
         {/if}
 
         {#if isGuidedBuild}
+          <!-- One line, not two. This carried a tracked-out uppercase eyebrow
+               ("NEXT STEP") above the instruction it introduced ("Choose step
+               2") — the same thing said twice, in two typographic voices. -->
           <div
             class="guided-build-status"
             aria-live={tookOver ? "polite" : "off"}
           >
-            <span>
-              {phase === "pick-start"
-                ? "Start position"
-                : phase === "add-step"
-                  ? "Next step"
-                  : "Sequence ready"}
-            </span>
             <strong>
               {phase === "pick-start"
                 ? "Choose where the props begin"
@@ -1042,29 +1038,20 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
+  /* Height stays reserved so the picker below it never moves as the wording
+     changes between phases. */
   .guided-build-status {
-    min-height: 3.25rem;
+    min-height: 2.75rem;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
     padding-inline: 0.25rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-min, 0.875rem);
-  }
-
-  .guided-build-status span {
-    color: oklch(0.72 0.1 278);
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: clamp(1rem, 0.96rem + 0.14vw, 1.15rem);
   }
 
   .guided-build-status strong {
     color: var(--theme-text, #fff);
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
-    text-align: right;
   }
 
   .hand-dot {
@@ -1235,6 +1222,14 @@
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
+
+    /* Clear, play, and history all size from --min-touch-target, which is a flat
+       44px. The page's root font ramps 16px→24px from 1680 to 3840, so at 4K
+       every label and pill beside these grew by half again while the discs did
+       not — three buttons visibly smaller than the text next to them. Ramping
+       the token for this row keeps the trio in family AND keeps the 44px floor,
+       since the rem value only overtakes it once the root has ramped. */
+    --min-touch-target: max(44px, 2.75rem);
   }
 
   .slot-side {
@@ -1248,28 +1243,48 @@
     gap: 0.4rem;
   }
 
+  /* Matched to the real UndoButton: a filled accent circle, not an outline.
+     The row holds three controls — clear, play, history — and the app gives
+     each a saturated fill with a matching glow (red, green, purple). An
+     outlined ghost pair beside two solid discs read as three unrelated
+     control languages in one row. */
   .history-button {
     display: grid;
     place-items: center;
-    width: max(var(--min-touch-target, 44px), 44px);
-    height: max(var(--min-touch-target, 44px), 44px);
+    box-sizing: border-box;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
     border-radius: 50%;
-    border: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.28));
-    background: var(--theme-surface-raised, oklch(0.2 0.02 270 / 0.6));
-    color: var(--theme-text, oklch(0.92 0.02 270));
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent-strong, #6b5cff) 30%, transparent);
+    background: linear-gradient(
+      135deg,
+      var(--theme-accent-strong, #6b5cff) 0%,
+      color-mix(
+          in srgb,
+          var(--theme-accent-strong, #6b5cff) 85%,
+          var(--theme-panel-bg, oklch(0.13 0.025 270))
+        )
+        100%
+    );
+    color: var(--theme-text, #fff);
     cursor: pointer;
     transition:
+      transform var(--duration-emphasis, 240ms) cubic-bezier(0.4, 0, 0.2, 1),
       background var(--duration-fast, 140ms) ease,
-      border-color var(--duration-fast, 140ms) ease,
+      box-shadow var(--duration-fast, 140ms) ease,
       opacity var(--duration-fast, 140ms) ease;
+    box-shadow: 0 4px 12px
+      color-mix(in srgb, var(--theme-accent-strong, #6b5cff) 40%, transparent);
   }
   .history-button:hover:not(:disabled) {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b8cff) 22%,
-      var(--theme-surface-raised, oklch(0.2 0.02 270 / 0.6))
-    );
-    border-color: var(--theme-accent, #8b8cff);
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px
+      color-mix(in srgb, var(--theme-accent-strong, #6b5cff) 60%, transparent);
+  }
+  .history-button:active:not(:disabled) {
+    transform: scale(0.95);
+    transition-duration: var(--duration-instant, 80ms);
   }
   .history-button:focus-visible {
     outline: 2px solid var(--theme-accent, #8b8cff);
@@ -1278,13 +1293,16 @@
   /* Disabled reads as unavailable, not absent: the slot keeps its footprint so
      nothing beside it moves when history becomes available. */
   .history-button:disabled {
-    opacity: 0.34;
-    cursor: default;
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .history-button {
+    .history-button,
+    .history-button:hover:not(:disabled),
+    .history-button:active:not(:disabled) {
       transition: none;
+      transform: none;
     }
   }
 
@@ -1326,14 +1344,31 @@
     min-width: 0;
   }
 
-  /* Side-by-side tier: the frame stretches to the picker column's height so
-     the left column has no dead band under the sequence. (Placed AFTER the
-     base rule — same specificity, source order decides.) */
+  /* Side-by-side tier: reserve the tallest the grid ever gets — two rows at the
+     8-step cap — and stop there.
+
+     This used to `flex: 1` up to the picker column's full height, which made the
+     frame ~80px taller than the grid could ever be. StepGrid pins construct mode
+     to four stable columns so cells never resize mid-build, so the grid is a
+     fixed-height row block; stretching the frame past it just banked void around
+     it, and a small strip floating in a tall box is what read as unfinished. The
+     column ends where its content ends. */
   @container (min-width: 1100px) {
     .ws-frame {
-      flex: 1;
+      flex: 0 0 auto;
       height: auto;
-      min-height: 15rem;
+      min-height: 18rem;
+    }
+  }
+
+  /* Each column is its own height now rather than one stretching to match the
+     other, and whichever is shorter centers against its neighbour. Which one
+     that is changes with the phase — the workspace is taller while picking,
+     the player taller during play — so balanced space reads as breathing room
+     either way, where top-aligning banked it all under one column. */
+  @container (min-width: 1100px) {
+    .demo-columns {
+      align-items: center;
     }
   }
 
@@ -1401,12 +1436,15 @@
     justify-content: center;
   }
 
+  /* Sized in rem with a px floor so these ride the root ramp alongside the
+     round buttons they share the action row with, instead of staying 44px
+     while the discs beside them grow to 66 at 4K. */
   .cta-btn {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    padding: 0 22px;
+    gap: 0.5rem;
+    min-height: max(44px, 2.75rem);
+    padding: 0 1.375rem;
     border-radius: 999px;
     border: 1px solid
       color-mix(in srgb, var(--theme-accent, #8b5cf6) 55%, transparent);

@@ -136,9 +136,10 @@
     <div class="opening-copy">
       <p class="opening-line">Write flow arts choreography. See it move.</p>
       <h1 id="composer-title">Flow Arts <span>Composer</span></h1>
+      <!-- The cut sentence described where the pictographs sit relative to the
+           animation — which the demo two inches to the right is doing. -->
       <p class="opening-lede">
-        Build a sequence one step at a time or generate a starting point. The
-        pictographs stay beside the animation while you work.
+        Build a sequence one step at a time, or generate a starting point.
       </p>
 
       <div class="opening-actions">
@@ -167,30 +168,13 @@
     </div>
   </section>
 
+  <!-- One heading, then the thing itself. An earlier version explained Build and
+       Generate in a two-column definition list directly above the two demos that
+       ARE build and generate — narration sitting on top of the working control it
+       narrates. The demos carry their own labels; the page does not need to
+       introduce them twice. -->
   <section class="making" aria-labelledby="making-title">
-    <div class="making-intro">
-      <h2 id="making-title">Write it step by step.</h2>
-      <p>
-        Choose a starting position, then add one valid step at a time. The
-        sequence you build continues into every demonstration below.
-      </p>
-
-      <div
-        class="making-paths"
-        role="list"
-        aria-label="Ways to begin a sequence"
-      >
-        <div role="listitem">
-          <strong>Build</strong>
-          <span>Pick a start and add the next move. Take over at any time.</span
-          >
-        </div>
-        <div role="listitem">
-          <strong>Generate</strong>
-          <span>Draw another sequence from one prepared recipe.</span>
-        </div>
-      </div>
-    </div>
+    <h2 id="making-title" class="making-title">Write it step by step</h2>
 
     <div class="making-demos" use:activateConstruct>
       <div class="construct-surface">
@@ -209,7 +193,6 @@
           {/snippet}
         </LazyMount>
       </div>
-      <div class="demo-divider"><span>or draw another</span></div>
       <div class="generator-surface">
         <ComposerGenerateDemo {sequence} onGenerated={carrySequence} />
       </div>
@@ -534,17 +517,8 @@
     border-top: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
   }
 
-  .making-intro {
-    display: grid;
-    grid-template-columns: minmax(0, 0.78fr) minmax(20rem, 1.22fr);
-    grid-template-rows: auto auto;
-    gap: 1rem clamp(2rem, 6vw, 7rem);
-    align-items: end;
-  }
-
-  .making-intro h2 {
-    grid-row: 1 / 3;
-    align-self: center;
+  .making-title {
+    max-width: 18ch;
   }
 
   h2 {
@@ -554,7 +528,6 @@
     line-height: 1;
   }
 
-  .making-intro > p,
   .changing-intro > p,
   .keeping-lede > p,
   .foundation-detail p {
@@ -562,30 +535,6 @@
     color: oklch(0.76 0.014 270);
     font-size: clamp(1rem, 0.94rem + 0.24vw, 1.18rem);
     line-height: 1.7;
-  }
-
-  .making-paths {
-    margin-top: 0;
-    border-top: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
-  }
-
-  .making-paths > div {
-    display: grid;
-    grid-template-columns: minmax(5rem, 0.35fr) minmax(0, 1fr);
-    gap: 1rem;
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
-  }
-
-  .making-paths strong {
-    color: oklch(0.86 0.1 278);
-    font-size: var(--font-size-min, 0.875rem);
-  }
-
-  .making-paths span {
-    color: oklch(0.69 0.016 270);
-    font-size: var(--font-size-min, 0.875rem);
-    line-height: 1.5;
   }
 
   .generator-surface {
@@ -598,7 +547,12 @@
     box-shadow: 0 2rem 5rem oklch(0.04 0.03 270 / 0.35);
   }
 
+  /* The two demos are separated by a gap, not by a tracked-out uppercase rule
+     saying "or draw another". Each panel already says what it is — one has a
+     picker and a play button, the other a Generate button. */
   .making-demos {
+    display: grid;
+    gap: clamp(1.5rem, 3vw, 3rem);
     min-width: 0;
     margin-top: clamp(2rem, 4vw, 4rem);
   }
@@ -631,24 +585,6 @@
 
   .construct-error {
     min-height: clamp(36rem, 52vw, 46rem);
-  }
-
-  .demo-divider {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-    margin-block: 1rem;
-    color: oklch(0.74 0.018 270);
-    font-size: var(--font-size-compact, 0.75rem);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-  .demo-divider::before,
-  .demo-divider::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
   }
 
   /* `.making` already ends on 9rem of padding; a matching 8rem here stacked to
@@ -887,16 +823,6 @@
 
     .opening-player {
       width: min(100%, 38rem);
-    }
-
-    .making-intro {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto;
-      gap: 1.25rem;
-    }
-
-    .making-intro h2 {
-      grid-row: auto;
     }
 
     .construct-placeholder {
