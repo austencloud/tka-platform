@@ -45,8 +45,8 @@ export const FILM_LIBRARY: readonly FilmLibraryEntry[] = [
     film: skyIsTheLimitFilm,
     poster: {
       src: "/films/posters/sky.webp",
-      sceneId: "celestial-canon",
-      offsetSeconds: 5.5,
+      sceneId: "ocean-bubbles",
+      offsetSeconds: 5,
     },
   },
   {
@@ -65,8 +65,8 @@ export const FILM_LIBRARY: readonly FilmLibraryEntry[] = [
     film: understudyNightFilm,
     poster: {
       src: "/films/posters/understudy.webp",
-      sceneId: "all-eight-efforts",
-      offsetSeconds: 5,
+      sceneId: "mirror-pair",
+      offsetSeconds: 4,
     },
   },
   {
@@ -75,8 +75,8 @@ export const FILM_LIBRARY: readonly FilmLibraryEntry[] = [
     film: chanceSuiteFilm,
     poster: {
       src: "/films/posters/chance.webp",
-      sceneId: "distinct-everything",
-      offsetSeconds: 6,
+      sceneId: "loaded-dice",
+      offsetSeconds: 5,
     },
   },
   {
