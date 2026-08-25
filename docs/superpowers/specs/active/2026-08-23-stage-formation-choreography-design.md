@@ -272,9 +272,52 @@ mutations use today).
       / `html:has(.legal-container)` and app modules are a different regime. The
       formation row matches `.clip-name` exactly, so it is no worse than its
       siblings; ramping app modules is a cross-cutting change for its own task.
-- [ ] **Phase 4 — Overlay UI.** Ends by deleting mark CRUD (`addMark`,
-      `updateMarkPosition`, `updateMarkBeats`, `updateMarkWalkStyle`,
-      `updateMarkEasing`, `deleteMark`, `Performer.marks`) once no component
-      calls it — the removal deferred from Phase 2.
+- [x] **Phase 4a — Read paths.** `7b0091bdc8` (Codex, verified by the main
+      session). `maxTotalBeats`, `currentStep`, `totalSteps`,
+      `beatMarkerPositions` and `performanceFrames` all derive from
+      `choreography.formations` through `sampleStageFormations`. Mark CRUD is
+      left intact but no longer read. `maxTotalBeats` now includes the last
+      formation's `atBeat`, which the mark path had been dropping.
+- [x] **Phase 4b/4c — Overlay and properties.** `183fa4cd7f`.
+      `FormationOverlay.svelte` is a real drill chart: one `pxPerMetre` for both
+      axes, letterboxed and centred, with chips, labels, grid dots and arrows
+      all derived from it. `MarkProperties.svelte` is deleted and replaced by
+      `SetProperties.svelte` (counts to get there, 8/16 quick counts, walk
+      style, pacing, spot readout, remove-set). `active-formation.ts` is the
+      single owner of which set is active — pinned selection wins, otherwise the
+      playhead decides — consumed by the chart, the sidebar and the panel.
+      `CountStepper.svelte` replaces the ad-hoc performer-count buttons.
+      Evidence: 60/60 stage tests under the CI config; `npm run check` 0 errors
+      0 warnings; drag proved with synthesized pointer events (a chip moved
+      6.0×4.0 → 4.9×4.8 and Ctrl+Z restored it exactly); screenshots read at
+      1920, 2560, 3840, 1440, 820x1180, 960x412 landscape and 375x667.
+      **Findings the screenshots caught that the numbers did not:** the chart
+      was anisotropic by 2.4× (174.9 px/m across, 72.1 px/m upstage), which
+      fails the one job a drill chart has; the chart was undersized inside its
+      pane and the grid was too faint to read as ground; the caption sat
+      marooned over the cast at 960×412 and left dead rail everywhere wide; a
+      short walk drew a 7px arrow stub reading as a smudge, and the first fix
+      over-corrected into a large head on a 5.7px shaft because the marker is
+      sized in stroke-widths; chips stayed 22px while the chart doubled at
+      3840; and the 44px touch floor piled the whole cast into one blob at
+      960×412.
+      **Fixes worth carrying forward:** the touch target is a transparent
+      22px-minimum circle separate from the 9px-minimum drawn chip — the same
+      hit-zone/visible-grip split Phase 3 used for the transition handle. Below
+      a 13px chip the performer's letter moves outside the dot. The caption
+      lives in the letterbox rail when `originX >= 190`, so isotropy costs no
+      usable space.
+      **Also fixed here (pre-existing, module-wide):** undo was dead everywhere
+      in Stage. `undoStack`/`redoStack` were plain arrays, so the `canUndo`
+      getter never notified `EditHistoryShortcutBridge` and its
+      `disabled={!canUndo}` kept Ctrl+Z inert regardless of edit count. They are
+      `$state` now. Found while verifying that the new chip drag was undoable.
+- [ ] **Phase 4d — Delete mark CRUD.** `addMark`, `updateMarkPosition`,
+      `updateMarkBeats`, `updateMarkWalkStyle`, `updateMarkEasing`,
+      `deleteMark`, `Performer.marks`, `createMark`, the `Mark` type,
+      `totalBeatsForPerformer`, and `selectMark`/`selectedMarkId` — the removal
+      deferred from Phase 2, now unblocked because nothing reads them.
+      `formation-migration.ts` stays as the loader for persisted documents.
+      Mechanical, test-verifiable and non-visual: a good Codex candidate.
 - [ ] **Phase 5 — Proof pass.** Visual verification is the main session's job,
       never a subagent's.
