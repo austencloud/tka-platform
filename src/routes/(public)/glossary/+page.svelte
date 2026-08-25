@@ -334,9 +334,21 @@
   // select the target term and scroll to it once hydrated. onMount, not
   // $effect - reveal() reads and writes reactive state, so an effect here
   // would re-fire on every search keystroke and yank the scroll position.
+  //
+  // A category slug (#cat-letter) drills into that category. The sidebar has
+  // always linked categories that way, so the href was already a promise this
+  // handler did not keep: pasting one landed on the category grid instead of
+  // the category. It matters most for the codex, whose whole surface lives
+  // inside one category and was otherwise unreachable by URL.
   onMount(() => {
     const slug = window.location.hash.slice(1);
-    if (slug && slugToCat.has(slug)) void reveal(slug);
+    if (!slug) return;
+    const catKey = sectionSlugToKey.get(slug);
+    if (catKey) {
+      enterView(catKey);
+      return;
+    }
+    if (slugToCat.has(slug)) void reveal(slug);
   });
 
   // Drawer: lock body scroll and move focus in while open.
