@@ -36,20 +36,35 @@
     links: { label: string; href: string }[];
   }
 
+  /**
+   * Eight links, two columns — cut from eighteen across four on 2026-08-25.
+   *
+   * The footer sits on every public page, so a link here is a claim that the
+   * destination is a site-level place. Four of the old columns did not clear
+   * that bar:
+   *
+   * - Props (Double Staves, Clubs, Fans, Buugeng) — four per-prop notation
+   *   pages the header's Notation menu deliberately omits. They are leaves of
+   *   /notation, reachable from it, not destinations in their own right.
+   * - Endless LOOPs, Poi and TKA, Double Staff Codex — the other three links
+   *   that existed only here. Same reason: leaf pages under /endless-spinner,
+   *   /notation, and /guide.
+   * - The Shop column was a verbatim copy of the header's Shop dropdown, and
+   *   `SALES_LIVE` is false, so all four pointed into a storefront that says it
+   *   is not open. The storefront stays browsable, so one "Shop" link remains
+   *   and the product links stay with the header, which owns that menu.
+   *
+   * Anything cut is still reachable from its parent page and from the header.
+   * Before adding a row here, ask whether the header already carries it.
+   */
   const COLUMNS: FooterColumn[] = [
     {
       title: "Explore",
       links: [
         { label: "History", href: "/notation" },
         { label: "Composer", href: "/composer" },
+        { label: "Shop", href: "/shop" },
         { label: "About", href: "/about" },
-        { label: "Endless LOOPs", href: "/endless-spinner" },
-        // Deliberately NOT in the Props column. TKA is built for static
-        // dual-wielded props; poi reach only the restricted subset whose
-        // rotation stays continuous. Listing "Poi" beside staves/clubs/fans/
-        // buugeng under a "Props" heading reads as "TKA supports poi" at a
-        // glance, which contradicts /notation/poi. Keep it here, as a topic.
-        { label: "Poi and TKA", href: "/notation/poi" },
       ],
     },
     {
@@ -59,26 +74,6 @@
         { label: "Read the Guide", href: "/guide" },
         { label: "Glossary", href: "/glossary" },
         { label: "FAQ", href: "/faq" },
-        { label: "Double Staff Codex", href: "/guide/codex" },
-      ],
-    },
-    {
-      title: "Props",
-      links: [
-        { label: "Double Staves", href: "/notation/staves" },
-        { label: "Clubs", href: "/notation/clubs" },
-        { label: "Fans", href: "/notation/fans" },
-        { label: "Buugeng", href: "/notation/buugeng" },
-      ],
-    },
-    {
-      title: "Shop",
-      links: [
-        // Lockstep with the header's Shop dropdown.
-        { label: "LOOP Deck", href: "/shop/loop-deck" },
-        { label: "T&D Trilogy", href: "/shop/tnd-trilogy" },
-        { label: "Starter Pack", href: "/shop/starter-pack" },
-        { label: "Browse the Shop", href: "/shop" },
       ],
     },
   ];
@@ -471,7 +466,7 @@
     }
   }
 
-  /* ≥560px: the four link columns form a 2×2 grid under the brand block. */
+  /* ≥560px: the two link columns sit side by side under the brand block. */
   @media (min-width: 560px) {
     .cols {
       grid-template-columns: repeat(2, 1fr);
@@ -481,21 +476,20 @@
     }
   }
 
-  /* ≥820px: all four link columns in one row under the brand. */
-  @media (min-width: 820px) {
-    .cols {
-      grid-template-columns: repeat(4, 1fr);
-    }
-  }
-
-  /* ≥1024px: brand joins the row; bottom bar splits left/right. */
+  /* ≥1024px: brand joins the row; bottom bar splits left/right.
+     `auto` tracks for the two link columns, not `1fr` each: with only two
+     columns left, equal fractions stretched four short link labels across
+     ~800px apiece at 4K and left a lake of nothing inside each column. Sized
+     to content, the pair anchors to the right edge of the band and the brand
+     holds the left, which is the shape a footer is supposed to have. The slack
+     lives between the two groups, not inside them. */
   @media (min-width: 1024px) {
     .cols {
-      grid-template-columns: 1.6fr repeat(4, 1fr);
+      grid-template-columns: minmax(0, 1fr) auto auto;
       gap: clamp(32px, 3.5vw, 84px);
     }
     .sitemap .cols {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .brand {
       grid-column: auto;
