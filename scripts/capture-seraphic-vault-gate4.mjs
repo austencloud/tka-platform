@@ -2,9 +2,14 @@
 /** Capture the Seraphic Vault Gate 4 still and motion evidence from debug Chrome. */
 
 import { execFileSync } from "node:child_process";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+// The CDP client moved to scripts/lib/chrome-cdp.mjs when a third consumer
+// appeared. Re-exported here so gate5 and any other caller keep working.
+export { capture, connect, delay } from "./lib/chrome-cdp.mjs";
+import { capture, connect, delay } from "./lib/chrome-cdp.mjs";
 
 const DEBUG_ENDPOINT = "http://127.0.0.1:9222/json/list";
 const TARGET_URL = "https://127.0.0.1:5175/test/celestial-scene?view=hero";
@@ -19,54 +24,6 @@ const MOTION_PATH = resolve(
   "seraphic-vault-gate4-interaction-capture.gif"
 );
 const stillOnly = process.argv.includes("--still-only");
-
-export const delay = (milliseconds) =>
-  new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds));
-
-export async function connect(webSocketDebuggerUrl) {
-  const socket = new WebSocket(webSocketDebuggerUrl);
-  await new Promise((resolveConnection, rejectConnection) => {
-    socket.addEventListener("open", resolveConnection, { once: true });
-    socket.addEventListener("error", rejectConnection, { once: true });
-  });
-
-  let nextId = 1;
-  const pending = new Map();
-  socket.addEventListener("message", (event) => {
-    const message = JSON.parse(event.data);
-    const resolver = pending.get(message.id);
-    if (!resolver) return;
-    pending.delete(message.id);
-    if (message.error) resolver.reject(new Error(message.error.message));
-    else resolver.resolve(message.result);
-  });
-
-  return {
-    async send(method, params = {}) {
-      const id = nextId++;
-      const response = new Promise((resolveResponse, rejectResponse) => {
-        pending.set(id, {
-          resolve: resolveResponse,
-          reject: rejectResponse,
-        });
-      });
-      socket.send(JSON.stringify({ id, method, params }));
-      return response;
-    },
-    close() {
-      socket.close();
-    },
-  };
-}
-
-export async function capture(client, path) {
-  const { data } = await client.send("Page.captureScreenshot", {
-    format: "png",
-    fromSurface: true,
-    captureBeyondViewport: false,
-  });
-  writeFileSync(path, Buffer.from(data, "base64"));
-}
 
 async function main() {
   const targets = await fetch(DEBUG_ENDPOINT).then((response) =>
