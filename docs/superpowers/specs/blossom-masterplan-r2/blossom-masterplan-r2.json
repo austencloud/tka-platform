@@ -603,6 +603,16 @@
     "bedDepth": 0.85,
     "surfaceElevation": -0.15,
     "surfaceRule": "The river requires a visible bed, bank slope, surface reflection, shallow-edge color transition, and moving highlights. A flat opaque ribbon is prohibited.",
+    "splineSubdivisions": 8,
+    "bankTerraceWidth": 4.6,
+    "shoreFadeMetres": 4.2,
+    "runOut": {
+      "note": "The authored centerline spans 85 m inside a 256 m site, so without a run-out the water stops mid-field behind square caps. Both the runtime outline and the Blender channel extend the end tangents past the terrain boundary and open the section into a valley on the way out, so the river arrives from the hills instead of beginning nowhere.",
+      "marginMetres": 6,
+      "openFromMetres": 38,
+      "surfaceWidth": 9.2,
+      "bankTerraceWidth": 15
+    },
     "localWidenings": [
       {
         "id": "west-koi-pool-water",
