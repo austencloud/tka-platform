@@ -1,0 +1,301 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "title": "Flow Fest Sim Earth",
+  "domainProofRequired": false,
+  "currentGate": 2,
+  "authority": {
+    "experienceSpec": "docs/superpowers/specs/active/2026-08-24-flow-fest-sim-design.md",
+    "roomShellSource": "static/data/flow-fest-sim/terrain.manifest.json",
+    "planContract": "docs/superpowers/specs/flow-fest-sim/flow-fest-site-plan.json",
+    "connectorTrace": "docs/superpowers/specs/flow-fest-sim/austen-traced-connectors.json",
+    "museumTrackerItems": [
+      "user-direction:flow-fest-sim:2026-08-25-proceed",
+      "0RowNe7w8F1g3dGTu1KW"
+    ]
+  },
+  "sequenceFingerprints": [],
+  "claims": [
+    {
+      "id": "C-001",
+      "class": "literal",
+      "statement": "The checked Earth footprint is 1,024 by 1,024 metres at one-metre terrain spacing.",
+      "evidence": [
+        "static/data/flow-fest-sim/terrain.manifest.json",
+        "docs/superpowers/specs/flow-fest-sim/evidence/geospatial/geospatial-validation.json"
+      ]
+    },
+    {
+      "id": "C-002",
+      "class": "literal",
+      "statement": "Route elevations, open-ground regions, and sightline occlusions are computed from the checked DTM, lidar surface, and orthophoto registration. Lidar surface is not used as a walkability mask.",
+      "evidence": [
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-1/gate1-validation.json",
+        "scripts/geospatial/build_flow_fest_gate1_plan.py"
+      ]
+    },
+    {
+      "id": "C-003",
+      "class": "literal",
+      "statement": "Public event guidance places check-in at the gate, lets arrivals drive to a selected site to unload or settle a car-camping site, and requires tent campers to move vehicles to designated parking.",
+      "evidence": [
+        "https://kineticfire.org/general-info/"
+      ]
+    },
+    {
+      "id": "C-004",
+      "class": "literal",
+      "statement": "Lower and upper tent campers return through the lower gate, park in the west upper field, and walk back; lower car campers keep the car at camp; Middle Earth is not camping.",
+      "evidence": [
+        "docs/superpowers/specs/flow-fest-sim/flow-fest-site-plan.json"
+      ]
+    },
+    {
+      "id": "C-005",
+      "class": "literal",
+      "statement": "Austen traced a direct upper-to-middle connector and a clear middle-to-lower connector over the registered orthophoto; Gate 1 source-locks those vertices and composes them with short open-tier approaches.",
+      "evidence": [
+        "docs/superpowers/specs/flow-fest-sim/austen-traced-connectors.json",
+        "docs/superpowers/specs/flow-fest-sim/flow-fest-site-plan.json",
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-1/gate1-sightline-study.png"
+      ]
+    },
+    {
+      "id": "C-006",
+      "class": "invention",
+      "statement": "Exact Gate 1 stops, road centerlines, campsite examples, and other non-traced placements are registered proposals over measured terrain, not centimetre-accurate field survey.",
+      "evidence": [
+        "docs/superpowers/specs/flow-fest-sim/flow-fest-site-plan.json"
+      ]
+    },
+    {
+      "id": "C-007",
+      "class": "invention",
+      "statement": "The useful task, night transformation, final choice, and route presentation are gameplay proposals.",
+      "evidence": [
+        "docs/superpowers/specs/flow-fest-sim/flow-fest-site-plan.json"
+      ]
+    },
+    {
+      "id": "C-008",
+      "class": "invention",
+      "statement": "The eight-metre night-heart mast is art direction only; no Gate 1 sightline result depends on its height.",
+      "evidence": [
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-1/gate1-sightline-study.png"
+      ]
+    }
+  ],
+  "exemptions": [],
+  "gates": [
+    {
+      "id": "evidence-preflight",
+      "status": "verified",
+      "evidence": [
+        {
+          "kind": "canon-audit",
+          "path": "docs/superpowers/specs/active/2026-08-24-flow-fest-sim-design.md",
+          "sha256": "f493e66dde9b65c7c1dae0b54e779b0e37b73de282e503c91c11b5aefb48bb42"
+        },
+        {
+          "kind": "room-shell",
+          "path": "static/data/flow-fest-sim/terrain.manifest.json",
+          "sha256": "22bb16b5ed1585bd7eeb15b42d71b8577ed5b8ce5955ed9d01e66b727bb9af46"
+        },
+        {
+          "kind": "connector-source",
+          "path": "docs/superpowers/specs/flow-fest-sim/austen-traced-connectors.json",
+          "sha256": "af4d263c7a4cd063d156531a974245dd714281c82c0eceaf04903358a5e58e62"
+        }
+      ],
+      "checks": [
+        {
+          "name": "canon-conflicts",
+          "status": "passed",
+          "evidence": "The production contract separates measured Earth, interpreted site clues, fictional festival design, and the quarantined legacy artifact."
+        },
+        {
+          "name": "source-digests",
+          "status": "passed",
+          "evidence": "Gate 1 source authority pins the terrain manifest, every consumed runtime layer, and Austen's connector trace by SHA-256."
+        }
+      ],
+      "approval": null
+    },
+    {
+      "id": "measured-plan",
+      "status": "approved",
+      "evidence": [
+        {
+          "kind": "floor-plan",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-1/gate1-measured-plan.png",
+          "sha256": "eedda1b28cad88781608d6bfaca7e79b43f7c7de1fdb9a8d722cadff97795dcd"
+        },
+        {
+          "kind": "vertical-section",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-1/gate1-vertical-section.png",
+          "sha256": "ffa637113d51c06f41f2c9eaf8ebabaa9dcf9b85db39503dfa9d55e875bd5a83"
+        },
+        {
+          "kind": "route-storyboard",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-1/gate1-route-storyboard.png",
+          "sha256": "9a0a89a1d000a7b54e8770dca6684a84e8befb51d1e458c31f597dfbd1661632"
+        },
+        {
+          "kind": "sightline-study",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-1/gate1-sightline-study.png",
+          "sha256": "4de587a8e917c03c1fd063fef12694da806f5702249a5321106c43e66ae7ab90"
+        },
+        {
+          "kind": "review-board",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-1/gate1-review-board.png",
+          "sha256": "66610517db4b9d1a3a0a10b21c465bb03c8b67c6e47c6469a4508abfe8848243"
+        },
+        {
+          "kind": "automated-report",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-1/gate1-validation.json",
+          "sha256": "5aac0d65cab89703c96a429a1cca2c373a758e3b89165b70906d3a35bd89367d"
+        },
+        {
+          "kind": "north-up-hillshade",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/geospatial/terrain-hillshade.png",
+          "sha256": "4f7435c96df4d8f622b3b99737053a83a73da8fb1f59bffc0f111019130a3744"
+        },
+        {
+          "kind": "terrain-registration",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/geospatial/terrain-registration-contact-sheet.png",
+          "sha256": "01330abbfc2f1bf3ea498d2e146d862d9adc42e635a418ecdc2313b7b0a76e79"
+        },
+        {
+          "kind": "lidar-registration",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/geospatial/lidar-surface-registration-contact-sheet.png",
+          "sha256": "fff4497ac37ac253962769811a2d6d3c55f102e4b1fac6960f76428dcfb01d83"
+        },
+        {
+          "kind": "west-east-terrain-section",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/geospatial/terrain-section-west-east.png",
+          "sha256": "0d39595d0002efa04ee6405960e1ec1600734badf06e778d39c1901711e2cd08"
+        },
+        {
+          "kind": "north-south-terrain-section",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/geospatial/terrain-section-north-south.png",
+          "sha256": "7b3f47f6a511797e711a73071af03795933c7f99c0075e3ef2477823cedf6a34"
+        },
+        {
+          "kind": "geospatial-validation",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/geospatial/geospatial-validation.json",
+          "sha256": "d00743c7c36e2eed9571462332f49ba69128413b0bdc06b09328e67a5deccf37"
+        }
+      ],
+      "checks": [
+        {
+          "name": "walkability",
+          "status": "passed",
+          "evidence": "All three registered pedestrian branches hold a 24.9% maximum ten-metre DTM grade against the 35% game-space cap; this is not an ADA field survey."
+        },
+        {
+          "name": "clearance",
+          "status": "passed",
+          "evidence": "All registered route points remain inside the measured terrain footprint, and the Gate 2 contract reserves 0.8 m person, 3.0 m vehicle, and 3.0 m accessible game-space widths. Physical and ADA clearance remain field-unverified."
+        },
+        {
+          "name": "vehicle-grade",
+          "status": "passed",
+          "evidence": "All registered vehicle branches hold a 24.7% maximum ten-metre DTM grade against the 30% game-space driving cap; the real road grade remains field-unverified."
+        },
+        {
+          "name": "sightlines",
+          "status": "passed",
+          "evidence": "8 of 8 expectations match: 4 terrain-plus-surface occlusions, 1 marginal terrain-plus-surface occlusion, 1 surface-only occlusion, and 2 clear relationships."
+        },
+        {
+          "name": "final-view",
+          "status": "passed",
+          "evidence": "The registered dusk camera frames a 1.7 m composition target from all 49 points in its 3 m review neighbourhood; worst clearance is 1.61 m."
+        },
+        {
+          "name": "arrival-topology",
+          "status": "passed",
+          "evidence": "Lower- and upper-tent branches unload, return through the lower gate, relocate to west upper parking, and walk home; lower car camping keeps the vehicle and skips relocation."
+        },
+        {
+          "name": "return-route",
+          "status": "passed",
+          "evidence": "All three night returns terminate at their own branch campsite: lower-tent 247.4 m; upper-tent 224.0 m; car-camp 278.4 m."
+        },
+        {
+          "name": "connector-registration",
+          "status": "passed",
+          "evidence": "Austen-traced connector centerlines are registered with measured >=2 m surface coverage: lower-to-middle 34.0%; upper-to-middle 47.1%; car-camp-to-middle 29.6%. Physical field precision remains unverified."
+        },
+        {
+          "name": "connector-trace-lock",
+          "status": "passed",
+          "evidence": "The 13-vertex upper-to-middle trace and 14-vertex middle-to-lower trace captured 2026-08-25T20:41:21.633Z are source-locked to the registered orthophoto and embedded without vertex drift in every affected arrival and return branch."
+        },
+        {
+          "name": "middle-earth-camping-exclusion",
+          "status": "passed",
+          "evidence": "All three campsite examples remain outside Middle Earth: lower-tent 186.6 m from its activity center; upper-tent 167.1 m from its activity center; car-camp 155.7 m from its activity center."
+        },
+        {
+          "name": "lower-camping-separation",
+          "status": "passed",
+          "evidence": "Austen's placement keeps the representative lower-tent point outside the authored open-middle car-camping envelope. Both examples sit on measured open ground; no measured physical feature is claimed to divide them."
+        },
+        {
+          "name": "zone-openness",
+          "status": "passed",
+          "evidence": "Middle Earth: no camping envelope 99.3% measured open; Car camping: open middle envelope 100.0% measured open"
+        },
+        {
+          "name": "route-visibility",
+          "status": "passed",
+          "evidence": "lower-tent-vehicle 25652 plan / 12738 sightline exact-color pixels; lower-tent-person 7938 plan / 3483 sightline exact-color pixels; upper-tent 12856 plan / 6187 sightline exact-color pixels; car-camp 5129 plan / 1993 sightline exact-color pixels"
+        }
+      ],
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-25T21:12:51Z",
+        "quote": "approved",
+        "museumTrackerItem": "0RowNe7w8F1g3dGTu1KW",
+        "visualComprehensionConfirmed": true,
+        "comprehensionBasis": "Austen independently identified both missing forest connectors, corrected their topology, drew each centerline against the registered terrain, completed the trace save, and explicitly approved the regenerated Gate 1 review package."
+      }
+    },
+    {
+      "id": "playable-graybox",
+      "status": "in-progress",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "registered-visual-target",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "production-slice",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "integrated-room",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "final-acceptance",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    }
+  ]
+}
