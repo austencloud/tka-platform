@@ -2,8 +2,17 @@
   import { onDestroy } from "svelte";
   import { useTask, useThrelte } from "@threlte/core";
   import { Vector3, Raycaster, PerspectiveCamera } from "three";
-  import { CameraMode, getNextCameraMode, isGameMode, type PhysicsProvider, type AvatarState } from "../types";
-  import { createCameraPreferences, type CameraPreferences } from "../camera-preferences.svelte";
+  import {
+    CameraMode,
+    getNextCameraMode,
+    isGameMode,
+    type PhysicsProvider,
+    type AvatarState,
+  } from "../types";
+  import {
+    createCameraPreferences,
+    type CameraPreferences,
+  } from "../camera-preferences.svelte";
   import { CAMERA_DEFAULTS } from "../constants";
   import { normalizeCameraFrameDelta } from "../frame-delta";
   import { createInputCapabilities } from "../input-capabilities";
@@ -76,11 +85,15 @@
   const physicsProvider = $derived(props.physicsProvider ?? null);
   const enabled = $derived(props.enabled ?? true);
   const moveSpeed = $derived(props.moveSpeed ?? CAMERA_DEFAULTS.WALK_SPEED);
-  const sprintMultiplier = $derived(props.sprintMultiplier ?? CAMERA_DEFAULTS.SPRINT_MULTIPLIER);
+  const sprintMultiplier = $derived(
+    props.sprintMultiplier ?? CAMERA_DEFAULTS.SPRINT_MULTIPLIER
+  );
   const jumpForce = $derived(props.jumpForce ?? CAMERA_DEFAULTS.JUMP_VELOCITY);
-  const gravity = $derived(props.gravity ?? Math.abs(CAMERA_DEFAULTS.GRAVITY) * 2.5);
+  const gravity = $derived(
+    props.gravity ?? Math.abs(CAMERA_DEFAULTS.GRAVITY) * 2.5
+  );
   const firstPersonCameraOffset = $derived(
-    props.firstPersonCameraOffset ?? CAMERA_DEFAULTS.FIRST_PERSON_CAMERA_OFFSET,
+    props.firstPersonCameraOffset ?? CAMERA_DEFAULTS.FIRST_PERSON_CAMERA_OFFSET
   );
   const enableSprint = $derived(props.enableSprint ?? true);
   const enableJump = $derived(props.enableJump ?? true);
@@ -90,16 +103,19 @@
 
   const usePhysics = $derived(physicsProvider !== null);
 
-  const cameraPreferences = props.cameraPreferences ?? createCameraPreferences(
-    props.preferencesKey,
-    props.destinationDefaults,
-  );
+  const cameraPreferences =
+    props.cameraPreferences ??
+    createCameraPreferences(props.preferencesKey, props.destinationDefaults);
 
   const { renderer, camera, scene } = useThrelte();
 
-  const _initMode = $derived(cameraPreferences.getModeForDestination(destinationId));
+  const _initMode = $derived(
+    cameraPreferences.getModeForDestination(destinationId)
+  );
   let mode = $state<CameraMode>(CameraMode.ORBIT);
-  $effect.pre(() => { mode = _initMode; });
+  $effect.pre(() => {
+    mode = _initMode;
+  });
 
   // `initial*` means initial. These used to be assigned from an $effect.pre,
   // which read both props reactively - so any consumer passing a live value for
@@ -153,7 +169,8 @@
   let noclipEnabled = $state(false);
 
   let crouchHeightOffset = 0;
-  const CROUCH_HEIGHT_DROP = CAMERA_DEFAULTS.EYE_HEIGHT - CAMERA_DEFAULTS.CROUCH_EYE_HEIGHT;
+  const CROUCH_HEIGHT_DROP =
+    CAMERA_DEFAULTS.EYE_HEIGHT - CAMERA_DEFAULTS.CROUCH_EYE_HEIGHT;
   const CROUCH_LERP_SPEED = 8;
 
   /**
@@ -179,11 +196,16 @@
   let colliderRootChildCount = -1;
   let cameraColliders: import("three").Object3D[] = [];
 
-  function getCameraColliders(sceneRoot: import("three").Object3D): import("three").Object3D[] {
+  function getCameraColliders(
+    sceneRoot: import("three").Object3D
+  ): import("three").Object3D[] {
     // Museum room chunks are added directly to the scene root. Re-index only
     // when that root changes instead of recursively intersecting the complete
     // scene graph on every third-person frame.
-    if (colliderScene !== sceneRoot || colliderRootChildCount !== sceneRoot.children.length) {
+    if (
+      colliderScene !== sceneRoot ||
+      colliderRootChildCount !== sceneRoot.children.length
+    ) {
       colliderScene = sceneRoot;
       colliderRootChildCount = sceneRoot.children.length;
       cameraColliders = collectCameraColliders(sceneRoot);
@@ -253,7 +275,11 @@
 
   function handleKeyDown(e: KeyboardEvent) {
     if (!enabled) return;
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    if (
+      e.target instanceof HTMLInputElement ||
+      e.target instanceof HTMLTextAreaElement
+    )
+      return;
 
     if (e.code === "KeyV" && !props.disableModeToggle) {
       e.preventDefault();
@@ -304,7 +330,10 @@
       }
       yaw -= e.movementX * SETTINGS.lookSensitivity;
       pitch += e.movementY * SETTINGS.lookSensitivity;
-      const config = mode === CameraMode.FIRST_PERSON ? SETTINGS.firstPerson : SETTINGS.thirdPerson;
+      const config =
+        mode === CameraMode.FIRST_PERSON
+          ? SETTINGS.firstPerson
+          : SETTINGS.thirdPerson;
       pitch = Math.max(config.minPitch, Math.min(config.maxPitch, pitch));
     } else if (isDragging) {
       const deltaX = e.clientX - lastPointerPos.x;
@@ -313,7 +342,10 @@
       lastPointerPos = { x: e.clientX, y: e.clientY };
       yaw -= deltaX * SETTINGS.lookSensitivity;
       pitch += deltaY * SETTINGS.lookSensitivity;
-      const config = mode === CameraMode.FIRST_PERSON ? SETTINGS.firstPerson : SETTINGS.thirdPerson;
+      const config =
+        mode === CameraMode.FIRST_PERSON
+          ? SETTINGS.firstPerson
+          : SETTINGS.thirdPerson;
       pitch = Math.max(config.minPitch, Math.min(config.maxPitch, pitch));
     }
   }
@@ -323,7 +355,10 @@
     e.preventDefault();
     const cfg = SETTINGS.thirdPerson;
     const scrollDir = Math.sign(e.deltaY);
-    desiredDistance = Math.max(cfg.minDistance, Math.min(cfg.maxDistance, desiredDistance + scrollDir * cfg.zoomSpeed));
+    desiredDistance = Math.max(
+      cfg.minDistance,
+      Math.min(cfg.maxDistance, desiredDistance + scrollDir * cfg.zoomSpeed)
+    );
   }
 
   function handlePointerDown(e: PointerEvent) {
@@ -354,7 +389,10 @@
       lastPointerPos = { x: e.clientX, y: e.clientY };
       yaw -= deltaX * SETTINGS.lookSensitivity;
       pitch += deltaY * SETTINGS.lookSensitivity;
-      const config = mode === CameraMode.FIRST_PERSON ? SETTINGS.firstPerson : SETTINGS.thirdPerson;
+      const config =
+        mode === CameraMode.FIRST_PERSON
+          ? SETTINGS.firstPerson
+          : SETTINGS.thirdPerson;
       pitch = Math.max(config.minPitch, Math.min(config.maxPitch, pitch));
     }
   }
@@ -387,7 +425,10 @@
   function handleCanvasClick() {
     if (!enabled) return;
     if (mode === CameraMode.ORBIT) {
-      cameraPreferences.setModeForDestination(destinationId, CameraMode.THIRD_PERSON);
+      cameraPreferences.setModeForDestination(
+        destinationId,
+        CameraMode.THIRD_PERSON
+      );
       mode = CameraMode.THIRD_PERSON;
     }
     props.onModeChange?.(mode);
@@ -407,9 +448,11 @@
   let attached = false;
 
   function findCanvas(): HTMLCanvasElement | null {
-    return (renderer.current?.domElement as HTMLCanvasElement | undefined)
-      ?? document.querySelector<HTMLCanvasElement>("canvas[data-engine]")
-      ?? null;
+    return (
+      (renderer.current?.domElement as HTMLCanvasElement | undefined) ??
+      document.querySelector<HTMLCanvasElement>("canvas[data-engine]") ??
+      null
+    );
   }
 
   function detachFromCanvas() {
@@ -449,7 +492,11 @@
           let attempts = 0;
           function tryAttach() {
             const c = findCanvas();
-            if (c) { attachToCanvas(c); attached = true; return; }
+            if (c) {
+              attachToCanvas(c);
+              attached = true;
+              return;
+            }
             if (++attempts < 50) setTimeout(tryAttach, 100);
           }
           setTimeout(tryAttach, 100);
@@ -482,7 +529,9 @@
     detachFromCanvas();
   });
 
-  $effect(() => { props.onRotationChange?.(yaw, pitch); });
+  $effect(() => {
+    props.onRotationChange?.(yaw, pitch);
+  });
 
   $effect(() => {
     const extYaw = props.externalYaw;
@@ -492,7 +541,10 @@
   $effect(() => {
     const extPitch = props.externalPitch;
     if (extPitch !== null && extPitch !== undefined) {
-      const config = mode === CameraMode.FIRST_PERSON ? SETTINGS.firstPerson : SETTINGS.thirdPerson;
+      const config =
+        mode === CameraMode.FIRST_PERSON
+          ? SETTINGS.firstPerson
+          : SETTINGS.thirdPerson;
       pitch = Math.max(config.minPitch, Math.min(config.maxPitch, extPitch));
     }
   });
@@ -538,7 +590,9 @@
     // poison moveX/moveZ and freeze the player for the rest of the session.
     const axis = props.moveAxis;
     const clamp1 = (v: number | undefined) =>
-      typeof v === "number" && Number.isFinite(v) ? Math.max(-1, Math.min(1, v)) : 0;
+      typeof v === "number" && Number.isFinite(v)
+        ? Math.max(-1, Math.min(1, v))
+        : 0;
     const stickForward = clamp1(axis?.z);
     const stickStrafe = clamp1(axis?.x);
     const stickPushed = stickForward !== 0 || stickStrafe !== 0;
@@ -573,20 +627,33 @@
         ? moveSpeed * sprintMultiplier
         : moveSpeed;
 
-    const isNoclip = usePhysics && physicsProvider?.isNoclipEnabled?.() || false;
+    const isNoclip =
+      (usePhysics && physicsProvider?.isNoclipEnabled?.()) || false;
 
     let moveX: number;
     let moveY: number;
     let moveZ: number;
 
     if (isNoclip) {
-      moveX = (_forward3D.x * forwardInput + _right.x * strafeInput) * speed * frameDelta;
-      moveY = (_forward3D.y * forwardInput) * speed * frameDelta;
-      moveZ = (_forward3D.z * forwardInput + _right.z * strafeInput) * speed * frameDelta;
+      moveX =
+        (_forward3D.x * forwardInput + _right.x * strafeInput) *
+        speed *
+        frameDelta;
+      moveY = _forward3D.y * forwardInput * speed * frameDelta;
+      moveZ =
+        (_forward3D.z * forwardInput + _right.z * strafeInput) *
+        speed *
+        frameDelta;
     } else {
-      moveX = (_forward.x * forwardInput + _right.x * strafeInput) * speed * frameDelta;
+      moveX =
+        (_forward.x * forwardInput + _right.x * strafeInput) *
+        speed *
+        frameDelta;
       moveY = 0;
-      moveZ = (_forward.z * forwardInput + _right.z * strafeInput) * speed * frameDelta;
+      moveZ =
+        (_forward.z * forwardInput + _right.z * strafeInput) *
+        speed *
+        frameDelta;
     }
 
     const moveLen = Math.sqrt(moveX * moveX + moveZ * moveZ);
@@ -610,17 +677,28 @@
         // would be a fall. That is what lets a room move the visitor both ways on
         // air alone instead of owing a ramp for the trip back down.
         const lift =
-          (physicsProvider as LiftingPhysicsProvider).updraftSpeedAtPlayer?.() ?? 0;
+          (
+            physicsProvider as LiftingPhysicsProvider
+          ).updraftSpeedAtPlayer?.() ?? 0;
 
         if (lift !== 0) {
-          verticalVelocity += (lift - verticalVelocity) * Math.min(1, UPDRAFT_RISE_EASE * frameDelta);
+          verticalVelocity +=
+            (lift - verticalVelocity) *
+            Math.min(1, UPDRAFT_RISE_EASE * frameDelta);
         } else {
-          if (isJumping && physicsProvider.isGrounded() && verticalVelocity <= 0) {
+          if (
+            isJumping &&
+            physicsProvider.isGrounded() &&
+            verticalVelocity <= 0
+          ) {
             verticalVelocity = jumpForce;
           }
           if (!physicsProvider.isGrounded()) {
             verticalVelocity -= gravity * frameDelta;
-            verticalVelocity = Math.max(verticalVelocity, CAMERA_DEFAULTS.TERMINAL_VELOCITY);
+            verticalVelocity = Math.max(
+              verticalVelocity,
+              CAMERA_DEFAULTS.TERMINAL_VELOCITY
+            );
           } else if (verticalVelocity < 0) {
             verticalVelocity = 0;
           }
@@ -635,7 +713,8 @@
       targetY = newPos.y;
       targetZ = newPos.z;
       avatarState.position.x = targetX;
-      if (avatarState.position.y !== undefined) avatarState.position.y = targetY;
+      if (avatarState.position.y !== undefined)
+        avatarState.position.y = targetY;
       avatarState.position.z = targetZ;
     } else {
       const isGrounded = (avatarState.position.y ?? 0) <= 0;
@@ -644,7 +723,10 @@
       }
       if (!isGrounded) {
         verticalVelocity -= gravity * frameDelta;
-        verticalVelocity = Math.max(verticalVelocity, CAMERA_DEFAULTS.TERMINAL_VELOCITY);
+        verticalVelocity = Math.max(
+          verticalVelocity,
+          CAMERA_DEFAULTS.TERMINAL_VELOCITY
+        );
       } else if (verticalVelocity < 0) {
         verticalVelocity = 0;
       }
@@ -702,7 +784,8 @@
       if (sceneToCast?.children) {
         rayOrigin.set(targetX, targetY + cfg.lookAtHeight, targetZ);
         const dCamX = targetX - Math.sin(yaw) * desiredDistance * cosPitch;
-        const dCamY = targetY + cfg.height + Math.sin(pitch) * desiredDistance * 0.5;
+        const dCamY =
+          targetY + cfg.height + Math.sin(pitch) * desiredDistance * 0.5;
         const dCamZ = targetZ - Math.cos(yaw) * desiredDistance * cosPitch;
         desiredCamPos.set(dCamX, dCamY, dCamZ);
         rayDirection.subVectors(desiredCamPos, rayOrigin).normalize();
@@ -711,24 +794,38 @@
         cameraRaycaster.far = distToCamera;
         const intersects = cameraRaycaster.intersectObjects(
           getCameraColliders(sceneToCast),
-          false,
+          false
         );
         for (const intersection of intersects) {
           if (!intersection.object.userData?.cameraCollider) continue;
           if (!intersection.object.visible) continue;
-          const safeDistance = Math.max(intersection.distance - CAMERA_COLLISION_OFFSET, MIN_CAMERA_DISTANCE);
+          const safeDistance = Math.max(
+            intersection.distance - CAMERA_COLLISION_OFFSET,
+            MIN_CAMERA_DISTANCE
+          );
           targetDistance = Math.min(targetDistance, safeDistance);
           break;
         }
       }
 
-      const lerpSpeed = targetDistance < smoothedCameraDistance ? CAMERA_PULL_IN_SPEED : CAMERA_RECOVERY_SPEED;
-      smoothedCameraDistance += (targetDistance - smoothedCameraDistance) * (1 - Math.exp(-lerpSpeed * frameDelta));
-      smoothedCameraDistance = Math.max(MIN_CAMERA_DISTANCE, Math.min(desiredDistance, smoothedCameraDistance));
+      const lerpSpeed =
+        targetDistance < smoothedCameraDistance
+          ? CAMERA_PULL_IN_SPEED
+          : CAMERA_RECOVERY_SPEED;
+      smoothedCameraDistance +=
+        (targetDistance - smoothedCameraDistance) *
+        (1 - Math.exp(-lerpSpeed * frameDelta));
+      smoothedCameraDistance = Math.max(
+        MIN_CAMERA_DISTANCE,
+        Math.min(desiredDistance, smoothedCameraDistance)
+      );
 
-      const finalCamX = targetX - Math.sin(yaw) * smoothedCameraDistance * cosPitch;
-      const finalCamY = targetY + cfg.height + Math.sin(pitch) * smoothedCameraDistance * 0.5;
-      const finalCamZ = targetZ - Math.cos(yaw) * smoothedCameraDistance * cosPitch;
+      const finalCamX =
+        targetX - Math.sin(yaw) * smoothedCameraDistance * cosPitch;
+      const finalCamY =
+        targetY + cfg.height + Math.sin(pitch) * smoothedCameraDistance * 0.5;
+      const finalCamZ =
+        targetZ - Math.cos(yaw) * smoothedCameraDistance * cosPitch;
 
       const dampFactor = 1 - Math.exp(-CAMERA_DAMPING_SPEED * frameDelta);
       const lookTargetX = targetX;
@@ -758,8 +855,11 @@
   });
 
   const modeLabel = $derived(
-    mode === CameraMode.ORBIT ? "Orbit" :
-    mode === CameraMode.THIRD_PERSON ? "3rd Person" : "1st Person"
+    mode === CameraMode.ORBIT
+      ? "Orbit"
+      : mode === CameraMode.THIRD_PERSON
+        ? "3rd Person"
+        : "1st Person"
   );
 
   function portalToBody(node: HTMLElement) {
