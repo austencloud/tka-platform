@@ -52,16 +52,33 @@ else
 	exit 66
 fi
 
-codex exec \
+#   </dev/null on the exec below
+#       The prompt is already in $PROMPT by this point, so codex needs nothing
+#       from stdin -- but if stdin is an open pipe it does not know that, and
+#       parks on "Reading additional input from stdin..." forever. That is not
+#       hypothetical: one run sat for three hours having burned 0.03s of CPU
+#       and read zero files. Closing stdin makes the hang unrepresentable.
+#
+#   timeout
+#       So a wedged or pathologically slow run fails loudly with a transcript
+#       instead of looking identical to one that is still thinking.
+
+STATUS=0
+timeout "${CODEX_ASK_TIMEOUT:-2700}" codex exec \
 	--ignore-user-config \
 	-m "$MODEL" \
 	-o "$OUT" \
 	--dangerously-bypass-approvals-and-sandbox \
 	-C "$REPO" \
-	"$PROMPT" >"${OUT%.md}.log" 2>&1
+	"$PROMPT" </dev/null >"${OUT%.md}.log" 2>&1 || STATUS=$?
+
+if [ "$STATUS" -eq 124 ]; then
+	echo "codex timed out after ${CODEX_ASK_TIMEOUT:-2700}s; transcript: ${OUT%.md}.log" >&2
+	exit 124
+fi
 
 if [ ! -s "$OUT" ]; then
-	echo "codex produced no answer; transcript: ${OUT%.md}.log" >&2
+	echo "codex produced no answer (exit $STATUS); transcript: ${OUT%.md}.log" >&2
 	exit 70
 fi
 
