@@ -1,0 +1,188 @@
+{
+  "revision": "r1",
+  "purpose": "Compare Ember spatial topologies before selecting a production direction.",
+  "blenderVersion": "5.0.1",
+  "blendPath": "blender/ember-spatial-directions-r1.blend",
+  "sharedContract": {
+    "performerHeightMeters": 1.75,
+    "clearActionRadiusMeters": 4.5,
+    "heroCamera": {
+      "position": [
+        0,
+        -21.5,
+        7
+      ],
+      "target": [
+        0,
+        2.8,
+        2
+      ],
+      "lensMm": 44
+    },
+    "obliqueCamera": {
+      "position": [
+        12.5,
+        -18,
+        8
+      ],
+      "target": [
+        0,
+        2,
+        2
+      ],
+      "lensMm": 44
+    },
+    "reverseCamera": {
+      "position": [
+        -12.5,
+        10,
+        7.5
+      ],
+      "target": [
+        0,
+        0.5,
+        2
+      ],
+      "lensMm": 44
+    },
+    "planCamera": {
+      "position": [
+        0,
+        2,
+        48
+      ],
+      "target": [
+        0,
+        2,
+        0
+      ],
+      "orthoScale": 45
+    },
+    "renderResolution": [
+      1280,
+      720
+    ]
+  },
+  "options": {
+    "a-basalt-arch": {
+      "collection": "OPTION_A-BASALT-ARCH",
+      "objectCount": 30,
+      "meshCount": 26,
+      "lightCount": 2,
+      "bounds": {
+        "min": [
+          -23.0,
+          -21.0,
+          -2.735
+        ],
+        "max": [
+          23.0,
+          27.0,
+          12.05
+        ]
+      },
+      "renders": {
+        "hero": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/a-basalt-arch-hero.png",
+        "oblique": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/a-basalt-arch-oblique.png",
+        "reverse": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/a-basalt-arch-reverse.png",
+        "plan": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/a-basalt-arch-plan.png"
+      }
+    },
+    "b-oculus-lava-tube": {
+      "collection": "OPTION_B-OCULUS-LAVA-TUBE",
+      "objectCount": 31,
+      "meshCount": 27,
+      "lightCount": 2,
+      "bounds": {
+        "min": [
+          -23.0,
+          -21.0,
+          -2.709
+        ],
+        "max": [
+          23.0,
+          27.0,
+          13.663
+        ]
+      },
+      "renders": {
+        "hero": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/b-oculus-lava-tube-hero.png",
+        "oblique": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/b-oculus-lava-tube-oblique.png",
+        "reverse": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/b-oculus-lava-tube-reverse.png",
+        "plan": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/b-oculus-lava-tube-plan.png"
+      }
+    },
+    "c-faultline-causeway": {
+      "collection": "OPTION_C-FAULTLINE-CAUSEWAY",
+      "objectCount": 31,
+      "meshCount": 27,
+      "lightCount": 2,
+      "bounds": {
+        "min": [
+          -21.86,
+          -20.0,
+          -3.335
+        ],
+        "max": [
+          20.267,
+          25.298,
+          12.949
+        ]
+      },
+      "renders": {
+        "hero": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/c-faultline-causeway-hero.png",
+        "oblique": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/c-faultline-causeway-oblique.png",
+        "reverse": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/c-faultline-causeway-reverse.png",
+        "plan": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/c-faultline-causeway-plan.png"
+      }
+    },
+    "d-basalt-organ-canyon": {
+      "collection": "OPTION_D-BASALT-ORGAN-CANYON",
+      "objectCount": 64,
+      "meshCount": 61,
+      "lightCount": 2,
+      "bounds": {
+        "min": [
+          -23.0,
+          -21.0,
+          -2.064
+        ],
+        "max": [
+          23.0,
+          27.0,
+          13.145
+        ]
+      },
+      "renders": {
+        "hero": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/d-basalt-organ-canyon-hero.png",
+        "oblique": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/d-basalt-organ-canyon-oblique.png",
+        "reverse": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/d-basalt-organ-canyon-reverse.png",
+        "plan": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/d-basalt-organ-canyon-plan.png"
+      }
+    },
+    "e-broken-rift-gate": {
+      "collection": "OPTION_E-BROKEN-RIFT-GATE",
+      "objectCount": 30,
+      "meshCount": 26,
+      "lightCount": 2,
+      "bounds": {
+        "min": [
+          -22.301,
+          -21.0,
+          -3.786
+        ],
+        "max": [
+          21.875,
+          27.446,
+          11.714
+        ]
+      },
+      "renders": {
+        "hero": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/e-broken-rift-gate-hero.png",
+        "oblique": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/e-broken-rift-gate-oblique.png",
+        "reverse": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/e-broken-rift-gate-reverse.png",
+        "plan": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/e-broken-rift-gate-plan.png"
+      }
+    }
+  }
+}

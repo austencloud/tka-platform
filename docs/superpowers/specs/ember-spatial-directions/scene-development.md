@@ -1,0 +1,153 @@
+# Ember Spatial Directions
+
+Status: spatial exploration, no production direction selected  
+Date: 2026-08-25
+
+## Why this exists
+
+The first Basalt Caldera image is a useful mood and composition hypothesis. It
+is not a target to reproduce. Ember needs several alternatives built as actual
+3D spaces before one direction earns production investment.
+
+This pass compares topology, silhouette, depth, performer legibility, and
+camera behavior. It deliberately does not decide final geology, textures,
+particles, or asset sources.
+
+## Shared comparison contract
+
+Every direction uses the same:
+
+- world origin for the performer;
+- 1.75 m performer proxy;
+- unobstructed 4.5 m action radius around the performer;
+- hero camera position, lens, target, resolution, world lighting, and exposure;
+- plan camera and scene bounds;
+- dark basalt, obsidian, ash, and lava graybox material families.
+
+Perspective cameras stay inside Viewer3D's real 25 m orbit cap.
+
+The common camera makes the hero renders comparable. The plan renders expose
+the spatial logic that a flattering hero angle can hide.
+
+## Directions
+
+### A. Basalt Arch Caldera
+
+An open caldera framed by one monumental collapsed lava-tube arch. A molten
+fault leads from the foreground to a broad natural performance shelf.
+
+Strength to test: immediate icon, open sky, strong foreground-to-background
+depth.
+
+Failure mode: the scene becomes one expensive arch with an ordinary circular
+stage beneath it.
+
+The generated concept is retained only as a reference for this direction:
+`references/direction-a-basalt-arch-concept.png`.
+
+### B. Oculus Lava Tube
+
+An enclosed lava-tube chamber with a broken roof opening above and behind the
+performer. The floor is a cooled crust shelf surrounded by lower molten seams.
+
+Strength to test: intimate atmosphere, unusual overhead silhouette, controlled
+contrast around the performer.
+
+Failure mode: the roof blocks orbit cameras and the chamber feels cramped.
+
+### C. Faultline Causeway
+
+A long obsidian shelf crosses a deep molten rift and widens naturally around
+the performer. The composition is diagonal rather than radial.
+
+Strength to test: strongest directional movement, dramatic negative space,
+clear foreground route.
+
+Failure mode: the widened shelf still reads as a manufactured stage or leaves
+bad camera angles over empty lava.
+
+### D. Basalt Organ Canyon
+
+Unequal walls of columnar basalt form a canyon mouth around the performer. A
+distant molten fall and ash plume terminate the view through the slot.
+
+Strength to test: vertical scale, layered silhouettes, and a distinctive world
+without relying on one arch.
+
+Failure mode: repeated columns look architectural or revive Ember's current
+ring-of-crystals problem at a larger scale.
+
+### E. Broken Rift Gate
+
+This direction was not selected in advance. It was earned by the first camera
+comparison: Direction C kept the performer readable from every tested angle
+but lacked a memorable horizon, while Direction A supplied a strong icon but
+wrapped it around the stage. The synthesis keeps C's directional causeway and
+moves a fractured basalt gate into the far field.
+
+Strength to test: resilient playable topology with a recognizable destination
+and no giant structure surrounding the performer.
+
+Failure mode: the distant gate becomes decorative set dressing rather than a
+spatial destination, or the causeway still reads as a runway.
+
+## Selection rubric
+
+Each direction will be judged from both hero and plan renders.
+
+| Criterion | Weight | Question |
+| --- | ---: | --- |
+| Performer readability | 25% | Does the body and prop envelope remain legible against the environment? |
+| Spatial identity | 20% | Is the scene recognizable from silhouette alone? |
+| Depth and framing | 20% | Are foreground, midground, and background doing distinct jobs? |
+| Non-radial composition | 15% | Does the world feel authored rather than distributed around the origin? |
+| Camera resilience | 10% | Can an orbiting viewer find several good angles without clipping or emptiness? |
+| Runtime plausibility | 10% | Can this topology become a performant authored GLB plus existing Ember effects? |
+
+No direction advances because it most closely resembles the generated image.
+The selected direction must win the spatial comparison.
+
+## Deliverables for this pass
+
+- `blender/ember-spatial-directions-r1.blend`: editable geometry for all five
+  directions, isolated in named collections.
+- `evidence/r1/*-hero.png`: fixed-camera comparison renders.
+- `evidence/r1/*-plan.png`: fixed-scale plan renders.
+- `evidence/r1/ember-spatial-directions-r1-report.json`: object counts, bounds,
+  camera contract, and output paths.
+
+## Explicitly deferred
+
+- No production Ember GLB.
+- No changes to `EmberScene.svelte` or its configuration.
+- No final material or asset-source decision.
+- No deletion of the current procedural environment.
+- No commitment to the Basalt Arch direction.
+
+## R1 outcome
+
+Direction E, **Broken Rift Gate**, is the strongest spatial chassis from this
+comparison. This does not freeze its present graybox silhouette, materials, or
+individual rock placements.
+
+| Rank | Direction | Spatial result |
+| ---: | --- | --- |
+| 1 | E. Broken Rift Gate | Keeps the directional fault shelf readable from the tested views and adds a far-field landmark without wrapping the performer. |
+| 2 | C. Faultline Causeway | Best pure topology and camera freedom, but the horizon has no identity. |
+| 3 | A. Basalt Arch Caldera | Strongest single icon, but the icon recenters the scene around a broad stage. |
+| 4 | D. Basalt Organ Canyon | Excellent front depth; side and rear-quarter cameras are consumed by its column walls. |
+| 5 | B. Oculus Lava Tube | Atmospheric enclosure, but repeated tube ribs dominate or fully block orbit views. |
+
+The result should be read as: **develop E's topology next while continuing to
+search its visual language**. It should not be read as: reproduce the generated
+concept image, preserve the graybox arch, or begin final-detail production.
+
+The next gate is a small look-development matrix inside Direction E's space:
+
+- natural fractured basalt gate versus a collapsed lava-tube remnant;
+- exposed caldera versus ash-storm horizon;
+- narrow live fault versus broad cooling lava field;
+- glassy obsidian shelf versus porous rope-lava shelf.
+
+Those alternatives can change the appearance substantially without discarding
+the spatial lesson earned here.
