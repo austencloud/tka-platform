@@ -378,6 +378,7 @@
      by the package's .brand. Authored here, so this scoped rule reaches the
      span even though it renders inside the package. */
   .brand-wordmark {
+    display: block;
     font-family: "Fraunces", Georgia, serif;
     font-style: italic;
     font-weight: 700;
@@ -387,6 +388,15 @@
        the size so the slide-reveal morph never changes font mid-transition. */
     font-size: 0.9rem;
     letter-spacing: 0.01em;
+  }
+
+  /* The package mounts the always-visible word directly in a flex row, while
+     the revealed words sit inside its clipping wrapper. Centering that wrapper
+     gives both snippets the same line box, so the expanded name reads as one
+     continuous wordmark instead of "Flow" floating above the rest. */
+  :global(.ghost-hover-boundary .brand-rest-text) {
+    display: flex;
+    align-items: center;
   }
 
   /* ============================================================================
