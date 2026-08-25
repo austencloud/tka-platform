@@ -151,19 +151,18 @@ describe("Flow Fest Gate 2 runtime contract", () => {
     );
     expect(barriers.mesh.geometry.getIndex()?.array).toBe(barriers.indices);
     for (const point of traces) {
-      for (let offset = 0; offset < positions.length; offset += 24) {
-        const xs = [
-          positions[offset]!,
-          positions[offset + 3]!,
-          positions[offset + 6]!,
-          positions[offset + 9]!,
-        ];
-        const zs = [
-          positions[offset + 2]!,
-          positions[offset + 5]!,
-          positions[offset + 8]!,
-          positions[offset + 11]!,
-        ];
+      const floatsPerProxy = barriers.verticesPerProxy * 3;
+      for (
+        let offset = 0;
+        offset < positions.length;
+        offset += floatsPerProxy
+      ) {
+        const xs: number[] = [];
+        const zs: number[] = [];
+        for (let vertex = 0; vertex < barriers.verticesPerProxy; vertex += 1) {
+          xs.push(positions[offset + vertex * 3]!);
+          zs.push(positions[offset + vertex * 3 + 2]!);
+        }
         const inside =
           point.x >= Math.min(...xs) - 0.4 &&
           point.x <= Math.max(...xs) + 0.4 &&

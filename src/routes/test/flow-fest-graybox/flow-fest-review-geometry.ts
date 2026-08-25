@@ -2,6 +2,7 @@ import {
   BufferAttribute,
   BufferGeometry,
   ConeGeometry,
+  DoubleSide,
   Group,
   Mesh,
   MeshBasicMaterial,
@@ -22,6 +23,7 @@ export interface FlowFestBarrierGeometry {
   vertices: Float32Array;
   indices: Uint32Array;
   proxyCount: number;
+  verticesPerProxy: number;
 }
 
 const BRANCH_COLOR: Record<FlowFestBranchId, string> = {
@@ -60,6 +62,7 @@ export function buildFlowFestReviewOverlay(
           transparent: true,
           opacity: branchId === selectedBranch ? 0.92 : 0.28,
           depthWrite: false,
+          side: DoubleSide,
         })
       );
       mesh.name = `FFS_Route_${branchId}_${segment.id}`;
@@ -98,6 +101,7 @@ export function buildFlowFestReviewOverlay(
         transparent: true,
         opacity: 0.76,
         depthWrite: false,
+        side: DoubleSide,
       })
     );
     ring.name = `FFS_Zone_${zone.id}`;
@@ -188,7 +192,15 @@ export function buildFlowFestLidarBarrierGeometry(
 
       const groundY = sampleFlowFestTerrainWorldY(terrain, x, z);
       const proxyHeight = Math.min(18, Math.max(4, measuredHeight));
-      appendBox(positions, indices, x, groundY, z, footprint, proxyHeight);
+      appendCanopyMass(
+        positions,
+        indices,
+        x,
+        groundY,
+        z,
+        footprint,
+        proxyHeight
+      );
       proxyCount += 1;
     }
   }
@@ -208,12 +220,19 @@ export function buildFlowFestLidarBarrierGeometry(
       roughness: 1,
       transparent: true,
       opacity: 0.78,
+      side: DoubleSide,
     })
   );
   mesh.name = "FFS_Barrier_LidarProxy_Merged";
   mesh.castShadow = true;
   mesh.receiveShadow = true;
-  return { mesh, vertices, indices: triangleIndices, proxyCount };
+  return {
+    mesh,
+    vertices,
+    indices: triangleIndices,
+    proxyCount,
+    verticesPerProxy: 26,
+  };
 }
 
 function buildRibbonGeometry(
@@ -313,7 +332,7 @@ function distanceToSegment(
   return Math.hypot(px - (ax + dx * t), pz - (az + dz * t));
 }
 
-function appendBox(
+function appendCanopyMass(
   positions: number[],
   indices: number[],
   centerX: number,
@@ -322,37 +341,58 @@ function appendBox(
   footprint: number,
   height: number
 ): void {
-  const half = footprint / 2;
   const base = positions.length / 3;
-  positions.push(
-    centerX - half,
-    baseY,
-    centerZ - half,
-    centerX + half,
-    baseY,
-    centerZ - half,
-    centerX + half,
-    baseY,
-    centerZ + half,
-    centerX - half,
-    baseY,
-    centerZ + half,
-    centerX - half,
-    baseY + height,
-    centerZ - half,
-    centerX + half,
-    baseY + height,
-    centerZ - half,
-    centerX + half,
-    baseY + height,
-    centerZ + half,
-    centerX - half,
-    baseY + height,
-    centerZ + half
-  );
-  const faces = [
-    0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7, 0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2,
-    3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7,
+  const sides = 8;
+  const rotation =
+    ((((Math.round(centerX) * 73856093) ^ (Math.round(centerZ) * 19349663)) >>>
+      0) %
+      360) *
+    (Math.PI / 180);
+  const rings = [
+    { y: baseY, radius: footprint * 0.32 },
+    { y: baseY + height * 0.32, radius: footprint * 0.58 },
+    { y: baseY + height * 0.78, radius: footprint * 0.52 },
   ];
-  for (const face of faces) indices.push(base + face);
+
+  // Ground centre, three octagonal rings, crown point: 26 vertices. The broad
+  // middle keeps collision honest while the silhouette reads as measured
+  // above-ground mass instead of an invented building.
+  positions.push(centerX, baseY, centerZ);
+  for (const ring of rings) {
+    for (let side = 0; side < sides; side += 1) {
+      const angle = rotation + (side / sides) * Math.PI * 2;
+      positions.push(
+        centerX + Math.cos(angle) * ring.radius,
+        ring.y,
+        centerZ + Math.sin(angle) * ring.radius
+      );
+    }
+  }
+  const crown = base + 25;
+  positions.push(centerX, baseY + height, centerZ);
+
+  const lower = base + 1;
+  const middle = lower + sides;
+  const upper = middle + sides;
+  for (let side = 0; side < sides; side += 1) {
+    const next = (side + 1) % sides;
+    indices.push(base, lower + next, lower + side);
+    indices.push(
+      lower + side,
+      lower + next,
+      middle + side,
+      lower + next,
+      middle + next,
+      middle + side
+    );
+    indices.push(
+      middle + side,
+      middle + next,
+      upper + side,
+      middle + next,
+      upper + next,
+      upper + side
+    );
+    indices.push(upper + side, upper + next, crown);
+  }
 }
