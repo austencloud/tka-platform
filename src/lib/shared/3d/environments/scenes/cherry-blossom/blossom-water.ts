@@ -329,12 +329,12 @@ export function getBlossomRiverCenterline(): PlanPoint[] {
 
 /** Local XY water footprint, centred on its own bounding box. */
 export function getBlossomRiverOutline(): PlanPoint[] {
-  return localOutline;
+  return localOutline.map((point) => [...point] as PlanPoint);
 }
 
 /** The same footprint reduced to the 32 segments the pool shader carries. */
 export function getBlossomRiverShoreline(): PlanPoint[] {
-  return localShoreline;
+  return localShoreline.map((point) => [...point] as PlanPoint);
 }
 
 export function getBlossomRiverBounds(): {
