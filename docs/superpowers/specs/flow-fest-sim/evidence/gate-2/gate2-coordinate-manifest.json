@@ -1,0 +1,2669 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "gateId": "playable-graybox",
+  "coordinateContentFingerprint": {
+    "algorithm": "sha256",
+    "canonicalPayloadSha256": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d"
+  },
+  "producer": "scripts/geospatial/build_flow_fest_gate2_graybox.py",
+  "sourceAuthority": {
+    "inputs": [
+      {
+        "path": "static/data/flow-fest-sim/terrain.manifest.json",
+        "sha256": "22bb16b5ed1585bd7eeb15b42d71b8577ed5b8ce5955ed9d01e66b727bb9af46"
+      },
+      {
+        "path": "docs/superpowers/specs/flow-fest-sim/flow-fest-site-plan.json",
+        "sha256": "8a2710c76062c736999eb98b2b24e28a1727d88d56b40afcfc77343ad3e2e2b7"
+      },
+      {
+        "path": "docs/superpowers/specs/flow-fest-sim/austen-traced-connectors.json",
+        "sha256": "af4d263c7a4cd063d156531a974245dd714281c82c0eceaf04903358a5e58e62"
+      },
+      {
+        "path": "static/data/flow-fest-sim/terrain-height.f32",
+        "sha256": "d56f912d24c644156f088b95240c02cb76c1e4548b2990ccd7dd80f0f6eecafd"
+      },
+      {
+        "path": "static/data/flow-fest-sim/surface-offset.u16",
+        "sha256": "f014eeef49921037f1a10aff72d40c7f9524fbc4980dfd7578c06f4002f5d879"
+      },
+      {
+        "path": "static/data/flow-fest-sim/ortho.webp",
+        "sha256": "abbf63d78d4d4cc29f3df591e2c19687cba8ce63811748008a8bc6235e18fd2f"
+      }
+    ],
+    "terrainManifestSourceLocks": {
+      "heightSha256": "d56f912d24c644156f088b95240c02cb76c1e4548b2990ccd7dd80f0f6eecafd",
+      "surfaceSha256": "f014eeef49921037f1a10aff72d40c7f9524fbc4980dfd7578c06f4002f5d879",
+      "orthophotoSha256": "abbf63d78d4d4cc29f3df591e2c19687cba8ce63811748008a8bc6235e18fd2f",
+      "sourceLockPath": "scripts/geospatial/flow-fest-source-lock.json",
+      "sourceLockSha256": "e5b62dedc4c5be4f880b8787ff740d2a8cfc47f0540efb4ae5578b71beebcbee"
+    },
+    "derivationPolicy": "Source files remain authoritative. The manifest, Blend, GLB, renders, and video are reproducible review derivatives."
+  },
+  "runtimeWorldFrame": {
+    "units": "meter",
+    "metersPerUnit": 1,
+    "handedness": "right",
+    "axes": {
+      "x": "east",
+      "y": "up",
+      "z": "south"
+    },
+    "projectedCrs": {
+      "authority": "EPSG",
+      "code": 26916,
+      "name": "NAD83 / UTM zone 16N",
+      "wkt": "PROJCRS[\"NAD83 / UTM zone 16N\",BASEGEOGCRS[\"NAD83\",DATUM[\"North American Datum 1983\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",4269]],CONVERSION[\"UTM zone 16N\",METHOD[\"Transverse Mercator\",ID[\"EPSG\",9807]],PARAMETER[\"Latitude of natural origin\",0,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8801]],PARAMETER[\"Longitude of natural origin\",-87,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8802]],PARAMETER[\"Scale factor at natural origin\",0.9996,SCALEUNIT[\"unity\",1],ID[\"EPSG\",8805]],PARAMETER[\"False easting\",500000,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8806]],PARAMETER[\"False northing\",0,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8807]]],CS[Cartesian,2],AXIS[\"(E)\",east,ORDER[1],LENGTHUNIT[\"metre\",1]],AXIS[\"(N)\",north,ORDER[2],LENGTHUNIT[\"metre\",1]],USAGE[SCOPE[\"Engineering survey, topographic mapping.\"],AREA[\"North America - between 90°W and 84°W - onshore and offshore. Canada - Manitoba; Nunavut; Ontario. United States (USA) - Alabama; Arkansas; Florida; Georgia; Indiana; Illinois; Kentucky; Louisiana; Michigan; Minnesota; Mississippi; Missouri; North Carolina; Ohio; Tennessee; Wisconsin.\"],BBOX[23.97,-90,84,-84]],ID[\"EPSG\",26916]]"
+    },
+    "requestedAnchorWgs84": {
+      "latitude": 39.589617,
+      "longitude": -84.785764
+    },
+    "resolvedOriginWgs84": {
+      "latitude": 39.589613265369856,
+      "longitude": -84.78576527257212
+    },
+    "originProjectedMeters": {
+      "easting": 690142.0,
+      "northing": 4384552.0
+    },
+    "vertical": {
+      "datum": "NAVD88",
+      "originElevationMeters": 270.0,
+      "scale": 1
+    },
+    "transform": {
+      "worldX": "projectedEasting - originEasting",
+      "worldZ": "originNorthing - projectedNorthing",
+      "worldY": "navd88Elevation - originElevation"
+    }
+  },
+  "coordinateMapping": {
+    "planWorldLocal": {
+      "axes": {
+        "x": "east",
+        "y": "up",
+        "z": "south"
+      },
+      "units": "meter"
+    },
+    "blenderSource": {
+      "rootNode": "FFS_WorldRoot",
+      "childCoordinates": "Unscaled plan-world metres stored as child-local coordinates.",
+      "rootEulerDegreesXYZ": [
+        90.0,
+        0.0,
+        0.0
+      ],
+      "formula": "blender = (worldX, -worldZ, worldY)",
+      "matrixRowMajor": [
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          -1,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ]
+      ]
+    },
+    "glbRuntime": {
+      "rootNode": "FFS_WorldRoot",
+      "exportAxis": "glTF 2.0 Y-up",
+      "expectedChildCoordinates": "plan-world metres; x east, y up, z south",
+      "rootTransformPolicy": "One named root carries any exporter axis restoration; child mesh coordinates are never projected, recentered, scaled, or permanently baked."
+    }
+  },
+  "terrainReviewMesh": {
+    "nodeName": "FFS_Terrain",
+    "sourcePath": "/data/flow-fest-sim/terrain-height.f32",
+    "sourceSha256": "d56f912d24c644156f088b95240c02cb76c1e4548b2990ccd7dd80f0f6eecafd",
+    "sourceProductType": "DTM",
+    "sourceSampleSpacingMeters": 1.0,
+    "sampleBoundsWorldMeters": {
+      "minX": -512.0,
+      "maxX": 512.0,
+      "minZ": -512.0,
+      "maxZ": 512.0
+    },
+    "renderColliderIdentity": true,
+    "colliderPolicy": "Inside the offline Blend/GLB review artifact, FFS_Terrain is the sole visible ground and sole review collider. No duplicate or invisible collision mesh exists.",
+    "runtimeCollisionAuthority": {
+      "path": "/data/flow-fest-sim/terrain-height.f32",
+      "sha256": "d56f912d24c644156f088b95240c02cb76c1e4548b2990ccd7dd80f0f6eecafd",
+      "sampleSpacingMeters": 1.0,
+      "policy": "Browser/runtime geometry and collision must be built from the full 1 m DTM. The 4 m GLB terrain is visual-review geometry and is not runtime collision authority."
+    },
+    "sourceDimensions": {
+      "width": 1025,
+      "height": 1025
+    },
+    "strideSamples": 4,
+    "vertexSpacingMeters": 4.0,
+    "vertexCount": 66049,
+    "triangleCount": 131072,
+    "retainedVertexHeightSha256": "8f07b8c756d7ad346cb120565de419706f8caec8215352617cc354a55f0028f8",
+    "measuredMaxVerticalInterpolationErrorMeters": 1.621601,
+    "measuredRmsVerticalInterpolationErrorMeters": 0.08518,
+    "maximumHorizontalDistanceToRetainedVertexMeters": 2.828427,
+    "errorMeasurement": "Every source DTM sample compared with bilinear interpolation of the retained review lattice."
+  },
+  "surfaceEvidenceProxy": {
+    "nodeName": "FFS_Anchor_LidarCanopyProxy",
+    "sourcePath": "/data/flow-fest-sim/surface-offset.u16",
+    "sourceSha256": "f014eeef49921037f1a10aff72d40c7f9524fbc4980dfd7578c06f4002f5d879",
+    "sourceClass": "measured-surface-evidence",
+    "interpretationBoundary": "Low-poly masses show sampled above-ground lidar return height, not individual tree species, trunks, or building truth.",
+    "strideSamples": 12,
+    "thresholdMetersAboveDtm": 4.0,
+    "activeBoundsWorldMeters": {
+      "minX": -160.0,
+      "maxX": 380.0,
+      "minZ": -170.0,
+      "maxZ": 40.0
+    },
+    "selectedProxyCount": 378,
+    "selectionSha256": "a4ed98dcdc465964ac7ae665a0f194e83ba81ce73d1b264b2c6b458938ddf424",
+    "collides": false
+  },
+  "routes": {
+    "arrivalBranches": {
+      "lower-tent": {
+        "label": "Lower tent camping",
+        "vehicleOutcome": "relocated-to-west-upper-parking",
+        "segments": [
+          {
+            "id": "lower-tent-unload",
+            "mode": "vehicle",
+            "widthMeters": 3.0,
+            "nominalSpeedMetersPerSecond": null,
+            "lengthMeters": 126.826202,
+            "nominalDurationSeconds": null,
+            "timingStatus": "No vehicle speed was approved; distance is authoritative and duration is intentionally null.",
+            "sourceClasses": [
+              "austen-observed-topology",
+              "interpreted-centerline"
+            ],
+            "pathClass": "registered Gate 1 centerline",
+            "points": [
+              {
+                "x": 340.0,
+                "z": -20.0,
+                "sourceTerrainY": 10.392426,
+                "reviewTerrainY": 10.392426
+              },
+              {
+                "x": 338.0,
+                "z": -50.0,
+                "sourceTerrainY": 10.954132,
+                "reviewTerrainY": 10.952194
+              },
+              {
+                "x": 326.0,
+                "z": -78.0,
+                "sourceTerrainY": 7.920898,
+                "reviewTerrainY": 8.021019
+              },
+              {
+                "x": 312.0,
+                "z": -103.0,
+                "sourceTerrainY": 6.580109,
+                "reviewTerrainY": 6.584991
+              },
+              {
+                "x": 297.0,
+                "z": -121.0,
+                "sourceTerrainY": 6.611969,
+                "reviewTerrainY": 6.620581
+              },
+              {
+                "x": 286.0,
+                "z": -130.0,
+                "sourceTerrainY": 6.399475,
+                "reviewTerrainY": 6.423584
+              }
+            ]
+          },
+          {
+            "id": "lower-gate-return",
+            "mode": "vehicle",
+            "widthMeters": 3.0,
+            "nominalSpeedMetersPerSecond": null,
+            "lengthMeters": 126.826202,
+            "nominalDurationSeconds": null,
+            "timingStatus": "No vehicle speed was approved; distance is authoritative and duration is intentionally null.",
+            "sourceClasses": [
+              "austen-observed-topology",
+              "interpreted-centerline"
+            ],
+            "pathClass": "registered Gate 1 centerline",
+            "points": [
+              {
+                "x": 286.0,
+                "z": -130.0,
+                "sourceTerrainY": 6.399475,
+                "reviewTerrainY": 6.423584
+              },
+              {
+                "x": 297.0,
+                "z": -121.0,
+                "sourceTerrainY": 6.611969,
+                "reviewTerrainY": 6.620581
+              },
+              {
+                "x": 312.0,
+                "z": -103.0,
+                "sourceTerrainY": 6.580109,
+                "reviewTerrainY": 6.584991
+              },
+              {
+                "x": 326.0,
+                "z": -78.0,
+                "sourceTerrainY": 7.920898,
+                "reviewTerrainY": 8.021019
+              },
+              {
+                "x": 338.0,
+                "z": -50.0,
+                "sourceTerrainY": 10.954132,
+                "reviewTerrainY": 10.952194
+              },
+              {
+                "x": 340.0,
+                "z": -20.0,
+                "sourceTerrainY": 10.392426,
+                "reviewTerrainY": 10.392426
+              }
+            ]
+          },
+          {
+            "id": "west-upper-parking",
+            "mode": "vehicle",
+            "widthMeters": 3.0,
+            "nominalSpeedMetersPerSecond": null,
+            "lengthMeters": 536.593437,
+            "nominalDurationSeconds": null,
+            "timingStatus": "No vehicle speed was approved; distance is authoritative and duration is intentionally null.",
+            "sourceClasses": [
+              "austen-observed-topology",
+              "interpreted-centerline"
+            ],
+            "pathClass": "registered Gate 1 centerline",
+            "points": [
+              {
+                "x": 340.0,
+                "z": -20.0,
+                "sourceTerrainY": 10.392426,
+                "reviewTerrainY": 10.392426
+              },
+              {
+                "x": 350.0,
+                "z": 5.0,
+                "sourceTerrainY": 10.211334,
+                "reviewTerrainY": 10.308849
+              },
+              {
+                "x": 300.0,
+                "z": 10.0,
+                "sourceTerrainY": 10.14743,
+                "reviewTerrainY": 10.152344
+              },
+              {
+                "x": 220.0,
+                "z": 10.0,
+                "sourceTerrainY": 16.187195,
+                "reviewTerrainY": 16.253311
+              },
+              {
+                "x": 140.0,
+                "z": 10.0,
+                "sourceTerrainY": 23.223846,
+                "reviewTerrainY": 23.410156
+              },
+              {
+                "x": 70.0,
+                "z": 10.0,
+                "sourceTerrainY": 25.948822,
+                "reviewTerrainY": 25.885399
+              },
+              {
+                "x": 40.0,
+                "z": 10.0,
+                "sourceTerrainY": 26.371277,
+                "reviewTerrainY": 26.342224
+              },
+              {
+                "x": 22.0,
+                "z": -18.0,
+                "sourceTerrainY": 26.300537,
+                "reviewTerrainY": 26.30172
+              },
+              {
+                "x": -20.0,
+                "z": -45.0,
+                "sourceTerrainY": 26.455688,
+                "reviewTerrainY": 26.437691
+              },
+              {
+                "x": -62.0,
+                "z": -74.0,
+                "sourceTerrainY": 24.948273,
+                "reviewTerrainY": 24.989311
+              },
+              {
+                "x": -90.0,
+                "z": -50.0,
+                "sourceTerrainY": 25.926239,
+                "reviewTerrainY": 25.949501
+              },
+              {
+                "x": -110.0,
+                "z": -30.0,
+                "sourceTerrainY": 26.527771,
+                "reviewTerrainY": 26.557365
+              }
+            ]
+          },
+          {
+            "id": "lower-tent-home-on-foot",
+            "mode": "person",
+            "widthMeters": 0.8,
+            "nominalSpeedMetersPerSecond": 1.2,
+            "lengthMeters": 453.064589,
+            "nominalDurationSeconds": 377.553824,
+            "timingStatus": "Derived from the approved Gate 1 nominal walking speed.",
+            "sourceClasses": [
+              "austen-traced",
+              "invention-open-approach"
+            ],
+            "pathClass": "open-tier approaches composed with Austen-traced canopy-hidden upper-to-middle and middle-to-lower connectors",
+            "points": [
+              {
+                "x": -110.0,
+                "z": -30.0,
+                "sourceTerrainY": 26.527771,
+                "reviewTerrainY": 26.557365
+              },
+              {
+                "x": -90.0,
+                "z": -50.0,
+                "sourceTerrainY": 25.926239,
+                "reviewTerrainY": 25.949501
+              },
+              {
+                "x": -62.0,
+                "z": -74.0,
+                "sourceTerrainY": 24.948273,
+                "reviewTerrainY": 24.989311
+              },
+              {
+                "x": -61.3,
+                "z": -73.8,
+                "sourceTerrainY": 24.967758,
+                "reviewTerrainY": 25.007873
+              },
+              {
+                "x": -7.3,
+                "z": -74.6,
+                "sourceTerrainY": 26.294446,
+                "reviewTerrainY": 26.329545
+              },
+              {
+                "x": -0.2,
+                "z": -71.7,
+                "sourceTerrainY": 26.324691,
+                "reviewTerrainY": 26.321302
+              },
+              {
+                "x": 8.0,
+                "z": -66.4,
+                "sourceTerrainY": 25.770367,
+                "reviewTerrainY": 25.773596
+              },
+              {
+                "x": 15.0,
+                "z": -64.3,
+                "sourceTerrainY": 25.159451,
+                "reviewTerrainY": 25.170306
+              },
+              {
+                "x": 33.6,
+                "z": -63.5,
+                "sourceTerrainY": 22.721887,
+                "reviewTerrainY": 22.702245
+              },
+              {
+                "x": 41.0,
+                "z": -65.1,
+                "sourceTerrainY": 21.201596,
+                "reviewTerrainY": 21.175588
+              },
+              {
+                "x": 52.1,
+                "z": -73.0,
+                "sourceTerrainY": 17.864038,
+                "reviewTerrainY": 17.854637
+              },
+              {
+                "x": 62.0,
+                "z": -81.6,
+                "sourceTerrainY": 16.087811,
+                "reviewTerrainY": 16.117383
+              },
+              {
+                "x": 81.0,
+                "z": -103.1,
+                "sourceTerrainY": 14.982501,
+                "reviewTerrainY": 14.979474
+              },
+              {
+                "x": 89.7,
+                "z": -108.0,
+                "sourceTerrainY": 14.726245,
+                "reviewTerrainY": 14.721972
+              },
+              {
+                "x": 93.0,
+                "z": -108.8,
+                "sourceTerrainY": 14.623798,
+                "reviewTerrainY": 14.621611
+              },
+              {
+                "x": 99.2,
+                "z": -113.4,
+                "sourceTerrainY": 14.376766,
+                "reviewTerrainY": 14.400147
+              },
+              {
+                "x": 102.5,
+                "z": -113.8,
+                "sourceTerrainY": 14.316174,
+                "reviewTerrainY": 14.314716
+              },
+              {
+                "x": 114.9,
+                "z": -114.2,
+                "sourceTerrainY": 14.05863,
+                "reviewTerrainY": 14.089585
+              },
+              {
+                "x": 129.3,
+                "z": -112.1,
+                "sourceTerrainY": 13.969722,
+                "reviewTerrainY": 13.982258
+              },
+              {
+                "x": 152.8,
+                "z": -106.8,
+                "sourceTerrainY": 13.566609,
+                "reviewTerrainY": 13.426228
+              },
+              {
+                "x": 182.9,
+                "z": -102.2,
+                "sourceTerrainY": 9.492153,
+                "reviewTerrainY": 9.504027
+              },
+              {
+                "x": 209.7,
+                "z": -95.2,
+                "sourceTerrainY": 8.401656,
+                "reviewTerrainY": 8.389249
+              },
+              {
+                "x": 220.9,
+                "z": -93.6,
+                "sourceTerrainY": 8.075488,
+                "reviewTerrainY": 8.087395
+              },
+              {
+                "x": 243.6,
+                "z": -93.2,
+                "sourceTerrainY": 7.634304,
+                "reviewTerrainY": 7.635819
+              },
+              {
+                "x": 248.5,
+                "z": -97.7,
+                "sourceTerrainY": 7.504825,
+                "reviewTerrainY": 7.494801
+              },
+              {
+                "x": 255.1,
+                "z": -108.8,
+                "sourceTerrainY": 7.22561,
+                "reviewTerrainY": 7.236392
+              },
+              {
+                "x": 262.5,
+                "z": -116.3,
+                "sourceTerrainY": 7.12262,
+                "reviewTerrainY": 7.102322
+              },
+              {
+                "x": 276.6,
+                "z": -123.7,
+                "sourceTerrainY": 6.794973,
+                "reviewTerrainY": 6.800226
+              },
+              {
+                "x": 279.9,
+                "z": -124.5,
+                "sourceTerrainY": 6.800282,
+                "reviewTerrainY": 6.795011
+              },
+              {
+                "x": 286.9,
+                "z": -129.9,
+                "sourceTerrainY": 6.369294,
+                "reviewTerrainY": 6.38556
+              },
+              {
+                "x": 286.0,
+                "z": -130.0,
+                "sourceTerrainY": 6.399475,
+                "reviewTerrainY": 6.423584
+              }
+            ]
+          },
+          {
+            "id": "middle-earth-arrival",
+            "mode": "person",
+            "widthMeters": 0.8,
+            "nominalSpeedMetersPerSecond": 1.2,
+            "lengthMeters": 202.383526,
+            "nominalDurationSeconds": 168.652938,
+            "timingStatus": "Derived from the approved Gate 1 nominal walking speed.",
+            "sourceClasses": [
+              "austen-traced",
+              "invention-open-approach"
+            ],
+            "pathClass": "Austen-traced clear connector beneath canopy",
+            "points": [
+              {
+                "x": 286.0,
+                "z": -130.0,
+                "sourceTerrainY": 6.399475,
+                "reviewTerrainY": 6.423584
+              },
+              {
+                "x": 286.9,
+                "z": -129.9,
+                "sourceTerrainY": 6.369294,
+                "reviewTerrainY": 6.38556
+              },
+              {
+                "x": 279.9,
+                "z": -124.5,
+                "sourceTerrainY": 6.800282,
+                "reviewTerrainY": 6.795011
+              },
+              {
+                "x": 276.6,
+                "z": -123.7,
+                "sourceTerrainY": 6.794973,
+                "reviewTerrainY": 6.800226
+              },
+              {
+                "x": 262.5,
+                "z": -116.3,
+                "sourceTerrainY": 7.12262,
+                "reviewTerrainY": 7.102322
+              },
+              {
+                "x": 255.1,
+                "z": -108.8,
+                "sourceTerrainY": 7.22561,
+                "reviewTerrainY": 7.236392
+              },
+              {
+                "x": 248.5,
+                "z": -97.7,
+                "sourceTerrainY": 7.504825,
+                "reviewTerrainY": 7.494801
+              },
+              {
+                "x": 243.6,
+                "z": -93.2,
+                "sourceTerrainY": 7.634304,
+                "reviewTerrainY": 7.635819
+              },
+              {
+                "x": 220.9,
+                "z": -93.6,
+                "sourceTerrainY": 8.075488,
+                "reviewTerrainY": 8.087395
+              },
+              {
+                "x": 209.7,
+                "z": -95.2,
+                "sourceTerrainY": 8.401656,
+                "reviewTerrainY": 8.389249
+              },
+              {
+                "x": 182.9,
+                "z": -102.2,
+                "sourceTerrainY": 9.492153,
+                "reviewTerrainY": 9.504027
+              },
+              {
+                "x": 152.8,
+                "z": -106.8,
+                "sourceTerrainY": 13.566609,
+                "reviewTerrainY": 13.426228
+              },
+              {
+                "x": 129.3,
+                "z": -112.1,
+                "sourceTerrainY": 13.969722,
+                "reviewTerrainY": 13.982258
+              },
+              {
+                "x": 114.9,
+                "z": -114.2,
+                "sourceTerrainY": 14.05863,
+                "reviewTerrainY": 14.089585
+              },
+              {
+                "x": 102.5,
+                "z": -113.8,
+                "sourceTerrainY": 14.316174,
+                "reviewTerrainY": 14.314716
+              }
+            ]
+          },
+          {
+            "id": "community-task",
+            "mode": "person",
+            "widthMeters": 0.8,
+            "nominalSpeedMetersPerSecond": 1.2,
+            "lengthMeters": 16.549622,
+            "nominalDurationSeconds": 13.791352,
+            "timingStatus": "Derived from the approved Gate 1 nominal walking speed.",
+            "sourceClasses": [
+              "invention"
+            ],
+            "pathClass": "registered Gate 1 centerline",
+            "points": [
+              {
+                "x": 102.5,
+                "z": -113.8,
+                "sourceTerrainY": 14.316174,
+                "reviewTerrainY": 14.314716
+              },
+              {
+                "x": 118.0,
+                "z": -108.0,
+                "sourceTerrainY": 14.194214,
+                "reviewTerrainY": 14.193527
+              }
+            ]
+          },
+          {
+            "id": "first-night-choice",
+            "mode": "person",
+            "widthMeters": 0.8,
+            "nominalSpeedMetersPerSecond": 1.2,
+            "lengthMeters": 59.606911,
+            "nominalDurationSeconds": 49.672426,
+            "timingStatus": "Derived from the approved Gate 1 nominal walking speed.",
+            "sourceClasses": [
+              "invention"
+            ],
+            "pathClass": "registered Gate 1 centerline",
+            "points": [
+              {
+                "x": 118.0,
+                "z": -108.0,
+                "sourceTerrainY": 14.194214,
+                "reviewTerrainY": 14.193527
+              },
+              {
+                "x": 100.0,
+                "z": -110.0,
+                "sourceTerrainY": 14.45401,
+                "reviewTerrainY": 14.439804
+              },
+              {
+                "x": 80.0,
+                "z": -105.0,
+                "sourceTerrainY": 14.951111,
+                "reviewTerrainY": 14.95993
+              },
+              {
+                "x": 60.0,
+                "z": -99.0,
+                "sourceTerrainY": 15.765717,
+                "reviewTerrainY": 15.759583
+              }
+            ]
+          }
+        ]
+      },
+      "upper-tent": {
+        "label": "Upper tent camping",
+        "vehicleOutcome": "relocated-to-west-upper-parking",
+        "segments": [
+          {
+            "id": "gate-to-upper-unload",
+            "mode": "vehicle",
+            "widthMeters": 3.0,
+            "nominalSpeedMetersPerSecond": null,
+            "lengthMeters": 471.430988,
+            "nominalDurationSeconds": null,
+            "timingStatus": "No vehicle speed was approved; distance is authoritative and duration is intentionally null.",
+            "sourceClasses": [
+              "austen-observed-topology",
+              "interpreted-centerline"
+            ],
+            "pathClass": "registered Gate 1 centerline",
+            "points": [
+              {
+                "x": 340.0,
+                "z": -20.0,
+                "sourceTerrainY": 10.392426,
+                "reviewTerrainY": 10.392426
+              },
+              {
+                "x": 350.0,
+                "z": 5.0,
+                "sourceTerrainY": 10.211334,
+                "reviewTerrainY": 10.308849
+              },
+              {
+                "x": 300.0,
+                "z": 10.0,
+                "sourceTerrainY": 10.14743,
+                "reviewTerrainY": 10.152344
+              },
+              {
+                "x": 220.0,
+                "z": 10.0,
+                "sourceTerrainY": 16.187195,
+                "reviewTerrainY": 16.253311
+              },
+              {
+                "x": 140.0,
+                "z": 10.0,
+                "sourceTerrainY": 23.223846,
+                "reviewTerrainY": 23.410156
+              },
+              {
+                "x": 70.0,
+                "z": 10.0,
+                "sourceTerrainY": 25.948822,
+                "reviewTerrainY": 25.885399
+              },
+              {
+                "x": 40.0,
+                "z": 10.0,
+                "sourceTerrainY": 26.371277,
+                "reviewTerrainY": 26.342224
+              },
+              {
+                "x": 22.0,
+                "z": -18.0,
+                "sourceTerrainY": 26.300537,
+                "reviewTerrainY": 26.30172
+              },
+              {
+                "x": -20.0,
+                "z": -45.0,
+                "sourceTerrainY": 26.455688,
+                "reviewTerrainY": 26.437691
+              },
+              {
+                "x": -62.0,
+                "z": -74.0,
+                "sourceTerrainY": 24.948273,
+                "reviewTerrainY": 24.989311
+              }
+            ]
+          },
+          {
+            "id": "upper-unload-to-gate",
+            "mode": "vehicle",
+            "widthMeters": 3.0,
+            "nominalSpeedMetersPerSecond": null,
+            "lengthMeters": 471.430988,
+            "nominalDurationSeconds": null,
+            "timingStatus": "No vehicle speed was approved; distance is authoritative and duration is intentionally null.",
+            "sourceClasses": [
+              "austen-observed-topology",
+              "interpreted-centerline"
+            ],
+            "pathClass": "registered Gate 1 centerline",
+            "points": [
+              {
+                "x": -62.0,
+                "z": -74.0,
+                "sourceTerrainY": 24.948273,
+                "reviewTerrainY": 24.989311
+              },
+              {
+                "x": -20.0,
+                "z": -45.0,
+                "sourceTerrainY": 26.455688,
+                "reviewTerrainY": 26.437691
+              },
+              {
+                "x": 22.0,
+                "z": -18.0,
+                "sourceTerrainY": 26.300537,
+                "reviewTerrainY": 26.30172
+              },
+              {
+                "x": 40.0,
+                "z": 10.0,
+                "sourceTerrainY": 26.371277,
+                "reviewTerrainY": 26.342224
+              },
+              {
+                "x": 140.0,
+                "z": 10.0,
+                "sourceTerrainY": 23.223846,
+                "reviewTerrainY": 23.410156
+              },
+              {
+                "x": 220.0,
+                "z": 10.0,
+                "sourceTerrainY": 16.187195,
+                "reviewTerrainY": 16.253311
+              },
+              {
+                "x": 300.0,
+                "z": 10.0,
+                "sourceTerrainY": 10.14743,
+                "reviewTerrainY": 10.152344
+              },
+              {
+                "x": 350.0,
+                "z": 5.0,
+                "sourceTerrainY": 10.211334,
+                "reviewTerrainY": 10.308849
+              },
+              {
+                "x": 340.0,
+                "z": -20.0,
+                "sourceTerrainY": 10.392426,
+                "reviewTerrainY": 10.392426
+              }
+            ]
+          },
+          {
+            "id": "gate-to-west-parking",
+            "mode": "vehicle",
+            "widthMeters": 3.0,
+            "nominalSpeedMetersPerSecond": null,
+            "lengthMeters": 536.593437,
+            "nominalDurationSeconds": null,
+            "timingStatus": "No vehicle speed was approved; distance is authoritative and duration is intentionally null.",
+            "sourceClasses": [
+              "austen-observed-topology",
+              "interpreted-centerline"
+            ],
+            "pathClass": "registered Gate 1 centerline",
+            "points": [
+              {
+                "x": 340.0,
+                "z": -20.0,
+                "sourceTerrainY": 10.392426,
+                "reviewTerrainY": 10.392426
+              },
+              {
+                "x": 350.0,
+                "z": 5.0,
+                "sourceTerrainY": 10.211334,
+                "reviewTerrainY": 10.308849
+              },
+              {
+                "x": 300.0,
+                "z": 10.0,
+                "sourceTerrainY": 10.14743,
+                "reviewTerrainY": 10.152344
+              },
+              {
+                "x": 220.0,
+                "z": 10.0,
+                "sourceTerrainY": 16.187195,
+                "reviewTerrainY": 16.253311
+              },
+              {
+                "x": 140.0,
+                "z": 10.0,
+                "sourceTerrainY": 23.223846,
+                "reviewTerrainY": 23.410156
+              },
+              {
+                "x": 70.0,
+                "z": 10.0,
+                "sourceTerrainY": 25.948822,
+                "reviewTerrainY": 25.885399
+              },
+              {
+                "x": 40.0,
+                "z": 10.0,
+                "sourceTerrainY": 26.371277,
+                "reviewTerrainY": 26.342224
+              },
+              {
+                "x": 22.0,
+                "z": -18.0,
+                "sourceTerrainY": 26.300537,
+                "reviewTerrainY": 26.30172
+              },
+              {
+                "x": -20.0,
+                "z": -45.0,
+                "sourceTerrainY": 26.455688,
+                "reviewTerrainY": 26.437691
+              },
+              {
+                "x": -62.0,
+                "z": -74.0,
+                "sourceTerrainY": 24.948273,
+                "reviewTerrainY": 24.989311
+              },
+              {
+                "x": -90.0,
+                "z": -50.0,
+                "sourceTerrainY": 25.926239,
+                "reviewTerrainY": 25.949501
+              },
+              {
+                "x": -110.0,
+                "z": -30.0,
+                "sourceTerrainY": 26.527771,
+                "reviewTerrainY": 26.557365
+              }
+            ]
+          },
+          {
+            "id": "parking-to-upper-camp",
+            "mode": "person",
+            "widthMeters": 0.8,
+            "nominalSpeedMetersPerSecond": 1.2,
+            "lengthMeters": 65.162449,
+            "nominalDurationSeconds": 54.302041,
+            "timingStatus": "Derived from the approved Gate 1 nominal walking speed.",
+            "sourceClasses": [
+              "invention"
+            ],
+            "pathClass": "open-upper-tier",
+            "points": [
+              {
+                "x": -110.0,
+                "z": -30.0,
+                "sourceTerrainY": 26.527771,
+                "reviewTerrainY": 26.557365
+              },
+              {
+                "x": -90.0,
+                "z": -50.0,
+                "sourceTerrainY": 25.926239,
+                "reviewTerrainY": 25.949501
+              },
+              {
+                "x": -62.0,
+                "z": -74.0,
+                "sourceTerrainY": 24.948273,
+                "reviewTerrainY": 24.989311
+              }
+            ]
+          },
+          {
+            "id": "upper-camp-to-middle-earth",
+            "mode": "person",
+            "widthMeters": 0.8,
+            "nominalSpeedMetersPerSecond": 1.2,
+            "lengthMeters": 182.19446,
+            "nominalDurationSeconds": 151.828717,
+            "timingStatus": "Derived from the approved Gate 1 nominal walking speed.",
+            "sourceClasses": [
+              "austen-traced",
+              "invention-open-approach"
+            ],
+            "pathClass": "Austen-traced direct tree-line connector",
+            "points": [
+              {
+                "x": -62.0,
+                "z": -74.0,
+                "sourceTerrainY": 24.948273,
+                "reviewTerrainY": 24.989311
+              },
+              {
+                "x": -61.3,
+                "z": -73.8,
+                "sourceTerrainY": 24.967758,
+                "reviewTerrainY": 25.007873
+              },
+              {
+                "x": -7.3,
+                "z": -74.6,
+                "sourceTerrainY": 26.294446,
+                "reviewTerrainY": 26.329545
+              },
+              {
+                "x": -0.2,
+                "z": -71.7,
+                "sourceTerrainY": 26.324691,
+                "reviewTerrainY": 26.321302
+              },
+              {
+                "x": 8.0,
+                "z": -66.4,
+                "sourceTerrainY": 25.770367,
+                "reviewTerrainY": 25.773596
+              },
+              {
+                "x": 15.0,
+                "z": -64.3,
+                "sourceTerrainY": 25.159451,
+                "reviewTerrainY": 25.170306
+              },
+              {
+                "x": 33.6,
+                "z": -63.5,
+                "sourceTerrainY": 22.721887,
+                "reviewTerrainY": 22.702245
+              },
+              {
+                "x": 41.0,
+                "z": -65.1,
+                "sourceTerrainY": 21.201596,
+                "reviewTerrainY": 21.175588
+              },
+              {
+                "x": 52.1,
+                "z": -73.0,
+                "sourceTerrainY": 17.864038,
+                "reviewTerrainY": 17.854637
+              },
+              {
+                "x": 62.0,
+                "z": -81.6,
+                "sourceTerrainY": 16.087811,
+                "reviewTerrainY": 16.117383
+              },
+              {
+                "x": 81.0,
+                "z": -103.1,
+                "sourceTerrainY": 14.982501,
+                "reviewTerrainY": 14.979474
+              },
+              {
+                "x": 89.7,
+                "z": -108.0,
+                "sourceTerrainY": 14.726245,
+                "reviewTerrainY": 14.721972
+              },
+              {
+                "x": 93.0,
+                "z": -108.8,
+                "sourceTerrainY": 14.623798,
+                "reviewTerrainY": 14.621611
+              },
+              {
+                "x": 99.2,
+                "z": -113.4,
+                "sourceTerrainY": 14.376766,
+                "reviewTerrainY": 14.400147
+              }
+            ]
+          },
+          {
+            "id": "middle-earth-to-night-choice",
+            "mode": "person",
+            "widthMeters": 0.8,
+            "nominalSpeedMetersPerSecond": 1.2,
+            "lengthMeters": 79.167075,
+            "nominalDurationSeconds": 65.972563,
+            "timingStatus": "Derived from the approved Gate 1 nominal walking speed.",
+            "sourceClasses": [
+              "invention"
+            ],
+            "pathClass": "registered Gate 1 centerline",
+            "points": [
+              {
+                "x": 99.2,
+                "z": -113.4,
+                "sourceTerrainY": 14.376766,
+                "reviewTerrainY": 14.400147
+              },
+              {
+                "x": 118.0,
+                "z": -108.0,
+                "sourceTerrainY": 14.194214,
+                "reviewTerrainY": 14.193527
+              },
+              {
+                "x": 100.0,
+                "z": -110.0,
+                "sourceTerrainY": 14.45401,
+                "reviewTerrainY": 14.439804
+              },
+              {
+                "x": 80.0,
+                "z": -105.0,
+                "sourceTerrainY": 14.951111,
+                "reviewTerrainY": 14.95993
+              },
+              {
+                "x": 60.0,
+                "z": -99.0,
+                "sourceTerrainY": 15.765717,
+                "reviewTerrainY": 15.759583
+              }
+            ]
+          }
+        ]
+      },
+      "car-camp": {
+        "label": "Lower car camping",
+        "vehicleOutcome": "stays-at-campsite",
+        "segments": [
+          {
+            "id": "gate-to-car-camp",
+            "mode": "vehicle",
+            "widthMeters": 3.0,
+            "nominalSpeedMetersPerSecond": null,
+            "lengthMeters": 151.956305,
+            "nominalDurationSeconds": null,
+            "timingStatus": "No vehicle speed was approved; distance is authoritative and duration is intentionally null.",
+            "sourceClasses": [
+              "austen-observed-topology",
+              "interpreted-centerline"
+            ],
+            "pathClass": "registered Gate 1 centerline",
+            "points": [
+              {
+                "x": 340.0,
+                "z": -20.0,
+                "sourceTerrainY": 10.392426,
+                "reviewTerrainY": 10.392426
+              },
+              {
+                "x": 338.0,
+                "z": -50.0,
+                "sourceTerrainY": 10.954132,
+                "reviewTerrainY": 10.952194
+              },
+              {
+                "x": 326.0,
+                "z": -78.0,
+                "sourceTerrainY": 7.920898,
+                "reviewTerrainY": 8.021019
+              },
+              {
+                "x": 307.0,
+                "z": -105.0,
+                "sourceTerrainY": 6.618561,
+                "reviewTerrainY": 6.622349
+              },
+              {
+                "x": 280.0,
+                "z": -123.0,
+                "sourceTerrainY": 6.828186,
+                "reviewTerrainY": 6.821907
+              },
+              {
+                "x": 255.0,
+                "z": -130.0,
+                "sourceTerrainY": 6.96521,
+                "reviewTerrainY": 6.987831
+              }
+            ]
+          },
+          {
+            "id": "car-camp-to-middle-earth",
+            "mode": "person",
+            "widthMeters": 0.8,
+            "nominalSpeedMetersPerSecond": 1.2,
+            "lengthMeters": 233.378144,
+            "nominalDurationSeconds": 194.481786,
+            "timingStatus": "Derived from the approved Gate 1 nominal walking speed.",
+            "sourceClasses": [
+              "austen-traced",
+              "invention-open-approach"
+            ],
+            "pathClass": "open lower-tier approach plus Austen-traced connector beneath canopy",
+            "points": [
+              {
+                "x": 255.0,
+                "z": -130.0,
+                "sourceTerrainY": 6.96521,
+                "reviewTerrainY": 6.987831
+              },
+              {
+                "x": 286.9,
+                "z": -129.9,
+                "sourceTerrainY": 6.369294,
+                "reviewTerrainY": 6.38556
+              },
+              {
+                "x": 279.9,
+                "z": -124.5,
+                "sourceTerrainY": 6.800282,
+                "reviewTerrainY": 6.795011
+              },
+              {
+                "x": 276.6,
+                "z": -123.7,
+                "sourceTerrainY": 6.794973,
+                "reviewTerrainY": 6.800226
+              },
+              {
+                "x": 262.5,
+                "z": -116.3,
+                "sourceTerrainY": 7.12262,
+                "reviewTerrainY": 7.102322
+              },
+              {
+                "x": 255.1,
+                "z": -108.8,
+                "sourceTerrainY": 7.22561,
+                "reviewTerrainY": 7.236392
+              },
+              {
+                "x": 248.5,
+                "z": -97.7,
+                "sourceTerrainY": 7.504825,
+                "reviewTerrainY": 7.494801
+              },
+              {
+                "x": 243.6,
+                "z": -93.2,
+                "sourceTerrainY": 7.634304,
+                "reviewTerrainY": 7.635819
+              },
+              {
+                "x": 220.9,
+                "z": -93.6,
+                "sourceTerrainY": 8.075488,
+                "reviewTerrainY": 8.087395
+              },
+              {
+                "x": 209.7,
+                "z": -95.2,
+                "sourceTerrainY": 8.401656,
+                "reviewTerrainY": 8.389249
+              },
+              {
+                "x": 182.9,
+                "z": -102.2,
+                "sourceTerrainY": 9.492153,
+                "reviewTerrainY": 9.504027
+              },
+              {
+                "x": 152.8,
+                "z": -106.8,
+                "sourceTerrainY": 13.566609,
+                "reviewTerrainY": 13.426228
+              },
+              {
+                "x": 129.3,
+                "z": -112.1,
+                "sourceTerrainY": 13.969722,
+                "reviewTerrainY": 13.982258
+              },
+              {
+                "x": 114.9,
+                "z": -114.2,
+                "sourceTerrainY": 14.05863,
+                "reviewTerrainY": 14.089585
+              },
+              {
+                "x": 102.5,
+                "z": -113.8,
+                "sourceTerrainY": 14.316174,
+                "reviewTerrainY": 14.314716
+              }
+            ]
+          },
+          {
+            "id": "middle-earth-to-night-choice",
+            "mode": "person",
+            "widthMeters": 0.8,
+            "nominalSpeedMetersPerSecond": 1.2,
+            "lengthMeters": 76.156534,
+            "nominalDurationSeconds": 63.463778,
+            "timingStatus": "Derived from the approved Gate 1 nominal walking speed.",
+            "sourceClasses": [
+              "invention"
+            ],
+            "pathClass": "registered Gate 1 centerline",
+            "points": [
+              {
+                "x": 102.5,
+                "z": -113.8,
+                "sourceTerrainY": 14.316174,
+                "reviewTerrainY": 14.314716
+              },
+              {
+                "x": 118.0,
+                "z": -108.0,
+                "sourceTerrainY": 14.194214,
+                "reviewTerrainY": 14.193527
+              },
+              {
+                "x": 100.0,
+                "z": -110.0,
+                "sourceTerrainY": 14.45401,
+                "reviewTerrainY": 14.439804
+              },
+              {
+                "x": 80.0,
+                "z": -105.0,
+                "sourceTerrainY": 14.951111,
+                "reviewTerrainY": 14.95993
+              },
+              {
+                "x": 60.0,
+                "z": -99.0,
+                "sourceTerrainY": 15.765717,
+                "reviewTerrainY": 15.759583
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "nightReturnBranches": {
+      "lower-tent": {
+        "id": "lower-tent-night-return",
+        "mode": "person",
+        "widthMeters": 0.8,
+        "nominalSpeedMetersPerSecond": 1.2,
+        "lengthMeters": 247.423816,
+        "nominalDurationSeconds": 206.186513,
+        "timingStatus": "Derived from the approved Gate 1 nominal walking speed.",
+        "sourceClasses": [
+          "austen-traced",
+          "invention-open-approach"
+        ],
+        "pathClass": "remembered return composed with traced connector",
+        "points": [
+          {
+            "x": 60.0,
+            "z": -99.0,
+            "sourceTerrainY": 15.765717,
+            "reviewTerrainY": 15.759583
+          },
+          {
+            "x": 80.0,
+            "z": -105.0,
+            "sourceTerrainY": 14.951111,
+            "reviewTerrainY": 14.95993
+          },
+          {
+            "x": 102.5,
+            "z": -113.8,
+            "sourceTerrainY": 14.316174,
+            "reviewTerrainY": 14.314716
+          },
+          {
+            "x": 114.9,
+            "z": -114.2,
+            "sourceTerrainY": 14.05863,
+            "reviewTerrainY": 14.089585
+          },
+          {
+            "x": 129.3,
+            "z": -112.1,
+            "sourceTerrainY": 13.969722,
+            "reviewTerrainY": 13.982258
+          },
+          {
+            "x": 152.8,
+            "z": -106.8,
+            "sourceTerrainY": 13.566609,
+            "reviewTerrainY": 13.426228
+          },
+          {
+            "x": 182.9,
+            "z": -102.2,
+            "sourceTerrainY": 9.492153,
+            "reviewTerrainY": 9.504027
+          },
+          {
+            "x": 209.7,
+            "z": -95.2,
+            "sourceTerrainY": 8.401656,
+            "reviewTerrainY": 8.389249
+          },
+          {
+            "x": 220.9,
+            "z": -93.6,
+            "sourceTerrainY": 8.075488,
+            "reviewTerrainY": 8.087395
+          },
+          {
+            "x": 243.6,
+            "z": -93.2,
+            "sourceTerrainY": 7.634304,
+            "reviewTerrainY": 7.635819
+          },
+          {
+            "x": 248.5,
+            "z": -97.7,
+            "sourceTerrainY": 7.504825,
+            "reviewTerrainY": 7.494801
+          },
+          {
+            "x": 255.1,
+            "z": -108.8,
+            "sourceTerrainY": 7.22561,
+            "reviewTerrainY": 7.236392
+          },
+          {
+            "x": 262.5,
+            "z": -116.3,
+            "sourceTerrainY": 7.12262,
+            "reviewTerrainY": 7.102322
+          },
+          {
+            "x": 276.6,
+            "z": -123.7,
+            "sourceTerrainY": 6.794973,
+            "reviewTerrainY": 6.800226
+          },
+          {
+            "x": 279.9,
+            "z": -124.5,
+            "sourceTerrainY": 6.800282,
+            "reviewTerrainY": 6.795011
+          },
+          {
+            "x": 286.9,
+            "z": -129.9,
+            "sourceTerrainY": 6.369294,
+            "reviewTerrainY": 6.38556
+          },
+          {
+            "x": 286.0,
+            "z": -130.0,
+            "sourceTerrainY": 6.399475,
+            "reviewTerrainY": 6.423584
+          }
+        ]
+      },
+      "upper-tent": {
+        "id": "upper-tent-night-return",
+        "mode": "person",
+        "widthMeters": 0.8,
+        "nominalSpeedMetersPerSecond": 1.2,
+        "lengthMeters": 224.032173,
+        "nominalDurationSeconds": 186.693477,
+        "timingStatus": "Derived from the approved Gate 1 nominal walking speed.",
+        "sourceClasses": [
+          "austen-traced",
+          "invention-open-approach"
+        ],
+        "pathClass": "remembered return composed with traced connector",
+        "points": [
+          {
+            "x": 60.0,
+            "z": -99.0,
+            "sourceTerrainY": 15.765717,
+            "reviewTerrainY": 15.759583
+          },
+          {
+            "x": 80.0,
+            "z": -105.0,
+            "sourceTerrainY": 14.951111,
+            "reviewTerrainY": 14.95993
+          },
+          {
+            "x": 99.2,
+            "z": -113.4,
+            "sourceTerrainY": 14.376766,
+            "reviewTerrainY": 14.400147
+          },
+          {
+            "x": 93.0,
+            "z": -108.8,
+            "sourceTerrainY": 14.623798,
+            "reviewTerrainY": 14.621611
+          },
+          {
+            "x": 89.7,
+            "z": -108.0,
+            "sourceTerrainY": 14.726245,
+            "reviewTerrainY": 14.721972
+          },
+          {
+            "x": 81.0,
+            "z": -103.1,
+            "sourceTerrainY": 14.982501,
+            "reviewTerrainY": 14.979474
+          },
+          {
+            "x": 62.0,
+            "z": -81.6,
+            "sourceTerrainY": 16.087811,
+            "reviewTerrainY": 16.117383
+          },
+          {
+            "x": 52.1,
+            "z": -73.0,
+            "sourceTerrainY": 17.864038,
+            "reviewTerrainY": 17.854637
+          },
+          {
+            "x": 41.0,
+            "z": -65.1,
+            "sourceTerrainY": 21.201596,
+            "reviewTerrainY": 21.175588
+          },
+          {
+            "x": 33.6,
+            "z": -63.5,
+            "sourceTerrainY": 22.721887,
+            "reviewTerrainY": 22.702245
+          },
+          {
+            "x": 15.0,
+            "z": -64.3,
+            "sourceTerrainY": 25.159451,
+            "reviewTerrainY": 25.170306
+          },
+          {
+            "x": 8.0,
+            "z": -66.4,
+            "sourceTerrainY": 25.770367,
+            "reviewTerrainY": 25.773596
+          },
+          {
+            "x": -0.2,
+            "z": -71.7,
+            "sourceTerrainY": 26.324691,
+            "reviewTerrainY": 26.321302
+          },
+          {
+            "x": -7.3,
+            "z": -74.6,
+            "sourceTerrainY": 26.294446,
+            "reviewTerrainY": 26.329545
+          },
+          {
+            "x": -61.3,
+            "z": -73.8,
+            "sourceTerrainY": 24.967758,
+            "reviewTerrainY": 25.007873
+          },
+          {
+            "x": -62.0,
+            "z": -74.0,
+            "sourceTerrainY": 24.948273,
+            "reviewTerrainY": 24.989311
+          }
+        ]
+      },
+      "car-camp": {
+        "id": "car-camp-night-return",
+        "mode": "person",
+        "widthMeters": 0.8,
+        "nominalSpeedMetersPerSecond": 1.2,
+        "lengthMeters": 278.418434,
+        "nominalDurationSeconds": 232.015362,
+        "timingStatus": "Derived from the approved Gate 1 nominal walking speed.",
+        "sourceClasses": [
+          "austen-traced",
+          "invention-open-approach"
+        ],
+        "pathClass": "remembered return composed with traced connector",
+        "points": [
+          {
+            "x": 60.0,
+            "z": -99.0,
+            "sourceTerrainY": 15.765717,
+            "reviewTerrainY": 15.759583
+          },
+          {
+            "x": 80.0,
+            "z": -105.0,
+            "sourceTerrainY": 14.951111,
+            "reviewTerrainY": 14.95993
+          },
+          {
+            "x": 102.5,
+            "z": -113.8,
+            "sourceTerrainY": 14.316174,
+            "reviewTerrainY": 14.314716
+          },
+          {
+            "x": 114.9,
+            "z": -114.2,
+            "sourceTerrainY": 14.05863,
+            "reviewTerrainY": 14.089585
+          },
+          {
+            "x": 129.3,
+            "z": -112.1,
+            "sourceTerrainY": 13.969722,
+            "reviewTerrainY": 13.982258
+          },
+          {
+            "x": 152.8,
+            "z": -106.8,
+            "sourceTerrainY": 13.566609,
+            "reviewTerrainY": 13.426228
+          },
+          {
+            "x": 182.9,
+            "z": -102.2,
+            "sourceTerrainY": 9.492153,
+            "reviewTerrainY": 9.504027
+          },
+          {
+            "x": 209.7,
+            "z": -95.2,
+            "sourceTerrainY": 8.401656,
+            "reviewTerrainY": 8.389249
+          },
+          {
+            "x": 220.9,
+            "z": -93.6,
+            "sourceTerrainY": 8.075488,
+            "reviewTerrainY": 8.087395
+          },
+          {
+            "x": 243.6,
+            "z": -93.2,
+            "sourceTerrainY": 7.634304,
+            "reviewTerrainY": 7.635819
+          },
+          {
+            "x": 248.5,
+            "z": -97.7,
+            "sourceTerrainY": 7.504825,
+            "reviewTerrainY": 7.494801
+          },
+          {
+            "x": 255.1,
+            "z": -108.8,
+            "sourceTerrainY": 7.22561,
+            "reviewTerrainY": 7.236392
+          },
+          {
+            "x": 262.5,
+            "z": -116.3,
+            "sourceTerrainY": 7.12262,
+            "reviewTerrainY": 7.102322
+          },
+          {
+            "x": 276.6,
+            "z": -123.7,
+            "sourceTerrainY": 6.794973,
+            "reviewTerrainY": 6.800226
+          },
+          {
+            "x": 279.9,
+            "z": -124.5,
+            "sourceTerrainY": 6.800282,
+            "reviewTerrainY": 6.795011
+          },
+          {
+            "x": 286.9,
+            "z": -129.9,
+            "sourceTerrainY": 6.369294,
+            "reviewTerrainY": 6.38556
+          },
+          {
+            "x": 255.0,
+            "z": -130.0,
+            "sourceTerrainY": 6.96521,
+            "reviewTerrainY": 6.987831
+          }
+        ]
+      }
+    }
+  },
+  "connectorTraces": {
+    "upperClearingToMiddleEarth": {
+      "sourceClass": "austen-traced",
+      "capturedAt": "2026-08-25T20:41:21.633Z",
+      "vertices": [
+        {
+          "x": -61.3,
+          "z": -73.8,
+          "sourceTerrainY": 24.967758,
+          "reviewTerrainY": 25.007873
+        },
+        {
+          "x": -7.3,
+          "z": -74.6,
+          "sourceTerrainY": 26.294446,
+          "reviewTerrainY": 26.329545
+        },
+        {
+          "x": -0.2,
+          "z": -71.7,
+          "sourceTerrainY": 26.324691,
+          "reviewTerrainY": 26.321302
+        },
+        {
+          "x": 8.0,
+          "z": -66.4,
+          "sourceTerrainY": 25.770367,
+          "reviewTerrainY": 25.773596
+        },
+        {
+          "x": 15.0,
+          "z": -64.3,
+          "sourceTerrainY": 25.159451,
+          "reviewTerrainY": 25.170306
+        },
+        {
+          "x": 33.6,
+          "z": -63.5,
+          "sourceTerrainY": 22.721887,
+          "reviewTerrainY": 22.702245
+        },
+        {
+          "x": 41.0,
+          "z": -65.1,
+          "sourceTerrainY": 21.201596,
+          "reviewTerrainY": 21.175588
+        },
+        {
+          "x": 52.1,
+          "z": -73.0,
+          "sourceTerrainY": 17.864038,
+          "reviewTerrainY": 17.854637
+        },
+        {
+          "x": 62.0,
+          "z": -81.6,
+          "sourceTerrainY": 16.087811,
+          "reviewTerrainY": 16.117383
+        },
+        {
+          "x": 81.0,
+          "z": -103.1,
+          "sourceTerrainY": 14.982501,
+          "reviewTerrainY": 14.979474
+        },
+        {
+          "x": 89.7,
+          "z": -108.0,
+          "sourceTerrainY": 14.726245,
+          "reviewTerrainY": 14.721972
+        },
+        {
+          "x": 93.0,
+          "z": -108.8,
+          "sourceTerrainY": 14.623798,
+          "reviewTerrainY": 14.621611
+        },
+        {
+          "x": 99.2,
+          "z": -113.4,
+          "sourceTerrainY": 14.376766,
+          "reviewTerrainY": 14.400147
+        }
+      ]
+    },
+    "middleEarthToLowerClearing": {
+      "sourceClass": "austen-traced",
+      "capturedAt": "2026-08-25T20:41:21.633Z",
+      "vertices": [
+        {
+          "x": 102.5,
+          "z": -113.8,
+          "sourceTerrainY": 14.316174,
+          "reviewTerrainY": 14.314716
+        },
+        {
+          "x": 114.9,
+          "z": -114.2,
+          "sourceTerrainY": 14.05863,
+          "reviewTerrainY": 14.089585
+        },
+        {
+          "x": 129.3,
+          "z": -112.1,
+          "sourceTerrainY": 13.969722,
+          "reviewTerrainY": 13.982258
+        },
+        {
+          "x": 152.8,
+          "z": -106.8,
+          "sourceTerrainY": 13.566609,
+          "reviewTerrainY": 13.426228
+        },
+        {
+          "x": 182.9,
+          "z": -102.2,
+          "sourceTerrainY": 9.492153,
+          "reviewTerrainY": 9.504027
+        },
+        {
+          "x": 209.7,
+          "z": -95.2,
+          "sourceTerrainY": 8.401656,
+          "reviewTerrainY": 8.389249
+        },
+        {
+          "x": 220.9,
+          "z": -93.6,
+          "sourceTerrainY": 8.075488,
+          "reviewTerrainY": 8.087395
+        },
+        {
+          "x": 243.6,
+          "z": -93.2,
+          "sourceTerrainY": 7.634304,
+          "reviewTerrainY": 7.635819
+        },
+        {
+          "x": 248.5,
+          "z": -97.7,
+          "sourceTerrainY": 7.504825,
+          "reviewTerrainY": 7.494801
+        },
+        {
+          "x": 255.1,
+          "z": -108.8,
+          "sourceTerrainY": 7.22561,
+          "reviewTerrainY": 7.236392
+        },
+        {
+          "x": 262.5,
+          "z": -116.3,
+          "sourceTerrainY": 7.12262,
+          "reviewTerrainY": 7.102322
+        },
+        {
+          "x": 276.6,
+          "z": -123.7,
+          "sourceTerrainY": 6.794973,
+          "reviewTerrainY": 6.800226
+        },
+        {
+          "x": 279.9,
+          "z": -124.5,
+          "sourceTerrainY": 6.800282,
+          "reviewTerrainY": 6.795011
+        },
+        {
+          "x": 286.9,
+          "z": -129.9,
+          "sourceTerrainY": 6.369294,
+          "reviewTerrainY": 6.38556
+        }
+      ]
+    }
+  },
+  "spawn": {
+    "anchorId": "lower-gate-spawn",
+    "positionWorld": [
+      340.0,
+      12.092426,
+      -20.0
+    ],
+    "eyeHeightMeters": 1.7,
+    "sourceClass": "austen-observed-topology"
+  },
+  "reviewCameras": [
+    {
+      "id": "lower-gate",
+      "label": "Lower gate check-in",
+      "sourceClass": "approved-gate1-review-camera",
+      "horizontalFovDegrees": 65.0,
+      "positionWorld": [
+        340.0,
+        12.092426,
+        -20.0
+      ],
+      "targetWorld": [
+        320.0,
+        10.958095,
+        -55.0
+      ]
+    },
+    {
+      "id": "lower-level",
+      "label": "Lower camping choices",
+      "sourceClass": "approved-gate1-review-camera",
+      "horizontalFovDegrees": 65.0,
+      "positionWorld": [
+        300.0,
+        8.499339,
+        -105.0
+      ],
+      "targetWorld": [
+        255.0,
+        8.187831,
+        -130.0
+      ]
+    },
+    {
+      "id": "upper-parking",
+      "label": "West upper parking",
+      "sourceClass": "approved-gate1-review-camera",
+      "horizontalFovDegrees": 65.0,
+      "positionWorld": [
+        -130.0,
+        28.513934,
+        -15.0
+      ],
+      "targetWorld": [
+        -110.0,
+        27.757365,
+        -30.0
+      ]
+    },
+    {
+      "id": "middle-earth",
+      "label": "Middle Earth relationship",
+      "sourceClass": "approved-gate1-review-camera",
+      "horizontalFovDegrees": 65.0,
+      "positionWorld": [
+        78.0,
+        16.804225,
+        -101.0
+      ],
+      "targetWorld": [
+        100.0,
+        16.049686,
+        -115.0
+      ]
+    },
+    {
+      "id": "night-composition",
+      "label": "First-night composition",
+      "sourceClass": "approved-gate1-review-camera",
+      "horizontalFovDegrees": 65.0,
+      "positionWorld": [
+        60.0,
+        17.459583,
+        -99.0
+      ],
+      "targetWorld": [
+        100.0,
+        16.049686,
+        -115.0
+      ]
+    }
+  ],
+  "firstPersonReview": {
+    "routeBranch": "lower-tent",
+    "points": [
+      {
+        "x": 340.0,
+        "z": -20.0,
+        "sourceTerrainY": 10.392426,
+        "reviewTerrainY": 10.392426
+      },
+      {
+        "x": 338.0,
+        "z": -50.0,
+        "sourceTerrainY": 10.954132,
+        "reviewTerrainY": 10.952194
+      },
+      {
+        "x": 326.0,
+        "z": -78.0,
+        "sourceTerrainY": 7.920898,
+        "reviewTerrainY": 8.021019
+      },
+      {
+        "x": 312.0,
+        "z": -103.0,
+        "sourceTerrainY": 6.580109,
+        "reviewTerrainY": 6.584991
+      },
+      {
+        "x": 297.0,
+        "z": -121.0,
+        "sourceTerrainY": 6.611969,
+        "reviewTerrainY": 6.620581
+      },
+      {
+        "x": 286.0,
+        "z": -130.0,
+        "sourceTerrainY": 6.399475,
+        "reviewTerrainY": 6.423584
+      },
+      {
+        "x": 297.0,
+        "z": -121.0,
+        "sourceTerrainY": 6.611969,
+        "reviewTerrainY": 6.620581
+      },
+      {
+        "x": 312.0,
+        "z": -103.0,
+        "sourceTerrainY": 6.580109,
+        "reviewTerrainY": 6.584991
+      },
+      {
+        "x": 326.0,
+        "z": -78.0,
+        "sourceTerrainY": 7.920898,
+        "reviewTerrainY": 8.021019
+      },
+      {
+        "x": 338.0,
+        "z": -50.0,
+        "sourceTerrainY": 10.954132,
+        "reviewTerrainY": 10.952194
+      },
+      {
+        "x": 340.0,
+        "z": -20.0,
+        "sourceTerrainY": 10.392426,
+        "reviewTerrainY": 10.392426
+      },
+      {
+        "x": 350.0,
+        "z": 5.0,
+        "sourceTerrainY": 10.211334,
+        "reviewTerrainY": 10.308849
+      },
+      {
+        "x": 300.0,
+        "z": 10.0,
+        "sourceTerrainY": 10.14743,
+        "reviewTerrainY": 10.152344
+      },
+      {
+        "x": 220.0,
+        "z": 10.0,
+        "sourceTerrainY": 16.187195,
+        "reviewTerrainY": 16.253311
+      },
+      {
+        "x": 140.0,
+        "z": 10.0,
+        "sourceTerrainY": 23.223846,
+        "reviewTerrainY": 23.410156
+      },
+      {
+        "x": 70.0,
+        "z": 10.0,
+        "sourceTerrainY": 25.948822,
+        "reviewTerrainY": 25.885399
+      },
+      {
+        "x": 40.0,
+        "z": 10.0,
+        "sourceTerrainY": 26.371277,
+        "reviewTerrainY": 26.342224
+      },
+      {
+        "x": 22.0,
+        "z": -18.0,
+        "sourceTerrainY": 26.300537,
+        "reviewTerrainY": 26.30172
+      },
+      {
+        "x": -20.0,
+        "z": -45.0,
+        "sourceTerrainY": 26.455688,
+        "reviewTerrainY": 26.437691
+      },
+      {
+        "x": -62.0,
+        "z": -74.0,
+        "sourceTerrainY": 24.948273,
+        "reviewTerrainY": 24.989311
+      },
+      {
+        "x": -90.0,
+        "z": -50.0,
+        "sourceTerrainY": 25.926239,
+        "reviewTerrainY": 25.949501
+      },
+      {
+        "x": -110.0,
+        "z": -30.0,
+        "sourceTerrainY": 26.527771,
+        "reviewTerrainY": 26.557365
+      },
+      {
+        "x": -90.0,
+        "z": -50.0,
+        "sourceTerrainY": 25.926239,
+        "reviewTerrainY": 25.949501
+      },
+      {
+        "x": -62.0,
+        "z": -74.0,
+        "sourceTerrainY": 24.948273,
+        "reviewTerrainY": 24.989311
+      },
+      {
+        "x": -61.3,
+        "z": -73.8,
+        "sourceTerrainY": 24.967758,
+        "reviewTerrainY": 25.007873
+      },
+      {
+        "x": -7.3,
+        "z": -74.6,
+        "sourceTerrainY": 26.294446,
+        "reviewTerrainY": 26.329545
+      },
+      {
+        "x": -0.2,
+        "z": -71.7,
+        "sourceTerrainY": 26.324691,
+        "reviewTerrainY": 26.321302
+      },
+      {
+        "x": 8.0,
+        "z": -66.4,
+        "sourceTerrainY": 25.770367,
+        "reviewTerrainY": 25.773596
+      },
+      {
+        "x": 15.0,
+        "z": -64.3,
+        "sourceTerrainY": 25.159451,
+        "reviewTerrainY": 25.170306
+      },
+      {
+        "x": 33.6,
+        "z": -63.5,
+        "sourceTerrainY": 22.721887,
+        "reviewTerrainY": 22.702245
+      },
+      {
+        "x": 41.0,
+        "z": -65.1,
+        "sourceTerrainY": 21.201596,
+        "reviewTerrainY": 21.175588
+      },
+      {
+        "x": 52.1,
+        "z": -73.0,
+        "sourceTerrainY": 17.864038,
+        "reviewTerrainY": 17.854637
+      },
+      {
+        "x": 62.0,
+        "z": -81.6,
+        "sourceTerrainY": 16.087811,
+        "reviewTerrainY": 16.117383
+      },
+      {
+        "x": 81.0,
+        "z": -103.1,
+        "sourceTerrainY": 14.982501,
+        "reviewTerrainY": 14.979474
+      },
+      {
+        "x": 89.7,
+        "z": -108.0,
+        "sourceTerrainY": 14.726245,
+        "reviewTerrainY": 14.721972
+      },
+      {
+        "x": 93.0,
+        "z": -108.8,
+        "sourceTerrainY": 14.623798,
+        "reviewTerrainY": 14.621611
+      },
+      {
+        "x": 99.2,
+        "z": -113.4,
+        "sourceTerrainY": 14.376766,
+        "reviewTerrainY": 14.400147
+      },
+      {
+        "x": 102.5,
+        "z": -113.8,
+        "sourceTerrainY": 14.316174,
+        "reviewTerrainY": 14.314716
+      },
+      {
+        "x": 114.9,
+        "z": -114.2,
+        "sourceTerrainY": 14.05863,
+        "reviewTerrainY": 14.089585
+      },
+      {
+        "x": 129.3,
+        "z": -112.1,
+        "sourceTerrainY": 13.969722,
+        "reviewTerrainY": 13.982258
+      },
+      {
+        "x": 152.8,
+        "z": -106.8,
+        "sourceTerrainY": 13.566609,
+        "reviewTerrainY": 13.426228
+      },
+      {
+        "x": 182.9,
+        "z": -102.2,
+        "sourceTerrainY": 9.492153,
+        "reviewTerrainY": 9.504027
+      },
+      {
+        "x": 209.7,
+        "z": -95.2,
+        "sourceTerrainY": 8.401656,
+        "reviewTerrainY": 8.389249
+      },
+      {
+        "x": 220.9,
+        "z": -93.6,
+        "sourceTerrainY": 8.075488,
+        "reviewTerrainY": 8.087395
+      },
+      {
+        "x": 243.6,
+        "z": -93.2,
+        "sourceTerrainY": 7.634304,
+        "reviewTerrainY": 7.635819
+      },
+      {
+        "x": 248.5,
+        "z": -97.7,
+        "sourceTerrainY": 7.504825,
+        "reviewTerrainY": 7.494801
+      },
+      {
+        "x": 255.1,
+        "z": -108.8,
+        "sourceTerrainY": 7.22561,
+        "reviewTerrainY": 7.236392
+      },
+      {
+        "x": 262.5,
+        "z": -116.3,
+        "sourceTerrainY": 7.12262,
+        "reviewTerrainY": 7.102322
+      },
+      {
+        "x": 276.6,
+        "z": -123.7,
+        "sourceTerrainY": 6.794973,
+        "reviewTerrainY": 6.800226
+      },
+      {
+        "x": 279.9,
+        "z": -124.5,
+        "sourceTerrainY": 6.800282,
+        "reviewTerrainY": 6.795011
+      },
+      {
+        "x": 286.9,
+        "z": -129.9,
+        "sourceTerrainY": 6.369294,
+        "reviewTerrainY": 6.38556
+      },
+      {
+        "x": 286.0,
+        "z": -130.0,
+        "sourceTerrainY": 6.399475,
+        "reviewTerrainY": 6.423584
+      },
+      {
+        "x": 286.9,
+        "z": -129.9,
+        "sourceTerrainY": 6.369294,
+        "reviewTerrainY": 6.38556
+      },
+      {
+        "x": 279.9,
+        "z": -124.5,
+        "sourceTerrainY": 6.800282,
+        "reviewTerrainY": 6.795011
+      },
+      {
+        "x": 276.6,
+        "z": -123.7,
+        "sourceTerrainY": 6.794973,
+        "reviewTerrainY": 6.800226
+      },
+      {
+        "x": 262.5,
+        "z": -116.3,
+        "sourceTerrainY": 7.12262,
+        "reviewTerrainY": 7.102322
+      },
+      {
+        "x": 255.1,
+        "z": -108.8,
+        "sourceTerrainY": 7.22561,
+        "reviewTerrainY": 7.236392
+      },
+      {
+        "x": 248.5,
+        "z": -97.7,
+        "sourceTerrainY": 7.504825,
+        "reviewTerrainY": 7.494801
+      },
+      {
+        "x": 243.6,
+        "z": -93.2,
+        "sourceTerrainY": 7.634304,
+        "reviewTerrainY": 7.635819
+      },
+      {
+        "x": 220.9,
+        "z": -93.6,
+        "sourceTerrainY": 8.075488,
+        "reviewTerrainY": 8.087395
+      },
+      {
+        "x": 209.7,
+        "z": -95.2,
+        "sourceTerrainY": 8.401656,
+        "reviewTerrainY": 8.389249
+      },
+      {
+        "x": 182.9,
+        "z": -102.2,
+        "sourceTerrainY": 9.492153,
+        "reviewTerrainY": 9.504027
+      },
+      {
+        "x": 152.8,
+        "z": -106.8,
+        "sourceTerrainY": 13.566609,
+        "reviewTerrainY": 13.426228
+      },
+      {
+        "x": 129.3,
+        "z": -112.1,
+        "sourceTerrainY": 13.969722,
+        "reviewTerrainY": 13.982258
+      },
+      {
+        "x": 114.9,
+        "z": -114.2,
+        "sourceTerrainY": 14.05863,
+        "reviewTerrainY": 14.089585
+      },
+      {
+        "x": 102.5,
+        "z": -113.8,
+        "sourceTerrainY": 14.316174,
+        "reviewTerrainY": 14.314716
+      },
+      {
+        "x": 118.0,
+        "z": -108.0,
+        "sourceTerrainY": 14.194214,
+        "reviewTerrainY": 14.193527
+      },
+      {
+        "x": 100.0,
+        "z": -110.0,
+        "sourceTerrainY": 14.45401,
+        "reviewTerrainY": 14.439804
+      },
+      {
+        "x": 80.0,
+        "z": -105.0,
+        "sourceTerrainY": 14.951111,
+        "reviewTerrainY": 14.95993
+      },
+      {
+        "x": 60.0,
+        "z": -99.0,
+        "sourceTerrainY": 15.765717,
+        "reviewTerrainY": 15.759583
+      }
+    ],
+    "walkingDurationSeconds": 609.67054,
+    "vehicleDurationSeconds": null,
+    "reviewDurationSeconds": 30.0,
+    "timeCompressionFactor": null,
+    "timingBoundary": "No vehicle speed is approved, so no total source-duration or compression ratio is asserted. The review camera covers equal route distance per frame for a fixed 30-second spatial proof.",
+    "fps": 15,
+    "encoder": "FFmpeg 8.0.1 libx264 after Blender PNG-frame rendering",
+    "eyeHeightMeters": 1.7,
+    "spatialContinuity": "Position is interpolated along every consecutive registered segment; there are no teleport cuts."
+  },
+  "zones": [
+    {
+      "id": "lower-gate-zone",
+      "label": "Lower gate check-in",
+      "class": "invention",
+      "shape": "circle",
+      "center": {
+        "x": 340.0,
+        "z": -20.0,
+        "sourceTerrainY": 10.392426,
+        "reviewTerrainY": 10.392426
+      },
+      "radiusMeters": 10
+    },
+    {
+      "id": "upper-tent-zone",
+      "label": "Upper tent camping",
+      "class": "invention",
+      "shape": "circle",
+      "center": {
+        "x": -62.0,
+        "z": -74.0,
+        "sourceTerrainY": 24.948273,
+        "reviewTerrainY": 24.989311
+      },
+      "radiusMeters": 16
+    },
+    {
+      "id": "west-upper-parking-zone",
+      "label": "West upper parking",
+      "class": "invention",
+      "shape": "circle",
+      "center": {
+        "x": -110.0,
+        "z": -30.0,
+        "sourceTerrainY": 26.527771,
+        "reviewTerrainY": 26.557365
+      },
+      "radiusMeters": 18
+    },
+    {
+      "id": "middle-earth-zone",
+      "label": "Middle Earth: no camping",
+      "class": "interpreted",
+      "shape": "surface-open-region",
+      "center": {
+        "x": 100.0,
+        "z": -115.0,
+        "sourceTerrainY": 14.33075,
+        "reviewTerrainY": 14.349686
+      },
+      "seed": {
+        "x": 100,
+        "z": -115
+      },
+      "searchRadiusXMeters": 35,
+      "searchRadiusZMeters": 28,
+      "minimumEnvelopeOpenFraction": 0.95
+    },
+    {
+      "id": "lower-tent-zone",
+      "label": "Lower tent perimeter example",
+      "class": "invention",
+      "shape": "circle",
+      "center": {
+        "x": 286.0,
+        "z": -130.0,
+        "sourceTerrainY": 6.399475,
+        "reviewTerrainY": 6.423584
+      },
+      "radiusMeters": 10
+    },
+    {
+      "id": "car-camp-zone",
+      "label": "Car camping: open middle",
+      "class": "invention",
+      "shape": "surface-open-region",
+      "center": {
+        "x": 255.0,
+        "z": -130.0,
+        "sourceTerrainY": 6.96521,
+        "reviewTerrainY": 6.987831
+      },
+      "seed": {
+        "x": 255,
+        "z": -130
+      },
+      "searchRadiusXMeters": 24,
+      "searchRadiusZMeters": 18,
+      "minimumEnvelopeOpenFraction": 0.95
+    },
+    {
+      "id": "night-heart-zone",
+      "label": "Fictional night heart",
+      "class": "invention",
+      "shape": "circle",
+      "center": {
+        "x": 100.0,
+        "z": -115.0,
+        "sourceTerrainY": 14.33075,
+        "reviewTerrainY": 14.349686
+      },
+      "radiusMeters": 12,
+      "targetHeightMeters": 8
+    }
+  ],
+  "anchors": [
+    {
+      "id": "lower-gate-spawn",
+      "label": "Lower gate player spawn",
+      "sourceClass": "austen-observed-topology",
+      "placeholderKind": "player-scale-marker",
+      "positionWorld": [
+        340.0,
+        10.392426,
+        -20.0
+      ]
+    },
+    {
+      "id": "lower-gate",
+      "label": "Lower gate check-in",
+      "sourceClass": "invention",
+      "placeholderKind": "gate-marker-not-gate-structure",
+      "positionWorld": [
+        340.0,
+        10.392426,
+        -20.0
+      ]
+    },
+    {
+      "id": "upper-tent",
+      "label": "Upper tent camping",
+      "sourceClass": "invention",
+      "placeholderKind": "tent-marker-not-structure",
+      "positionWorld": [
+        -62.0,
+        24.989311,
+        -74.0
+      ]
+    },
+    {
+      "id": "west-upper-parking",
+      "label": "West upper parking",
+      "sourceClass": "invention",
+      "placeholderKind": "parking-marker-not-vehicle-layout",
+      "positionWorld": [
+        -110.0,
+        26.557365,
+        -30.0
+      ]
+    },
+    {
+      "id": "lower-tent",
+      "label": "Lower tent perimeter example",
+      "sourceClass": "invention",
+      "placeholderKind": "tent-marker-not-structure",
+      "positionWorld": [
+        286.0,
+        6.423584,
+        -130.0
+      ]
+    },
+    {
+      "id": "car-camp",
+      "label": "Car camping: open middle",
+      "sourceClass": "invention",
+      "placeholderKind": "car-marker-not-vehicle-model",
+      "positionWorld": [
+        255.0,
+        6.987831,
+        -130.0
+      ]
+    },
+    {
+      "id": "night-heart",
+      "label": "Fictional night heart",
+      "sourceClass": "invention",
+      "placeholderKind": "fictional-mast-marker",
+      "positionWorld": [
+        100.0,
+        14.349686,
+        -115.0
+      ]
+    }
+  ],
+  "nodePolicy": {
+    "root": "FFS_WorldRoot",
+    "ground": "FFS_Terrain",
+    "barrierPrefix": "FFS_Barrier_",
+    "routePrefix": "FFS_Route_",
+    "zonePrefix": "FFS_Zone_",
+    "anchorPrefix": "FFS_Anchor_",
+    "barriers": [],
+    "barrierProvenance": "No source-backed blocking topology is asserted in the offline Gate 2 GLB, so no FFS_Barrier_* nodes are emitted.",
+    "runtimeTopologyBarrierPolicy": {
+      "allowedPrefix": "FFS_Barrier_LidarProxy_",
+      "sourcePath": "/data/flow-fest-sim/surface-offset.u16",
+      "sourceSha256": "f014eeef49921037f1a10aff72d40c7f9524fbc4980dfd7578c06f4002f5d879",
+      "sourceClass": "interpreted-gameplay-from-measured-surface",
+      "visibleColliderIdentityRequired": true,
+      "corridorCarvePolicy": "Browser/runtime may derive visible gameplay masses from checked surface-offset samples only when every approved person-route corridor is carved to at least its contract width. Austen's two verbatim traced connectors must remain unblocked at every vertex and segment.",
+      "truthBoundary": "Derived masses express gameplay topology from measured above-ground surface returns. They do not identify individual trees, trunks, species, buildings, fences, or cadastral boundaries.",
+      "offlineGlbRelationship": "The offline GLB retains one non-colliding FFS_Anchor_LidarCanopyProxy context mesh and emits no FFS_Barrier_* nodes. Runtime barriers are a separate visible-and-colliding derivation governed by this policy."
+    },
+    "structures": [],
+    "structureProvenance": "No buildings or exact campground structures are asserted. All semantic markers are visibly classified placeholders.",
+    "invisibleCollisionGeometryAllowed": false
+  },
+  "glb": {
+    "path": "static/models/flow-fest-sim/review/flow-fest-sim-gate2-graybox.glb",
+    "format": "glTF 2.0 binary",
+    "reviewOnly": true
+  },
+  "sourceClassDefinitions": {
+    "measured": "DTM elevation, lidar surface height, orthophoto registration, scale, and coordinate transforms.",
+    "austenObserved": "First-person operational topology: camping eligibility, vehicle ritual, parking outcome, and the existence of the two canopy-hidden pedestrian connectors.",
+    "austenTraced": "The two pedestrian connector centerlines Austen drew over the source-locked orthophoto on 2026-08-25.",
+    "interpreted": "Tier-scale open ground, road centerlines traced from public imagery, and surface screens; field confirmation required.",
+    "invention": "Festival placements, interactions, night transformation, and exact proposed coordinates beyond what public terrain or Austen's first-person account establishes."
+  },
+  "limitations": [
+    "The 4 m review mesh is a measured downsample of the 1 m source DTM; recorded full-grid interpolation errors bound the offline visual-review surface only. Browser/runtime collision must use the full 1 m DTM.",
+    "Austen's connector vertices are verbatim orthophoto traces, not centimetre-accurate field survey.",
+    "Road, campsite, parking, zone, and marker coordinates retain their Gate 1 evidence classes and are not promoted to building or cadastral truth.",
+    "Surface-evidence proxy masses are non-colliding lidar-height context and do not identify individual trees or structures."
+  ]
+}

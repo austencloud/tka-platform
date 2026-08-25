@@ -1,0 +1,958 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "gateId": "playable-graybox",
+  "status": "ready-for-review",
+  "blenderVersion": "5.0.1",
+  "commands": {
+    "build": "python scripts/geospatial/build_flow_fest_gate2_graybox.py build",
+    "verify": "python scripts/geospatial/build_flow_fest_gate2_graybox.py verify"
+  },
+  "artifacts": {
+    "static/data/flow-fest-sim/gate2-runtime-contract.json": {
+      "sha256": "ff43b8373da6a6313923f275c85f4bfad2fc02e4b2dcdc5efeb8bf4bbc6968cf",
+      "byteLength": 77571
+    },
+    "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-coordinate-manifest.json": {
+      "sha256": "ff43b8373da6a6313923f275c85f4bfad2fc02e4b2dcdc5efeb8bf4bbc6968cf",
+      "byteLength": 77571
+    },
+    "blender/flow_fest_sim_gate2_graybox.blend": {
+      "sha256": "97d652b2e389b3c84f4109e7aab506eb27c1ab0769dd122506d4c9dfc957d848",
+      "byteLength": 3312776
+    },
+    "static/models/flow-fest-sim/review/flow-fest-sim-gate2-graybox.glb": {
+      "sha256": "0a4d6a58f43837a7217dd643d65f1e0bf0a8871f3ed781e9116c1691d2b9c5e8",
+      "byteLength": 15119796
+    },
+    "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-lower-gate.png": {
+      "sha256": "7899e41d309f1994e0696ba7cd18f49f7c911d91d04c87754d83f1fab33dd77b",
+      "byteLength": 836002
+    },
+    "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-lower-level.png": {
+      "sha256": "bf112fc1b55b2b95ccf37fdcdafd5faf02d81a884ebd2c903157971880f2e82a",
+      "byteLength": 906545
+    },
+    "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-upper-parking.png": {
+      "sha256": "f5ab3b2466f01698f50bae694c1cba95a8ff9f3a7497b8db67894270fe35076b",
+      "byteLength": 881285
+    },
+    "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-middle-earth.png": {
+      "sha256": "b1e707abbfe9af3f14611315827c21ac0c915ed63332d61a386cc8006e2ae8c2",
+      "byteLength": 969025
+    },
+    "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-night-composition.png": {
+      "sha256": "1c070273768ac077bd782a69dbc1a1f5280129eea0bbb71ffdc92fdd2b744f97",
+      "byteLength": 946475
+    },
+    "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-overview.png": {
+      "sha256": "55b0864605a001e87c6bae68d7fbf696312ec5ff13bb7a9b59a0bb545d5ef9d5",
+      "byteLength": 1360679
+    },
+    "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-contact-sheet.png": {
+      "sha256": "712b5ef792eeed0fc92ccff4cf35647ac6fc7ba5afbeb57dfdf1565981090d94",
+      "byteLength": 2162197
+    },
+    "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-first-person-lower-tent-route.mp4": {
+      "sha256": "242874ede56e60f71d692effa6a75bec74dfcabeb1b7247025116a9567803640",
+      "byteLength": 5488980
+    }
+  },
+  "terrainReviewMesh": {
+    "nodeName": "FFS_Terrain",
+    "sourcePath": "/data/flow-fest-sim/terrain-height.f32",
+    "sourceSha256": "d56f912d24c644156f088b95240c02cb76c1e4548b2990ccd7dd80f0f6eecafd",
+    "sourceProductType": "DTM",
+    "sourceSampleSpacingMeters": 1.0,
+    "sampleBoundsWorldMeters": {
+      "minX": -512.0,
+      "maxX": 512.0,
+      "minZ": -512.0,
+      "maxZ": 512.0
+    },
+    "renderColliderIdentity": true,
+    "colliderPolicy": "Inside the offline Blend/GLB review artifact, FFS_Terrain is the sole visible ground and sole review collider. No duplicate or invisible collision mesh exists.",
+    "runtimeCollisionAuthority": {
+      "path": "/data/flow-fest-sim/terrain-height.f32",
+      "sha256": "d56f912d24c644156f088b95240c02cb76c1e4548b2990ccd7dd80f0f6eecafd",
+      "sampleSpacingMeters": 1.0,
+      "policy": "Browser/runtime geometry and collision must be built from the full 1 m DTM. The 4 m GLB terrain is visual-review geometry and is not runtime collision authority."
+    },
+    "sourceDimensions": {
+      "width": 1025,
+      "height": 1025
+    },
+    "strideSamples": 4,
+    "vertexSpacingMeters": 4.0,
+    "vertexCount": 66049,
+    "triangleCount": 131072,
+    "retainedVertexHeightSha256": "8f07b8c756d7ad346cb120565de419706f8caec8215352617cc354a55f0028f8",
+    "measuredMaxVerticalInterpolationErrorMeters": 1.621601,
+    "measuredRmsVerticalInterpolationErrorMeters": 0.08518,
+    "maximumHorizontalDistanceToRetainedVertexMeters": 2.828427,
+    "errorMeasurement": "Every source DTM sample compared with bilinear interpolation of the retained review lattice."
+  },
+  "glbRootTransform": {
+    "children": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36
+    ],
+    "extras": {
+      "ffs_role": "world-root",
+      "ffs_child_coordinate_frame": "plan world metres; x east, y up, z south",
+      "ffs_plan_to_blender": "(x, y, z) -> (x, -z, y)"
+    },
+    "name": "FFS_WorldRoot",
+    "rotation": [
+      0.7071068286895752,
+      0,
+      0,
+      0.7071068286895752
+    ]
+  },
+  "nodePolicy": {
+    "root": "FFS_WorldRoot",
+    "ground": "FFS_Terrain",
+    "barrierPrefix": "FFS_Barrier_",
+    "routePrefix": "FFS_Route_",
+    "zonePrefix": "FFS_Zone_",
+    "anchorPrefix": "FFS_Anchor_",
+    "barriers": [],
+    "barrierProvenance": "No source-backed blocking topology is asserted in the offline Gate 2 GLB, so no FFS_Barrier_* nodes are emitted.",
+    "runtimeTopologyBarrierPolicy": {
+      "allowedPrefix": "FFS_Barrier_LidarProxy_",
+      "sourcePath": "/data/flow-fest-sim/surface-offset.u16",
+      "sourceSha256": "f014eeef49921037f1a10aff72d40c7f9524fbc4980dfd7578c06f4002f5d879",
+      "sourceClass": "interpreted-gameplay-from-measured-surface",
+      "visibleColliderIdentityRequired": true,
+      "corridorCarvePolicy": "Browser/runtime may derive visible gameplay masses from checked surface-offset samples only when every approved person-route corridor is carved to at least its contract width. Austen's two verbatim traced connectors must remain unblocked at every vertex and segment.",
+      "truthBoundary": "Derived masses express gameplay topology from measured above-ground surface returns. They do not identify individual trees, trunks, species, buildings, fences, or cadastral boundaries.",
+      "offlineGlbRelationship": "The offline GLB retains one non-colliding FFS_Anchor_LidarCanopyProxy context mesh and emits no FFS_Barrier_* nodes. Runtime barriers are a separate visible-and-colliding derivation governed by this policy."
+    },
+    "structures": [],
+    "structureProvenance": "No buildings or exact campground structures are asserted. All semantic markers are visibly classified placeholders.",
+    "invisibleCollisionGeometryAllowed": false
+  },
+  "checks": {
+    "artifact-digest": {
+      "passed": true,
+      "evidence": "SHA-256 and byte length recorded for 12 artifacts."
+    },
+    "source-lock": {
+      "passed": true,
+      "evidence": [
+        {
+          "path": "static/data/flow-fest-sim/terrain.manifest.json",
+          "sha256": "22bb16b5ed1585bd7eeb15b42d71b8577ed5b8ce5955ed9d01e66b727bb9af46"
+        },
+        {
+          "path": "docs/superpowers/specs/flow-fest-sim/flow-fest-site-plan.json",
+          "sha256": "8a2710c76062c736999eb98b2b24e28a1727d88d56b40afcfc77343ad3e2e2b7"
+        },
+        {
+          "path": "docs/superpowers/specs/flow-fest-sim/austen-traced-connectors.json",
+          "sha256": "af4d263c7a4cd063d156531a974245dd714281c82c0eceaf04903358a5e58e62"
+        },
+        {
+          "path": "static/data/flow-fest-sim/terrain-height.f32",
+          "sha256": "d56f912d24c644156f088b95240c02cb76c1e4548b2990ccd7dd80f0f6eecafd"
+        },
+        {
+          "path": "static/data/flow-fest-sim/surface-offset.u16",
+          "sha256": "f014eeef49921037f1a10aff72d40c7f9524fbc4980dfd7578c06f4002f5d879"
+        },
+        {
+          "path": "static/data/flow-fest-sim/ortho.webp",
+          "sha256": "abbf63d78d4d4cc29f3df591e2c19687cba8ce63811748008a8bc6235e18fd2f"
+        }
+      ]
+    },
+    "coordinate-manifest-copy": {
+      "passed": true,
+      "evidence": "Runtime and evidence manifests are byte-identical."
+    },
+    "connector-trace-parity": {
+      "passed": true,
+      "evidence": {
+        "upperClearingToMiddleEarth": {
+          "passed": true,
+          "vertexCount": 13
+        },
+        "middleEarthToLowerClearing": {
+          "passed": true,
+          "vertexCount": 14
+        }
+      }
+    },
+    "three-camp-branch-parity": {
+      "passed": true,
+      "evidence": {
+        "arrivalBranches": [
+          "car-camp",
+          "lower-tent",
+          "upper-tent"
+        ],
+        "nightReturns": [
+          "car-camp",
+          "lower-tent",
+          "upper-tent"
+        ]
+      }
+    },
+    "collision": {
+      "passed": true,
+      "evidence": "FFS_Terrain is the sole visible ground/collider inside the offline review artifact; no invisible colliders or FFS_Barrier_* nodes exist. Browser/runtime collision authority is the full 1 m DTM, not this 4 m GLB mesh."
+    },
+    "route-duration": {
+      "passed": true,
+      "evidence": {
+        "routeBranch": "lower-tent",
+        "points": [
+          {
+            "x": 340.0,
+            "z": -20.0,
+            "sourceTerrainY": 10.392426,
+            "reviewTerrainY": 10.392426
+          },
+          {
+            "x": 338.0,
+            "z": -50.0,
+            "sourceTerrainY": 10.954132,
+            "reviewTerrainY": 10.952194
+          },
+          {
+            "x": 326.0,
+            "z": -78.0,
+            "sourceTerrainY": 7.920898,
+            "reviewTerrainY": 8.021019
+          },
+          {
+            "x": 312.0,
+            "z": -103.0,
+            "sourceTerrainY": 6.580109,
+            "reviewTerrainY": 6.584991
+          },
+          {
+            "x": 297.0,
+            "z": -121.0,
+            "sourceTerrainY": 6.611969,
+            "reviewTerrainY": 6.620581
+          },
+          {
+            "x": 286.0,
+            "z": -130.0,
+            "sourceTerrainY": 6.399475,
+            "reviewTerrainY": 6.423584
+          },
+          {
+            "x": 297.0,
+            "z": -121.0,
+            "sourceTerrainY": 6.611969,
+            "reviewTerrainY": 6.620581
+          },
+          {
+            "x": 312.0,
+            "z": -103.0,
+            "sourceTerrainY": 6.580109,
+            "reviewTerrainY": 6.584991
+          },
+          {
+            "x": 326.0,
+            "z": -78.0,
+            "sourceTerrainY": 7.920898,
+            "reviewTerrainY": 8.021019
+          },
+          {
+            "x": 338.0,
+            "z": -50.0,
+            "sourceTerrainY": 10.954132,
+            "reviewTerrainY": 10.952194
+          },
+          {
+            "x": 340.0,
+            "z": -20.0,
+            "sourceTerrainY": 10.392426,
+            "reviewTerrainY": 10.392426
+          },
+          {
+            "x": 350.0,
+            "z": 5.0,
+            "sourceTerrainY": 10.211334,
+            "reviewTerrainY": 10.308849
+          },
+          {
+            "x": 300.0,
+            "z": 10.0,
+            "sourceTerrainY": 10.14743,
+            "reviewTerrainY": 10.152344
+          },
+          {
+            "x": 220.0,
+            "z": 10.0,
+            "sourceTerrainY": 16.187195,
+            "reviewTerrainY": 16.253311
+          },
+          {
+            "x": 140.0,
+            "z": 10.0,
+            "sourceTerrainY": 23.223846,
+            "reviewTerrainY": 23.410156
+          },
+          {
+            "x": 70.0,
+            "z": 10.0,
+            "sourceTerrainY": 25.948822,
+            "reviewTerrainY": 25.885399
+          },
+          {
+            "x": 40.0,
+            "z": 10.0,
+            "sourceTerrainY": 26.371277,
+            "reviewTerrainY": 26.342224
+          },
+          {
+            "x": 22.0,
+            "z": -18.0,
+            "sourceTerrainY": 26.300537,
+            "reviewTerrainY": 26.30172
+          },
+          {
+            "x": -20.0,
+            "z": -45.0,
+            "sourceTerrainY": 26.455688,
+            "reviewTerrainY": 26.437691
+          },
+          {
+            "x": -62.0,
+            "z": -74.0,
+            "sourceTerrainY": 24.948273,
+            "reviewTerrainY": 24.989311
+          },
+          {
+            "x": -90.0,
+            "z": -50.0,
+            "sourceTerrainY": 25.926239,
+            "reviewTerrainY": 25.949501
+          },
+          {
+            "x": -110.0,
+            "z": -30.0,
+            "sourceTerrainY": 26.527771,
+            "reviewTerrainY": 26.557365
+          },
+          {
+            "x": -90.0,
+            "z": -50.0,
+            "sourceTerrainY": 25.926239,
+            "reviewTerrainY": 25.949501
+          },
+          {
+            "x": -62.0,
+            "z": -74.0,
+            "sourceTerrainY": 24.948273,
+            "reviewTerrainY": 24.989311
+          },
+          {
+            "x": -61.3,
+            "z": -73.8,
+            "sourceTerrainY": 24.967758,
+            "reviewTerrainY": 25.007873
+          },
+          {
+            "x": -7.3,
+            "z": -74.6,
+            "sourceTerrainY": 26.294446,
+            "reviewTerrainY": 26.329545
+          },
+          {
+            "x": -0.2,
+            "z": -71.7,
+            "sourceTerrainY": 26.324691,
+            "reviewTerrainY": 26.321302
+          },
+          {
+            "x": 8.0,
+            "z": -66.4,
+            "sourceTerrainY": 25.770367,
+            "reviewTerrainY": 25.773596
+          },
+          {
+            "x": 15.0,
+            "z": -64.3,
+            "sourceTerrainY": 25.159451,
+            "reviewTerrainY": 25.170306
+          },
+          {
+            "x": 33.6,
+            "z": -63.5,
+            "sourceTerrainY": 22.721887,
+            "reviewTerrainY": 22.702245
+          },
+          {
+            "x": 41.0,
+            "z": -65.1,
+            "sourceTerrainY": 21.201596,
+            "reviewTerrainY": 21.175588
+          },
+          {
+            "x": 52.1,
+            "z": -73.0,
+            "sourceTerrainY": 17.864038,
+            "reviewTerrainY": 17.854637
+          },
+          {
+            "x": 62.0,
+            "z": -81.6,
+            "sourceTerrainY": 16.087811,
+            "reviewTerrainY": 16.117383
+          },
+          {
+            "x": 81.0,
+            "z": -103.1,
+            "sourceTerrainY": 14.982501,
+            "reviewTerrainY": 14.979474
+          },
+          {
+            "x": 89.7,
+            "z": -108.0,
+            "sourceTerrainY": 14.726245,
+            "reviewTerrainY": 14.721972
+          },
+          {
+            "x": 93.0,
+            "z": -108.8,
+            "sourceTerrainY": 14.623798,
+            "reviewTerrainY": 14.621611
+          },
+          {
+            "x": 99.2,
+            "z": -113.4,
+            "sourceTerrainY": 14.376766,
+            "reviewTerrainY": 14.400147
+          },
+          {
+            "x": 102.5,
+            "z": -113.8,
+            "sourceTerrainY": 14.316174,
+            "reviewTerrainY": 14.314716
+          },
+          {
+            "x": 114.9,
+            "z": -114.2,
+            "sourceTerrainY": 14.05863,
+            "reviewTerrainY": 14.089585
+          },
+          {
+            "x": 129.3,
+            "z": -112.1,
+            "sourceTerrainY": 13.969722,
+            "reviewTerrainY": 13.982258
+          },
+          {
+            "x": 152.8,
+            "z": -106.8,
+            "sourceTerrainY": 13.566609,
+            "reviewTerrainY": 13.426228
+          },
+          {
+            "x": 182.9,
+            "z": -102.2,
+            "sourceTerrainY": 9.492153,
+            "reviewTerrainY": 9.504027
+          },
+          {
+            "x": 209.7,
+            "z": -95.2,
+            "sourceTerrainY": 8.401656,
+            "reviewTerrainY": 8.389249
+          },
+          {
+            "x": 220.9,
+            "z": -93.6,
+            "sourceTerrainY": 8.075488,
+            "reviewTerrainY": 8.087395
+          },
+          {
+            "x": 243.6,
+            "z": -93.2,
+            "sourceTerrainY": 7.634304,
+            "reviewTerrainY": 7.635819
+          },
+          {
+            "x": 248.5,
+            "z": -97.7,
+            "sourceTerrainY": 7.504825,
+            "reviewTerrainY": 7.494801
+          },
+          {
+            "x": 255.1,
+            "z": -108.8,
+            "sourceTerrainY": 7.22561,
+            "reviewTerrainY": 7.236392
+          },
+          {
+            "x": 262.5,
+            "z": -116.3,
+            "sourceTerrainY": 7.12262,
+            "reviewTerrainY": 7.102322
+          },
+          {
+            "x": 276.6,
+            "z": -123.7,
+            "sourceTerrainY": 6.794973,
+            "reviewTerrainY": 6.800226
+          },
+          {
+            "x": 279.9,
+            "z": -124.5,
+            "sourceTerrainY": 6.800282,
+            "reviewTerrainY": 6.795011
+          },
+          {
+            "x": 286.9,
+            "z": -129.9,
+            "sourceTerrainY": 6.369294,
+            "reviewTerrainY": 6.38556
+          },
+          {
+            "x": 286.0,
+            "z": -130.0,
+            "sourceTerrainY": 6.399475,
+            "reviewTerrainY": 6.423584
+          },
+          {
+            "x": 286.9,
+            "z": -129.9,
+            "sourceTerrainY": 6.369294,
+            "reviewTerrainY": 6.38556
+          },
+          {
+            "x": 279.9,
+            "z": -124.5,
+            "sourceTerrainY": 6.800282,
+            "reviewTerrainY": 6.795011
+          },
+          {
+            "x": 276.6,
+            "z": -123.7,
+            "sourceTerrainY": 6.794973,
+            "reviewTerrainY": 6.800226
+          },
+          {
+            "x": 262.5,
+            "z": -116.3,
+            "sourceTerrainY": 7.12262,
+            "reviewTerrainY": 7.102322
+          },
+          {
+            "x": 255.1,
+            "z": -108.8,
+            "sourceTerrainY": 7.22561,
+            "reviewTerrainY": 7.236392
+          },
+          {
+            "x": 248.5,
+            "z": -97.7,
+            "sourceTerrainY": 7.504825,
+            "reviewTerrainY": 7.494801
+          },
+          {
+            "x": 243.6,
+            "z": -93.2,
+            "sourceTerrainY": 7.634304,
+            "reviewTerrainY": 7.635819
+          },
+          {
+            "x": 220.9,
+            "z": -93.6,
+            "sourceTerrainY": 8.075488,
+            "reviewTerrainY": 8.087395
+          },
+          {
+            "x": 209.7,
+            "z": -95.2,
+            "sourceTerrainY": 8.401656,
+            "reviewTerrainY": 8.389249
+          },
+          {
+            "x": 182.9,
+            "z": -102.2,
+            "sourceTerrainY": 9.492153,
+            "reviewTerrainY": 9.504027
+          },
+          {
+            "x": 152.8,
+            "z": -106.8,
+            "sourceTerrainY": 13.566609,
+            "reviewTerrainY": 13.426228
+          },
+          {
+            "x": 129.3,
+            "z": -112.1,
+            "sourceTerrainY": 13.969722,
+            "reviewTerrainY": 13.982258
+          },
+          {
+            "x": 114.9,
+            "z": -114.2,
+            "sourceTerrainY": 14.05863,
+            "reviewTerrainY": 14.089585
+          },
+          {
+            "x": 102.5,
+            "z": -113.8,
+            "sourceTerrainY": 14.316174,
+            "reviewTerrainY": 14.314716
+          },
+          {
+            "x": 118.0,
+            "z": -108.0,
+            "sourceTerrainY": 14.194214,
+            "reviewTerrainY": 14.193527
+          },
+          {
+            "x": 100.0,
+            "z": -110.0,
+            "sourceTerrainY": 14.45401,
+            "reviewTerrainY": 14.439804
+          },
+          {
+            "x": 80.0,
+            "z": -105.0,
+            "sourceTerrainY": 14.951111,
+            "reviewTerrainY": 14.95993
+          },
+          {
+            "x": 60.0,
+            "z": -99.0,
+            "sourceTerrainY": 15.765717,
+            "reviewTerrainY": 15.759583
+          }
+        ],
+        "walkingDurationSeconds": 609.67054,
+        "vehicleDurationSeconds": null,
+        "reviewDurationSeconds": 30.0,
+        "timeCompressionFactor": null,
+        "timingBoundary": "No vehicle speed is approved, so no total source-duration or compression ratio is asserted. The review camera covers equal route distance per frame for a fixed 30-second spatial proof.",
+        "fps": 15,
+        "encoder": "FFmpeg 8.0.1 libx264 after Blender PNG-frame rendering",
+        "eyeHeightMeters": 1.7,
+        "spatialContinuity": "Position is interpolated along every consecutive registered segment; there are no teleport cuts."
+      }
+    },
+    "sequence-parity": {
+      "passed": true,
+      "applicable": false,
+      "evidence": "This geospatial graybox contains no TKA performance sequence; source-route and connector parity are verified instead."
+    },
+    "fixed-camera-evidence": {
+      "passed": true,
+      "evidence": {
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-lower-gate.png": [
+          1280,
+          720
+        ],
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-lower-level.png": [
+          1280,
+          720
+        ],
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-upper-parking.png": [
+          1280,
+          720
+        ],
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-middle-earth.png": [
+          1280,
+          720
+        ],
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-night-composition.png": [
+          1280,
+          720
+        ],
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-overview.png": [
+          1280,
+          720
+        ],
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-contact-sheet.png": [
+          1920,
+          1080
+        ]
+      }
+    },
+    "first-person-video": {
+      "passed": true,
+      "evidence": {
+        "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-first-person-lower-tent-route.mp4",
+        "fps": 15,
+        "durationSeconds": 30.0,
+        "spatiallyContinuous": true,
+        "timingPolicy": "Equal route distance per rendered frame; no unapproved vehicle speed or total source duration is asserted.",
+        "codec": "H.264 in MPEG-4"
+      }
+    },
+    "blender-source-integrity": {
+      "passed": true,
+      "evidence": {
+        "sceneId": "flow-fest-sim-earth",
+        "blenderVersion": "5.0.1",
+        "blendPath": "blender/flow_fest_sim_gate2_graybox.blend",
+        "coordinateManifestSha256": "ff43b8373da6a6313923f275c85f4bfad2fc02e4b2dcdc5efeb8bf4bbc6968cf",
+        "meshObjectCount": 37,
+        "checks": {
+          "manifest-scene-lock": {
+            "passed": true,
+            "evidence": {
+              "sceneManifestSha256": "ff43b8373da6a6313923f275c85f4bfad2fc02e4b2dcdc5efeb8bf4bbc6968cf",
+              "actual": "ff43b8373da6a6313923f275c85f4bfad2fc02e4b2dcdc5efeb8bf4bbc6968cf"
+            }
+          },
+          "root-transform": {
+            "passed": true,
+            "evidence": {
+              "root": "FFS_WorldRoot",
+              "rotationEulerRadians": [
+                1.5707963705062866,
+                0.0,
+                0.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          },
+          "terrain-render-collider-identity": {
+            "passed": true,
+            "evidence": {
+              "colliders": [
+                "FFS_Terrain"
+              ],
+              "terrainVertexCount": 66049,
+              "terrainTriangleCount": 131072
+            }
+          },
+          "no-invisible-collision": {
+            "passed": true,
+            "evidence": {
+              "hiddenColliders": []
+            }
+          },
+          "barrier-provenance": {
+            "passed": true,
+            "evidence": {
+              "barrierNodes": []
+            }
+          },
+          "route-nodes": {
+            "passed": true,
+            "evidence": {
+              "count": 21,
+              "names": [
+                "FFS_Route_lower_tent_01_lower_tent_unload",
+                "FFS_Route_lower_tent_02_lower_gate_return",
+                "FFS_Route_lower_tent_03_west_upper_parking",
+                "FFS_Route_lower_tent_04_lower_tent_home_on_foot",
+                "FFS_Route_lower_tent_05_middle_earth_arrival",
+                "FFS_Route_lower_tent_06_community_task",
+                "FFS_Route_lower_tent_07_first_night_choice",
+                "FFS_Route_upper_tent_01_gate_to_upper_unload",
+                "FFS_Route_upper_tent_02_upper_unload_to_gate",
+                "FFS_Route_upper_tent_03_gate_to_west_parking",
+                "FFS_Route_upper_tent_04_parking_to_upper_camp",
+                "FFS_Route_upper_tent_05_upper_camp_to_middle_earth",
+                "FFS_Route_upper_tent_06_middle_earth_to_night_choice",
+                "FFS_Route_car_camp_01_gate_to_car_camp",
+                "FFS_Route_car_camp_02_car_camp_to_middle_earth",
+                "FFS_Route_car_camp_03_middle_earth_to_night_choice",
+                "FFS_Route_NightReturn_lower_tent",
+                "FFS_Route_NightReturn_upper_tent",
+                "FFS_Route_NightReturn_car_camp",
+                "FFS_Route_Trace_upperClearingToMiddleEarth",
+                "FFS_Route_Trace_middleEarthToLowerClearing"
+              ]
+            }
+          },
+          "zone-nodes": {
+            "passed": true,
+            "evidence": {
+              "count": 7
+            }
+          },
+          "anchor-nodes": {
+            "passed": true,
+            "evidence": {
+              "count": 8,
+              "includesSurfaceProxy": true
+            }
+          },
+          "review-cameras": {
+            "passed": true,
+            "evidence": {
+              "count": 6,
+              "names": [
+                "FFS_ReviewCamera_lower_gate",
+                "FFS_ReviewCamera_lower_level",
+                "FFS_ReviewCamera_upper_parking",
+                "FFS_ReviewCamera_middle_earth",
+                "FFS_ReviewCamera_night_composition",
+                "FFS_ReviewCamera_overview"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "glb-node-policy": {
+      "passed": true,
+      "evidence": {
+        "rootNode": {
+          "children": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36
+          ],
+          "extras": {
+            "ffs_role": "world-root",
+            "ffs_child_coordinate_frame": "plan world metres; x east, y up, z south",
+            "ffs_plan_to_blender": "(x, y, z) -> (x, -z, y)"
+          },
+          "name": "FFS_WorldRoot",
+          "rotation": [
+            0.7071068286895752,
+            0,
+            0,
+            0.7071068286895752
+          ]
+        },
+        "terrainNode": {
+          "extras": {
+            "ffs_role": "terrain-render-collider",
+            "ffs_source_class": "measured-downsample",
+            "ffs_collides": true,
+            "ffs_coordinate_manifest_sha256": "ff43b8373da6a6313923f275c85f4bfad2fc02e4b2dcdc5efeb8bf4bbc6968cf",
+            "ffs_retained_vertex_height_sha256": "8f07b8c756d7ad346cb120565de419706f8caec8215352617cc354a55f0028f8",
+            "ffs_review_stride": 4,
+            "ffs_vertical_error_max_m": 1.621601
+          },
+          "mesh": 29,
+          "name": "FFS_Terrain"
+        },
+        "meshNodeCount": 37,
+        "meshNodeNames": [
+          "FFS_Anchor_car_camp",
+          "FFS_Anchor_LidarCanopyProxy",
+          "FFS_Anchor_lower_gate",
+          "FFS_Anchor_lower_gate_spawn",
+          "FFS_Anchor_lower_tent",
+          "FFS_Anchor_night_heart",
+          "FFS_Anchor_upper_tent",
+          "FFS_Anchor_west_upper_parking",
+          "FFS_Route_car_camp_01_gate_to_car_camp",
+          "FFS_Route_car_camp_02_car_camp_to_middle_earth",
+          "FFS_Route_car_camp_03_middle_earth_to_night_choice",
+          "FFS_Route_lower_tent_01_lower_tent_unload",
+          "FFS_Route_lower_tent_02_lower_gate_return",
+          "FFS_Route_lower_tent_03_west_upper_parking",
+          "FFS_Route_lower_tent_04_lower_tent_home_on_foot",
+          "FFS_Route_lower_tent_05_middle_earth_arrival",
+          "FFS_Route_lower_tent_06_community_task",
+          "FFS_Route_lower_tent_07_first_night_choice",
+          "FFS_Route_NightReturn_car_camp",
+          "FFS_Route_NightReturn_lower_tent",
+          "FFS_Route_NightReturn_upper_tent",
+          "FFS_Route_Trace_middleEarthToLowerClearing",
+          "FFS_Route_Trace_upperClearingToMiddleEarth",
+          "FFS_Route_upper_tent_01_gate_to_upper_unload",
+          "FFS_Route_upper_tent_02_upper_unload_to_gate",
+          "FFS_Route_upper_tent_03_gate_to_west_parking",
+          "FFS_Route_upper_tent_04_parking_to_upper_camp",
+          "FFS_Route_upper_tent_05_upper_camp_to_middle_earth",
+          "FFS_Route_upper_tent_06_middle_earth_to_night_choice",
+          "FFS_Terrain",
+          "FFS_Zone_car_camp_zone",
+          "FFS_Zone_lower_gate_zone",
+          "FFS_Zone_lower_tent_zone",
+          "FFS_Zone_middle_earth_zone",
+          "FFS_Zone_night_heart_zone",
+          "FFS_Zone_upper_tent_zone",
+          "FFS_Zone_west_upper_parking_zone"
+        ]
+      }
+    }
+  },
+  "limitations": [
+    "The 4 m review mesh is a measured downsample of the 1 m source DTM; recorded full-grid interpolation errors bound the offline visual-review surface only. Browser/runtime collision must use the full 1 m DTM.",
+    "Austen's connector vertices are verbatim orthophoto traces, not centimetre-accurate field survey.",
+    "Road, campsite, parking, zone, and marker coordinates retain their Gate 1 evidence classes and are not promoted to building or cadastral truth.",
+    "Surface-evidence proxy masses are non-colliding lidar-height context and do not identify individual trees or structures."
+  ]
+}
