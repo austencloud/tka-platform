@@ -7,7 +7,11 @@
 
   import { getStageChoreographyContext } from "../context/stage-choreography-context";
   import { getActiveStageSequenceClip } from "../domain/stage-sequence-timeline";
-  import type { Performer, StageSequenceClip } from "../domain/stage-types";
+  import type {
+    Formation,
+    Performer,
+    StageSequenceClip,
+  } from "../domain/stage-types";
   import type { StageEditMode } from "../state/stage-edit-mode.svelte";
 
   interface Props {
@@ -22,6 +26,16 @@
     initialDurationBeats: number;
     draftStartBeat: number;
     draftDurationBeats: number;
+  };
+
+  type FormationDrag = {
+    formationId: string;
+    mode: "move" | "transition";
+    pointerStartX: number;
+    initialAtBeat: number;
+    initialTransitionBeats: number;
+    draftAtBeat: number;
+    draftTransitionBeats: number;
   };
 
   let { editMode }: Props = $props();
@@ -46,6 +60,8 @@
   let pickerPerformerId = $state<string | null>(null);
   let drag = $state<ClipDrag | null>(null);
   let didDrag = false;
+  let formationDrag = $state<FormationDrag | null>(null);
+  let didFormationDrag = false;
   const effectivePixelsPerBeat = $derived(
     Math.max(
       pixelsPerBeat,
@@ -69,7 +85,10 @@
   }
 
   function seekFromPointer(event: PointerEvent): void {
-    if ((event.target as Element).closest(".sequence-clip")) return;
+    if (
+      (event.target as Element).closest(".sequence-clip, .formation-block")
+    )
+      return;
     const lane = event.currentTarget as HTMLElement;
     const rect = lane.getBoundingClientRect();
     const beat = Math.max(
@@ -159,6 +178,140 @@
       : clip.durationBeats;
   }
 
+  function formationBeat(formation: Formation): number {
+    return formationDrag?.formationId === formation.id &&
+      formationDrag.mode === "move"
+      ? formationDrag.draftAtBeat
+      : formation.atBeat;
+  }
+
+  function formationTransition(formation: Formation): number {
+    return formationDrag?.formationId === formation.id &&
+      formationDrag.mode === "transition"
+      ? formationDrag.draftTransitionBeats
+      : formation.transitionBeats;
+  }
+
+  /**
+   * A set is held from the beat it lands on until the walk into the NEXT set
+   * begins. The hold can legitimately be zero — the default document walks for
+   * all eight counts — so this drives a rail drawn behind the set's chip, never
+   * the chip's own width. Sizing the chip by the hold collapsed it to an
+   * unreadable stub whenever the cast never stops.
+   */
+  function formationHoldBeats(index: number): number {
+    const formation = choreography.formations[index];
+    if (!formation) return 0;
+    const next = choreography.formations[index + 1];
+    const end = next
+      ? formationBeat(next) - formationTransition(next)
+      : maxBeats;
+    return Math.max(0, end - formationBeat(formation));
+  }
+
+  function formationName(formation: Formation, index: number): string {
+    return formation.label?.trim() || `Set ${index + 1}`;
+  }
+
+  function addFormationAtPlayhead(): void {
+    const formation = stageState.addFormation(
+      Math.round(stageState.currentBeat)
+    );
+    if (formation) editMode.selectFormation(formation.id);
+  }
+
+  function removeFormation(formationId: string): void {
+    stageState.removeFormation(formationId);
+    editMode.selectFormation(null);
+  }
+
+  function beginFormationDrag(
+    event: PointerEvent,
+    formation: Formation,
+    mode: FormationDrag["mode"]
+  ): void {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    didFormationDrag = false;
+    stageState.beginDrag();
+    formationDrag = {
+      formationId: formation.id,
+      mode,
+      pointerStartX: event.clientX,
+      initialAtBeat: formation.atBeat,
+      initialTransitionBeats: formation.transitionBeats,
+      draftAtBeat: formation.atBeat,
+      draftTransitionBeats: formation.transitionBeats,
+    };
+  }
+
+  function updateFormationDrag(event: PointerEvent): void {
+    if (!formationDrag) return;
+    const beatDelta =
+      (event.clientX - formationDrag.pointerStartX) / effectivePixelsPerBeat;
+    if (Math.abs(event.clientX - formationDrag.pointerStartX) > 3) {
+      didFormationDrag = true;
+    }
+    if (formationDrag.mode === "move") {
+      formationDrag.draftAtBeat = Math.max(
+        1,
+        Math.round(formationDrag.initialAtBeat + beatDelta)
+      );
+    } else {
+      // The handle sits on the set's leading edge, so dragging it left pulls
+      // the start of the walk earlier and lengthens the transition.
+      formationDrag.draftTransitionBeats = Math.max(
+        0,
+        Math.round(formationDrag.initialTransitionBeats - beatDelta)
+      );
+    }
+  }
+
+  function commitFormationDrag(): void {
+    if (!formationDrag) return;
+    if (didFormationDrag) {
+      if (formationDrag.mode === "move") {
+        stageState.moveFormation(
+          formationDrag.formationId,
+          formationDrag.draftAtBeat
+        );
+      } else {
+        stageState.setFormationTransitionBeats(
+          formationDrag.formationId,
+          formationDrag.draftTransitionBeats
+        );
+      }
+    }
+    formationDrag = null;
+  }
+
+  function handleFormationKeydown(
+    event: KeyboardEvent,
+    formation: Formation,
+    index: number
+  ): void {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      editMode.selectFormation(formation.id);
+      return;
+    }
+    if (index > 0 && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+      event.preventDefault();
+      const direction = event.key === "ArrowLeft" ? -1 : 1;
+      stageState.moveFormation(
+        formation.id,
+        formation.atBeat + direction * (event.shiftKey ? 4 : 1)
+      );
+      return;
+    }
+    if (index > 0 && (event.key === "Delete" || event.key === "Backspace")) {
+      event.preventDefault();
+      removeFormation(formation.id);
+    }
+  }
+
   function handleClipKeydown(
     event: KeyboardEvent,
     performer: Performer,
@@ -186,9 +339,18 @@
 </script>
 
 <svelte:window
-  onpointermove={updateClipDrag}
-  onpointerup={commitClipDrag}
-  onpointercancel={commitClipDrag}
+  onpointermove={(event) => {
+    updateClipDrag(event);
+    updateFormationDrag(event);
+  }}
+  onpointerup={() => {
+    commitClipDrag();
+    commitFormationDrag();
+  }}
+  onpointercancel={() => {
+    commitClipDrag();
+    commitFormationDrag();
+  }}
 />
 
 <section class="stage-timeline" aria-label="Performance timeline">
@@ -244,6 +406,122 @@
           class="ruler-playhead"
           style:left="{stageState.currentBeat * effectivePixelsPerBeat}px"
         ></div>
+      </div>
+
+      <div class="formation-label">
+        <span class="formation-label-text">SETS</span>
+        <button
+          type="button"
+          class="add-formation"
+          onclick={addFormationAtPlayhead}
+          aria-label="Add a set at the playhead"
+          title="Add a set at the playhead"
+        >
+          <i class="fas fa-plus" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <div
+        class="formation-track"
+        style="width: var(--timeline-width); --pixels-per-beat: {effectivePixelsPerBeat}px"
+        onpointerdown={seekFromPointer}
+        role="listbox"
+        aria-label="Formation sets. Each block is a held set; the ramp before it is the walk into that set."
+        tabindex="-1"
+      >
+        <div
+          class="lane-playhead"
+          style:left="{stageState.currentBeat * effectivePixelsPerBeat}px"
+        ></div>
+        {#each choreography.formations as formation, index (formation.id)}
+          {@const beat = formationBeat(formation)}
+          {@const transition = formationTransition(formation)}
+          {@const hold = formationHoldBeats(index)}
+          {@const selected = editMode.selectedFormationId === formation.id}
+          {#if hold > 0}
+            <div
+              class="formation-hold"
+              class:selected
+              style="left: {beat * effectivePixelsPerBeat}px; width: {hold *
+                effectivePixelsPerBeat}px"
+              aria-hidden="true"
+            ></div>
+          {/if}
+          {#if transition > 0}
+            <div
+              class="formation-ramp"
+              class:selected
+              style="left: {(beat - transition) *
+                effectivePixelsPerBeat}px; width: {transition *
+                effectivePixelsPerBeat}px"
+              aria-hidden="true"
+            ></div>
+          {/if}
+          <div
+            class="formation-block"
+            class:selected
+            class:dragging={formationDrag?.formationId === formation.id}
+            style="left: {beat * effectivePixelsPerBeat}px"
+            role="option"
+            aria-selected={selected}
+            tabindex="0"
+            onkeydown={(event) =>
+              handleFormationKeydown(event, formation, index)}
+          >
+            {#if index > 0}
+              <button
+                type="button"
+                class="transition-handle"
+                onpointerdown={(event) =>
+                  beginFormationDrag(event, formation, "transition")}
+                aria-label="Change the walk into {formationName(
+                  formation,
+                  index
+                )}, currently {formation.transitionBeats} counts"
+                title="Drag to change how many counts the walk takes"
+              ></button>
+            {/if}
+            <button
+              type="button"
+              class="formation-body"
+              onpointerdown={(event) => {
+                if (index === 0) return;
+                beginFormationDrag(event, formation, "move");
+              }}
+              onclick={() => {
+                if (didFormationDrag) {
+                  didFormationDrag = false;
+                  return;
+                }
+                editMode.selectFormation(formation.id);
+              }}
+              aria-label="{formationName(formation, index)}, in place on count {formation.atBeat}{index >
+              0
+                ? `, ${formation.transitionBeats} counts to get there`
+                : ''}"
+            >
+              <span class="formation-name">
+                {formationName(formation, index)}
+              </span>
+              <span class="formation-count">{beat}</span>
+            </button>
+            {#if selected && index > 0}
+              <button
+                type="button"
+                class="formation-action"
+                aria-label="Remove {formationName(formation, index)}"
+                title="Remove"
+                onpointerdown={(event) => event.stopPropagation()}
+                onclick={(event) => {
+                  event.stopPropagation();
+                  removeFormation(formation.id);
+                }}
+              >
+                <i class="fas fa-trash" aria-hidden="true"></i>
+              </button>
+            {/if}
+          </div>
+        {/each}
       </div>
 
       {#each choreography.performers as performer (performer.id)}
@@ -461,10 +739,13 @@
     min-height: 100%;
     grid-template-columns: 7rem var(--timeline-width);
     grid-auto-rows: minmax(3.5rem, 1fr);
-    grid-template-rows: 2.25rem;
+    /* 3.5rem keeps the set chip's 2.75rem touch target intact inside its
+       0.35rem inset, and matches the performer lane height. */
+    grid-template-rows: 2.25rem 3.5rem;
   }
 
   .ruler-label,
+  .formation-label,
   .lane-label {
     position: sticky;
     left: 0;
@@ -563,6 +844,212 @@
     cursor: pointer;
   }
 
+  .formation-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    padding: 0.3rem 0.45rem;
+    /* Deliberately NOT --theme-accent: the themed accent collides with the
+       performer clip colours and makes the spine read as a fifth lane. */
+    --formation-accent: #7cd4e8;
+  }
+  .formation-label-text {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.42));
+    font-size: 0.65rem;
+    font-weight: 750;
+    letter-spacing: 0.1em;
+  }
+  .add-formation {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid
+      color-mix(in srgb, var(--formation-accent) 42%, transparent);
+    border-radius: 0.65rem;
+    background: color-mix(in srgb, var(--formation-accent) 10%, transparent);
+    color: var(--formation-accent);
+    cursor: pointer;
+  }
+  .formation-track {
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background:
+      repeating-linear-gradient(
+        90deg,
+        transparent 0,
+        transparent calc(var(--pixels-per-beat) - 1px),
+        rgba(255, 255, 255, 0.06) calc(var(--pixels-per-beat) - 1px),
+        rgba(255, 255, 255, 0.06) var(--pixels-per-beat)
+      ),
+      color-mix(in srgb, var(--theme-panel-bg, #0c0d14) 88%, black);
+    /* Deliberately NOT --theme-accent: the themed accent collides with the
+       performer clip colours and makes the spine read as a fifth lane. */
+    --formation-accent: #7cd4e8;
+  }
+  /* The cast is standing still: a flat hairline rail, no travel implied. */
+  .formation-hold {
+    position: absolute;
+    top: 50%;
+    z-index: 1;
+    height: 0.125rem;
+    border-radius: 0.0625rem;
+    background: color-mix(in srgb, var(--formation-accent) 30%, transparent);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  .formation-hold.selected {
+    background: color-mix(in srgb, var(--formation-accent) 60%, transparent);
+  }
+  /* The walk into a set: a bar that thickens toward its arrowhead, so travel
+     and its direction read at a glance instead of looking like a divider. */
+  .formation-ramp {
+    position: absolute;
+    top: 50%;
+    z-index: 1;
+    height: 0.45rem;
+    border-radius: 0.225rem 0 0 0.225rem;
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--formation-accent) 10%, transparent),
+      color-mix(in srgb, var(--formation-accent) 65%, transparent)
+    );
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  .formation-ramp::after {
+    position: absolute;
+    top: 50%;
+    right: -0.05rem;
+    width: 0;
+    height: 0;
+    border-top: 0.45rem solid transparent;
+    border-bottom: 0.45rem solid transparent;
+    border-left: 0.5rem solid
+      color-mix(in srgb, var(--formation-accent) 65%, transparent);
+    content: "";
+    transform: translateY(-50%);
+  }
+  .formation-ramp.selected {
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--formation-accent) 22%, transparent),
+      var(--formation-accent)
+    );
+  }
+  .formation-ramp.selected::after {
+    border-left-color: var(--formation-accent);
+  }
+  /* A set is a marker anchored on its count, sized by its own label — never by
+     the hold, which is often zero. The leading rule is the count it lands on. */
+  .formation-block {
+    position: absolute;
+    top: 0.35rem;
+    bottom: 0.35rem;
+    z-index: 2;
+    display: flex;
+    min-width: 2.75rem;
+    max-width: 14rem;
+    border: 1px solid
+      color-mix(in srgb, var(--formation-accent) 40%, transparent);
+    border-left: 2px solid var(--formation-accent);
+    border-radius: 0 0.45rem 0.45rem 0;
+    background: color-mix(in srgb, var(--formation-accent) 14%, #0e1018);
+    box-shadow: 0 0.2rem 0.6rem rgba(0, 0, 0, 0.4);
+  }
+  .formation-block.selected {
+    outline: 2px solid white;
+    outline-offset: 1px;
+  }
+  .formation-block.dragging {
+    opacity: 0.85;
+  }
+  /* The walk length is dragged from the set's leading edge. The hit zone keeps
+     the 44px floor the clip resize handles use, but straddles that edge instead
+     of sitting in flow: a 44px slab in flow outweighs the label on a set this
+     narrow. What you see is the grip below. */
+  .transition-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -1.375rem;
+    width: 2.75rem;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: ew-resize;
+  }
+  .transition-handle::before {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 1.375rem;
+    width: 0.375rem;
+    background: linear-gradient(
+      90deg,
+      var(--formation-accent),
+      color-mix(in srgb, var(--formation-accent) 15%, transparent)
+    );
+    content: "";
+    transition: width 120ms ease;
+  }
+  .transition-handle:hover::before,
+  .transition-handle:focus-visible::before {
+    width: 0.7rem;
+  }
+  .formation-body {
+    display: flex;
+    min-width: 0;
+    min-height: 2.75rem;
+    flex: 1;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    padding: 0 0.5rem 0 0.7rem;
+    border: 0;
+    background: transparent;
+    color: var(--theme-text, white);
+    cursor: grab;
+    text-align: left;
+  }
+  .formation-name {
+    overflow: hidden;
+    /* Matches .clip-name: sets and clips are the same class of timeline label. */
+    font-size: 0.75rem;
+    font-weight: 750;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* A tinted chip, so "Set 1" and its count read as two things rather than as
+     the string "Set 1 0". */
+  .formation-count {
+    flex: 0 0 auto;
+    padding: 0.1rem 0.3rem;
+    border-radius: 0.3rem;
+    background: color-mix(in srgb, var(--formation-accent) 22%, transparent);
+    color: color-mix(in srgb, var(--formation-accent) 75%, white);
+    font-size: 0.75rem;
+    font-weight: 750;
+    /* The count changes as a set is dragged, so fix the digit width. */
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .formation-action {
+    display: grid;
+    width: 2.25rem;
+    min-height: 2.75rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(0, 0, 0, 0.28);
+    color: rgba(255, 255, 255, 0.82);
+    cursor: pointer;
+  }
   .sequence-lane {
     position: relative;
     overflow: hidden;
