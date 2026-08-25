@@ -276,10 +276,10 @@
   // for the same reason the column counts do: the module box is inset by the
   // app sidebar, so a viewport media query picks the wrong number. Floored so
   // it stays a map and capped so it stays a band — at 412px tall it is 8.5em
-  // beside the slot, at 4K it is 18em of a surface that has the room for it.
-  const MAP_STAGE_SHARE = 0.26;
+  // beside the slot, at 4K it is 22em of a surface that has the room for it.
+  const MAP_STAGE_SHARE = 0.34;
   const MAP_STAGE_MIN_EM = 8.5;
-  const MAP_STAGE_MAX_EM = 18;
+  const MAP_STAGE_MAX_EM = 22;
 
   const mapStageEm = $derived(
     Math.round(
@@ -968,6 +968,14 @@
     min-height: var(--map-band-slot-h);
   }
 
+  @container creators (min-width: 900px) {
+    .ph-body {
+      grid-template-columns: minmax(0, 1fr) minmax(17em, 24em);
+      align-items: center;
+      max-width: max(64em, 55%);
+    }
+  }
+
   .map-band-ph.compact {
     margin-bottom: 1.25em;
   }
@@ -975,6 +983,7 @@
   .map-band-ph.compact .ph-body {
     grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
     align-items: center;
+    max-width: none;
   }
 
   .bands {

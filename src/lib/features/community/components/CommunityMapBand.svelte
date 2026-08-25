@@ -32,20 +32,22 @@
 
   let { compact = false }: Props = $props();
 
-  const { state, getApiKey } = getCommunityMapContext();
+  // Not named `state`: a variable of that name in scope turns every
+  // `$state(...)` in this module into a store subscription.
+  const { state: mapState, getApiKey } = getCommunityMapContext();
 
   const apiKey = $derived(getApiKey());
   const configured = $derived(
     Boolean(apiKey) && apiKey !== "your-google-maps-api-key",
   );
-  const locations = $derived(state.locations);
-  const status = $derived(state.locationsStatus);
+  const locations = $derived(mapState.locations);
+  const status = $derived(mapState.locationsStatus);
 
   // The read is deliberately tied to the band mounting rather than to the
   // panel: the band is behind LazyMount and an IntersectionObserver, so a
   // visitor who never scrolls to it never pays for the query.
   onMount(() => {
-    if (configured) void state.loadLocations();
+    if (configured) void mapState.loadLocations();
   });
 </script>
 
@@ -65,12 +67,21 @@
       {:else if status === "failed"}
         <div class="stage-note" role="alert">
           <p>Couldn't load the map.</p>
-          <button type="button" onclick={() => void state.loadLocations()}>
+          <button type="button" onclick={() => void mapState.loadLocations()}>
             Try again
           </button>
         </div>
       {:else}
-        <GlobalUserMap {locations} userLocation={null} {apiKey} size="full" />
+        <!-- Framed to the pins rather than to a fixed world view: with one
+             marker the default centres on the Atlantic and puts it off-screen. -->
+        <GlobalUserMap
+          {locations}
+          userLocation={null}
+          {apiKey}
+          size="full"
+          frame="markers"
+          controls="minimal"
+        />
       {/if}
     </div>
 
@@ -204,13 +215,38 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
   }
 
+  /*
+   * Wide: the map and the invitation sit side by side, and the pair is capped.
+   * Both halves matter. A full-width stage in a band-height box is a 6:1 strip
+   * of mostly ocean — the map only reads as a map near 2:1 — and a capped pair
+   * under a full-width header rule is an ordinary editorial composition, where
+   * a 3760px row holding one sentence and two buttons is not. The floor grows
+   * with the container so 4K gets a bigger map rather than the same map with
+   * more rail.
+   *
+   * 900 rather than a tablet-ish 640: the slot needs ~17em whatever the
+   * container does, so at 820 a two-column body left the map 330px wide beside
+   * a 352px stage — a portrait map. The seam is set where a landscape map
+   * still fits next to the slot, not where a tablet begins.
+   */
+  @container creators (min-width: 900px) {
+    .band-body {
+      grid-template-columns: minmax(0, 1fr) minmax(17em, 24em);
+      align-items: center;
+      max-width: max(64em, 55%);
+    }
+  }
+
   /* ── short landscape ──────────────────────────────────────────────────── */
   .map-band.compact {
     margin-bottom: 1.25em;
   }
 
+  /* Last, so it wins over the wide rule above: a 960x412 box is wider than
+     640 but has no room to spend on a cap. */
   .map-band.compact .band-body {
     grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
     align-items: center;
+    max-width: none;
   }
 </style>

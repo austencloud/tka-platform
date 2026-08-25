@@ -20,6 +20,8 @@
     onScanMarkerClick,
     showEmptyState = true,
     size = "full",
+    frame = "world",
+    controls = "default",
   }: {
     locations: UserLocationWithProfile[];
     userLocation: { lat: number; lng: number } | null;
@@ -39,6 +41,21 @@
     showEmptyState?: boolean;
     /** Layout variant. "embedded" gives a compact rounded 260px container. */
     size?: "full" | "embedded";
+    /**
+     * How the viewport is chosen. `"world"` keeps the historical fixed centre
+     * and zoom. `"markers"` frames the pins that exist and re-frames when the
+     * container resizes — opt-in, because the three existing hosts were built
+     * around the world view and changing it under them is not this feature's
+     * business.
+     */
+    frame?: "world" | "markers";
+    /**
+     * `"minimal"` drops the zoom, fullscreen, camera and Street View chrome.
+     * Google's control stack is a fixed pixel size, so in a 321px-wide band it
+     * covers a third of the map. Dragging and scroll-zoom still work; only the
+     * buttons go. Default keeps the historical full set.
+     */
+    controls?: "default" | "minimal";
   } = $props();
 
   let mapContainer: HTMLDivElement;
@@ -87,21 +104,80 @@
   function initializeMap(): void {
     // Default center (world view)
     const center = userLocation || { lat: 20, lng: 0 };
-    const zoom = userLocation ? 4 : 2;
+    // A framed map re-frames the moment markers exist. Opening at the no-repeat
+    // floor rather than at 2 means the first paint is never a tiled world that
+    // then snaps.
+    const zoom = userLocation
+      ? 4
+      : frame === "markers"
+        ? noRepeatMinZoom()
+        : 2;
 
     map = new google.maps.Map(mapContainer, {
       center,
       zoom,
       mapId: "tka-community-map", // Required for AdvancedMarkerElement
-      disableDefaultUI: false,
-      zoomControl: true,
+      disableDefaultUI: controls === "minimal",
+      zoomControl: controls !== "minimal",
       mapTypeControl: false,
       streetViewControl: false,
-      fullscreenControl: true,
+      fullscreenControl: controls !== "minimal",
+      cameraControl: controls !== "minimal",
+      keyboardShortcuts: controls !== "minimal",
     });
 
     mapReady = true;
     onMapReady();
+  }
+
+  /** Google's world is 256px wide at zoom 0 and doubles every level. */
+  const WORLD_TILE_PX = 256;
+  /** The ceiling stops a single pin dropping the viewer onto one city's streets. */
+  const FRAME_MAX_ZOOM = 5;
+  /** Enough context around one pin to recognise where in the world it is. */
+  const SINGLE_MARKER_ZOOM = 4;
+
+  /**
+   * The lowest zoom at which the world still covers the container. Any wider
+   * and the projection tiles horizontally: the same continents are drawn two
+   * or three times, which reads as decorative texture rather than as a map.
+   * It is derived rather than fixed because the same component is given a
+   * 300px box on a phone and a 1400px one at 4K.
+   */
+  function noRepeatMinZoom(): number {
+    const width = mapContainer?.clientWidth ?? 0;
+    if (width <= 0) return 2;
+    return Math.max(1, Math.ceil(Math.log2(width / WORLD_TILE_PX)));
+  }
+
+  function frameToMarkers(): void {
+    if (!map || frame !== "markers") return;
+
+    const points = locations.map((location) => location.cityCenterCoordinates);
+    if (points.length === 0) return;
+
+    const minZoom = noRepeatMinZoom();
+
+    if (points.length === 1) {
+      map.setCenter(points[0]);
+      map.setZoom(Math.max(minZoom, SINGLE_MARKER_ZOOM));
+      return;
+    }
+
+    const bounds = new google.maps.LatLngBounds();
+    for (const point of points) bounds.extend(point);
+    map.fitBounds(bounds, 48);
+
+    // `fitBounds` is asynchronous and ignores min/max zoom passed as options,
+    // so the clamp is applied once it has settled.
+    google.maps.event.addListenerOnce(map, "idle", () => {
+      const zoom = map?.getZoom();
+      if (zoom === undefined) return;
+      // The floor wins over the ceiling: a repeated world is a worse failure
+      // than a viewport that cannot hold every pin at once.
+      if (zoom > FRAME_MAX_ZOOM) map?.setZoom(FRAME_MAX_ZOOM);
+      if ((map?.getZoom() ?? minZoom) < minZoom) map?.setZoom(minZoom);
+    });
   }
 
   function createMarkers(incoming: typeof locations): void {
@@ -150,6 +226,8 @@
 
       markers.push(marker);
     }
+
+    frameToMarkers();
 
     // Marker clustering will be added later once package is installed
     // For now, markers will display individually
@@ -228,6 +306,26 @@
       map?.panTo(center);
       map?.setZoom(10); // City-level zoom
     });
+  });
+
+  // A framed map that keeps its centre through a resize loses the pins it was
+  // framed around: the container reflows, the projection does not.
+  $effect(() => {
+    if (!mapReady || frame !== "markers" || !mapContainer) return;
+    if (typeof ResizeObserver === "undefined") return;
+
+    let pending = 0;
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(pending);
+      pending = requestAnimationFrame(() => {
+        untrack(() => frameToMarkers());
+      });
+    });
+    observer.observe(mapContainer);
+    return () => {
+      cancelAnimationFrame(pending);
+      observer.disconnect();
+    };
   });
 </script>
 

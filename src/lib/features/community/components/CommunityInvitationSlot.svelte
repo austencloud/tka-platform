@@ -25,9 +25,11 @@
   import { getCommunityMapContext } from "../context/community-map-context";
   import CommunityCityPicker from "./CommunityCityPicker.svelte";
 
-  const { state, getApiKey } = getCommunityMapContext();
+  // Not named `state`: a variable of that name in scope turns every
+  // `$state(...)` in this module into a store subscription.
+  const { state: mapState, getApiKey } = getCommunityMapContext();
 
-  const slot = $derived(state.slot);
+  const slot = $derived(mapState.slot);
   const apiKey = $derived(getApiKey());
 
   /**
@@ -43,7 +45,7 @@
   let pickTrigger = $state<HTMLButtonElement | null>(null);
 
   const status = $derived.by(() => {
-    const error = state.mutationError;
+    const error = mapState.mutationError;
     if (!error) return "";
     // Only a CityResolutionError carries copy written for a person. Anything
     // else is a Firestore or network object whose message is a diagnostic, not
@@ -58,11 +60,11 @@
 
   function openPicker(trigger: HTMLButtonElement | null): void {
     pickTrigger = trigger;
-    state.openPicker();
+    mapState.openPicker();
   }
 
   function closePicker(): void {
-    state.closePicker();
+    mapState.closePicker();
     pickTrigger?.focus();
     pickTrigger = null;
   }
@@ -70,7 +72,7 @@
   function addSuggested(): void {
     if (slot.kind !== "suggest" || !slot.suggestion) return;
     const suggestion = slot.suggestion;
-    void state.addCity({
+    void mapState.addCity({
       label: suggestion.city,
       canonicalize: suggestion.canonicalize,
     });
@@ -78,7 +80,7 @@
 
   function addPicked(suggestion: CitySuggestion): void {
     pickTrigger = null;
-    void state.addCity({
+    void mapState.addCity({
       label: suggestion.city,
       canonicalize: suggestion.canonicalize,
     });
@@ -133,7 +135,7 @@
           <PanelButton
             variant="secondary"
             disabled={slot.pending}
-            onclick={() => void state.removeCity()}
+            onclick={() => void mapState.removeCity()}
           >
             Remove
           </PanelButton>
@@ -160,7 +162,7 @@
               <PanelButton
                 variant="secondary"
                 disabled={slot.pending}
-                onclick={() => void state.retryOwnMembership()}
+                onclick={() => void mapState.retryOwnMembership()}
               >
                 Try again
               </PanelButton>
