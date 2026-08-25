@@ -1,0 +1,358 @@
+import {
+  BufferAttribute,
+  BufferGeometry,
+  ConeGeometry,
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  MeshStandardMaterial,
+} from "three";
+import type { ImportedTerrainDataV2 } from "$lib/shared/3d/procedural-engine/generation/real-terrain-zone";
+import {
+  allFlowFestSegments,
+  type FlowFestBranchId,
+  type FlowFestRuntimeContract,
+  type FlowFestRuntimePoint,
+  type FlowFestRuntimeSegment,
+} from "./flow-fest-runtime-contract";
+import { sampleFlowFestTerrainWorldY } from "./flow-fest-terrain-host";
+
+export interface FlowFestBarrierGeometry {
+  mesh: Mesh;
+  vertices: Float32Array;
+  indices: Uint32Array;
+  proxyCount: number;
+}
+
+const BRANCH_COLOR: Record<FlowFestBranchId, string> = {
+  "lower-tent": "#ffb45b",
+  "upper-tent": "#b69cff",
+  "car-camp": "#69df9d",
+};
+
+/**
+ * Build the legibility layer from the canonical Gate 2 contract. Nothing in
+ * this group collides; it explains the routes and evidence classes without
+ * becoming a second description of the ground.
+ */
+export function buildFlowFestReviewOverlay(
+  contract: FlowFestRuntimeContract,
+  terrain: ImportedTerrainDataV2,
+  selectedBranch: FlowFestBranchId
+): Group {
+  const root = new Group();
+  root.name = "FFS_ReviewOverlay";
+
+  for (const branchId of Object.keys(
+    contract.routes.arrivalBranches
+  ) as FlowFestBranchId[]) {
+    const branch = contract.routes.arrivalBranches[branchId];
+    const segments = [
+      ...branch.segments,
+      contract.routes.nightReturnBranches[branchId],
+    ];
+    for (const segment of segments) {
+      const geometry = buildRibbonGeometry(terrain, segment);
+      const mesh = new Mesh(
+        geometry,
+        new MeshBasicMaterial({
+          color: BRANCH_COLOR[branchId],
+          transparent: true,
+          opacity: branchId === selectedBranch ? 0.92 : 0.28,
+          depthWrite: false,
+        })
+      );
+      mesh.name = `FFS_Route_${branchId}_${segment.id}`;
+      mesh.renderOrder = branchId === selectedBranch ? 4 : 2;
+      root.add(mesh);
+    }
+  }
+
+  for (const zone of contract.zones) {
+    const radiusX = zone.radiusMeters ?? zone.searchRadiusXMeters ?? 8;
+    const radiusZ = zone.radiusMeters ?? zone.searchRadiusZMeters ?? radiusX;
+    const points: FlowFestRuntimePoint[] = [];
+    for (let index = 0; index <= 96; index += 1) {
+      const angle = (index / 96) * Math.PI * 2;
+      const x = zone.center.x + Math.cos(angle) * radiusX;
+      const z = zone.center.z + Math.sin(angle) * radiusZ;
+      points.push({
+        x,
+        z,
+        sourceTerrainY: sampleFlowFestTerrainWorldY(terrain, x, z),
+        reviewTerrainY: 0,
+      });
+    }
+    const ring = new Mesh(
+      buildRibbonGeometry(terrain, {
+        id: zone.id,
+        mode: "person",
+        widthMeters: 0.55,
+        lengthMeters: 0,
+        sourceClasses: [zone.class],
+        pathClass: zone.shape,
+        points,
+      }),
+      new MeshBasicMaterial({
+        color: zone.id === "middle-earth-zone" ? "#62d8de" : "#fff4c7",
+        transparent: true,
+        opacity: 0.76,
+        depthWrite: false,
+      })
+    );
+    ring.name = `FFS_Zone_${zone.id}`;
+    ring.renderOrder = 5;
+    root.add(ring);
+  }
+
+  for (const anchor of contract.anchors) {
+    const geometry = new ConeGeometry(0.85, 2.8, 8);
+    const mesh = new Mesh(
+      geometry,
+      new MeshStandardMaterial({
+        color:
+          anchor.id === "car-camp"
+            ? BRANCH_COLOR["car-camp"]
+            : anchor.id === "upper-tent"
+              ? BRANCH_COLOR["upper-tent"]
+              : BRANCH_COLOR["lower-tent"],
+        roughness: 0.78,
+      })
+    );
+    mesh.name = `FFS_Anchor_${anchor.id}`;
+    mesh.position.set(
+      anchor.positionWorld[0],
+      sampleFlowFestTerrainWorldY(
+        terrain,
+        anchor.positionWorld[0],
+        anchor.positionWorld[2]
+      ) + 1.55,
+      anchor.positionWorld[2]
+    );
+    root.add(mesh);
+  }
+
+  return root;
+}
+
+/**
+ * Build visible gameplay topology from measured above-ground returns.
+ *
+ * The output deliberately does not call these boxes trees or buildings. The
+ * source proves that something rises above the DTM, and Austen's traces prove
+ * where the two corridors pass through that surface mass. We carve every
+ * approved person route, merge the remaining proxies into one visible mesh,
+ * and hand these exact arrays to Rapier as one trimesh.
+ */
+export function buildFlowFestLidarBarrierGeometry(
+  contract: FlowFestRuntimeContract,
+  terrain: ImportedTerrainDataV2,
+  surfaceOffsetsCentimeters: Uint16Array
+): FlowFestBarrierGeometry {
+  const width = terrain.heightmap.width;
+  const height = terrain.heightmap.height;
+  if (surfaceOffsetsCentimeters.length !== width * height) {
+    throw new Error("Flow Fest lidar surface dimensions do not match the DTM");
+  }
+  const proxy = contract.surfaceEvidenceProxy;
+  const stride = proxy.strideSamples;
+  const footprint = Math.max(4, stride * 0.82);
+  const routes = allFlowFestSegments(contract).filter(
+    (segment) => segment.mode === "person"
+  );
+  const positions: number[] = [];
+  const indices: number[] = [];
+  let proxyCount = 0;
+
+  for (let row = 0; row < height; row += stride) {
+    const z = terrain.worldBounds.minZ + row;
+    if (
+      z < proxy.activeBoundsWorldMeters.minZ ||
+      z > proxy.activeBoundsWorldMeters.maxZ
+    ) {
+      continue;
+    }
+    for (let column = 0; column < width; column += stride) {
+      const x = terrain.worldBounds.minX + column;
+      if (
+        x < proxy.activeBoundsWorldMeters.minX ||
+        x > proxy.activeBoundsWorldMeters.maxX
+      ) {
+        continue;
+      }
+      const encoded = surfaceOffsetsCentimeters[row * width + column];
+      if (encoded == null || encoded === 65535) continue;
+      const measuredHeight = encoded / 100;
+      if (measuredHeight < proxy.thresholdMetersAboveDtm) continue;
+      if (routeCarvesProxy(x, z, footprint, routes)) continue;
+
+      const groundY = sampleFlowFestTerrainWorldY(terrain, x, z);
+      const proxyHeight = Math.min(18, Math.max(4, measuredHeight));
+      appendBox(positions, indices, x, groundY, z, footprint, proxyHeight);
+      proxyCount += 1;
+    }
+  }
+
+  const vertices = new Float32Array(positions);
+  const triangleIndices = new Uint32Array(indices);
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", new BufferAttribute(vertices, 3));
+  geometry.setIndex(new BufferAttribute(triangleIndices, 1));
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  const mesh = new Mesh(
+    geometry,
+    new MeshStandardMaterial({
+      color: "#36533c",
+      roughness: 1,
+      transparent: true,
+      opacity: 0.78,
+    })
+  );
+  mesh.name = "FFS_Barrier_LidarProxy_Merged";
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return { mesh, vertices, indices: triangleIndices, proxyCount };
+}
+
+function buildRibbonGeometry(
+  terrain: ImportedTerrainDataV2,
+  segment: FlowFestRuntimeSegment
+): BufferGeometry {
+  const positions: number[] = [];
+  const indices: number[] = [];
+  const halfWidth = segment.widthMeters / 2;
+  for (
+    let pointIndex = 1;
+    pointIndex < segment.points.length;
+    pointIndex += 1
+  ) {
+    const start = segment.points[pointIndex - 1]!;
+    const end = segment.points[pointIndex]!;
+    const dx = end.x - start.x;
+    const dz = end.z - start.z;
+    const distance = Math.hypot(dx, dz);
+    const steps = Math.max(1, Math.ceil(distance / 2));
+    const normalX = distance > 0 ? -dz / distance : 0;
+    const normalZ = distance > 0 ? dx / distance : 0;
+    for (let step = 0; step < steps; step += 1) {
+      const t0 = step / steps;
+      const t1 = (step + 1) / steps;
+      const x0 = start.x + dx * t0;
+      const z0 = start.z + dz * t0;
+      const x1 = start.x + dx * t1;
+      const z1 = start.z + dz * t1;
+      const y0 = sampleFlowFestTerrainWorldY(terrain, x0, z0) + 0.12;
+      const y1 = sampleFlowFestTerrainWorldY(terrain, x1, z1) + 0.12;
+      const base = positions.length / 3;
+      positions.push(
+        x0 + normalX * halfWidth,
+        y0,
+        z0 + normalZ * halfWidth,
+        x0 - normalX * halfWidth,
+        y0,
+        z0 - normalZ * halfWidth,
+        x1 + normalX * halfWidth,
+        y1,
+        z1 + normalZ * halfWidth,
+        x1 - normalX * halfWidth,
+        y1,
+        z1 - normalZ * halfWidth
+      );
+      indices.push(base, base + 1, base + 2, base + 2, base + 1, base + 3);
+    }
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute(
+    "position",
+    new BufferAttribute(new Float32Array(positions), 3)
+  );
+  geometry.setIndex(new BufferAttribute(new Uint32Array(indices), 1));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function routeCarvesProxy(
+  x: number,
+  z: number,
+  footprint: number,
+  routes: FlowFestRuntimeSegment[]
+): boolean {
+  for (const route of routes) {
+    const clearance = route.widthMeters / 2 + footprint * 0.78;
+    for (let index = 1; index < route.points.length; index += 1) {
+      const start = route.points[index - 1]!;
+      const end = route.points[index]!;
+      if (
+        distanceToSegment(x, z, start.x, start.z, end.x, end.z) <= clearance
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function distanceToSegment(
+  px: number,
+  pz: number,
+  ax: number,
+  az: number,
+  bx: number,
+  bz: number
+): number {
+  const dx = bx - ax;
+  const dz = bz - az;
+  const lengthSquared = dx * dx + dz * dz;
+  if (lengthSquared === 0) return Math.hypot(px - ax, pz - az);
+  const t = Math.max(
+    0,
+    Math.min(1, ((px - ax) * dx + (pz - az) * dz) / lengthSquared)
+  );
+  return Math.hypot(px - (ax + dx * t), pz - (az + dz * t));
+}
+
+function appendBox(
+  positions: number[],
+  indices: number[],
+  centerX: number,
+  baseY: number,
+  centerZ: number,
+  footprint: number,
+  height: number
+): void {
+  const half = footprint / 2;
+  const base = positions.length / 3;
+  positions.push(
+    centerX - half,
+    baseY,
+    centerZ - half,
+    centerX + half,
+    baseY,
+    centerZ - half,
+    centerX + half,
+    baseY,
+    centerZ + half,
+    centerX - half,
+    baseY,
+    centerZ + half,
+    centerX - half,
+    baseY + height,
+    centerZ - half,
+    centerX + half,
+    baseY + height,
+    centerZ - half,
+    centerX + half,
+    baseY + height,
+    centerZ + half,
+    centerX - half,
+    baseY + height,
+    centerZ + half
+  );
+  const faces = [
+    0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7, 0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2,
+    3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7,
+  ];
+  for (const face of faces) indices.push(base + face);
+}

@@ -82,7 +82,7 @@ describe("Flow Fest Gate 2 terrain hosts", () => {
       const westOffset = (row * 33 + 32) * 3;
       const eastOffset = row * 33 * 3;
       expect(Array.from(west!.slice(westOffset, westOffset + 3))).toEqual(
-        Array.from(east!.slice(eastOffset, eastOffset + 3)),
+        Array.from(east!.slice(eastOffset, eastOffset + 3))
       );
     }
     host.dispose();
@@ -91,7 +91,9 @@ describe("Flow Fest Gate 2 terrain hosts", () => {
   it("samples the meter grid in the declared +X east, +Z south frame", () => {
     const terrain = makeTerrain(33, 33);
     expect(sampleFlowFestTerrainWorldY(terrain, 4, 8)).toBeCloseTo(4, 6);
-    expect(sampleFlowFestTerrainWorldY(terrain, 4.5, 8.5)).toBeCloseTo(4.375, 6);
+    expect(sampleFlowFestTerrainWorldY(terrain, 4.5, 8.5)).toBeCloseTo(
+      4.375,
+      6
+    );
   });
 });
-

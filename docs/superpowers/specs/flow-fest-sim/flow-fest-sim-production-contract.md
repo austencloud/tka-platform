@@ -28,18 +28,18 @@ and chooses what happens next.
 
 ## Authority ledger
 
-| Concern | Canonical owner | Evidence path | Current boundary |
-|---|---|---|---|
-| Creative direction | Austen's request plus active design spec | `../active/2026-08-24-flow-fest-sim-design.md` | None |
-| Arrival operations | Austen's first-person corrections | `./flow-fest-site-plan.json` → `sourceAuthority.operationalTopology` | Topology is authoritative; physical conditions remain field-unverified |
-| Hidden connector centerlines | Austen's orthophoto traces | `./austen-traced-connectors.json` | Source-locked user drawing; not a centimetre-accurate field survey |
-| Public event corroboration | Kinetic Fire public information | `https://kineticfire.org/general-info/` and `https://kineticfire.org/art/` | Corroborates check-in, unload/parking separation, and the activity-tier concept; it does not override Austen's site knowledge |
-| Earth coordinate frame | Terrain manifest | `../../../../static/data/flow-fest-sim/terrain.manifest.json` | None |
-| Source selection | Geospatial source lock | `../../../../scripts/geospatial/flow-fest-source-lock.json` | None |
-| Spatial geometry | Gate 1 plan contract | `./flow-fest-site-plan.json` | Traced connectors require comprehension approval; other exact placements remain proposals |
-| Review drawings | Deterministic Gate 1 builder | `../../../../scripts/geospatial/build_flow_fest_gate1_plan.py` | Image byte comparison is toolchain-bound; semantic analysis is portable |
-| Blender output | Derived Gate 2 contract | `./evidence/gate-2/gate2-coordinate-manifest.json` | Built only from approved, source-locked terrain and route inputs |
-| Runtime behavior | Dedicated Flow Fest Sim Gate 2 review route on the shared camera and Rapier owners | Gate 2 in progress | Must remain a bare, collision-truthful review until Austen approves it |
+| Concern                      | Canonical owner                                                                    | Evidence path                                                              | Current boundary                                                                                                              |
+| ---------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Creative direction           | Austen's request plus active design spec                                           | `../active/2026-08-24-flow-fest-sim-design.md`                             | None                                                                                                                          |
+| Arrival operations           | Austen's first-person corrections                                                  | `./flow-fest-site-plan.json` → `sourceAuthority.operationalTopology`       | Topology is authoritative; physical conditions remain field-unverified                                                        |
+| Hidden connector centerlines | Austen's orthophoto traces                                                         | `./austen-traced-connectors.json`                                          | Source-locked user drawing; not a centimetre-accurate field survey                                                            |
+| Public event corroboration   | Kinetic Fire public information                                                    | `https://kineticfire.org/general-info/` and `https://kineticfire.org/art/` | Corroborates check-in, unload/parking separation, and the activity-tier concept; it does not override Austen's site knowledge |
+| Earth coordinate frame       | Terrain manifest                                                                   | `../../../../static/data/flow-fest-sim/terrain.manifest.json`              | None                                                                                                                          |
+| Source selection             | Geospatial source lock                                                             | `../../../../scripts/geospatial/flow-fest-source-lock.json`                | None                                                                                                                          |
+| Spatial geometry             | Gate 1 plan contract                                                               | `./flow-fest-site-plan.json`                                               | Traced connectors require comprehension approval; other exact placements remain proposals                                     |
+| Review drawings              | Deterministic Gate 1 builder                                                       | `../../../../scripts/geospatial/build_flow_fest_gate1_plan.py`             | Image byte comparison is toolchain-bound; semantic analysis is portable                                                       |
+| Blender output               | Derived Gate 2 contract                                                            | `./evidence/gate-2/gate2-coordinate-manifest.json`                         | Built only from approved, source-locked terrain and route inputs                                                              |
+| Runtime behavior             | Dedicated Flow Fest Sim Gate 2 review route on the shared camera and Rapier owners | Gate 2 in progress                                                         | Must remain a bare, collision-truthful review until Austen approves it                                                        |
 
 The validator retains a `museumTrackerItems` compatibility field because the
 gate framework began as a museum workflow. This non-museum scene uses that slot
@@ -47,29 +47,29 @@ only to identify Austen's direction record.
 
 ## Evidence and claim vocabulary
 
-| Evidence source | Gate-claim class | Meaning at Gate 1 |
-|---|---|---|
-| measured | literal | Computed from the pinned terrain, lidar surface, or orthophoto registration |
-| public documentation | literal | Publicly stated check-in, unload, parking, or tier use |
-| Austen-observed | literal for topology | First-person operational knowledge about camping, traffic, parking, and connector existence |
-| Austen-traced | literal for the recorded image trace | Source-locked connector vertices drawn over the registered orthophoto; not a field survey |
-| interpreted | invention until field verified | A public-image clue assigned a possible centerline, boundary, or permanent use |
-| authored | invention | Gameplay placement, interaction, night state, or exact composition |
+| Evidence source      | Gate-claim class                     | Meaning at Gate 1                                                                           |
+| -------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------- |
+| measured             | literal                              | Computed from the pinned terrain, lidar surface, or orthophoto registration                 |
+| public documentation | literal                              | Publicly stated check-in, unload, parking, or tier use                                      |
+| Austen-observed      | literal for topology                 | First-person operational knowledge about camping, traffic, parking, and connector existence |
+| Austen-traced        | literal for the recorded image trace | Source-locked connector vertices drawn over the registered orthophoto; not a field survey   |
+| interpreted          | invention until field verified       | A public-image clue assigned a possible centerline, boundary, or permanent use              |
+| authored             | invention                            | Gameplay placement, interaction, night state, or exact composition                          |
 
 No Gate 1 claim uses the `metaphor` class.
 
 ## Claim ledger
 
-| ID | Class | Statement | Evidence or proposal source | Status |
-|---|---|---|---|---|
-| C-001 | literal | The checked Earth footprint is 1,024 by 1,024 metres at one-metre terrain spacing. | Terrain manifest and geospatial validation report | verified |
-| C-002 | literal | Route elevations, open-ground regions, and sightline occlusions are computed from the checked DTM, lidar surface, and orthophoto registration. Lidar surface is not used as a walkability mask. | Gate 1 report and builder | verified |
-| C-003 | literal | Public event guidance places check-in at the gate, lets arrivals drive to a selected site to unload or settle a car-camping site, and requires tent campers to move vehicles to designated parking. | Kinetic Fire General Info | corroborated |
-| C-004 | literal | Lower and upper tent campers return through the lower gate, park in the west upper field, and walk back; lower car campers keep the car at camp; Middle Earth is not camping. | Austen's first-person correction | accepted source authority |
-| C-005 | literal | Austen traced a direct upper-to-middle connector and a clear middle-to-lower connector over the registered orthophoto. Gate 1 source-locks those vertices and composes them with short open-tier approaches. | `./austen-traced-connectors.json` | accepted source authority |
-| C-006 | invention | Exact Gate 1 stops, road centerlines, campsite examples, and other non-traced placements are registered proposals over measured terrain, not centimetre-accurate field survey. | Gate 1 plan contract | proposed |
-| C-007 | invention | The useful task, night transformation, final choice, and route presentation are gameplay proposals. | Gate 1 plan contract | proposed |
-| C-008 | invention | The eight-metre night-heart mast is art direction only; no Gate 1 sightline result depends on its height. | Gate 1 plan and sightline report | proposed |
+| ID    | Class     | Statement                                                                                                                                                                                                    | Evidence or proposal source                       | Status                    |
+| ----- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- | ------------------------- |
+| C-001 | literal   | The checked Earth footprint is 1,024 by 1,024 metres at one-metre terrain spacing.                                                                                                                           | Terrain manifest and geospatial validation report | verified                  |
+| C-002 | literal   | Route elevations, open-ground regions, and sightline occlusions are computed from the checked DTM, lidar surface, and orthophoto registration. Lidar surface is not used as a walkability mask.              | Gate 1 report and builder                         | verified                  |
+| C-003 | literal   | Public event guidance places check-in at the gate, lets arrivals drive to a selected site to unload or settle a car-camping site, and requires tent campers to move vehicles to designated parking.          | Kinetic Fire General Info                         | corroborated              |
+| C-004 | literal   | Lower and upper tent campers return through the lower gate, park in the west upper field, and walk back; lower car campers keep the car at camp; Middle Earth is not camping.                                | Austen's first-person correction                  | accepted source authority |
+| C-005 | literal   | Austen traced a direct upper-to-middle connector and a clear middle-to-lower connector over the registered orthophoto. Gate 1 source-locks those vertices and composes them with short open-tier approaches. | `./austen-traced-connectors.json`                 | accepted source authority |
+| C-006 | invention | Exact Gate 1 stops, road centerlines, campsite examples, and other non-traced placements are registered proposals over measured terrain, not centimetre-accurate field survey.                               | Gate 1 plan contract                              | proposed                  |
+| C-007 | invention | The useful task, night transformation, final choice, and route presentation are gameplay proposals.                                                                                                          | Gate 1 plan contract                              | proposed                  |
+| C-008 | invention | The eight-metre night-heart mast is art direction only; no Gate 1 sightline result depends on its height.                                                                                                    | Gate 1 plan and sightline report                  | proposed                  |
 
 ## Experience sentence
 
@@ -94,16 +94,16 @@ No Gate 1 claim uses the `metaphor` class.
 
 ### Arrival branch logic
 
-| Step | All players | Lower or upper tent branch | Lower car-camp branch |
-|---|---|---|---|
-| 1 | Check in at the lower gate and receive orientation | Same | Same |
-| 2 | Choose a camping type and drive to the selected site | Lower perimeter or upper tier | Open middle of the lower level |
-| 3 | Establish camp | Unload tent and gear | Settle with the vehicle at camp |
-| 4 | Resolve the car | Return in the car through the lower gate | Car stays; relocation is skipped |
-| 5 | Resolve parking | Drive uphill and park in the west upper field | Already complete |
-| 6 | Become a pedestrian | Walk from parking back to the selected camp | Already at camp |
-| 7 | Enter Middle Earth as a participant | Use the upper connector, or retrace the lower connector after crossing Middle Earth during the parking walk | Use the middle-to-lower connector |
-| 8 | Begin festival life | Useful task, dusk transformation, free choice, and route back to the selected camp | Same |
+| Step | All players                                          | Lower or upper tent branch                                                                                  | Lower car-camp branch             |
+| ---- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| 1    | Check in at the lower gate and receive orientation   | Same                                                                                                        | Same                              |
+| 2    | Choose a camping type and drive to the selected site | Lower perimeter or upper tier                                                                               | Open middle of the lower level    |
+| 3    | Establish camp                                       | Unload tent and gear                                                                                        | Settle with the vehicle at camp   |
+| 4    | Resolve the car                                      | Return in the car through the lower gate                                                                    | Car stays; relocation is skipped  |
+| 5    | Resolve parking                                      | Drive uphill and park in the west upper field                                                               | Already complete                  |
+| 6    | Become a pedestrian                                  | Walk from parking back to the selected camp                                                                 | Already at camp                   |
+| 7    | Enter Middle Earth as a participant                  | Use the upper connector, or retrace the lower connector after crossing Middle Earth during the parking walk | Use the middle-to-lower connector |
+| 8    | Begin festival life                                  | Useful task, dusk transformation, free choice, and route back to the selected camp                          | Same                              |
 
 ### Spatial proof
 

@@ -9,6 +9,10 @@
     "verify": "python scripts/geospatial/build_flow_fest_gate2_graybox.py verify"
   },
   "artifacts": {
+    "scripts/geospatial/build_flow_fest_gate2_graybox.py": {
+      "sha256": "ca3ca4849bca89256bc7ca207703429808b868f5a92b83d2ee593156e05f403c",
+      "byteLength": 74488
+    },
     "static/data/flow-fest-sim/gate2-runtime-contract.json": {
       "sha256": "ff43b8373da6a6313923f275c85f4bfad2fc02e4b2dcdc5efeb8bf4bbc6968cf",
       "byteLength": 77571
@@ -18,44 +22,44 @@
       "byteLength": 77571
     },
     "blender/flow_fest_sim_gate2_graybox.blend": {
-      "sha256": "97d652b2e389b3c84f4109e7aab506eb27c1ab0769dd122506d4c9dfc957d848",
-      "byteLength": 3312776
+      "sha256": "0748146c2f814a6391886dcfab27c8ca2585dee4aa8139c4c44cd18ca3b1e174",
+      "byteLength": 3312841
     },
     "static/models/flow-fest-sim/review/flow-fest-sim-gate2-graybox.glb": {
-      "sha256": "0a4d6a58f43837a7217dd643d65f1e0bf0a8871f3ed781e9116c1691d2b9c5e8",
-      "byteLength": 15119796
+      "sha256": "ab200c645832f0f08fd2a79003288ea9153c1eedc73f53c04c2a6bb92dfbf00a",
+      "byteLength": 15119848
     },
     "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-lower-gate.png": {
-      "sha256": "7899e41d309f1994e0696ba7cd18f49f7c911d91d04c87754d83f1fab33dd77b",
-      "byteLength": 836002
+      "sha256": "583b3be41fc82081d870054adb44ab6ae6c828903aa741c165ce867da1d9f14d",
+      "byteLength": 925401
     },
     "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-lower-level.png": {
-      "sha256": "bf112fc1b55b2b95ccf37fdcdafd5faf02d81a884ebd2c903157971880f2e82a",
+      "sha256": "c0e7749eea4aa68c82297ee2c5989f84ee06d3ae6f2e9b011e4a9493213ff735",
       "byteLength": 906545
     },
     "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-upper-parking.png": {
-      "sha256": "f5ab3b2466f01698f50bae694c1cba95a8ff9f3a7497b8db67894270fe35076b",
+      "sha256": "9e57f3b9b55f4f127ef38681ef75d8038e0e1f52652977f79fe9498ea8722c14",
       "byteLength": 881285
     },
     "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-middle-earth.png": {
-      "sha256": "b1e707abbfe9af3f14611315827c21ac0c915ed63332d61a386cc8006e2ae8c2",
+      "sha256": "f6710872396704d15329de036c7ea887fbcb278a3af97826dc059cf12afe1c03",
       "byteLength": 969025
     },
     "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-night-composition.png": {
-      "sha256": "1c070273768ac077bd782a69dbc1a1f5280129eea0bbb71ffdc92fdd2b744f97",
+      "sha256": "2ca13f969de33f0ec0e3dcd9cde9dbebb58cb78efae5a3b365c09e651e40bbc1",
       "byteLength": 946475
     },
     "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-overview.png": {
-      "sha256": "55b0864605a001e87c6bae68d7fbf696312ec5ff13bb7a9b59a0bb545d5ef9d5",
+      "sha256": "8ee630635a8f50eb10854a5fa29d5c77ae0eefce1894b80751096cbe8f4764b1",
       "byteLength": 1360679
     },
     "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-contact-sheet.png": {
-      "sha256": "712b5ef792eeed0fc92ccff4cf35647ac6fc7ba5afbeb57dfdf1565981090d94",
-      "byteLength": 2162197
+      "sha256": "25ceb3d6e81b1cc810926117b2f7b23b946b6fc07a5f4f96a96f8469edd9c455",
+      "byteLength": 1253784
     },
     "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-first-person-lower-tent-route.mp4": {
-      "sha256": "242874ede56e60f71d692effa6a75bec74dfcabeb1b7247025116a9567803640",
-      "byteLength": 5488980
+      "sha256": "d9068fba021644703399fdfa012dfddbd685db6df49284caaffeec9dd24fac1a",
+      "byteLength": 5492244
     }
   },
   "terrainReviewMesh": {
@@ -171,7 +175,7 @@
   "checks": {
     "artifact-digest": {
       "passed": true,
-      "evidence": "SHA-256 and byte length recorded for 12 artifacts."
+      "evidence": "SHA-256 and byte length recorded for 13 artifacts."
     },
     "source-lock": {
       "passed": true,
@@ -709,7 +713,7 @@
         ],
         "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-contact-sheet.png": [
           1920,
-          1080
+          720
         ]
       }
     },
@@ -717,11 +721,17 @@
       "passed": true,
       "evidence": {
         "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-first-person-lower-tent-route.mp4",
-        "fps": 15,
+        "codec": "h264",
+        "profile": "High",
+        "dimensions": [
+          960,
+          540
+        ],
+        "averageFrameRate": "15/1",
+        "frameCount": 450,
         "durationSeconds": 30.0,
         "spatiallyContinuous": true,
-        "timingPolicy": "Equal route distance per rendered frame; no unapproved vehicle speed or total source duration is asserted.",
-        "codec": "H.264 in MPEG-4"
+        "timingPolicy": "Equal route distance per rendered frame; no unapproved vehicle speed or total source duration is asserted."
       }
     },
     "blender-source-integrity": {
@@ -946,6 +956,28 @@
           "FFS_Zone_upper_tent_zone",
           "FFS_Zone_west_upper_parking_zone"
         ]
+      }
+    },
+    "glb-coordinate-restoration": {
+      "passed": true,
+      "evidence": {
+        "childLocalPositionMin": [
+          -512,
+          -512,
+          -28.4906005859375
+        ],
+        "childLocalPositionMax": [
+          512,
+          512,
+          -0.816436767578125
+        ],
+        "rootQuaternionXyzw": [
+          0.7071068286895752,
+          0,
+          0,
+          0.7071068286895752
+        ],
+        "composition": "Exporter-local (worldX, worldZ, -worldY) composed with root +90 degrees X restores (worldX, worldY, worldZ)."
       }
     }
   },

@@ -41,7 +41,7 @@ const CHUNK_SEGMENTS = 32;
 export function sampleFlowFestTerrainWorldY(
   terrain: ImportedTerrainDataV2,
   x: number,
-  z: number,
+  z: number
 ): number {
   const { width, height, heights, verticalOriginMeters } = terrain.heightmap;
   const column =
@@ -82,7 +82,7 @@ interface GridWindow {
 export function buildFlowFestTerrainHost(
   terrain: ImportedTerrainDataV2,
   mode: FlowFestTerrainHostMode,
-  orthophoto: Texture | null,
+  orthophoto: Texture | null
 ): FlowFestTerrainHost {
   const startedAt = performance.now();
   const material = new MeshStandardMaterial({
@@ -142,7 +142,9 @@ export function buildFlowFestTerrainHost(
     vertices += built.positions.length / 3;
     triangles += built.indices.length / 3;
     geometryBytes +=
-      built.positions.byteLength + built.uvs.byteLength + built.indices.byteLength;
+      built.positions.byteLength +
+      built.uvs.byteLength +
+      built.indices.byteLength;
   }
 
   const metrics: FlowFestTerrainHostMetrics = {
@@ -178,7 +180,7 @@ function buildChunkWindows(width: number, height: number): GridWindow[] {
     segmentHeight % CHUNK_SEGMENTS !== 0
   ) {
     throw new Error(
-      `Flow Fest chunk host requires ${CHUNK_SEGMENTS}m-aligned terrain; received ${width}x${height}`,
+      `Flow Fest chunk host requires ${CHUNK_SEGMENTS}m-aligned terrain; received ${width}x${height}`
     );
   }
 
@@ -198,7 +200,7 @@ function buildChunkWindows(width: number, height: number): GridWindow[] {
 
 function buildWindowGeometry(
   terrain: ImportedTerrainDataV2,
-  window: GridWindow,
+  window: GridWindow
 ): {
   positions: Float32Array;
   uvs: Float32Array;
@@ -211,7 +213,7 @@ function buildWindowGeometry(
   const positions = new Float32Array(columns * rows * 3);
   const uvs = new Float32Array(columns * rows * 2);
   const indices = new Uint32Array(
-    window.segmentColumns * window.segmentRows * 6,
+    window.segmentColumns * window.segmentRows * 6
   );
   const spacing =
     (terrain.worldBounds.maxX - terrain.worldBounds.minX) / (width - 1);
@@ -224,10 +226,13 @@ function buildWindowGeometry(
     for (let localColumn = 0; localColumn < columns; localColumn += 1) {
       const sourceColumn = window.startColumn + localColumn;
       const sourceIndex = sourceRow * width + sourceColumn;
-      positions[positionOffset++] = terrain.worldBounds.minX + sourceColumn * spacing;
       positions[positionOffset++] =
-        (terrain.heightmap.heights[sourceIndex] ?? verticalOrigin) - verticalOrigin;
-      positions[positionOffset++] = terrain.worldBounds.minZ + sourceRow * spacing;
+        terrain.worldBounds.minX + sourceColumn * spacing;
+      positions[positionOffset++] =
+        (terrain.heightmap.heights[sourceIndex] ?? verticalOrigin) -
+        verticalOrigin;
+      positions[positionOffset++] =
+        terrain.worldBounds.minZ + sourceRow * spacing;
       uvs[uvOffset++] = sourceColumn / (width - 1);
       // The source image is north-up: its top row is the terrain's min Z.
       uvs[uvOffset++] = 1 - sourceRow / (height - 1);

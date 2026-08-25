@@ -47,6 +47,7 @@ CACHE_DIR = ROOT / ".cache/flow-fest-sim/gate2"
 BLENDER_SNAPSHOT_PATH = CACHE_DIR / "blender-verification.json"
 BLENDER_EXE = Path("C:/Program Files/Blender Foundation/Blender 5.0/blender.exe")
 FFMPEG_EXE = Path("C:/ffmpeg/ffmpeg-8.0.1-essentials_build/bin/ffmpeg.exe")
+FFPROBE_EXE = FFMPEG_EXE.with_name("ffprobe.exe")
 
 TERRAIN_STRIDE = 4
 CANOPY_STRIDE = 12
@@ -716,6 +717,23 @@ def verify_outer() -> dict[str, Any]:
     barrier_names = [name for name in mesh_node_names if name.startswith("FFS_Barrier_")]
     if forbidden_names or barrier_names:
         raise AssertionError(f"GLB node policy failed: forbidden={forbidden_names}, barriers={barrier_names}")
+    terrain_primitive = glb["meshes"][terrain_node["mesh"]]["primitives"][0]
+    position_accessor = glb["accessors"][terrain_primitive["attributes"]["POSITION"]]
+    child_min = position_accessor["min"]
+    child_max = position_accessor["max"]
+    expected_rotation = [math.sqrt(0.5), 0.0, 0.0, math.sqrt(0.5)]
+    root_rotation = root_node.get("rotation", [0.0, 0.0, 0.0, 1.0])
+    terrain_bounds = contract["terrainReviewMesh"]["sampleBoundsWorldMeters"]
+    glb_coordinate_restoration_ok = (
+        all(abs(actual - expected) < 1e-5 for actual, expected in zip(root_rotation, expected_rotation))
+        and abs(child_min[0] - terrain_bounds["minX"]) < 1e-5
+        and abs(child_max[0] - terrain_bounds["maxX"]) < 1e-5
+        and abs(child_min[1] - terrain_bounds["minZ"]) < 1e-5
+        and abs(child_max[1] - terrain_bounds["maxZ"]) < 1e-5
+        and child_min[2] < child_max[2] < 0
+    )
+    if not glb_coordinate_restoration_ok:
+        raise AssertionError("GLB root does not restore exporter-local terrain coordinates to plan world")
 
     png_dimensions = {rel(path): list(parse_png_dimensions(path)) for path in review_paths + [CONTACT_SHEET_PATH]}
     if any(dimensions != [REVIEW_WIDTH, REVIEW_HEIGHT] for path, dimensions in png_dimensions.items() if path != rel(CONTACT_SHEET_PATH)):
@@ -724,11 +742,42 @@ def verify_outer() -> dict[str, Any]:
         raise AssertionError("Contact sheet dimensions differ from 1920x720")
 
     video_header = VIDEO_PATH.read_bytes()[:32]
-    video_ok = VIDEO_PATH.stat().st_size > 100_000 and b"ftyp" in video_header
+    if not FFPROBE_EXE.exists():
+        raise FileNotFoundError(FFPROBE_EXE)
+    probe = json.loads(
+        subprocess.run(
+            [
+                str(FFPROBE_EXE),
+                "-v",
+                "error",
+                "-show_streams",
+                "-show_format",
+                "-of",
+                "json",
+                str(VIDEO_PATH),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+    )
+    video_stream = next(stream for stream in probe["streams"] if stream.get("codec_type") == "video")
+    video_duration = float(probe["format"]["duration"])
+    video_frame_count = int(video_stream["nb_frames"])
+    video_ok = (
+        VIDEO_PATH.stat().st_size > 100_000
+        and b"ftyp" in video_header
+        and video_stream["codec_name"] == "h264"
+        and video_stream["width"] == 960
+        and video_stream["height"] == 540
+        and video_frame_count == int(VIDEO_FPS * VIDEO_SECONDS)
+        and abs(video_duration - VIDEO_SECONDS) < 0.05
+    )
     if not video_ok:
         raise AssertionError("Route video is missing a valid MP4 header or is unexpectedly small")
 
     artifact_paths = [
+        Path(__file__).resolve(),
         RUNTIME_CONTRACT_PATH,
         EVIDENCE_CONTRACT_PATH,
         BLEND_PATH,
@@ -780,11 +829,14 @@ def verify_outer() -> dict[str, Any]:
             "passed": True,
             "evidence": {
                 "path": rel(VIDEO_PATH),
-                "fps": VIDEO_FPS,
-                "durationSeconds": VIDEO_SECONDS,
+                "codec": video_stream["codec_name"],
+                "profile": video_stream.get("profile"),
+                "dimensions": [video_stream["width"], video_stream["height"]],
+                "averageFrameRate": video_stream["avg_frame_rate"],
+                "frameCount": video_frame_count,
+                "durationSeconds": video_duration,
                 "spatiallyContinuous": True,
                 "timingPolicy": "Equal route distance per rendered frame; no unapproved vehicle speed or total source duration is asserted.",
-                "codec": "H.264 in MPEG-4",
             },
         },
         "blender-source-integrity": {"passed": True, "evidence": blender_snapshot},
@@ -795,6 +847,15 @@ def verify_outer() -> dict[str, Any]:
                 "terrainNode": terrain_node,
                 "meshNodeCount": len(mesh_node_names),
                 "meshNodeNames": mesh_node_names,
+            },
+        },
+        "glb-coordinate-restoration": {
+            "passed": glb_coordinate_restoration_ok,
+            "evidence": {
+                "childLocalPositionMin": child_min,
+                "childLocalPositionMax": child_max,
+                "rootQuaternionXyzw": root_rotation,
+                "composition": "Exporter-local (worldX, worldZ, -worldY) composed with root +90 degrees X restores (worldX, worldY, worldZ).",
             },
         },
     }
@@ -1169,6 +1230,10 @@ def blender_build() -> None:
             # The spawn anchor shares the registered lower-gate camera position.
             # Keep it an exact ground marker so it never encloses the camera.
             vertices, faces = box_geometry((x, y + 0.025, z), (0.65, 0.05, 0.65))
+        elif "gate-marker" in kind:
+            # Exact semantic anchor only.  Gate/building form is unknown and a
+            # vertical proxy here would enclose the registered spawn camera.
+            vertices, faces = box_geometry((x, y + 0.02, z), (0.9, 0.04, 0.9))
         else:
             vertices, faces = box_geometry((x, y + 1.5, z), (0.5, 3.0, 0.5))
         item_material = zone_materials.get(anchor["sourceClass"], zone_materials["derived-review"])
@@ -1295,6 +1360,26 @@ def blender_build() -> None:
     bpy.context.window.scene = contact_scene
     contact_scene.render.filepath = str(CONTACT_SHEET_PATH)
     bpy.ops.render.render(write_still=True)
+    if not FFMPEG_EXE.exists():
+        raise FileNotFoundError(FFMPEG_EXE)
+    contact_inputs: list[str] = []
+    for path in render_paths:
+        contact_inputs.extend(["-i", str(path)])
+    subprocess.run(
+        [
+            str(FFMPEG_EXE),
+            "-y",
+            *contact_inputs,
+            "-filter_complex",
+            "[0:v]scale=640:360[a0];[1:v]scale=640:360[a1];[2:v]scale=640:360[a2];[3:v]scale=640:360[a3];[4:v]scale=640:360[a4];[5:v]scale=640:360[a5];[a0][a1][a2]hstack=inputs=3[top];[a3][a4][a5]hstack=inputs=3[bottom];[top][bottom]vstack=inputs=2[out]",
+            "-map",
+            "[out]",
+            "-frames:v",
+            "1",
+            str(CONTACT_SHEET_PATH),
+        ],
+        check=True,
+    )
     for contact_object in contact_scene.objects:
         contact_object.select_set(False)
     bpy.context.window.scene = scene
