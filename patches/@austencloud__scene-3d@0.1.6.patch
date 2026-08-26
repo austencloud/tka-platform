@@ -7,7 +7,7 @@ index 1932bc5d43760364c07f78486b3066538a38753b..3746fe0932aa81df143f9c61c5ad9c80
 -//# sourceMappingURL=index.d.ts.map
 \ No newline at end of file
 diff --git a/dist/lib/components/Avatar3D.svelte b/dist/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..e429cb2a3d9692c36896fd22fc8442da5c0666cf 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..8d80a63adae286cd90e702a2778a95a6596657fe 100644
 --- a/dist/lib/components/Avatar3D.svelte
 +++ b/dist/lib/components/Avatar3D.svelte
 @@ -16,26 +16,34 @@
@@ -478,7 +478,21 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..e429cb2a3d9692c36896fd22fc8442da
          leftUpLeg.quaternion.multiply(leftTilt);
          rightUpLeg.quaternion.multiply(rightTilt);
          leftUpLeg.updateMatrixWorld(true);
-@@ -398,7 +679,11 @@
+@@ -388,17 +669,21 @@
+       // use IK only and don't need idle/walk animations.
+       if (enableLocomotion && locomotionAnimator && cachedRoot) {
+         // Configure before initialize so clips are prepared correctly
++        // Leg tracks stay in the idle clip. FootPlanter skips idle precisely
++        // because "the idle animation already places feet correctly on the
++        // ground" — strip them and the legs hold raw bind pose instead, which
++        // reads as a splayed A-stance.
+         locomotionAnimator.configure({
+           ...(enableRootMotion && { enableRootMotion: true }),
+-          // Exhibit performers: strip leg bones from idle clip so feet
+-          // stay planted during sequence playback. The FPS player keeps
+-          // full leg animation for responsive movement.
+-          ...(enableFootPlanting && { stripLegBones: true }),
+         });
          locomotionAnimator.initialize(cachedRoot);
  
          // Initialize root motion extractor with the Hips bone
@@ -3856,7 +3870,7 @@ index 8cd64ec5f6be4a8bbf69c3bf1f14c5db6f5fddc1..45ad35f24053dc5e1129546f0eb01ac8
  export default Triquetra3D;
 -//# sourceMappingURL=Triquetra3D.svelte.d.ts.map
 \ No newline at end of file
-diff --git a/dist/lib/components/props/club-profile.d.ts b/dist/lib/components/props/club-profile.d.ts
+diff --git a/b/dist/lib/components/props/club-profile.d.ts b/dist/lib/components/props/club-profile.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..730c0993e7ea4d72d93940c1023d120bffcebe14
 --- /dev/null
@@ -3956,7 +3970,7 @@ index 0000000000000000000000000000000000000000..730c0993e7ea4d72d93940c1023d120b
 +export declare const CLUB_BANDS: readonly ClubBand[];
 +/** Hand to the top of the cap, in metres. */
 +export declare const CLUB_REACH_M = 0.50343;
-diff --git a/dist/lib/components/props/club-profile.js b/dist/lib/components/props/club-profile.js
+diff --git a/b/dist/lib/components/props/club-profile.js b/dist/lib/components/props/club-profile.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..23d9827eb937b880d7ee13cb7dc9b68967d5b86c
 --- /dev/null
@@ -4128,7 +4142,7 @@ index 0000000000000000000000000000000000000000..23d9827eb937b880d7ee13cb7dc9b689
 +];
 +/** Hand to the top of the cap, in metres. */
 +export const CLUB_REACH_M = 0.50343;
-diff --git a/dist/lib/components/props/doublestar-profile.d.ts b/dist/lib/components/props/doublestar-profile.d.ts
+diff --git a/b/dist/lib/components/props/doublestar-profile.d.ts b/dist/lib/components/props/doublestar-profile.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..1350f3bafedb04447b2d1b80ebf3e9a721b56774
 --- /dev/null
@@ -4159,7 +4173,7 @@ index 0000000000000000000000000000000000000000..1350f3bafedb04447b2d1b80ebf3e9a7
 + * long axis measures `length` units and lying in the XY plane ready to extrude.
 + */
 +export declare function buildDoublestarShape(length: number): Shape;
-diff --git a/dist/lib/components/props/doublestar-profile.js b/dist/lib/components/props/doublestar-profile.js
+diff --git a/b/dist/lib/components/props/doublestar-profile.js b/dist/lib/components/props/doublestar-profile.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..b6349edf5f347f63d46296705563f0eb26feac2b
 --- /dev/null
@@ -4247,7 +4261,7 @@ index 0000000000000000000000000000000000000000..b6349edf5f347f63d46296705563f0eb
 +    ];
 +    return shape;
 +}
-diff --git a/dist/lib/components/props/eightrings-profile.d.ts b/dist/lib/components/props/eightrings-profile.d.ts
+diff --git a/b/dist/lib/components/props/eightrings-profile.d.ts b/dist/lib/components/props/eightrings-profile.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..e26681fc9919f82a7a0d7eab6ccf888e971f1a61
 --- /dev/null
@@ -4301,7 +4315,7 @@ index 0000000000000000000000000000000000000000..e26681fc9919f82a7a0d7eab6ccf888e
 + * lying in the XY plane ready to extrude, with the hand at the origin.
 + */
 +export declare function buildEightringsShape(staffLength: number): Shape;
-diff --git a/dist/lib/components/props/eightrings-profile.js b/dist/lib/components/props/eightrings-profile.js
+diff --git a/b/dist/lib/components/props/eightrings-profile.js b/dist/lib/components/props/eightrings-profile.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..297fcdc8243808898327df2ee1d7367cebbaeb68
 --- /dev/null
@@ -4383,7 +4397,7 @@ index 0000000000000000000000000000000000000000..297fcdc8243808898327df2ee1d7367c
 +    ];
 +    return shape;
 +}
-diff --git a/dist/lib/components/props/fan-profile.d.ts b/dist/lib/components/props/fan-profile.d.ts
+diff --git a/b/dist/lib/components/props/fan-profile.d.ts b/dist/lib/components/props/fan-profile.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..9487fed0f2648d413cd2e330254b87bd358f94fc
 --- /dev/null
@@ -4427,7 +4441,7 @@ index 0000000000000000000000000000000000000000..9487fed0f2648d413cd2e330254b87bd
 + * XY plane ready to extrude, with the hand at the origin.
 + */
 +export declare function buildFanShape(staffLength: number): Shape;
-diff --git a/dist/lib/components/props/fan-profile.js b/dist/lib/components/props/fan-profile.js
+diff --git a/b/dist/lib/components/props/fan-profile.js b/dist/lib/components/props/fan-profile.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..5abfbe088d175d0a66a1213ac8931ef761e5a86f
 --- /dev/null
@@ -4573,7 +4587,7 @@ index 0000000000000000000000000000000000000000..5abfbe088d175d0a66a1213ac8931ef7
 +    ];
 +    return shape;
 +}
-diff --git a/dist/lib/components/props/frame-materials.d.ts b/dist/lib/components/props/frame-materials.d.ts
+diff --git a/b/dist/lib/components/props/frame-materials.d.ts b/dist/lib/components/props/frame-materials.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..819691075577b9199c4381d6aa1580a1ac344c09
 --- /dev/null
@@ -4685,7 +4699,7 @@ index 0000000000000000000000000000000000000000..819691075577b9199c4381d6aa1580a1
 + * metal's diffuse response is black, and these are dark scenes.
 + */
 +export declare function getHoopMaterials(color: "blue" | "red"): HoopMaterialSet;
-diff --git a/dist/lib/components/props/frame-materials.js b/dist/lib/components/props/frame-materials.js
+diff --git a/b/dist/lib/components/props/frame-materials.js b/dist/lib/components/props/frame-materials.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..19bae60371108ca32a8941f5d133fffc899d3762
 --- /dev/null
@@ -4926,7 +4940,7 @@ index 0000000000000000000000000000000000000000..19bae60371108ca32a8941f5d133fffc
 +    hoopSets.set(color, materials);
 +    return materials;
 +}
-diff --git a/dist/lib/components/props/geng-profile.d.ts b/dist/lib/components/props/geng-profile.d.ts
+diff --git a/b/dist/lib/components/props/geng-profile.d.ts b/dist/lib/components/props/geng-profile.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..50f77fa01ac383cfeb8c578cf11b6c61ebc8b40a
 --- /dev/null
@@ -4973,7 +4987,7 @@ index 0000000000000000000000000000000000000000..50f77fa01ac383cfeb8c578cf11b6c61
 +export declare function buildBuugengShape(staffLength: number): Shape;
 +/** Build the trigeng — three arms off one hub, gripped at the hub. */
 +export declare function buildTrigengShape(staffLength: number): Shape;
-diff --git a/dist/lib/components/props/geng-profile.js b/dist/lib/components/props/geng-profile.js
+diff --git a/b/dist/lib/components/props/geng-profile.js b/dist/lib/components/props/geng-profile.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..e22eff0c745fb150ec9e194b6722a5a95c7fd0bb
 --- /dev/null
@@ -5113,7 +5127,7 @@ index 0000000000000000000000000000000000000000..e22eff0c745fb150ec9e194b6722a5a9
 +export function buildTrigengShape(staffLength) {
 +    return trace(TRIGENG_OUTLINE, staffLength);
 +}
-diff --git a/dist/lib/components/props/hoop-geometry.d.ts b/dist/lib/components/props/hoop-geometry.d.ts
+diff --git a/b/dist/lib/components/props/hoop-geometry.d.ts b/dist/lib/components/props/hoop-geometry.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..a13c1ffa6b7277888aa32ba6a63f7501b6ea3f65
 --- /dev/null
@@ -5227,7 +5241,7 @@ index 0000000000000000000000000000000000000000..a13c1ffa6b7277888aa32ba6a63f7501
 + * the far edge is therefore a full diameter minus one tube radius.
 + */
 +export declare const HOOP_REACH_M: number;
-diff --git a/dist/lib/components/props/hoop-geometry.js b/dist/lib/components/props/hoop-geometry.js
+diff --git a/b/dist/lib/components/props/hoop-geometry.js b/dist/lib/components/props/hoop-geometry.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..a2b871a8a9b362b2f280ca0da42a728ba6c92520
 --- /dev/null
@@ -5341,7 +5355,7 @@ index 0000000000000000000000000000000000000000..a2b871a8a9b362b2f280ca0da42a728b
 + * the far edge is therefore a full diameter minus one tube radius.
 + */
 +export const HOOP_REACH_M = 2 * HOOP_CENTERLINE_RADIUS_M + HOOP_TUBE_RADIUS_M;
-diff --git a/dist/lib/components/props/plate-extrude.d.ts b/dist/lib/components/props/plate-extrude.d.ts
+diff --git a/b/dist/lib/components/props/plate-extrude.d.ts b/dist/lib/components/props/plate-extrude.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..b32d5700a688fd1f4cbb802248f1cdea4fa79bea
 --- /dev/null
@@ -5379,7 +5393,7 @@ index 0000000000000000000000000000000000000000..b32d5700a688fd1f4cbb802248f1cdea
 + * of faces, group 1 is the rim.
 + */
 +export declare function bullnosePlate(shape: ShapeType | ShapeType[], depth: number, maxInset: number, curveSegments?: number): BufferGeometry;
-diff --git a/dist/lib/components/props/plate-extrude.js b/dist/lib/components/props/plate-extrude.js
+diff --git a/b/dist/lib/components/props/plate-extrude.js b/dist/lib/components/props/plate-extrude.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..286ab745e01e31fdbe6d2b0eb06693f22630d8ce
 --- /dev/null
@@ -5445,7 +5459,7 @@ index 0000000000000000000000000000000000000000..286ab745e01e31fdbe6d2b0eb06693f2
 +    extruded.dispose();
 +    return welded;
 +}
-diff --git a/dist/lib/components/props/plate-materials.d.ts b/dist/lib/components/props/plate-materials.d.ts
+diff --git a/b/dist/lib/components/props/plate-materials.d.ts b/dist/lib/components/props/plate-materials.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..cbd2d5b7b1a6007ee857ac032252fef14bf95d1e
 --- /dev/null
@@ -5470,7 +5484,7 @@ index 0000000000000000000000000000000000000000..cbd2d5b7b1a6007ee857ac032252fef1
 +export declare function getPlateMaterials(color: "blue" | "red"): PlateMaterialSet;
 +/** Shared marker geometry for the trail indicator. */
 +export declare const PLATE_TRAIL_GEOMETRY: SphereGeometry;
-diff --git a/dist/lib/components/props/plate-materials.js b/dist/lib/components/props/plate-materials.js
+diff --git a/b/dist/lib/components/props/plate-materials.js b/dist/lib/components/props/plate-materials.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..04c333769c76c253057d83d6e99a8b5da539a49a
 --- /dev/null
@@ -5533,7 +5547,7 @@ index 0000000000000000000000000000000000000000..04c333769c76c253057d83d6e99a8b5d
 +}
 +/** Shared marker geometry for the trail indicator. */
 +export const PLATE_TRAIL_GEOMETRY = new SphereGeometry(0.015, 8, 8);
-diff --git a/dist/lib/components/props/prop-lathe.d.ts b/dist/lib/components/props/prop-lathe.d.ts
+diff --git a/b/dist/lib/components/props/prop-lathe.d.ts b/dist/lib/components/props/prop-lathe.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..2e8310b7d622482412710d841777994fa75b6bb3
 --- /dev/null
@@ -5598,7 +5612,7 @@ index 0000000000000000000000000000000000000000..2e8310b7d622482412710d841777994f
 + * the shoulders away into a bevel.
 + */
 +export declare function revolvedProfile(stops: readonly ProfileStop[], radialSegments?: number): BufferGeometry;
-diff --git a/dist/lib/components/props/prop-lathe.js b/dist/lib/components/props/prop-lathe.js
+diff --git a/b/dist/lib/components/props/prop-lathe.js b/dist/lib/components/props/prop-lathe.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..5531c9ba7d3dd6890f40e632f0d4d7772118585b
 --- /dev/null
@@ -6038,7 +6052,7 @@ index d5bb967e4febab088b3a26a82fc09c46cb96d2c5..dc3409eae84fa3c374b50f9ceaa08298
  export declare function computePropRotation(propState: PropState3D): [number, number, number];
 -//# sourceMappingURL=prop3d-transforms.d.ts.map
 \ No newline at end of file
-diff --git a/dist/lib/components/props/torch-profile.d.ts b/dist/lib/components/props/torch-profile.d.ts
+diff --git a/b/dist/lib/components/props/torch-profile.d.ts b/dist/lib/components/props/torch-profile.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..1155c65053b9fddf1c93161254b137cca20765ec
 --- /dev/null
@@ -6096,7 +6110,7 @@ index 0000000000000000000000000000000000000000..1155c65053b9fddf1c93161254b137cc
 +export declare const TORCH_BANDS: readonly TorchBand[];
 +/** Hand to the end of the wick, as a fraction of staff length. */
 +export declare const TORCH_REACH = 0.59335;
-diff --git a/dist/lib/components/props/torch-profile.js b/dist/lib/components/props/torch-profile.js
+diff --git a/b/dist/lib/components/props/torch-profile.js b/dist/lib/components/props/torch-profile.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..90dee722a0dfff7df7587571f03dc01bc73d368d
 --- /dev/null
@@ -6227,7 +6241,7 @@ index 0000000000000000000000000000000000000000..90dee722a0dfff7df7587571f03dc01b
 +];
 +/** Hand to the end of the wick, as a fraction of staff length. */
 +export const TORCH_REACH = 0.59335;
-diff --git a/dist/lib/components/props/triad-frame.d.ts b/dist/lib/components/props/triad-frame.d.ts
+diff --git a/b/dist/lib/components/props/triad-frame.d.ts b/dist/lib/components/props/triad-frame.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..d9d3cda0c4c75e710ca44754557e12572f79fadb
 --- /dev/null
@@ -6332,7 +6346,7 @@ index 0000000000000000000000000000000000000000..d9d3cda0c4c75e710ca44754557e1257
 + * spread the light.
 + */
 +export declare const TRIAD_DAY: TriadFrame;
-diff --git a/dist/lib/components/props/triad-frame.js b/dist/lib/components/props/triad-frame.js
+diff --git a/b/dist/lib/components/props/triad-frame.js b/dist/lib/components/props/triad-frame.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..77dae684f0a8eaa4d6f07dab53ce6f995a93f79f
 --- /dev/null
@@ -6417,7 +6431,7 @@ index 0000000000000000000000000000000000000000..77dae684f0a8eaa4d6f07dab53ce6f99
 +    ringTube: 0.03,
 +    fillet: 0.016,
 +};
-diff --git a/dist/lib/components/props/triquetra-profile.d.ts b/dist/lib/components/props/triquetra-profile.d.ts
+diff --git a/b/dist/lib/components/props/triquetra-profile.d.ts b/dist/lib/components/props/triquetra-profile.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..fa53ecbf85f0d1df2fdefd0bbbe2e3a143557173
 --- /dev/null
@@ -6494,7 +6508,7 @@ index 0000000000000000000000000000000000000000..fa53ecbf85f0d1df2fdefd0bbbe2e3a1
 + */
 +export declare function buildTriquetraShape(staffLength: number, hand: Hand): Shape;
 +export {};
-diff --git a/dist/lib/components/props/triquetra-profile.js b/dist/lib/components/props/triquetra-profile.js
+diff --git a/b/dist/lib/components/props/triquetra-profile.js b/dist/lib/components/props/triquetra-profile.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..30632a0b02ca68d577ec7aa281c7d89257373bfc
 --- /dev/null
@@ -6726,7 +6740,7 @@ index db7cfcea8497fdd89b80bbf7b37364aae2d345ed..476f0b1ee0da5d6ea88d252ead169c2b
  export {};
 -//# sourceMappingURL=avatar-debug-hooks.d.ts.map
 \ No newline at end of file
-diff --git a/dist/lib/debug/avatar-load-instrumentation.d.ts b/dist/lib/debug/avatar-load-instrumentation.d.ts
+diff --git a/b/dist/lib/debug/avatar-load-instrumentation.d.ts b/dist/lib/debug/avatar-load-instrumentation.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..c59ad15e57a6fb2462235f7c79c894a95e373038
 --- /dev/null
@@ -6786,7 +6800,7 @@ index 0000000000000000000000000000000000000000..c59ad15e57a6fb2462235f7c79c894a9
 +    busyMs: number;
 +}
 +export declare function summarizeAvatarLoadSpans(): AvatarLoadSummary;
-diff --git a/dist/lib/debug/avatar-load-instrumentation.js b/dist/lib/debug/avatar-load-instrumentation.js
+diff --git a/b/dist/lib/debug/avatar-load-instrumentation.js b/dist/lib/debug/avatar-load-instrumentation.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..3da407076bbad414d93cdac0dd1f84ba44abfb56
 --- /dev/null
@@ -9050,7 +9064,7 @@ index adb85b16968baa585645b13795904a9c25bba11d..b36c49d7ad72426c984c78da4d705c20
 -//# sourceMappingURL=LegAnimator.d.ts.map
 \ No newline at end of file
 diff --git a/dist/lib/services/implementations/LocomotionAnimator.d.ts b/dist/lib/services/implementations/LocomotionAnimator.d.ts
-index cc7a4e36b66824092dfe8b7e6e2d13464f121aa5..d7a21bf9c9f74eaac114fe61e2c4bb0050fa12f0 100644
+index cc7a4e36b66824092dfe8b7e6e2d13464f121aa5..1a08e3315406954644f91016e39662b73643c566 100644
 --- a/dist/lib/services/implementations/LocomotionAnimator.d.ts
 +++ b/dist/lib/services/implementations/LocomotionAnimator.d.ts
 @@ -17,7 +17,6 @@ import { LocomotionState } from "../contracts/IAnimationStateMachine";
@@ -9061,7 +9075,21 @@ index cc7a4e36b66824092dfe8b7e6e2d13464f121aa5..d7a21bf9c9f74eaac114fe61e2c4bb00
      private modelPrefix;
      private idleAction;
      private walkActions;
-@@ -64,11 +63,9 @@ export declare class LocomotionAnimator implements ILocomotionAnimator {
+@@ -40,6 +39,13 @@ export declare class LocomotionAnimator implements ILocomotionAnimator {
+      * Detect bone naming prefix on the loaded model.
+      */
+     private detectModelPrefix;
++    /**
++     * A prefix is the model's only if the hip and a leg both carry it. Hips
++     * alone matches the bare "" prefix against a stray bone named "Hips" and
++     * binds every track to nothing.
++     */
++    private hasRig;
++    private releaseActions;
+     loadAnimations(urls: AnimationUrls): Promise<void>;
+     /**
+      * Remap a pending clip's track names to match this model's bone prefix.
+@@ -64,11 +70,9 @@ export declare class LocomotionAnimator implements ILocomotionAnimator {
      configure(config: LocomotionConfig): void;
      getHipsBone(): Bone | null;
      dispose(): void;
@@ -9075,7 +9103,7 @@ index cc7a4e36b66824092dfe8b7e6e2d13464f121aa5..d7a21bf9c9f74eaac114fe61e2c4bb00
 -//# sourceMappingURL=LocomotionAnimator.d.ts.map
 \ No newline at end of file
 diff --git a/dist/lib/services/implementations/LocomotionAnimator.js b/dist/lib/services/implementations/LocomotionAnimator.js
-index 56279f173c47d912a9cb02a35e4e27abc07c41d6..77b398b9add30cfb2b52630de93b4819381e9a68 100644
+index 56279f173c47d912a9cb02a35e4e27abc07c41d6..d3d8c6fd5cea9bf046f6e7355b2129151eaf5d43 100644
 --- a/dist/lib/services/implementations/LocomotionAnimator.js
 +++ b/dist/lib/services/implementations/LocomotionAnimator.js
 @@ -12,8 +12,9 @@
@@ -9169,7 +9197,82 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..77b398b9add30cfb2b52630de93b4819
      modelPrefix = "mixamorig";
      // Actions - created from raw clips, no processing
      idleAction = null;
-@@ -231,15 +247,7 @@ export class LocomotionAnimator {
+@@ -189,6 +205,11 @@ export class LocomotionAnimator {
+         strafeRight: 0,
+     };
+     initialize(root) {
++        // Actions belong to the mixer that made them, and createActions() only
++        // fills empty slots. Carrying them across a new mixer leaves it with
++        // zero actions, so every clip is silently dropped and the avatar never
++        // moves.
++        this.releaseActions();
+         this.root = root;
+         this.mixer = new AnimationMixer(root);
+         this.modelPrefix = this.detectModelPrefix(root);
+@@ -202,17 +223,55 @@ export class LocomotionAnimator {
+      */
+     detectModelPrefix(root) {
+         for (const prefix of KNOWN_PREFIXES) {
+-            if (root.getObjectByName(`${prefix}Hips`))
++            if (this.hasRig(root, prefix))
+                 return prefix;
+         }
+-        // Fallback: search for any bone containing "Hips"
+-        let found = "mixamorig";
++        // Fallback: a rig whose prefix is not in the known list. Take it from
++        // the bone actually named "<prefix>Hips", not from any name that merely
++        // contains "Hips" — "LeftHipsHelper" would yield a prefix that binds
++        // nothing.
++        let found = null;
+         root.traverse((obj) => {
+-            if (obj.name.includes("Hips")) {
+-                found = obj.name.slice(0, obj.name.indexOf("Hips"));
+-            }
++            if (found !== null || !obj.name.endsWith("Hips"))
++                return;
++            const prefix = obj.name.slice(0, obj.name.length - "Hips".length);
++            if (this.hasRig(root, prefix))
++                found = prefix;
+         });
+-        return found;
++        return found ?? "mixamorig";
++    }
++    /**
++     * A prefix is the model's only if the hip and a leg both carry it. Hips
++     * alone matches the bare "" prefix against a stray bone named "Hips" and
++     * binds every track to nothing.
++     */
++    hasRig(root, prefix) {
++        return (!!root.getObjectByName(`${prefix}Hips`) &&
++            !!root.getObjectByName(`${prefix}LeftUpLeg`));
++    }
++    releaseActions() {
++        if (this.mixer) {
++            this.mixer.stopAllAction();
++            if (this.root)
++                this.mixer.uncacheRoot(this.root);
++            this.mixer = null;
++        }
++        this.idleAction = null;
++        this.jumpAction = null;
++        this.fallAction = null;
++        this.landAction = null;
++        this.crouchAction = null;
++        for (const key of Object.keys(this.walkActions)) {
++            this.walkActions[key] = null;
++        }
++        this.currentIdleWeight = 1;
++        this.targetIdleWeight = 1;
++        this.activeState = null;
++        this.currentActiveState = null;
++        for (const key of Object.keys(this.currentDirWeights)) {
++            this.currentDirWeights[key] = 0;
++            this.targetDirWeights[key] = 0;
++        }
+     }
+     async loadAnimations(urls) {
+         const entries = [
+@@ -231,15 +290,7 @@ export class LocomotionAnimator {
          if (urls.crouch)
              entries.push({ key: "crouch", url: urls.crouch });
          const results = await Promise.allSettled(entries.map(async ({ key, url }) => {
@@ -9186,7 +9289,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..77b398b9add30cfb2b52630de93b4819
              return { key, clip };
          }));
          for (const result of results) {
-@@ -280,7 +288,21 @@ export class LocomotionAnimator {
+@@ -280,7 +331,21 @@ export class LocomotionAnimator {
          // Strip leg bones from idle clip for exhibit performers so feet
          // stay perfectly planted during sequence playback.
          const stripLegs = this.config.stripLegBones && key === "idle";
@@ -9209,7 +9312,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..77b398b9add30cfb2b52630de93b4819
      }
      /**
       * Create actions from clips - only bone prefix remapping, no track filtering.
-@@ -299,7 +321,12 @@ export class LocomotionAnimator {
+@@ -299,7 +364,12 @@ export class LocomotionAnimator {
              this.idleAction.play();
          }
          // Walk directions - start at weight 0
@@ -9223,8 +9326,35 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..77b398b9add30cfb2b52630de93b4819
              const clip = this.prepareClip(key);
              if (clip && !this.walkActions[key]) {
                  const action = this.mixer.clipAction(clip);
-@@ -423,11 +450,6 @@ export class LocomotionAnimator {
-         }
+@@ -397,37 +467,13 @@ export class LocomotionAnimator {
+         return obj ?? null;
+     }
+     dispose() {
+-        if (this.mixer) {
+-            this.mixer.stopAllAction();
+-            this.mixer = null;
+-        }
+-        this.idleAction = null;
+-        this.jumpAction = null;
+-        this.fallAction = null;
+-        this.landAction = null;
+-        this.crouchAction = null;
+-        for (const key of Object.keys(this.walkActions)) {
+-            this.walkActions[key] = null;
+-        }
++        this.releaseActions();
+         this.pendingClips.clear();
+         this.root = null;
+         this.initialized = false;
+         this.clipsLoaded = false;
+-        this.currentIdleWeight = 1;
+-        this.targetIdleWeight = 1;
+-        this.activeState = null;
+-        this.currentActiveState = null;
+-        for (const key of Object.keys(this.currentDirWeights)) {
+-            this.currentDirWeights[key] = 0;
+-            this.targetDirWeights[key] = 0;
+-        }
      }
      // --- Private helpers ---
 -    loadGltf(url) {
@@ -9235,7 +9365,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..77b398b9add30cfb2b52630de93b4819
      updateDirectionalTargets(input) {
          const dir = input.moveDirection ?? { x: 0, z: 1 };
          const fw = Math.max(0, dir.z);
-@@ -483,7 +505,7 @@ export class LocomotionAnimator {
+@@ -483,7 +529,7 @@ export class LocomotionAnimator {
          // "hunched walk" without needing a dedicated crouch-walk animation clip.
          // Without movement, 100% crouch-idle plays normally.
          const isCrouching = state === LocomotionState.CROUCHING;
@@ -9244,7 +9374,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..77b398b9add30cfb2b52630de93b4819
          const crouchWalking = isCrouching && hasMovement;
          const wantWalk = state === LocomotionState.WALKING ? 1 : crouchWalking ? 0.4 : 0;
          const wantCrouch = isCrouching ? (crouchWalking ? 0.6 : 1) : 0;
-@@ -506,7 +528,8 @@ export class LocomotionAnimator {
+@@ -506,7 +552,8 @@ export class LocomotionAnimator {
          // On state entry: snap weights for instant transitions on one-shot clips.
          if (state !== this.currentActiveState) {
              // Zero out ground animations instantly when entering any airborne state
@@ -9522,7 +9652,7 @@ index 29809adb0b6cd2e639a532bc3c7794224d7bc79c..450c99ae72008006bcd75bdbe2dd3a4b
          q.setFromEuler(euler);
          return q;
      }
-diff --git a/dist/lib/services/implementations/SpineTwister.test.d.ts b/dist/lib/services/implementations/SpineTwister.test.d.ts
+diff --git a/b/dist/lib/services/implementations/SpineTwister.test.d.ts b/dist/lib/services/implementations/SpineTwister.test.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..cb0ff5c3b541f646105198ee23ac0fc3d805023e
 --- /dev/null
@@ -9549,7 +9679,7 @@ index 1fc0eaee116ab6d3c606a3ea5acb3673257dcd2c..911e49e51de6255eed139bbb4010593e
  };
 -//# sourceMappingURL=scene-asset-preloader.svelte.d.ts.map
 \ No newline at end of file
-diff --git a/dist/lib/services/shared-gltf-cache.d.ts b/dist/lib/services/shared-gltf-cache.d.ts
+diff --git a/b/dist/lib/services/shared-gltf-cache.d.ts b/dist/lib/services/shared-gltf-cache.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..542b1462224a88f72e7380d8f79ba0ce702d75b3
 --- /dev/null
@@ -9615,7 +9745,7 @@ index 0000000000000000000000000000000000000000..542b1462224a88f72e7380d8f79ba0ce
 +export declare function cloneSharedSkinnedScene(source: Object3D): Object3D;
 +/** Test-only reset for proving retry and deduplication behavior. */
 +export declare function clearSharedGltfCache(): void;
-diff --git a/dist/lib/services/shared-gltf-cache.js b/dist/lib/services/shared-gltf-cache.js
+diff --git a/b/dist/lib/services/shared-gltf-cache.js b/dist/lib/services/shared-gltf-cache.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..f110292508ed1650839c4b2daa75bba109334783
 --- /dev/null
@@ -10003,7 +10133,7 @@ index 0000000000000000000000000000000000000000..f110292508ed1650839c4b2daa75bba1
 +        context.preparedRoots.clear();
 +    }
 +}
-diff --git a/dist/lib/state/prop-finish-state.svelte.d.ts b/dist/lib/state/prop-finish-state.svelte.d.ts
+diff --git a/b/dist/lib/state/prop-finish-state.svelte.d.ts b/dist/lib/state/prop-finish-state.svelte.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..675610e362e7cb1f6e07e9a30d50877e16e9b56a
 --- /dev/null
@@ -10044,7 +10174,7 @@ index 0000000000000000000000000000000000000000..675610e362e7cb1f6e07e9a30d50877e
 +export declare function propHasFinishVariants(propType: PropType): boolean;
 +export declare function propHasFanAppearanceOptions(propType: PropType): boolean;
 +export {};
-diff --git a/dist/lib/state/prop-finish-state.svelte.js b/dist/lib/state/prop-finish-state.svelte.js
+diff --git a/b/dist/lib/state/prop-finish-state.svelte.js b/dist/lib/state/prop-finish-state.svelte.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..7a8bc92c77a0a73e4a89caab73827c5e0ecda41f
 --- /dev/null
@@ -10131,7 +10261,7 @@ index f18ca9b67211f249b0b65867abedc535d776db81..1c12e5a0ff1c4f1cbd2b3564041d49b3
 -//# sourceMappingURL=user-proportions-state.svelte.d.ts.map
 \ No newline at end of file
 diff --git a/src/lib/components/Avatar3D.svelte b/src/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..e429cb2a3d9692c36896fd22fc8442da5c0666cf 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..8d80a63adae286cd90e702a2778a95a6596657fe 100644
 --- a/src/lib/components/Avatar3D.svelte
 +++ b/src/lib/components/Avatar3D.svelte
 @@ -16,26 +16,34 @@
@@ -10602,7 +10732,21 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..e429cb2a3d9692c36896fd22fc8442da
          leftUpLeg.quaternion.multiply(leftTilt);
          rightUpLeg.quaternion.multiply(rightTilt);
          leftUpLeg.updateMatrixWorld(true);
-@@ -398,7 +679,11 @@
+@@ -388,17 +669,21 @@
+       // use IK only and don't need idle/walk animations.
+       if (enableLocomotion && locomotionAnimator && cachedRoot) {
+         // Configure before initialize so clips are prepared correctly
++        // Leg tracks stay in the idle clip. FootPlanter skips idle precisely
++        // because "the idle animation already places feet correctly on the
++        // ground" — strip them and the legs hold raw bind pose instead, which
++        // reads as a splayed A-stance.
+         locomotionAnimator.configure({
+           ...(enableRootMotion && { enableRootMotion: true }),
+-          // Exhibit performers: strip leg bones from idle clip so feet
+-          // stay planted during sequence playback. The FPS player keeps
+-          // full leg animation for responsive movement.
+-          ...(enableFootPlanting && { stripLegBones: true }),
+         });
          locomotionAnimator.initialize(cachedRoot);
  
          // Initialize root motion extractor with the Hips bone
@@ -13669,7 +13813,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..c05aecf863070202be34f6db930c6879
 +    dispose={false}
 +  />
  {/if}
-diff --git a/src/lib/components/props/club-profile.ts b/src/lib/components/props/club-profile.ts
+diff --git a/b/src/lib/components/props/club-profile.ts b/src/lib/components/props/club-profile.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..863f3bbbc67406a457aac1bb0e1ca9bf8be338ce
 --- /dev/null
@@ -13854,7 +13998,7 @@ index 0000000000000000000000000000000000000000..863f3bbbc67406a457aac1bb0e1ca9bf
 +
 +/** Hand to the top of the cap, in metres. */
 +export const CLUB_REACH_M = 0.50343;
-diff --git a/src/lib/components/props/doublestar-profile.ts b/src/lib/components/props/doublestar-profile.ts
+diff --git a/b/src/lib/components/props/doublestar-profile.ts b/src/lib/components/props/doublestar-profile.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..6c1a0cff0b24c07b96e584153f27b064107955eb
 --- /dev/null
@@ -13960,7 +14104,7 @@ index 0000000000000000000000000000000000000000..6c1a0cff0b24c07b96e584153f27b064
 +  ];
 +  return shape;
 +}
-diff --git a/src/lib/components/props/eightrings-profile.ts b/src/lib/components/props/eightrings-profile.ts
+diff --git a/b/src/lib/components/props/eightrings-profile.ts b/src/lib/components/props/eightrings-profile.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..c08bdcb8934b579eb722aef21cc56cd33dfd966a
 --- /dev/null
@@ -14050,7 +14194,7 @@ index 0000000000000000000000000000000000000000..c08bdcb8934b579eb722aef21cc56cd3
 +  ];
 +  return shape;
 +}
-diff --git a/src/lib/components/props/fan-profile.ts b/src/lib/components/props/fan-profile.ts
+diff --git a/b/src/lib/components/props/fan-profile.ts b/src/lib/components/props/fan-profile.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..0da37239a8053b7b14d4224987f648381ff7a220
 --- /dev/null
@@ -14225,7 +14369,7 @@ index 0000000000000000000000000000000000000000..0da37239a8053b7b14d4224987f64838
 +  ];
 +  return shape;
 +}
-diff --git a/src/lib/components/props/frame-materials.ts b/src/lib/components/props/frame-materials.ts
+diff --git a/b/src/lib/components/props/frame-materials.ts b/src/lib/components/props/frame-materials.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..7b254520dfe4f142d276bd7ed4d6643449ed1788
 --- /dev/null
@@ -14552,7 +14696,7 @@ index 0000000000000000000000000000000000000000..7b254520dfe4f142d276bd7ed4d66434
 +  hoopSets.set(color, materials);
 +  return materials;
 +}
-diff --git a/src/lib/components/props/geng-profile.ts b/src/lib/components/props/geng-profile.ts
+diff --git a/b/src/lib/components/props/geng-profile.ts b/src/lib/components/props/geng-profile.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..e6a8fa5c7212231654c232b99f1946477a62166f
 --- /dev/null
@@ -14714,7 +14858,7 @@ index 0000000000000000000000000000000000000000..e6a8fa5c7212231654c232b99f194647
 +export function buildTrigengShape(staffLength: number): Shape {
 +  return trace(TRIGENG_OUTLINE, staffLength);
 +}
-diff --git a/src/lib/components/props/hoop-geometry.ts b/src/lib/components/props/hoop-geometry.ts
+diff --git a/b/src/lib/components/props/hoop-geometry.ts b/src/lib/components/props/hoop-geometry.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..fe4ab4237836fde97e194a8c88e009633ce0ca20
 --- /dev/null
@@ -14837,7 +14981,7 @@ index 0000000000000000000000000000000000000000..fe4ab4237836fde97e194a8c88e00963
 + */
 +export const HOOP_REACH_M =
 +  2 * HOOP_CENTERLINE_RADIUS_M + HOOP_TUBE_RADIUS_M;
-diff --git a/src/lib/components/props/plate-extrude.ts b/src/lib/components/props/plate-extrude.ts
+diff --git a/b/src/lib/components/props/plate-extrude.ts b/src/lib/components/props/plate-extrude.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..3b093299f8fd46afc2d5e303492b3c156594e571
 --- /dev/null
@@ -14915,7 +15059,7 @@ index 0000000000000000000000000000000000000000..3b093299f8fd46afc2d5e303492b3c15
 +  extruded.dispose();
 +  return welded;
 +}
-diff --git a/src/lib/components/props/plate-materials.ts b/src/lib/components/props/plate-materials.ts
+diff --git a/b/src/lib/components/props/plate-materials.ts b/src/lib/components/props/plate-materials.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..f3f717d6d8a7efdc77f9883984bb7f89aacdb388
 --- /dev/null
@@ -14998,7 +15142,7 @@ index 0000000000000000000000000000000000000000..f3f717d6d8a7efdc77f9883984bb7f89
 +
 +/** Shared marker geometry for the trail indicator. */
 +export const PLATE_TRAIL_GEOMETRY = new SphereGeometry(0.015, 8, 8);
-diff --git a/src/lib/components/props/prop-lathe.ts b/src/lib/components/props/prop-lathe.ts
+diff --git a/b/src/lib/components/props/prop-lathe.ts b/src/lib/components/props/prop-lathe.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..2653ce5702094760a785e7352b9a245835d43cb0
 --- /dev/null
@@ -15458,7 +15602,7 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..a79703a0e472bc442440c2d2de4b6f0e
    // Check big variant map
    const bigVariant = BIG_VARIANT_MAP[propType];
    if (bigVariant) {
-diff --git a/src/lib/components/props/torch-profile.ts b/src/lib/components/props/torch-profile.ts
+diff --git a/b/src/lib/components/props/torch-profile.ts b/src/lib/components/props/torch-profile.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..764b15386348c9e9bdd2ae3701d14199856e40fa
 --- /dev/null
@@ -15606,7 +15750,7 @@ index 0000000000000000000000000000000000000000..764b15386348c9e9bdd2ae3701d14199
 +
 +/** Hand to the end of the wick, as a fraction of staff length. */
 +export const TORCH_REACH = 0.59335;
-diff --git a/src/lib/components/props/triad-frame.ts b/src/lib/components/props/triad-frame.ts
+diff --git a/b/src/lib/components/props/triad-frame.ts b/src/lib/components/props/triad-frame.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..c3e88a14abd46aa706641905aad0885d801a6c71
 --- /dev/null
@@ -15746,7 +15890,7 @@ index 0000000000000000000000000000000000000000..c3e88a14abd46aa706641905aad0885d
 +  ringTube: 0.03,
 +  fillet: 0.016,
 +};
-diff --git a/src/lib/components/props/triquetra-profile.ts b/src/lib/components/props/triquetra-profile.ts
+diff --git a/b/src/lib/components/props/triquetra-profile.ts b/src/lib/components/props/triquetra-profile.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..e78e9296e60edb2d417b43b47b32edff55684d48
 --- /dev/null
@@ -15938,7 +16082,7 @@ index 0000000000000000000000000000000000000000..e78e9296e60edb2d417b43b47b32edff
 +  ];
 +  return shape;
 +}
-diff --git a/src/lib/debug/avatar-load-instrumentation.ts b/src/lib/debug/avatar-load-instrumentation.ts
+diff --git a/b/src/lib/debug/avatar-load-instrumentation.ts b/src/lib/debug/avatar-load-instrumentation.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..7533d55eb9587dc3eda6ea149de226fc48749af5
 --- /dev/null
@@ -17719,7 +17863,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..4231488f5aa447cbf94e7ce0ea06907d
    }
  
 diff --git a/src/lib/services/implementations/LocomotionAnimator.ts b/src/lib/services/implementations/LocomotionAnimator.ts
-index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f6791bb3ed4 100644
+index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..fb031224cb558cf28f32f03ee1d883fd88b4eefa 100644
 --- a/src/lib/services/implementations/LocomotionAnimator.ts
 +++ b/src/lib/services/implementations/LocomotionAnimator.ts
 @@ -14,7 +14,6 @@
@@ -17833,7 +17977,82 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f67
    private modelPrefix = "mixamorig";
  
    // Actions - created from raw clips, no processing
-@@ -262,14 +289,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -220,6 +247,11 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+   };
+ 
+   initialize(root: Object3D): void {
++    // Actions belong to the mixer that made them, and createActions() only
++    // fills empty slots. Carrying them across a new mixer leaves it with zero
++    // actions, so every clip is silently dropped and the avatar never moves.
++    this.releaseActions();
++
+     this.root = root;
+     this.mixer = new AnimationMixer(root);
+     this.modelPrefix = this.detectModelPrefix(root);
+@@ -235,16 +267,55 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+    */
+   private detectModelPrefix(root: Object3D): string {
+     for (const prefix of KNOWN_PREFIXES) {
+-      if (root.getObjectByName(`${prefix}Hips`)) return prefix;
++      if (this.hasRig(root, prefix)) return prefix;
+     }
+-    // Fallback: search for any bone containing "Hips"
+-    let found = "mixamorig";
++    // Fallback: a rig whose prefix is not in the known list. Take it from the
++    // bone actually named "<prefix>Hips", not from any name that merely
++    // contains "Hips" — "LeftHipsHelper" would yield a prefix that binds
++    // nothing.
++    let found: string | null = null;
+     root.traverse((obj) => {
+-      if (obj.name.includes("Hips")) {
+-        found = obj.name.slice(0, obj.name.indexOf("Hips"));
+-      }
++      if (found !== null || !obj.name.endsWith("Hips")) return;
++      const prefix = obj.name.slice(0, obj.name.length - "Hips".length);
++      if (this.hasRig(root, prefix)) found = prefix;
+     });
+-    return found;
++    return found ?? "mixamorig";
++  }
++
++  /**
++   * A prefix is the model's only if the hip and a leg both carry it. Hips
++   * alone matches the bare "" prefix against a stray bone named "Hips" and
++   * binds every track to nothing.
++   */
++  private hasRig(root: Object3D, prefix: string): boolean {
++    return (
++      !!root.getObjectByName(`${prefix}Hips`) &&
++      !!root.getObjectByName(`${prefix}LeftUpLeg`)
++    );
++  }
++
++  private releaseActions(): void {
++    if (this.mixer) {
++      this.mixer.stopAllAction();
++      if (this.root) this.mixer.uncacheRoot(this.root);
++      this.mixer = null;
++    }
++    this.idleAction = null;
++    this.jumpAction = null;
++    this.fallAction = null;
++    this.landAction = null;
++    this.crouchAction = null;
++    for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
++      this.walkActions[key] = null;
++    }
++    this.currentIdleWeight = 1;
++    this.targetIdleWeight = 1;
++    this.activeState = null;
++    this.currentActiveState = null;
++    for (const key of Object.keys(this.currentDirWeights) as DirectionKey[]) {
++      this.currentDirWeights[key] = 0;
++      this.targetDirWeights[key] = 0;
++    }
+   }
+ 
+   async loadAnimations(urls: AnimationUrls): Promise<void> {
+@@ -262,14 +333,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
  
      const results = await Promise.allSettled(
        entries.map(async ({ key, url }) => {
@@ -17849,7 +18068,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f67
          return { key, clip };
        })
      );
-@@ -309,14 +329,35 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -309,14 +373,35 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // (Mixamo FBX→GLB values are in centimeters, skeleton is in meters).
      // This lets the Hips bone drop to the correct crouched height.
      let hipsMode: "strip" | "rootMotion" | "pose" = "strip";
@@ -17887,7 +18106,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f67
    }
  
    /**
-@@ -327,7 +368,6 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -327,7 +412,6 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    private createActions(): void {
      if (!this.mixer) return;
  
@@ -17895,7 +18114,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f67
      // Idle - starts at weight 1
      const idleClip = this.prepareClip("idle");
      if (idleClip && !this.idleAction) {
-@@ -338,7 +378,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -338,7 +422,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      }
  
      // Walk directions - start at weight 0
@@ -17909,7 +18128,36 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f67
        const clip = this.prepareClip(key);
        if (clip && !this.walkActions[key]) {
          const action = this.mixer.clipAction(clip);
-@@ -475,12 +520,6 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -447,40 +536,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+   }
+ 
+   dispose(): void {
+-    if (this.mixer) {
+-      this.mixer.stopAllAction();
+-      this.mixer = null;
+-    }
+-    this.idleAction = null;
+-    this.jumpAction = null;
+-    this.fallAction = null;
+-    this.landAction = null;
+-    this.crouchAction = null;
+-    for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
+-      this.walkActions[key] = null;
+-    }
++    this.releaseActions();
+     this.pendingClips.clear();
+     this.root = null;
+     this.initialized = false;
+     this.clipsLoaded = false;
+-    this.currentIdleWeight = 1;
+-    this.targetIdleWeight = 1;
+-    this.activeState = null;
+-    this.currentActiveState = null;
+-    for (const key of Object.keys(this.currentDirWeights) as DirectionKey[]) {
+-      this.currentDirWeights[key] = 0;
+-      this.targetDirWeights[key] = 0;
+-    }
+   }
  
    // --- Private helpers ---
  
@@ -17922,7 +18170,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f67
    private updateDirectionalTargets(input: LocomotionInput): void {
      const dir = input.moveDirection ?? { x: 0, z: 1 };
      const fw = Math.max(0, dir.z);
-@@ -545,10 +584,11 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -545,10 +609,11 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // "hunched walk" without needing a dedicated crouch-walk animation clip.
      // Without movement, 100% crouch-idle plays normally.
      const isCrouching = state === LocomotionState.CROUCHING;
@@ -17936,7 +18184,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f67
      const wantCrouch = isCrouching ? (crouchWalking ? 0.6 : 1) : 0;
  
      // Idle
-@@ -573,7 +613,10 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -573,7 +638,10 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // On state entry: snap weights for instant transitions on one-shot clips.
      if (state !== this.currentActiveState) {
        // Zero out ground animations instantly when entering any airborne state
@@ -18202,7 +18450,7 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..6106a21ee445534768e8fff7992facbb
      q.setFromEuler(euler);
      return q;
    }
-diff --git a/src/lib/services/shared-gltf-cache.ts b/src/lib/services/shared-gltf-cache.ts
+diff --git a/b/src/lib/services/shared-gltf-cache.ts b/src/lib/services/shared-gltf-cache.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..f0954ba714626612592fc2b166f1f9a75417b658
 --- /dev/null
@@ -18668,7 +18916,7 @@ index 0000000000000000000000000000000000000000..f0954ba714626612592fc2b166f1f9a7
 +    context.preparedRoots.clear();
 +  }
 +}
-diff --git a/src/lib/state/prop-finish-state.svelte.ts b/src/lib/state/prop-finish-state.svelte.ts
+diff --git a/b/src/lib/state/prop-finish-state.svelte.ts b/src/lib/state/prop-finish-state.svelte.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..f70374ef5ce31bc83a9b219a97fafb926991ce9d
 --- /dev/null

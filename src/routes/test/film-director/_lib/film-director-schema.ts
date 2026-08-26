@@ -722,6 +722,13 @@ export interface ResolvedDirectorScene {
     sequence: { source: "demo"; loop: boolean };
     formation: FormationPreset;
     performers: ResolvedDirectorPerformer[];
+    /**
+     * Every mark the cast reaches during this scene, opening positions and
+     * blocking waypoints alike. The viewer sizes the ground to this instead of
+     * to the live positions, so a scene of walking gets one stage rather than
+     * one that grows and shrinks under the feet crossing it.
+     */
+    stageExtent: readonly { x: number; z: number }[];
   };
   effectPresets: Record<string, string>;
   effectOverrides: Record<string, Record<string, unknown>>;

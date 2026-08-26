@@ -486,6 +486,7 @@
     waitForPerformersOnInitialReveal={true}
     performerStepOffsets={presentedStepOffsets}
     visiblePerformerCount={presentedScene.performance.performers.length}
+    stageBoundsPositions={presentedScene.performance.stageExtent}
     {retainedEnvironmentTypes}
     environmentTransitionVisualMode="host-controlled"
     sceneLoadTimeoutMs={60_000}

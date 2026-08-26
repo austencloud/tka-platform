@@ -760,11 +760,25 @@ function resolveScene(
       },
       formation,
       performers,
+      stageExtent: collectStageExtent(performers),
     },
     effectPresets,
     effectOverrides,
     camera: cameraTrack,
   };
+}
+
+/**
+ * Blocking segments are straight lines between keyframes, so the keyframes
+ * themselves bound the whole scene's travel — no sampling needed.
+ */
+function collectStageExtent(
+  performers: readonly ResolvedDirectorPerformer[]
+): { x: number; z: number }[] {
+  return performers.flatMap((performer) => [
+    { ...performer.position },
+    ...performer.blocking.map((keyframe) => ({ ...keyframe.position })),
+  ]);
 }
 
 export function resolveFilmDirectorSpec(

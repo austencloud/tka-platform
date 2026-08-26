@@ -102,6 +102,16 @@
     worldChildren?: Snippet;
     /** Reserved film rigs stay mounted, but only the active cast is rendered. */
     visiblePerformerCount?: number;
+    /**
+     * Points the stage must contain, in place of the cast's live positions.
+     *
+     * The stage is sized from where the performers are, which is right for a
+     * cast that only moves when someone edits the formation. Under a director
+     * the cast walks, so the same derivation makes the ground grow and shrink
+     * under their feet for the length of a scene. A host that knows the whole
+     * scene's travel up front passes its extent here and gets one fixed stage.
+     */
+    stageBoundsPositions?: readonly { x: number; z: number }[] | null;
     /** Environments retained in the scene graph after the opening preparation. */
     retainedEnvironmentTypes?: readonly BackgroundType[];
     /** Lets a film-level compositor hide an atomic retained-world switch. */
@@ -132,6 +142,7 @@
     performerSteps = null,
     worldChildren,
     visiblePerformerCount,
+    stageBoundsPositions = null,
     retainedEnvironmentTypes = [],
     environmentTransitionVisualMode = "internal",
     onPerformerReadinessChange,
@@ -527,7 +538,8 @@
 
   const stageDimensions = $derived(
     getPerformerStageBounds(
-      visiblePerformers.map((performer) => performer.position),
+      stageBoundsPositions ??
+        visiblePerformers.map((performer) => performer.position),
       {
         performerClearance: getPerformerStageClearance(
           userProportionsState.avatarScale

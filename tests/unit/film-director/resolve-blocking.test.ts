@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/_lib/resolve-film-director-spec";
 import { sampleDirectorBlockingTrack } from "../../../src/routes/test/film-director/_lib/director-blocking-track";
+import { getPerformerStageBounds } from "../../../src/lib/shared/3d/environments/domain/performer-stage-bounds";
 
 function film(performance: Record<string, unknown>, durationSeconds = 8) {
   return {
@@ -161,5 +162,53 @@ describe("blocking in the resolved spec", () => {
         )
       )
     ).toThrow(/Travel tops out at/);
+  });
+});
+
+describe("the stage extent a scene publishes", () => {
+  const walkingFilm = film(
+    {
+      formation: "custom",
+      performers: [
+        {
+          id: "traveler",
+          position: { x: 0, z: 0 },
+          blocking: [
+            { move: "walk", to: { x: 7, z: 0 }, durationSeconds: 4 },
+            { move: "walk", to: { x: 0, z: 0 }, durationSeconds: 4 },
+          ],
+        },
+      ],
+    },
+    8
+  );
+
+  function extentOf(doc: ReturnType<typeof film>) {
+    return resolveFilmDirectorSpec(doc).scenes[0]!.performance.stageExtent;
+  }
+
+  it("covers the far mark a performer only reaches mid-scene", () => {
+    expect(extentOf(walkingFilm)).toContainEqual({ x: 7, z: 0 });
+  });
+
+  it("holds the stage one size across the whole walk", () => {
+    const scene = resolveFilmDirectorSpec(walkingFilm).scenes[0]!;
+    const fixed = getPerformerStageBounds(scene.performance.stageExtent);
+    const live = [0, 2, 4, 6, 8].map((seconds) =>
+      getPerformerStageBounds(
+        scene.performance.performers.map(
+          (performer) =>
+            sampleDirectorBlockingTrack(performer.blocking, seconds).position
+        )
+      )
+    );
+    for (const bounds of live) {
+      expect(bounds.width).toBeLessThanOrEqual(fixed.width + 1e-6);
+    }
+    // The live derivation is what made the ground breathe: sized to the
+    // performer's position, it is widest mid-walk and narrowest at the ends.
+    expect(Math.max(...live.map((b) => b.width))).toBeGreaterThan(
+      Math.min(...live.map((b) => b.width)) + 1
+    );
   });
 });

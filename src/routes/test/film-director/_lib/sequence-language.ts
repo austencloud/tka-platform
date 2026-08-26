@@ -118,9 +118,15 @@ export type DirectorStartOrientation =
   | DirectorOrientation
   | { blue?: DirectorOrientation; red?: DirectorOrientation };
 
+/**
+ * A film is authored as JSON as often as it is authored in TypeScript, so the
+ * LOOP name is the enum's string, not the enum member.
+ */
+export type DirectorLoopName = `${LOOPType}`;
+
 export type DirectorLoop =
-  | LOOPType
-  | { type: LOOPType; period?: DirectorLoopPeriod };
+  | DirectorLoopName
+  | { type: DirectorLoopName; period?: DirectorLoopPeriod };
 
 /**
  * Everything a generated sequence can say beyond its source. Each field is one
@@ -386,7 +392,7 @@ function compileLoop(
   const period = typeof loop === "string" ? undefined : loop.period;
   return {
     mode: GenerationMode.CIRCULAR,
-    loopType: type,
+    loopType: type as LOOPType,
     ...(period ? { period: period as Period } : {}),
   };
 }
