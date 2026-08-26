@@ -134,6 +134,8 @@
     top: 0;
     bottom: 0;
     min-width: 0;
+    overflow: hidden;
+    container-type: inline-size;
     border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
   }
 
@@ -174,17 +176,42 @@
   }
 
   .segment-number {
+    flex: 0 0 auto;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-compact, 0.75rem);
     font-variant-numeric: tabular-nums;
   }
 
   .segment-title {
+    flex: 0 1 auto;
+    min-width: 0;
     overflow: hidden;
     font-size: var(--font-size-min, 0.875rem);
     font-weight: 700;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* A segment is a share of the track, so no viewport breakpoint describes it:
+     the same phone gives an 17-second scene room for its title and an
+     11-second one none. Each band decides for itself. */
+  @container (max-width: 6rem) {
+    .segment-title {
+      display: none;
+    }
+  }
+
+  @container (max-width: 2.75rem) {
+    .segment button {
+      justify-content: center;
+      padding: 0;
+    }
+  }
+
+  @container (max-width: 1.6rem) {
+    .segment-number {
+      display: none;
+    }
   }
 
   .playhead {

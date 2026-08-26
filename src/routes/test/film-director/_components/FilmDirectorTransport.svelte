@@ -50,16 +50,25 @@
     onStepFullBeatForward={director.nextScene}
   />
 
-  <FilmTimeline />
+  <div class="timeline-cell"><FilmTimeline /></div>
 
-  <span class="timecode">
-    <span class="sizer" aria-hidden="true">00:00 / 00:00</span>
-    <span class="live">
-      {formatTime(director.playheadSeconds)} / {formatTime(
-        director.film.durationSeconds
-      )}
+  <!-- Below 60rem the shortest bands are too narrow to carry their titles, so
+       the scene the film is actually in gets its own line rather than going
+       unsaid. The timecode rides along instead of being dropped. A film with
+       many more scenes would cross that threshold while still wide; the seam
+       is a width because the alternative is measuring every band at runtime. -->
+  <div class="compact-head">
+    <span class="scene-name">{director.frame.scene.title}</span>
+
+    <span class="timecode">
+      <span class="sizer" aria-hidden="true">00:00 / 00:00</span>
+      <span class="live">
+        {formatTime(director.playheadSeconds)} / {formatTime(
+          director.film.durationSeconds
+        )}
+      </span>
     </span>
-  </span>
+  </div>
 
   {#if trailing}{@render trailing()}{/if}
 </div>
@@ -107,15 +116,53 @@
     visibility: hidden;
   }
 
-  @media (max-width: 44rem) {
+  .timeline-cell {
+    min-width: 0;
+  }
+
+  .compact-head {
+    display: contents;
+  }
+
+  .scene-name {
+    display: none;
+  }
+
+  @media (max-width: 60rem) {
     .transport {
-      grid-template-columns: auto minmax(4rem, 1fr) auto;
-      gap: 0.45rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem 0.5rem;
       padding: 0.5rem 0.6rem;
     }
 
-    .timecode {
-      display: none;
+    .timeline-cell {
+      flex: 1 1 4rem;
+    }
+
+    /* Its own full-width line, which is also what forces the controls row to
+       wrap under it. */
+    .compact-head {
+      display: flex;
+      order: -1;
+      flex: 1 0 100%;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0 0.15rem;
+    }
+
+    .scene-name {
+      display: block;
+      min-width: 0;
+      overflow: hidden;
+      color: var(--theme-text, #fff);
+      font-size: var(--font-size-compact, 0.75rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      white-space: nowrap;
     }
   }
 </style>
