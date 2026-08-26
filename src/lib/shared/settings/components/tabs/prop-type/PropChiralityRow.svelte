@@ -11,71 +11,82 @@
   the Arena drawer, My Props and Tunnel art settings without adding a twelfth
   copy of the button.
 
-  Exactly one of two states is always active, so this routes to
+  Buugeng chirality is a statement about the PAIR: two of the same handedness
+  stay apart, two of opposite handedness nest into one shape. So a host that
+  sets both hands gets one control per hand rather than a single control
+  writing both — the relationship is the whole point, and a shared control
+  cannot express it. Prop type still travels together in those hosts.
+
+  Exactly one of two states is always active per hand, so this routes to
   SegmentedControl per .claude/rules/chip-primitives.md. Each segment renders
-  the selected prop's own art — one upright, one mirrored — through the
-  primitive's existing optionContent slot; the word underneath carries the same
-  distinction for anyone who cannot resolve the glyph at this size.
+  the selected prop's own art in its hand's colour — one upright, one mirrored
+  — through the primitive's existing optionContent slot. Colour plus the
+  control's aria-label carry which hand it is, so the words Blue and Red stay
+  off the face (chip-primitives.md, Blue / Red Prop Identity).
 -->
 <script lang="ts">
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "./prop-type-registry";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import type {
+    ChiralityHand,
+    PropChiralityHandState,
+  } from "./prop-chirality-seam";
 
   type Chirality = "standard" | "mirrored";
 
   let {
     propType,
-    flipped,
-    hand,
+    hands,
     onChange,
   }: {
-    /** The prop whose art the two segments preview. */
+    /** The prop whose art the segments preview. */
     propType: PropType;
-    flipped: boolean;
-    /** Which hand this writes. Omitted means the host writes both. */
-    hand?: "blue" | "red";
-    onChange: (flipped: boolean) => void;
+    /** One entry per hand this picker governs, blue first. */
+    hands: readonly PropChiralityHandState[];
+    onChange: (hand: ChiralityHand, flipped: boolean) => void;
   } = $props();
 
   const displayInfo = $derived(getPropTypeDisplayInfo(propType));
-  const value = $derived<Chirality>(flipped ? "mirrored" : "standard");
 
-  const options = $derived([
+  const options = [
     { value: "standard" as const, label: "Standard" },
     { value: "mirrored" as const, label: "Mirrored" },
-  ]);
+  ];
 
-  // The hand belongs in the accessible name because the visible label cannot
-  // carry it — the same row is used by hosts that write one hand and by hosts
-  // that write both.
-  const groupLabel = $derived(
-    hand ? `${hand} buugeng chirality` : "Buugeng chirality"
-  );
+  function valueFor(flipped: boolean): Chirality {
+    return flipped ? "mirrored" : "standard";
+  }
 </script>
 
-<div class="chirality-row" class:blue={hand === "blue"} class:red={hand === "red"}>
-  <span class="chirality-label" id="chirality-label">Chirality</span>
-  <SegmentedControl
-    {options}
-    {value}
-    onchange={(next) => onChange(next === "mirrored")}
-    color={hand ?? "accent"}
-    semantics="radiogroup"
-    ariaLabel={groupLabel}
-  >
-    {#snippet optionContent(option)}
-      <img
-        src={displayInfo.image}
-        alt=""
-        class="chirality-art"
-        class:mirrored={option === "mirrored"}
-      />
-      <span class="chirality-word"
-        >{option === "mirrored" ? "Mirrored" : "Standard"}</span
-      >
-    {/snippet}
-  </SegmentedControl>
+<div class="chirality-row">
+  <span class="chirality-label">Chirality</span>
+  <div class="chirality-controls">
+    {#each hands as state (state.hand)}
+      <div class="chirality-hand" class:red={state.hand === "red"}>
+        <SegmentedControl
+          {options}
+          value={valueFor(state.flipped)}
+          onchange={(next) => onChange(state.hand, next === "mirrored")}
+          color={state.hand}
+          semantics="radiogroup"
+          ariaLabel="{state.hand === 'red' ? 'Red' : 'Blue'} buugeng chirality"
+        >
+          {#snippet optionContent(option)}
+            <img
+              src={displayInfo.image}
+              alt=""
+              class="chirality-art"
+              class:mirrored={option === "mirrored"}
+            />
+            <span class="chirality-word"
+              >{option === "mirrored" ? "Mirrored" : "Standard"}</span
+            >
+          {/snippet}
+        </SegmentedControl>
+      </div>
+    {/each}
+  </div>
 </div>
 
 <style>
@@ -95,13 +106,48 @@
     white-space: nowrap;
   }
 
-  .chirality-row :global(.segmented-control) {
+  .chirality-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    /* Wide enough that two controls read as two groups. At 10px the four
+       segments ran together as one Standard/Mirrored/Standard/Mirrored bar. */
+    gap: 20px;
     flex: 1;
     min-width: 0;
-    /* The row is a two-option selector, not a progress bar. Without a ceiling
-       it stretches to whatever the host panel is wide — the exact failure
-       .claude/rules/visual-verification-mandatory.md opens with. */
+  }
+
+  /* Each hand's control is a two-option selector, not a progress bar. Without
+     a ceiling it stretches to whatever the host panel is wide — the exact
+     failure .claude/rules/visual-verification-mandatory.md opens with. The
+     15rem basis is what makes the pair wrap to one per line on a narrow sheet
+     instead of squeezing both words to ellipses. */
+  .chirality-hand {
+    flex: 1 1 15rem;
+    min-width: 0;
     max-width: 22rem;
+    padding: 4px;
+    border-radius: 14px;
+    /* The wash and ring make the whole control unmistakably one hand's, which
+       is what lets the words Blue and Red stay off the face
+       (chip-primitives.md, Blue / Red Prop Identity). */
+    background: color-mix(
+      in srgb,
+      var(--dm-motion-blue, #3d44b8) 12%,
+      transparent
+    );
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--dm-motion-blue, #3d44b8) 38%, transparent);
+  }
+
+  .chirality-hand.red {
+    background: color-mix(
+      in srgb,
+      var(--dm-motion-red, #dc2626) 12%,
+      transparent
+    );
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--dm-motion-red, #dc2626) 38%, transparent);
   }
 
   .chirality-row :global(.segment-label) {
@@ -128,15 +174,25 @@
     white-space: nowrap;
   }
 
-  /* Tint the previews to the hand they belong to, matching CompactPropDisplay. */
-  .chirality-row.red .chirality-art {
+  /* Tint the previews to the hand they belong to, matching CompactPropDisplay.
+     With two controls side by side this is what tells them apart, so it is
+     load-bearing rather than decorative. */
+  .chirality-hand.red .chirality-art {
     filter: hue-rotate(125deg) saturate(1.2);
   }
 
+  /* Narrow hosts stack the pair one per line, so the word moves above them
+     instead of disappearing. Hiding it left two identical Standard/Mirrored
+     pairs with nothing on screen saying what they set. */
   @container prop-grid (max-width: 340px) {
+    .chirality-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+
     .chirality-label {
-      /* The SegmentedControl's own aria-label still names the group. */
-      display: none;
+      text-align: center;
     }
   }
 </style>

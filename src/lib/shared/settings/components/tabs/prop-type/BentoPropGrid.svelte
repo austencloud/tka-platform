@@ -69,8 +69,9 @@
      * Buugeng chirality seam. Absent means the picker renders no chirality
      * row, so hosts that should never expose it (the deck releaser renders
      * canonical print cards) are unaffected by omission rather than by an
-     * opt-out. `hand` is what the accessible name reads; omit it when the
-     * host writes both hands, as the single-prop hosts do for prop type.
+     * opt-out. `hands` names the hands this picker governs: one for a
+     * per-hand picker, both for a picker that sets the pair — chirality is
+     * never shared between hands the way prop type is.
      */
     chirality?: PropChiralitySeam;
   }>();
@@ -201,8 +202,7 @@
   {#if chirality && isBuugengFamilyProp(selectedPropType)}
     <PropChiralityRow
       propType={selectedPropType}
-      flipped={chirality.flipped}
-      hand={chirality.hand}
+      hands={chirality.hands}
       onChange={chirality.onChange}
     />
   {/if}

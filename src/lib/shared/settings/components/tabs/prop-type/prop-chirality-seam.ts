@@ -3,12 +3,21 @@ import {
   updateSettings,
 } from "$lib/shared/application/state/app-state.svelte";
 
-export interface PropChiralitySeam {
-  /** Current chirality of the hand this seam addresses. */
+export type ChiralityHand = "blue" | "red";
+
+export interface PropChiralityHandState {
+  readonly hand: ChiralityHand;
   readonly flipped: boolean;
-  /** Which hand the seam writes. Omitted means both. */
-  readonly hand?: "blue" | "red";
-  onChange: (flipped: boolean) => void;
+}
+
+export interface PropChiralitySeam {
+  /**
+   * The hands this picker governs, blue first. A picker that chooses one
+   * hand's prop carries one entry; a picker that sets both hands at once
+   * carries both, because chirality is never shared the way prop type is.
+   */
+  readonly hands: readonly PropChiralityHandState[];
+  onChange: (hand: ChiralityHand, flipped: boolean) => void;
 }
 
 /**
@@ -19,35 +28,36 @@ export interface PropChiralitySeam {
  * still tracks the setting: the picker reads it during its own render, which is
  * what registers the dependency.
  *
- * Passing no hand writes both, matching what `handlePropTypeChange` already
- * does for prop type itself in the single-prop hosts. Blue is then the value
- * read back, because a host that writes both can never have them disagree
- * through this control.
+ * Passing no hand yields BOTH hands as separate controls rather than one
+ * control writing both. Buugeng chirality is a statement about how the two
+ * props relate — two of the same handedness stay apart, two of opposite
+ * handedness nest into one shape — so forcing them equal removes the only
+ * distinction the setting exists to make. Prop type still travels together in
+ * those hosts; chirality does not.
  */
 export function createGlobalChiralitySeam(
-  hand?: "blue" | "red"
+  hand?: ChiralityHand
 ): PropChiralitySeam {
-  return {
+  const handState = (which: ChiralityHand): PropChiralityHandState => ({
+    hand: which,
     get flipped() {
       const settings = getSettings();
       return (
-        (hand === "red"
+        (which === "red"
           ? settings.redBuugengFlipped
           : settings.blueBuugengFlipped) ?? false
       );
     },
-    hand,
-    onChange(flipped: boolean) {
-      if (hand === "blue") {
-        updateSettings({ blueBuugengFlipped: flipped });
-      } else if (hand === "red") {
-        updateSettings({ redBuugengFlipped: flipped });
-      } else {
-        updateSettings({
-          blueBuugengFlipped: flipped,
-          redBuugengFlipped: flipped,
-        });
-      }
+  });
+
+  return {
+    hands: hand ? [handState(hand)] : [handState("blue"), handState("red")],
+    onChange(which: ChiralityHand, flipped: boolean) {
+      updateSettings(
+        which === "red"
+          ? { redBuugengFlipped: flipped }
+          : { blueBuugengFlipped: flipped }
+      );
     },
   };
 }

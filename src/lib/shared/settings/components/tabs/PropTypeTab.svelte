@@ -20,7 +20,11 @@
   import CatDogToggle from "./prop-type/CatDogToggle.svelte";
   import PresetChipBar from "./prop-type/PresetChipBar.svelte";
   import CompactPropDisplay from "./prop-type/CompactPropDisplay.svelte";
-  import type { PropChiralitySeam } from "./prop-type/prop-chirality-seam";
+  import type {
+    ChiralityHand,
+    PropChiralityHandState,
+    PropChiralitySeam,
+  } from "./prop-type/prop-chirality-seam";
   import BentoPropGrid from "./prop-type/BentoPropGrid.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
@@ -329,17 +333,16 @@
   // the global seam, because this tab keeps $state copies of every setting and
   // publishes them through onUpdate — a direct settings write would leave the
   // mirrors (and the preset row that reads them) stale.
-  function setChirality(hand: "blue" | "red", flipped: boolean) {
+  // Each hand keeps its own handedness even when both hands share a prop
+  // type. Two buugeng of the same chirality stay apart; two of opposite
+  // chirality nest into one shape, so mirroring blue onto red would erase the
+  // distinction the setting exists to make.
+  function setChirality(hand: ChiralityHand, flipped: boolean) {
     hapticService?.trigger("selection");
 
     if (hand === "blue") {
       blueBuugengFlipped = flipped;
       onUpdate?.({ key: "blueBuugengFlipped", value: blueBuugengFlipped });
-      // Outside cat/dog mode the two hands are one choice, so blue carries red.
-      if (!catDogMode) {
-        redBuugengFlipped = blueBuugengFlipped;
-        onUpdate?.({ key: "redBuugengFlipped", value: redBuugengFlipped });
-      }
     } else {
       redBuugengFlipped = flipped;
       onUpdate?.({ key: "redBuugengFlipped", value: redBuugengFlipped });
@@ -347,16 +350,17 @@
     updateCurrentPreset();
   }
 
-  function chiralitySeam(hand: "blue" | "red"): PropChiralitySeam {
+  function chiralityHand(hand: ChiralityHand): PropChiralityHandState {
     return {
+      hand,
       get flipped() {
         return hand === "blue" ? blueBuugengFlipped : redBuugengFlipped;
       },
-      // Outside cat/dog mode one control writes both hands, so it names
-      // neither — same contract as the single-prop hosts.
-      hand: catDogMode ? hand : undefined,
-      onChange: (flipped: boolean) => setChirality(hand, flipped),
     };
+  }
+
+  function chiralitySeam(...hands: ChiralityHand[]): PropChiralitySeam {
+    return { hands: hands.map(chiralityHand), onChange: setChirality };
   }
 </script>
 
@@ -482,7 +486,7 @@
         color="blue"
         title="Select Prop"
         onSelect={handleInlineSelect}
-        chirality={chiralitySeam("blue")}
+        chirality={chiralitySeam("blue", "red")}
       />
     {/if}
   </section>

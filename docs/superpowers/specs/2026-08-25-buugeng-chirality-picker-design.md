@@ -49,15 +49,19 @@ independence in the single-prop hosts.
 
 ```ts
 chirality?: {
-  flipped: boolean;
-  hand?: "blue" | "red";   // omitted = the control writes both hands
-  onChange: (flipped: boolean) => void;
+  hands: readonly { hand: "blue" | "red"; flipped: boolean }[];
+  onChange: (hand: "blue" | "red", flipped: boolean) => void;
 };
 ```
 
 Absent means the row does not render, so no existing host breaks. The grouped
-shape keeps it one seam rather than three loose props, and `hand` is what the
-accessible name and the accent indicator read.
+shape keeps it one seam rather than three loose props, and each entry's `hand`
+is what its accessible name and accent read.
+
+`hands` names the hands this picker governs: one entry for a picker that chooses
+a single hand's prop, both entries for a picker that sets the pair. A picker that
+sets both renders **two controls**, never one control writing both values — see
+Per-hand, always.
 
 ### Presentation
 
@@ -78,16 +82,32 @@ The row renders only when the selected prop is buugeng-family, and it mounts in
 the picker's existing bottom dock — the same slot `premium-nudge-dock` already
 uses, outside `grid-scroll` — so revealing it moves nothing inside the grid.
 
-### Per-hand vs both hands
+### Per-hand, always
 
-The picker is already `color`-aware, so this falls out of the existing shape:
+Chirality is **not** shared between hands the way prop type is. Buugeng chirality
+is a statement about how the two props relate: two of the same handedness stay
+apart, two of opposite handedness nest into one shape. A control that writes both
+hands at once can only ever produce the same-handedness case, which erases the
+only distinction the setting exists to make. Austen, 2026-08-26: *"it's all about
+left's relationship to right so you need to be able to pick the left and right
+chirality individually."*
 
-- **Color-scoped hosts** (`PropSelectionSheet` opened from the step-editor row)
-  pass `hand`, and write that hand only. Blue Standard + red Mirrored stays
-  reachable, which is the configuration that nests.
-- **Single-prop hosts** (Animation Panel props pill, viewer art settings) omit
-  `hand` and write both, exactly as `handlePropTypeChange` already does for prop
-  type itself in `viewer-shell-interaction-state.svelte.ts`.
+So:
+
+- **Color-scoped hosts** (`PropSelectionSheet` opened from the step-editor row,
+  the Cat Dog blue/red grids) pass that one hand and render one control.
+- **Pair hosts** (Animation Panel props pill, viewer art settings, Settings ->
+  Prop Type outside Cat Dog) pass both hands and render two controls side by
+  side — blue then red. This is where prop type and chirality diverge:
+  `handlePropTypeChange` mirroring one prop type onto both hands is correct;
+  mirroring chirality is not.
+
+The two controls carry a per-hand background wash and ring built from
+`--dm-motion-blue` / `--dm-motion-red`, which is what makes them read as two
+groups rather than one four-option bar, and what lets the words Blue and Red stay
+off the face (`chip-primitives.md`, Blue / Red Prop Identity). Each control keeps
+a hand-specific `aria-label` as the non-visual cue. Below a 340px container the
+pair stacks one per line and the "Chirality" label moves above it.
 
 ### Hosts wired
 

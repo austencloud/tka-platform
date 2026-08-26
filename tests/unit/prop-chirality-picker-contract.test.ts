@@ -84,16 +84,37 @@ describe("buugeng chirality is owned by the prop picker", () => {
     expect(row).toContain("Mirrored");
   });
 
-  it("the seam writes both hands only when it names neither", () => {
+  it("the row gives every hand its own control", () => {
+    // Chirality is a statement about the PAIR — same handedness stays apart,
+    // opposite handedness nests — so a picker that governs both hands renders
+    // two controls. One control writing both erases the only distinction the
+    // setting makes.
+    const row = read(ROW_PATH);
+    expect(row).toMatch(/\{#each hands as/);
+    expect(row).toContain("onChange(state.hand,");
+  });
+
+  it("no seam ever writes one hand's chirality onto the other", () => {
     const seam = read(SEAM_PATH);
     expect(seam).toContain("createGlobalChiralitySeam");
-    // A seam that names a hand must not touch the other one.
-    const blueBranch = seam.slice(
-      seam.indexOf('if (hand === "blue")'),
-      seam.indexOf('} else if (hand === "red")')
+    // A hand-less seam yields BOTH hands as separate entries rather than one
+    // entry that writes both.
+    expect(seam).toContain('[handState("blue"), handState("red")]');
+    // And the writer touches exactly the hand it was handed.
+    const writer = seam.slice(seam.indexOf("onChange("));
+    expect(writer).toMatch(
+      /\{ redBuugengFlipped: flipped \}\s*:\s*\{ blueBuugengFlipped: flipped \}/
     );
-    expect(blueBranch).toContain("blueBuugengFlipped");
-    expect(blueBranch).not.toContain("redBuugengFlipped");
+  });
+
+  it("the settings tab keeps the hands independent too", () => {
+    const tab = read(
+      "src/lib/shared/settings/components/tabs/PropTypeTab.svelte"
+    );
+    // Its single-prop grid governs the pair, so it hands over both hands.
+    expect(tab).toContain('chiralitySeam("blue", "red")');
+    // The old mirror — blue carries red outside cat/dog mode — is gone.
+    expect(tab).not.toContain("redBuugengFlipped = blueBuugengFlipped");
   });
 
   it.each(Object.entries(HOSTS))("%s passes a chirality seam", (_name, file) => {
