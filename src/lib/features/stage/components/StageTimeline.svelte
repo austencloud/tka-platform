@@ -368,7 +368,7 @@
   <header class="timeline-toolbar">
     <div class="timeline-title">
       <strong
-        >Beat {stageState.currentBeat.toFixed(1)} / {Math.round(
+        >Count {stageState.currentBeat.toFixed(1)} / {Math.round(
           stageState.maxTotalBeats
         )}</strong
       >
@@ -404,7 +404,7 @@
         class="ruler"
         onpointerdown={seekFromPointer}
         role="group"
-        aria-label="Beat ruler. Click to move the playhead."
+        aria-label="Count ruler. Click to move the playhead."
       >
         <TimeRuler
           duration={maxBeats}

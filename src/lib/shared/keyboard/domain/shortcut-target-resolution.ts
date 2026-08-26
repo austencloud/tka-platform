@@ -6,6 +6,12 @@ export interface ShortcutTargetResolutionOptions {
   scopeSelector?: string;
   ignoreEditableFocus?: boolean;
   excludedLayerSelector?: string;
+  /**
+   * Treat a disabled target as "this owner has nothing to offer" rather than
+   * as a wall. Set by shortcuts whose targets carry a history, so an owner with
+   * an empty one cannot swallow the key from an owner that has entries.
+   */
+  preferEnabled?: boolean;
 }
 
 function isVisible(element: HTMLElement): boolean {
@@ -111,6 +117,12 @@ function getDomDistance(from: Element, to: Element): number {
  * Modal layers block the page behind them. A focused editor scope blocks its
  * siblings, and the nearest target wins when several independent editors share
  * a page.
+ *
+ * With `preferEnabled`, enabled targets are considered first. A host can embed
+ * a shared control that brings its own bridge — the Stage renders the 3D scene
+ * rail inside its own editor scope — and without this the nearer of the two
+ * wins even while it is disabled, which reads to the user as Ctrl+Z doing
+ * nothing at all.
  */
 export function resolveShortcutTarget<T extends HTMLElement>(
   document: Document,
@@ -135,6 +147,11 @@ export function resolveShortcutTarget<T extends HTMLElement>(
     : null;
   if (focusedScope && (!topLayer || topLayer.contains(focusedScope))) {
     candidates = candidates.filter((target) => focusedScope.contains(target));
+  }
+
+  if (options.preferEnabled) {
+    const enabled = candidates.filter(isShortcutTargetEnabled);
+    if (enabled.length > 0) candidates = enabled;
   }
 
   if (candidates.length === 0) return null;

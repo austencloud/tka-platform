@@ -29,7 +29,8 @@ export type ShortcutContext =
   | "compose" // Active in COMPOSE module
   | "choreo" // Active in CHOREO module (sheet builder)
   | "admin" // Active in ADMIN module
-  | "realm" // Active in Realm module (Stage/Museum)
+  | "realm" // Active in the 3D viewer surfaces (Museum, scene viewer)
+  | "stage" // Active in the STAGE module (drill chart + show timeline)
   | "edit-panel" // Active when Edit panel is open
   | "animation-panel" // Active when Animation panel is open
   | "share-panel" // Active when Share panel is open

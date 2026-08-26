@@ -57,7 +57,9 @@ describe("stage choreography state", () => {
     expect(added).not.toHaveProperty("label");
     expect(first!.sequenceClips).toHaveLength(2);
     expect(second!.sequenceClips).toHaveLength(1);
-    expect(state.maxTotalBeats).toBe(64);
+    // The show is as long as its longest lane, so a clip landing after the
+    // opening one extends it: 64 counts plus the six this clip adds.
+    expect(state.maxTotalBeats).toBe(70);
     state.destroy();
   });
 

@@ -24,6 +24,10 @@ function resolveTarget(
     targetSelector: targetSelector(action),
     scopeSelector: "[data-edit-history-shortcut-scope]",
     ignoreEditableFocus: !options.fromCommandPalette,
+    // A host may contain more than one history owner: the Stage embeds the 3D
+    // scene rail, which brings its own bridge. Undo belongs to whichever of
+    // them actually has something to undo.
+    preferEnabled: true,
     excludedLayerSelector: options.fromCommandPalette
       ? COMMAND_PALETTE_LAYER_SELECTOR
       : undefined,

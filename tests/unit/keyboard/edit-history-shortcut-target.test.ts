@@ -253,4 +253,51 @@ describe("app-wide edit history registration", () => {
     expect(event.defaultPrevented).toBe(false);
     manager.dispose();
   });
+  it("skips a nearer bridge that has nothing to undo", () => {
+    // The Stage embeds the shared 3D scene rail inside its own editor scope, so
+    // two undo bridges live in one scope: the rail's, which sits deeper in the
+    // tree, and the module's. When the viewer has no history its bridge is
+    // disabled, and picking the nearest one regardless left Ctrl+Z doing
+    // nothing at all while the Stage had edits waiting.
+    const scope = testDocument.createElement("div");
+    scope.setAttribute("data-edit-history-shortcut-scope", "");
+    testDocument.body.append(scope);
+
+    const moduleUndo = appendTarget("undo", scope);
+
+    const railHost = testDocument.createElement("div");
+    scope.append(railHost);
+    const railUndo = appendTarget("undo", railHost);
+    railUndo.disabled = true;
+
+    const focusHost = testDocument.createElement("div");
+    railHost.append(focusHost);
+    setActiveElement(focusHost);
+
+    expect(resolveEditHistoryShortcutTarget("undo", testDocument)).toBe(
+      moduleUndo
+    );
+    expect(canActivateEditHistoryShortcutTarget("undo", testDocument)).toBe(
+      true
+    );
+  });
+
+  it("still picks the nearest bridge when both have history", () => {
+    const scope = testDocument.createElement("div");
+    scope.setAttribute("data-edit-history-shortcut-scope", "");
+    testDocument.body.append(scope);
+
+    appendTarget("undo", scope);
+    const railHost = testDocument.createElement("div");
+    scope.append(railHost);
+    const railUndo = appendTarget("undo", railHost);
+
+    const focusHost = testDocument.createElement("div");
+    railHost.append(focusHost);
+    setActiveElement(focusHost);
+
+    expect(resolveEditHistoryShortcutTarget("undo", testDocument)).toBe(
+      railUndo
+    );
+  });
 });

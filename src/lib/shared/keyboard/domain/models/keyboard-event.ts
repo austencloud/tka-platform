@@ -131,8 +131,11 @@ export class NormalizedKeyboardEvent implements KeyboardEventDetails {
    * The marker can live on the widget root so nested visual elements inherit it.
    */
   private isLocallyHandledTarget(target: EventTarget | null): boolean {
+    // Element, not HTMLElement: the Stage's drill-chart spots are SVG <g>
+    // widgets that own the arrow keys, and an HTMLElement test silently
+    // skipped the marker for every SVG widget in the app.
     return (
-      target instanceof HTMLElement &&
+      target instanceof Element &&
       target.closest("[data-keyboard-shortcuts-ignore]") !== null
     );
   }

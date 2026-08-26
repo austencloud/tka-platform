@@ -22,6 +22,7 @@
   import { registerCreateShortcuts } from "../registration/register-create-shortcuts";
   import { register3DViewerShortcuts } from "../registration/register-3d-viewer-shortcuts";
   import { registerChoreoShortcuts } from "../registration/register-choreo-shortcuts";
+  import { registerStageShortcuts } from "../registration/register-stage-shortcuts";
 
   // Services
   let shortcutManager = $state<KeyboardShortcutManager | null>(null);
@@ -53,6 +54,9 @@
 
         // Register Choreo sheet shortcuts (static, handlers bound dynamically)
         registerChoreoShortcuts(manager);
+
+        // Register Stage shortcuts (static, handlers bound dynamically)
+        registerStageShortcuts(manager);
       } catch (error) {
         console.error("Failed to initialize keyboard shortcuts:", error);
       }

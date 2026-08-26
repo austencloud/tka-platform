@@ -173,7 +173,7 @@ export function createChoreoShortcuts(
       id: "choreo.play",
       label: "Play act",
       description: "Play the whole sheet as one sequence",
-      key: " ",
+      key: "Space", // Normalized name; a raw " " never matches
       context: CTX,
       scope: "playback",
       priority: "high",

@@ -3,6 +3,12 @@
   import { MediaQuery } from "svelte/reactivity";
 
   import EditHistoryShortcutBridge from "$lib/shared/keyboard/components/EditHistoryShortcutBridge.svelte";
+  import { getKeyboardShortcutManager } from "$lib/shared/keyboard/get-keyboard-shortcut-manager";
+  import { getEscapeLayerManager } from "$lib/shared/keyboard/get-escape-layer-manager";
+  import {
+    createInertStageHandlers,
+    createStageShortcuts,
+  } from "$lib/shared/keyboard/registration/register-stage-shortcuts";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
   import type { PanelDefinition } from "$lib/shared/panels/PanelGroup.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
@@ -331,23 +337,101 @@
     stageState.setSharedSequence(next);
   }
 
-  function seekToBeat(beat: number): void {
+  /** One count, and the eight counts a drill is written in. */
+  const COUNT = 1;
+  const EIGHT = 8;
+
+  function seekToCount(count: number): void {
     const total = Math.max(1, stageState.maxTotalBeats);
-    stageState.seek(beat / total);
+    stageState.seek(Math.min(Math.max(count, 0), total) / total);
   }
 
-  function handleKeydown(event: KeyboardEvent): void {
-    const target = event.target as HTMLElement | null;
-    const stageHasFocus =
-      event.target === document.body || target?.closest(".stage-module");
-    if (!stageHasFocus) return;
+  function nudgeCount(delta: number): void {
+    seekToCount(Math.round(stageState.currentBeat) + delta);
+  }
 
-    if (event.key === "t" || event.key === "T") {
-      chartRaised = !chartRaised;
-    } else if (event.key === "Escape" && chartRaised) {
-      chartRaised = false;
+  /**
+   * Sets carry the show, so the brackets jump between the counts they arrive
+   * on rather than scrubbing. A tolerance keeps a float playhead sitting on a
+   * set from counting as "before" it and going nowhere.
+   */
+  function jumpToNeighbouringSet(direction: -1 | 1): void {
+    const beats = choreography.formations.map((formation) => formation.atBeat);
+    const here = stageState.currentBeat;
+    const next =
+      direction === 1
+        ? beats.find((beat) => beat > here + 0.001)
+        : [...beats].reverse().find((beat) => beat < here - 0.001);
+    if (next !== undefined) seekToCount(next);
+  }
+
+  function addSetAtPlayhead(): void {
+    const added = stageState.addFormation(Math.round(stageState.currentBeat));
+    if (added) editMode.selectFormation(added.id);
+  }
+
+  function removeSelectedSet(): void {
+    const id = editMode.selectedFormationId ?? activeSet?.id;
+    if (!id) return;
+    stageState.removeFormation(id);
+    editMode.clearSelection();
+  }
+
+  /**
+   * The Stage's keys go through the app's shortcut manager rather than a local
+   * window listener, so they appear in `?` and Settings → Keyboard Shortcuts,
+   * can be rebound, and are conflict-checked against every other binding. The
+   * ids are registered inert at boot; this re-registration supplies the real
+   * actions. Undo and redo are not here — Ctrl+Z is owned globally and reaches
+   * this document through EditHistoryShortcutBridge below.
+   */
+  $effect(() => {
+    const manager = getKeyboardShortcutManager();
+    const previousContext = manager.getContext();
+    manager.setContext("stage");
+
+    for (const shortcut of createStageShortcuts({
+      togglePlay: () => stageState.togglePlay(),
+      stepBack: () => nudgeCount(-COUNT),
+      stepForward: () => nudgeCount(COUNT),
+      jumpBack: () => nudgeCount(-EIGHT),
+      jumpForward: () => nudgeCount(EIGHT),
+      firstCount: () => seekToCount(0),
+      lastCount: () => seekToCount(stageState.maxTotalBeats),
+      previousSet: () => jumpToNeighbouringSet(-1),
+      nextSet: () => jumpToNeighbouringSet(1),
+      toggleChart: () => (chartRaised = !chartRaised),
+      addSet: addSetAtPlayhead,
+      removeSelectedSet,
+    })) {
+      manager.register(shortcut);
     }
-  }
+
+    return () => {
+      // Leave the definitions registered so Settings keeps listing them, but
+      // hand back the context and let the inert actions stand again.
+      manager.setContext(previousContext);
+      for (const shortcut of createStageShortcuts(createInertStageHandlers())) {
+        manager.register(shortcut);
+      }
+    };
+  });
+
+  /**
+   * The raised chart is a layer, so Escape closes it through the same manager
+   * that closes drawers and modals — a competing Escape shortcut would have to
+   * guess which of them the user meant.
+   */
+  $effect(() => {
+    if (!chartRaised) return;
+    return getEscapeLayerManager().register({
+      id: "stage:drill-chart",
+      canDismiss: () => true,
+      dismiss: () => {
+        chartRaised = false;
+      },
+    });
+  });
 </script>
 
 {#snippet stageHudActions()}
@@ -421,7 +505,7 @@
         exportBusy={exporter.state.isExporting}
         onPlaybackToggle={() => stageState.togglePlay()}
         onBpmChange={(nextBpm) => stageState.setBpm(nextBpm)}
-        onProgressBarSeek={seekToBeat}
+        onProgressBarSeek={seekToCount}
         immersive={fullscreen.immersive}
         onToggleImmersive={(host) => fullscreen.toggleImmersive(host)}
         {performerSteps}
@@ -447,8 +531,6 @@
 {#snippet timelinePanel()}
   <StageTimeline {editMode} />
 {/snippet}
-
-<svelte:window onkeydown={handleKeydown} />
 
 <div
   class="stage-module"

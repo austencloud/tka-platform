@@ -357,6 +357,7 @@
               : 'grab'}; touch-action: none;"
             role="button"
             tabindex="0"
+            data-keyboard-shortcuts-ignore
             aria-label="{performer.label} in {formationName(
               activeIndex
             )} at {spot.x.toFixed(1)} by {spot.z.toFixed(
