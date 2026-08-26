@@ -21,6 +21,9 @@
   import Viewer3DCamera from "./Viewer3DCamera.svelte";
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
   import PerfMonitor from "./PerfMonitor.svelte";
+  import GaitProbe from "../diagnostics/gait/GaitProbe.svelte";
+  import GaitOverlay from "../diagnostics/gait/GaitOverlay.svelte";
+  import { gaitProbeState } from "../diagnostics/gait/gait-probe-state.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { createSceneFeatureState } from "../scene-features/state/scene-feature-state.svelte";
   import {
@@ -249,6 +252,14 @@
   // starts. A focused scene workbench has no curtain, so delaying the canvas
   // only creates a fake blank loading step.
   let canvasMountReady = $state(false);
+
+  // Read `?gait=1` once, on the client, where a URL exists. Doing it here
+  // rather than at module scope keeps SSR from deciding the answer for a
+  // session it cannot see the address bar of.
+  $effect(() => {
+    gaitProbeState.syncFromEnvironment();
+  });
+
   $effect(() => {
     if (
       initialRevealMode === "gated" &&
@@ -446,6 +457,12 @@
             adaptive={sceneReady && isPlaying && !viewer3DState.isExporting}
           />
           <Viewer3DCanvasRef {onRendererReady} />
+          <!-- Reads the legs every host in the app puts on screen. Renders
+               nothing, and does not run at all unless the instrument was
+               asked for with `?gait=1` or window.__gaitProbeEnabled. -->
+          {#if gaitProbeState.enabled}
+            <GaitProbe />
+          {/if}
           {#if adaptiveQuality.initialized}
             <SceneShaderWarmup
               onReadyChange={handleRendererReadyChange}
@@ -530,6 +547,10 @@
   {:else if initialRevealMode === "gated"}
     <div class="viewer-3d-loading">Loading 3D viewer...</div>
   {/if}
+
+  <!-- The readout half. Lives out here rather than in the Canvas because it
+       is DOM, and it renders nothing when the probe is off. -->
+  <GaitOverlay />
 </div>
 
 <style>

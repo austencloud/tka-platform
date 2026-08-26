@@ -1,0 +1,419 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  analyzeGait,
+  DEFAULT_THRESHOLDS,
+  extractStances,
+  localGroundSeries,
+  findTwitches,
+  lateralOffsetOverSupport,
+  resolveGroundY,
+  supportOf,
+} from "$lib/shared/3d/diagnostics/gait/gait-analysis";
+import type {
+  FootFrame,
+  GaitFrame,
+} from "$lib/shared/3d/diagnostics/gait/gait-frame";
+
+const DT = 1 / 60;
+
+interface LegSpec {
+  x: number;
+  y: number;
+  z: number;
+  kneeAngle?: number;
+  /** Ankle-above-toe, which is how the analysis sees a lifted heel. */
+  heelLift?: number;
+}
+
+function leg(spec: LegSpec): FootFrame {
+  return {
+    ankle: { x: spec.x, y: spec.y, z: spec.z },
+    toe: { x: spec.x, y: spec.y - (spec.heelLift ?? 0), z: spec.z + 0.15 },
+    knee: { x: spec.x, y: spec.y + 0.45, z: spec.z },
+    hip: { x: spec.x, y: spec.y + 0.9, z: spec.z },
+    kneeAngle: spec.kneeAngle ?? 175,
+    claimedContact: -1,
+  };
+}
+
+function frame(
+  t: number,
+  root: { x: number; z: number },
+  left: LegSpec,
+  right: LegSpec,
+  hipsLateral = 0
+): GaitFrame {
+  return {
+    t,
+    dt: DT,
+    root: { x: root.x, y: 0, z: root.z },
+    // Forward is +Z, so the character's right is -X and its left is +X.
+    // Lateral quantities therefore read on X with the sign inverted.
+    facing: 0,
+    hips: { x: root.x + hipsLateral, y: 0.95, z: root.z },
+    left: leg(left),
+    right: leg(right),
+  };
+}
+
+/**
+ * A walk built to order.
+ *
+ * Feet alternate: one pinned on the floor for a stance, the other lifted and
+ * carried forward. `slipPerFrame` drags the planted foot, which is exactly the
+ * skating the instrument exists to catch, and `weightShift` moves the pelvis
+ * over whichever foot is down.
+ */
+function syntheticWalk(options: {
+  steps: number;
+  stepLength: number;
+  framesPerStance: number;
+  slipPerFrame?: number;
+  weightShift?: number;
+  heelLift?: number;
+}): GaitFrame[] {
+  const {
+    steps,
+    stepLength,
+    framesPerStance,
+    slipPerFrame = 0,
+    weightShift = 0,
+    heelLift = 0,
+  } = options;
+  const frames: GaitFrame[] = [];
+  const LIFT = 0.2;
+  let t = 0;
+  let leftZ = 0;
+  let rightZ = stepLength;
+  let rootZ = 0;
+
+  for (let step = 0; step < steps; step++) {
+    const planted = step % 2 === 0 ? "left" : "right";
+    for (let i = 0; i < framesPerStance; i++) {
+      const progress = i / framesPerStance;
+      if (planted === "left") leftZ += slipPerFrame;
+      else rightZ += slipPerFrame;
+      // The swinging foot travels two step lengths, from behind to ahead.
+      const swingZ =
+        (planted === "left" ? rightZ : leftZ) -
+        stepLength +
+        2 * stepLength * progress;
+      rootZ += stepLength / framesPerStance;
+
+      const down = {
+        x: planted === "left" ? 0.1 : -0.1,
+        y: 0,
+        z: planted === "left" ? leftZ : rightZ,
+        // Ramped across the stance, because a foot whose ankle sits
+        // permanently above its toe is a raked rig, not a popping heel, and
+        // the analysis is right to charge it nothing.
+        heelLift: heelLift * progress,
+      };
+      const up = {
+        x: planted === "left" ? -0.1 : 0.1,
+        y: LIFT * Math.sin(Math.PI * progress) + 0.06,
+        z: swingZ,
+      };
+      // Balancing on a leg brings the body over it: left foot down pulls the
+      // pelvis toward the character's left, which is +X here.
+      const lateral = planted === "left" ? weightShift : -weightShift;
+      frames.push(
+        planted === "left"
+          ? frame(t, { x: 0, z: rootZ }, down, up, lateral)
+          : frame(t, { x: 0, z: rootZ }, up, down, lateral)
+      );
+      t += DT;
+    }
+    if (planted === "left") rightZ = leftZ + stepLength;
+    else leftZ = rightZ + stepLength;
+  }
+
+  return frames;
+}
+
+describe("gait analysis", () => {
+  it("takes the floor from the data rather than being told", () => {
+    const frames = syntheticWalk({
+      steps: 2,
+      stepLength: 0.7,
+      framesPerStance: 20,
+    });
+    // Every planted ankle sits at y=0, so that is the floor even though the
+    // swinging one spends most of its time well above it.
+    expect(resolveGroundY(frames)).toBeCloseTo(0, 5);
+  });
+
+  it("reads support off the geometry, never off what the animator claims", () => {
+    const f = frame(
+      0,
+      { x: 0, z: 0 },
+      { x: 0.1, y: 0, z: 0 },
+      { x: -0.1, y: 0.3, z: 0.7 }
+    );
+    // claimedContact is -1 on both feet here; the answer comes from height.
+    expect(supportOf(f, 0, DEFAULT_THRESHOLDS.contactBand)).toBe("left");
+
+    const both = frame(
+      0,
+      { x: 0, z: 0 },
+      { x: 0.1, y: 0, z: 0 },
+      { x: -0.1, y: 0.01, z: 0.7 }
+    );
+    expect(supportOf(both, 0, DEFAULT_THRESHOLDS.contactBand)).toBe("both");
+
+    const air = frame(
+      0,
+      { x: 0, z: 0 },
+      { x: 0.1, y: 0.3, z: 0 },
+      { x: -0.1, y: 0.3, z: 0.7 }
+    );
+    expect(supportOf(air, 0, DEFAULT_THRESHOLDS.contactBand)).toBe("flight");
+  });
+
+  it("charges a pinned foot no slip and a dragged one all of it", () => {
+    const clean = syntheticWalk({
+      steps: 4,
+      stepLength: 0.7,
+      framesPerStance: 24,
+    });
+    const cleanReport = analyzeGait(clean);
+    expect(cleanReport.stances.length).toBeGreaterThanOrEqual(3);
+    expect(cleanReport.meanSlip).toBeLessThan(0.005);
+
+    // 3mm per frame over a 24-frame stance is about 7cm of skate per step.
+    const skating = syntheticWalk({
+      steps: 4,
+      stepLength: 0.7,
+      framesPerStance: 24,
+      slipPerFrame: 0.003,
+    });
+    const skatingReport = analyzeGait(skating);
+    expect(skatingReport.meanSlip).toBeGreaterThan(0.05);
+    expect(skatingReport.slipRatio).toBeGreaterThan(0.05);
+  });
+
+  it("measures step length between alternating footfalls", () => {
+    const frames = syntheticWalk({
+      steps: 6,
+      stepLength: 0.68,
+      framesPerStance: 22,
+    });
+    const report = analyzeGait(frames);
+    expect(report.meanStepLength).toBeGreaterThan(0.6);
+    expect(report.meanStepLength).toBeLessThan(0.78);
+  });
+
+  it("separates a heel that lifts from one that stays flat", () => {
+    const flat = analyzeGait(
+      syntheticWalk({ steps: 4, stepLength: 0.7, framesPerStance: 24 })
+    );
+    expect(flat.hasToes).toBe(true);
+    expect(flat.peakHeelLift).toBeLessThan(0.005);
+
+    const popping = analyzeGait(
+      syntheticWalk({
+        steps: 4,
+        stepLength: 0.7,
+        framesPerStance: 24,
+        heelLift: 0.09,
+      })
+    );
+    expect(popping.peakHeelLift).toBeGreaterThan(0.05);
+  });
+
+  it("reports no toes rather than inventing a ball of the foot", () => {
+    const frames = syntheticWalk({
+      steps: 3,
+      stepLength: 0.7,
+      framesPerStance: 20,
+    }).map((f) => ({
+      ...f,
+      left: { ...f.left, toe: null },
+      right: { ...f.right, toe: null },
+    }));
+    const report = analyzeGait(frames);
+    expect(report.hasToes).toBe(false);
+    expect(report.peakHeelLift).toBe(0);
+  });
+
+  it("calls a knee that reverses in one frame a twitch, and a smooth one not", () => {
+    const smooth: GaitFrame[] = [];
+    for (let i = 0; i < 60; i++) {
+      const angle = 175 - 35 * Math.sin((i / 60) * Math.PI * 2);
+      smooth.push(
+        frame(
+          i * DT,
+          { x: 0, z: i * 0.01 },
+          { x: 0.1, y: 0, z: 0, kneeAngle: angle },
+          { x: -0.1, y: 0.2, z: 0.5, kneeAngle: angle }
+        )
+      );
+    }
+    expect(findTwitches(smooth, DEFAULT_THRESHOLDS).twitches).toHaveLength(0);
+
+    // One frame where the knee snaps 20 degrees and snaps back.
+    const popped = smooth.map((f, i) =>
+      i === 30
+        ? { ...f, left: { ...f.left, kneeAngle: f.left.kneeAngle - 20 } }
+        : f
+    );
+    const { twitches, jerkRms } = findTwitches(popped, DEFAULT_THRESHOLDS);
+    expect(twitches.length).toBeGreaterThan(0);
+    expect(twitches[0]!.foot).toBe("left");
+    expect(jerkRms).toBeGreaterThan(1000);
+  });
+
+  it("catches feet still cycling after the body has stopped", () => {
+    const frames: GaitFrame[] = [];
+    for (let i = 0; i < 90; i++) {
+      // The root never moves. The legs keep swinging anyway.
+      const swing = 0.35 * Math.sin((i / 30) * Math.PI * 2);
+      frames.push(
+        frame(
+          i * DT,
+          { x: 0, z: 0 },
+          { x: 0.1, y: Math.max(0, swing) * 0.5, z: swing },
+          { x: -0.1, y: Math.max(0, -swing) * 0.5, z: -swing }
+        )
+      );
+    }
+    const report = analyzeGait(frames);
+    expect(report.inPlaceCyclingSeconds).toBeGreaterThan(0.4);
+    expect(report.inPlaceCyclingFraction).toBeGreaterThan(0.3);
+
+    // A body that is genuinely walking is never charged for it.
+    const walking = analyzeGait(
+      syntheticWalk({ steps: 4, stepLength: 0.7, framesPerStance: 24 })
+    );
+    expect(walking.inPlaceCyclingSeconds).toBeLessThan(0.05);
+  });
+
+  it("tells weight transfer apart from a pelvis riding the centreline", () => {
+    const railed = analyzeGait(
+      syntheticWalk({
+        steps: 6,
+        stepLength: 0.7,
+        framesPerStance: 22,
+        weightShift: 0,
+      })
+    );
+    expect(railed.weightShiftAlternates).toBe(false);
+
+    const transferring = analyzeGait(
+      syntheticWalk({
+        steps: 6,
+        stepLength: 0.7,
+        framesPerStance: 22,
+        weightShift: 0.045,
+      })
+    );
+    expect(transferring.weightShiftAlternates).toBe(true);
+    expect(transferring.weightShiftAmplitude).toBeGreaterThan(0.05);
+
+    // Leaning the same way regardless of which leg is under the body is a
+    // list, not a transfer, and must not read as one.
+    const listing = analyzeGait(
+      syntheticWalk({ steps: 6, stepLength: 0.7, framesPerStance: 22 }).map(
+        (f) => ({
+          ...f,
+          hips: { ...f.hips, x: f.root.x + 0.05 },
+        })
+      )
+    );
+    expect(listing.weightShiftAlternates).toBe(false);
+  });
+
+  it("signs the lateral offset by the character's own right", () => {
+    // Forward +Z puts the character's left at +X. Standing on the left foot
+    // with the hips on the centreline leaves the body 10cm to the character's
+    // right of the foot carrying it, which is where a real pelvis sits.
+    const f = frame(
+      0,
+      { x: 0, z: 0 },
+      { x: 0.1, y: 0, z: 0 },
+      { x: -0.1, y: 0.3, z: 0.7 }
+    );
+    expect(lateralOffsetOverSupport(f, "left")).toBeCloseTo(0.1, 5);
+    expect(lateralOffsetOverSupport(f, "both")).toBeNull();
+    expect(lateralOffsetOverSupport(f, "flight")).toBeNull();
+  });
+
+  it("throws away stance runs too short to be a step", () => {
+    const frames = syntheticWalk({
+      steps: 4,
+      stepLength: 0.7,
+      framesPerStance: 24,
+    });
+    // One stray frame of contact in the middle of a swing is sampling noise.
+    frames[10] = {
+      ...frames[10]!,
+      right: {
+        ...frames[10]!.right,
+        ankle: { ...frames[10]!.right.ankle, y: 0 },
+      },
+    };
+    const stances = extractStances(frames, 0, DEFAULT_THRESHOLDS);
+    expect(
+      stances.every(
+        (s) => s.endT - s.startT >= DEFAULT_THRESHOLDS.minStanceDuration
+      )
+    ).toBe(true);
+  });
+
+  it("finds the floor under a standing pose parked above the walking one", () => {
+    // The real rig does this: its idle leaves both ankles about 11cm higher
+    // than mid-stride, so one floor for the whole session calls every standing
+    // frame flight and the walk comes back with two footfalls in half a minute.
+    const standing: GaitFrame[] = [];
+    for (let i = 0; i < 120; i++) {
+      standing.push(
+        frame(
+          i * DT,
+          { x: 0, z: 0 },
+          { x: 0.1, y: 0.11, z: 0 },
+          { x: -0.1, y: 0.11, z: 0 }
+        )
+      );
+    }
+    const walking = syntheticWalk({
+      steps: 6,
+      stepLength: 0.7,
+      framesPerStance: 22,
+    });
+    const shifted = walking.map((f) => ({ ...f, t: f.t + 2 }));
+    const frames = [...standing, ...shifted];
+
+    const ground = localGroundSeries(frames);
+    expect(ground[0]).toBeCloseTo(0.11, 3);
+    expect(ground[ground.length - 1]).toBeCloseTo(0, 3);
+
+    // The bug, reproduced: one floor for the whole session loses the standing
+    // period entirely, because those ankles sit 11cm above the walking floor.
+    const scalar = extractStances(
+      frames,
+      resolveGroundY(frames),
+      DEFAULT_THRESHOLDS
+    );
+    const scalarStanding = scalar.filter((st) => st.startT < 2).length;
+    expect(scalarStanding).toBe(0);
+
+    // The local floor keeps both: the stand and every step of the walk.
+    const local = extractStances(frames, ground, DEFAULT_THRESHOLDS);
+    expect(local.filter((st) => st.startT < 2).length).toBeGreaterThan(0);
+    expect(local.length).toBeGreaterThan(scalar.length);
+
+    const report = analyzeGait(frames);
+    // Two seconds of both feet flat is double support, not flight.
+    expect(report.doubleSupportFraction).toBeGreaterThan(0.25);
+    expect(report.stances.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("returns an empty report rather than dividing by an empty buffer", () => {
+    const report = analyzeGait([]);
+    expect(report.frameCount).toBe(0);
+    expect(report.cadence).toBe(0);
+    expect(report.slipRatio).toBe(0);
+    expect(report.stances).toEqual([]);
+  });
+});
