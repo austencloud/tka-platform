@@ -58,6 +58,26 @@ describe("sampleDirectorBlockingTrack", () => {
     expect(frame.moveSpeed).toBeCloseTo(0, 6);
   });
 
+  it("reports zero speed on the frame a walk hands over to a stand", () => {
+    const frames = track([
+      { move: "walk", to: { x: 0, z: 4 }, durationSeconds: 4 },
+      { move: "stand", durationSeconds: 4 },
+    ]);
+    const arrival = sampleDirectorBlockingTrack(frames, 4);
+    expect(arrival.isMoving).toBe(false);
+    expect(arrival.moveSpeed).toBe(0);
+  });
+
+  it("holds full speed on the last frame of a walk", () => {
+    const frames = track([
+      { move: "walk", to: { x: 0, z: 4 }, durationSeconds: 4 },
+      { move: "stand", durationSeconds: 4 },
+    ]);
+    const last = sampleDirectorBlockingTrack(frames, 4 - 1 / 120);
+    expect(last.isMoving).toBe(true);
+    expect(last.moveSpeed).toBeCloseTo(1, 2);
+  });
+
   it("an eased walk still reports speed, measured from the sampled path", () => {
     const frames = track([
       { move: "walk", to: { x: 0, z: 4 }, easing: "ease-in-out" },

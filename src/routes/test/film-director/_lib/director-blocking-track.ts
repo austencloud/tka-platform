@@ -16,6 +16,9 @@ interface BlockingPose {
   facingAngle: number;
   walking: boolean;
   segmentDelta: { x: number; z: number };
+  /** Bounds of the keyframe segment this pose came from. */
+  segmentStart: number;
+  segmentEnd: number;
 }
 
 const REST: DirectorBlockingFrame = {
@@ -40,18 +43,40 @@ export function sampleDirectorBlockingTrack(
   if (keyframes.length === 0) return { ...REST, position: { ...REST.position } };
 
   const pose = samplePose(keyframes, atSeconds);
-  const ahead = samplePose(keyframes, atSeconds + SPEED_PROBE_SECONDS).position;
-  const behind = samplePose(keyframes, atSeconds - SPEED_PROBE_SECONDS).position;
 
   return {
     position: pose.position,
     facingAngle: pose.facingAngle,
     isMoving: pose.walking,
-    moveSpeed:
-      Math.hypot(ahead.x - behind.x, ahead.z - behind.z) /
-      (2 * SPEED_PROBE_SECONDS),
+    moveSpeed: measureSpeed(keyframes, atSeconds, pose),
     moveDirection: toLocalDirection(pose.segmentDelta, pose.facingAngle),
   };
+}
+
+/**
+ * Ground speed at one instant, measured inside the segment that owns it.
+ *
+ * The probe is clamped to the segment because a centred difference that
+ * reaches past a keyframe measures the neighbouring segment instead: on the
+ * frame a performer arrives, half the window still lies in the travel they
+ * just finished, and the walk would be handed a standing performer a speed to
+ * stretch their stride to.
+ */
+function measureSpeed(
+  keyframes: readonly ResolvedDirectorBlockingKeyframe[],
+  atSeconds: number,
+  pose: BlockingPose
+): number {
+  if (!pose.walking) return 0;
+
+  const from = Math.max(pose.segmentStart, atSeconds - SPEED_PROBE_SECONDS);
+  const to = Math.min(pose.segmentEnd, atSeconds + SPEED_PROBE_SECONDS);
+  const span = to - from;
+  if (span < 1e-6) return 0;
+
+  const ahead = samplePose(keyframes, to).position;
+  const behind = samplePose(keyframes, from).position;
+  return Math.hypot(ahead.x - behind.x, ahead.z - behind.z) / span;
 }
 
 function samplePose(
@@ -87,6 +112,8 @@ function samplePose(
       start.facingAngle + shortestTurn(start.facingAngle, end.facingAngle) * progress,
     walking: start.walking,
     segmentDelta: delta,
+    segmentStart: start.atSeconds,
+    segmentEnd: end.atSeconds,
   };
 }
 
@@ -96,6 +123,8 @@ function held(frame: ResolvedDirectorBlockingKeyframe): BlockingPose {
     facingAngle: frame.facingAngle,
     walking: false,
     segmentDelta: { x: 0, z: 0 },
+    segmentStart: frame.atSeconds,
+    segmentEnd: frame.atSeconds,
   };
 }
 
