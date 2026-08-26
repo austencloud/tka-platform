@@ -28,7 +28,11 @@ export interface Performer {
 export interface StageSequenceClip {
   id: string;
   sequenceId: string;
-  label: string;
+  /**
+   * A name the author typed for this clip. Left unset, the clip shows the name
+   * of the sequence it plays, which is what a lane needs to say by default.
+   */
+  label?: string;
   startBeat: number;
   durationBeats: number;
   sourceBeatCount: number;
@@ -99,4 +103,20 @@ export const PERFORMER_COLORS = [
 export const DEFAULT_STAGE_WIDTH = 10;
 export const DEFAULT_STAGE_DEPTH = 8;
 export const DEFAULT_BPM = 120;
-export const DEFAULT_PERFORMER_COUNT = 4;
+/**
+ * Three, because the opening document is a triangle that turns inside out, and
+ * a triangle takes three. A fourth performer lands on the formation's own mean
+ * depth, where the closing move leaves them standing still while everyone else
+ * walks — the one shape that makes the demo read as nothing happening.
+ */
+export const DEFAULT_PERFORMER_COUNT = 3;
+
+/**
+ * The sequence a fresh Stage document opens on, and the catalog it lives in.
+ *
+ * These sit in the domain layer rather than beside the loader because the
+ * loader reaches Firestore: importing it just to read a string pulls the whole
+ * data provider into anything that touches a Stage document, tests included.
+ */
+export const DEFAULT_STAGE_SEQUENCE_ID = "tnd-quarter-opp-mpmp";
+export const DEFAULT_STAGE_SEQUENCE_CATALOG = "/data/hero/tnd-base-words.json";

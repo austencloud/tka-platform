@@ -13,6 +13,7 @@
    * so the workspace exists before choreography is chosen.
    */
 
+  import type { Snippet } from "svelte";
   import { Canvas } from "@threlte/core";
   import { WebGLRenderer } from "three";
 
@@ -99,6 +100,10 @@
     waitForPerformersOnInitialReveal?: boolean;
     /** Per-performer count offsets for directed canon/ripple performances. */
     performerStepOffsets?: readonly number[];
+    /** Resolved per-performer step for hosts whose lanes run independent clocks. */
+    performerSteps?: readonly (number | null | undefined)[] | null;
+    /** Host world geometry rendered in the performer coordinate frame. */
+    worldChildren?: Snippet;
     /** Keep reserved rigs mounted while rendering only the active shot's cast. */
     visiblePerformerCount?: number;
     /** Keep these already-prepared environments mounted between cinematic cuts. */
@@ -142,6 +147,8 @@
     effectQualityTier,
     waitForPerformersOnInitialReveal = false,
     performerStepOffsets = [],
+    performerSteps = null,
+    worldChildren,
     visiblePerformerCount,
     retainedEnvironmentTypes = [],
     environmentTransitionVisualMode = "internal",
@@ -460,6 +467,8 @@
                 {enablePerformerLocomotion}
                 {effectQualityTier}
                 {performerStepOffsets}
+                {performerSteps}
+                {worldChildren}
                 {visiblePerformerCount}
                 {retainedEnvironmentTypes}
                 {environmentTransitionVisualMode}

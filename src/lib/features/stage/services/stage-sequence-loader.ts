@@ -2,8 +2,12 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import { loadStaticSequence } from "$lib/shared/foundation/services/static-sequence-catalog";
 import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
 
-export const DEFAULT_STAGE_SEQUENCE_ID = "tnd-quarter-opp-mpmp";
-export const DEFAULT_STAGE_SEQUENCE_CATALOG = "/data/hero/tnd-base-words.json";
+import {
+  DEFAULT_STAGE_SEQUENCE_CATALOG,
+  DEFAULT_STAGE_SEQUENCE_ID,
+} from "../domain/stage-types";
+
+export { DEFAULT_STAGE_SEQUENCE_CATALOG, DEFAULT_STAGE_SEQUENCE_ID };
 
 export async function loadStageSequence(
   sequenceId: string,

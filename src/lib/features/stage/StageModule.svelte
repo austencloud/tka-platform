@@ -1,40 +1,323 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import EditHistoryShortcutBridge from "$lib/shared/keyboard/components/EditHistoryShortcutBridge.svelte";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
   import type { PanelDefinition } from "$lib/shared/panels/PanelGroup.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
+  import SceneChromeButton from "$lib/shared/3d/components/controls/SceneChromeButton.svelte";
+  import Viewer3DFullscreen from "$lib/shared/3d/components/Viewer3DFullscreen.svelte";
+  import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
+  import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
+  import { createFullscreenController } from "$lib/shared/fullscreen/state/fullscreen-controller.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { sceneEnvironmentIdForBackground } from "$lib/shared/3d/environments/domain/scene-environment";
-  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
+  import { consumeSceneStudioHandoff } from "$lib/features/scene-3d-collection/services/open-3d-scene";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { FormationPresetId } from "./domain/stage-types";
 
   import FormationOverlay from "./components/FormationOverlay.svelte";
-  import StageSidebar from "./components/StageSidebar.svelte";
+  import SetProperties from "./components/SetProperties.svelte";
+  import StageFloorPaths from "./components/StageFloorPaths.svelte";
   import StageTimeline from "./components/StageTimeline.svelte";
-  import StageViewer from "./components/StageViewer.svelte";
+  import StageFirstRun from "./components/StageFirstRun.svelte";
+  import SceneExportModal from "./scene/components/SceneExportModal.svelte";
+  import { createSceneVideoExport } from "./scene/services/create-scene-video-export.svelte";
   import { setStageChoreographyContext } from "./context/stage-choreography-context";
+  import { resolveActiveFormationIndex } from "./domain/active-formation";
+  import { samplePerformerSequenceAtBeat } from "./domain/stage-sequence-timeline";
   import { createStageChoreographyState } from "./state/stage-choreography-state.svelte";
   import { createStageEditMode } from "./state/stage-edit-mode.svelte";
-  import SceneStudio from "./scene/SceneStudio.svelte";
+  import {
+    DEFAULT_STAGE_SEQUENCE_ID,
+    loadStageSequence,
+  } from "./services/stage-sequence-loader";
+  import {
+    applyStageCastToViewer,
+    applyStagePerformerMotion,
+  } from "./services/stage-viewer-adapter";
 
+  type SequenceLoadState = "loading" | "ready" | "error";
+
+  // Opening a saved 3D scene from the collection hands over a whole resolved
+  // sequence rather than an id, so it seeds the resolver instead of going
+  // through the catalog — a collection id has no catalog entry to fetch.
+  const handoff = consumeSceneStudioHandoff();
+
+  const settings = getSettings();
   const stageState = createStageChoreographyState({
     initialEnvironmentId: sceneEnvironmentIdForBackground(
-      getSettings().backgroundType
+      settings.backgroundType
     ),
   });
   setStageChoreographyContext(stageState);
   const editMode = createStageEditMode();
-  const activeTab = $derived(navigationState.activeTab || "scene");
+
+  // The Stage is the same 3D surface as every other one in the app: the shared
+  // viewer state is what makes the control rail's tools — performers, formation,
+  // camera, scene, presets — reach real rigs instead of doing nothing.
+  const viewer = createViewer3DState(undefined, {
+    firstUseEnvironment: stageState.choreography.environmentId,
+    appDefaultProp: settings.bluePropType ?? null,
+  });
+  setViewer3DContext(viewer);
+  viewer.setEnvironmentId(stageState.choreography.environmentId);
+  viewer.enter3D();
+
+  if (handoff) {
+    stageState.setSharedSequence(handoff.sequence);
+    if (handoff.bpm != null) stageState.setBpm(handoff.bpm);
+  }
+
+  const fullscreen = createFullscreenController({
+    getHapticService: () => null,
+    announce: (message) => console.debug("[Stage]", message),
+  });
+
+  const exporter = createSceneVideoExport(viewer);
+
   const compactPortrait = new MediaQuery(
     "(max-width: 900px) and (orientation: portrait)"
   );
-  let controlsOpen = $state(false);
 
-  onDestroy(stageState.destroy);
+  const choreography = $derived(stageState.choreography);
+  const performanceFrames = $derived(stageState.performanceFrames);
+
+  let chartRaised = $state(false);
+  let pickerOpen = $state(false);
+  const preloadedSequences = new Map<string, SequenceData>(
+    handoff ? [[handoff.sequence.id, handoff.sequence]] : []
+  );
+  let resolvedSequences = $state<ReadonlyMap<string, SequenceData>>(
+    new Map(preloadedSequences)
+  );
+  let sequenceLoadState = $state<SequenceLoadState>("loading");
+  let sequenceLoadError = $state<string | null>(null);
+  let retryRequest = $state(0);
+
+  const sharedSequenceId = $derived(
+    choreography.sharedSequenceId ?? DEFAULT_STAGE_SEQUENCE_ID
+  );
+  const sharedSequence = $derived(
+    resolvedSequences.get(sharedSequenceId) ?? null
+  );
+
+  const sequenceIds = $derived.by(() => {
+    const ids = new Set<string>([sharedSequenceId]);
+    for (const performer of choreography.performers) {
+      for (const clip of performer.sequenceClips) ids.add(clip.sequenceId);
+    }
+    return [...ids].sort();
+  });
+
+  const sequenceIdKey = $derived(sequenceIds.join("|"));
+
+  const sequenceByPerformerId = $derived.by(() => {
+    const active = new Map<string, SequenceData>();
+    for (const performer of choreography.performers) {
+      const sample = samplePerformerSequenceAtBeat(
+        performer,
+        stageState.currentBeat
+      );
+      const sequenceId = sample?.clip.sequenceId ?? sharedSequenceId;
+      const sequence = resolvedSequences.get(sequenceId);
+      if (sequence) active.set(performer.id, sequence);
+    }
+    return active;
+  });
+
+  /**
+   * Each performer's own playhead. Stage lanes hold independent choreography,
+   * so the shared clock cannot express them — this is what the viewer's
+   * `performerSteps` seam exists for.
+   */
+  const performerSteps = $derived(
+    choreography.performers.map((performer) => {
+      const sample = samplePerformerSequenceAtBeat(
+        performer,
+        stageState.currentBeat
+      );
+      return sample ? sample.stepIndex + sample.progress : 0;
+    })
+  );
+
+  const activeSetIndex = $derived(
+    resolveActiveFormationIndex(
+      choreography.formations,
+      editMode.selectedFormationId,
+      stageState.currentBeat
+    )
+  );
+  const activeSet = $derived(
+    activeSetIndex >= 0 ? choreography.formations[activeSetIndex] : undefined
+  );
+
+  const stageWord = $derived(
+    sharedSequence
+      ? simplifyRepeatedWord(
+          sharedSequence.word ??
+            sharedSequence.intendedWord ??
+            sharedSequence.displayName ??
+            ""
+        ) || null
+      : null
+  );
+
+  // Resolve every sequence the document references. One request per id, redone
+  // whenever the set of ids changes or the user retries a failure.
+  //
+  // Keyed on the joined ids rather than the array: `sequenceIds` rebuilds its
+  // array whenever anything in the clip list is touched, and this effect writes
+  // back into that list, so depending on the array itself makes the fetch
+  // re-run forever.
+  $effect(() => {
+    sequenceIdKey;
+    retryRequest;
+    const requestedIds = untrack(() => sequenceIds);
+    let cancelled = false;
+
+    sequenceLoadState = "loading";
+    sequenceLoadError = null;
+
+    void Promise.all(
+      requestedIds.map(async (sequenceId) => {
+        const preloaded = preloadedSequences.get(sequenceId);
+        return [
+          sequenceId,
+          preloaded ?? (await loadStageSequence(sequenceId)),
+        ] as const;
+      })
+    )
+      .then((entries) => {
+        if (cancelled) return;
+        resolvedSequences = new Map(entries);
+        stageState.registerSequenceLabels(
+          new Map(
+            entries.map(([sequenceId, sequence]) => [
+              sequenceId,
+              simplifyRepeatedWord(
+                sequence.word ??
+                  sequence.intendedWord ??
+                  sequence.displayName ??
+                  sequenceId
+              ),
+            ])
+          )
+        );
+        stageState.syncClipSourceLengths(
+          new Map(
+            entries.map(([sequenceId, sequence]) => [
+              sequenceId,
+              sequence.steps.length,
+            ])
+          )
+        );
+        sequenceLoadState = "ready";
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        const failure =
+          error instanceof Error ? error : new Error(String(error));
+        sequenceLoadState = "error";
+        sequenceLoadError = failure.message;
+        getErrorHandler().showUserError({
+          message: "The Stage sequence could not be loaded.",
+          technicalDetails: failure.message,
+          error: failure,
+          context: {
+            module: "stage",
+            action: "load-stage-performance-sequence",
+            additionalData: { sequenceIds: requestedIds },
+          },
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  // Cast size and per-lane sequences are document facts; look edits — avatar,
+  // prop, effort, effects, planes — stay with the performer manager and are
+  // never rewritten from here, so the rail's Performer tool keeps working.
+  //
+  // The tracked reads are explicit because `choreography` is a mutated $state
+  // object whose identity never changes: reading the object alone would make
+  // this run once and never again.
+  let castSizeFromDocument = choreography.performers.length;
+  $effect(() => {
+    const castSize = choreography.performers.length;
+    const castLabels = choreography.performers.map((p) => p.label).join("|");
+    const sequences = sequenceByPerformerId;
+    void castSize;
+    void castLabels;
+    untrack(() => {
+      castSizeFromDocument = choreography.performers.length;
+      applyStageCastToViewer(viewer, choreography, sequences);
+    });
+  });
+
+  // The other direction: adding or removing a performer from the rail is a
+  // document edit. Without this the effect above would put the cast straight
+  // back, and the rail's Performers tool would look broken.
+  $effect(() => {
+    const railCastSize = viewer.performerManager.performers.length;
+    if (railCastSize === castSizeFromDocument) return;
+    untrack(() => stageState.setPerformerCount(railCastSize));
+  });
+
+  $effect(() => {
+    const frames = performanceFrames;
+    const playing = stageState.isPlaying;
+    untrack(() =>
+      applyStagePerformerMotion(viewer, choreography, frames, playing)
+    );
+  });
+
+  // The rail's Scene tool writes the viewer's environment; the document keeps
+  // it so the choreography carries its own world. One direction only — the
+  // document was seeded from the viewer at mount.
+  let syncedEnvironmentId = stageState.choreography.environmentId;
+  $effect(() => {
+    const next = viewer.environmentId;
+    if (next === syncedEnvironmentId) return;
+    syncedEnvironmentId = next;
+    stageState.setEnvironmentId(next);
+  });
+
+  /**
+   * The rail's Formation tool arranges the cast now. On the Stage, "now" is a
+   * count in a document, so a shape chosen there reseeds the set the playhead
+   * is sitting on rather than starting a transition the Stage would overwrite
+   * on its next frame.
+   */
+  let syncedFormation = viewer.activeFormation;
+  $effect(() => {
+    const preset = viewer.activeFormation;
+    if (preset === syncedFormation) return;
+    syncedFormation = preset;
+    const set = untrack(() => activeSet);
+    if (!preset || !set) return;
+    untrack(() => {
+      stageState.applyPresetToFormation(set.id, preset as FormationPresetId);
+      viewer.performerManager.cancelFormationTransition();
+    });
+  });
+
+  onDestroy(() => {
+    stageState.destroy();
+    exporter.cancel();
+    viewer.dispose();
+  });
+
+  let exportOpen = $state(false);
 
   const workspacePanels: PanelDefinition[] = [
-    { content: viewerPanel, defaultSize: 2.6, minSize: 200, id: "viewer" },
+    { content: stagePanel, defaultSize: 2.6, minSize: 240, id: "stage" },
     {
       content: timelinePanel,
       defaultSize: 1.55,
@@ -44,100 +327,119 @@
     },
   ];
 
+  function chooseSequence(next: SequenceData): void {
+    stageState.setSharedSequence(next);
+  }
+
+  function seekToBeat(beat: number): void {
+    const total = Math.max(1, stageState.maxTotalBeats);
+    stageState.seek(beat / total);
+  }
+
   function handleKeydown(event: KeyboardEvent): void {
-    if (activeTab === "scene") return;
-    const target = event.target as HTMLElement;
+    const target = event.target as HTMLElement | null;
     const stageHasFocus =
-      event.target === document.body || target.closest(".stage-module");
+      event.target === document.body || target?.closest(".stage-module");
     if (!stageHasFocus) return;
 
     if (event.key === "t" || event.key === "T") {
-      editMode.toggleCameraMode();
-    } else if (event.key === "Escape" && controlsOpen) {
-      controlsOpen = false;
+      chartRaised = !chartRaised;
+    } else if (event.key === "Escape" && chartRaised) {
+      chartRaised = false;
     }
   }
 </script>
 
-{#snippet viewerPanel()}
-  <div class="viewer-container">
-    {#if editMode.cameraMode === "orbit"}
-      <StageViewer />
-    {:else}
-      <div class="top-down-canvas">
+{#snippet stageHudActions()}
+  <SceneChromeButton
+    icon="fa-border-all"
+    label={chartRaised ? "Hide drill chart" : "Drill chart"}
+    tooltipSide="bottom"
+    active={chartRaised}
+    onclick={(event: MouseEvent) => {
+      event.stopPropagation();
+      chartRaised = !chartRaised;
+    }}
+  />
+{/snippet}
+
+{#snippet floorPaths()}
+  <StageFloorPaths />
+{/snippet}
+
+{#snippet stageOverlay()}
+  {#if chartRaised}
+    <div class="drill-layer" aria-label="Drill chart">
+      <div class="drill-chart">
         <FormationOverlay {editMode} />
       </div>
-    {/if}
-
-    <div class="scene-rail" role="toolbar" aria-label="Stage workspace tools">
-      <button
-        type="button"
-        class:active={editMode.cameraMode === "top-down"}
-        onclick={() => editMode.toggleCameraMode()}
-        aria-pressed={editMode.cameraMode === "top-down"}
-        aria-label={editMode.cameraMode === "top-down"
-          ? "Return to 3D view"
-          : "Edit formations"}
-        data-tooltip={editMode.cameraMode === "top-down"
-          ? "3D view"
-          : "Formation editor"}
-      >
-        <i
-          class="fas {editMode.cameraMode === 'top-down'
-            ? 'fa-cube'
-            : 'fa-border-all'}"
-          aria-hidden="true"
-        ></i>
-      </button>
-      <button
-        type="button"
-        class:active={controlsOpen}
-        onclick={() => (controlsOpen = !controlsOpen)}
-        aria-pressed={controlsOpen}
-        aria-label="Stage setup"
-        data-tooltip="Stage setup"
-      >
-        <i class="fas fa-sliders" aria-hidden="true"></i>
-      </button>
-    </div>
-
-    {#if controlsOpen}
-      <aside class="stage-inspector" aria-label="Stage setup">
-        <header>
-          <div>
-            <strong>Stage setup</strong>
-            <span>Cast, formations, and environment</span>
-          </div>
-          <div class="inspector-actions">
-            <button
-              type="button"
-              onclick={() => stageState.undo()}
-              disabled={!stageState.canUndo}
-              aria-label="Undo stage change"
-            >
-              <i class="fas fa-rotate-left" aria-hidden="true"></i>
-            </button>
-            <button
-              type="button"
-              onclick={() => stageState.redo()}
-              disabled={!stageState.canRedo}
-              aria-label="Redo stage change"
-            >
-              <i class="fas fa-rotate-right" aria-hidden="true"></i>
-            </button>
-            <button
-              type="button"
-              onclick={() => (controlsOpen = false)}
-              aria-label="Close stage setup"
-            >
-              <i class="fas fa-times" aria-hidden="true"></i>
-            </button>
-          </div>
-        </header>
-        <div class="inspector-body">
-          <StageSidebar {editMode} />
+      {#if activeSet}
+        <div class="drill-inspector">
+          <SetProperties {editMode} />
         </div>
-      </aside>
+      {/if}
+    </div>
+  {/if}
+
+  {#if sequenceLoadState === "loading"}
+    <div class="load-notice" role="status" aria-live="polite">
+      <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+      <strong>Preparing the performance</strong>
+      <span>Loading the sequence and performer rigs</span>
+    </div>
+  {:else if sequenceLoadState === "error"}
+    <div class="load-notice error" role="alert">
+      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+      <strong>Sequence failed to load</strong>
+      <span>{sequenceLoadError ?? "The catalog entry is unavailable."}</span>
+      <PanelButton variant="primary" onclick={() => (retryRequest += 1)}>
+        Try again
+      </PanelButton>
+    </div>
+  {:else}
+    <StageFirstRun
+      word={stageWord}
+      onChooseSequence={() => (pickerOpen = true)}
+      onOpenChart={() => (chartRaised = true)}
+    />
+  {/if}
+{/snippet}
+
+{#snippet stagePanel()}
+  <div class="stage-canvas">
+    {#if viewer.webgl2Available}
+      <Viewer3DFullscreen
+        sequenceData={sharedSequence}
+        currentStep={stageState.currentBeat}
+        isPlaying={stageState.isPlaying}
+        bpm={choreography.bpm}
+        word={stageWord}
+        bluePropType={settings.bluePropType ?? settings.propType ?? "staff"}
+        redPropType={settings.redPropType ?? settings.propType ?? "staff"}
+        onChangeSequence={() => (pickerOpen = true)}
+        onExport={sharedSequence ? () => (exportOpen = true) : undefined}
+        exportBusy={exporter.state.isExporting}
+        onPlaybackToggle={() => stageState.togglePlay()}
+        onBpmChange={(nextBpm) => stageState.setBpm(nextBpm)}
+        onProgressBarSeek={seekToBeat}
+        immersive={fullscreen.immersive}
+        onToggleImmersive={(host) => fullscreen.toggleImmersive(host)}
+        {performerSteps}
+        worldChildren={floorPaths}
+        hudActions={stageHudActions}
+        overlayChildren={stageOverlay}
+        hideCanvasOverlays
+        sceneControlsBottomOffset="0.75rem"
+        allowSaveScene={false}
+        renderEmptyScene
+        contained
+      />
+    {:else}
+      <div class="unsupported-state" role="alert">
+        <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+        <h1>3D isn’t available in this browser</h1>
+        <p>WebGL 2 is required to stage a performance.</p>
+      </div>
     {/if}
   </div>
 {/snippet}
@@ -148,30 +450,43 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-{#if activeTab === "scene"}
-  <SceneStudio />
-{:else}
-  <div
-    class="stage-module"
-    role="main"
-    aria-label="Stage performance editor"
-    data-edit-history-shortcut-scope
-  >
-    <EditHistoryShortcutBridge
-      onUndo={stageState.undo}
-      onRedo={stageState.redo}
-      canUndo={stageState.canUndo}
-      canRedo={stageState.canRedo}
-    />
-    {#if compactPortrait.current}
-      <div class="compact-stage-layout">
-        <div class="compact-viewer">{@render viewerPanel()}</div>
-        <div class="compact-timeline">{@render timelinePanel()}</div>
-      </div>
-    {:else}
-      <PanelGroup direction="vertical" panels={workspacePanels} />
-    {/if}
-  </div>
+<div
+  class="stage-module"
+  role="main"
+  aria-label="Stage"
+  data-edit-history-shortcut-scope
+>
+  <EditHistoryShortcutBridge
+    onUndo={stageState.undo}
+    onRedo={stageState.redo}
+    canUndo={stageState.canUndo}
+    canRedo={stageState.canRedo}
+  />
+  {#if compactPortrait.current}
+    <div class="compact-stage-layout">
+      <div class="compact-viewer">{@render stagePanel()}</div>
+      <div class="compact-timeline">{@render timelinePanel()}</div>
+    </div>
+  {:else}
+    <PanelGroup direction="vertical" panels={workspacePanels} />
+  {/if}
+</div>
+
+<SequencePickerModal
+  bind:open={pickerOpen}
+  onClose={() => (pickerOpen = false)}
+  onSelect={chooseSequence}
+  title="Choose the sequence your cast performs"
+/>
+
+{#if sharedSequence}
+  <SceneExportModal
+    bind:open={exportOpen}
+    sequence={sharedSequence}
+    bpm={choreography.bpm}
+    {exporter}
+    onClose={() => (exportOpen = false)}
+  />
 {/if}
 
 <style>
@@ -205,203 +520,113 @@
     overflow: hidden;
   }
 
-  .viewer-container {
+  .stage-canvas {
     position: relative;
     min-width: 0;
     min-height: 0;
     flex: 1;
     overflow: hidden;
+    container-type: size;
   }
 
-  .viewer-container :global(.stage-viewer),
-  .top-down-canvas {
-    border-radius: 0;
+  /* The chart is a layer you raise over the stage, not a mode that replaces
+     it. It stops short of the rail so the tools stay reachable while editing. */
+  .drill-layer {
+    position: absolute;
+    top: 4.75rem;
+    right: 5.75rem;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    z-index: 2;
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.14));
+    border-radius: 1rem;
+    background: #0c0e16;
+    box-shadow: var(--theme-panel-shadow, 0 1.25rem 4rem rgba(0, 0, 0, 0.62));
   }
 
-  .top-down-canvas {
+  .drill-chart {
     position: relative;
+    min-width: 0;
+    min-height: 0;
+    flex: 1;
+  }
+
+  .drill-inspector {
+    width: min(22rem, 34%);
+    min-width: 0;
+    flex: none;
+    overflow-y: auto;
+  }
+
+  .load-notice {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    z-index: 3;
+    display: flex;
+    width: min(24rem, calc(100% - 2rem));
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    padding: 1.5rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    border-radius: 1rem;
+    background: #0c0e16;
+    color: var(--theme-text, #fff);
+    text-align: center;
+    translate: -50% -50%;
+  }
+
+  .load-notice i {
+    color: var(--theme-accent, #f59e0b);
+    font-size: 2rem;
+  }
+
+  .load-notice.error i {
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .load-notice span {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
+    font-size: var(--font-size-compact, 0.75rem);
+  }
+
+  .unsupported-state {
+    display: grid;
     width: 100%;
     height: 100%;
-    overflow: hidden;
-    background: var(--theme-panel-bg, #12121c);
-  }
-
-  .scene-rail {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    z-index: 30;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .scene-rail button {
-    position: relative;
-    display: grid;
-    width: 3.5rem;
-    height: 3.5rem;
     place-items: center;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 0.875rem;
-    background: rgba(20, 22, 32, 0.78);
-    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(20px) saturate(140%);
-    color: rgba(255, 255, 255, 0.66);
-    cursor: pointer;
-    font-size: 1.25rem;
+    align-content: center;
+    padding: clamp(1.25rem, 4cqi, 4.5rem);
+    color: var(--theme-text, #fff);
+    text-align: center;
   }
 
-  .scene-rail button.active {
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #f59e0b) 55%,
-      transparent
-    );
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #f59e0b) 20%,
-      rgba(20, 22, 32, 0.9)
-    );
-    color: white;
+  .unsupported-state i {
+    color: var(--semantic-warning, #f59e0b);
+    font-size: 2.5rem;
   }
 
-  .scene-rail button:hover::after {
-    position: absolute;
-    top: 50%;
-    right: calc(100% + 0.6rem);
-    padding: 0.35rem 0.55rem;
-    border-radius: 0.45rem;
-    background: rgba(0, 0, 0, 0.9);
-    color: white;
-    content: attr(data-tooltip);
-    font-size: 0.7rem;
-    font-weight: 700;
-    white-space: nowrap;
-    translate: 0 -50%;
-  }
-
-  .stage-inspector {
-    position: absolute;
-    top: 0.75rem;
-    right: 5rem;
-    bottom: 0.75rem;
-    z-index: 25;
-    display: flex;
-    width: clamp(20rem, 30vw, 29rem);
-    min-width: 0;
-    min-height: 0;
-    flex-direction: column;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.13);
-    border-radius: 1rem;
-    background: rgba(10, 12, 19, 0.94);
-    box-shadow: 0 0.75rem 3rem rgba(0, 0, 0, 0.58);
-    backdrop-filter: blur(24px) saturate(130%);
-  }
-
-  .stage-inspector > header {
-    display: flex;
-    min-height: 4rem;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.55rem 0.65rem 0.55rem 0.9rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .stage-inspector > header > div:first-child {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 0.15rem;
-  }
-
-  .stage-inspector header strong {
-    color: var(--theme-text, white);
-    font-size: var(--font-size-min, 0.875rem);
-  }
-
-  .stage-inspector header span {
-    overflow: hidden;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.58));
-    font-size: var(--font-size-compact, 0.75rem);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .inspector-actions {
-    display: flex;
-    flex: 0 0 auto;
-    gap: 0.25rem;
-  }
-
-  .inspector-actions button {
-    display: grid;
-    width: 2.75rem;
-    height: 2.75rem;
-    place-items: center;
-    border: 1px solid transparent;
-    border-radius: 0.65rem;
-    background: transparent;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
-    cursor: pointer;
-  }
-
-  .inspector-actions button:hover:not(:disabled) {
-    border-color: rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.07);
-    color: white;
-  }
-
-  .inspector-actions button:disabled {
-    opacity: 0.3;
-  }
-
-  .inspector-body {
-    min-height: 0;
-    flex: 1;
-    overflow: hidden;
-  }
-
-  .inspector-body :global(.stage-sidebar) {
-    height: 100%;
-  }
-
-  button:focus-visible {
-    outline: 3px solid var(--theme-accent, #f59e0b);
-    outline-offset: 3px;
-  }
-
-  @media (max-width: 700px) {
-    .stage-inspector {
-      position: fixed;
-      top: max(0.75rem, env(safe-area-inset-top));
+  @container (max-width: 52rem) {
+    .drill-layer {
       right: 0.75rem;
-      bottom: calc(var(--primary-nav-height, 3.75rem) + 0.75rem);
-      left: 0.75rem;
-      z-index: 60;
-      width: auto;
+      flex-direction: column;
     }
-  }
 
-  @media (max-height: 600px) and (orientation: landscape) {
-    .stage-inspector {
-      position: fixed;
-      top: 0.75rem;
-      right: 0.75rem;
-      bottom: 0.75rem;
-      left: auto;
-      z-index: 60;
-      width: min(29rem, calc(100vw - 6rem));
+    .drill-inspector {
+      width: auto;
+      max-height: 40%;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .scene-rail button,
-    .inspector-actions button {
-      transition: none;
+    .load-notice i {
+      animation: none;
     }
   }
 </style>

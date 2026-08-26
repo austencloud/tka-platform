@@ -27,6 +27,9 @@ const PRESET_GENERATORS: Record<FormationPresetId, (n: number) => NormalizedPoin
       z: 0.5,
     })),
 
+  // Intervals wide enough to read as a formation from the stage camera. At
+  // 0.15 x 0.2 on a 10x8 stage the whole triangle fitted inside 1.5m x 1.6m,
+  // which renders as one huddle rather than a shape with an apex.
   triangle: (n) => {
     if (n <= 2) return PRESET_GENERATORS.line(n);
     const pts: NormalizedPoint[] = [];
@@ -37,8 +40,8 @@ const PRESET_GENERATORS: Record<FormationPresetId, (n: number) => NormalizedPoin
       const count = Math.min(perRow, remaining);
       for (let i = 0; i < count; i++) {
         pts.push({
-          x: 0.5 + (i - (count - 1) / 2) * 0.15,
-          z: 0.3 + row * 0.2,
+          x: 0.5 + (i - (count - 1) / 2) * 0.2,
+          z: 0.28 + row * 0.24,
         });
       }
       remaining -= count;

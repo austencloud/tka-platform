@@ -30,8 +30,10 @@ import { onMount } from "svelte";
     window.location.href = "/create";
   }
 
-  // Extract error details if possible
-  const errorDetails = $derived(() => {
+  // Extract error details if possible.
+  // $derived.by, not $derived: $derived(fn) stores the FUNCTION, so the panel
+  // rendered its own source text where the error message belongs.
+  const errorDetails = $derived.by(() => {
     try {
       // Try to parse if it's a JSON error
       const parsed = JSON.parse(error);
@@ -42,7 +44,7 @@ import { onMount } from "svelte";
     }
   });
 
-  const displayMessage = $derived(() => {
+  const displayMessage = $derived.by(() => {
     if (
       typeof errorDetails === "object" &&
       errorDetails &&

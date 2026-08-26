@@ -67,7 +67,7 @@
     { value: "easeInOut", label: "Ease in and out", shortLabel: "Both" },
   ];
 
-  // The counts a phrase is actually built from. Anything else is the stepper.
+  // The counts a drill is actually written in. Anything else is the stepper.
   const QUICK_COUNTS = [8, 16];
 
   function setTransition(beats: number) {

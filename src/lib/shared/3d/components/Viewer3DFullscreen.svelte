@@ -14,7 +14,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import Viewer3DCanvas from "./Viewer3DCanvas.svelte";
   import type { SceneControlLayout } from "../domain/scene-control-layout";
-  import { onMount } from "svelte";
+  import { onMount, type Snippet } from "svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
@@ -56,6 +56,29 @@
     exportBusy?: boolean;
     /** Keep the environment and camera visible without a loaded sequence. */
     renderEmptyScene?: boolean;
+    /** Resolved per-performer step for hosts whose lanes run independent clocks. */
+    performerSteps?: readonly (number | null | undefined)[] | null;
+    /** Host world geometry rendered in the performer coordinate frame. */
+    worldChildren?: Snippet;
+    /** Host commands added to the left of the HUD's command bar. */
+    hudActions?: Snippet;
+    /**
+     * Host chrome layered over the canvas — a transport, a timeline, a chart.
+     * It sits below the scene controls, so a host that reserves space with
+     * `sceneControlsBottomOffset` keeps the rail clear of it.
+     */
+    overlayChildren?: Snippet;
+    /**
+     * Suppress the canvas's own transport and step strip, for a host that owns
+     * the timeline itself. Without it the surface shows two timelines.
+     */
+    hideCanvasOverlays?: boolean;
+    /** Room reserved below the rail for host chrome such as a timeline. */
+    sceneControlsBottomOffset?: string;
+    /** Room reserved at the stage's top-left for host chrome. */
+    sceneControlsLeftOffset?: string;
+    /** Hosts whose artifact is a document, not a look, turn saving off. */
+    allowSaveScene?: boolean;
   }
 
   let {
@@ -79,6 +102,14 @@
     onExport,
     exportBusy = false,
     renderEmptyScene = false,
+    performerSteps = null,
+    worldChildren,
+    hudActions,
+    overlayChildren,
+    hideCanvasOverlays = false,
+    sceneControlsBottomOffset,
+    sceneControlsLeftOffset,
+    allowSaveScene = true,
   }: Props = $props();
 
   let hostEl = $state<HTMLElement | null>(null);
@@ -135,6 +166,7 @@
 
     <div class="scene-command-bar" aria-label="3D Studio commands">
       <div class="command-group">
+        {@render hudActions?.()}
         {#if onChangeSequence}
           <SceneChromeButton
             icon="fa-folder-open"
@@ -202,14 +234,22 @@
       {onBpmChange}
       {bluePropType}
       {redPropType}
-      hideOverlays={immersive}
+      hideOverlays={immersive || hideCanvasOverlays}
       {initialRevealMode}
       {initialRevealDeferredFeatures}
       {onPlaybackToggle}
       {onProgressBarSeek}
       {renderEmptyScene}
+      {performerSteps}
+      {worldChildren}
     />
   </div>
+
+  {#if overlayChildren}
+    <div class="host-overlay" class:hidden={immersive}>
+      {@render overlayChildren()}
+    </div>
+  {/if}
 
   <!-- The standalone viewer uses the same adaptive scene-control owner as the
        embedded viewer. Sequence Viewer chrome is not involved. -->
@@ -218,6 +258,9 @@
       <SceneControls
         {bpm}
         topOffset="76px"
+        bottomOffset={sceneControlsBottomOffset}
+        leftOffset={sceneControlsLeftOffset}
+        {allowSaveScene}
         onLayoutChange={(next) => (sceneControlLayout = next)}
       />
     </div>
@@ -299,7 +342,21 @@
     background: var(--theme-stroke, rgba(255, 255, 255, 0.12));
   }
 
+  /* Between the canvas and the rail: host chrome can cover the stage, and the
+     rail's tools still open over it. */
+  .host-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .host-overlay > :global(*) {
+    pointer-events: auto;
+  }
+
   .viewer-hud.hidden,
+  .host-overlay.hidden,
   .scene-controls.hidden {
     opacity: 0;
     pointer-events: none;

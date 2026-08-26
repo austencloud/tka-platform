@@ -16,18 +16,18 @@ function sequence(id: string, word: string, stepCount: number): SequenceData {
 }
 
 describe("stage choreography state", () => {
-  it("creates isolated Stage documents with two sequence clips per performer", () => {
+  it("creates isolated Stage documents holding one lane across the show", () => {
     const first = createStageChoreographyState();
     const second = createStageChoreographyState();
 
     expect(first.choreography.id).not.toBe(second.choreography.id);
-    expect(first.choreography.performers).toHaveLength(4);
+    expect(first.choreography.performers).toHaveLength(3);
     expect(
       first.choreography.performers.every(
-        (performer) => performer.sequenceClips.length === 2
+        (performer) => performer.sequenceClips.length === 1
       )
     ).toBe(true);
-    expect(first.maxTotalBeats).toBe(16);
+    expect(first.maxTotalBeats).toBe(64);
 
     first.destroy();
     second.destroy();
@@ -45,32 +45,37 @@ describe("stage choreography state", () => {
       16
     );
 
+    // The opening clip already covers counts 0-64, so a clip dropped inside it
+    // lands after it rather than on top of it. Clips carry no label of their
+    // own: the timeline reads the word off the resolved sequence.
     expect(added).toMatchObject({
       sequenceId: "sequence-new",
-      label: "NEW",
-      startBeat: 16,
+      startBeat: 64,
       durationBeats: 6,
       sourceBeatCount: 6,
     });
-    expect(first!.sequenceClips).toHaveLength(3);
-    expect(second!.sequenceClips).toHaveLength(2);
-    expect(state.maxTotalBeats).toBe(22);
+    expect(added).not.toHaveProperty("label");
+    expect(first!.sequenceClips).toHaveLength(2);
+    expect(second!.sequenceClips).toHaveLength(1);
+    expect(state.maxTotalBeats).toBe(64);
     state.destroy();
   });
 
   it("moves, resizes, loops, removes, and undoes a clip", () => {
     const state = createStageChoreographyState();
     const performer = state.choreography.performers[0]!;
-    const target = performer.sequenceClips[1]!;
+    const target = performer.sequenceClips[0]!;
 
     state.moveSequenceClip(target.id, 10.25);
     state.resizeSequenceClip(target.id, 5.5);
     state.toggleSequenceClipLoop(target.id);
 
+    // The opening clip loops so a short sequence fills the whole show; the
+    // toggle is what turns that off.
     expect(target).toMatchObject({
       startBeat: 10.25,
       durationBeats: 5.5,
-      loop: true,
+      loop: false,
     });
 
     state.removeSequenceClip(target.id);
@@ -86,17 +91,24 @@ describe("stage choreography state", () => {
     state.destroy();
   });
 
-  it("creates the default line-to-v formation track", () => {
+  it("opens on a line, a triangle, and that triangle reversed", () => {
     const state = createStageChoreographyState();
     const { formations, performers, stageWidth, stageDepth } =
       state.choreography;
-    const line = generatePresetPositions("line", 4, stageWidth, stageDepth);
-    const vShape = generatePresetPositions(
-      "v-shape",
-      4,
+    const line = generatePresetPositions(
+      "line",
+      performers.length,
       stageWidth,
       stageDepth
     );
+    const triangle = generatePresetPositions(
+      "triangle",
+      performers.length,
+      stageWidth,
+      stageDepth
+    );
+    const triangleMeanZ =
+      triangle.reduce((total, point) => total + point.z, 0) / triangle.length;
     const spotsFor = (positions: typeof line) =>
       Object.fromEntries(
         performers.map((performer, index) => [
@@ -104,7 +116,7 @@ describe("stage choreography state", () => {
           {
             ...positions[index]!,
             walkStyle: "direct",
-            easing: "linear",
+            easing: "easeInOut",
           },
         ])
       );
@@ -118,35 +130,101 @@ describe("stage choreography state", () => {
         presetId: "line",
       },
       {
-        id: "default-formation-8",
-        atBeat: 8,
-        transitionBeats: 8,
-        spots: spotsFor(vShape),
-        presetId: "v-shape",
+        id: "default-formation-32",
+        atBeat: 32,
+        transitionBeats: 16,
+        spots: spotsFor(triangle),
+        presetId: "triangle",
+      },
+      {
+        id: "default-formation-64",
+        atBeat: 64,
+        transitionBeats: 16,
+        spots: spotsFor(
+          triangle.map((point) => ({
+            x: point.x,
+            z: 2 * triangleMeanZ - point.z,
+          }))
+        ),
       },
     ]);
 
     state.destroy();
   });
 
-  it("reads playback duration and positions from the formation track", () => {
+  it("turns the closing triangle inside out over the last sixteen counts", () => {
+    const state = createStageChoreographyState();
+    const { performers } = state.choreography;
+    const at = (beat: number) =>
+      sampleStageFormations(state.choreography, beat);
+
+    const held = at(48);
+    const arrived = at(64);
+    const downstageIndex = held.reduce(
+      (nearest, frame, index) =>
+        frame.stagePosition.z < held[nearest]!.stagePosition.z ? index : nearest,
+      0
+    );
+
+    // The performer nearest the audience walks away from it; whoever was
+    // furthest upstage walks toward it. That is the reverse triangle.
+    expect(arrived[downstageIndex]!.stagePosition.z).toBeGreaterThan(
+      held[downstageIndex]!.stagePosition.z
+    );
+
+    // Mirrored through the triangle's OWN mean depth, so the shape turns
+    // inside out where it stands instead of being thrown across the stage.
+    // Nobody drifts sideways doing it.
+    const meanZ =
+      held.reduce((total, frame) => total + frame.stagePosition.z, 0) /
+      held.length;
+    for (const [index, frame] of held.entries()) {
+      expect(arrived[index]!.stagePosition.z).toBeCloseTo(
+        2 * meanZ - frame.stagePosition.z,
+        6
+      );
+      expect(arrived[index]!.stagePosition.x).toBeCloseTo(
+        frame.stagePosition.x,
+        6
+      );
+      // The demo is only a demo if every performer walks. A cast whose middle
+      // rank sits on the mean depth turns inside out without moving.
+      expect(arrived[index]!.stagePosition.z).not.toBeCloseTo(
+        frame.stagePosition.z,
+        3
+      );
+    }
+
+    // Nothing moves before the walk starts, and everyone is walking inside it.
+    expect(at(47).every((frame) => !frame.isMoving)).toBe(true);
+    expect(at(56).every((frame) => frame.isMoving)).toBe(true);
+    expect(performers).toHaveLength(3);
+    state.destroy();
+  });
+
+  it("reads staging at a count off the formation track", () => {
     const state = createStageChoreographyState();
     const secondFormation = state.choreography.formations[1]!;
+    const stagingAt = (beat: number) =>
+      sampleStageFormations(state.choreography, beat).map(
+        ({ stagePosition }) => ({ ...stagePosition })
+      );
 
-    for (const performer of state.choreography.performers) {
-      performer.sequenceClips = [];
-    }
-    state.seek(6 / state.maxTotalBeats);
-    const beforeMove = state.interpolatedPositions.map(({ x, z }) => ({
-      x,
-      z,
-    }));
+    // Count 24 sits inside the walk into the second set, which arrives on 32
+    // over sixteen counts.
+    const beforeMove = stagingAt(24);
 
     state.moveFormation(secondFormation.id, 12);
-    state.seek(6 / state.maxTotalBeats);
 
-    expect(state.maxTotalBeats).toBe(12);
-    expect(state.interpolatedPositions).not.toEqual(beforeMove);
+    // Arriving on 12 clamps the walk to the twelve counts since the opening
+    // set, so by 24 that walk is long over and everyone is holding the shape.
+    expect(
+      state.choreography.formations.map((formation) => formation.atBeat)
+    ).toEqual([0, 12, 64]);
+    expect(
+      state.choreography.formations[1]!.transitionBeats
+    ).toBe(12);
+    expect(stagingAt(24)).not.toEqual(beforeMove);
     state.destroy();
   });
 
@@ -195,11 +273,13 @@ describe("stage choreography state", () => {
 
     state.setFormationTransitionBeats(formation!.id, 20.7);
 
+    // A set arriving on 12 cannot walk for longer than the twelve counts since
+    // the opening set.
     expect(
       state.choreography.formations.find(
         (candidate) => candidate.id === formation!.id
       )?.transitionBeats
-    ).toBe(4);
+    ).toBe(12);
     state.destroy();
   });
 
@@ -227,7 +307,7 @@ describe("stage choreography state", () => {
 
     expect(
       state.choreography.formations.map((formation) => formation.atBeat)
-    ).toEqual([0, 4, 8]);
+    ).toEqual([0, 4, 32, 64]);
     expect(state.choreography.formations[1]?.id).toBe(later!.id);
     state.destroy();
   });

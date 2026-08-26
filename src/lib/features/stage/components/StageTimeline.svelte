@@ -54,7 +54,17 @@
     }
     return ids;
   });
-  const pixelsPerBeat = 64;
+  // The floor, not the target. A show should read end to end without
+  // scrolling — a 64-count drill whose sets land on 32 and 64 is unreadable if
+  // the second set is off the right edge — so the track fits the viewport and
+  // only starts scrolling once counts would get narrower than this.
+  const MIN_PIXELS_PER_BEAT = 12;
+  // The label gutter on the left, and room on the right for the closing set's
+  // chip. A set that lands on the final count sits flush against the end of the
+  // track, so without the trailing room its chip hangs off the edge and the
+  // last thing in the show is the one thing you cannot read.
+  const TRACK_GUTTER_PX = 112;
+  const TRACK_TRAILING_PX = 148;
   let timelineViewportWidth = $state(0);
   let pickerOpen = $state(false);
   let pickerPerformerId = $state<string | null>(null);
@@ -64,8 +74,9 @@
   let didFormationDrag = false;
   const effectivePixelsPerBeat = $derived(
     Math.max(
-      pixelsPerBeat,
-      (timelineViewportWidth - 112) / Math.max(1, maxBeats)
+      MIN_PIXELS_PER_BEAT,
+      (timelineViewportWidth - TRACK_GUTTER_PX - TRACK_TRAILING_PX) /
+        Math.max(1, maxBeats)
     )
   );
 
@@ -391,7 +402,6 @@
       <div class="ruler-label" aria-hidden="true">PERFORMER</div>
       <div
         class="ruler"
-        style:width="var(--timeline-width)"
         onpointerdown={seekFromPointer}
         role="group"
         aria-label="Beat ruler. Click to move the playhead."
@@ -423,7 +433,7 @@
 
       <div
         class="formation-track"
-        style="width: var(--timeline-width); --pixels-per-beat: {effectivePixelsPerBeat}px"
+        style="--pixels-per-beat: {effectivePixelsPerBeat}px"
         onpointerdown={seekFromPointer}
         role="listbox"
         aria-label="Formation sets. Each block is a held set; the ramp before it is the walk into that set."
@@ -553,7 +563,7 @@
         <div
           class="sequence-lane"
           class:selected={editMode.selectedPerformerId === performer.id}
-          style="width: var(--timeline-width); --performer-color: {performer.color}; --pixels-per-beat: {effectivePixelsPerBeat}px"
+          style="--performer-color: {performer.color}; --pixels-per-beat: {effectivePixelsPerBeat}px"
           onpointerdown={seekFromPointer}
           role="group"
           aria-label="Performer {performer.label} sequence lane"
@@ -594,9 +604,9 @@
                 class="clip-body"
                 onpointerdown={(event) => beginClipDrag(event, clip, "move")}
                 onclick={(event) => selectClip(event, performer, clip)}
-                aria-label="{clip.label}, starts at beat {clip.startBeat}, lasts {clip.durationBeats} beats"
+                aria-label="{stageState.clipLabel(clip)}, starts at beat {clip.startBeat}, lasts {clip.durationBeats} beats"
               >
-                <span class="clip-name">{clip.label}</span>
+                <span class="clip-name">{stageState.clipLabel(clip)}</span>
                 {#if clip.loop && editMode.selectedClipId !== clip.id}
                   <i class="fas fa-repeat" aria-label="Loops"></i>
                 {/if}
@@ -607,7 +617,7 @@
                   class="clip-action"
                   class:active={clip.loop}
                   aria-pressed={clip.loop}
-                  aria-label="Loop {clip.label}"
+                  aria-label="Loop {stageState.clipLabel(clip)}"
                   title="Loop"
                   onpointerdown={(event) => event.stopPropagation()}
                   onclick={(event) => {
@@ -620,7 +630,7 @@
                 <button
                   type="button"
                   class="clip-action delete-clip"
-                  aria-label="Remove {clip.label}"
+                  aria-label="Remove {stageState.clipLabel(clip)}"
                   title="Remove"
                   onpointerdown={(event) => event.stopPropagation()}
                   onclick={(event) => {
@@ -635,7 +645,7 @@
                 type="button"
                 class="resize-handle"
                 onpointerdown={(event) => beginClipDrag(event, clip, "resize")}
-                aria-label="Resize {clip.label}"
+                aria-label="Resize {stageState.clipLabel(clip)}"
                 title="Drag to change duration"
               ></button>
             </div>
@@ -737,7 +747,10 @@
     width: max-content;
     min-width: 100%;
     min-height: 100%;
-    grid-template-columns: 7rem var(--timeline-width);
+    /* The track column is at least the beat scale wide and takes whatever
+       else is going, so a chip sitting on the final count has somewhere to be
+       drawn instead of being clipped by the lane it ends. */
+    grid-template-columns: 7rem minmax(var(--timeline-width), 1fr);
     grid-auto-rows: minmax(3.5rem, 1fr);
     /* 3.5rem keeps the set chip's 2.75rem touch target intact inside its
        0.35rem inset, and matches the performer lane height. */
@@ -767,7 +780,7 @@
     align-items: center;
     padding: 0 0.75rem;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.42));
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     font-weight: 750;
     letter-spacing: 0.1em;
   }
@@ -856,7 +869,7 @@
   }
   .formation-label-text {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.42));
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     font-weight: 750;
     letter-spacing: 0.1em;
   }
@@ -886,6 +899,10 @@
         rgba(255, 255, 255, 0.06) var(--pixels-per-beat)
       ),
       color-mix(in srgb, var(--theme-panel-bg, #0c0d14) 88%, black);
+    background-size:
+      var(--timeline-width) 100%,
+      100% 100%;
+    background-repeat: no-repeat;
     /* Deliberately NOT --theme-accent: the themed accent collides with the
        performer clip colours and makes the spine read as a fifth lane. */
     --formation-accent: #7cd4e8;
@@ -1063,6 +1080,10 @@
         rgba(255, 255, 255, 0.06) var(--pixels-per-beat)
       ),
       color-mix(in srgb, var(--theme-panel-bg, #0c0d14) 94%, black);
+    background-size:
+      var(--timeline-width) 100%,
+      100% 100%;
+    background-repeat: no-repeat;
   }
 
   .sequence-lane.selected {
@@ -1209,17 +1230,24 @@
 
   @media (max-width: 920px) {
     .timeline-grid {
-      grid-template-columns: 6rem var(--timeline-width);
+      grid-template-columns: 6rem minmax(var(--timeline-width), 1fr);
     }
   }
 
   @media (max-width: 560px) {
-    .timeline-title {
-      display: none;
-    }
-
+    /* The count is the timeline's primary readout — which beat you are on, out
+       of how many. It moves onto its own line here rather than disappearing,
+       because a phone is exactly where you cannot infer it from the ruler. */
     .timeline-toolbar {
       grid-template-columns: auto minmax(0, 1fr);
+      grid-template-rows: auto auto;
+      row-gap: 0.3rem;
+    }
+
+    .timeline-title {
+      display: flex;
+      grid-column: 1 / -1;
+      justify-content: center;
     }
   }
 

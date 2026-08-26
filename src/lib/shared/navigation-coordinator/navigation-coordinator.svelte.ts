@@ -609,7 +609,9 @@ function readHistoryState(raw: unknown): HistoryState | null {
 }
 
 /** Modules whose default tab should not appear in the URL (full-screen experiences) */
-const CLEAN_URL_MODULES: Set<string> = new Set(["museum"]);
+// The Stage is one surface, not a set of tabs, so its single section never
+// belongs in the address bar: /stage, never /stage/scene.
+const CLEAN_URL_MODULES: Set<string> = new Set(["museum", "stage"]);
 // Keep retired default tab IDs here so an HMR session or old history entry
 // cannot put a removed section back into an otherwise sectionless URL.
 const RETIRED_DEFAULT_SECTIONS: ReadonlyMap<string, string> = new Map([

@@ -1141,24 +1141,20 @@ export const LAB_TABS: Section[] = [
 
 // REMOVED: LANDING_PAGE_TABS - public pages are routed directly.
 
-// Stage module tabs configuration
+// Stage module tabs configuration.
+//
+// One stage, one tab. The Scene / Stage split asked the author to decide
+// whether they were dressing a scene or choreographing a cast before they had
+// seen either, and hid the shared control rail behind the wrong half of the
+// answer. Both live on one surface now.
 export const STAGE_TABS: Section[] = [
   {
     id: "scene",
     labelKey: "tab_stage_scene",
     descKey: "tab_desc_stage_scene",
-    label: "Scene",
-    icon: '<i class="fas fa-cube" aria-hidden="true"></i>',
-    description: "Build and export a 3D scene around one sequence",
-    color: "#22d3ee",
-  },
-  {
-    id: "editor",
-    labelKey: "tab_stage_editor",
-    descKey: "tab_desc_stage_editor",
     label: "Stage",
     icon: '<i class="fas fa-people-group" aria-hidden="true"></i>',
-    description: "Choreograph multiple performers on a shared timeline",
+    description: "Choreograph a cast in 3D, then save and export the scene",
     color: "#06b6d4",
   },
 ];

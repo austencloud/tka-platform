@@ -1,7 +1,7 @@
 <script lang="ts">
   import { T, useTask, useThrelte, useScheduler } from "@threlte/core";
   import { layers, type ThrelteLayers } from "@threlte/extras";
-  import { onMount, onDestroy } from "svelte";
+  import { onMount, onDestroy, type Snippet } from "svelte";
   import { PerformerRig } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { BackgroundType } from "@austencloud/backgrounds";
@@ -31,7 +31,7 @@
   import type { SceneEffectsManager3D } from "../effects/scene-effects/scene-effects-manager-3d";
   import type { QualityTier } from "../effects/types";
   import { resolvePetalEnvironmentProfile } from "../effects/petals/petal-world-art-direction";
-  import { resolvePerformerPlaybackStep } from "../domain/performer-step-timing";
+  import { resolvePerformerStepSource } from "../domain/performer-step-timing";
   import {
     getStageCoordinateFrame,
     isRenderable3DEnvironment,
@@ -83,6 +83,23 @@
     effectQualityTier?: QualityTier;
     /** Per-performer count offsets, sampled against the same shared clock. */
     performerStepOffsets?: readonly number[];
+    /**
+     * Per-performer playback step, supplied whole by the host.
+     *
+     * The default puppet loop derives every performer's step from one shared
+     * clock plus a constant offset, which assumes the cast is performing the
+     * same sequence. A host whose performers hold independent timelines — the
+     * Stage, where each lane carries its own choreography — supplies the
+     * resolved step per performer instead. Missing entries fall back to the
+     * shared clock, so a partially-driven cast still animates.
+     */
+    performerSteps?: readonly (number | null | undefined)[] | null;
+    /**
+     * Host world geometry rendered in the performer coordinate frame — the
+     * same space `performer.position` is expressed in, so floor paths and
+     * markers land under the feet that walk them.
+     */
+    worldChildren?: Snippet;
     /** Reserved film rigs stay mounted, but only the active cast is rendered. */
     visiblePerformerCount?: number;
     /** Environments retained in the scene graph after the opening preparation. */
@@ -112,6 +129,8 @@
     enablePerformerLocomotion = true,
     effectQualityTier,
     performerStepOffsets = [],
+    performerSteps = null,
+    worldChildren,
     visiblePerformerCount,
     retainedEnvironmentTypes = [],
     environmentTransitionVisualMode = "internal",
@@ -292,7 +311,8 @@
     for (const [performerIndex, p] of performerManager.performers
       .slice(0, visiblePerformerCount)
       .entries()) {
-      const performerStep = resolvePerformerPlaybackStep(
+      const performerStep = resolvePerformerStepSource(
+        performerSteps?.[performerIndex],
         step,
         performerStepOffsets[performerIndex] ?? 0,
         p.totalSteps
@@ -565,7 +585,7 @@
 
 <!-- Seated audience (gated by scene feature toggle) -->
 {#if sceneFeatures.isEnabled("audience")}
-  <SeatedAudience3D />
+  <SeatedAudience3D groundLevel={performerGroundLevel} />
 {/if}
 
 <!-- Lighting - reduced when the environment provides its own -->
@@ -599,6 +619,8 @@
   position.z={stageZOffset}
   layers={PERFORMER_LAYERS}
 >
+  {@render worldChildren?.()}
+
   <T.PointLight
     position={selectedPerformerLightPosition}
     intensity={selectedPerformer ? 6 : 0}
@@ -658,7 +680,8 @@
       {@const perfEffect =
         performer.rawEffect ?? globalTipEffectMap["*"]?.effect ?? "none"}
       {@const perfTipMap = { "*": { effect: perfEffect } }}
-      {@const performerCurrentStep = resolvePerformerPlaybackStep(
+      {@const performerCurrentStep = resolvePerformerStepSource(
+        performerSteps?.[i],
         currentStep,
         performerStepOffsets[i] ?? 0,
         performer.totalSteps

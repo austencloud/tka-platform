@@ -8,6 +8,7 @@ import type {
   EasingType,
 } from "../domain/stage-types";
 import {
+  DEFAULT_STAGE_SEQUENCE_ID,
   PERFORMER_COLORS,
   PERFORMER_LABELS,
   DEFAULT_STAGE_WIDTH,
@@ -23,7 +24,6 @@ import {
   sampleFormationPerformance,
   sampleStageFormations,
 } from "../domain/stage-formation-sampler";
-import { DEFAULT_STAGE_SEQUENCE_ID } from "../services/stage-sequence-loader";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { getPerformerSequenceEndBeat } from "../domain/stage-sequence-timeline";
 import {
@@ -98,10 +98,36 @@ export interface StageChoreographyState extends UnifiedPlaybackContext {
   resizeSequenceClip(clipId: string, durationBeats: number): void;
   toggleSequenceClipLoop(clipId: string): void;
   setBpm(bpm: number): void;
+  /**
+   * Put a different sequence on the stage. Every clip still pointing at the
+   * outgoing shared sequence follows it, because "change the sequence" means
+   * the cast performs the new one — not that half the timeline keeps the old.
+   */
+  setSharedSequence(sequence: SequenceData): void;
+  /**
+   * Display names for the sequences the host has resolved. Labels are read-only
+   * presentation, so they stay out of the undo history and out of the document.
+   */
+  registerSequenceLabels(labels: ReadonlyMap<string, string>): void;
+  /**
+   * Tell the document how long each referenced sequence actually is. A seeded
+   * or imported clip only guesses, and a wrong `sourceBeatCount` skews every
+   * step the lane samples — visibly, now that performers hold their own
+   * playhead. Not an authored edit, so it never enters the undo history.
+   */
+  syncClipSourceLengths(lengthBySequenceId: ReadonlyMap<string, number>): void;
+  sequenceLabel(sequenceId: string): string;
+  clipLabel(clip: StageSequenceClip): string;
   undo(): void;
   redo(): void;
   destroy(): void;
 }
+
+/**
+ * Counts in the document a fresh Stage opens on. Sixty-four is the length of
+ * the drill the seed authors, and the lane that plays under it.
+ */
+const DEFAULT_SHOW_BEATS = 64;
 
 function createPerformer(index: number): Performer {
   return {
@@ -112,19 +138,12 @@ function createPerformer(index: number): Performer {
     sequenceClips: [
       createSequenceClip({
         sequenceId: DEFAULT_STAGE_SEQUENCE_ID,
-        label: "Opening phrase",
         startBeat: 0,
-        durationBeats: 8,
+        durationBeats: DEFAULT_SHOW_BEATS,
+        // Corrected the moment the host resolves the sequence; a seeded
+        // document cannot know how many steps a catalog entry carries.
         sourceBeatCount: 8,
-        loop: false,
-      }),
-      createSequenceClip({
-        sequenceId: DEFAULT_STAGE_SEQUENCE_ID,
-        label: "Second phrase",
-        startBeat: 8,
-        durationBeats: 8,
-        sourceBeatCount: 8,
-        loop: false,
+        loop: true,
       }),
     ],
   };
@@ -157,21 +176,41 @@ export function createStageChoreographyState(
     sharedSequenceId: DEFAULT_STAGE_SEQUENCE_ID,
   });
 
-  // The Stage opens on a real authored move, so the first press of Play proves
-  // the same thing users came here to build: performers travel while their TKA
-  // sequence continues.
-  const defaultPositions = generatePresetPositions(
-    "line",
-    DEFAULT_PERFORMER_COUNT,
-    DEFAULT_STAGE_WIDTH,
-    DEFAULT_STAGE_DEPTH
-  );
-  const defaultTargetPositions = generatePresetPositions(
-    "v-shape",
-    DEFAULT_PERFORMER_COUNT,
-    DEFAULT_STAGE_WIDTH,
-    DEFAULT_STAGE_DEPTH
-  );
+  // The Stage opens on a show, not on an empty grid. Two moves in sixty-four
+  // counts: the cast opens in a line, walks into a triangle by count 32, and
+  // spends the last sixteen counts turning that triangle inside out — the
+  // downstage performer walking back while the upstage performers walk forward.
+  // Arriving on a document you can immediately press Play on is what tells a
+  // first-time author what this surface is for.
+  const preset = (id: "line" | "triangle") =>
+    generatePresetPositions(
+      id,
+      DEFAULT_PERFORMER_COUNT,
+      DEFAULT_STAGE_WIDTH,
+      DEFAULT_STAGE_DEPTH
+    );
+
+  /**
+   * Front-to-back mirror through the formation's OWN mean depth. A triangle
+   * through it is the reverse triangle: the downstage performer walks back, the
+   * upstage performers walk forward, and nobody moves sideways.
+   *
+   * Mirroring through the middle of the STAGE instead looks identical whenever
+   * the formation happens to be centred there and is wrong the moment it is
+   * not — a triangle sitting downstage would be thrown to the back wall rather
+   * than turned inside out where it stands.
+   */
+  const reverseDepth = (positions: Array<{ x: number; z: number }>) => {
+    if (positions.length === 0) return positions;
+    const meanZ =
+      positions.reduce((total, position) => total + position.z, 0) /
+      positions.length;
+    return positions.map((position) => ({
+      x: position.x,
+      z: 2 * meanZ - position.z,
+    }));
+  };
+
   const defaultSpots = (
     positions: Array<{ x: number; z: number }>
   ): Formation["spots"] =>
@@ -184,24 +223,31 @@ export function createStageChoreographyState(
             z: choreography.stageDepth / 2,
           }),
           walkStyle: "direct" as const,
-          easing: "linear" as const,
+          easing: "easeInOut" as const,
         },
       ])
     );
+
   choreography.formations = [
     {
       id: "default-formation-0",
       atBeat: 0,
       transitionBeats: 0,
-      spots: defaultSpots(defaultPositions),
+      spots: defaultSpots(preset("line")),
       presetId: "line",
     },
     {
-      id: "default-formation-8",
-      atBeat: 8,
-      transitionBeats: 8,
-      spots: defaultSpots(defaultTargetPositions),
-      presetId: "v-shape",
+      id: "default-formation-32",
+      atBeat: 32,
+      transitionBeats: 16,
+      spots: defaultSpots(preset("triangle")),
+      presetId: "triangle",
+    },
+    {
+      id: "default-formation-64",
+      atBeat: DEFAULT_SHOW_BEATS,
+      transitionBeats: 16,
+      spots: defaultSpots(reverseDepth(preset("triangle"))),
     },
   ];
 
@@ -625,7 +671,6 @@ export function createStageChoreographyState(
     const snappedStart = Math.max(0, Math.round(startBeat * 4) / 4);
     const clip = createSequenceClip({
       sequenceId: sequence.id,
-      label: sequence.word || sequence.name || "Untitled sequence",
       startBeat: performer.sequenceClips.some(
         (candidate) =>
           snappedStart >= candidate.startBeat &&
@@ -693,6 +738,85 @@ export function createStageChoreographyState(
 
   function setBpm(bpm: number) {
     choreography.bpm = Math.max(15, Math.min(180, bpm));
+  }
+
+  /**
+   * Change what the cast performs.
+   *
+   * Every clip still pointing at the outgoing shared sequence follows the new
+   * one. A clip whose counts matched its source is re-fitted to the new
+   * source's length; a clip the author deliberately stretched or compressed
+   * keeps the counts they chose.
+   */
+  function setSharedSequence(sequence: SequenceData) {
+    const previousSharedId =
+      choreography.sharedSequenceId ?? DEFAULT_STAGE_SEQUENCE_ID;
+    const sourceBeatCount = Math.max(1, sequence.steps.length);
+    pushUndo();
+    choreography.sharedSequenceId = sequence.id;
+    for (const performer of choreography.performers) {
+      performer.sequenceClips = performer.sequenceClips.map((clip) => {
+        if (clip.sequenceId !== previousSharedId) return clip;
+        const wasUnscaled = clip.durationBeats === clip.sourceBeatCount;
+        return {
+          ...clip,
+          sequenceId: sequence.id,
+          sourceBeatCount,
+          durationBeats: wasUnscaled ? sourceBeatCount : clip.durationBeats,
+          loop: sequence.isCircular === true ? clip.loop : clip.loop,
+        };
+      });
+    }
+    normalizeFormationTrack();
+  }
+
+  function syncClipSourceLengths(
+    lengthBySequenceId: ReadonlyMap<string, number>
+  ) {
+    let changed = false;
+    for (const performer of choreography.performers) {
+      let performerChanged = false;
+      const next = performer.sequenceClips.map((clip) => {
+        const resolved = lengthBySequenceId.get(clip.sequenceId);
+        if (!resolved || resolved <= 0 || resolved === clip.sourceBeatCount) {
+          return clip;
+        }
+        performerChanged = true;
+        // A clip the author never resized still means "play it once, at
+        // tempo", so it follows the real length. A clip they stretched keeps
+        // the span they chose.
+        const wasUnscaled = clip.durationBeats === clip.sourceBeatCount;
+        return {
+          ...clip,
+          sourceBeatCount: resolved,
+          durationBeats: wasUnscaled ? resolved : clip.durationBeats,
+        };
+      });
+      // Assigning unconditionally would write a new array into the document on
+      // every resolve, and the host's loader reads the clip list to decide
+      // which sequences to fetch: the write re-triggered the fetch, which
+      // called back into here, and the Stage sat on "Preparing the
+      // performance" forever.
+      if (!performerChanged) continue;
+      performer.sequenceClips = next;
+      changed = true;
+    }
+    if (changed) normalizeFormationTrack();
+  }
+
+  // Presentation only: never snapshotted, never written to the document.
+  let sequenceLabels = $state<ReadonlyMap<string, string>>(new Map());
+
+  function registerSequenceLabels(labels: ReadonlyMap<string, string>) {
+    sequenceLabels = new Map(labels);
+  }
+
+  function sequenceLabel(sequenceId: string): string {
+    return sequenceLabels.get(sequenceId) ?? "";
+  }
+
+  function clipLabel(clip: StageSequenceClip): string {
+    return clip.label?.trim() || sequenceLabel(clip.sequenceId) || "Sequence";
   }
 
   function destroy() {
@@ -778,6 +902,11 @@ export function createStageChoreographyState(
     resizeSequenceClip,
     toggleSequenceClipLoop,
     setBpm,
+    setSharedSequence,
+    registerSequenceLabels,
+    syncClipSourceLengths,
+    sequenceLabel,
+    clipLabel,
     setEnvironmentId,
     undo,
     redo,
