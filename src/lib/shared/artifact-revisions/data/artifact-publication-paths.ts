@@ -34,8 +34,11 @@ export function getArtifactPublicationRequestPath(requestId: string): string {
  * re-render has to land on a new path or cached clients keep the old picture
  * forever. Version 2 raised both the tunnel and mandala posters to 1024px —
  * version 1 tunnels were 200px thumbnails upscaled ~4.8x on a 4K Explore card.
+ * Version 3 changed what a tunnel poster DEPICTS: the still is now the tunnel's
+ * complete traced figure rather than a frame of one, and the same picture every
+ * time (see `tunnel-collection/domain/tunnel-poster-look.ts`).
  */
-export const ARTIFACT_POSTER_RENDER_VERSION = 2;
+export const ARTIFACT_POSTER_RENDER_VERSION = 3;
 
 /**
  * Storage object for the world-readable discovery poster (webp, ≤200KB).

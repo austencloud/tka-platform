@@ -23,8 +23,9 @@ const mockStartAfter = vi.fn();
 // serverTimestamp()/increment()/arrayUnion()/deleteField() all return
 // instances of it (see @firebase/firestore dist:
 // ServerTimestampFieldValueImpl extends FieldValue, etc). firestore-helpers.ts's
-// stripUndefined() does `value instanceof FieldValue` to pass these sentinels
-// through untouched — this mock class + the instance below keep that branch real.
+// stripUndefined() passes anything that is not a plain object through untouched,
+// which is what keeps these sentinels intact — a mock CLASS (not an object
+// literal) is what keeps that branch real.
 vi.mock("firebase/firestore", () => {
   class MockFieldValue {
     readonly _isServerTimestamp: boolean;

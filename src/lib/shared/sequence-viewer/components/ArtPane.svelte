@@ -34,6 +34,7 @@
   import { capturePosterFromContainer } from "../tunnel/tunnel-poster";
   import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
   import { TUNNEL_AUTO_EXPORT_INTENT_KEY } from "$lib/features/tunnel-collection/services/open-tunnel-in-viewer";
+  import { refreshTunnelPoster } from "$lib/features/tunnel-collection/services/tunnel-poster-refresh";
   import { deriveTunnelName } from "$lib/shared/sequence-viewer/tunnel/tunnel-name";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import {
@@ -645,6 +646,10 @@
         "succeeded",
         Date.now()
       );
+      // The frame above is whatever the stage was showing; the canonical poster
+      // takes seconds to draw and is not worth making anyone wait for. Correct
+      // it in the background now that the record is safely stored.
+      void refreshTunnelPoster(savedTunnel);
       try {
         await reportPostHogLifecycleEvent({
           event: "tunnel_save",
