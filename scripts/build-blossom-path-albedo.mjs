@@ -31,10 +31,19 @@ const OUTPUT = resolve("static/textures/blossom-floor/path-fines-albedo.jpg");
 /** How far each texel is pulled toward its own luminance. */
 const DESATURATION = 0.62;
 /** Midtone lift, applied as an inverse gamma. */
-const MIDTONE_GAMMA = 2.15;
-/** Contrast stretch about the lifted midpoint, so the aggregate stays legible. */
-const CONTRAST = 1.26;
-const CONTRAST_PIVOT = 0.58;
+const MIDTONE_GAMMA = 1.95;
+/**
+ * Contrast stretch about the lifted midpoint.
+ *
+ * The first pass lifted to a mean of about 0.59 and left the contrast near the
+ * source's. Seen from standing height that surface was pale but soft: the
+ * aggregate had been brightened into a smear rather than sharpened into grains.
+ * A harder stretch about a lower pivot keeps the mean where a moonlit walk
+ * belongs while pushing the dark interstices back down, which is what actually
+ * reads as loose stone underfoot.
+ */
+const CONTRAST = 1.52;
+const CONTRAST_PIVOT = 0.52;
 /** Faint warm cast, so the walks separate from the lawn by hue as well as value. */
 const WARMTH = [1.035, 1.0, 0.935];
 

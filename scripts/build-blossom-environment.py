@@ -374,11 +374,19 @@ PATH_PUBLIC = path_material(
 # on.
 PATH_SERVICE = path_material("Blossom Service Gravel", 0.99, (0.50, 0.50, 0.48))
 PATH_EDGING = path_material("Blossom Path Edging Stone", 0.93, (0.80, 0.79, 0.78))
-PATH_PAVING = path_material("Blossom Nobedan Paving", 0.88, (0.84, 0.84, 0.87))
-PATH_FINES_REPEAT = 1.15
-PATH_SERVICE_REPEAT = 1.7
-PATH_PAVING_REPEAT = 2.0
-PATH_EDGING_REPEAT = 0.9
+# Nobedan reads as fitted stone through its tighter repeat, not through hue. The
+# cool grey this carried before put a blue slab in the middle of a warm walk, so
+# every junction pad looked like a different material dropped on the path.
+PATH_PAVING = path_material("Blossom Nobedan Paving", 0.88, (0.86, 0.84, 0.80))
+# Repeat lengths are the size of one tile on the ground, so they set the grain
+# the eye reads while standing on the surface. At 1.15 m a single tile spanned
+# half a 2.2 m walk and the granite's mottling resolved as three or four soft
+# blotches across the path — the same featureless read the sand set gave, just
+# paler. Compacted fines want a tile you could cover with two hands.
+PATH_FINES_REPEAT = 0.55
+PATH_SERVICE_REPEAT = 0.8
+PATH_PAVING_REPEAT = 1.3
+PATH_EDGING_REPEAT = 0.45
 
 
 def enable_vertex_tint(mat):
@@ -735,6 +743,12 @@ def point_in_polygon(x, y, polygon):
     return inside
 
 
+def polygon_signed_distance(x, y, polygon):
+    """Distance to a closed polygon's boundary, negative inside it."""
+    distance = polyline_distance(x, y, [*polygon, polygon[0]])
+    return -distance if point_in_polygon(x, y, polygon) else distance
+
+
 def catmull_rom_point(first, second, third, fourth, amount):
     return tuple(
         0.5
@@ -928,19 +942,47 @@ def path_distance(x, y):
     )
 
 
+# The built ribbon is wider than its authored width: the mitre widens it by up to
+# thirty per cent through a bend, and a skirt runs outboard of that. The terrain
+# has to be flat under all of it, not just under the authored width, or the last
+# third of a metre of every bend sits over ground that is still being graded and
+# the grid's own chord error surfaces through the paving.
+PATH_BUILT_OVERSHOOT = 1.3
+# Softmin width for reconciling the elevations of routes that converge. Taking
+# the single nearest route's elevation puts a step wherever the nearest route
+# changes, which is a seam running outward from every junction — precisely where
+# two walks are equidistant and are authored at different heights.
+PATH_ELEVATION_BLEND = 0.9
+
+
 def closest_path_surface(x, y):
-    closest = None
+    """Signed distance to the built edge of the nearest walk, and its grade."""
+    nearest = None
+    samples = []
     for path in MASTERPLAN["circulation"]["paths"]:
         if path["id"] == "bridge-crossing":
             continue
+        built_half_width = (
+            path["width"] * 0.5 * PATH_BUILT_OVERSHOOT + PATH_SKIRT_WIDTH
+        )
         for first, second in zip(path["centerline"], path["centerline"][1:]):
             distance, elevation = point_segment_distance_with_height(
                 x, y, first, second
             )
-            signed = distance - path["width"] * 0.5
-            if closest is None or signed < closest[0]:
-                closest = (signed, elevation)
-    return closest
+            signed = distance - built_half_width
+            samples.append((signed, elevation))
+            if nearest is None or signed < nearest:
+                nearest = signed
+    if nearest is None:
+        return None
+
+    total = 0.0
+    blended = 0.0
+    for signed, elevation in samples:
+        weight = math.exp(-(signed - nearest) / PATH_ELEVATION_BLEND)
+        total += weight
+        blended += elevation * weight
+    return nearest, blended / total
 
 
 def rectangle_distance(x, y, half_width, half_depth):
@@ -949,6 +991,44 @@ def rectangle_distance(x, y, half_width, half_depth):
     outside = math.hypot(max(delta_x, 0.0), max(delta_y, 0.0))
     inside = min(max(delta_x, delta_y), 0.0)
     return outside + inside
+
+
+# How far outside an audience terrace its bank runs, and how wide the shoulder
+# beside a walk is.
+#
+# Both were effectively zero and 1.15 m, and both were sampled onto a 1.2 m
+# terrain grid. A terrace stamped as a hard `height = target` steps by up to half
+# a metre across a single cell, and a walk crossing one dropped that same half
+# metre back down inside one cell more. Rasterised, each of those came out as a
+# staircase of metre-wide treads, and the treads sliced up through any ribbon
+# they ran along — which is what bit the rectangular wedges of grass out of the
+# paving at the arrival junction. Grading over two cells or more gives the grid
+# something it can actually resolve.
+AUDIENCE_TERRACE_FEATHER = 2.4
+PATH_GRADE_SHOULDER = 2.4
+
+
+def audience_terrace(x, y):
+    """The graded terrace in force at this point, and how much of it applies.
+
+    Returns the plateau elevation and a weight that is one anywhere inside the
+    authored zone and falls to zero across the bank outside it.
+    """
+    best_target = 0.0
+    best_weight = 0.0
+    for zone in MASTERPLAN["audience"]["zones"]:
+        signed = polygon_signed_distance(x, y, zone["polygon"])
+        weight = 1.0 - smoothstep(0.0, AUDIENCE_TERRACE_FEATHER, signed)
+        if weight <= best_weight:
+            continue
+        if zone["id"] == "central-hanami-lawn":
+            best_target = 0.18 + smoothstep(-11.0, -26.0, y) * 0.53
+        elif zone["id"] == "accessible-overlook":
+            best_target = 0.30
+        else:
+            best_target = 0.28 + smoothstep(-12.0, -25.0, y) * 0.44
+        best_weight = weight
+    return best_target, best_weight
 
 
 def garden_ground_height(x, y):
@@ -985,17 +1065,9 @@ def garden_ground_height(x, y):
             * north_amount,
         )
 
-    for zone in MASTERPLAN["audience"]["zones"]:
-        if not point_in_polygon(x, y, zone["polygon"]):
-            continue
-        if zone["id"] == "central-hanami-lawn":
-            target = 0.18 + smoothstep(-11.0, -26.0, y) * 0.53
-        elif zone["id"] == "accessible-overlook":
-            target = 0.30
-        else:
-            target = 0.28 + smoothstep(-12.0, -25.0, y) * 0.44
-        height = target
-        break
+    terrace_target, terrace_weight = audience_terrace(x, y)
+    if terrace_weight > 0.0:
+        height = height * (1.0 - terrace_weight) + terrace_target * terrace_weight
 
     surface_distance, terrace_width = river_bank_profile(x, y)
 
@@ -1012,7 +1084,21 @@ def garden_ground_height(x, y):
     path_surface = closest_path_surface(x, y)
     if path_surface:
         signed_distance, path_elevation = path_surface
-        path_weight = 1.0 - smoothstep(0.0, 1.15, signed_distance)
+        # A walk that crosses a terrace belongs to that terrace's grade. The
+        # masterplan authors node elevations and terrace elevations
+        # independently, and they disagree by up to forty centimetres: the
+        # arrival junction is authored at 0.15 while sitting three metres inside
+        # a west terrace graded to 0.53. Taken literally that carved a trench for
+        # the walk through the middle of the terrace. Reconciling here, against
+        # the same weight the terrace itself uses, keeps the two continuous by
+        # construction — inside a terrace the path blend becomes a no-op and the
+        # walk simply lies on the plateau.
+        if terrace_weight > 0.0:
+            path_elevation = (
+                path_elevation * (1.0 - terrace_weight)
+                + max(path_elevation, terrace_target) * terrace_weight
+            )
+        path_weight = 1.0 - smoothstep(0.0, PATH_GRADE_SHOULDER, signed_distance)
         height = height * (1.0 - path_weight) + path_elevation * path_weight
 
     stage_clearance = MASTERPLAN["stage"]["protectedClearance"]
@@ -1199,7 +1285,11 @@ def create_ground():
 
 
 SURFACE_SAMPLE_SPACING = 1.4
-SURFACE_LIFT = 0.025
+# A pad has to sit above the crown of every ribbon that ends underneath it, or
+# the trimmed ribbon cap surfaces through it and tears a wedge of grass into the
+# joint. 0.025 was below PATH_CROWN_LIFT, which is what produced the notched,
+# torn junctions.
+SURFACE_LIFT = 0.068
 SURFACE_FRINGE_DROP = -0.012
 
 
@@ -1302,7 +1392,13 @@ def create_surface_polygon(
     return surface
 
 
-PATH_STATION_SPACING = 0.45
+# Stations are the ribbon's cross-sections. At 0.45 m a 2.2 m walk turning
+# through a bend showed its boundary as a chain of visible straight facets
+# roughly half a pace long, which is exactly the scale the eye picks out from
+# standing height. 0.24 m puts the facet below the width of a footfall, and the
+# ribbon cost is linear in a mesh that is now a rounding error against the
+# grove.
+PATH_STATION_SPACING = 0.24
 
 # A built walk is full-brightness surface right out to a defined edge, and only
 # then gives way to turf. The five-column section this replaces spent the outer
@@ -1312,26 +1408,44 @@ PATH_STATION_SPACING = 0.45
 # happens in a skirt a quarter of a metre wide, tucked below grade so turf laps
 # over it the way it does against real edging.
 PATH_CORE_FRACTION = 0.78
-PATH_SKIRT_WIDTH = 0.26
-PATH_CROWN_LIFT = 0.045
-PATH_CORE_LIFT = 0.036
-PATH_EDGE_LIFT = 0.020
-PATH_SKIRT_DROP = -0.020
+# The skirt is the handover to turf, not more path. At 0.26 m it put a quarter
+# of a metre of pale surface outboard of the edging on both sides, so from
+# standing height the stones looked stranded in the middle of the walk instead
+# of marking its boundary. Narrower and darker, it reads as the scuffed lip
+# under the kerb that it is.
+PATH_SKIRT_WIDTH = 0.15
+# The built surface stands proud of the turf beside it. Two centimetres at the
+# edge was inside the terrain grid's own chord error, so any undulation the 1.2 m
+# mesh under-resolved surfaced straight through the paving. Six at the crown is
+# both real clearance and the right read: a walk with kerbstones sits on the
+# lawn, it is not flush with it.
+PATH_CROWN_LIFT = 0.060
+PATH_CORE_LIFT = 0.050
+PATH_EDGE_LIFT = 0.035
+PATH_SKIRT_DROP = -0.026
 PATH_CORE_TINT = (1.0, 1.0, 1.0)
 PATH_SHOULDER_TINT = (0.93, 0.92, 0.89)
-PATH_EDGE_TINT = (0.76, 0.75, 0.70)
-PATH_SKIRT_TINT = (0.42, 0.46, 0.34)
+PATH_EDGE_TINT = (0.62, 0.61, 0.56)
+PATH_SKIRT_TINT = (0.34, 0.38, 0.27)
 
 # Edging stones (fuchi-ishi) set along both sides of every public walk. They are
 # what makes a path read as laid rather than worn: a hard silhouette at the
 # boundary that survives being seen from across the garden, where a colour
 # gradient does not. Service routes get none, which is also how the eye tells
 # the two apart without reading a label.
-PATH_EDGING_SPACING = 0.82
-PATH_EDGING_LENGTH = 0.34
-PATH_EDGING_WIDTH = 0.20
-PATH_EDGING_RISE = 0.085
-PATH_EDGING_BURIAL = 0.11
+#
+# The first attempt spaced 0.34 m hexagons every 0.82 m and stood them 6 cm
+# proud of the walk with a flat top. Half a metre of gap between each one and a
+# pale disc facing the sky is not a kerb — from standing height they read as
+# tin lids dropped along the path. A kerb is continuous: stones longer than
+# their spacing so they abut, narrow across so they read as set on edge, and
+# domed so no face catches the moon flat. The top ring is drawn in past the
+# widest point to round the silhouette.
+PATH_EDGING_SPACING = 0.42
+PATH_EDGING_LENGTH = 0.47
+PATH_EDGING_WIDTH = 0.155
+PATH_EDGING_RISE = 0.135
+PATH_EDGING_BURIAL = 0.14
 
 
 def resample_centerline(centerline, spacing=PATH_STATION_SPACING):
@@ -1376,7 +1490,7 @@ def path_edge_offset(arc_length, side_seed):
     )
 
 
-LANDING_RIBBON_TUCK = 0.30
+LANDING_RIBBON_TUCK = 0.55
 
 
 def trim_stations_at_landings(stations, landings):
@@ -1448,7 +1562,10 @@ def create_path_ribbon(path, edging_sink, landings):
             alignment = (incoming_x * outgoing_x + incoming_y * outgoing_y) / (
                 incoming_length * outgoing_length
             )
-            miter = min(1.0 / math.sqrt(max(0.08, 0.5 * (1.0 + alignment))), 1.3)
+            miter = min(
+                1.0 / math.sqrt(max(0.08, 0.5 * (1.0 + alignment))),
+                PATH_BUILT_OVERSHOOT,
+            )
         else:
             miter = 1.0
 
@@ -1553,7 +1670,10 @@ LANDING_NODE_MARGINS = {
     "destination": 0.5,
     "audience-access": 0.3,
 }
-LANDING_SIDES = 12
+# Twelve sides on a 2.4 m pad is a 1.2 m facet — a hand's width shy of the whole
+# width of the walk arriving at it, and unmistakably a polygon from anywhere in
+# the garden. Twenty brings the facet under half a metre.
+LANDING_SIDES = 20
 LANDING_SNAP_RADIUS = 1.2
 
 
@@ -1635,17 +1755,26 @@ def create_path_edging(placements):
     vertices = []
     faces = []
     tints = []
-    sides = 6
+    sides = 8
+    # Each ring is (section scale, height as a multiple of the exposed rise
+    # measured from ground, shade). The middle ring sits just above grade and
+    # carries the full section, so the stone bulges where it leaves the earth
+    # and draws back in above that — a dome, not a disc.
+    rings = ((1.0, -1.0, 0.30), (1.0, 0.30, 0.66), (0.54, 1.0, 1.0))
     for index, (x, y, heading, arc_length, side) in enumerate(placements):
         wobble = math.sin(arc_length * 3.7 + side * 2.3 + index * 0.9)
-        length = PATH_EDGING_LENGTH * (1.0 + 0.22 * wobble)
-        width = PATH_EDGING_WIDTH * (1.0 - 0.18 * wobble)
-        rise = PATH_EDGING_RISE * (1.0 + 0.3 * math.sin(index * 1.7))
-        angle = heading + 0.14 * math.sin(index * 2.11)
-        base = garden_ground_height(x, y) - PATH_EDGING_BURIAL
+        length = PATH_EDGING_LENGTH * (1.0 + 0.16 * wobble)
+        width = PATH_EDGING_WIDTH * (1.0 - 0.14 * wobble)
+        rise = PATH_EDGING_RISE * (1.0 + 0.26 * math.sin(index * 1.7))
+        angle = heading + 0.09 * math.sin(index * 2.11)
+        ground = garden_ground_height(x, y)
         first = len(vertices)
-        for ring, height in ((0, base), (1, base + PATH_EDGING_BURIAL + rise)):
-            taper = 1.0 if ring == 0 else 0.82
+        for taper, rise_multiple, shade in rings:
+            height = ground + (
+                PATH_EDGING_BURIAL * rise_multiple
+                if rise_multiple < 0.0
+                else rise * rise_multiple
+            )
             for step in range(sides):
                 theta = math.tau * step / sides
                 local_x = math.cos(theta) * length * 0.5 * taper
@@ -1657,18 +1786,24 @@ def create_path_edging(placements):
                         height,
                     )
                 )
-                tints.append((0.74, 0.74, 0.72) if ring else (0.42, 0.44, 0.40))
-        for step in range(sides):
-            following = (step + 1) % sides
-            faces.append(
-                (
-                    first + step,
-                    first + following,
-                    first + sides + following,
-                    first + sides + step,
+                tints.append(
+                    (0.34 + 0.46 * shade, 0.35 + 0.44 * shade, 0.32 + 0.43 * shade)
                 )
-            )
-        faces.append(tuple(first + sides + step for step in range(sides)))
+        for ring in range(len(rings) - 1):
+            lower = first + ring * sides
+            upper = lower + sides
+            for step in range(sides):
+                following = (step + 1) % sides
+                faces.append(
+                    (
+                        lower + step,
+                        lower + following,
+                        upper + following,
+                        upper + step,
+                    )
+                )
+        top = first + (len(rings) - 1) * sides
+        faces.append(tuple(top + step for step in range(sides)))
 
     edging = link_object(
         "Path_Edging_Stones",
