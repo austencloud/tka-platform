@@ -38,6 +38,8 @@
     isPlaying: boolean;
     bpm: number;
     word: string | null;
+    /** A stage the host authored, in metres — see Viewer3DScene. */
+    stageExtent?: { width: number; depth: number } | null;
     bluePropType?: string | null;
     redPropType?: string | null;
     onClose?: () => void;
@@ -87,6 +89,7 @@
     isPlaying,
     bpm,
     word,
+    stageExtent = null,
     bluePropType = null,
     redPropType = null,
     onClose,
@@ -242,6 +245,7 @@
       {renderEmptyScene}
       {performerSteps}
       {worldChildren}
+      {stageExtent}
     />
   </div>
 

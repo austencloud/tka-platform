@@ -1,3 +1,9 @@
+import {
+  PRESET_VALID_COUNTS,
+  createFormationFromPreset,
+  type FormationPreset,
+} from "@austencloud/scene-3d";
+
 export interface PerformerStagePosition {
   x: number;
   z: number;
@@ -12,6 +18,12 @@ export interface PerformerStageBounds {
   depth: number;
   radius: number;
   zOffset: number;
+}
+
+/** A stage a host authors itself, in metres, centered on the scene origin. */
+export interface StageExtent {
+  width: number;
+  depth: number;
 }
 
 export interface StageCenterOffset {
@@ -79,4 +91,71 @@ export function resolveCircularStageRadius(
     minimumRadius,
     performerRadius + Math.hypot(centerOffset.x, centerOffset.z)
   );
+}
+
+/**
+ * The deck a host authored, used as given.
+ *
+ * A host that owns a stage — the Stage module draws one on its drill chart and
+ * clamps every spot to it — already knows how big the floor is. Its cast walking
+ * from one side to the other does not make the venue bigger. The circular deck
+ * circumscribes the rectangle so a performer standing in a corner is still on it.
+ */
+export function getStageBoundsForExtent(
+  extent: StageExtent
+): PerformerStageBounds {
+  return {
+    width: extent.width,
+    depth: extent.depth,
+    radius: Math.hypot(extent.width / 2, extent.depth / 2),
+    zOffset: 0,
+  };
+}
+
+const canonicalPositionsByCount = new Map<
+  number,
+  readonly PerformerStagePosition[]
+>();
+
+/**
+ * Every spot a cast of this size can be asked to stand on.
+ *
+ * Sizing a deck from where performers happen to be standing makes the floor
+ * breathe under them: it grows as a formation opens out and shrinks as it
+ * closes, so the venue appears to move while the cast walks. Sizing it from the
+ * union of every formation this many performers can form gives one canonical
+ * deck per count — it does not change while they walk, and it does not jump when
+ * the formation changes, because every formation already fits.
+ *
+ * Read from the preset generators rather than transcribed into a table here, so
+ * a preset that changes its spacing cannot silently outgrow the floor.
+ *
+ * Accumulated across every smaller cast too, because some presets are capped at
+ * a count: stage-lr splits two performers to opposite wings and is invalid at
+ * three, so counting only the presets valid at exactly three would hand a trio a
+ * SMALLER stage than a duo. Adding a performer never shrinks the venue.
+ */
+export function getCanonicalStagePositions(
+  performerCount: number
+): readonly PerformerStagePosition[] {
+  const count = Math.max(0, Math.floor(performerCount));
+  const cached = canonicalPositionsByCount.get(count);
+  if (cached) return cached;
+
+  const positions: PerformerStagePosition[] = [];
+  for (let cast = 1; cast <= count; cast += 1) {
+    for (const [preset, validCounts] of Object.entries(PRESET_VALID_COUNTS)) {
+      // "custom" is whatever the user dragged; it has no canonical footprint.
+      if (preset === "custom" || !validCounts.includes(cast)) continue;
+      for (const slot of createFormationFromPreset(
+        preset as FormationPreset,
+        cast
+      ).slots) {
+        positions.push({ x: slot.position.x, z: slot.position.z });
+      }
+    }
+  }
+
+  canonicalPositionsByCount.set(count, positions);
+  return positions;
 }

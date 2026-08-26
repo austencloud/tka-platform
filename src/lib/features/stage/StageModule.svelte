@@ -503,6 +503,10 @@
         isPlaying={stageState.isPlaying}
         bpm={choreography.bpm}
         word={null}
+        stageExtent={{
+          width: choreography.stageWidth,
+          depth: choreography.stageDepth,
+        }}
         bluePropType={settings.bluePropType ?? settings.propType ?? "staff"}
         redPropType={settings.redPropType ?? settings.propType ?? "staff"}
         onChangeSequence={() => (pickerOpen = true)}

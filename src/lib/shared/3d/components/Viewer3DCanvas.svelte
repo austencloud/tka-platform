@@ -108,6 +108,8 @@
     visiblePerformerCount?: number;
     /** Fixed stage extent for hosts whose cast walks — see Viewer3DScene. */
     stageBoundsPositions?: readonly { x: number; z: number }[] | null;
+    /** A stage the host authored — see Viewer3DScene. */
+    stageExtent?: { width: number; depth: number } | null;
     /** Keep these already-prepared environments mounted between cinematic cuts. */
     retainedEnvironmentTypes?: readonly BackgroundType[];
     /** Lets a film-level compositor own the visible edit between retained worlds. */
@@ -153,6 +155,7 @@
     worldChildren,
     visiblePerformerCount,
     stageBoundsPositions = null,
+    stageExtent = null,
     retainedEnvironmentTypes = [],
     environmentTransitionVisualMode = "internal",
     sceneLoadTimeoutMs = 15_000,
@@ -474,6 +477,7 @@
                 {worldChildren}
                 {visiblePerformerCount}
                 {stageBoundsPositions}
+                {stageExtent}
                 {retainedEnvironmentTypes}
                 {environmentTransitionVisualMode}
                 onPerformerReadinessChange={handlePerformerReadinessChange}

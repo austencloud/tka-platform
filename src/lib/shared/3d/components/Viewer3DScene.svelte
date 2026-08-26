@@ -39,6 +39,8 @@
   import { getSceneEnvironmentRendererKey } from "../environments/domain/scene-environment";
   import {
     getPerformerStageBounds,
+    getCanonicalStagePositions,
+    getStageBoundsForExtent,
     getPerformerStageClearance,
   } from "../environments/domain/performer-stage-bounds";
   import { tryGetEnvironmentTransitionVisualContext } from "../environments/context/environment-transition-visual-context";
@@ -112,6 +114,11 @@
      * scene's travel up front passes its extent here and gets one fixed stage.
      */
     stageBoundsPositions?: readonly { x: number; z: number }[] | null;
+    /**
+     * A stage the host authored, in metres. Wins outright: a host that owns a
+     * floor and clamps its cast to it already knows how big the deck is.
+     */
+    stageExtent?: { width: number; depth: number } | null;
     /** Environments retained in the scene graph after the opening preparation. */
     retainedEnvironmentTypes?: readonly BackgroundType[];
     /** Lets a film-level compositor hide an atomic retained-world switch. */
@@ -143,6 +150,7 @@
     worldChildren,
     visiblePerformerCount,
     stageBoundsPositions = null,
+    stageExtent = null,
     retainedEnvironmentTypes = [],
     environmentTransitionVisualMode = "internal",
     onPerformerReadinessChange,
@@ -532,20 +540,21 @@
     )
   );
 
-  const visiblePerformers = $derived(
-    performerManager.performers.slice(0, performerCount)
-  );
-
+  // The deck is a property of the venue, not of where the cast happens to be
+  // standing this frame. Measuring live positions made the floor grow as a
+  // formation opened out and shrink as it closed, so the stage appeared to
+  // breathe under performers who were only walking across it.
   const stageDimensions = $derived(
-    getPerformerStageBounds(
-      stageBoundsPositions ??
-        visiblePerformers.map((performer) => performer.position),
-      {
-        performerClearance: getPerformerStageClearance(
-          userProportionsState.avatarScale
-        ),
-      }
-    )
+    stageExtent
+      ? getStageBoundsForExtent(stageExtent)
+      : getPerformerStageBounds(
+          stageBoundsPositions ?? getCanonicalStagePositions(performerCount),
+          {
+            performerClearance: getPerformerStageClearance(
+              userProportionsState.avatarScale
+            ),
+          }
+        )
   );
 
   const stageZOffset = $derived(stageDimensions.zOffset);
