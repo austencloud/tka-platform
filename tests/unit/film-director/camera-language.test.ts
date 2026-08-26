@@ -15,12 +15,12 @@ const CONTEXT = {
     {
       id: "performer-1", name: "P1", avatarId: "y-bot" as never,
       prop: "staff" as never, effect: "none" as never, effort: "linear" as never,
-      position: { x: -1, z: 0 }, facingAngle: 0, beatOffset: 0, staffLengthCm: null,
+      position: { x: -1, z: 0 }, facingAngle: 0, blocking: [], beatOffset: 0, staffLengthCm: null,
     },
     {
       id: "performer-2", name: "P2", avatarId: "x-bot" as never,
       prop: "staff" as never, effect: "none" as never, effort: "linear" as never,
-      position: { x: 1, z: 0 }, facingAngle: 0, beatOffset: 0, staffLengthCm: null,
+      position: { x: 1, z: 0 }, facingAngle: 0, blocking: [], beatOffset: 0, staffLengthCm: null,
     },
   ],
 };

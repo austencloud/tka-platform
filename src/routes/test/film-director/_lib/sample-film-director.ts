@@ -1,3 +1,7 @@
+import {
+  sampleDirectorBlockingTrack,
+  type DirectorBlockingFrame,
+} from "./director-blocking-track";
 import { sampleDirectorCameraTrack } from "./director-camera-track";
 import type {
   ResolvedDirectorScene,
@@ -13,6 +17,8 @@ export interface FilmDirectorFrame {
   sceneProgress: number;
   sequenceStep: number;
   performerStepOffsets: number[];
+  /** Where each performer stands and how they travel, in cast order. */
+  performerMotion: DirectorBlockingFrame[];
   camera: ReturnType<typeof sampleDirectorCameraTrack>;
   fadeOpacity: number;
 }
@@ -81,6 +87,9 @@ export function sampleFilmDirector(
     sequenceStep: (sceneTimeSeconds * scene.performance.bpm) / 60,
     performerStepOffsets: scene.performance.performers.map(
       (performer) => performer.beatOffset
+    ),
+    performerMotion: scene.performance.performers.map((performer) =>
+      sampleDirectorBlockingTrack(performer.blocking, sceneTimeSeconds)
     ),
     camera: sampleDirectorCameraTrack(scene.camera.keyframes, sceneTimeSeconds),
     fadeOpacity: fadeOpacity(film, sceneIndex, sceneTimeSeconds),

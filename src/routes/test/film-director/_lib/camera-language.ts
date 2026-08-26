@@ -2,6 +2,7 @@ import { userProportionsState } from "@austencloud/scene-3d";
 
 import { computeFramingShot } from "$lib/shared/3d/camera/compute-framing-shot";
 
+import { allocateMoveWindows } from "./director-move-windows";
 import type {
   DirectorCameraTargetInput,
   ResolvedDirectorCameraKeyframe,
@@ -205,7 +206,11 @@ export function compileCameraMoves(
     ];
   }
 
-  const windows = allocateWindows(moves, context.durationSeconds);
+  const windows = allocateMoveWindows(
+    moves,
+    context.durationSeconds,
+    "Camera moves"
+  );
   const frames: ResolvedDirectorCameraKeyframe[] = [];
   let position: [number, number, number] = [...framing.position];
   let target: [number, number, number] = [...framing.target];
@@ -333,28 +338,4 @@ function validateMove(move: DirectorCameraMove): void {
       );
     }
   }
-}
-
-function allocateWindows(
-  moves: readonly DirectorCameraMove[],
-  durationSeconds: number
-): { start: number; end: number }[] {
-  const explicit = moves.reduce(
-    (sum, move) => sum + (move.durationSeconds ?? 0),
-    0
-  );
-  if (explicit > durationSeconds + 1e-6) {
-    throw new Error(
-      `Camera moves total ${explicit}s but the scene's duration is ${durationSeconds}s.`
-    );
-  }
-  const openCount = moves.filter((move) => move.durationSeconds === undefined).length;
-  const openShare = openCount ? (durationSeconds - explicit) / openCount : 0;
-  let cursor = 0;
-  return moves.map((move) => {
-    const length = move.durationSeconds ?? openShare;
-    const window = { start: cursor, end: cursor + length };
-    cursor += length;
-    return window;
-  });
 }

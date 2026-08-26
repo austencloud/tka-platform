@@ -13,6 +13,7 @@ import type { EffectsConfigState } from "$lib/shared/effects/state/effects-confi
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
+import type { DirectorBlockingFrame } from "./director-blocking-track";
 import type { DirectorCameraFrame } from "./director-camera-track";
 import type { ResolvedDirectorScene } from "./film-director-schema";
 import { resolveDirectorPerformerPoolSize } from "./film-director-performance-policy";
@@ -188,6 +189,33 @@ export function applyDirectorEffectPresets(
   }
 
   state.replace(config);
+}
+
+/**
+ * Drives the cast's staging for one frame: where each performer stands, which
+ * way they face, and what the locomotion animator needs to keep their feet on
+ * the ground while they travel.
+ *
+ * Facing snaps rather than lerps because the blocking track has already eased
+ * it — the rig's own rotation lerp would fight that curve and lag the walk.
+ */
+export function applyDirectorPerformerMotion(
+  viewer: Viewer3DState,
+  motion: readonly DirectorBlockingFrame[]
+): void {
+  const performers = viewer.performerManager.performers;
+  motion.forEach((frame, index) => {
+    const performer = performers[index];
+    if (!performer) return;
+    performer.position.x = frame.position.x;
+    performer.position.z = frame.position.z;
+    performer.snapFacingAngle(frame.facingAngle);
+    performer.setTravel({
+      direction: frame.moveDirection,
+      speed: frame.moveSpeed,
+      moving: frame.isMoving,
+    });
+  });
 }
 
 export function applyDirectorCameraFrame(

@@ -1,5 +1,6 @@
 import { computeFramingShot } from "$lib/shared/3d/camera/compute-framing-shot";
 
+import { applyDirectorEasing } from "./director-easing";
 import {
   compileCameraMoves,
   computeCameraFraming,
@@ -245,21 +246,6 @@ export function resolveDirectorCameraTrack(
   };
 }
 
-function applyEasing(value: number, easing: DirectorEasing): number {
-  switch (easing) {
-    case "linear":
-      return value;
-    case "ease-in":
-      return value * value;
-    case "ease-out":
-      return 1 - (1 - value) * (1 - value);
-    case "ease-in-out":
-      return value < 0.5
-        ? 2 * value * value
-        : 1 - Math.pow(-2 * value + 2, 2) / 2;
-  }
-}
-
 function interpolateScalar(
   before: number,
   start: number,
@@ -342,7 +328,7 @@ export function sampleDirectorCameraTrack(
     0,
     Math.min(1, (atSeconds - start.atSeconds) / duration)
   );
-  const progress = applyEasing(linearProgress, start.easing);
+  const progress = applyDirectorEasing(linearProgress, start.easing);
   const before = keyframes[Math.max(0, startIndex - 1)] ?? start;
   const after = keyframes[Math.min(keyframes.length - 1, endIndex + 1)] ?? end;
   const smooth = start.interpolation === "smooth";

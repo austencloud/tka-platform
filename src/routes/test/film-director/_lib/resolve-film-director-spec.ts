@@ -22,6 +22,11 @@ import type { EffectType } from "$lib/shared/effects/domain/effects-config";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
+import {
+  AUDIENCE_FACING_ANGLE,
+  compileBlockingMoves,
+  type DirectorBlockingMove,
+} from "./blocking-language";
 import { resolveDirectorCameraTrack } from "./director-camera-track";
 import { isDirectiveExpression, type DirectiveValue } from "./directives";
 import {
@@ -37,6 +42,7 @@ import {
   FilmDirectorInputSchema,
   type DirectorCastInput,
   type DirectorPerformerSequence,
+  type DirectorSceneBlockingInput,
   type DirectorSceneInput,
   type FilmDirectorInput,
   type ResolvedDirectorPerformer,
@@ -80,6 +86,7 @@ interface ResolvedPerformerFields {
   sequence: DirectorPerformerSequence;
   position?: { x: number; z: number };
   facingDegrees?: number;
+  blocking?: DirectorBlockingMove[];
   beatOffset?: number;
   staffLengthCm: number | null;
   bluePlane: Plane;
@@ -287,9 +294,86 @@ function validateEffectOverrides(
   }
 }
 
+type FormationLayout = ReturnType<typeof createFormationFromPreset>;
+type FormationSlot = FormationLayout["slots"][number];
+
+/**
+ * Two conventions collide here. The formation library's "same-direction"
+ * default faces +Z, but every director camera fronts the group from -Z
+ * (computeFramingScene's wall-plane eye). A film's default cast must face
+ * its audience, so same-direction (and slot-less custom rosters) face -Z.
+ * Slots with their own facingAngle (circle, back-to-back, ...) keep theirs.
+ */
+function slotFacingAngle(
+  slot: FormationSlot | undefined,
+  formation: FormationLayout
+): number {
+  if (!slot) return AUDIENCE_FACING_ANGLE;
+  if (
+    slot.facingAngle === undefined &&
+    formation.facingMode === "same-direction"
+  ) {
+    return AUDIENCE_FACING_ANGLE;
+  }
+  return calculateFacingAngle(slot, formation);
+}
+
+function endFormationMarks(
+  preset: FormationPreset,
+  count: number
+): { x: number; z: number }[] {
+  if (preset === "custom") {
+    throw new Error(
+      'Blocking cannot end in a "custom" formation — it has no marks of its own. Name a preset, or give each performer their own blocking.'
+    );
+  }
+  if (!PRESET_VALID_COUNTS[preset].includes(count)) {
+    throw new Error(
+      `Blocking ends in "${preset}", which does not support ${count} performers.`
+    );
+  }
+  const layout = createFormationFromPreset(preset, count);
+  return Array.from({ length: count }, (_, index) => {
+    const slot = layout.slots.find((candidate) => candidate.index === index);
+    if (!slot) {
+      throw new Error(
+        `Blocking ends in "${preset}", which has no mark for performer ${index + 1}.`
+      );
+    }
+    return { ...slot.position };
+  });
+}
+
+/** Close enough to a mark that walking to it would be walking in place. */
+const MARK_ARRIVED_METERS = 0.05;
+
+function movesToMark(
+  mark: { x: number; z: number },
+  start: { x: number; z: number },
+  blocking: DirectorSceneBlockingInput
+): DirectorBlockingMove[] {
+  if (Math.hypot(mark.x - start.x, mark.z - start.z) < MARK_ARRIVED_METERS) {
+    return [{ move: "stand", durationSeconds: blocking.durationSeconds }];
+  }
+  return [
+    {
+      move: "walk",
+      to: mark,
+      // Everyone keeps the facing they opened with, so a cast facing its
+      // audience travels sideways or backs up into the new formation instead
+      // of turning away to walk there.
+      facing: blocking.facing ?? "hold",
+      durationSeconds: blocking.durationSeconds,
+      easing: blocking.easing,
+    },
+  ];
+}
+
 function buildResolvedPerformers(
   inputs: readonly ResolvedPerformerFields[],
-  formationPreset: FormationPreset
+  formationPreset: FormationPreset,
+  durationSeconds: number,
+  sceneBlocking: DirectorSceneBlockingInput | undefined
 ): ResolvedDirectorPerformer[] {
   const validCounts = PRESET_VALID_COUNTS[formationPreset];
   if (!validCounts.includes(inputs.length)) {
@@ -305,6 +389,9 @@ function buildResolvedPerformers(
   }
 
   const formation = createFormationFromPreset(formationPreset, inputs.length);
+  const marks = sceneBlocking
+    ? endFormationMarks(sceneBlocking.endFormation, inputs.length)
+    : null;
   const seenIds = new Set<string>();
 
   return inputs.map((input, index) => {
@@ -325,21 +412,18 @@ function buildResolvedPerformers(
       );
     }
     const position = input.position ?? slot!.position;
-    // Two conventions collide here. The formation library's "same-direction"
-    // default faces +Z, but every director camera fronts the group from -Z
-    // (computeFramingScene's wall-plane eye). A film's default cast must face
-    // its audience, so same-direction (and slot-less custom rosters) face -Z.
-    // Slots with their own facingAngle (circle, back-to-back, ...) and
-    // explicit facingDegrees keep their meaning.
     const facingAngle =
       input.facingDegrees !== undefined
         ? (input.facingDegrees * Math.PI) / 180
-        : slot
-          ? slot.facingAngle === undefined &&
-            formation.facingMode === "same-direction"
-            ? Math.PI
-            : calculateFacingAngle(slot, formation)
-          : Math.PI;
+        : slotFacingAngle(slot, formation);
+
+    // A performer's own blocking is dictation and wins outright: the director
+    // said where this one goes, which is not "and also join the formation."
+    const moves =
+      input.blocking ??
+      (marks && sceneBlocking
+        ? movesToMark(marks[index]!, position, sceneBlocking)
+        : []);
 
     return {
       id,
@@ -351,6 +435,12 @@ function buildResolvedPerformers(
       sequence: input.sequence,
       position: { ...position },
       facingAngle,
+      blocking: compileBlockingMoves(moves, {
+        durationSeconds,
+        performerId: id,
+        startPosition: position,
+        startFacingAngle: facingAngle,
+      }),
       beatOffset: input.beatOffset ?? 0,
       staffLengthCm: input.staffLengthCm,
       bluePlane: input.bluePlane,
@@ -563,6 +653,7 @@ function resolveScene(
       sequence: resolvedSequences[index]!,
       position: input.position,
       facingDegrees: input.facingDegrees,
+      blocking: input.blocking ?? cast?.defaults?.blocking,
       beatOffset: input.beatOffset,
       staffLengthCm: resolvedStaffLengths[index]!,
       bluePlane: resolvedBluePlanes[index]!,
@@ -594,7 +685,12 @@ function resolveScene(
     formationCatalog
   );
 
-  const performers = buildResolvedPerformers(resolvedFields, formation);
+  const performers = buildResolvedPerformers(
+    resolvedFields,
+    formation,
+    durationSeconds,
+    scene.performance?.blocking
+  );
 
   const showStage = scene.location?.showStage ?? false;
   const showAudience = scene.location?.showAudience ?? false;

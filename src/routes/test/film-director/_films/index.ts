@@ -4,6 +4,7 @@ import { ninePlanesFilm } from "./nine-planes";
 import { understudyNightFilm } from "./understudy-night";
 import { chanceSuiteFilm } from "./chance-suite";
 import { starOfFiveFilm } from "./star-of-five";
+import { breakTheStarFilm } from "./break-the-star";
 
 /**
  * The frame the marquee shows for a library film, and the cue that produced it.
@@ -87,6 +88,19 @@ export const FILM_LIBRARY: readonly FilmLibraryEntry[] = [
       src: "/films/posters/star.webp",
       sceneId: "star-reveal",
       offsetSeconds: 11,
+    },
+  },
+  {
+    key: "break",
+    label: "Break the Star",
+    film: breakTheStarFilm,
+    poster: {
+      src: "/films/posters/break.webp",
+      sceneId: "star-to-line",
+      // Mid-crossing, with all five in motion and none of them yet on the
+      // line — the formed line at the end is a row like any other row, and
+      // would not tell this film apart from Star of Five on the marquee.
+      offsetSeconds: 9,
     },
   },
 ];

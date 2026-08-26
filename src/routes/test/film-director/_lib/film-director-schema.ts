@@ -15,6 +15,7 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { directiveSchema } from "./directives";
 import { normalizeFilmDirectorInput } from "./normalize-film-director-input";
+import type { ResolvedDirectorBlockingKeyframe } from "./blocking-language";
 
 export const FILM_DIRECTOR_SCHEMA_VERSION = 1 as const;
 export const FILM_DIRECTOR_SCHEMA_VERSION_2 = 2 as const;
@@ -226,6 +227,54 @@ const performerSequenceSchema = z.union([
 
 export type DirectorPerformerSequence = z.infer<typeof performerSequenceSchema>;
 
+/**
+ * One blocking move. `direction` is the performer's own left/right/forward/
+ * back; `to` names a world point instead. The grammar and its defaults live in
+ * `blocking-language.ts`.
+ */
+const blockingMoveSchema = z
+  .object({
+    move: z.enum(["stand", "walk", "turn"]),
+    to: position2Schema.optional(),
+    direction: z.enum(["forward", "backward", "left", "right"]).optional(),
+    amount: z
+      .union([
+        z.object({ meters: finiteNumber.positive() }).strict(),
+        z.object({ degrees: finiteNumber }).strict(),
+      ])
+      .optional(),
+    facing: z
+      .union([
+        z.enum(["travel", "hold", "audience"]),
+        z.object({ degrees: finiteNumber }).strict(),
+      ])
+      .optional(),
+    durationSeconds: finiteNumber.positive().optional(),
+    easing: z.enum(DIRECTOR_EASINGS).optional(),
+  })
+  .strict();
+
+const blockingSchema = z.array(blockingMoveSchema).min(1).max(16);
+
+/**
+ * Cast-wide staging. `endFormation` walks everyone from their opening slot
+ * into the named formation — the spoken "and then they all form a line". A
+ * performer with their own `blocking` list ignores it.
+ */
+const sceneBlockingSchema = z
+  .object({
+    endFormation: formationIdSchema,
+    durationSeconds: finiteNumber.positive().optional(),
+    easing: z.enum(DIRECTOR_EASINGS).optional(),
+    facing: z
+      .union([
+        z.enum(["travel", "hold", "audience"]),
+        z.object({ degrees: finiteNumber }).strict(),
+      ])
+      .optional(),
+  })
+  .strict();
+
 const performerSchema = z
   .object({
     id: z.string().min(1).optional(),
@@ -238,6 +287,7 @@ const performerSchema = z
     position: position2Schema.optional(),
     facingDegrees: finiteNumber.optional(),
     beatOffset: finiteNumber.optional(),
+    blocking: blockingSchema.optional(),
     staffLengthCm: directiveSchema(finiteNumber.min(40).max(300)).optional(),
     bluePlane: directiveSchema(planeSchema).optional(),
     redPlane: directiveSchema(planeSchema).optional(),
@@ -252,6 +302,7 @@ const castDefaultsSchema = z
     prop: directiveSchema(propTypeSchema).optional(),
     effect: directiveSchema(effectIdSchema).optional(),
     effort: directiveSchema(effortIdSchema).optional(),
+    blocking: blockingSchema.optional(),
     staffLengthCm: directiveSchema(finiteNumber.min(40).max(300)).optional(),
     bluePlane: directiveSchema(planeSchema).optional(),
     redPlane: directiveSchema(planeSchema).optional(),
@@ -275,6 +326,7 @@ const performanceSchema = z
       .strict()
       .optional(),
     formation: directiveSchema(formationIdSchema).optional(),
+    blocking: sceneBlockingSchema.optional(),
     cast: castSchema.optional(),
     performers: z.array(performerSchema).min(1).max(8).optional(),
   })
@@ -450,6 +502,8 @@ export type DirectorSceneInput = z.infer<typeof sceneSchema>;
 export type DirectorCastInput = z.infer<typeof castSchema>;
 export type DirectorCameraInput = z.infer<typeof cameraSchema>;
 export type DirectorCameraTargetInput = z.infer<typeof cameraTargetSchema>;
+export type DirectorBlockingInput = z.infer<typeof blockingSchema>;
+export type DirectorSceneBlockingInput = z.infer<typeof sceneBlockingSchema>;
 export type DirectorCameraPreset = (typeof DIRECTOR_CAMERA_PRESETS)[number];
 export type DirectorInterpolation = (typeof DIRECTOR_INTERPOLATIONS)[number];
 export type DirectorEasing = (typeof DIRECTOR_EASINGS)[number];
@@ -468,8 +522,12 @@ export interface ResolvedDirectorPerformer {
   effect: EffectType;
   effort: EffortId;
   sequence: DirectorPerformerSequence;
+  /** Where this performer stands when the scene opens. */
   position: { x: number; z: number };
+  /** Which way they face when the scene opens. */
   facingAngle: number;
+  /** Their staging for the whole scene, always at least an opening hold. */
+  blocking: ResolvedDirectorBlockingKeyframe[];
   beatOffset: number;
   staffLengthCm: number | null;
   bluePlane: Plane;

@@ -16,9 +16,11 @@
   import {
     applyDirectorCameraFrame,
     applyDirectorEffectPresets,
+    applyDirectorPerformerMotion,
     applyDirectorSceneToViewer,
     buildDirectorViewerSeed,
   } from "../_lib/director-viewer-adapter";
+  import { sampleDirectorBlockingTrack } from "../_lib/director-blocking-track";
   import { getPreviewCameraFov } from "../_lib/director-camera-track";
   import { createDirectorSequenceLibrary } from "../_lib/director-sequence-library";
   import { createFilmDirectorTransitionProfiler } from "../_lib/film-director-transition-profiler.svelte";
@@ -102,6 +104,15 @@
       ? director.frame.performerStepOffsets
       : presentedScene.performance.performers.map(
           (performer) => performer.beatOffset
+        )
+  );
+  // Warmup renders a scene the playhead is not on, so its cast stands at its
+  // own opening marks rather than wherever scene one's track happens to be.
+  const presentedMotion = $derived(
+    director.preparation.complete
+      ? director.frame.performerMotion
+      : presentedScene.performance.performers.map((performer) =>
+          sampleDirectorBlockingTrack(performer.blocking, 0)
         )
   );
   const previewCameraFov = $derived(
@@ -421,6 +432,12 @@
     applyDirectorCameraFrame(viewer, camera, previewCameraFov);
   });
 
+  $effect(() => {
+    const motion = presentedMotion;
+    director.sceneReady;
+    applyDirectorPerformerMotion(viewer, motion);
+  });
+
   onDestroy(() => {
     activeTransitionToken += 1;
     director.setTransitionHolding(false);
@@ -447,7 +464,7 @@
     hideOrientationHelpers={true}
     fullScreen={true}
     enableEffects={true}
-    enablePerformerLocomotion={false}
+    enablePerformerLocomotion={true}
     {effectQualityTier}
     waitForPerformersOnInitialReveal={true}
     performerStepOffsets={presentedStepOffsets}

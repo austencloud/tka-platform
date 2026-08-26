@@ -699,6 +699,9 @@
             isPlaying={isPlaying && i < performerCount}
             enableLocomotion={enablePerformerLocomotion}
             enableFootPlanting={enablePerformerLocomotion}
+            isMoving={performer.isMoving}
+            moveSpeed={performer.moveSpeed}
+            moveDirection={performer.moveDirection}
             onAvatarSwapped={(avatarId) => {
               onAvatarSwapped(avatarId);
               markPerformerAvatarReady(performer.id, avatarId);
