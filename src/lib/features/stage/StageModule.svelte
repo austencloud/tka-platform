@@ -492,12 +492,17 @@
 {#snippet stagePanel()}
   <div class="stage-canvas">
     {#if viewer.webgl2Available}
+      <!-- word={null}: a Stage is a cast of lanes that each hold their own
+           sequence, so one title over the frame is a claim the document cannot
+           make. The timeline names each lane's clip, where it is true. Dropping
+           it also hands the top-left corner to the performer bar, which is what
+           a viewer of a multi-performer show reaches for first. -->
       <Viewer3DFullscreen
         sequenceData={sharedSequence}
         currentStep={stageState.currentBeat}
         isPlaying={stageState.isPlaying}
         bpm={choreography.bpm}
-        word={stageWord}
+        word={null}
         bluePropType={settings.bluePropType ?? settings.propType ?? "staff"}
         redPropType={settings.redPropType ?? settings.propType ?? "staff"}
         onChangeSequence={() => (pickerOpen = true)}
@@ -615,7 +620,9 @@
      it. It stops short of the rail so the tools stay reachable while editing. */
   .drill-layer {
     position: absolute;
-    top: 4.75rem;
+    /* Clears the top band the scene chrome owns: the performer bar on the left,
+       the command buttons on the right. The bar is the taller of the two. */
+    top: 5.75rem;
     right: 5.75rem;
     bottom: 0.75rem;
     left: 0.75rem;

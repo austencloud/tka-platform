@@ -31,6 +31,14 @@
     /** Leaves room for host-owned close/fullscreen controls above the rail. */
     topOffset?: string;
     /**
+     * The same reservation, but for the top-LEFT corner alone, where the
+     * performer bar pins itself. A host whose top band is occupied only on the
+     * right — commands there, nothing over the corner — publishes a smaller
+     * number here and lets the bar sit up in the corner while the inspector
+     * still clears the chrome opposite it. Unset, the bar follows topOffset.
+     */
+    topLeftOffset?: string;
+    /**
      * Leaves room for host-owned chrome below the rail, such as a transport.
      * Left unset, each surface keeps its own default sized for the sequence
      * viewer's bar.
@@ -66,6 +74,7 @@
     onStepForward,
     onStepBackward,
     topOffset = "12px",
+    topLeftOffset,
     bottomOffset,
     leftOffset = "0.75rem",
     allowSaveScene = true,
@@ -179,6 +188,7 @@
   data-presentation={layout.presentation}
   data-open={activeTool !== null || undefined}
   style:--scene-controls-top={topOffset}
+  style:--scene-performer-bar-top={topLeftOffset ?? topOffset}
   style:--scene-controls-bottom={bottomOffset}
   style:--scene-controls-left={leftOffset}
   style:--scene-inspector-width="{layout.panelWidth}px"
@@ -262,7 +272,7 @@
      content-sized so a solo scene shows two chips rather than an empty strip. */
   .performer-bar-anchor {
     position: absolute;
-    top: var(--scene-controls-top, 0.75rem);
+    top: var(--scene-performer-bar-top, var(--scene-controls-top, 0.75rem));
     left: var(--scene-controls-left, 0.75rem);
     z-index: 28;
     display: flex;

@@ -258,6 +258,9 @@
       <SceneControls
         {bpm}
         topOffset="76px"
+        topLeftOffset={word
+          ? undefined
+          : "max(1rem, env(safe-area-inset-top))"}
         bottomOffset={sceneControlsBottomOffset}
         leftOffset={sceneControlsLeftOffset}
         {allowSaveScene}
