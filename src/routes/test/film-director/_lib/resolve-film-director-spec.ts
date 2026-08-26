@@ -36,6 +36,7 @@ import {
   type FilmSeed,
 } from "./directive-random";
 import { resolveCastAxis } from "./resolve-directives";
+import { assertSequenceDirective } from "./sequence-language";
 import {
   DIRECTOR_EFFORT_IDS,
   DIRECTOR_FORMATIONS,
@@ -622,8 +623,12 @@ function resolveScene(
     (input) => input.sequence ?? cast?.defaults?.sequence ?? { source: "demo" }
   );
   resolvedSequences.forEach((sequence, index) => {
-    if (!("mirrorOf" in sequence)) return;
     const self = performerIds[index]!;
+    assertSequenceDirective(
+      sequence,
+      `Scene "${scene.id}", performer "${self}"`
+    );
+    if (!("mirrorOf" in sequence)) return;
     const targetIndex = performerIds.indexOf(sequence.mirrorOf);
     if (sequence.mirrorOf === self) {
       throw new Error(

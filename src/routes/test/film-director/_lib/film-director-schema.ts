@@ -13,9 +13,20 @@ import {
   type SceneEnvironmentId,
 } from "$lib/shared/3d/environments/domain/scene-environment";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { directiveSchema } from "./directives";
 import { normalizeFilmDirectorInput } from "./normalize-film-director-input";
 import type { ResolvedDirectorBlockingKeyframe } from "./blocking-language";
+import {
+  DIRECTOR_CONTINUITIES,
+  DIRECTOR_LOOP_PERIODS,
+  DIRECTOR_MOTION_TYPE_FILTERS,
+  DIRECTOR_ORIENTATIONS,
+  DIRECTOR_POSITION_GROUPS,
+  DIRECTOR_SEQUENCE_LEVELS,
+  type DirectorPerformerSequence,
+} from "./sequence-language";
 
 export const FILM_DIRECTOR_SCHEMA_VERSION = 1 as const;
 export const FILM_DIRECTOR_SCHEMA_VERSION_2 = 2 as const;
@@ -211,21 +222,166 @@ const cameraKeyframeSchema = z
   })
   .strict();
 
-/**
- * What one performer spins. `demo` is the film's shared sequence, `word`
- * spells a new one through the same generator the Create module uses, and
- * `mirrorOf` reflects another performer's sequence across the north-south
- * axis — the transform that makes a pair read as mirrored rather than merely
- * synchronized. Deliberately not a directive axis: "mirror her" names one
- * specific performer, so a random pick would have nothing to mean.
- */
-const performerSequenceSchema = z.union([
-  z.object({ source: z.literal("demo") }).strict(),
-  z.object({ word: z.string().min(1).max(24) }).strict(),
-  z.object({ mirrorOf: z.string().min(1) }).strict(),
+const positionRefSchema = z.union(
+  [
+    z.string().min(1),
+    z.object({ blue: z.string().min(1), red: z.string().min(1) }).strict(),
+    z
+      .object({
+        group: z.enum(DIRECTOR_POSITION_GROUPS),
+        location: z.string().min(1),
+      })
+      .strict(),
+  ],
+  {
+    error:
+      'A position is a name like "beta5", a {blue, red} location pair, or a {group, location} like {group: "beta", location: "south"}.',
+  }
+);
+
+const turnValueSchema = z.union([finiteNumber, z.literal("fl")]);
+const turnLaneSchema = z.union([
+  turnValueSchema,
+  z.array(turnValueSchema).min(1).max(32),
+]);
+const turnsSchema = z.union(
+  [
+    turnLaneSchema,
+    z
+      .object({
+        blue: turnLaneSchema.optional(),
+        red: turnLaneSchema.optional(),
+      })
+      .strict()
+      .refine((lanes) => lanes.blue !== undefined || lanes.red !== undefined, {
+        message: "A per-hand turn figure names blue, red, or both.",
+      }),
+    z.object({ intensity: finiteNumber }).strict(),
+  ],
+  {
+    error:
+      'Turns are one value (a number or "fl"), a repeating figure of them, {blue, red} for per-hand figures, or {intensity} to roll at random.',
+  }
+);
+
+const orientationSchema = z.enum(DIRECTOR_ORIENTATIONS);
+const startOrientationSchema = z.union([
+  orientationSchema,
+  z
+    .object({
+      blue: orientationSchema.optional(),
+      red: orientationSchema.optional(),
+    })
+    .strict()
+    .refine((hands) => hands.blue !== undefined || hands.red !== undefined, {
+      message: "A per-hand start orientation names blue, red, or both.",
+    }),
 ]);
 
-export type DirectorPerformerSequence = z.infer<typeof performerSequenceSchema>;
+const loopSchema = z.union([
+  z.enum(LOOPType),
+  z
+    .object({
+      type: z.enum(LOOPType),
+      period: z.enum(DIRECTOR_LOOP_PERIODS).optional(),
+    })
+    .strict(),
+]);
+
+const SEQUENCE_SOURCE_KEYS = ["source", "mirrorOf", "word", "length"] as const;
+const SEQUENCE_CONTROL_KEYS = [
+  "startPosition",
+  "startOrientation",
+  "turns",
+  "level",
+  "gridMode",
+  "flow",
+  "handPath",
+  "motionTypes",
+  "loop",
+  "mustContain",
+  "mustNotContain",
+  "endPosition",
+] as const;
+
+const quoted = (keys: readonly string[]) =>
+  keys.map((key) => `"${key}"`).join(", ");
+
+/**
+ * What one performer spins. `demo` is the film's shared sequence, `word` and
+ * `length` generate a new one through the same pipeline the Create module
+ * uses, and `mirrorOf` reflects another performer's sequence across the
+ * north-south axis — the transform that makes a pair read as mirrored rather
+ * than merely synchronized. Deliberately not a directive axis: "mirror her"
+ * names one specific performer, so a random pick would have nothing to mean.
+ *
+ * One flat object rather than a union of four, because a union reports every
+ * branch's failure at once: a misspelled `flow` would arrive buried under
+ * three irrelevant complaints about the branches that wanted a different
+ * source key. Exactly-one-source is a refinement instead, which leaves every
+ * other field free to fail in its own name. The grammar and its meaning live
+ * in `sequence-language.ts`.
+ */
+const performerSequenceSchema = z
+  .object({
+    source: z.literal("demo").optional(),
+    mirrorOf: z.string().min(1).optional(),
+    word: z.string().min(1).max(24).optional(),
+    length: z.number().int().min(1).max(64).optional(),
+    startPosition: positionRefSchema.optional(),
+    startOrientation: startOrientationSchema.optional(),
+    turns: turnsSchema.optional(),
+    level: z.literal(DIRECTOR_SEQUENCE_LEVELS).optional(),
+    gridMode: z.enum(GridMode).optional(),
+    flow: z.enum(DIRECTOR_CONTINUITIES).optional(),
+    handPath: z.enum(DIRECTOR_CONTINUITIES).optional(),
+    motionTypes: z.enum(DIRECTOR_MOTION_TYPE_FILTERS).optional(),
+    loop: loopSchema.optional(),
+    mustContain: z.array(z.string().min(1)).min(1).max(24).optional(),
+    mustNotContain: z.array(z.string().min(1)).min(1).max(24).optional(),
+    endPosition: z
+      .union([positionRefSchema, z.array(positionRefSchema).min(1).max(16)])
+      .optional(),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    const named = SEQUENCE_SOURCE_KEYS.filter(
+      (key) => value[key] !== undefined
+    );
+    if (named.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          'A sequence names one source: {source: "demo"}, a "word" to spell, a "length" to improvise, or a "mirrorOf" to reflect.',
+      });
+      return;
+    }
+    if (named.length > 1) {
+      ctx.addIssue({
+        code: "custom",
+        message: `A sequence names one source, but this one names ${quoted(named)}.`,
+      });
+      return;
+    }
+    if (named[0] === "word" || named[0] === "length") return;
+
+    const controls = SEQUENCE_CONTROL_KEYS.filter(
+      (key) => value[key] !== undefined
+    );
+    if (controls.length === 0) return;
+    ctx.addIssue({
+      code: "custom",
+      message:
+        named[0] === "mirrorOf"
+          ? `A mirror reflects another performer's sequence exactly, so it carries no controls of its own. Move ${quoted(controls)} to the performer being mirrored.`
+          : `The demo sequence is the film's shared one, so it carries no controls of its own. Remove ${quoted(controls)}, or spell a "word" of your own.`,
+    });
+  })
+  // The refinement above is the proof that exactly one source key is present,
+  // which is what makes the narrower union type true.
+  .transform((value) => value as DirectorPerformerSequence);
+
+export type { DirectorPerformerSequence };
 
 /**
  * One blocking move. `direction` is the performer's own left/right/forward/

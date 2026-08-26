@@ -70,6 +70,13 @@ export interface GenerationOptions {
   motionTypeFilter?: "no-dash" | "prefer-dash" | null | undefined;
 
   // Customize options - advanced constraints for generation
+  /**
+   * Pin the sequence to this start position. The orchestrator reads nothing
+   * from `startPosition` but its grid position, so a caller that has the
+   * position and no pictograph says it here instead of building a motionless
+   * one to carry a single string.
+   */
+  startPositionId?: GridPosition;
   /** @deprecated Use blockedStartPositions for multi-select */
   startPosition?: PictographData | null; // Specific start position constraint
   /** @deprecated Use endPositions for multi-select */

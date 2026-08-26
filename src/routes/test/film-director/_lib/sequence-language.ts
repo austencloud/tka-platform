@@ -1,0 +1,517 @@
+/**
+ * What a performer spins, in the words a director uses.
+ *
+ * "DJ, starting at beta at South, one turn every step" is four separate
+ * generator inputs. This is where the spoken form becomes the
+ * `GenerationOptions` the Create module's orchestrator already runs.
+ *
+ * The schema shapes these directives; meaning is checked here, the same split
+ * `blocking-language.ts` uses. A wrong grid location or an impossible turn
+ * gets a sentence naming the catalog, which a zod union cannot produce.
+ *
+ * Every axis here was traced to a `builder.build()` call before it was
+ * offered. `GenerationOptions.propContinuity` reads like the prop-continuity
+ * knob and reaches neither call — `flow` maps to `constraintPreset`, which is
+ * the one that arrives.
+ */
+
+import {
+  DifficultyLevel,
+  GenerationMode,
+  type GenerationOptions,
+  type LOOPType,
+} from "$lib/shared/foundation/domain/models/generation/generate-models";
+import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import {
+  Letter,
+  normalizeLetter,
+} from "$lib/shared/foundation/domain/models/letter";
+import {
+  GridLocation,
+  GridMode,
+  GridPosition,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  getGridLocationsFromPosition,
+  getGridPositionFromLocations,
+} from "$lib/shared/pictograph/grid/services/grid-position-deriver";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { getTurnPool, type TurnLanes } from "@tka/sequence-engine/generation";
+
+// ---------------------------------------------------------------------------
+// Catalogs
+// ---------------------------------------------------------------------------
+
+/** Spoken location names, and the grid codes they stand for. */
+export const DIRECTOR_LOCATION_NAMES = {
+  north: GridLocation.NORTH,
+  northeast: GridLocation.NORTHEAST,
+  east: GridLocation.EAST,
+  southeast: GridLocation.SOUTHEAST,
+  south: GridLocation.SOUTH,
+  southwest: GridLocation.SOUTHWEST,
+  west: GridLocation.WEST,
+  northwest: GridLocation.NORTHWEST,
+} as const satisfies Record<string, GridLocation>;
+
+/**
+ * Position groups a start or end position can be named by. These are the
+ * groups the grid-position deriver maps to hand locations — tau and terra are
+ * centric-mode positions it does not carry, so they cannot be resolved here.
+ */
+export const DIRECTOR_POSITION_GROUPS = [
+  "alpha",
+  "beta",
+  "gamma",
+  "zeta",
+  "eta",
+] as const;
+
+export const DIRECTOR_SEQUENCE_LEVELS = [1, 2, 3] as const;
+
+/** Start orientation per hand, as the engine's BuildOptions names them. */
+export const DIRECTOR_ORIENTATIONS = ["in", "out", "clock", "counter"] as const;
+
+/** The three-step continuity dial shared by prop spin and hand path. */
+export const DIRECTOR_CONTINUITIES = ["smooth", "mixed", "choppy"] as const;
+
+export const DIRECTOR_MOTION_TYPE_FILTERS = ["no-dash", "prefer-dash"] as const;
+
+export const DIRECTOR_LOOP_PERIODS = ["halved", "quartered"] as const;
+
+export type DirectorPositionGroup = (typeof DIRECTOR_POSITION_GROUPS)[number];
+export type DirectorSequenceLevel = (typeof DIRECTOR_SEQUENCE_LEVELS)[number];
+export type DirectorOrientation = (typeof DIRECTOR_ORIENTATIONS)[number];
+export type DirectorContinuity = (typeof DIRECTOR_CONTINUITIES)[number];
+export type DirectorMotionTypeFilter =
+  (typeof DIRECTOR_MOTION_TYPE_FILTERS)[number];
+export type DirectorLoopPeriod = (typeof DIRECTOR_LOOP_PERIODS)[number];
+
+/** The level a directed sequence generates at when it does not name one. */
+export const DEFAULT_SEQUENCE_LEVEL: DirectorSequenceLevel = 2;
+
+const DIFFICULTY_BY_LEVEL: Record<DirectorSequenceLevel, DifficultyLevel> = {
+  1: DifficultyLevel.BEGINNER,
+  2: DifficultyLevel.INTERMEDIATE,
+  3: DifficultyLevel.ADVANCED,
+};
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export type DirectorPositionRef =
+  | string
+  | { blue: string; red: string }
+  | { group: DirectorPositionGroup; location: string };
+
+export type DirectorTurnValue = number | "fl";
+
+export type DirectorTurnLane = DirectorTurnValue | DirectorTurnValue[];
+
+export type DirectorTurns =
+  | DirectorTurnLane
+  | { blue?: DirectorTurnLane; red?: DirectorTurnLane }
+  | { intensity: number };
+
+export type DirectorStartOrientation =
+  | DirectorOrientation
+  | { blue?: DirectorOrientation; red?: DirectorOrientation };
+
+export type DirectorLoop =
+  | LOOPType
+  | { type: LOOPType; period?: DirectorLoopPeriod };
+
+/**
+ * Everything a generated sequence can say beyond its source. Each field is one
+ * spoken axis; absent means the generator's own default.
+ */
+export interface DirectorSequenceControls {
+  startPosition?: DirectorPositionRef;
+  startOrientation?: DirectorStartOrientation;
+  turns?: DirectorTurns;
+  level?: DirectorSequenceLevel;
+  gridMode?: GridMode;
+  /** Prop spin continuity. */
+  flow?: DirectorContinuity;
+  handPath?: DirectorContinuity;
+  motionTypes?: DirectorMotionTypeFilter;
+  loop?: DirectorLoop;
+  mustContain?: string[];
+  mustNotContain?: string[];
+  endPosition?: DirectorPositionRef | DirectorPositionRef[];
+}
+
+export type DirectorGeneratedSequence =
+  | ({ word: string } & DirectorSequenceControls)
+  | ({ length: number } & DirectorSequenceControls);
+
+/**
+ * What one performer spins. `demo` is the film's shared sequence; `word` and
+ * `length` generate a new one through the same pipeline the Create module
+ * uses; `mirrorOf` reflects another performer's sequence across the
+ * north-south axis — the transform that makes a pair read as mirrored rather
+ * than merely synchronized.
+ *
+ * `demo` and `mirrorOf` take no controls. A mirror is its source's sequence
+ * reflected, so a turn figure written on the mirror would have to disagree
+ * with the thing it claims to reflect.
+ */
+export type DirectorPerformerSequence =
+  | { source: "demo" }
+  | { mirrorOf: string }
+  | DirectorGeneratedSequence;
+
+export function isGeneratedSequence(
+  sequence: DirectorPerformerSequence
+): sequence is DirectorGeneratedSequence {
+  return "word" in sequence || "length" in sequence;
+}
+
+// ---------------------------------------------------------------------------
+// Locations and positions
+// ---------------------------------------------------------------------------
+
+const LOCATION_BY_NAME = new Map<string, GridLocation>();
+for (const [name, code] of Object.entries(DIRECTOR_LOCATION_NAMES)) {
+  LOCATION_BY_NAME.set(name, code);
+  LOCATION_BY_NAME.set(code, code);
+}
+
+const LOCATION_CATALOG = Object.entries(DIRECTOR_LOCATION_NAMES)
+  .map(([name, code]) => `${code}/${name}`)
+  .join(", ");
+
+/** "North-East", "northeast" and "ne" all name the same grid point. */
+export function normalizeLocation(raw: string): GridLocation | null {
+  const key = raw.trim().toLowerCase().replace(/[\s_-]/g, "");
+  return LOCATION_BY_NAME.get(key) ?? null;
+}
+
+function requireLocation(raw: string, where: string): GridLocation {
+  const location = normalizeLocation(raw);
+  if (location) return location;
+  throw new Error(
+    `${where}: unknown grid location "${raw}". Locations are ${LOCATION_CATALOG}.`
+  );
+}
+
+const POSITION_GROUP_PATTERN = /^([a-z]+)\d+$/;
+
+const POSITIONS_BY_GROUP = new Map<DirectorPositionGroup, GridPosition[]>(
+  DIRECTOR_POSITION_GROUPS.map((group) => [
+    group,
+    Object.values(GridPosition).filter(
+      (position) => POSITION_GROUP_PATTERN.exec(position)?.[1] === group
+    ),
+  ])
+);
+
+const KNOWN_POSITIONS = new Set<string>(
+  [...POSITIONS_BY_GROUP.values()].flat()
+);
+
+const POSITION_CATALOG = DIRECTOR_POSITION_GROUPS.map((group) => {
+  const positions = POSITIONS_BY_GROUP.get(group)!;
+  return `${group}1-${positions.length}`;
+}).join(", ");
+
+function describePosition(position: GridPosition): string {
+  const [blue, red] = getGridLocationsFromPosition(position);
+  return `${position} (blue ${blue}, red ${red})`;
+}
+
+/**
+ * Turn a spoken position reference into a grid position.
+ *
+ * `{ group, location }` is the form a director actually says — "beta at
+ * South". It is unique inside beta, where both hands share a point, and
+ * ambiguous inside alpha and gamma, where either hand could be the one meant.
+ * Ambiguity throws with the candidates rather than picking one, because
+ * guessing here silently changes which hand leads.
+ */
+export function resolvePositionRef(
+  ref: DirectorPositionRef,
+  where: string
+): GridPosition {
+  if (typeof ref === "string") {
+    const name = ref.trim().toLowerCase();
+    if (!KNOWN_POSITIONS.has(name)) {
+      throw new Error(
+        `${where}: unknown position "${ref}". Positions are ${POSITION_CATALOG}.`
+      );
+    }
+    return name as GridPosition;
+  }
+
+  if ("blue" in ref) {
+    const blue = requireLocation(ref.blue, where);
+    const red = requireLocation(ref.red, where);
+    try {
+      return getGridPositionFromLocations(blue, red);
+    } catch {
+      throw new Error(
+        `${where}: no TKA position puts blue at ${blue} and red at ${red}.`
+      );
+    }
+  }
+
+  const location = requireLocation(ref.location, where);
+  const candidates = POSITIONS_BY_GROUP.get(ref.group)!.filter((position) => {
+    const [blue, red] = getGridLocationsFromPosition(position);
+    return blue === location || red === location;
+  });
+
+  if (candidates.length === 1) return candidates[0]!;
+  if (candidates.length === 0) {
+    throw new Error(
+      `${where}: no ${ref.group} position has a hand at ${location}.`
+    );
+  }
+  throw new Error(
+    `${where}: "${ref.group} at ${location}" could be ${candidates
+      .map(describePosition)
+      .join(" or ")}. Name one, or give a {blue, red} pair.`
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Turns
+// ---------------------------------------------------------------------------
+
+function isIntensity(turns: DirectorTurns): turns is { intensity: number } {
+  return typeof turns === "object" && !Array.isArray(turns) && "intensity" in turns;
+}
+
+function isLanePair(
+  turns: DirectorTurns
+): turns is { blue?: DirectorTurnLane; red?: DirectorTurnLane } {
+  return (
+    typeof turns === "object" &&
+    !Array.isArray(turns) &&
+    ("blue" in turns || "red" in turns)
+  );
+}
+
+function toLane(lane: DirectorTurnLane | undefined): DirectorTurnValue[] {
+  if (lane === undefined) return [0];
+  return Array.isArray(lane) ? [...lane] : [lane];
+}
+
+function formatPool(pool: readonly DirectorTurnValue[]): string {
+  return pool.map((value) => (value === "fl" ? '"fl"' : String(value))).join(", ");
+}
+
+function assertTurnAllowed(
+  value: DirectorTurnValue,
+  level: DirectorSequenceLevel,
+  hand: string,
+  where: string
+): void {
+  const pool = getTurnPool(level);
+  if (pool.includes(value)) return;
+  const upgrade =
+    level < 3 ? ' Level 3 adds halves and the float marker "fl".' : "";
+  throw new Error(
+    `${where}: ${hand} turn ${value === "fl" ? '"fl"' : value} is not available at level ${level}, which allows ${formatPool(pool)}.${upgrade}`
+  );
+}
+
+/**
+ * A turn figure becomes `turnPattern`, not `turnIntensity`. The pattern is
+ * read modulo its own length, so it still answers at the bridge steps the
+ * search inserts; an intensity allocation is a fixed-length roll that runs out
+ * past the original length and leaves those steps unturned.
+ */
+function compileTurns(
+  turns: DirectorTurns | undefined,
+  level: DirectorSequenceLevel,
+  where: string
+): { turnPattern?: TurnLanes; turnIntensity?: number } {
+  if (turns === undefined) return {};
+
+  if (isIntensity(turns)) {
+    const ceiling = Math.max(
+      ...getTurnPool(level).filter(
+        (value): value is number => typeof value === "number"
+      )
+    );
+    if (turns.intensity < 0 || turns.intensity > ceiling) {
+      throw new Error(
+        `${where}: turn intensity ${turns.intensity} is outside level ${level}, which tops out at ${ceiling}.`
+      );
+    }
+    return { turnIntensity: turns.intensity };
+  }
+
+  const lanes: TurnLanes = isLanePair(turns)
+    ? { blue: toLane(turns.blue), red: toLane(turns.red) }
+    : { blue: toLane(turns), red: toLane(turns) };
+
+  lanes.blue.forEach((value) => assertTurnAllowed(value, level, "blue", where));
+  lanes.red.forEach((value) => assertTurnAllowed(value, level, "red", where));
+  return { turnPattern: lanes };
+}
+
+// ---------------------------------------------------------------------------
+// Remaining axes
+// ---------------------------------------------------------------------------
+
+function compileOrientations(
+  orientation: DirectorStartOrientation | undefined
+): { blueStartOrientation?: string; redStartOrientation?: string } {
+  if (orientation === undefined) return {};
+  if (typeof orientation === "string") {
+    return {
+      blueStartOrientation: orientation,
+      redStartOrientation: orientation,
+    };
+  }
+  return {
+    ...(orientation.blue ? { blueStartOrientation: orientation.blue } : {}),
+    ...(orientation.red ? { redStartOrientation: orientation.red } : {}),
+  };
+}
+
+/**
+ * A LOOP directive also sets the mode. `loopType` and `period` are read only
+ * after `generateSequence` routes on `mode === CIRCULAR`, so a film that names
+ * a LOOP without the mode gets an ordinary sequence and no complaint.
+ */
+function compileLoop(
+  loop: DirectorLoop | undefined
+): Pick<GenerationOptions, "mode" | "loopType" | "period"> {
+  if (loop === undefined) return {};
+  const type = typeof loop === "string" ? loop : loop.type;
+  const period = typeof loop === "string" ? undefined : loop.period;
+  return {
+    mode: GenerationMode.CIRCULAR,
+    loopType: type,
+    ...(period ? { period: period as Period } : {}),
+  };
+}
+
+function compileLetters(
+  letters: string[] | undefined,
+  field: string,
+  where: string
+): Letter[] | undefined {
+  if (!letters) return undefined;
+  return letters.map((raw) => {
+    const letter = normalizeLetter(raw);
+    if (!letter) {
+      throw new Error(`${where}: ${field} names "${raw}", which is not a TKA letter.`);
+    }
+    return letter;
+  });
+}
+
+function compileEndPositions(
+  endPosition: DirectorPositionRef | DirectorPositionRef[] | undefined,
+  where: string
+): GridPosition[] | undefined {
+  if (endPosition === undefined) return undefined;
+  const refs = Array.isArray(endPosition) ? endPosition : [endPosition];
+  return refs.map((ref) => resolvePositionRef(ref, `${where} end position`));
+}
+
+// ---------------------------------------------------------------------------
+// The compiler
+// ---------------------------------------------------------------------------
+
+/**
+ * Turn one directed sequence into the options the generation orchestrator
+ * takes. Throws with a director-readable sentence when the directive names
+ * something that cannot exist.
+ */
+export function compileSequenceDirective(
+  sequence: DirectorGeneratedSequence,
+  where = "sequence"
+): GenerationOptions {
+  const level = sequence.level ?? DEFAULT_SEQUENCE_LEVEL;
+  const turns = compileTurns(sequence.turns, level, where);
+  const startPosition = sequence.startPosition
+    ? resolvePositionRef(sequence.startPosition, `${where} start position`)
+    : undefined;
+
+  return {
+    // A word wins over length inside the orchestrator; the field is required
+    // by GenerationOptions, so it echoes the spelled length.
+    ...("word" in sequence
+      ? { word: sequence.word, length: sequence.word.length }
+      : { length: sequence.length }),
+    gridMode: sequence.gridMode ?? GridMode.DIAMOND,
+    // The generation prop only shapes constraint checks — the rendered prop is
+    // whatever the performer was cast with.
+    propType: PropType.STAFF,
+    difficulty: DIFFICULTY_BY_LEVEL[level],
+    constraintPreset: sequence.flow ?? "smooth",
+    ...(sequence.handPath ? { handPathMode: sequence.handPath } : {}),
+    ...(sequence.motionTypes ? { motionTypeFilter: sequence.motionTypes } : {}),
+    ...(startPosition ? { startPositionId: startPosition } : {}),
+    ...turns,
+    ...compileOrientations(sequence.startOrientation),
+    ...compileLoop(sequence.loop),
+    ...(sequence.mustContain
+      ? {
+          mustContainLetters: compileLetters(
+            sequence.mustContain,
+            "mustContain",
+            where
+          ),
+        }
+      : {}),
+    ...(sequence.mustNotContain
+      ? {
+          mustNotContainLetters: compileLetters(
+            sequence.mustNotContain,
+            "mustNotContain",
+            where
+          ),
+        }
+      : {}),
+    ...(sequence.endPosition
+      ? { endPositions: compileEndPositions(sequence.endPosition, where) }
+      : {}),
+  };
+}
+
+/**
+ * Fail the film at load rather than at generation. The sequence library
+ * catches a failed build and falls back to the demo sequence, which is right
+ * for an engine that cannot satisfy a legal request and wrong for a directive
+ * that was never legal — that one should stop the film the way a bad mirror
+ * reference does.
+ */
+export function assertSequenceDirective(
+  sequence: DirectorPerformerSequence,
+  where: string
+): void {
+  if (!isGeneratedSequence(sequence)) return;
+  compileSequenceDirective(sequence, where);
+}
+
+/**
+ * Two performers who asked for exactly the same thing share one generated
+ * sequence. The key covers every control, so the same word with different
+ * turns stays two sequences.
+ */
+export function sequenceDirectiveKey(
+  sequence: DirectorPerformerSequence
+): string {
+  if ("mirrorOf" in sequence) return `mirrorOf:${sequence.mirrorOf}`;
+  if (!isGeneratedSequence(sequence)) return "demo";
+  return `generated:${stableJson(sequence)}`;
+}
+
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, member]) => member !== undefined)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([key, member]) => `${JSON.stringify(key)}:${stableJson(member)}`);
+    return `{${entries.join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
+}

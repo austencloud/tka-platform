@@ -48,7 +48,7 @@ the pick/oneOf/not vocabulary.
 | performer `position` | performer | literal `{x, z}` | `performerSchema` | Only required (and only meaningful) for `formation: "custom"`; otherwise the formation preset's slot geometry places the performer. |
 | performer `facingDegrees` | performer | literal number (degrees) | `performerSchema` | Falls back to the formation slot's computed facing angle when omitted. |
 | performer `beatOffset` | performer | literal number | `performerSchema` | Defaults to 0. |
-| performer `sequence` | performer | literal `{source:"demo"}` \| `{word}` \| `{mirrorOf}` | `performerSchema`; resolved async by `src/routes/test/film-director/_lib/director-sequence-library.ts` | Defaults to `{source:"demo"}` (the film's shared sequence). `{word}` spells a new one through `generationOrchestrator` with `constraintPreset: "smooth"`; `{mirrorOf}` reflects another performer's sequence across the north-south axis via `mirrorSequence`. Deliberately not directive-capable: `mirrorOf` names one specific performer, so a random pick would have nothing to mean. Rejections: `performer "<id>" cannot mirror themselves.`; `mirrors "<id>", who is not in this scene.`; `mirrors "<id>", who is already a mirror. Mirror the original instead.` Generation happens after the first frame, so a scene opens on the shared sequence and re-applies when the library resolves. |
+| performer `sequence` | performer | one source (`{source:"demo"}` \| `word` \| `length` \| `mirrorOf`) plus, for the two generated sources, any of the twelve controls below | `src/routes/test/film-director/_lib/sequence-language.ts` (grammar + meaning), `film-director-schema.ts` `performerSequenceSchema` (shape); resolved async by `director-sequence-library.ts` | Defaults to `{source:"demo"}` (the film's shared sequence). See "Sequence directives" below. Deliberately not directive-capable: `mirrorOf` names one specific performer, so a random pick would have nothing to mean. Rejections: `A sequence names one source…`; `performer "<id>" cannot mirror themselves.`; `mirrors "<id>", who is not in this scene.`; `mirrors "<id>", who is already a mirror. Mirror the original instead.` Generation happens after the first frame, so a scene opens on the shared sequence and re-applies when the library resolves. |
 | bpm | scene (`performance.bpm`) | literal number, 20–300 | `performanceSchema` | Defaults to 90. |
 | durationSeconds | scene | literal number, 1–60 | `sceneSchema` | Defaults to 8. |
 | transition | scene | literal `{kind, durationSeconds}` | `transitionSchema` | `kind` ∈ `cut` / `environment-dissolve` / `fade-through-black`. First scene defaults to `cut` (0s); later scenes default to `environment-dissolve` (0.8s). |
@@ -63,6 +63,59 @@ the pick/oneOf/not vocabulary.
 | camera keyframes | scene | literal array of `{atSeconds, position, target?, fovDeg?, interpolation?, easing?}` | `film-director-schema.ts` `cameraKeyframeSchema` | Mutually exclusive with the framing grammar (`shotSize`/`angle`/`position`/`moves`/`subject`) and with `preset` (unless `preset: "custom"`, which requires at least one keyframe). |
 | camera framing grammar | scene | `subject` + `shotSize`/`angle`/`position` + `moves[]` | `src/routes/test/film-director/_lib/camera-language.ts` | Exclusivity rules enforced by `cameraSchema`'s `.refine()`s (keyframes vs. framing; preset vs. framing; `subject` vs. `target`). Per-move unit/direction contradictions enforced by `validateMove()` in `camera-language.ts` (e.g. `orbit` takes degrees + cw/ccw only, `push-in`/`pull-back` take meters and no direction). |
 | cast block | scene (`performance.cast`) | `{count: 1-8, defaults?, performers?: override[]}` | `castSchema` | Mutually exclusive with `performance.performers` (schema `.refine()`). Overrides addressed by `id` (`performer-<n>`) fill their named slot; overrides with no `id` fill remaining slots in array order. An `id` that doesn't match any of the cast's performers rejects: `Cast override "<id>" does not match any of the <n> performers.` |
+
+## Sequence directives
+
+A performer's `sequence` names exactly one source, and the two generated
+sources take controls. "DJ, starting at beta at south, one turn every step" is
+`{word: "DJ", startPosition: {group: "beta", location: "south"}, turns: 1}`.
+
+| Source | Shape | Meaning |
+|---|---|---|
+| `{source: "demo"}` | literal | The film's shared sequence. Takes no controls. |
+| `{mirrorOf: "<performer id>"}` | literal | That performer's sequence reflected across the north-south axis (`mirrorSequence`). Takes no controls — a mirror reflects its source exactly, so a control written here would have to disagree with the thing it claims to reflect. |
+| `{word: "DJDJDJ"}` | 1–24 chars | Spell it. `length` echoes the spelled length. |
+| `{length: 8}` | 1–64 | Improvise that many steps. |
+
+Controls, all optional, all on the generated sources only. Each compiles to a
+`GenerationOptions` field the orchestrator actually reads — verified call-site
+by call-site, because `GenerationOptions.propContinuity` reads like the
+prop-continuity knob and reaches neither `builder.build()`.
+
+| Control | Spoken form | Compiles to |
+|---|---|---|
+| `startPosition` | `"beta5"`, `{blue: "s", red: "s"}`, or `{group: "beta", location: "south"}` | `startPositionId` |
+| `endPosition` | one position ref or an array of up to 16 | `endPositions` |
+| `turns` | `1` · `[1, 0]` · `{blue: [1, 0], red: 0}` · `{intensity: 2}` | `turnPattern`, or `turnIntensity` for the `{intensity}` form |
+| `level` | `1` \| `2` \| `3` (default 2) | `difficulty` (beginner/intermediate/advanced), and the turn pool the figure is checked against |
+| `startOrientation` | `"in"` \| `"out"` \| `"clock"` \| `"counter"`, or `{blue, red}` | `blueStartOrientation` / `redStartOrientation` |
+| `gridMode` | `GridMode` value (default `diamond`) | `gridMode` |
+| `flow` | `"smooth"` \| `"mixed"` \| `"choppy"` (default smooth) | `constraintPreset` — the prop-continuity axis |
+| `handPath` | same three | `handPathMode` |
+| `motionTypes` | `"no-dash"` \| `"prefer-dash"` | `motionTypeFilter` |
+| `loop` | a `LOOPType`, or `{type, period: "halved" \| "quartered"}` | `loopType` + `period`, **and** `mode: CIRCULAR` — without the mode the engine never reads either, so a LOOP directive sets it |
+| `mustContain` | letters, up to 24 | `mustContainLetters` |
+| `mustNotContain` | letters, up to 24 | `mustNotContainLetters` |
+
+Notes worth knowing before writing one:
+
+- **A turn figure repeats; an intensity runs out.** `turns` becomes
+  `turnPattern`, read modulo its own length, so it still answers at the bridge
+  steps the search inserts. `{intensity}` is a fixed-length random allocation
+  that leaves inserted steps unturned. Say a figure when you mean "every step."
+- **A hand left out of a `{blue, red}` figure rests.** `{blue: [1, 0]}` gives
+  red `[0]`, not red's default roll.
+- **`{group, location}` is unambiguous only for beta**, where both hands share
+  a point. Alpha has two candidates per location and gamma four, so those throw
+  and list them: `"alpha at s" could be alpha1 (blue s, red n) or alpha5 (blue
+  n, red s). Name one, or give a {blue, red} pair.` Locations accept `n`,
+  `north`, or `North-East`.
+- **The level gates the turn pool.** Level 1 allows only 0, level 2 whole turns
+  to 3, level 3 adds halves and the float marker `"fl"`. A turn outside the
+  level names the pool it violated.
+- **An illegal directive stops the film at load**, the way a bad `mirrorOf`
+  does. An engine that cannot satisfy a legal request still falls back to the
+  demo sequence with a console reason.
 
 ## Camera orbit direction convention
 

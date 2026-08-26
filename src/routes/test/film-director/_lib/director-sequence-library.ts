@@ -2,29 +2,30 @@
  * Resolves each performer's directed sequence into real SequenceData.
  *
  * The film schema lets a performer say what they spin — the shared demo, a
- * spelled word, or another performer's sequence mirrored. Turning a word into
- * motion means running the generator, which is async, so this sits between the
- * synchronous spec resolver and the location: the scene asks for a scene's
- * sequences, gets whatever has resolved so far, and re-applies once the rest
- * land.
+ * directed sequence, or another performer's sequence mirrored. Generating a
+ * directed sequence is async, so this sits between the synchronous spec
+ * resolver and the location: the scene asks for a scene's sequences, gets
+ * whatever has resolved so far, and re-applies once the rest land.
  *
  * Everything is cached by what it is rather than by who asked for it, so two
- * performers spelling the same word share one generated sequence, and the
- * mirror of a word is generated once no matter how many performers reflect it.
+ * performers who directed the same sequence share one generated result, and
+ * the mirror of it is generated once no matter how many performers reflect it.
  */
 
 import { generationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
 import { mirrorSequence } from "$lib/shared/create/services/sequence-transformer";
-import { DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 import type {
-  DirectorPerformerSequence,
   ResolvedDirectorScene,
   ResolvedFilmDirectorSpec,
 } from "./film-director-schema";
+import {
+  compileSequenceDirective,
+  isGeneratedSequence,
+  sequenceDirectiveKey,
+  type DirectorPerformerSequence,
+} from "./sequence-language";
 
 export interface DirectorSequenceLibrary {
   /**
@@ -40,11 +41,6 @@ export interface DirectorSequenceLibrary {
 
 const EMPTY: ReadonlyMap<string, SequenceData> = new Map();
 
-/** A word spells the same motion no matter which performer asked for it. */
-function sourceKey(sequence: DirectorPerformerSequence): string {
-  return "word" in sequence ? `word:${sequence.word}` : "demo";
-}
-
 export function createDirectorSequenceLibrary(
   demoSequence: SequenceData
 ): DirectorSequenceLibrary {
@@ -58,25 +54,15 @@ export function createDirectorSequenceLibrary(
   function resolveSource(
     sequence: DirectorPerformerSequence
   ): Promise<SequenceData> {
-    const key = sourceKey(sequence);
+    const key = sequenceDirectiveKey(sequence);
     const existing = sources.get(key);
     if (existing) return existing;
 
-    const created =
-      "word" in sequence
-        ? generationOrchestrator.generateSequence({
-            word: sequence.word,
-            // `word` wins over `length` inside the orchestrator; the field is
-            // required by GenerationOptions, so it echoes the spelled length.
-            length: sequence.word.length,
-            gridMode: GridMode.DIAMOND,
-            // The generation prop only shapes constraint checks — the rendered
-            // prop is whatever the performer was cast with.
-            propType: PropType.STAFF,
-            difficulty: DifficultyLevel.INTERMEDIATE,
-            constraintPreset: "smooth",
-          })
-        : Promise.resolve(demoSequence);
+    const created = isGeneratedSequence(sequence)
+      ? generationOrchestrator.generateSequence(
+          compileSequenceDirective(sequence)
+        )
+      : Promise.resolve(demoSequence);
 
     sources.set(key, created);
     return created;
@@ -85,7 +71,7 @@ export function createDirectorSequenceLibrary(
   function resolveMirror(
     sequence: DirectorPerformerSequence
   ): Promise<SequenceData> {
-    const key = `mirror:${sourceKey(sequence)}`;
+    const key = `mirror:${sequenceDirectiveKey(sequence)}`;
     const existing = mirrors.get(key);
     if (existing) return existing;
 

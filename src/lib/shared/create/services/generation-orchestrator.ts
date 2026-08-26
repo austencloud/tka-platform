@@ -82,6 +82,20 @@ function resolveEndPositions(
   return ends.size > 0 ? [...ends] : undefined;
 }
 
+/**
+ * The engine's pinned start position.
+ *
+ * `startPositionId` is the direct form. `startPosition` is the legacy
+ * PictographData whose `.startPosition` field carries the same grid position;
+ * a start-position pictograph is static, so its start and end are one value.
+ */
+function resolveStartPosition(options: GenerationOptions): string | undefined {
+  if (options.startPositionId) return String(options.startPositionId);
+  return options.startPosition?.startPosition
+    ? String(options.startPosition.startPosition)
+    : undefined;
+}
+
 export class GenerationOrchestrator {
   constructor(
     private readonly variationProvider: BrowserVariationProvider,
@@ -120,9 +134,7 @@ export class GenerationOrchestrator {
       gridMode: String(options.gridMode),
       level,
       constraintOptions: this.mapConstraints(options),
-      startPosition: options.startPosition?.startPosition
-        ? String(options.startPosition.startPosition)
-        : undefined,
+      startPosition: resolveStartPosition(options),
       blockedStartPositions: options.blockedStartPositions?.map(String),
       endPositions: resolveEndPositions(options),
       mustContainLetters: options.mustContainLetters?.map(String),
@@ -192,9 +204,7 @@ export class GenerationOrchestrator {
       gridMode: String(options.gridMode),
       level,
       constraintOptions: this.mapConstraints(options),
-      startPosition: options.startPosition?.startPosition
-        ? String(options.startPosition.startPosition)
-        : undefined,
+      startPosition: resolveStartPosition(options),
       blockedStartPositions: options.blockedStartPositions?.map(String),
       endPositions: resolveEndPositions(options),
       mustContainLetters: options.mustContainLetters?.map(String),

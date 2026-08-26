@@ -18,9 +18,11 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
  * feet start to skate. Each pair instead gets the window its own distance needs
  * at a shared 0.75 m/s.
  *
- * Casting, sequence words and mirroring are Star of Five's, unchanged — see
- * that file for why DEFDEF, SAILOR and ORBITS are the words and why these five
- * avatar ids read the way they do on screen.
+ * Casting and mirroring are Star of Five's — see that file for why SAILOR and
+ * ORBITS are the words and why these five avatar ids read the way they do on
+ * screen. The lead is directed rather than merely spelled: DJ out of beta at
+ * south, one turn on every step, so the featured performer's spin is pinned
+ * where the star's tip points instead of wherever the generator started.
  */
 export const breakTheStarFilm: FilmDirectorInput = {
   version: 3,
@@ -49,7 +51,11 @@ export const breakTheStarFilm: FilmDirectorInput = {
             prop: PropType.CAPSULE_BATON,
             effect: "led",
             effort: "linear",
-            sequence: { word: "DEFDEF" },
+            sequence: {
+              word: "DJDJDJ",
+              startPosition: { group: "beta", location: "south" },
+              turns: 1,
+            },
             position: { x: 0, z: -2.6 },
             facingDegrees: 180,
             bluePlane: "wall",
