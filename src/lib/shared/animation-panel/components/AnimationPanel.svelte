@@ -35,6 +35,7 @@
   import PathShapePanel from "$lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import type { PropChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
   import IconRailNav from "../pill-nav/IconRailNav.svelte";
   import ControlDock, {
     type ControlDockTab,
@@ -94,6 +95,13 @@
      *  and mandala tiles can preview THIS sequence instead of a stand-in. */
     sequence?: { word?: string | null; steps?: ReadonlyArray<{ letter?: string | null }> | null } | null;
     onPropChange?: (propType: PropType) => void;
+    /**
+     * Buugeng chirality seam forwarded to the props pill's picker. Optional
+     * because two hosts (ProfilePhotoPicker, PostStudio) keep prop type local
+     * to themselves — a chirality control there would write a global setting
+     * the surrounding preview never reads.
+     */
+    propChirality?: PropChiralitySeam;
     onExport?: () => void;
     onCancel?: () => void;
     secondaryActions?: (ControlDockLink | ControlDockAction)[];
@@ -130,6 +138,7 @@
     selectedPropType,
     sequence = null,
     onPropChange,
+    propChirality,
     onExport,
     onCancel,
     secondaryActions = [],
@@ -548,6 +557,7 @@
       <mod.default
         {selectedPropType}
         onSelect={onPropChange}
+        chirality={propChirality}
         variant="inline"
         flat={layout === "bottom"}
       />

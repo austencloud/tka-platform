@@ -14,6 +14,7 @@
   import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import BentoPropGrid from "./BentoPropGrid.svelte";
+  import type { PropChiralitySeam } from "./prop-chirality-seam";
   import CatDogToggle from "./CatDogToggle.svelte";
 
   let {
@@ -28,6 +29,7 @@
     showCatDogToggle = false,
     catDogEnabled = false,
     onCatDogToggle,
+    chirality,
   } = $props<{
     isOpen?: boolean;
     selectedPropType: PropType;
@@ -46,6 +48,12 @@
     catDogEnabled?: boolean;
     /** Callback when user toggles cat/dog mode */
     onCatDogToggle?: () => void;
+    /**
+     * Buugeng chirality seam, forwarded to the grid. The sheet is opened per
+     * hand, so hosts pass the hand this sheet is editing and it writes that
+     * hand only — blue Standard beside red Mirrored is the pairing that nests.
+     */
+    chirality?: PropChiralitySeam;
   }>();
 
   // Desktop (side-by-side layout, i.e. nav sidebar present) opens the picker as
@@ -158,6 +166,7 @@
       {title}
       variant="inline"
       onSelect={handlePropSelect}
+      {chirality}
     />
   </div>
 </Drawer>

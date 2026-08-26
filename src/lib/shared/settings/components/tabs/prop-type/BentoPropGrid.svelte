@@ -20,6 +20,9 @@
     isPremiumCosmeticProp,
   } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import PropTypeButton from "./PropTypeButton.svelte";
+  import PropChiralityRow from "./PropChiralityRow.svelte";
+  import type { PropChiralitySeam } from "./prop-chirality-seam";
+  import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
   import { isPropUnlocked } from "$lib/shared/gamification/state/prop-collection-state.svelte";
   import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
   import PremiumBadge from "$lib/shared/subscription/components/PremiumBadge.svelte";
@@ -49,6 +52,7 @@
     onSelect,
     variant = "panel",
     flat = false,
+    chirality,
   } = $props<{
     selectedPropType: PropType;
     color?: "blue" | "red" | (string & {});
@@ -61,6 +65,14 @@
      * visible count beats grouping.
      */
     flat?: boolean;
+    /**
+     * Buugeng chirality seam. Absent means the picker renders no chirality
+     * row, so hosts that should never expose it (the deck releaser renders
+     * canonical print cards) are unaffected by omission rather than by an
+     * opt-out. `hand` is what the accessible name reads; omit it when the
+     * host writes both hands, as the single-prop hosts do for prop type.
+     */
+    chirality?: PropChiralitySeam;
   }>();
 
   // Active props grouped into the flat picker sections. Each prop renders as
@@ -185,6 +197,15 @@
       </div>
     {/if}
   </div>
+
+  {#if chirality && isBuugengFamilyProp(selectedPropType)}
+    <PropChiralityRow
+      propType={selectedPropType}
+      flipped={chirality.flipped}
+      hand={chirality.hand}
+      onChange={chirality.onChange}
+    />
+  {/if}
 
   {#if premiumNudgeFor}
     <div class="premium-nudge-dock">

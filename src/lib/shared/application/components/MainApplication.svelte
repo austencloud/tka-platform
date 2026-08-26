@@ -23,6 +23,7 @@
 <script lang="ts">
   import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import { settingsService as settingsServiceSingleton } from "$lib/shared/settings/state/settings-state.svelte";
+  import { createGlobalChiralitySeam } from "../../settings/components/tabs/prop-type/prop-chirality-seam";
   import WhatsNewChecker from "../../settings/components/WhatsNewChecker.svelte";
   import ErrorModal from "../../error/components/ErrorModal.svelte";
   import ErrorToast from "../../error/components/ErrorToast.svelte";
@@ -749,6 +750,9 @@
           showTabs={catDogMode}
           bind:activeTab={propDrawerActiveTab}
           autoClose={!catDogMode}
+          chirality={createGlobalChiralitySeam(
+            catDogMode ? propDrawerActiveTab : undefined
+          )}
         />
       {/await}
     {/if}

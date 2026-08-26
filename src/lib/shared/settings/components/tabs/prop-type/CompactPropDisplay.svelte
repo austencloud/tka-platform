@@ -5,8 +5,9 @@
   Cat Dog mode: Two rows (blue/red) each with icon, name, controls
 
   Read-only current-selection readout. Selection happens in the inline
-  BentoPropGrid alongside it; this panel just reflects the active prop(s) and
-  hosts the buugeng flip control.
+  BentoPropGrid alongside it, which also owns the buugeng chirality control —
+  this panel only reflects the active prop(s), mirroring the tile art when a
+  buugeng is flipped.
 -->
 <script lang="ts">
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -26,7 +27,6 @@
     catDogMode = false,
     blueBuugengFlipped = false,
     redBuugengFlipped = false,
-    onToggleFlip,
     onToggleBig,
   } = $props<{
     bluePropType: PropType;
@@ -34,7 +34,6 @@
     catDogMode?: boolean;
     blueBuugengFlipped?: boolean;
     redBuugengFlipped?: boolean;
-    onToggleFlip?: (hand: "blue" | "red") => void;
     onToggleBig?: (hand: "blue" | "red") => void;
   }>();
 
@@ -90,18 +89,6 @@
           ></i>
         </button>
       {/if}
-      {#if blueIsBuugeng}
-        <button
-          class="action-btn"
-          class:active={blueBuugengFlipped}
-          onclick={() => onToggleFlip?.("blue")}
-          aria-label="Flip buugeng"
-          aria-pressed={blueBuugengFlipped}
-          title="Flip prop (asymmetric)"
-        >
-          <i class="fas fa-arrows-left-right" aria-hidden="true"></i>
-        </button>
-      {/if}
     </span>
   </div>
 
@@ -138,18 +125,6 @@
               class="fas fa-up-right-and-down-left-from-center"
               aria-hidden="true"
             ></i>
-          </button>
-        {/if}
-        {#if redIsBuugeng}
-          <button
-            class="action-btn"
-            class:active={redBuugengFlipped}
-            onclick={() => onToggleFlip?.("red")}
-            aria-label="Flip buugeng"
-            aria-pressed={redBuugengFlipped}
-            title="Flip prop (asymmetric)"
-          >
-            <i class="fas fa-arrows-left-right" aria-hidden="true"></i>
           </button>
         {/if}
       </span>

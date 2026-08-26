@@ -20,6 +20,7 @@
   import CatDogToggle from "./prop-type/CatDogToggle.svelte";
   import PresetChipBar from "./prop-type/PresetChipBar.svelte";
   import CompactPropDisplay from "./prop-type/CompactPropDisplay.svelte";
+  import type { PropChiralitySeam } from "./prop-type/prop-chirality-seam";
   import BentoPropGrid from "./prop-type/BentoPropGrid.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
@@ -324,22 +325,38 @@
     updateCurrentPreset();
   }
 
-  // Buugeng flip toggle
-  function handleToggleFlip(hand: "blue" | "red") {
+  // Buugeng chirality. Written through the tab's own local mirrors rather than
+  // the global seam, because this tab keeps $state copies of every setting and
+  // publishes them through onUpdate — a direct settings write would leave the
+  // mirrors (and the preset row that reads them) stale.
+  function setChirality(hand: "blue" | "red", flipped: boolean) {
     hapticService?.trigger("selection");
 
     if (hand === "blue") {
-      blueBuugengFlipped = !blueBuugengFlipped;
+      blueBuugengFlipped = flipped;
       onUpdate?.({ key: "blueBuugengFlipped", value: blueBuugengFlipped });
+      // Outside cat/dog mode the two hands are one choice, so blue carries red.
       if (!catDogMode) {
         redBuugengFlipped = blueBuugengFlipped;
         onUpdate?.({ key: "redBuugengFlipped", value: redBuugengFlipped });
       }
     } else {
-      redBuugengFlipped = !redBuugengFlipped;
+      redBuugengFlipped = flipped;
       onUpdate?.({ key: "redBuugengFlipped", value: redBuugengFlipped });
     }
     updateCurrentPreset();
+  }
+
+  function chiralitySeam(hand: "blue" | "red"): PropChiralitySeam {
+    return {
+      get flipped() {
+        return hand === "blue" ? blueBuugengFlipped : redBuugengFlipped;
+      },
+      // Outside cat/dog mode one control writes both hands, so it names
+      // neither — same contract as the single-prop hosts.
+      hand: catDogMode ? hand : undefined,
+      onChange: (flipped: boolean) => setChirality(hand, flipped),
+    };
   }
 </script>
 
@@ -364,7 +381,6 @@
         {catDogMode}
         {blueBuugengFlipped}
         {redBuugengFlipped}
-        onToggleFlip={handleToggleFlip}
         onToggleBig={handleToggleBig}
       />
     </div>
@@ -431,6 +447,7 @@
           color="blue"
           title={t("settings_select_left_prop")}
           onSelect={handleInlineSelect}
+          chirality={chiralitySeam("blue")}
         />
       {:else}
         <BentoPropGrid
@@ -438,6 +455,7 @@
           color="red"
           title={t("settings_select_right_prop")}
           onSelect={handleInlineSelectRed}
+          chirality={chiralitySeam("red")}
         />
       {/if}
     {:else if catDogMode}
@@ -448,12 +466,14 @@
           color="blue"
           title={t("settings_select_left_prop")}
           onSelect={handleInlineSelect}
+          chirality={chiralitySeam("blue")}
         />
         <BentoPropGrid
           selectedPropType={selectedRedPropType}
           color="red"
           title={t("settings_select_right_prop")}
           onSelect={handleInlineSelectRed}
+          chirality={chiralitySeam("red")}
         />
       </div>
     {:else}
@@ -462,6 +482,7 @@
         color="blue"
         title="Select Prop"
         onSelect={handleInlineSelect}
+        chirality={chiralitySeam("blue")}
       />
     {/if}
   </section>

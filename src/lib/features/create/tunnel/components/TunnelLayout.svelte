@@ -18,6 +18,7 @@
   import { TunnelViewController } from "$lib/shared/sequence-viewer/tunnel/tunnel-view-controller.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+  import { createGlobalChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
   import { getTunnelCreatorContext } from "../context/tunnel-creator-context";
   import type { TunnelCreatorMode } from "../state/tunnel-creator-state.svelte";
   import TunnelPerformerCard from "./TunnelPerformerCard.svelte";
@@ -255,6 +256,7 @@
         onPlaybackToggle={() => (playing = !playing)}
         bluePropType={propType}
         onPropChange={changeProp}
+        propChirality={createGlobalChiralitySeam()}
         exporting={false}
         {reduceMotion}
       />

@@ -27,6 +27,7 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
   import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
+  import { createGlobalChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { StepOperator } from "$lib/features/create/shared/services/step-operator";
@@ -577,6 +578,7 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   color={propSheetColor}
   title={propSheetColor === "blue" ? "Select Blue Prop" : "Select Red Prop"}
   onSelect={handlePropSelect}
+  chirality={createGlobalChiralitySeam(propSheetColor)}
 />
 
 <style>

@@ -75,15 +75,36 @@
     </button>
   {/if}
   {#if isBuugeng}
+    <!--
+      The one-click per-color path. The full chirality picker now lives in the
+      prop sheet this row opens (BentoPropGrid's chirality row), but keeping
+      this shortcut saves a sheet open for the flip you make most often.
+      aria-pressed and the visible word replace what used to be a title
+      attribute and an unlabelled icon.
+    -->
     <button
       class="chirality-btn"
       class:compact
       class:flipped
       onclick={toggleChirality}
-      aria-label="Flip {color} buugeng chirality"
-      title={flipped ? "Flipped" : "Normal"}
+      aria-label="{color} buugeng chirality: {flipped
+        ? 'mirrored'
+        : 'standard'}"
+      aria-pressed={flipped}
     >
       <i class="fas fa-arrows-left-right" aria-hidden="true"></i>
+      {#if !compact}
+        <!--
+          Ghost-sizer: both words occupy the same grid cell so the cell is as
+          wide as the longer of them and the row never shifts on toggle
+          (.claude/rules/no-layout-shift.md).
+        -->
+        <span class="chirality-word">
+          <span class="sizer" aria-hidden="true">Mirrored</span>
+          <span class="sizer" aria-hidden="true">Standard</span>
+          <span class="live">{flipped ? "Mirrored" : "Standard"}</span>
+        </span>
+      {/if}
     </button>
   {/if}
 </div>
@@ -223,7 +244,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
+    gap: 6px;
+    min-width: 36px;
+    padding: 0 8px;
     height: 36px;
     border-radius: 8px;
     border: 1px solid;
@@ -233,8 +256,25 @@
     flex-shrink: 0;
   }
 
+  .chirality-word {
+    display: inline-grid;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+  }
+
+  .chirality-word .sizer,
+  .chirality-word .live {
+    grid-area: 1 / 1;
+    white-space: nowrap;
+  }
+
+  .chirality-word .sizer {
+    visibility: hidden;
+  }
+
   /* Compact chirality button */
   .chirality-btn.compact {
+    padding: 0;
     width: var(--min-touch-target, 44px);
     height: var(--min-touch-target, 44px);
     font-size: var(--font-size-compact, 12px);

@@ -4,6 +4,7 @@
   import IconRailNav from "$lib/shared/animation-panel/pill-nav/IconRailNav.svelte";
   import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
   import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
+  import { createGlobalChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import ControlDock, {
     type ControlDockAction,
@@ -187,6 +188,7 @@
           onSelect={onPropChange}
           variant="inline"
           flat={dense}
+          chirality={createGlobalChiralitySeam()}
         />
       {/if}
     </div>
