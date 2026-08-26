@@ -311,6 +311,7 @@
         {stageWidth}
         {stageDepth}
         {stageZOffset}
+        showDirectionCues={sceneFeatures.isEnabled("stage")}
       />
     {/await}
   </T.Group>
@@ -426,7 +427,12 @@
       {/await}
     {:else if config.scene === "blossom"}
       {#await import("../scenes/BlossomScene.svelte") then { default: BlossomScene }}
-        <BlossomScene {stageWidth} {stageDepth} {stageZOffset} />
+        <BlossomScene
+          {stageWidth}
+          {stageDepth}
+          {stageZOffset}
+          showDirectionCues={sceneFeatures.isEnabled("stage")}
+        />
       {/await}
     {:else if config.scene === "rainbow"}
       {#await import("../scenes/RainbowScene.svelte") then { default: RainbowScene }}

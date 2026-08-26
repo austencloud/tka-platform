@@ -35,6 +35,8 @@
     stageWidth?: number;
     stageDepth?: number;
     stageZOffset?: number;
+    /** Forwarded to the deck: practice orientation markings on or off. */
+    showDirectionCues?: boolean;
     /** Retained film worlds load while hidden but only the active one owns globals. */
     active?: boolean;
   }
@@ -44,6 +46,7 @@
     stageDepth = 6,
     stageZOffset = 0,
     active = true,
+    showDirectionCues = true,
   }: Props = $props();
 
   // ── Quality detection ─────────────────────────────────────────────────
@@ -222,7 +225,12 @@
      covers the most repetitive central floor, and restores directional cues.
      It is mounted unconditionally so a failed environment load still leaves a
      usable surface under the performer rather than an empty world. -->
-<Stage3D width={stageWidth} depth={stageDepth} overrideGroundY={groundY} />
+<Stage3D
+  width={stageWidth}
+  depth={stageDepth}
+  overrideGroundY={groundY}
+  {showDirectionCues}
+/>
 
 {#key tier}
   <AutumnRuntimeSystems

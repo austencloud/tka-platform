@@ -44,6 +44,8 @@
     stageWidth?: number;
     stageDepth?: number;
     stageZOffset?: number;
+    /** Forwarded to the deck: practice orientation markings on or off. */
+    showDirectionCues?: boolean;
   }
 
   let {
@@ -51,6 +53,7 @@
     stageWidth = 6,
     stageDepth = 6,
     stageZOffset = 0,
+    showDirectionCues = true,
   }: Props = $props();
 
   const activeConfig = $derived(config ?? createDefaultBlossomConfig());
@@ -397,7 +400,12 @@
   />
 {/if}
 
-<Stage3D width={stageWidth} depth={stageDepth} overrideGroundY={groundY} />
+<Stage3D
+  width={stageWidth}
+  depth={stageDepth}
+  overrideGroundY={groundY}
+  {showDirectionCues}
+/>
 
 {#if !failed && runtime.effects.reflectiveWater}
   <BlossomRiver {groundY} {stageZOffset} />

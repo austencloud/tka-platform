@@ -42,9 +42,23 @@
      * a studio environment at Y=0). Normally omitted.
      */
     overrideGroundY?: number;
+    /**
+     * The footlight strip, edge bars, downstage triangle and cardinal dots.
+     * They answer "which way is the audience" for a practice viewer. On a
+     * scene being filmed they read as instrumentation drawn over the set, so
+     * a host that owns the deck as scenery turns them off and keeps the
+     * planks, which several environments need as their performer surface.
+     */
+    showDirectionCues?: boolean;
   }
 
-  let { width = 6.0, depth = 4.5, height = STAGE.STAGE_DECK_HEIGHT, overrideGroundY }: Props = $props();
+  let {
+    width = 6.0,
+    depth = 4.5,
+    height = STAGE.STAGE_DECK_HEIGHT,
+    overrideGroundY,
+    showDirectionCues = true,
+  }: Props = $props();
 
   // Ground level tracks the visible floor of whatever environment is
   // active. For the default forest floor this is ~-1.5 (below the
@@ -257,122 +271,124 @@
     </T.Mesh>
   {/each}
 
-  <!--
-    Downstage (+Z) footlight strip: warm bright yellow, emissive so it
-    glows like a real stage footlight. Strongest visual cue for the
-    audience direction.
-  -->
-  <T.Mesh position={[0, DECK_TOP + STRIP_HEIGHT / 2, halfD - 0.01]}>
-    <T.BoxGeometry args={[width * 0.94, STRIP_HEIGHT, STRIP_WIDTH]} />
-    <T.MeshStandardMaterial
-      color="#ffb347"
-      emissive="#ffb347"
-      emissiveIntensity={1.4}
-      toneMapped={false}
-    />
-  </T.Mesh>
+  {#if showDirectionCues}
+    <!--
+      Downstage (+Z) footlight strip: warm bright yellow, emissive so it
+      glows like a real stage footlight. Strongest visual cue for the
+      audience direction.
+    -->
+    <T.Mesh position={[0, DECK_TOP + STRIP_HEIGHT / 2, halfD - 0.01]}>
+      <T.BoxGeometry args={[width * 0.94, STRIP_HEIGHT, STRIP_WIDTH]} />
+      <T.MeshStandardMaterial
+        color="#ffb347"
+        emissive="#ffb347"
+        emissiveIntensity={1.4}
+        toneMapped={false}
+      />
+    </T.Mesh>
 
-  <!--
-    Upstage (-Z) back marker: dim cool blue so "behind" is distinct
-    from "front" even from an overhead view. Much dimmer than the
-    footlights so the audience direction still dominates.
-  -->
-  <T.Mesh position={[0, DECK_TOP + STRIP_HEIGHT / 2, -(halfD - 0.01)]}>
-    <T.BoxGeometry args={[width * 0.94, STRIP_HEIGHT, STRIP_WIDTH]} />
-    <T.MeshStandardMaterial
-      color="#3d5a80"
-      emissive="#3d5a80"
-      emissiveIntensity={0.45}
-      toneMapped={false}
-    />
-  </T.Mesh>
+    <!--
+      Upstage (-Z) back marker: dim cool blue so "behind" is distinct
+      from "front" even from an overhead view. Much dimmer than the
+      footlights so the audience direction still dominates.
+    -->
+    <T.Mesh position={[0, DECK_TOP + STRIP_HEIGHT / 2, -(halfD - 0.01)]}>
+      <T.BoxGeometry args={[width * 0.94, STRIP_HEIGHT, STRIP_WIDTH]} />
+      <T.MeshStandardMaterial
+        color="#3d5a80"
+        emissive="#3d5a80"
+        emissiveIntensity={0.45}
+        toneMapped={false}
+      />
+    </T.Mesh>
 
-  <!--
-    Stage-right (+X = character-right = red port light) and stage-left
-    (-X = character-left = green starboard light). Theater convention
-    measured from the performer's POV when facing the audience.
-  -->
-  <T.Mesh position={[halfW - 0.01, DECK_TOP + STRIP_HEIGHT / 2, 0]}>
-    <T.BoxGeometry args={[STRIP_WIDTH, STRIP_HEIGHT, depth * 0.94]} />
-    <T.MeshStandardMaterial
-      color="#f87171"
-      emissive="#f87171"
-      emissiveIntensity={0.75}
-      toneMapped={false}
-    />
-  </T.Mesh>
-  <T.Mesh position={[-(halfW - 0.01), DECK_TOP + STRIP_HEIGHT / 2, 0]}>
-    <T.BoxGeometry args={[STRIP_WIDTH, STRIP_HEIGHT, depth * 0.94]} />
-    <T.MeshStandardMaterial
-      color="#4ade80"
-      emissive="#4ade80"
-      emissiveIntensity={0.75}
-      toneMapped={false}
-    />
-  </T.Mesh>
+    <!--
+      Stage-right (+X = character-right = red port light) and stage-left
+      (-X = character-left = green starboard light). Theater convention
+      measured from the performer's POV when facing the audience.
+    -->
+    <T.Mesh position={[halfW - 0.01, DECK_TOP + STRIP_HEIGHT / 2, 0]}>
+      <T.BoxGeometry args={[STRIP_WIDTH, STRIP_HEIGHT, depth * 0.94]} />
+      <T.MeshStandardMaterial
+        color="#f87171"
+        emissive="#f87171"
+        emissiveIntensity={0.75}
+        toneMapped={false}
+      />
+    </T.Mesh>
+    <T.Mesh position={[-(halfW - 0.01), DECK_TOP + STRIP_HEIGHT / 2, 0]}>
+      <T.BoxGeometry args={[STRIP_WIDTH, STRIP_HEIGHT, depth * 0.94]} />
+      <T.MeshStandardMaterial
+        color="#4ade80"
+        emissive="#4ade80"
+        emissiveIntensity={0.75}
+        toneMapped={false}
+      />
+    </T.Mesh>
 
-  <!--
-    Big orange triangle on the downstage half of the floor, pointing
-    at the audience. CircleGeometry with segments=3 gives an
-    equilateral triangle; thetaStart=-π/2 places the first vertex at
-    local -Y so after lay-flat (rotation.x = -π/2) the apex points
-    at world +Z (downstage).
-  -->
-  <T.Mesh
-    position={[0, DECK_TOP + 0.003, halfD * 0.35]}
-    rotation={[-Math.PI / 2, 0, 0]}
-  >
-    <T.CircleGeometry args={[0.55, 3, -Math.PI / 2]} />
-    <T.MeshStandardMaterial
-      color="#ffb347"
-      emissive="#ffb347"
-      emissiveIntensity={1.0}
-      toneMapped={false}
-    />
-  </T.Mesh>
+    <!--
+      Big orange triangle on the downstage half of the floor, pointing
+      at the audience. CircleGeometry with segments=3 gives an
+      equilateral triangle; thetaStart=-π/2 places the first vertex at
+      local -Y so after lay-flat (rotation.x = -π/2) the apex points
+      at world +Z (downstage).
+    -->
+    <T.Mesh
+      position={[0, DECK_TOP + 0.003, halfD * 0.35]}
+      rotation={[-Math.PI / 2, 0, 0]}
+    >
+      <T.CircleGeometry args={[0.55, 3, -Math.PI / 2]} />
+      <T.MeshStandardMaterial
+        color="#ffb347"
+        emissive="#ffb347"
+        emissiveIntensity={1.0}
+        toneMapped={false}
+      />
+    </T.Mesh>
 
-  <!--
-    Small cardinal dots at the other three edges, tinted to match the
-    corresponding edge strip so direction is legible at a glance.
-  -->
-  {@const dotInset = 0.38}
-  {@const dotY = DECK_TOP + 0.003}
-  <T.Mesh
-    position={[0, dotY, -(halfD - dotInset)]}
-    rotation={[-Math.PI / 2, 0, 0]}
-  >
-    <T.CircleGeometry args={[0.14, 24]} />
-    <T.MeshStandardMaterial
-      color="#3d5a80"
-      emissive="#3d5a80"
-      emissiveIntensity={0.6}
-      toneMapped={false}
-    />
-  </T.Mesh>
-  <T.Mesh
-    position={[halfW - dotInset, dotY, 0]}
-    rotation={[-Math.PI / 2, 0, 0]}
-  >
-    <T.CircleGeometry args={[0.14, 24]} />
-    <T.MeshStandardMaterial
-      color="#f87171"
-      emissive="#f87171"
-      emissiveIntensity={0.8}
-      toneMapped={false}
-    />
-  </T.Mesh>
-  <T.Mesh
-    position={[-(halfW - dotInset), dotY, 0]}
-    rotation={[-Math.PI / 2, 0, 0]}
-  >
-    <T.CircleGeometry args={[0.14, 24]} />
-    <T.MeshStandardMaterial
-      color="#4ade80"
-      emissive="#4ade80"
-      emissiveIntensity={0.8}
-      toneMapped={false}
-    />
-  </T.Mesh>
+    <!--
+      Small cardinal dots at the other three edges, tinted to match the
+      corresponding edge strip so direction is legible at a glance.
+    -->
+    {@const dotInset = 0.38}
+    {@const dotY = DECK_TOP + 0.003}
+    <T.Mesh
+      position={[0, dotY, -(halfD - dotInset)]}
+      rotation={[-Math.PI / 2, 0, 0]}
+    >
+      <T.CircleGeometry args={[0.14, 24]} />
+      <T.MeshStandardMaterial
+        color="#3d5a80"
+        emissive="#3d5a80"
+        emissiveIntensity={0.6}
+        toneMapped={false}
+      />
+    </T.Mesh>
+    <T.Mesh
+      position={[halfW - dotInset, dotY, 0]}
+      rotation={[-Math.PI / 2, 0, 0]}
+    >
+      <T.CircleGeometry args={[0.14, 24]} />
+      <T.MeshStandardMaterial
+        color="#f87171"
+        emissive="#f87171"
+        emissiveIntensity={0.8}
+        toneMapped={false}
+      />
+    </T.Mesh>
+    <T.Mesh
+      position={[-(halfW - dotInset), dotY, 0]}
+      rotation={[-Math.PI / 2, 0, 0]}
+    >
+      <T.CircleGeometry args={[0.14, 24]} />
+      <T.MeshStandardMaterial
+        color="#4ade80"
+        emissive="#4ade80"
+        emissiveIntensity={0.8}
+        toneMapped={false}
+      />
+    </T.Mesh>
+  {/if}
 
   <!--
     Downstage corner torches: wooden posts with glowing flames rising

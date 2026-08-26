@@ -5,6 +5,7 @@ import { understudyNightFilm } from "./understudy-night";
 import { chanceSuiteFilm } from "./chance-suite";
 import { starOfFiveFilm } from "./star-of-five";
 import { breakTheStarFilm } from "./break-the-star";
+import { figuresFilm } from "./figures";
 
 /**
  * The frame the marquee shows for a library film, and the cue that produced it.
@@ -101,6 +102,21 @@ export const FILM_LIBRARY: readonly FilmLibraryEntry[] = [
       // line — the formed line at the end is a row like any other row, and
       // would not tell this film apart from Star of Five on the marquee.
       offsetSeconds: 9,
+    },
+  },
+  {
+    key: "figures",
+    label: "Figures",
+    film: figuresFilm,
+    poster: {
+      src: "/films/posters/figures.webp",
+      sceneId: "the-hey",
+      // Six seconds into the weave, partway up the crane: the four dancers are
+      // still large enough to read their staffs, and the lit disc is centered.
+      // Later in the crane the whole disc fits with margin, but the dancers
+      // shrink to specks. The celestial films already on the marquee all read
+      // as a lit stage with a row of people on it; this one does not.
+      offsetSeconds: 6,
     },
   },
 ];

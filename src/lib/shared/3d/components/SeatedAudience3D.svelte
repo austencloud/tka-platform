@@ -30,15 +30,23 @@
     count?: number;
     arcRadius?: number;
     arcSpread?: number;
+    /**
+     * World Y of the surface the performers stand on. Every environment is
+     * moved to meet the canonical performer anchor, so this is one deck height
+     * above `userProportionsState.groundY` — seating the crowd at the bare
+     * ground value drops it through the floor.
+     */
+    groundLevel?: number;
   }
 
   let {
     count = 6,
     arcRadius = 4.8,
     arcSpread = Math.PI * 0.45,
+    groundLevel,
   }: Props = $props();
 
-  const groundY = $derived(userProportionsState.groundY);
+  const groundY = $derived(groundLevel ?? userProportionsState.groundY);
 
   let sceneFeatures: ReturnType<typeof getSceneFeatureContext> | null = null;
   try {

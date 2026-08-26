@@ -18,7 +18,13 @@ export const SEATED_AUDIENCE_AVATAR_IDS = [
 export const SEATED_AUDIENCE_AVATAR_URLS =
   SEATED_AUDIENCE_AVATAR_IDS.map(getAvatarModelPath);
 
+/**
+ * `sitting-idle-a` retargets to a near-horizontal pose — head 0.23m above the
+ * hips, against 0.58m for `-b` — so seats playing it read as bodies on the
+ * floor rather than people watching. Until that clip is re-baked the audience
+ * runs on `-b` alone; variety comes from the six avatars, the per-seat time
+ * offsets, and the scale jitter.
+ */
 export const SEATED_AUDIENCE_ANIMATION_URLS = [
-  `${R2_CDN}/animations/v2026-07-23-r1/sitting-idle-a.fbx.bin`,
   `${R2_CDN}/animations/v2026-07-23-r1/sitting-idle-b.fbx.bin`,
 ] as const;

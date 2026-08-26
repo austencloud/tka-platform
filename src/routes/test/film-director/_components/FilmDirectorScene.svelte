@@ -205,11 +205,26 @@
 
   async function waitForIncomingFrame(
     token: number,
-    scene: ResolvedDirectorScene
+    scene: ResolvedDirectorScene,
+    outgoingEnvironment: BackgroundType | null
   ): Promise<boolean> {
     const expectedEnvironment = getSceneEnvironmentRendererKey(
       scene.location.environmentId
     );
+
+    // Two scenes can share one world: a film that ends in the room it opened
+    // in, or a cut that only changes the cast. `Environment3D` publishes an
+    // observation when its transition state changes, and a request for the
+    // world already mounted changes nothing, so the loop below would spin to
+    // its timeout with the playhead held. Nothing is pending here — give the
+    // applied cast and camera two paints and release.
+    if (outgoingEnvironment === expectedEnvironment) {
+      await tick();
+      await afterPaint();
+      await afterPaint();
+      return token === activeTransitionToken;
+    }
+
     const startedAt = performance.now();
 
     while (token === activeTransitionToken) {
@@ -270,15 +285,17 @@
       if (token !== activeTransitionToken) return;
     }
 
+    const outgoingEnvironment = previousScene
+      ? getSceneEnvironmentRendererKey(previousScene.location.environmentId)
+      : null;
     transitionProfiler.beginHostTransition(
-      previousScene
-        ? getSceneEnvironmentRendererKey(previousScene.location.environmentId)
-        : null,
+      outgoingEnvironment,
       getSceneEnvironmentRendererKey(scene.location.environmentId)
     );
     applyScene(scene);
 
-    if (!(await waitForIncomingFrame(token, scene))) return;
+    if (!(await waitForIncomingFrame(token, scene, outgoingEnvironment)))
+      return;
 
     // The black overlay is already fully opaque at a fade-through-black scene
     // boundary. Releasing the held playhead lowers that same overlay over the
