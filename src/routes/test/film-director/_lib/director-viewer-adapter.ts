@@ -128,8 +128,8 @@ export function applyDirectorSceneToViewer(
       performer.snapFacingAngle(directed.facingAngle);
       performer.setDisplayName(directed.name);
       performer.setAvatarModel(directed.avatarId);
-      performer.setProp(directed.prop);
-      performer.setEffect(directed.effect);
+      performer.setProp(directed.prop, { equipBuild: false });
+      performer.setEffect(directed.effect, { equipBuild: false });
       performer.setEffort(directed.effort);
       performer.setStaffLengthCm(directed.staffLengthCm);
 

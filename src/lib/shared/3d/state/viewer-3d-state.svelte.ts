@@ -1376,11 +1376,12 @@ function buildViewer3DState(
             _restoreVerbatim
           );
           if (settings) {
-            if (settings.prop !== null) p.setProp(settings.prop as PropType);
+            if (settings.prop !== null)
+              p.setProp(settings.prop as PropType, { equipBuild: false });
             if (settings.effortId !== null)
               p.setEffort(settings.effortId as EffortId);
             if (settings.effect !== null)
-              p.setEffect(settings.effect as EffectType);
+              p.setEffect(settings.effect as EffectType, { equipBuild: false });
             if (settings.staffLengthCm !== null)
               p.setStaffLengthCm(settings.staffLengthCm);
           }
@@ -1541,12 +1542,12 @@ function buildViewer3DState(
           if (snap.settings) {
             if (snap.settings.prop !== null) {
               const prop = asPropType(snap.settings.prop);
-              if (prop) p.setProp(prop);
+              if (prop) p.setProp(prop, { equipBuild: false });
             }
             if (snap.settings.effortId !== null)
               p.setEffort(snap.settings.effortId as EffortId);
             if (snap.settings.effect !== null)
-              p.setEffect(snap.settings.effect as EffectType);
+              p.setEffect(snap.settings.effect as EffectType, { equipBuild: false });
             if (snap.settings.staffLengthCm !== null)
               p.setStaffLengthCm(snap.settings.staffLengthCm);
           }

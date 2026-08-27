@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createAvatarInstanceState, makeStandaloneDeps } from "$lib/shared/3d/state/avatar-instance-state.svelte";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { getSceneUndoManager } from "$lib/shared/3d/undo/get-scene-undo-manager";
 
 function makeConfig() {
   return { id: "p1", positionX: 0 };
@@ -123,6 +124,100 @@ describe("AvatarInstanceState — performer settings", () => {
     expect(a.settings.effortId).toBeNull();
     expect(a.settings.effect).toBeNull();
     expect(a.settings.staffLengthCm).toBe(120);
+    expect(a.settings.propBuild).toBeNull();
+  });
+});
+
+describe("AvatarInstanceState — an effect equips the build that carries it", () => {
+  it("swaps the default staff for the fire staff when fire is chosen", () => {
+    const a = createAvatarInstanceState(makeConfig(), makeDeps());
+    expect(a.effectiveProp).toBe(PropType.STAFF);
+    a.setEffect("fire");
+    expect(a.settings.effect).toBe("fire");
+    expect(a.settings.prop).toBe(PropType.FIRE_DOUBLE_STAFF);
+  });
+
+  it("puts a fan on the fire build rather than burning paper", () => {
+    const a = createAvatarInstanceState(makeConfig(), makeDeps());
+    a.setProp(PropType.FAN);
+    a.setPropBuild({ fanBuild: "day", fanCover: "covered" });
+    a.setEffect("fire");
+    expect(a.settings.prop).toBe(PropType.FAN);
+    expect(a.settings.propBuild).toEqual({
+      fanBuild: "fire",
+      fanCover: "bare",
+    });
+  });
+
+  it("keeps unrelated build overrides when it equips", () => {
+    const a = createAvatarInstanceState(makeConfig(), makeDeps());
+    a.setProp(PropType.FAN);
+    a.setPropBuild({ fanFrameColor: "white" });
+    a.setEffect("fire");
+    expect(a.settings.propBuild).toEqual({
+      fanFrameColor: "white",
+      fanBuild: "fire",
+    });
+  });
+
+  it("leaves the build alone for an effect that needs no build", () => {
+    const a = createAvatarInstanceState(makeConfig(), makeDeps());
+    a.setProp(PropType.FAN);
+    a.setEffect("trails");
+    expect(a.settings.prop).toBe(PropType.FAN);
+    expect(a.settings.propBuild).toBeNull();
+  });
+
+  it("keeps the equipped build when the effect is turned back off", () => {
+    const a = createAvatarInstanceState(makeConfig(), makeDeps());
+    a.setProp(PropType.FAN);
+    a.setEffect("fire");
+    a.setEffect("none");
+    expect(a.settings.propBuild).toEqual({ fanBuild: "fire" });
+  });
+
+  it("undoes the effect and the build it equipped as one step", () => {
+    const undo = getSceneUndoManager();
+    undo.clear();
+    const a = createAvatarInstanceState(makeConfig(), makeDeps());
+    a.setProp(PropType.FAN);
+    const historyBefore = undo.historySize;
+
+    a.setEffect("fire");
+    // One entry for both halves - two would let Ctrl+Z drop the effect and
+    // leave the fan on the fire build.
+    expect(undo.historySize).toBe(historyBefore + 1);
+    expect(a.settings.propBuild).toEqual({ fanBuild: "fire" });
+
+    undo.undo();
+    expect(a.settings.effect).toBeNull();
+    expect(a.settings.propBuild).toBeNull();
+    expect(a.settings.prop).toBe(PropType.FAN);
+  });
+});
+
+describe("AvatarInstanceState — picking a prop mid-effect equips too", () => {
+  it("hands a burning performer a fire fan, not a pictograph one", () => {
+    const a = createAvatarInstanceState(makeConfig(), makeDeps());
+    a.setEffect("fire"); // default staff -> fire staff
+    a.setProp(PropType.FAN);
+    expect(a.settings.prop).toBe(PropType.FAN);
+    expect(a.settings.propBuild).toEqual({ fanBuild: "fire" });
+  });
+
+  it("respects an in-family build choice instead of bouncing it back", () => {
+    const a = createAvatarInstanceState(makeConfig(), makeDeps());
+    a.setEffect("fire");
+    expect(a.settings.prop).toBe(PropType.FIRE_DOUBLE_STAFF);
+    // The Double Staff build radio is the performer overriding the equip.
+    a.setProp(PropType.STAFF);
+    expect(a.settings.prop).toBe(PropType.STAFF);
+  });
+
+  it("leaves the prop alone when no effect is running", () => {
+    const a = createAvatarInstanceState(makeConfig(), makeDeps());
+    a.setProp(PropType.CLUB);
+    expect(a.settings.prop).toBe(PropType.CLUB);
     expect(a.settings.propBuild).toBeNull();
   });
 });

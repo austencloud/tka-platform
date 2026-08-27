@@ -34,6 +34,8 @@ import {
 import type { EffectType } from "$lib/shared/effects/domain/effects-config";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { getSceneUndoManager } from "../undo/get-scene-undo-manager";
+import { buildForEffect } from "../domain/build-for-effect";
+import { findScenePropFamily } from "../domain/scene-prop-catalog";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PerformerDomainSnapshot } from "../undo/scene-undo-types";
 
@@ -863,9 +865,33 @@ export function createAvatarInstanceState(
     });
   }
 
-  function setProp(prop: PropType): void {
+  function setProp(prop: PropType, options?: { equipBuild?: boolean }): void {
     const before = $state.snapshot(_settings);
-    _settings = { ..._settings, prop };
+
+    // Picking a new prop while an effect is running is the same request as
+    // picking the effect: a day fan handed to a performer who is already on
+    // fire needs the fire build too.
+    //
+    // Only across a family change, though. Choosing "Staff" from the Double
+    // Staff build radio, or a day fan from the fan build radio, is the
+    // performer overriding the equip on purpose — bouncing them back would
+    // make that control unusable.
+    // A prop with no family is its own family, so a fan-to-quiad switch still
+    // reads as a change rather than as two undefineds matching.
+    const familyOf = (p: PropType): unknown => findScenePropFamily(p) ?? p;
+    const changesFamily = familyOf(effectiveProp) !== familyOf(prop);
+    const equip =
+      options?.equipBuild === false || !changesFamily
+        ? null
+        : buildForEffect(prop, _settings.effect, effectivePropBuild);
+
+    _settings = {
+      ..._settings,
+      prop: equip?.prop ?? prop,
+      ...(equip?.propBuild
+        ? { propBuild: { ...(_settings.propBuild ?? {}), ...equip.propBuild } }
+        : {}),
+    };
     const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntry("change-prop", `Prop: ${prop}`, {
       undo: () => { _settings = before; },
@@ -879,11 +905,38 @@ export function createAvatarInstanceState(
    * effects off for this performer, or null to clear the override and inherit
    * the global default.
    */
-  function setEffect(effect: EffectType | null): void {
+  function setEffect(
+    effect: EffectType | null,
+    options?: { equipBuild?: boolean }
+  ): void {
     const before = $state.snapshot(_settings);
-    _settings = { ..._settings, effect };
+
+    // An effect equips the build that can carry it: fire on a fan puts the
+    // five-wick fire fan in this performer's hand so the flames have real
+    // wicks to come off. Same undo entry as the effect itself — a second
+    // entry would let Ctrl+Z drop the effect and leave the build behind.
+    //
+    // Restore paths pass `equipBuild: false`. Replaying a stored effect is
+    // not a performer choosing one, and equipping there would write back
+    // overrides the saved scene deliberately does not carry.
+    const equip =
+      options?.equipBuild === false
+        ? null
+        : buildForEffect(effectiveProp, effect, effectivePropBuild);
+
+    _settings = {
+      ..._settings,
+      effect,
+      ...(equip?.prop ? { prop: equip.prop } : {}),
+      ...(equip?.propBuild
+        ? { propBuild: { ...(_settings.propBuild ?? {}), ...equip.propBuild } }
+        : {}),
+    };
     const after = $state.snapshot(_settings);
-    sceneUndo.pushSelfRestoringEntry("toggle-effect", `Effect: ${effect ?? "inherit"}`, {
+    const label = equip
+      ? `Effect: ${effect ?? "inherit"} (build equipped)`
+      : `Effect: ${effect ?? "inherit"}`;
+    sceneUndo.pushSelfRestoringEntry("toggle-effect", label, {
       undo: () => { _settings = before; },
       redo: () => { _settings = after; },
     });
