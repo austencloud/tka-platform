@@ -218,12 +218,22 @@ the actual code strings before committing. Five clobber incidents are on record.
 
 ## Staging
 
-Three phases with a dependency chain, one spec, one user story.
+Three phases, one spec, one user story. **Emitters go first**, not the state
+model, because emitters are the only phase that touches no patched package and
+they carry the entire visible win.
 
-1. **Per-performer build** — the state model and the picker seam.
-2. **Build-aware emitters** — independently shippable; fixes triad and quiad on
-   its own even if phase 3 never lands.
-3. **Auto-equip** — depends on both.
+1. **Build-aware emitters.** Reads the build from the existing
+   `propFinishState.fanBuild` / `.finish` getters, which already exist — so this
+   phase is confined to app-side files (`prop-tip-geometry-3d.ts`, the new
+   module, `verify-fan-glb.cjs`, `build-fan-model.py`) and needs no
+   `pnpm patch` at all. Independently shippable, fixes triad and quiad on its
+   own, and is the phase that makes the fans actually burn from their wicks.
+2. **Per-performer build.** The state model and the picker seam. This is the
+   phase that touches `@austencloud/scene-3d` and therefore carries the patch
+   risk. Phase 1's build lookup changes from the global getter to the
+   per-performer value here — a one-line change at one call site, a cheap price
+   for getting the visible fix out ahead of the risky refactor.
+3. **Auto-equip.** Depends on both.
 
 ## Related
 
