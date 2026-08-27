@@ -119,7 +119,8 @@ export const TERM_ALIASES: Record<string, string> = {
   "boomerang": "buugeng",
   "bigbuugeng": "buugeng",
   "big buugeng": "buugeng",
-  "trigeng": "buugeng"
+  "tri-geng": "trigeng",
+  "tri geng": "trigeng"
 } as const;
 
 export function resolveTermAlias(term: string): string {

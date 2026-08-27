@@ -70,6 +70,20 @@ if (danglingAliases.length > 0) {
   process.exit(1);
 }
 
+// An alias whose key is itself a glossary term shadows the real entry: the
+// lookup resolves the alias first and the reader never reaches the definition.
+// "trigeng" was exactly this before it earned an entry of its own.
+const shadowingAliases = Object.keys(TERM_ALIASES).filter((alias) => alias in GLOSSARY);
+if (shadowingAliases.length > 0) {
+  console.error(
+    `ERR: ${shadowingAliases.length} alias(es) shadow a glossary term of the same name:`
+  );
+  for (const alias of shadowingAliases) {
+    console.error(`  "${alias}" → "${TERM_ALIASES[alias]}" (but "${alias}" is a term)`);
+  }
+  process.exit(1);
+}
+
 const aliasOut = resolve(repoRoot, "mcp-server-pkg/data/tka-term-aliases.json");
 writeFileSync(aliasOut, JSON.stringify(TERM_ALIASES, null, 2) + "\n", "utf-8");
 console.log(

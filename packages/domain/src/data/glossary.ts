@@ -454,7 +454,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
       "Blue A beside red A stays separated, the same as any other matched pair",
       "Flipping one hand's chirality changes the shape drawn, not its rotation angle",
     ],
-    relatedTerms: ["buugeng", "prop", "orientation", "beta", "bilateral"],
+    relatedTerms: ["buugeng", "trigeng", "prop", "orientation", "beta", "bilateral"],
     category: "general",
   },
 
@@ -463,9 +463,20 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
       "An S-shaped bilateral prop, gripped at its center like a staff. Its shape is asymmetric, so each buugeng has a chirality: one of two mirror-image forms. The TKA buugeng family is buugeng, big buugeng, and trigeng, and all three carry chirality the same way. A pair of buugeng is the case TKA models most directly, because two of opposite chirality combine into one shape while two of the same chirality do not.",
     examples: [
       "A buugeng pictograph tracks orientation and chirality separately",
-      "Trigeng is the three-lobed member of the same family",
+      "Trigeng is the member of the same family that is reached through the triad card",
     ],
-    relatedTerms: ["chirality", "prop", "bilateral", "staff-reference"],
+    relatedTerms: ["chirality", "trigeng", "prop", "bilateral", "staff-reference"],
+    category: "general",
+  },
+  trigeng: {
+    definition:
+      "A geng: an asymmetric, center-gripped bilateral prop that carries chirality the same way a buugeng does, so a pair of opposite chirality nests and a matched pair does not. Its arms are drawn as two mirrored halves whose terminals sit off the grip centerline, which gives it a near-square footprint where a buugeng's is elongated, and TKA tracks three points on it — both terminals and the grip center — where a buugeng has two. The prop picker files it as a variation of the triad rather than of the buugeng, so it is reached through the triad card even though the render layer groups it with the buugeng family for chirality and spacing. It also carries a separation rule of its own: two trigeng at the same radiality but different end orientations sit together with no separation offset, whatever their chirality.",
+    examples: [
+      "Two trigeng of opposite chirality nest, the same as two buugeng",
+      "Reaching trigeng in the prop picker means opening the triad card, not the buugeng card",
+      "Two trigeng, both radial, ending on different orientations, take no beta offset",
+    ],
+    relatedTerms: ["buugeng", "chirality", "prop", "bilateral", "beta"],
     category: "general",
   },
   bilateral: {
