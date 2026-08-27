@@ -342,6 +342,9 @@ class AgentTerminalLauncher
                 {
                     string wt = ResolveWindowsTerminal();
                     string title = InitialTitle;
+                    string requestedTitle;
+                    if (args.TryGetValue("Title", out requestedTitle) && !string.IsNullOrWhiteSpace(requestedTitle))
+                        title = SessionTitleManager.NormalizeTitle(requestedTitle);
                     var inner = new List<string> {
                         sessionExe,
                         "-HoldColor", lease.Index.ToString(),
@@ -351,6 +354,8 @@ class AgentTerminalLauncher
                     };
                     AddOptionalPair(inner, args, "Bat");
                     AddOptionalPair(inner, args, "Executable");
+                    AddOptionalPair(inner, args, "Prompt");
+                    AddOptionalPair(inner, args, "Title");
 
                     List<string> terminalArgs = BuildTerminalArguments(
                         project,
@@ -398,6 +403,14 @@ class AgentTerminalLauncher
                 "TKA_AGENT_TERMINAL_SESSION_PID",
                 Process.GetCurrentProcess().Id.ToString()
             );
+            string initialTitle = InitialTitle;
+            string requestedTitle;
+            if (args.TryGetValue("Title", out requestedTitle) && !string.IsNullOrWhiteSpace(requestedTitle))
+            {
+                initialTitle = SessionTitleManager.NormalizeTitle(requestedTitle);
+                SessionTitleManager.Assign(Process.GetCurrentProcess().Id, initialTitle);
+            }
+
             using (var monitor = new TerminalColorMonitor(ReadSessionBackground(colorIndex)))
             using (var titleManager = SessionTitleManager.ForCurrentSession(WriteAttachedTerminalTitle))
             {
@@ -406,7 +419,7 @@ class AgentTerminalLauncher
                 using (EventWaitHandle ready = EventWaitHandle.OpenExisting(GetRequired(args, "ReadyEvent"))) ready.Set();
 
                 ClearInheritedAgentSessionMarkers();
-                try { Console.Title = InitialTitle; } catch { }
+                try { Console.Title = initialTitle; } catch { }
                 return RunAgent(agent, project, args);
             }
         }
@@ -1382,12 +1395,13 @@ class AgentTerminalLauncher
 
     static int RunAgent(string agent, string project, Dictionary<string, string> args)
     {
+        string promptArguments = BuildPromptArguments(args);
         string bat;
         if (args.TryGetValue("Bat", out bat) && !string.IsNullOrWhiteSpace(bat) && File.Exists(bat))
         {
             return RunProcess(
                 Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
-                "/d /c call " + QuoteArgument(Path.GetFullPath(bat)),
+                "/d /c call " + QuoteArgument(Path.GetFullPath(bat)) + promptArguments,
                 project
             );
         }
@@ -1403,11 +1417,11 @@ class AgentTerminalLauncher
             {
                 return RunProcess(
                     Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
-                    "/d /c call " + QuoteArgument(executable) + " " + flags,
+                    "/d /c call " + QuoteArgument(executable) + " " + flags + promptArguments,
                     project
                 );
             }
-            return RunProcess(executable, flags, project);
+            return RunProcess(executable, flags + promptArguments, project);
         }
 
         string command = agent == "codex"
@@ -1415,9 +1429,16 @@ class AgentTerminalLauncher
             : "claude --dangerously-skip-permissions";
         return RunProcess(
             Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
-            "/d /c " + command,
+            "/d /c " + command + promptArguments,
             project
         );
+    }
+
+    static string BuildPromptArguments(Dictionary<string, string> args)
+    {
+        string prompt;
+        if (args == null || !args.TryGetValue("Prompt", out prompt) || string.IsNullOrWhiteSpace(prompt)) return "";
+        return " " + QuoteArgument(prompt);
     }
 
     // The resident tray host can be started from inside an agent session and
@@ -1917,6 +1938,14 @@ class AgentTerminalLauncher
             string encoded = JoinArguments(new string[] { "plain", "path with spaces", "ends\\", "quote\"inside" });
             if (encoded.IndexOf("\"path with spaces\"", StringComparison.Ordinal) < 0)
                 throw new Exception("Argument quoting lost a spaced value.");
+            var workflowArgs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Prompt", "$fb list" },
+                { "Title", "Feedback Queue" }
+            };
+            if (BuildPromptArguments(workflowArgs) != " \"$fb list\"" ||
+                SessionTitleManager.NormalizeTitle(workflowArgs["Title"]) != "Feedback Queue")
+                throw new Exception("Workflow prompt or title arguments were not preserved.");
             string terminalArgs = JoinArguments(BuildTerminalArguments(
                 "C:\\project with spaces",
                 InitialTitle,
