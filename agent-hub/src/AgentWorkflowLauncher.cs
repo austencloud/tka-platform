@@ -194,6 +194,8 @@ sealed class CodexDesktopWorkspaceLaunchResult
 
 static class CodexDesktopWorkspaceLauncher
 {
+    const int DesktopLaunchTimeoutMs = 20000;
+
     public static CodexDesktopWorkspaceLaunchResult Launch(string worktreePath)
     {
         string path;
@@ -202,19 +204,34 @@ static class CodexDesktopWorkspaceLauncher
         if (!Directory.Exists(path))
             return new CodexDesktopWorkspaceLaunchResult(false, "This worktree folder is unavailable.");
 
-        string codex = AgentWorkflowLauncher.ResolveCodexExecutable();
+        string codex = ResolveDesktopExecutable();
         if (string.IsNullOrEmpty(codex))
-            return new CodexDesktopWorkspaceLaunchResult(false, "Codex is not installed.");
+            return new CodexDesktopWorkspaceLaunchResult(false, "Codex Desktop's bundled launcher is not installed.");
 
         try
         {
             var start = new ProcessStartInfo(codex, BuildArguments(path));
             start.WorkingDirectory = path;
-            start.UseShellExecute = true;
-            Process process = Process.Start(start);
-            if (process == null)
-                return new CodexDesktopWorkspaceLaunchResult(false, "Codex Desktop did not accept the workspace request.");
-            return new CodexDesktopWorkspaceLaunchResult(true, "Asked Codex Desktop to open this worktree.");
+            start.UseShellExecute = false;
+            start.CreateNoWindow = true;
+            start.RedirectStandardOutput = true;
+            start.RedirectStandardError = true;
+            using (Process process = Process.Start(start))
+            {
+                if (process == null)
+                    return new CodexDesktopWorkspaceLaunchResult(false, "Codex Desktop did not accept the workspace request.");
+                if (!process.WaitForExit(DesktopLaunchTimeoutMs))
+                {
+                    try { process.Kill(); } catch { }
+                    return new CodexDesktopWorkspaceLaunchResult(false, "Codex Desktop did not acknowledge the worktree within 20 seconds.");
+                }
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+                if (process.ExitCode != 0)
+                    return new CodexDesktopWorkspaceLaunchResult(false,
+                        HiddenProcessRunner.FirstUsefulLine(error, output, "Codex Desktop rejected the worktree request."));
+            }
+            return new CodexDesktopWorkspaceLaunchResult(true, "Codex Desktop accepted this worktree.");
         }
         catch (Exception ex)
         {
@@ -227,9 +244,52 @@ static class CodexDesktopWorkspaceLauncher
         return "app " + HiddenProcessRunner.QuoteArgument(worktreePath);
     }
 
+    // The colored TKA CLI is deliberately used for terminal sessions, but it
+    // can lag behind Desktop. `codex app` must go through Desktop's bundled CLI
+    // so its app handoff protocol matches the installed Desktop version.
+    internal static string ResolveDesktopExecutable()
+    {
+        string root = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "OpenAI", "Codex", "bin");
+        string newest = null;
+        DateTime newestWrite = DateTime.MinValue;
+        try
+        {
+            if (Directory.Exists(root))
+            {
+                string[] directories = Directory.GetDirectories(root);
+                for (int i = 0; i < directories.Length; i++)
+                {
+                    string candidate = Path.Combine(directories[i], "codex.exe");
+                    if (!File.Exists(candidate)) continue;
+                    DateTime modified = File.GetLastWriteTimeUtc(candidate);
+                    if (newest == null || modified > newestWrite)
+                    {
+                        newest = candidate;
+                        newestWrite = modified;
+                    }
+                }
+            }
+        }
+        catch { }
+        if (!string.IsNullOrEmpty(newest)) return newest;
+
+        string pathExecutable = HiddenProcessRunner.FindExecutableOnPath("codex.exe");
+        if (!string.IsNullOrEmpty(pathExecutable)) return pathExecutable;
+        string pathCommand = HiddenProcessRunner.FindExecutableOnPath("codex.cmd");
+        if (!string.IsNullOrEmpty(pathCommand)) return pathCommand;
+        return null;
+    }
+
     public static int SelfTest()
     {
         string arguments = BuildArguments("C:\\worktrees\\task one");
-        return arguments == "app \"C:\\worktrees\\task one\"" ? 0 : 1;
+        if (arguments != "app \"C:\\worktrees\\task one\"") return 1;
+        string tka = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TKA", "codex-tka", "bin", "codex-tka.exe");
+        string desktop = ResolveDesktopExecutable();
+        if (File.Exists(tka) && !string.IsNullOrEmpty(desktop) &&
+            string.Equals(Path.GetFullPath(tka), Path.GetFullPath(desktop), StringComparison.OrdinalIgnoreCase)) return 1;
+        return 0;
     }
 }
