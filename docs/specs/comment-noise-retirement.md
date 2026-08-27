@@ -1,10 +1,86 @@
 # Comment Noise Retirement
 
 Date: 2026-04-30
-Status: Draft
+Status: Implemented and verified
 Scope: Codebase-wide removal of AI-generated noise comments that add no information for humans or AI agents
 
-## Problem
+## 2026-08-27 Execution Contract
+
+Austen approved execution in a dedicated worktree so the primary checkout does
+not refresh throughout the pass. The working branch is
+`codex/comment-hygiene-pass` at `E:/tka-platform-comment-hygiene`.
+
+The original April inventory is historical. A token-aware August rescan of the
+present tracked TypeScript, JavaScript, Svelte, and CSS-family sources found
+89,038 comment blocks spanning 179,532 lines. It also found:
+
+- 6,097 narration-shaped blocks across 2,085 files;
+- 3,504 decorative section blocks across 429 files;
+- 674 history, phase, dated-decision, or author-attribution blocks;
+- 285 compiler, linter, coverage, and framework directives; and
+- 136 generated files, which are excluded from automated edits.
+
+Those are review queues, not deletion totals. Comment trustworthiness is the
+target. The pass removes prose that merely mirrors syntax and compresses design
+history to the surviving invariant or user-visible consequence. It preserves
+licenses, tool directives, generated markers, units, external contracts,
+compatibility constraints, security boundaries, and non-obvious algorithms.
+
+Automated edits must satisfy all of these constraints:
+
+1. Every removed byte belongs to a recognized comment token or that comment's
+   otherwise-empty line.
+2. Generated, vendored, declaration, snapshot, and asset files are skipped.
+3. `TODO`, `FIXME`, `HACK`, suppression, coverage, and bundler directives are
+   preserved for individual review.
+4. A dry run reports candidates by rule and includes representative samples
+   before any write occurs.
+5. Token streams outside comments must be identical before and after each
+   transformed TypeScript or JavaScript-family source.
+6. Long comments carrying mixed history and invariants are edited in context,
+   never removed by a word-overlap heuristic.
+
+This work changes comments only. If clearer naming or a structural refactor is
+needed to make a comment unnecessary, that becomes separate implementation
+work rather than being smuggled into this pass.
+
+## 2026-08-27 Results
+
+The pass inspected 9,604 tracked source files and changed comments in 1,325
+existing code files. The deterministic batch removed 5,996 blocks spanning
+6,855 lines. A contextual pass then compressed the worst history ledgers and
+syntax narration, bringing the existing-code diff to 8,550 deletions and 282
+concise-comment additions: a net reduction of 8,268 source lines.
+
+The reusable codemod and its regression suite live in
+`scripts/strip-noise-comments.mjs` and
+`tests/unit/scripts/strip-noise-comments.test.ts`. Its final dry run reports
+zero remaining deterministic candidates. Generated sources and directives were
+not modified.
+
+The ongoing rule is part of the canonical `code-style` skill and its generated
+Codex mirror. It rejects comments that restate nearby code while explicitly
+protecting rationale, warnings, contracts, compatibility constraints, units,
+security boundaries, tool directives, and non-obvious algorithms. Deletion
+count is not a quality target.
+
+Verification evidence:
+
+- a syntax-aware comparison found identical executable structure in all 1,325
+  edited code files after comments and whitespace were removed;
+- `npm run check` completed with 0 errors and 0 warnings;
+- all 7 codemod regression tests passed;
+- all 33 public-sequence projection tests passed;
+- `git diff --check` passed; and
+- the full suite passed 11,487 tests and failed 12. Five load-sensitive or
+  randomized failures passed when rerun alone. The seven persistent failures
+  reproduced exactly against an untouched archive of the branch's starting
+  commit, so none were introduced by this pass.
+
+No browser verification was needed because executable code, markup structure,
+and styles are unchanged.
+
+## Historical April 2026 Problem Statement
 
 The codebase contains 109,957 comment lines across 5,358 files (10.9% of total lines). A systematic audit categorizes every comment and identifies 34,235 lines as pure noise: they restate what the code already says, add visual clutter with no informational value, or pad JSDoc blocks with empty filler lines.
 
@@ -225,7 +301,7 @@ This phase can run as 3-4 parallel agents, each taking a slice of the files.
 4. Grep for any remaining section divider patterns
 5. Run the noise audit script again to verify totals
 
-## Expected Outcomes
+## Historical Expected Outcomes
 
 | Metric | Before | After |
 |---|---|---|
@@ -273,7 +349,10 @@ After cleanup, adopt these conventions for all new code:
 
 3. **Team expectations.** If other contributors exist or are expected, document the new comment conventions in a CONTRIBUTING.md or similar.
 
-## Execution Strategy for Claude Code
+## Historical Execution Strategy for Claude Code
+
+The August implementation used one dedicated Codex worktree. The parallel
+strategy below is retained only as the original April proposal.
 
 - Phase 0: Single agent writes the codemod script
 - Phase 1: Single agent runs the codemod (`--dry-run`, review, `--apply`)

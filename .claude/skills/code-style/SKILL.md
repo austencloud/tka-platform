@@ -60,6 +60,19 @@ Never create `index.ts` files in `src/` that re-export other modules. Vite's bun
 
 Write comments as if explaining to someone who uses the app but doesn't write code. Say what the user would observe, not what the code does internally. Explain *why* — what problem does this solve, what would go wrong without it.
 
+Keep a comment only when it adds information the surrounding code cannot make
+clear within a few seconds. Do not add JSDoc that restates a signature, prose
+that narrates the next statement, decorative section dividers, or historical
+phase ledgers whose decisions are already reflected in the code. Preserve and
+tighten comments that carry rationale, warnings, external contracts,
+compatibility constraints, units, security boundaries, tool directives, or
+non-obvious algorithm details. A cleanup is successful when the remaining
+comments are more trustworthy, not when it reaches a deletion target.
+
+For repository-wide review criteria and the token-aware audit tool, see
+`docs/specs/comment-noise-retirement.md` and
+`scripts/strip-noise-comments.mjs`.
+
 **Good:**
 ```ts
 // We normally find a sequence by its word (e.g. "ABBD"). But if the user
