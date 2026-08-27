@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { Collapsible } from "bits-ui";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import SmartCollectionRuleSummary from "$lib/features/library/components/SmartCollectionRuleSummary.svelte";
@@ -12,6 +13,7 @@
     color?: string;
     spec?: SmartFilterSpec | null;
     matchCount?: number | null;
+    ruleDisclosureLabel?: string;
     loading?: boolean;
     error?: boolean;
     readOnly?: boolean;
@@ -32,6 +34,7 @@
     color = "var(--theme-accent, #8b6cff)",
     spec = null,
     matchCount = null,
+    ruleDisclosureLabel,
     loading = false,
     error = false,
     readOnly = false,
@@ -49,6 +52,7 @@
     spec?.source === "my-library" ? "My Library" : "Community"
   );
   const empty = $derived(!loading && !error && matchCount === 0);
+  let ruleOpen = $state(false);
 </script>
 
 <section class="smart-detail" style:--smart-color={color} aria-label={name}>
@@ -120,12 +124,42 @@
 
   {#if spec}
     <div class="rule-wrap">
-      <SmartCollectionRuleSummary
-        {spec}
-        {matchCount}
-        builtIn={readOnly}
-        countUnavailable={error}
-      />
+      {#if ruleDisclosureLabel}
+        <Collapsible.Root bind:open={ruleOpen}>
+          <Collapsible.Trigger class="rule-disclosure-trigger">
+            <span class="rule-disclosure-icon" aria-hidden="true">
+              <i class="fas fa-circle-info"></i>
+            </span>
+            <span class="rule-disclosure-copy">
+              <strong>{ruleDisclosureLabel}</strong>
+              <span>Collection details</span>
+            </span>
+            <i
+              class="fas fa-chevron-down rule-disclosure-chevron"
+              class:open={ruleOpen}
+              aria-hidden="true"
+            ></i>
+          </Collapsible.Trigger>
+
+          <Collapsible.Content class="rule-disclosure-content">
+            <div class="rule-disclosure-content-inner">
+              <SmartCollectionRuleSummary
+                {spec}
+                {matchCount}
+                builtIn={readOnly}
+                countUnavailable={error}
+              />
+            </div>
+          </Collapsible.Content>
+        </Collapsible.Root>
+      {:else}
+        <SmartCollectionRuleSummary
+          {spec}
+          {matchCount}
+          builtIn={readOnly}
+          countUnavailable={error}
+        />
+      {/if}
     </div>
   {/if}
 
@@ -305,6 +339,98 @@
     padding: 0 clamp(12px, 2cqi, 20px) clamp(12px, 2cqi, 18px);
   }
 
+  :global(.rule-disclosure-trigger) {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    width: 100%;
+    min-height: 48px;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px 6px 7px;
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--smart-color) 28%,
+        var(--theme-stroke, rgba(255, 255, 255, 0.1))
+      );
+    border-radius: 12px;
+    background: color-mix(
+      in srgb,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 92%,
+      var(--smart-color) 8%
+    );
+    color: var(--theme-text, white);
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+  }
+
+  :global(.rule-disclosure-trigger:hover) {
+    border-color: color-mix(in srgb, var(--smart-color) 48%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 86%,
+      var(--smart-color) 14%
+    );
+  }
+
+  :global(.rule-disclosure-trigger:focus-visible) {
+    outline: 2px solid var(--smart-color);
+    outline-offset: 2px;
+  }
+
+  .rule-disclosure-icon {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--smart-color) 16%, transparent);
+    color: color-mix(in srgb, var(--smart-color) 74%, white);
+    font-size: 13px;
+  }
+
+  .rule-disclosure-copy {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .rule-disclosure-copy strong {
+    color: var(--theme-text, white);
+    font-size: var(--font-size-sm, 14px);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .rule-disclosure-copy span {
+    overflow: hidden;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.64));
+    font-size: var(--font-size-compact, 12px);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rule-disclosure-chevron {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.64));
+    font-size: 12px;
+    transition: transform 160ms ease;
+  }
+
+  .rule-disclosure-chevron.open {
+    transform: rotate(180deg);
+  }
+
+  :global(.rule-disclosure-content) {
+    overflow: hidden;
+  }
+
+  .rule-disclosure-content-inner {
+    padding-top: 8px;
+  }
+
   .detail-body {
     flex: 1;
     min-height: 0;
@@ -348,6 +474,17 @@
     .rule-wrap {
       padding: 0 10px 10px;
     }
+
+    :global(.rule-disclosure-trigger) {
+      min-height: 44px;
+      grid-template-columns: 30px minmax(0, 1fr) auto;
+      padding: 5px 10px 5px 6px;
+    }
+
+    .rule-disclosure-icon {
+      width: 30px;
+      height: 30px;
+    }
   }
 
   @container smart-detail (max-width: 410px) {
@@ -366,7 +503,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .icon-button {
+    .icon-button,
+    .rule-disclosure-chevron {
       transition: none;
     }
   }
