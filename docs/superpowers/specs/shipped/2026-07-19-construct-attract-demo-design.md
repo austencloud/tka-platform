@@ -8,9 +8,9 @@ for the real `/composer` page after harness sign-off.
 
 ## 2026-08-22 guided-build presentation amendment
 
-The focused `/composer/mockup` story reuses this section through its
-`guided-build` presentation mode. The full five-wings presentation remains the
-default and keeps the controls documented below.
+The public `/composer` story reuses this section through its `guided-build`
+presentation mode. The full five-wings presentation remains the component
+default and keeps the controls documented below for consumers that request it.
 
 The guided build deliberately narrows the act to one readable sequence: choose
 a starting position, add four valid beats, and play the result. It hides the
@@ -20,8 +20,8 @@ first interaction, and emits each growing sequence to the demonstrations below.
 This mode uses the production `StepGrid` with `activeMode="construct"` and an
 `arrivalSequence`. `StepGrid` and `PictographArrivalStage` therefore remain the
 owners of the option-to-grid preview, landing, and handoff animation. The older
-direct `WorkspaceGrid` composition remains only in the default full mode so the
-currently public `/composer` page does not change before mockup promotion.
+direct `WorkspaceGrid` composition remains only in the default full mode; the
+public `/composer` presentation uses the guided path.
 
 ## Problem
 

@@ -17,15 +17,15 @@ describe("SEO acquisition funnel analytics", () => {
     expect(layout).toContain("await initPostHog();");
   });
 
-  it("tracks every Composer launch CTA with its placement and destination", () => {
+  it("tracks the Composer launch CTA and the shared footer conversion", () => {
     const composer = read("src/routes/(public)/composer/+page.svelte");
-    const locations = Array.from(
-      composer.matchAll(/trackOpenComposer\("([^"]+)"\)/g),
-      (match) => match[1]
-    );
+    const footer = read("src/lib/shared/landing/components/SiteFooter.svelte");
 
-    expect(locations).toEqual(["hero", "viewer_3d", "footer"]);
+    expect(composer).toContain('trackCtaClick("hero"');
     expect(composer).toContain('destination: "/create"');
+    expect(composer).toContain("onclick={() => trackOpenComposer()}");
+    expect(footer).toContain('trackCtaClick("footer"');
+    expect(footer).toContain('destination: "/create"');
   });
 
   it("counts completed exports and shares without counting canceled share sheets", () => {

@@ -300,10 +300,13 @@ describe("landing shared-element contract", () => {
       'import { FALLBACK_DEMO } from "$lib/shared/landing/data/per-visit-demo"'
     );
     expect(composer).toContain(
-      "let demoSeq = $state<SequenceData | null>(FALLBACK_DEMO)"
+      "let sequence = $state<SequenceData>(FALLBACK_DEMO)"
     );
     expect(composer).toContain(
-      'await import("$lib/shared/landing/data/per-visit-demo")'
+      'loader={() => import("./_sections/ConstructSection.svelte")}'
+    );
+    expect(composer).toContain(
+      'loader={() => import("./_components/Composer3DViewerDemo.svelte")}'
     );
     expect(composer).toContain("showNotationStrip={true}");
     expect(composer).toContain("showWordHeader={true}");
@@ -354,28 +357,26 @@ describe("landing shared-element contract", () => {
     expect(anatomy).toContain(".preview-load-failure :global(.skeleton)");
   });
 
-  it("gives nested Composer demos cancellable loading and local recovery", () => {
+  it("gives the promoted Composer demonstrations local loading recovery", () => {
     const composer = readSource("src/routes/(public)/composer/+page.svelte");
     const generate = readSource(
-      "src/routes/(public)/composer/_sections/GenerateSection.svelte"
-    );
-    const mandala = readSource(
-      "src/routes/(public)/composer/_sections/MandalaSection.svelte"
+      "src/routes/(public)/composer/_components/ComposerGenerateDemo.svelte"
     );
     const sequenceHero = readSource(
       "src/lib/shared/landing/components/SequenceHeroDemo.svelte"
     );
 
-    expect(generate).toContain(
-      "const cancelSeed = runAfterNamedRouteMorphIdle"
-    );
-    expect(generate).toContain("cancelSeed();");
-    expect(generate).toContain("error={playerLoadError}");
-    expect(generate).toContain("error={stripLoadError}");
-    expect(mandala).toContain("This mandala did not load.");
-    expect(composer).toContain("tunnelActive && demoError && !demoSeq");
-    expect(composer).toContain("viewer3DActive && demoError && !demoSeq");
-    expect(composer).toContain("false,\n      rerollingDemo");
+    expect(composer).toContain("error={constructLoadError}");
+    expect(composer).toContain("error={tunnelLoadError}");
+    expect(composer).toContain("error={viewerLoadError}");
+    expect(composer).toContain("error={shelfLoadError}");
+    expect(composer).toContain("The step-by-step demonstration did not load.");
+    expect(composer).toContain("The tunnel demonstration did not load.");
+    expect(composer).toContain("The 3D demonstration did not load.");
+    expect(composer).toContain("The gallery shelf did not load.");
+    expect(generate).toContain("classifyComposerGenerationFailure(error)");
+    expect(generate).toContain('result === "no-result"');
+    expect(generate).toContain("The generator couldn't run. Try again.");
     expect(sequenceHero).toContain("placeholder={playerPlaceholder}");
     expect(sequenceHero).toContain("onStatusChange={(status) =>");
   });
