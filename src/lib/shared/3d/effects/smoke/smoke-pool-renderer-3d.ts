@@ -183,9 +183,11 @@ export class SmokePoolRenderer3D {
       this.x[slot] = source.position.x + (Math.random() - 0.5) * 0.06;
       this.y[slot] = source.position.y + (Math.random() - 0.5) * 0.04;
       this.z[slot] = source.position.z + (Math.random() - 0.5) * 0.06;
-      this.vx[slot] = (Math.random() - 0.5) * 0.08;
-      this.vy[slot] = params.resolvedRiseSpeed * (0.85 + Math.random() * 0.3);
-      this.vz[slot] = (Math.random() - 0.5) * 0.08;
+      this.vx[slot] = source.velocity.x * 0.32 + (Math.random() - 0.5) * 0.08;
+      this.vy[slot] =
+        source.velocity.y * 0.18 +
+        params.resolvedRiseSpeed * (0.85 + Math.random() * 0.3);
+      this.vz[slot] = source.velocity.z * 0.32 + (Math.random() - 0.5) * 0.08;
       this.age[slot] = 0;
       this.maxAge[slot] = params.lifetimeSeconds * (0.8 + Math.random() * 0.4);
       this.radiusStart[slot] = radius;

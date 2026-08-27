@@ -4,6 +4,33 @@
 **Date:** 2026-08-15  
 **Owner:** `SceneEffectsManager3D`
 
+## 2026-08-27 corrective review
+
+The first volume implementation failed visual review. At the production Classic
+preset, one performer accumulated a density sum above 300 and rendered as a
+performer-sized white dome. Four moving prop tips collapsed into one stationary
+column, opaque scene geometry could make the whole volume appear or disappear,
+and overlapping performer domains produced a flat wall of haze. This is the
+"haunted humidifier" failure mode. It does not satisfy the outcome below.
+
+The failure came from four concrete implementation errors:
+
+- source density had a constant floor even when authored emission was zero and
+  ignored the 2D renderer's ambient/motion rate contract;
+- prop velocity was integrated as a small force, including timestep scaling,
+  instead of being splatted into the velocity field as source momentum;
+- two pressure iterations and a very large 4.7 x 6.1 x 4.7 metre performer
+  domain erased coherent wakes into low-frequency blobs; and
+- conventional depth testing happened on the volume cube's back face. An
+  opaque fragment in front of that face could reject the entire ray even when
+  smoke in front of the opaque surface should remain visible.
+
+This correction keeps the scene-level density owner, but changes its observable
+contract. Density must remain sparse and source-shaped. Motion must pull a wake
+away from the current prop position within two simulation steps. A stationary
+source may create a narrow buoyant filament; it may not fill the performer
+domain. Scene depth clamps the ray itself, never the proxy cube fragment.
+
 ## Outcome
 
 Smoke reveals the lingering, buoyant three-dimensional wake of the prop. The
@@ -44,32 +71,45 @@ This document supersedes the 3D Smoke section of
 ### Current WebGL2 viewer
 
 High and Medium tiers use one scene-level renderer backed by a shared 3D
-density atlas. Each performer receives one bounded 20-cubed brick in that atlas. All
+density atlas. Each performer receives one 24-cubed brick in that atlas. All
 tracked prop tips for the performer inject density, heat, and velocity into the
 same brick. A brick follows its performer in whole-voxel increments while
 shifting its fields in the opposite direction, so existing smoke remains fixed
-in world space.
+in world space. Its physical envelope is not a permanent performer-sized box:
+solo and duet plumes expand into room space over their first seconds. Density
+and temperature dilute by the gained volume as the envelope entrains air.
+Groups of three or more retain the compact envelope to prevent transparent
+overdraw from eight overlapping room-sized fields.
 
 The CPU simulation runs at a fixed 30 Hz and uploads an unsigned-byte density
-atlas. Crowds above four performers interleave alternating brick sets, giving
-each low-frequency volume a 15 Hz field update while the material continues to
-animate its sub-voxel detail every frame. It performs:
+atlas. Three-to-four performer groups interleave alternating brick sets at
+15 Hz. Larger crowds interleave four brick sets at 7.5 Hz while the material
+continues to animate its sub-voxel detail every frame. It performs:
 
-- semi-Lagrangian transport for density, temperature, and velocity;
-- buoyancy and drag;
+- semi-Lagrangian transport for velocity plus bounded MacCormack correction for
+  density and temperature in the single-performer close review;
+- the same ambient/motion emission-rate composition as the 2D renderer;
+- direct, filtered prop-momentum splats plus buoyancy and drag;
+- deterministic divergence-free curl forcing in world space;
 - three-dimensional curl measurement and vorticity confinement;
-- divergence, Jacobi pressure solve, and velocity projection;
-- exponential dissipation; and
+- divergence, a tier-aware six-to-twelve-iteration Jacobi pressure solve, and
+  velocity projection;
+- exponential dissipation;
+- plume-envelope growth with mass-aware entrainment dilution; and
 - segment splats between the previous and current prop-tip positions.
 
 The renderer draws every active brick in one instanced call. A back-face
 raymarch accumulates optical depth front-to-back, applies palette absorption and
 scattering, samples a short density shadow cone, and adds sub-voxel turbulent
-warping. The material writes transparent, non-emissive smoke with normal depth
-testing and no depth writing. Close and small-group views retain the full ray
-and three-tap shadow budgets. Crowds above four performers use a 28-step High
-or 24-step Medium ray budget with a single shadow sample because each plume
-occupies fewer pixels at the wider camera framing.
+warping. The proxy cube does not use conventional depth testing. Instead, the
+raymarch consumes the existing compositor-owned scene depth snapshot and clamps
+each ray to the nearest opaque surface. This preserves smoke in front of props,
+performers, and scenery while preventing bleed-through and whole-volume
+eclipsing. The material writes transparent, non-emissive smoke with no depth
+writing. Close and small-group views retain the full ray and three-tap shadow
+budgets. Crowds above four performers use a 28-step High or 24-step Medium ray
+budget with a single shadow sample because each plume occupies fewer pixels at
+the wider camera framing.
 
 ### Lower tier and unsupported contexts
 
@@ -115,10 +155,12 @@ simulation and material values from each palette.
 
 `/test/smoke-3d-compare` uses `InfiniteSequenceGenerator`, requests 16 counts,
 and validates the result with `isEffectPreviewLoop`. It exposes honest loading,
-retry, and failure states. The harness reviews every Smoke material in the
-production viewer across black, Forest, and bright environments with one, four,
-and eight performers. It also reports active bricks, source count, ray steps,
-density, and CPU solve time while the sequence plays.
+retry, and failure states. The harness renders the production 2D fluid and 3D
+volume from the same sequence, preset, tempo, and effect state. The reference
+can be shown side by side or hidden for full-stage crowd review. It reviews
+every Smoke material across black, Forest, and bright environments with one,
+four, and eight performers, and reports active bricks, source count, ray steps,
+density, wake distance, and CPU solve time while the sequence plays.
 
 ## Acceptance gates
 
@@ -135,6 +177,14 @@ density, and CPU solve time while the sequence plays.
 8. Unit coverage proves atlas addressing, world-space brick shifts, continuous
    source splats, pressure projection, deterministic stepping, tier selection,
    disabling, and disposal.
+9. With authored ambient and motion emission both set to zero, density remains
+   zero. With motion emission enabled, density centroid and velocity align with
+   the prop path and leave a measurable wake behind the live tip.
+10. The comparison harness always exposes the production 2D reference. A 3D
+    review graded without that reference is incomplete.
+11. A solo plume grows beyond the original 2.7-metre performer box, thins as it
+    occupies room space, and loses density after emission stops. It may not
+    settle into a stationary halo around the performer.
 
 ## Risks and bail conditions
 
