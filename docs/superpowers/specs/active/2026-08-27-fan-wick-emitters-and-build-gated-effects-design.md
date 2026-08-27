@@ -151,6 +151,24 @@ retyping numbers. It remains the owner of emitter counts and positions for
 scaling props; the new module owns positions for builds that are fixed physical
 objects.
 
+**Velocity history must be re-keyed, or the flames go chaotic.**
+`tip-position-bridge-3d.ts:227` keys history as `` `${propIndex}-${tipIndex}` ``.
+Because all five wicks correctly share `effectTipIndex: 1`, five emitters would
+collide on one history entry and overwrite each other's `prevPosition` every
+frame. The resulting velocity and jerk are garbage, and they drive fire poof
+intensity, charcoal bursts and trail spawn — so the symptom is not a subtle
+one. The key needs an emitter ordinal, and the stale-signature cleanup at
+`:198`, which hardcodes `-0` and `-1`, must delete every emitter's entry.
+
+The transform itself is nearly free: the bridge already computes `finalQuat` and
+then discards everything but its +Y axis. A prop-local offset becomes
+`offset.clone().applyQuaternion(finalQuat)` in place of
+`tempAxis.multiplyScalar(axialOffset)`.
+
+Six call sites consume the current scalar shape: `EffectOrchestrator3D.svelte:188`
+and `:193`, `EffectsLayer.svelte:242` and `:248`, `tip-position-bridge-3d.ts:190`
+and `:208`, plus the `axialOffset` assertion in `sickles-registration.test.ts:45`.
+
 ### 3. `buildForEffect(propType, effect, current)`
 
 A pure domain module returning the prop-type and build changes an effect
