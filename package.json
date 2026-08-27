@@ -53,7 +53,7 @@
     "wt:status": "node scripts/worktree-automerge.mjs --skip-checks",
     "wt:automerge": "node scripts/worktree-automerge.mjs",
     "wt:automerge:apply": "node scripts/worktree-automerge.mjs --apply",
-    "type-check": "tsc --noEmit",
+    "type-check": "node scripts/svelte-kit-sync-if-needed.mjs && tsc --noEmit",
     "test": "vitest --config tests/config/vitest.config.ts",
     "test:ui": "vitest --config tests/config/vitest.config.ts --ui",
     "lint": "prettier --check . && eslint .",

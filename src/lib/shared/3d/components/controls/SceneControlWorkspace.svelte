@@ -11,7 +11,7 @@
     ViewerControlSink,
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
   import { dockSlide } from "$lib/shared/transitions/dock-slide";
-  import { createSheetDismiss } from "./BottomSheet.svelte";
+  import { createSheetDismiss } from "./sheet-dismiss";
   import SaveSceneModal from "$lib/features/scene-3d-collection/components/SaveSceneModal.svelte";
   import PerformerSpine from "./PerformerSpine.svelte";
   import SceneControlInspector from "./SceneControlInspector.svelte";

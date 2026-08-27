@@ -9,7 +9,7 @@ import {
   suggestCopyCounts,
 } from "../../../services/print-copy-suggester";
 import type { CardPair } from "../../../services/types";
-import type { PrintSide } from "../../print-preview/PrintPanel.svelte";
+import type { PrintSide } from "../../print-preview/print-side";
 import {
   buildDeckPrintMetadata,
   normalizeDeckFooters,

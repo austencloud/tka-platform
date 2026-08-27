@@ -185,15 +185,18 @@ function ease(t: number): number {
 }
 
 function samplePalette(stops: Stop[], at: number): Palette {
-  if (at <= stops[0].at) return stops[0];
-  const last = stops[stops.length - 1];
+  // The stop lists are authored module constants and never empty, so the
+  // first/last/neighbour lookups below cannot miss.
+  const first = stops[0]!;
+  if (at <= first.at) return first;
+  const last = stops[stops.length - 1]!;
   if (at >= last.at) return last;
 
   let index = 0;
-  while (index < stops.length - 2 && at > stops[index + 1].at) index += 1;
+  while (index < stops.length - 2 && at > stops[index + 1]!.at) index += 1;
 
-  const from = stops[index];
-  const to = stops[index + 1];
+  const from = stops[index]!;
+  const to = stops[index + 1]!;
   const t = ease((at - from.at) / (to.at - from.at));
 
   return {

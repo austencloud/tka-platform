@@ -242,20 +242,26 @@ describe("PropSvg orientation transitions", () => {
   ) {
     const screen = render(PropSvg, {
       motionData: {
-        ...motionData,
+        ...(motionData as Record<string, unknown>),
         startOrientation: fromOrientation,
       } as never,
       propAssets: assets(SVG_A),
-      propPosition: { ...propPosition, rotation: fromRotation } as never,
+      propPosition: {
+        ...(propPosition as Record<string, unknown>),
+        rotation: fromRotation,
+      } as never,
     });
 
     await screen.rerender({
       motionData: {
-        ...motionData,
+        ...(motionData as Record<string, unknown>),
         startOrientation: toOrientation,
       } as never,
       propAssets: assets(SVG_A),
-      propPosition: { ...propPosition, rotation: toRotation } as never,
+      propPosition: {
+        ...(propPosition as Record<string, unknown>),
+        rotation: toRotation,
+      } as never,
     });
     flushSync();
   }
