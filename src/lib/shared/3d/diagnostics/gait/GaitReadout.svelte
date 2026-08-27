@@ -85,10 +85,11 @@
           <span>left</span>
           <span>right</span>
           <span>twitch</span>
+          <span>jump</span>
         </div>
         <svg
           class="strip"
-          viewBox="0 0 {STRIP_W} 92"
+          viewBox="0 0 {STRIP_W} 114"
           preserveAspectRatio="none"
           role="img"
           aria-label="Footfall timeline"
@@ -103,6 +104,25 @@
               height="16"
               class="stance"
               class:skating={stance.slip > 0.02}
+            />
+          {/each}
+          <!-- Drawn under the bars and full height on purpose: a teleport is
+               only diagnosable next to what the feet were doing at the time,
+               and the moment it lines up with is usually a plant. -->
+          {#each report.jolts as jolt (jolt.t + jolt.joint)}
+            <line
+              x1={xOf(jolt.t)}
+              y1="0"
+              x2={xOf(jolt.t)}
+              y2="104"
+              class="jolt-line"
+            />
+            <line
+              x1={xOf(jolt.t)}
+              y1="86"
+              x2={xOf(jolt.t)}
+              y2="104"
+              class="jolt"
             />
           {/each}
           {#each report.twitches as twitch (twitch.t + twitch.foot)}
@@ -227,7 +247,7 @@
     transform: translateY(-50%);
   }
 
-  /* Band centres: left 4-20, right 34-50, twitch 62-82. */
+  /* Band centres: left 4-20, right 34-50, twitch 62-82, jump 86-104. */
   .strip-keys span:nth-child(1) {
     top: 12px;
   }
@@ -240,9 +260,13 @@
     top: 72px;
   }
 
+  .strip-keys span:nth-child(4) {
+    top: 95px;
+  }
+
   .strip {
     width: 100%;
-    height: 5.75rem;
+    height: 7.125rem;
     background: rgba(255, 255, 255, 0.03);
     border-radius: 0.375rem;
   }
@@ -264,6 +288,14 @@
   .twitch {
     stroke: #ff5f5f;
     stroke-width: 2;
+  }
+  .jolt {
+    stroke: #ff2fd0;
+    stroke-width: 2.5;
+  }
+  .jolt-line {
+    stroke: rgba(255, 47, 208, 0.28);
+    stroke-width: 1;
   }
 
   .plots {

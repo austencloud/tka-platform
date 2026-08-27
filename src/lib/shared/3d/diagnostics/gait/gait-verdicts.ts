@@ -112,6 +112,24 @@ export function verdictRows(report: GaitReport | null): VerdictRow[] {
       tell: "positive is the heel kicking up behind the character",
     },
     {
+      name: "Joint teleports",
+      value: r.joltsPerSecond.toFixed(1),
+      unit: "/s",
+      human: "0",
+      verdict: band(r.joltsPerSecond, [0, 0], [0, 0.5]),
+      tell: "a joint arriving in one frame instead of travelling there",
+    },
+    {
+      name: "Worst teleport",
+      value: r.peakJoltJoint
+        ? `${Math.round(r.peakJolt)} (${r.peakJoltJoint})`
+        : "--",
+      unit: "m/s2",
+      human: "under 300",
+      verdict: r.peakJoltJoint ? band(r.peakJolt, [0, 300], [0, 900]) : "none",
+      tell: `worst single-frame jump was ${cm(r.peakJoltStep)}cm in one frame`,
+    },
+    {
       name: "Knee twitches",
       value: r.twitchesPerSecond.toFixed(1),
       unit: "/s",

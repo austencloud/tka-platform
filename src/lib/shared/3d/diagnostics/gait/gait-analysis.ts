@@ -29,6 +29,18 @@ export interface GaitThresholds {
   minStanceDuration: number;
   /** Knee jerk above this is a visible pop, degrees/second squared. */
   twitchJerk: number;
+  /**
+   * Body-local acceleration above which a joint counts as having jumped
+   * rather than moved, metres/second squared.
+   *
+   * Calibrated in the walk lab rather than guessed. With the planter off,
+   * and with it on at the clip's authored speed, the worst honest frame
+   * across every pattern measured 180 - a toe whipping through mid-swing at
+   * 1.8 m/s. The faulted cases start at 608 and reach 6655. At sixty frames
+   * a second this threshold is a joint appearing eight centimetres away in
+   * one of them, and it sits in the gap between those two populations.
+   */
+  joltAccel: number;
   /** Lateral pelvis offset that counts as "over the foot", metres. */
   overFootLateral: number;
 }
@@ -39,6 +51,7 @@ export const DEFAULT_THRESHOLDS: GaitThresholds = {
   movingFootSpeed: 0.25,
   minStanceDuration: 0.08,
   twitchJerk: 4000,
+  joltAccel: 300,
   overFootLateral: 0.06,
 };
 
@@ -49,6 +62,34 @@ export interface Twitch {
   /** Change in knee angular velocity over one frame, degrees/second squared. */
   jerk: number;
   kneeAngle: number;
+}
+
+/** Which joint a jolt happened to. */
+export type JoltJoint =
+  | "pelvis"
+  | "left knee"
+  | "left ankle"
+  | "left toe"
+  | "right knee"
+  | "right ankle"
+  | "right toe";
+
+/**
+ * A joint arriving somewhere instead of travelling there.
+ *
+ * Measured in the character's own frame, so a body moving fast is not a body
+ * jumping: the pelvis is taken against the position the movement system asked
+ * for, and every leg joint against the pelvis. What is left is the pose
+ * changing, which is the only thing a clip, a blend, or an IK solver can do
+ * abruptly.
+ */
+export interface Jolt {
+  t: number;
+  joint: JoltJoint;
+  /** Body-local acceleration, metres/second squared. */
+  accel: number;
+  /** How far it moved in that one frame, body-local, metres. */
+  step: number;
 }
 
 export interface GaitReport {
@@ -103,6 +144,16 @@ export interface GaitReport {
   twitchesPerSecond: number;
   /** RMS knee jerk, degrees/second squared, both legs. */
   kneeJerkRms: number;
+
+  // -- The teleports ----------------------------------------------------
+  jolts: Jolt[];
+  joltsPerSecond: number;
+  /** Worst body-local joint acceleration in the buffer, m/s squared. */
+  peakJolt: number;
+  /** Which joint that was, or null when nothing was measured. */
+  peakJoltJoint: JoltJoint | null;
+  /** How far the worst one moved in a single frame, metres. */
+  peakJoltStep: number;
 
   // -- Walking on the spot ----------------------------------------------
   /** Seconds the feet kept cycling while the root was not going anywhere. */
@@ -362,6 +413,108 @@ export function findTwitches(
   return { twitches, jerkRms: n > 0 ? Math.sqrt(sumSq / n) : 0 };
 }
 
+/** Every joint the jolt pass watches, with what it is measured against. */
+const JOINT_TRACKS: readonly {
+  joint: JoltJoint;
+  of: (frame: GaitFrame) => Vec3 | null;
+  from: (frame: GaitFrame) => Vec3;
+}[] = [
+  { joint: "pelvis", of: (f) => f.hips, from: (f) => f.root },
+  { joint: "left knee", of: (f) => f.left.knee, from: (f) => f.hips },
+  { joint: "left ankle", of: (f) => f.left.ankle, from: (f) => f.hips },
+  { joint: "left toe", of: (f) => f.left.toe, from: (f) => f.hips },
+  { joint: "right knee", of: (f) => f.right.knee, from: (f) => f.hips },
+  { joint: "right ankle", of: (f) => f.right.ankle, from: (f) => f.hips },
+  { joint: "right toe", of: (f) => f.right.toe, from: (f) => f.hips },
+];
+
+/**
+ * A joint's offset from its reference, turned into the character's own frame.
+ *
+ * Without the rotation a character walking a circle reads as though its legs
+ * are being flung sideways, because the whole body is swinging around the
+ * world axes. In its own frame a leg is doing the same thing on every heading.
+ */
+function localOffset(
+  frame: GaitFrame,
+  point: Vec3,
+  reference: Vec3
+): [number, number, number] {
+  const dx = point.x - reference.x;
+  const dz = point.z - reference.z;
+  const [rx, rz] = rightOf(frame.facing);
+  const fx = Math.sin(frame.facing);
+  const fz = Math.cos(frame.facing);
+  return [dx * rx + dz * rz, point.y - reference.y, dx * fx + dz * fz];
+}
+
+/**
+ * Joints that arrive instead of travelling.
+ *
+ * The complaint this answers is a foot that teleports, and no aggregate over a
+ * whole buffer can answer it: a single bad frame in six hundred moves a mean
+ * by nothing at all. So this looks at frames, one at a time, and reports the
+ * time each one happened at.
+ *
+ * The measure is the second difference of position, the same shape as the
+ * knee-twitch pass one dimension up. Velocity alone cannot separate a fast
+ * swing from a jump - a foot honestly reaches four metres a second at
+ * mid-swing. Acceleration can: reaching that speed takes a fifth of a second
+ * of leg, and arriving at it takes one frame.
+ */
+export function findJolts(
+  frames: readonly GaitFrame[],
+  thresholds: GaitThresholds
+): {
+  jolts: Jolt[];
+  peak: number;
+  peakJoint: JoltJoint | null;
+  peakStep: number;
+} {
+  const jolts: Jolt[] = [];
+  let peak = 0;
+  let peakJoint: JoltJoint | null = null;
+  let peakStep = 0;
+
+  for (const track of JOINT_TRACKS) {
+    for (let i = 2; i < frames.length; i++) {
+      const a = track.of(frames[i - 2]!);
+      const b = track.of(frames[i - 1]!);
+      const c = track.of(frames[i]!);
+      // A rig without a ToeBase has no toe track to measure.
+      if (!a || !b || !c) break;
+
+      const pa = localOffset(frames[i - 2]!, a, track.from(frames[i - 2]!));
+      const pb = localOffset(frames[i - 1]!, b, track.from(frames[i - 1]!));
+      const pc = localOffset(frames[i]!, c, track.from(frames[i]!));
+
+      const dt = Math.max(frames[i]!.dt, EPS);
+      let sq = 0;
+      let stepSq = 0;
+      for (let axis = 0; axis < 3; axis++) {
+        const second = pc[axis]! - 2 * pb[axis]! + pa[axis]!;
+        sq += second * second;
+        const delta = pc[axis]! - pb[axis]!;
+        stepSq += delta * delta;
+      }
+      const accel = Math.sqrt(sq) / (dt * dt);
+      const step = Math.sqrt(stepSq);
+
+      if (accel > peak) {
+        peak = accel;
+        peakJoint = track.joint;
+        peakStep = step;
+      }
+      if (accel >= thresholds.joltAccel) {
+        jolts.push({ t: frames[i]!.t, joint: track.joint, accel, step });
+      }
+    }
+  }
+
+  jolts.sort((a, b) => a.t - b.t);
+  return { jolts, peak, peakJoint, peakStep };
+}
+
 /**
  * The character's own right, on the ground plane, as [x, z].
  *
@@ -428,6 +581,11 @@ function emptyReport(frameCount: number): GaitReport {
     twitches: [],
     twitchesPerSecond: 0,
     kneeJerkRms: 0,
+    jolts: [],
+    joltsPerSecond: 0,
+    peakJolt: 0,
+    peakJoltJoint: null,
+    peakJoltStep: 0,
     inPlaceCyclingSeconds: 0,
     inPlaceCyclingFraction: 0,
     weightShiftAmplitude: 0,
@@ -523,6 +681,7 @@ export function analyzeGait(
   }
 
   const { twitches, jerkRms } = findTwitches(frames, thresholds);
+  const jolt = findJolts(frames, thresholds);
 
   // Balancing on a leg means bringing the body over it, so the pelvis must sit
   // LEFT of the travel line while the left foot carries it and right of the
@@ -559,6 +718,11 @@ export function analyzeGait(
     twitches,
     twitchesPerSecond: duration > 0 ? twitches.length / duration : 0,
     kneeJerkRms: jerkRms,
+    jolts: jolt.jolts,
+    joltsPerSecond: duration > 0 ? jolt.jolts.length / duration : 0,
+    peakJolt: jolt.peak,
+    peakJoltJoint: jolt.peakJoint,
+    peakJoltStep: jolt.peakStep,
     inPlaceCyclingSeconds: inPlace,
     inPlaceCyclingFraction: duration > 0 ? inPlace / duration : 0,
     weightShiftAmplitude,

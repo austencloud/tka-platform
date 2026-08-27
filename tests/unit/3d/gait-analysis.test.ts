@@ -5,6 +5,7 @@ import {
   DEFAULT_THRESHOLDS,
   extractStances,
   localGroundSeries,
+  findJolts,
   findTwitches,
   lateralOffsetOverSupport,
   resolveGroundY,
@@ -127,6 +128,59 @@ function syntheticWalk(options: {
     }
     if (planted === "left") rightZ = leftZ + stepLength;
     else leftZ = rightZ + stepLength;
+  }
+
+  return frames;
+}
+
+/**
+ * A walk with no discontinuities anywhere in it.
+ *
+ * `syntheticWalk` is built to exercise contact and slip, and its swing foot
+ * jumps a few centimetres at each swap - it appears at a lifted height and
+ * vanishes mid-arc. That is invisible to a stance-and-slip measurement and
+ * fatal to a teleport measurement, so the jolt tests get their own walk whose
+ * swing height and swing travel both start and end with zero value and zero
+ * slope. Anything this one flags came from the test, not from the fixture.
+ */
+function smoothWalk(
+  steps: number,
+  stepLength: number,
+  framesPerStance: number
+): GaitFrame[] {
+  const LIFT = 0.16;
+  const TAU = Math.PI * 2;
+  const frames: GaitFrame[] = [];
+  const foot = { left: 0, right: stepLength };
+  let t = 0;
+  let rootZ = 0;
+
+  for (let step = 0; step < steps; step++) {
+    const swinging = step % 2 === 0 ? "right" : "left";
+    const from = foot[swinging];
+    for (let i = 0; i < framesPerStance; i++) {
+      const u = i / framesPerStance;
+      const swing = {
+        // Raised cosine: zero height and zero vertical speed at both ends.
+        y: LIFT * 0.5 * (1 - Math.cos(TAU * u)),
+        // Its integral, so the foot also leaves and lands at zero speed.
+        z: from + 2 * stepLength * (u - Math.sin(TAU * u) / TAU),
+      };
+      const up = { x: swinging === "left" ? -0.1 : 0.1, ...swing };
+      const down = {
+        x: swinging === "left" ? 0.1 : -0.1,
+        y: 0,
+        z: foot[swinging === "left" ? "right" : "left"],
+      };
+      frames.push(
+        swinging === "left"
+          ? frame(t, { x: 0, z: rootZ }, up, down)
+          : frame(t, { x: 0, z: rootZ }, down, up)
+      );
+      rootZ += stepLength / framesPerStance;
+      t += DT;
+    }
+    foot[swinging] = from + 2 * stepLength;
   }
 
   return frames;
@@ -407,6 +461,53 @@ describe("gait analysis", () => {
     // Two seconds of both feet flat is double support, not flight.
     expect(report.doubleSupportFraction).toBeGreaterThan(0.25);
     expect(report.stances.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("does not call an honest swing a teleport", () => {
+    const frames = smoothWalk(4, 0.7, 30);
+    const found = findJolts(frames, DEFAULT_THRESHOLDS);
+    expect(found.jolts).toEqual([]);
+    // A foot turning around at the end of its swing is the fastest thing a
+    // leg does honestly, and the threshold has to clear it with room to spare
+    // or every stride would read as a fault.
+    expect(found.peak).toBeLessThan(DEFAULT_THRESHOLDS.joltAccel / 2);
+  });
+
+  it("names the joint that arrived instead of travelling there", () => {
+    const frames = smoothWalk(4, 0.7, 30);
+    const at = 45;
+    frames[at]!.right.ankle.y += 0.15;
+
+    const found = findJolts(frames, DEFAULT_THRESHOLDS);
+    expect(found.jolts.length).toBeGreaterThan(0);
+    expect(found.peakJoint).toBe("right ankle");
+    expect(found.peakStep).toBeCloseTo(0.15, 2);
+    for (const jolt of found.jolts) {
+      expect(jolt.joint).toBe("right ankle");
+      // A one-frame displacement shows up in the three second-difference
+      // windows that span it, and nowhere else.
+      expect(jolt.t).toBeGreaterThanOrEqual(frames[at]!.t - 1e-9);
+      expect(jolt.t).toBeLessThanOrEqual(frames[at + 2]!.t + 1e-9);
+    }
+  });
+
+  it("measures in the character's own frame, so a fast body is not a jumping one", () => {
+    // The pose never changes; only the world position does, and it does so
+    // hard enough that a world-space measurement would flag every frame.
+    const frames: GaitFrame[] = [];
+    for (let i = 0; i < 30; i++) {
+      const t = i * DT;
+      const z = 40 * t * t;
+      frames.push(
+        frame(
+          t,
+          { x: 0, z },
+          { x: 0.1, y: 0, z: z + 0.3 },
+          { x: -0.1, y: 0, z: z - 0.3 }
+        )
+      );
+    }
+    expect(findJolts(frames, DEFAULT_THRESHOLDS).jolts).toEqual([]);
   });
 
   it("returns an empty report rather than dividing by an empty buffer", () => {
