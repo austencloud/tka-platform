@@ -9,6 +9,7 @@
    */
 
   import { T } from "@threlte/core";
+  import { Object3D } from "three";
   import { tryGetAdaptiveQualityContext } from "../../../context/adaptive-quality-context";
   import type { HemisphereLightConfig } from "../../domain/models/scene-configs/shared-scene-config";
   import {
@@ -20,24 +21,45 @@
     hemisphere: HemisphereLightConfig;
     profile?: ForestLightingConfig;
     groundY?: number;
+    /** World-space center of the active shadow pool. */
+    anchor?: { x: number; y: number; z: number };
+    /** Site-scale consumers can widen the original clearing shadow camera. */
+    shadowExtentMeters?: number;
+    keyLightDistanceMeters?: number;
   }
 
-  let { hemisphere, profile, groundY = 0 }: Props = $props();
+  let {
+    hemisphere,
+    profile,
+    groundY = 0,
+    anchor = { x: 0, y: groundY, z: 0 },
+    shadowExtentMeters,
+    keyLightDistanceMeters = 64,
+  }: Props = $props();
 
-  const KEY_LIGHT_DISTANCE = 64;
   const adaptiveQuality = tryGetAdaptiveQualityContext();
   const shadowsEnabled = $derived(
     adaptiveQuality?.config.enableShadows ?? true
   );
   const activeProfile = $derived(profile ?? FOREST_NIGHT_LIGHTING);
+  const keyTarget = new Object3D();
   const keyPosition = $derived.by(() => {
     const direction = activeProfile.key.direction;
     const length = Math.hypot(...direction);
-    if (length === 0) return [12, 22, -58] as const;
+    if (length === 0) {
+      return [anchor.x + 12, anchor.y + 22, anchor.z - 58] as const;
+    }
 
-    return direction.map(
-      (component) => (component / length) * KEY_LIGHT_DISTANCE
-    ) as [number, number, number];
+    return [
+      anchor.x + (direction[0] / length) * keyLightDistanceMeters,
+      anchor.y + (direction[1] / length) * keyLightDistanceMeters,
+      anchor.z + (direction[2] / length) * keyLightDistanceMeters,
+    ] as const;
+  });
+
+  $effect(() => {
+    keyTarget.position.set(anchor.x, anchor.y, anchor.z);
+    keyTarget.updateMatrixWorld();
   });
 </script>
 
@@ -47,22 +69,24 @@
   color={activeProfile.key.color}
   intensity={activeProfile.key.intensity}
   position.x={keyPosition[0]}
-  position.y={keyPosition[1] + groundY}
+  position.y={keyPosition[1]}
   position.z={keyPosition[2]}
+  target={keyTarget}
   castShadow={shadowsEnabled}
   shadow.mapSize.width={2048}
   shadow.mapSize.height={2048}
   shadow.camera.near={1}
   shadow.camera.far={140}
-  shadow.camera.left={-28}
-  shadow.camera.right={48}
-  shadow.camera.top={30}
-  shadow.camera.bottom={-30}
+  shadow.camera.left={shadowExtentMeters ? -shadowExtentMeters : -28}
+  shadow.camera.right={shadowExtentMeters ?? 48}
+  shadow.camera.top={shadowExtentMeters ?? 30}
+  shadow.camera.bottom={shadowExtentMeters ? -shadowExtentMeters : -30}
   shadow.bias={-0.0006}
   shadow.normalBias={0.035}
   shadow.radius={3}
   shadow.intensity={activeProfile.key.shadowIntensity}
 />
+<T is={keyTarget} />
 
 <!-- Camera-side canopy fill keeps bark and leaf color legible while the
      authored key still owns the shadows. -->
