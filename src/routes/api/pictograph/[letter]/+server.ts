@@ -20,7 +20,6 @@ export const GET: RequestHandler = async ({ params }) => {
   }
 
   try {
-    // Load CSV data
     const csvPath = path.join(process.cwd(), 'static', 'data', 'pictographs', 'DiamondPictographDataframe.csv');
     const csvData = fs.readFileSync(csvPath, 'utf-8');
     const lines = csvData.split('\n');

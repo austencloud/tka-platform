@@ -27,7 +27,6 @@ export interface StepMotionConfigs {
   red: MotionConfig3D | null;
 }
 
-/** Convert a MotionData object to MotionConfig3D */
 export function motionDataToConfig3D(
   motion: MotionData,
   fallbackPlane: Plane = Plane.WALL,

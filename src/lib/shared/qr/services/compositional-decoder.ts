@@ -56,7 +56,6 @@ export class CompositionalDecoder implements ICompositionalDecoder {
     const expectedHash = withoutPrefix.slice(firstColon + 1, secondColon);
     const compressedSeed = withoutPrefix.slice(secondColon + 1);
 
-    // Validate tag
     if (!TAG_TO_LOOP_TYPE[tag]) {
       throw new Error(`Unknown LOOP type tag: "${tag}"`);
     }

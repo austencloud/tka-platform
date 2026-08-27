@@ -60,7 +60,6 @@ export interface TempoCallbacks {
   onPlaybackModeChange: (mode: PlaybackMode) => void;
 }
 
-// ── Adapter factory ────────────────────────────────────────────────────
 
 export function createAvatarPlaybackAdapter(
   getAvatar: () => AvatarPlaybackHandle | null,

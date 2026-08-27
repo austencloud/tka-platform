@@ -30,7 +30,6 @@ import type { AnimatorState } from "../state/animator-state.svelte";
 export type FrameParamsProvider = () => RenderFrameParams;
 
 export class PropTypeManager {
-  // ── State ───────────────────────────────────────────────────────────
   propTypeOverrideBlue: string | null = null;
   propTypeOverrideRed: string | null = null;
   trailsSuppressedUntilTextureLoad = false;

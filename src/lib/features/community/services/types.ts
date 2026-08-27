@@ -1,5 +1,3 @@
-// --- From ILocationProvider ---
-// --- From IFollowingFeedProvider ---
 /**
  * IFollowingFeedProvider - Following Feed Service Contract
  *
@@ -48,7 +46,6 @@ export interface FollowingFeedOptions {
   userId?: string;
 }
 
-// --- From IGeocodingService ---
 /**
  * Geocoding Service Interface
  * Converts coordinates to city/country and gets city center coordinates

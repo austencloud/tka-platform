@@ -83,9 +83,7 @@ export function displayRating(mu: number, phi: number): number {
   return Math.round(mu - 2 * phi);
 }
 
-// ---------------------------------------------------------------------------
 // Glicko-2 internals
-// ---------------------------------------------------------------------------
 
 /**
  * Update a single player's rating after one game against one opponent.

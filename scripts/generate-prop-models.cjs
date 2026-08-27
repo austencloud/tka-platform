@@ -22,9 +22,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-// ============================================================================
 // Prop definitions — carefully crafted prompts for each prop type
-// ============================================================================
 
 const PROP_DEFINITIONS = {
   staff: {
@@ -147,9 +145,7 @@ const PROP_DEFINITIONS = {
   },
 };
 
-// ============================================================================
 // Meshy API client
-// ============================================================================
 
 const MESHY_API_BASE = "https://api.meshy.ai";
 

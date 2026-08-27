@@ -137,7 +137,6 @@
     return content;
   }
 
-  // Get all inline content from message parts
   function getInlineContentFromParts(parts: UIMessage["parts"]): InlineContent[] {
     if (!parts) return [];
     const allContent: InlineContent[] = [];

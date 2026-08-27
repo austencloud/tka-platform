@@ -1,4 +1,3 @@
-// src/lib/features/lab/pronunciation-recorder/domain/sample-ring.ts
 /**
  * Fixed-capacity sample ring with an absolute sample clock.
  *

@@ -53,7 +53,6 @@ import { getStripPatternEngine } from "$lib/features/poi/get-strip-pattern-engin
     poi.generateFromPreset();
   }
 
-  // ── Sequence picker ────────────────────────────────────────────
   // The lab starts in abstract-beat mode; loading a sequence ties
   // the timeline's beat count to the sequence's step count so each
   // beat corresponds to a real TKA step the user can paint onto.

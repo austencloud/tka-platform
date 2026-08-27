@@ -59,7 +59,6 @@
   });
   const groundY = $derived(userProportionsState.groundY);
 
-  // ── Fog ───────────────────────────────────────────────────────────────
 
   let fogInstance: FogExp2 | null = null;
   $effect(() => {
@@ -74,7 +73,6 @@
     };
   });
 
-  // ── Shared GLSL ──────────────────────────────────────────────────────
 
   const SIMPLEX_GLSL = /* glsl */ `
     vec3 mod289v3(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
@@ -141,7 +139,6 @@
     }
   `;
 
-  // ── Aurora curtain dome ──────────────────────────────────────────────
 
   const auroraDomeGeometry = untrack(() => new SphereGeometry(70, 48, 48));
 

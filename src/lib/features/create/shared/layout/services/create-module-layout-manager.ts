@@ -46,7 +46,6 @@ export class CreateModuleLayoutManager {
       isLikelyZFoldUnfolded ||
       isSignificantlyLandscape;
 
-    // Get navigation layout from device detector
     const navigationLayout = this.deviceDetector.getNavigationLayoutImmediate();
 
     return {
@@ -73,9 +72,6 @@ export class CreateModuleLayoutManager {
     });
   }
 
-  /**
-   * Get current viewport dimensions
-   */
   getViewportDimensions(): { width: number; height: number } {
     return {
       width: this.viewportService.width,
@@ -104,9 +100,6 @@ export class CreateModuleLayoutManager {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import { deviceDetector } from "$lib/shared/device/services/device-detector";
 import { viewportManager } from "$lib/shared/device/services/viewport-manager.svelte";
 

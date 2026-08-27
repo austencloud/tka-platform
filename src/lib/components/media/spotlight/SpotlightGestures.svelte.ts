@@ -77,7 +77,6 @@ export interface GestureCallbacks {
 }
 
 export class SpotlightGestureHandler {
-  // ===== Touch Tracking =====
   private touchStartX = 0;
   private touchStartY = 0;
   private touchCurrentX = 0;
@@ -86,21 +85,17 @@ export class SpotlightGestureHandler {
   private initialPinchDistance = 0;
   private initialScale = 1;
 
-  // ===== Gesture State =====
   private gestureType: GestureType = "none";
   private isGestureActive = false;
   private gestureDirection: GestureDirection = null;
 
-  // ===== Zoom State =====
   private scale = 1;
   private panX = 0;
   private panY = 0;
   private lastTapTime = 0;
 
-  // ===== Callbacks =====
   private callbacks: GestureCallbacks = {};
 
-  // ===== Element Reference =====
   private element: HTMLElement | null = null;
   private cleanupFn: (() => void) | null = null;
 
@@ -148,9 +143,6 @@ export class SpotlightGestureHandler {
     this.callbacks = { ...this.callbacks, ...callbacks };
   }
 
-  /**
-   * Get current gesture state
-   */
   getState(): GestureState {
     const deltaX = this.touchCurrentX - this.touchStartX;
     const deltaY = this.touchCurrentY - this.touchStartY;
@@ -183,9 +175,6 @@ export class SpotlightGestureHandler {
     };
   }
 
-  /**
-   * Reset zoom to 1x
-   */
   resetZoom() {
     this.scale = 1;
     this.panX = 0;
@@ -199,7 +188,6 @@ export class SpotlightGestureHandler {
     return this.scale > 1;
   }
 
-  // ===== Touch Handlers =====
 
   private onTouchStart(e: TouchEvent) {
     const touches = e.touches;
@@ -374,9 +362,6 @@ export class SpotlightGestureHandler {
     return Math.sqrt(dx * dx + dy * dy);
   }
 
-  /**
-   * Apply rubber band effect to offset
-   */
   applyRubberBand(offset: number, atEdge: boolean): number {
     if (!atEdge) return offset;
     // Diminishing returns as you pull further

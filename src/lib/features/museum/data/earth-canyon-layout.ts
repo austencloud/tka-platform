@@ -54,7 +54,6 @@ const HALF = TILE / 2;
 /** See elevationAt: how far tile rounding lets the player drift past a rect edge. */
 const TILE_ROUNDING_SLOP = TILE / 2;
 
-// ── Room ids ────────────────────────────────────────────────────────────────
 
 export const EARTH_ROOM_ID = "cave-earth";
 export const FIRE_ROOM_ID = "cave-fire";
@@ -156,7 +155,6 @@ const EXIT_JUNCTION = 2.0;
 /** Depth of the south band the rim, kerb and ramp have to share. */
 const SOUTH_BAND_MIN = RIM_WIDTH + EXIT_KERB_DEPTH + EXIT_WIDTH;
 
-// ── Types ───────────────────────────────────────────────────────────────────
 
 /**
  * A circle in the world plane. The shared primitive this room needed: the void,
@@ -181,14 +179,12 @@ export interface EarthCanyonLayout {
   /** Corridor tiles between Fire's east door and the earth west door. */
   corridor: WorldRect[];
 
-  // ── the gully ──
   gullyMouth: WorldRect;
   gullyBend: WorldRect;
   gullyLower: WorldRect;
   /** True when the bend leg runs north (decreasing z) from the mouth. */
   bendRunsNorth: boolean;
 
-  // ── the overlook ──
   /** Everything east of the gully strip: the whole rim ring plus the void. */
   chamber: WorldRect;
   /** Blocked boulder band just inside the compiled north wall. */
@@ -201,7 +197,6 @@ export interface EarthCanyonLayout {
   /** Walkable rim ring: chamber floor minus the void, slab, kerb and ramp. */
   rimRects: WorldRect[];
 
-  // ── the slab overlook ──
   /** Ramp up from the south rim onto the viewing apron. */
   slabRamp: WorldRect;
   /** The one walkable metre. */
@@ -209,7 +204,6 @@ export interface EarthCanyonLayout {
   /** The fractured two metres over the void. Blocked. */
   slabNose: WorldRect;
 
-  // ── the drop ──
   void_: Disc;
   /**
    * Radius of the rendered daylight column. Derived, not authored: the slab
@@ -233,7 +227,6 @@ export interface EarthCanyonLayout {
   /** Station anchors on the boss tops, west → east. */
   stations: Point2[];
 
-  // ── the way out ──
   exitRamp: WorldRect;
   /** Flat threshold east of the ramp, holding the Air door's corner at datum 0. */
   exitLanding: WorldRect;
@@ -246,7 +239,6 @@ export interface EarthCanyonLayout {
   /** Every interior tile the programme does not use. */
   rockFill: WorldRect[];
 
-  // ── everything the graybox renders ──
   floorRects: FloorRect[];
   wallRects: WallRect[];
   ceilingRects: CeilingRect[];
@@ -272,7 +264,6 @@ export interface EarthCanyonLayout {
   };
 }
 
-// ── Shared anchor expression ────────────────────────────────────────────────
 
 /**
  * Boss offsets in metres from the earth chamber's interior minimum corner. The
@@ -292,7 +283,6 @@ export function earthCanyonStationOffsets(
   }));
 }
 
-// ── Small helpers ───────────────────────────────────────────────────────────
 
 const cx = (r: WorldRect) => (r.minX + r.maxX) / 2;
 const cz = (r: WorldRect) => (r.minZ + r.maxZ) / 2;

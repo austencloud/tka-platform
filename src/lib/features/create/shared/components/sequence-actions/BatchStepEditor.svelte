@@ -149,7 +149,6 @@
     gap: 12px;
   }
 
-  /* ===== Header ===== */
   .batch-header {
     display: flex;
     align-items: center;
@@ -194,7 +193,6 @@
     min-width: var(--min-touch-target, 44px);
   }
 
-  /* ===== Pictograph grid ===== */
   .grid-scroll {
     flex: 1 1 auto;
     min-height: 0;

@@ -46,7 +46,6 @@
     };
   });
 
-  // Get action content
   const action = $derived(
     actionHelpContent.find((t) => t.id === transformId) ?? actionHelpContent[0]
   );
@@ -75,7 +74,6 @@
   let displayedPictograph = $state<PictographData | null>(null);
   let isLoading = $state(true);
 
-  // Load initial example
   $effect(() => {
     if (isTransform) {
       loadInitialExample();
@@ -136,14 +134,12 @@
     displayedPictograph = transformed;
   }
 
-  // Handle keyboard
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === "Escape") {
       onClose();
     }
   }
 
-  // Handle backdrop click
   function handleBackdropClick(event: MouseEvent) {
     if (event.target === event.currentTarget) {
       onClose();

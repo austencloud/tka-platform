@@ -21,7 +21,6 @@ const { COLLECTIONS, LINK_TYPES, JOURNAL_TYPES } = config;
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 async function addLink(db, fromId, toId, linkType, note = null) {
-  // Validate link type
   if (!LINK_TYPES.includes(linkType)) {
     return {
       success: false,

@@ -56,9 +56,7 @@ export abstract class EraRendererBase {
 		this.preparer = preparer;
 	}
 
-	// -------------------------------------------------------------------------
 	// Data conversion
-	// -------------------------------------------------------------------------
 
 	/**
 	 * Convert retro pictograph data to the modern PictographData format that

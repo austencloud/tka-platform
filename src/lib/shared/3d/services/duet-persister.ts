@@ -39,9 +39,6 @@ export class DuetPersister {
     return duet.id;
   }
 
-  /**
-   * Update an existing duet
-   */
   async updateDuet(duet: DuetSequence): Promise<void> {
     const duets = this.loadFromStorage();
     const index = duets.findIndex((d) => d.id === duet.id);
@@ -51,25 +48,16 @@ export class DuetPersister {
     }
   }
 
-  /**
-   * Get a duet by ID
-   */
   async getDuet(id: string): Promise<DuetSequence | null> {
     const duets = this.loadFromStorage();
     const stored = duets.find((d) => d.id === id);
     return stored ? this.deserializeDuet(stored) : null;
   }
 
-  /**
-   * Get all saved duets
-   */
   async getAllDuets(): Promise<DuetSequence[]> {
     return this.loadFromStorage().map((d) => this.deserializeDuet(d));
   }
 
-  /**
-   * Delete a duet by ID
-   */
   async deleteDuet(id: string): Promise<void> {
     const duets = this.loadFromStorage();
     const filtered = duets.filter((d) => d.id !== id);
@@ -111,9 +99,6 @@ export class DuetPersister {
     };
   }
 
-  // ============================================================
-  // PRIVATE HELPERS
-  // ============================================================
 
   private loadFromStorage(): StoredDuet[] {
     try {

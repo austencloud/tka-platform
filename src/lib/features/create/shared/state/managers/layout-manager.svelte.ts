@@ -21,7 +21,6 @@ export interface LayoutManagerConfig {
 export function createLayoutEffects(config: LayoutManagerConfig): () => void {
   const { layoutService, onLayoutChange } = config;
 
-  // Initialize layout service
   layoutService.initialize();
 
   // Subscribe to layout changes

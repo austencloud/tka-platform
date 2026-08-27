@@ -14,9 +14,7 @@ import type {
 } from "../domain/coral-types";
 import type { CoralSceneConfig } from "./types";
 
-// --------------------------------------------------------------------------
 // Constants
-// --------------------------------------------------------------------------
 
 /** Depth layer rendering properties: [minScale, maxScale, minOpacity, maxOpacity] */
 const LAYER_PROPERTIES: Record<CoralDepthLayer, [number, number, number, number]> = {
@@ -34,9 +32,7 @@ const DEFAULT_LAYER_COUNTS: [number, number, number] = [6, 8, 6];
 
 const LAYERS_ORDER: CoralDepthLayer[] = ["back", "mid", "front"];
 
-// --------------------------------------------------------------------------
 // Helpers
-// --------------------------------------------------------------------------
 
 function rand(min: number, max: number): number {
   return min + Math.random() * (max - min);
@@ -51,9 +47,7 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-// --------------------------------------------------------------------------
 // Implementation
-// --------------------------------------------------------------------------
 
 export class CoralSceneRenderer {
   private readonly loader: CoralAssetLoader;
@@ -193,9 +187,7 @@ export class CoralSceneRenderer {
     this.loader.cleanup();
   }
 
-  // --------------------------------------------------------------------------
   // Private
-  // --------------------------------------------------------------------------
 
   private placeCoral(
     assetsByLayer: Map<CoralDepthLayer, TintedCoralAsset[]>,

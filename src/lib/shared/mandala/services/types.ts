@@ -1,4 +1,3 @@
-// --- From MandalaGeometryCalculator ---
 export interface StepLike {
 	motions?: {
 		blue?: MotionLike | null;
@@ -53,7 +52,6 @@ export interface MandalaTipOverrides {
 }
 
 
-// --- From MandalaPathPreparer ---
 export interface PreparedMandalaPath {
 	path2d: Path2D;
 	totalLength: number;

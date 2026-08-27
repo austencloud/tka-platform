@@ -37,7 +37,6 @@
   }
   let { visible = true }: Props = $props();
 
-  // ── Identity ──
   const uid = $derived(getEffectiveUserId());
 
   // ── State (created once for this host's lifetime) ──
@@ -120,7 +119,6 @@
     })();
   });
 
-  // ── Build injection maps from the resolved slots ──
   // Ensures a plaque bitmap exists for each placed sequence (rendering only the
   // ones not already cached), then assembles the three maps the scene consumes.
   $effect(() => {
@@ -182,7 +180,6 @@
   // Driven by DimensionFlipProof's onExhibitFocus seam; null = picker closed.
   let focusedSlot = $state<string | null>(null);
 
-  // ── Teardown ──
   $effect(() => {
     return () => {
       museumState.dispose();

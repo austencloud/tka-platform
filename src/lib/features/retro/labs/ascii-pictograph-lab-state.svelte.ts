@@ -37,9 +37,7 @@ export interface RenderLayers {
 export type LabMode = "single" | "sequence" | "arrows" | "compare";
 export type ViewMode = "raw" | "crt";
 
-// ============================================================================
 // CSV LOADING (Single mode)
-// ============================================================================
 
 interface PictographEntry {
 	letter: string;
@@ -98,9 +96,7 @@ function parseCsv(text: string, gridMode: GridMode): PictographEntry[] {
 	return entries;
 }
 
-// ============================================================================
 // STEP CONVERSION (Sequence mode)
-// ============================================================================
 
 function stepToRetro(step: StepData, isBridge = false): RetroPictographData {
 	const blue = step.motions[MotionColor.BLUE];
@@ -134,9 +130,6 @@ function stepToRetro(step: StepData, isBridge = false): RetroPictographData {
 	};
 }
 
-// ============================================================================
-// PERSISTENCE
-// ============================================================================
 
 const STORAGE_KEY = "ascii-lab-state";
 
@@ -189,12 +182,10 @@ function savePersistedState(state: PersistedState): void {
 	}
 }
 
-// ============================================================================
 // ARROW TEST CASES (Arrows mode)
 //
 // Hard-coded pictographs for iterating on PRO/ANTI/DASH arrow rendering.
 // Uses the same positions as letters A (PRO CW) and B (ANTI CCW).
-// ============================================================================
 
 const ARROW_TEST_CASES: RetroPictographData[] = [
 	{
@@ -255,9 +246,6 @@ const ARROW_TEST_CASES: RetroPictographData[] = [
 	},
 ];
 
-// ============================================================================
-// STATE FACTORY
-// ============================================================================
 
 /**
  * Public surface of the ASCII Pictograph Lab state object. Annotating the
@@ -314,7 +302,6 @@ export function createAsciiLabState(): AsciiLabState {
 	// Word input (persisted so the text field survives navigation)
 	let wordInput = $state(restored.wordInput);
 
-	// ── Auto-save on change ──
 	$effect(() => {
 		savePersistedState({
 			mode,
@@ -326,7 +313,6 @@ export function createAsciiLabState(): AsciiLabState {
 		});
 	});
 
-	// ── Single mode derived ──
 
 	const filteredEntries = $derived(
 		entries.filter((e) => e.gridMode === gridModeFilter),

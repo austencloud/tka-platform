@@ -44,7 +44,6 @@
     [$glb0, $glb1, $glb2, $glb3, $glb4, $glb5, $glb6].filter(Boolean)
   );
 
-  // ── Build instanced meshes from Composer placements ─────────────────────────
 
   interface MeshData {
     mesh: InstancedMesh;
@@ -159,7 +158,6 @@
     return () => disposeAll(newMeshes);
   });
 
-  // ── Animation ───────────────────────────────────────────────────────────────
 
   let time = $state(0);
 
@@ -173,7 +171,6 @@
 
   onDestroy(() => disposeAll(meshes));
 
-  // ── Ambient glow lights derived from placement positions ───────────────────
 
   const glowLights = $derived.by(() => {
     if (!config.enabled) return [];

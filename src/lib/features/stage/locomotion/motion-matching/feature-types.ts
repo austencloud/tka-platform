@@ -1,4 +1,3 @@
-// src/lib/features/stage/locomotion/motion-matching/feature-types.ts
 
 /** A frame in the motion database: which clip + sample time it came from. */
 export interface MotionFrame {

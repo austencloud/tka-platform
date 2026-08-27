@@ -8,9 +8,7 @@
 import type { Timestamp } from 'firebase/firestore';
 import type { FlaggedTerm } from '$lib/features/moderation/domain/models/content-moderation-models';
 
-// ============================================================================
 // Enums & Constants
-// ============================================================================
 
 export type ShameCategory = 'profanity' | 'sexual' | 'creative';
 
@@ -30,9 +28,7 @@ export const SHAME_CATEGORY_DESCRIPTIONS: Record<ShameCategory, string> = {
 	creative: 'Clever, cheeky, or borderline words'
 };
 
-// ============================================================================
 // Core Models
-// ============================================================================
 
 /**
  * A sequence submitted to the Hall of Shame
@@ -90,9 +86,7 @@ export interface HallOfShameVote {
 	votedAt: Timestamp;
 }
 
-// ============================================================================
 // DTOs & Params
-// ============================================================================
 
 /**
  * Parameters for submitting a sequence to Hall of Shame
@@ -132,15 +126,11 @@ export interface PaginatedShameResult {
 	totalCount?: number;
 }
 
-// ============================================================================
 // Category Counts
-// ============================================================================
 
 export type ShameCategoryCounts = Record<ShameCategory, number>;
 
-// ============================================================================
 // Submission Rate Limiting
-// ============================================================================
 
 export const MAX_SUBMISSIONS_PER_DAY = 3;
 

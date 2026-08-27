@@ -11,9 +11,6 @@
 import { getDestination } from "./definitions";
 import type { Destination } from "./types";
 
-/**
- * Create the destination manager state
- */
 export function createDestinationManager() {
 	// Current active destination
 	let currentDestinationId = $state<string | null>(null);

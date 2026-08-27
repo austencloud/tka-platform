@@ -1,6 +1,5 @@
 import type { AccountSetupProgress } from "../domain/account-setup-progress";
 
-// --- From OnboardingPersister ---
 /**
  * OnboardingPersister
  *

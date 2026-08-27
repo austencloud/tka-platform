@@ -49,9 +49,6 @@
   } from "@austencloud/scene-3d";
   import DuetOrchestrator from "$lib/shared/3d/components/DuetOrchestrator.svelte";
 
-  // ============================================================================
-  // PROPS
-  // ============================================================================
 
   interface Props {
     /** Realm configuration (defines terrain, physics, features, spawn) */
@@ -80,9 +77,6 @@
   // Use provided realm config or default
   const activeConfig = $derived(realmConfig ?? getDefaultRealmConfig());
 
-  // ============================================================================
-  // HMR POSITION PERSISTENCE
-  // ============================================================================
   // Stores player position/yaw in sessionStorage so HMR doesn't reset you to spawn.
   // Key is per-realm so different worlds don't share camera state.
 

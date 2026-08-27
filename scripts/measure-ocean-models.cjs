@@ -1,4 +1,3 @@
-// measure-ocean-models.cjs
 // Loads each ocean GLB, measures raw geometry bounds, and reports
 // what the normalization pipeline will produce.
 // Run: node scripts/measure-ocean-models.cjs

@@ -109,7 +109,6 @@ Controls moved below the grid for better UX
   // Services
   let hapticService: HapticFeedback;
 
-  // Load persisted preferences on mount
   onMount(() => {
     hapticService = getHapticFeedback();
     loadPersistedPreferences();
@@ -634,9 +633,6 @@ Controls moved below the grid for better UX
     text-align: center;
   }
 
-  /* ============================================
-     Picker View - Animated content area
-     ============================================ */
   .picker-view {
     flex: 1;
     width: 100%;

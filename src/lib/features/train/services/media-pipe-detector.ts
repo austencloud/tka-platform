@@ -178,7 +178,6 @@ export class MediaPipeDetector {
         const stateResult = analyzeHandState(landmarks);
         const handState = stateResult.state;
 
-        // Use HandStateAnalyzer to calculate palm center
         const palmCenter = calculatePalmCenter(
           landmarks,
           handState
@@ -273,7 +272,6 @@ export class MediaPipeDetector {
       this._stabilizer.clearHistory("red");
     }
 
-    // Apply persistence
     const persisted = this._applyPersistence(bluePosition, redPosition);
     bluePosition = persisted.blue;
     redPosition = persisted.red;
@@ -312,7 +310,6 @@ export class MediaPipeDetector {
         }
       }
 
-      // Apply smoothing
       if (bluePosition) {
         bluePosition = this._applySmoothingToPosition(
           bluePosition,

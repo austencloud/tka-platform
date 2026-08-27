@@ -50,7 +50,6 @@ export class SimilarityCalculator {
     const positionSimilarity = this.computePositionSimilarity(seqA, seqB);
     const structuralSimilarity = this.computeStructuralSimilarity(seqA, seqB);
 
-    // Calculate beat-by-beat scores
     const stepByBeatScores = this.computeBeatByBeatScores(seqA, seqB);
 
     // Find common subsequences
@@ -60,10 +59,8 @@ export class SimilarityCalculator {
       opts.minSubsequenceLength
     );
 
-    // Calculate breakdown
     const breakdown = this.computeBreakdown(seqA, seqB, stepByBeatScores);
 
-    // Calculate overall score
     const overallScore =
       wordSimilarity * opts.wordWeight +
       motionSimilarity * opts.motionWeight +
@@ -229,9 +226,7 @@ export class SimilarityCalculator {
     return report.summary;
   }
 
-  // ============================================================================
   // PRIVATE: Component Similarity
-  // ============================================================================
 
   private computeWordSimilarity(wordA: string, wordB: string): number {
     if (wordA === wordB) {
@@ -393,9 +388,7 @@ export class SimilarityCalculator {
     return scores;
   }
 
-  // ============================================================================
   // PRIVATE: Breakdown
-  // ============================================================================
 
   private computeBreakdown(
     seqA: SequenceData,
@@ -489,9 +482,7 @@ export class SimilarityCalculator {
     };
   }
 
-  // ============================================================================
   // PRIVATE: Quick Comparison
-  // ============================================================================
 
   private areWordsCircularEquivalent(wordA: string, wordB: string): boolean {
     if (wordA.length !== wordB.length) {
@@ -546,9 +537,7 @@ export class SimilarityCalculator {
     return matches / (minLen * 2);
   }
 
-  // ============================================================================
   // PRIVATE: Summary Generation
-  // ============================================================================
 
   /**
    * The one string here a human reads — it renders verbatim in the combinator

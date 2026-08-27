@@ -24,7 +24,6 @@ import {
   type LoopPackId,
 } from "$lib/features/store/domain/loop-config";
 
-// ---------------------------------------------------------------------------
 // Order → deck fulfillment simulation (the "fire drill" in code).
 //
 // A paid shop order lands in Firestore `orders` carrying ONE of three LOOP
@@ -37,7 +36,6 @@ import {
 // the real generation pipeline, proving every slice a buyer can order is
 // actually producible at its exact requested length. Companion runbook:
 // docs/reference/order-fulfillment-runbook.md
-// ---------------------------------------------------------------------------
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 function loadCsv(name: string) {

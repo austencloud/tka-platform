@@ -184,7 +184,6 @@
     return raw ? simplifyRepeatedWord(raw) : null;
   });
 
-  // ── Header inputs ───────────────────────────────────────────────────
   // Mirrors AnimatorCanvas's own header computation (difficulty, LOOP badge,
   // active-letter underline) — the header moved out of the animator so it can
   // span the full card width, but it must show exactly what the animator's

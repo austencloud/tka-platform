@@ -63,7 +63,6 @@
   const showGuide = $derived(target.url === null || escapeState === "stayed");
   const showCopy = true;
 
-  // --- Hand-off signal watch ------------------------------------------------
   //
   // This records a hand-off SIGNAL, not a success rate. Document visibility is
   // not the same as the browser opening: Home pressed mid-attempt looks like a

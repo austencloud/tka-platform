@@ -87,7 +87,6 @@ export class PWAInstallDismissalManager {
       return true;
     }
 
-    // Calculate required delay based on dismissal count
     let requiredDelay: number;
     if (this.state.dismissCount === 1) {
       requiredDelay = DISMISSAL_DELAYS.FIRST;
@@ -113,7 +112,6 @@ export class PWAInstallDismissalManager {
       return 0;
     }
 
-    // Calculate required delay
     let requiredDelay: number;
     if (this.state.dismissCount === 1) {
       requiredDelay = DISMISSAL_DELAYS.FIRST;

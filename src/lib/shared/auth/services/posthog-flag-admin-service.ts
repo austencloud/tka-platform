@@ -48,7 +48,6 @@ export function createPostHogFlagAdminService(
       const state = getState();
       const flagKey = featureIdToPostHogKey(featureId);
 
-      // Handle minimumRole updates
       if (updates.minimumRole) {
         const newRoleOverrides = { ...state.globalRoleOverrides, [flagKey]: updates.minimumRole };
         setState({ globalRoleOverrides: newRoleOverrides, flagsVersion: state.flagsVersion + 1 });

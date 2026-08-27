@@ -37,9 +37,6 @@ export class DelightOrchestrator {
 		this.initializeService();
 	}
 
-	// ============================================================================
-	// PUBLIC API
-	// ============================================================================
 
 	public celebrate(
 		achievement: AchievementType,
@@ -121,9 +118,6 @@ export class DelightOrchestrator {
 		this.toastTrigger = trigger;
 	}
 
-	// ============================================================================
-	// PRIVATE METHODS - INITIALIZATION
-	// ============================================================================
 
 	private initializeService(): void {
 		if (!browser) return;
@@ -146,9 +140,6 @@ export class DelightOrchestrator {
 		}
 	}
 
-	// ============================================================================
-	// PRIVATE METHODS - CONFIG
-	// ============================================================================
 
 	private mergeConfig(intensity: DelightIntensity, overrides?: Partial<DelightConfig>): DelightConfig {
 		const defaults = INTENSITY_DEFAULTS[intensity];
@@ -174,9 +165,6 @@ export class DelightOrchestrator {
 		};
 	}
 
-	// ============================================================================
-	// PRIVATE METHODS - SOUND
-	// ============================================================================
 
 	private playSound(type: 'pop' | 'chime' | 'fanfare' | 'whoosh'): void {
 		if (!browser) return;

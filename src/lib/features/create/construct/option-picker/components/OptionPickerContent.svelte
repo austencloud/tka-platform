@@ -269,11 +269,9 @@ Uses organizer and sizer services for section grouping and sizing.
     );
   });
 
-  // ==================== LAYOUT MODE DETECTION ====================
   // Mobile stacked layout (workspace on top, tool panel on bottom) vs side-by-side desktop
   const isMobileStackedLayout = $derived(() => !isSideBySideLayout());
 
-  // ==================== NARROW LAYOUT DECISIONS ====================
   // These are evaluated when container is narrow (< 750px) OR in mobile stacked layout
 
   // Use compact 4x4 grid for continuous mode when in mobile/narrow layout
@@ -329,7 +327,6 @@ Uses organizer and sizer services for section grouping and sizing.
     logConstructLetterTypeGroupSelected({ group, source });
   }
 
-  // ==================== DESKTOP SIZING ====================
   // Desktop uses the sizer service to calculate appropriate card sizes
 
   // The card bounds are px constants, so on a surface that ramps its root font
@@ -380,7 +377,6 @@ Uses organizer and sizer services for section grouping and sizing.
     }
   });
 
-  // ==================== MOBILE LAYOUT CONFIGS ====================
   // Both configs use consistent values to prevent size "burst" when toggling
 
   // Height to subtract when calculating available space for content.
@@ -569,7 +565,6 @@ Uses organizer and sizer services for section grouping and sizing.
           </HorizontalSwipeContainer>
         </div>
       {:else if shouldUseSwipeLayout()}
-        <!-- ==================== SWIPE LAYOUT ==================== -->
         <div class="swipe-container">
           <OptionViewerSwipeLayout
             organizedPictographs={swipeSections()}
@@ -605,7 +600,6 @@ Uses organizer and sizer services for section grouping and sizing.
           </OptionViewerSwipeLayout>
         </div>
       {:else if shouldUseWideLayout && !isMobileStackedLayout()}
-        <!-- ==================== WIDE DESKTOP LAYOUT ==================== -->
         <div class="sections-container">
           <!-- Types 1-3: Individual vertical sections -->
           {#each types123Sections() as section (section.title)}

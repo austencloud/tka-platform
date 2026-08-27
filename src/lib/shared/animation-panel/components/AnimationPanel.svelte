@@ -289,7 +289,6 @@
     event.preventDefault();
   }
 
-  // ── Reactive bridge to animation visibility manager ──
   // Context-first so hosts with an ephemeral per-canvas manager (landing demo)
   // drive THAT instance; everywhere else falls through to the global singleton.
   const vm = getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
@@ -323,7 +322,6 @@
     );
   });
 
-  // ── Section summaries ──
   const effectsSummary = $derived.by(() => {
     void vmVersion;
     const activeEffect = effectsConfigState?.activeEffect ?? "none";
@@ -1388,9 +1386,6 @@
     gap: 6px;
   }
 
-  /* ============================================================
-   * MOBILE BOTTOM CONTAINER
-   * ============================================================ */
 
   .mobile-export {
     position: relative;
@@ -1407,9 +1402,6 @@
     padding: 10px 16px 12px;
   }
 
-  /* ============================================================
-   * DESKTOP SIDEBAR
-   * ============================================================ */
 
   .export-panel {
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));

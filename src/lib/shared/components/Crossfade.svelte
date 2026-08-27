@@ -103,7 +103,6 @@
 
   const heightEnabled = $derived(animateHeight && !fill);
 
-  // ---- animateHeight ----------------------------------------------------
   // The box is driven off the INCOMING layer's natural height. The outgoing
   // layer shares the same grid cell but is pinned to the top (`align-self:
   // start`) and no longer contributes, so a measurement taken mid-overlap is

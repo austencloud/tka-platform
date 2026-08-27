@@ -549,7 +549,6 @@
     color: var(--theme-text);
   }
 
-  /* ── Intro step ─────────────────────────────────────────────────────────── */
   .intro-step {
     display: grid;
     align-content: center;
@@ -582,7 +581,6 @@
     overflow: hidden;
   }
 
-  /* ── Word steps ─────────────────────────────────────────────────────────── */
   .word-step,
   .deck-browser,
   .selected-workspace {
@@ -620,7 +618,6 @@
     min-width: 0;
   }
 
-  /* ── Shared header pieces ───────────────────────────────────────────────── */
   .deck-progress,
   .sequence-position {
     margin: 0;
@@ -757,7 +754,6 @@
     overflow: hidden;
   }
 
-  /* ── Footer ─────────────────────────────────────────────────────────────── */
   .lesson-actions {
     display: grid;
     grid-template-columns: 1fr auto 1fr;

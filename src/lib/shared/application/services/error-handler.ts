@@ -26,9 +26,7 @@ export class ErrorHandler {
     timestamp: Date;
   }> = [];
 
-  // ========================================
   // Internal Logging (existing functionality)
-  // ========================================
 
   handleError(error: Error, context?: string): void {
     const errorEntry = {
@@ -253,9 +251,7 @@ export class ErrorHandler {
     return lines.join("\n");
   }
 
-  // ========================================
   // Stats & Cleanup
-  // ========================================
 
   getErrorStats(): {
     totalErrors: number;

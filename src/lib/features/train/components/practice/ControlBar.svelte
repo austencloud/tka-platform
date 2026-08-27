@@ -36,7 +36,6 @@
 
   const hapticService = getHapticFeedback();
 
-  // Get icon for current practice mode
   const modeIcon = $derived(() => {
     switch (practiceMode) {
       case PracticeMode.ADAPTIVE:
@@ -50,7 +49,6 @@
     }
   });
 
-  // Get label for current practice mode
   const modeLabel = $derived(() => {
     switch (practiceMode) {
       case PracticeMode.ADAPTIVE:
@@ -207,9 +205,6 @@
     letter-spacing: 0.05em;
   }
 
-  /* ============================================
-	   BUTTON VARIANTS - Solid Backgrounds
-	   ============================================ */
 
   /* Primary button (Play/Stop) - Green */
   .primary-btn {

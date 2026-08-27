@@ -240,9 +240,6 @@ export interface CreateCollectionOptions {
   sequenceCount?: number;
 }
 
-/**
- * Create a new collection
- */
 export function createCollection(
   name: string,
   ownerId: string,
@@ -297,9 +294,6 @@ export function createSmartCollectionModel(
   };
 }
 
-/**
- * Update a collection immutably
- */
 export function updateCollection(
   collection: LibraryCollection,
   updates: Partial<LibraryCollection>

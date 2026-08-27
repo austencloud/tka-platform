@@ -32,7 +32,6 @@
     onError,
   }: Props = $props();
 
-  // ===== State =====
   let videoRef = $state<HTMLVideoElement | null>(null);
   let isPlaying = $state(false);
   let isMuted = $state(false);
@@ -41,12 +40,10 @@
   let isLoaded = $state(false);
   let hasError = $state(false);
 
-  // ===== Derived =====
   const progress = $derived(duration > 0 ? (currentTime / duration) * 100 : 0);
   const formattedTime = $derived(formatTime(currentTime));
   const formattedDuration = $derived(formatTime(duration));
 
-  // ===== Event Handlers =====
   function handleLoadedMetadata() {
     if (videoRef) {
       duration = videoRef.duration;

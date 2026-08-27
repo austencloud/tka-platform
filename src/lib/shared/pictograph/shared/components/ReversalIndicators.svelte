@@ -35,7 +35,6 @@
   // Get global visibility manager to respect motion visibility settings
   const visibilityManager = getVisibilityStateManager();
 
-  // Get animation visibility manager for cached colors
   const animationVisibilityManager = getAnimationVisibilityManager();
 
   // Reactivity counter for visibility changes

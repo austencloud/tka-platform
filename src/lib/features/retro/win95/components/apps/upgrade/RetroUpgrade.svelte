@@ -18,9 +18,7 @@
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import { desktopState } from "../../../state/desktop-state.svelte";
 
-  /* ------------------------------------------------------------------ */
   /* Props                                                               */
-  /* ------------------------------------------------------------------ */
 
   let {
     onclose,
@@ -28,9 +26,7 @@
     onclose?: () => void;
   } = $props();
 
-  /* ------------------------------------------------------------------ */
   /* Premium status                                                      */
-  /* ------------------------------------------------------------------ */
 
   // Derive premium status from live auth role - reactive to role changes.
   const isPremium = $derived(isPremiumOrAbove(authState.role));
@@ -117,9 +113,7 @@
       <!-- Text block -->
       <div class="upgrade-text">
         {#if isPremium}
-          <!-- -------------------------------------------------- -->
           <!-- Registered view                                      -->
-          <!-- -------------------------------------------------- -->
           <div class="upgrade-heading upgrade-heading--registered">REGISTERED COPY</div>
 
           <p class="upgrade-para">
@@ -145,9 +139,7 @@
             All features unlocked. This dialog may now be safely ignored.
           </p>
         {:else}
-          <!-- -------------------------------------------------- -->
           <!-- Unregistered view                                    -->
-          <!-- -------------------------------------------------- -->
           <div class="upgrade-heading">UNREGISTERED COPY</div>
 
           <p class="upgrade-para">
@@ -214,9 +206,7 @@
 </div>
 
 <style>
-  /* ------------------------------------------------------------------ */
   /* Shell layout                                                        */
-  /* ------------------------------------------------------------------ */
   .upgrade-shell {
     display: flex;
     flex-direction: column;
@@ -239,9 +229,7 @@
     flex-shrink: 0;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Dialog layout                                                       */
-  /* ------------------------------------------------------------------ */
   .upgrade-dialog {
     display: flex;
     gap: 16px;
@@ -276,9 +264,7 @@
     line-height: 1.5;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Typography                                                          */
-  /* ------------------------------------------------------------------ */
   .upgrade-heading {
     font-size: 14px;
     font-weight: bold;
@@ -308,9 +294,7 @@
     letter-spacing: 0.5px;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Feature list                                                        */
-  /* ------------------------------------------------------------------ */
   .upgrade-features {
     margin-top: 12px;
   }
@@ -339,9 +323,7 @@
     margin-right: 4px;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Registered view                                                     */
-  /* ------------------------------------------------------------------ */
   .upgrade-heading--registered {
     color: var(--retro-navy, #000080);
   }
@@ -378,9 +360,7 @@
     font-style: italic;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Unregistered view extras                                            */
-  /* ------------------------------------------------------------------ */
   .upgrade-url {
     font-family: "Courier New", monospace;
     font-weight: bold;
@@ -389,9 +369,7 @@
     font-size: 12px;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Buttons                                                             */
-  /* ------------------------------------------------------------------ */
   .upgrade-buttons {
     display: flex;
     justify-content: center;

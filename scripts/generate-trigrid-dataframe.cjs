@@ -19,9 +19,7 @@
 const fs = require("fs");
 const path = require("path");
 
-// ============================================================================
 // Grid geometry
-// ============================================================================
 
 /** The 3 vertices in CW order for upright mode */
 const VERTICES = ["n", "se", "sw"];
@@ -36,9 +34,7 @@ function ccwNeighbor(v) {
   return VERTICES[(VERTICES.indexOf(v) + 2) % 3];
 }
 
-// ============================================================================
 // Position enumeration
-// ============================================================================
 
 /**
  * All 9 positions: 3 beta + 6 gamma (ordered pairs)

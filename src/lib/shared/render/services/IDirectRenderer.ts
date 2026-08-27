@@ -15,9 +15,6 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographVisibilityOptions } from "../utils/pictograph-to-svg";
 import type { RenderCanvas } from "./types";
 
-/**
- * Render options for direct rendering
- */
 export interface DirectRenderOptions {
   /** Size of the pictograph in pixels */
   size: number;

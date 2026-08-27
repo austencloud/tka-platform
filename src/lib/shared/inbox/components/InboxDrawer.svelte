@@ -442,7 +442,6 @@
       );
     }
 
-    // Add messages
     lines.push("", "### Messages", "");
     for (const msg of inboxState.messages) {
       const sender =

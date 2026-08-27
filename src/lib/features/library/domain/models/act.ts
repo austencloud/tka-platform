@@ -93,9 +93,6 @@ export interface CreateActOptions {
   loopAct?: boolean;
 }
 
-/**
- * Create a new act
- */
 export function createAct(
   name: string,
   ownerId: string,
@@ -118,9 +115,6 @@ export function createAct(
   };
 }
 
-/**
- * Create an act item with defaults
- */
 export function createActItem(
   sequenceId: string,
   position: number,
@@ -136,9 +130,6 @@ export function createActItem(
   };
 }
 
-/**
- * Update an act immutably
- */
 export function updateAct(act: Act, updates: Partial<Act>): Act {
   return {
     ...act,
@@ -221,9 +212,6 @@ export function reorderActItems(
   });
 }
 
-/**
- * Update a specific item in an act
- */
 export function updateActItem(
   act: Act,
   position: number,

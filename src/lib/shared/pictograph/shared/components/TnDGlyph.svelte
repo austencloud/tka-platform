@@ -83,9 +83,7 @@ that adapt to dark/light mode automatically.
     return undefined;
   });
 
-  // ============================================================================
   // TnD MODE CHANGE ANIMATION
-  // ============================================================================
   // Track when TnD mode changes to trigger a subtle scale-pulse animation.
 
   let prevTnDMode = $state<TnDMode | null | undefined>(undefined);

@@ -1,4 +1,3 @@
-// tests/unit/museum/MuseumPhysicsProvider.test.ts
 import { describe, it, expect } from "vitest";
 import {
 	MuseumPhysicsProvider,

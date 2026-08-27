@@ -49,7 +49,6 @@
     showDirectionCues = true,
   }: Props = $props();
 
-  // ── Quality detection ─────────────────────────────────────────────────
 
   // The shared viewer owns capability detection and live frame-pressure
   // adaptation. A standalone preview without that context starts at medium,
@@ -64,13 +63,11 @@
   );
   const quality = $derived(getAutumnQualityConfig(tier));
 
-  // ── Scene feature readiness ────────────────────────────────────────────
 
   const sceneFeatures = getSceneFeatureContext();
 
   const groundY = $derived(userProportionsState.groundY);
 
-  // ── Blender-authored environment ──────────────────────────────────────
 
   const autumnEnvironmentGlb = useGltf(
     "/models/autumn/autumn-environment.glb",
@@ -91,7 +88,6 @@
     AUTUMN_POND_LAYOUT.centerZ,
   ]);
 
-  // ── Shadow participation ───────────────────────────────────────────────
   //
   // Loaded GLB meshes default to neither casting nor receiving. Roles are
   // assigned by authored name so the depth pass stays bounded to geometry that

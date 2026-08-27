@@ -53,7 +53,6 @@
     onLightPlanChange,
   }: Props = $props();
 
-  // ── Palette ───────────────────────────────────────────────────────────────
   const BASALT = "#221d1c";
   const BASALT_LIT = "#3a2f2a";
   const BENCH = "#4a3d39";
@@ -152,7 +151,6 @@
     };
   }
 
-  // ── Box helpers ───────────────────────────────────────────────────────────
   interface Box {
     id: string;
     pos: [number, number, number];

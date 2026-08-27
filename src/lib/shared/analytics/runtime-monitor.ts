@@ -60,7 +60,6 @@ class RuntimeMonitor {
     this.isRunning = true;
     this.statsCallback = options?.onStats ?? null;
 
-    // Start FPS tracking
     this.startFPSTracking();
 
     // Observe long tasks (>50ms)
@@ -203,9 +202,6 @@ class RuntimeMonitor {
     }
   }
 
-  /**
-   * Get current stats
-   */
   getStats(): MonitorStats {
     const currentFps = this.fpsHistory[this.fpsHistory.length - 1] ?? 0;
     const avgFps =

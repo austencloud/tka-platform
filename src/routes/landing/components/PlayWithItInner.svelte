@@ -38,7 +38,6 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
   import { trackDemoInteraction } from "$lib/shared/analytics/landing-events";
 
-  // ── Factory state ──────────────────────────────────────────────────────────
   let playback = $state<EndlessPlaybackState | null>(null);
   let animationReady = $state(false);
   let animationError = $state(false);
@@ -67,7 +66,6 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   // BPM state - local to this landing section
   let bpm = $state(60);
 
-  // ── Derived values ─────────────────────────────────────────────────────────
   let isPlaying = $derived(playback?.animationState?.isPlaying ?? false);
 
   // Trail VISUALS (thickness, brightness, colors) live on the effects config
@@ -95,7 +93,6 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     return () => mq.removeEventListener("change", handler);
   });
 
-  // ── Initialize animation engine ─────────────────────────────────────────────
   onMount(async () => {
     try {
       scope.settings.setTrackingMode(TrackingMode.BOTH_ENDS);
@@ -175,7 +172,6 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     }
   }
 
-  // ── The two peer controls ───────────────────────────────────────────────────
   // Sequence and prop are independent: any sequence can be done with any prop.
   // Two buttons that each change exactly one of them make that legible in a way
   // a buried prop grid never did — click either one and only that thing moves.
@@ -225,12 +221,10 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     scope.settings.setBpm(newBpm);
   }
 
-  // ── Notation panel cells ──────────────────────────────────────────────────
   let notationCells = $derived<NotationCell[]>(
     buildNotationCells(playback?.animationState?.sequenceData)
   );
 
-  // ── Caption under the two buttons ─────────────────────────────────────────
   // A repeating word always reads in its smallest form (FΨ, never FΨFΨFΨFΨ),
   // and the endless spinner leans on LOOPs, so this is the common case.
   let currentWord = $derived(
@@ -442,7 +436,6 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     min-height: 0;
   }
 
-  /* ── The two peer swap controls ─────────────────────────────────────────── */
 
   .swap-controls {
     display: flex;
@@ -647,7 +640,6 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     opacity: 0.4;
   }
 
-  /* ── Responsive ────────────────────────────────────────────────────────── */
   @media (max-width: 600px) {
     /* Full-viewport fit: the showcase fills the height the section gives it, and
        the canvas-area flexes to take whatever the fixed-height beat strip +

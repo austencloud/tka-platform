@@ -1,4 +1,3 @@
-// tests/unit/video-trails/led-threshold-detector.test.ts
 
 import { describe, it, expect, beforeAll } from "vitest";
 import { LedThresholdDetector } from "$lib/features/video/video-trails/services/led-threshold-detector";

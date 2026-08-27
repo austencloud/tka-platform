@@ -704,7 +704,6 @@ export class Animal2DRenderer {
   }
 }
 
-// ── Utilities ─────────────────────────────────────────────────────────────
 
 /**
  * Body half-width profile along the creature. u = 0 (head) → 1 (tail). Narrow

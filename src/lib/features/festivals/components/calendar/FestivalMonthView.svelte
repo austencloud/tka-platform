@@ -29,7 +29,6 @@
 
   const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-  // ---- Grid date computation -------------------------------------------------
 
   const monthStart = $derived(startOfMonth(currentMonth));
   const monthEnd = $derived(endOfMonth(currentMonth));
@@ -47,7 +46,6 @@
 
   const monthTitle = $derived(format(currentMonth, "MMMM yyyy"));
 
-  // ---- Build entry map keyed by "yyyy-MM-dd" --------------------------------
   //
   // Each tracked festival contributes:
   //   - One "festival" entry per day in its date range
@@ -189,7 +187,6 @@
     gap: 0;
   }
 
-  /* ---- Navigation ---------------------------------------------------------- */
 
   .calendar-nav {
     display: flex;
@@ -255,7 +252,6 @@
     text-overflow: ellipsis;
   }
 
-  /* ---- Grid ---------------------------------------------------------------- */
 
   .month-grid {
     display: flex;
@@ -303,7 +299,6 @@
     flex-direction: column;
   }
 
-  /* ---- Responsive ---------------------------------------------------------- */
 
   @media (max-width: 767px) {
     .calendar-nav {

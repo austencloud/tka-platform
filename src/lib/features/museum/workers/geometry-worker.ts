@@ -17,7 +17,6 @@ import type {
 } from "./geometry-worker-protocol";
 import type { SerializedTileBuckets, SerializedBucketEntry } from "../domain/room-descriptor";
 
-// ─── Priority queue ───────────────────────────────────────────────────────────
 
 interface QueueEntry {
   roomId: string;
@@ -51,7 +50,6 @@ function cancel(roomId: string): void {
   }
 }
 
-// ─── Geometry conversion ──────────────────────────────────────────────────────
 
 /**
  * Converts a {x, z}[] position list to a flat Float32Array [x0, z0, x1, z1, ...].
@@ -92,7 +90,6 @@ function convertBucketEntry(
   return batch;
 }
 
-// ─── Processing ───────────────────────────────────────────────────────────────
 
 function postProgress(roomId: string, phase: string): void {
   const response: GeometryWorkerResponse = { type: "progress", roomId, phase };
@@ -105,12 +102,10 @@ function processEntry(entry: QueueEntry): void {
 
   postProgress(roomId, "Processing tiles");
 
-  // Convert floor buckets
   const floorBatches: BatchTransfer[] = buckets.floorEntries.map((e) =>
     convertBucketEntry(e, transferables)
   );
 
-  // Convert wall buckets
   const wallBatches: BatchTransfer[] = buckets.wallEntries.map((e) =>
     convertBucketEntry(e, transferables)
   );
@@ -156,7 +151,6 @@ function processNext(): void {
   });
 }
 
-// ─── Message handler ──────────────────────────────────────────────────────────
 
 (self as unknown as Worker).onmessage = (
   event: MessageEvent<GeometryWorkerRequest>

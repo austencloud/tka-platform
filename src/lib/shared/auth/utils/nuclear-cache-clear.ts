@@ -72,9 +72,7 @@ export async function diagnoseCacheState(): Promise<CacheDiagnostics> {
  */
 export async function nuclearCacheClear(): Promise<void> {
 
-  // ============================================================================
   // 1. DELETE ALL INDEXEDDB DATABASES (not just Firebase ones)
-  // ============================================================================
   try {
     if (window.indexedDB.databases) {
       const databases = await window.indexedDB.databases();

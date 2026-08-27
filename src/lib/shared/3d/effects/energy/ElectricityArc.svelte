@@ -98,9 +98,6 @@
   const coreOpacity = $derived(0.6 + intensity * 0.4);
   const glowOpacity = $derived(0.2 + intensity * 0.3);
 
-  /**
-   * Get a random perpendicular vector to a segment
-   */
   function getRandomPerpendicular(p1: Vector3, p2: Vector3): Vector3 {
     const segment = new Vector3().subVectors(p2, p1).normalize();
 

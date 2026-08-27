@@ -1,4 +1,3 @@
-// src/lib/shared/auth/services/anonymous-upgrade.ts
 //
 // Anonymous-guest upgrade. On signup we LINK the anonymous Firebase user in
 // place (preserving its uid + all its Firestore data) rather than minting a new

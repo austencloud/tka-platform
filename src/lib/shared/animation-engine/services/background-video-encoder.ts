@@ -90,9 +90,7 @@ export class BackgroundVideoEncoder {
 
   private initTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // ---------------------------------------------------------------------------
   // Public API
-  // ---------------------------------------------------------------------------
 
   async initialize(config: BackgroundExportConfig): Promise<void> {
     // Terminate any leftover worker from a previous export
@@ -281,9 +279,7 @@ export class BackgroundVideoEncoder {
     this.terminateWorker();
   }
 
-  // ---------------------------------------------------------------------------
   // Worker communication
-  // ---------------------------------------------------------------------------
 
   private postToWorker(message: ExportWorkerMessage): void {
     this.worker?.postMessage(message);

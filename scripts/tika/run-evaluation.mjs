@@ -25,7 +25,6 @@ if (!fs.existsSync(REPORTS_DIR)) {
 	fs.mkdirSync(REPORTS_DIR, { recursive: true });
 }
 
-// Parse args
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
 const opusReview = args.includes('--opus');
@@ -34,15 +33,12 @@ const limit = limitIdx >= 0 ? parseInt(args[limitIdx + 1]) : null;
 const categoryIdx = args.indexOf('--category');
 const categoryFilter = categoryIdx >= 0 ? args[categoryIdx + 1] : null;
 
-// Load scenarios
 let allScenarios = JSON.parse(fs.readFileSync(SCENARIOS_FILE, 'utf-8'));
 
-// Apply category filter
 if (categoryFilter) {
 	allScenarios = allScenarios.filter((s) => s.category === categoryFilter);
 }
 
-// Apply limit
 const scenarios = limit ? allScenarios.slice(0, limit) : allScenarios;
 
 console.log('');

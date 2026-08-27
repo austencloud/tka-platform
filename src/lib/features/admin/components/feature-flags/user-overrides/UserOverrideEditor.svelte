@@ -54,7 +54,6 @@
     onClose,
   }: Props = $props();
 
-  // Build hierarchy
   const hierarchy = $derived(buildFeatureHierarchy(featureFlags));
 
   // Calculate what "inherit" resolves to for a feature

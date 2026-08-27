@@ -168,9 +168,7 @@ export function detectReversalsForOptions(
   });
 }
 
-// ============================================================================
 // MODULE-PRIVATE HELPERS (option-preview dot channel — prop rotation only)
-// ============================================================================
 
 interface MotionLike {
   readonly rotationDirection?: string;
@@ -237,9 +235,7 @@ function propFlips(
   return cur !== null && cur !== "noRotation" && cur !== anchor;
 }
 
-// ============================================================================
 // SINGLETON EXPORT (backward-compatible object form for class consumers)
-// ============================================================================
 export const reversalDetector = {
   processReversals,
   detectReversal,

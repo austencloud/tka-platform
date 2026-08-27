@@ -126,7 +126,6 @@
     checkFullyReady();
   }
 
-  // ── WebGL context-loss resilience ──
   // Under memory pressure (especially mobile, where the WebGL context cap is as
   // low as 2-8 per principal) the browser can evict our context even while
   // mounted. preventDefault keeps it recoverable; on restore we force the ready

@@ -171,7 +171,6 @@ export function stepOf(tick: WalkTick, speed: number, dt: number): WalkStep {
   };
 }
 
-// ── The patterns ──────────────────────────────────────────────────────
 
 /** Out, about-face, back. The plainest walk there is, plus its two ends. */
 const shuttle: WalkPattern = {

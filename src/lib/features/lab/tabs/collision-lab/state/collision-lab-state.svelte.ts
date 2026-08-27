@@ -582,7 +582,6 @@ export async function createCollisionLabState(
       }
     },
 
-    // Export
     exportLabels() {
       labelRepo.exportJson(labels);
     },
@@ -607,9 +606,7 @@ export async function createCollisionLabState(
       }
     },
 
-    // ----------------------------------------------------------------
     // Multiple-choice candidate controls
-    // ----------------------------------------------------------------
 
     /**
      * Pick a candidate from the current candidate set. Applies its

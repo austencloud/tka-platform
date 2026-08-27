@@ -335,7 +335,6 @@
     }
   });
 
-  // ── Mobile ControlDock state ─────────────────────────────────────────
   // Columns + Theme are two buttons each — a whole tab apiece wasted the tray.
   // Folded into one "Format" tab (two labeled rows), so every tab now holds a
   // meaningful group instead of a lone pair.
@@ -928,9 +927,6 @@
 {/if}
 
 <style>
-  /* ============================================================
-   * MOBILE BOTTOM BAR
-   * ============================================================ */
 
   /* Mobile dock tray density (mirrors AnimationPanel .dock-dense).
      Tight vertical rhythm on purpose — every px the tray gives up goes to the
@@ -1294,9 +1290,6 @@
     font-size: 12px;
   }
 
-  /* ============================================================
-   * Reduced motion
-   * ============================================================ */
 
   @media (prefers-reduced-motion: reduce) {
     .chip {

@@ -45,9 +45,6 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
-  // ============================================================================
-  // MOBILE STATE
-  // ============================================================================
 
   // Mobile tool view state
   let mobileToolsExpanded = $state(true); // Whether to show full controls or just toolbar
@@ -214,9 +211,6 @@
     onLoopCountChange?: (count: number) => void;
   } = $props();
 
-  // ============================================================================
-  // HELP SHEET STATE
-  // ============================================================================
 
   let showHelpSheet = $state(false);
 
@@ -224,9 +218,6 @@
     showHelpSheet = true;
   }
 
-  // ============================================================================
-  // KEYBOARD SHORTCUTS
-  // ============================================================================
 
   let shortcutService: KeyboardShortcutManager | null = null;
   let unregisterShortcuts: (() => void) | null = null;
@@ -234,10 +225,8 @@
   function setupKeyboardShortcuts() {
     if (!shortcutService || !show) return;
 
-    // Set context to animation-panel
     shortcutService.setContext("animation-panel");
 
-    // Register shortcuts
     unregisterShortcuts = animationShortcutRegistrar.register(shortcutService, {
       onPlaybackToggle,
       onStepHalfBeatForward,
@@ -273,9 +262,6 @@
     cleanupKeyboardShortcuts();
   });
 
-  // ============================================================================
-  // LAYOUT DETECTION
-  // ============================================================================
 
   // Detect side-by-side layout internally if not provided via prop
   let layoutService: ResponsiveLayoutManager | null = null;
@@ -291,7 +277,6 @@
     shortcutService = getKeyboardShortcutManager();
   });
 
-  // Update on resize
   $effect(() => {
     if (!browser || !layoutService) return;
 
@@ -312,9 +297,6 @@
       : detectedSideBySide
   );
 
-  // ============================================================================
-  // STATE MANAGEMENT
-  // ============================================================================
 
   // Trail settings from global animation settings (derived for reactivity)
   let trailSettings = $derived(animationSettings.settings.trail);
@@ -322,9 +304,6 @@
   // ── Export takeover overlay (dim scrim + progress ring over the live canvas) ──
   const takeover = $derived(toExportTakeoverPhase(exportProgress, isExporting));
 
-  // ============================================================================
-  // EVENT HANDLERS
-  // ============================================================================
 
   function handleClose() {
     onClose();
@@ -482,9 +461,6 @@
     border: 0;
   }
 
-  /* ===========================
-     MAIN LAYOUT
-     =========================== */
 
   .canvas-container {
     container-type: size;
@@ -604,9 +580,6 @@
     }
   }
 
-  /* ===========================
-     DESKTOP LAYOUT - Full height canvas
-     =========================== */
 
   .content-wrapper.desktop {
     gap: 12px;
@@ -644,9 +617,6 @@
     }
   }
 
-  /* ===========================
-     LANDSLOOPE LAYOUT - Side-by-side
-     =========================== */
 
   @container animator-canvas (min-aspect-ratio: 1.5/1) {
     .content-wrapper {
@@ -685,9 +655,6 @@
     }
   }
 
-  /* ===========================
-     LOADING & ERROR STATES
-     =========================== */
 
   .loading-message,
   .error-message {

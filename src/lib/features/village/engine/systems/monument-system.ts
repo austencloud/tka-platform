@@ -44,7 +44,6 @@ export class MonumentSystem {
 			}
 		}
 
-		// Check for new monuments
 		for (const [seqId, cohorts] of sequenceCohorts) {
 			const existing = this.monuments.find(
 				(m) => m.sequenceId === seqId,

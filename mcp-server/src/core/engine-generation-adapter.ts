@@ -33,9 +33,7 @@ import type {
   SequenceResult,
 } from "./sequence-builder-adapter.js";
 
-// ─────────────────────────────────────────────────────────────────────────────
 // LOOP type string → enum mapping
-// ─────────────────────────────────────────────────────────────────────────────
 
 const LOOP_TYPE_MAP: Record<string, LOOPType> = {
   rotated: LOOPType.ROTATED,
@@ -58,9 +56,7 @@ const LOOP_TYPE_MAP: Record<string, LOOPType> = {
   rewound: LOOPType.REWOUND,
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // LOOP type → component names (for renderer metadata)
-// ─────────────────────────────────────────────────────────────────────────────
 
 const LOOP_TYPE_COMPONENTS: Record<string, string[]> = {
   rotated: ["rotated"],
@@ -88,9 +84,7 @@ const LOOP_TYPE_COMPONENTS: Record<string, string[]> = {
   rewound: ["rewound"],
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Public interface
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface EngineGenerationParams {
   /** Word to spell (mutually exclusive routing with length, but word wins if both present) */

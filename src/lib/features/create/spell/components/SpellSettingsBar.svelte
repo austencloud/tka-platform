@@ -41,9 +41,6 @@ Container-aware responsive design (2-tier):
 
   const haptic = getHapticFeedback();
 
-  // ============================================================
-  // EXPANSION STATE
-  // ============================================================
 
   // Single unified expansion state for all 5 chips
   let expandedId = $state<string | null>(null);
@@ -66,9 +63,6 @@ Container-aware responsive design (2-tier):
     }
   });
 
-  // ============================================================
-  // CHIP OPTIONS & VALUES
-  // ============================================================
 
   // Dashes
   let dashValue = $derived.by(() => {
@@ -147,9 +141,6 @@ Container-aware responsive design (2-tier):
 
   const gridDisplayValue = $derived(gridMode === "diamond" ? "\u25C7" : "\u25A2");
 
-  // ============================================================
-  // LOOP OPTIONS
-  // ============================================================
 
   /** Check if a set of components round-trips through LOOPType resolution */
   function isRoundTripValid(components: Set<LOOPComponent>): boolean {
@@ -199,9 +190,7 @@ Container-aware responsive design (2-tier):
 </script>
 
 <div class="settings-container" class:loop-expanded={isLoopExpanded}>
-  <!-- ============================================================ -->
   <!-- MOBILE LAYOUT: MorphChip expanding chips -->
-  <!-- ============================================================ -->
   <div class="mobile-layout" class:loop-expanded={isLoopExpanded}>
     <MorphChipGroup
       bind:expandedId
@@ -285,9 +274,7 @@ Container-aware responsive design (2-tier):
     </MorphChipGroup>
   </div>
 
-  <!-- ============================================================ -->
   <!-- DESKTOP LAYOUT: Expanded sections with all options visible -->
-  <!-- ============================================================ -->
   <div class="desktop-layout">
     <div class="setting-section">
       <span class="section-label">Dashes</span>
@@ -406,9 +393,6 @@ Container-aware responsive design (2-tier):
 
   /* Loop expanded: no special sizing needed - group handles it via min-height */
 
-  /* ============================================================ */
-  /* MOBILE LAYOUT */
-  /* ============================================================ */
 
   .mobile-layout {
     display: flex;
@@ -430,9 +414,7 @@ Container-aware responsive design (2-tier):
 
   /* MorphChipGroup handles its own sizing via has-expanded min-height */
 
-  /* ============================================================ */
   /* LOOP EXPANDED CONTENT (inside MorphChip custom content) */
-  /* ============================================================ */
 
   .loop-expanded-content {
     display: flex;
@@ -444,10 +426,8 @@ Container-aware responsive design (2-tier):
     display: none;
   }
 
-  /* ============================================================ */
   /* DESKTOP LAYOUT: Base styles for expanded sections */
   /* These MUST come before container queries so CQ overrides win */
-  /* ============================================================ */
 
   .setting-section {
     display: flex;
@@ -506,9 +486,7 @@ Container-aware responsive design (2-tier):
     padding-bottom: calc(12px * var(--scale));
   }
 
-  /* ============================================================ */
   /* LOOP TOGGLE CHIPS (shared mobile + desktop) */
-  /* ============================================================ */
 
   .loop-toggle-grid {
     display: grid;
@@ -582,9 +560,7 @@ Container-aware responsive design (2-tier):
     flex-shrink: 0;
   }
 
-  /* ============================================================ */
   /* CONTAINER QUERIES: Must come AFTER base styles to override */
-  /* ============================================================ */
 
   /* Desktop: tall tool panel - vertical flex column with labels + expanded options */
   @container tool-panel (min-height: 700px) {
@@ -644,9 +620,7 @@ Container-aware responsive design (2-tier):
     }
   }
 
-  /* ============================================================ */
   /* Reduced motion */
-  /* ============================================================ */
 
   @media (prefers-reduced-motion: reduce) {
     .loop-toggle-chip,

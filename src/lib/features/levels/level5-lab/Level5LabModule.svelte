@@ -21,7 +21,6 @@
   import FilterChips from "./components/FilterChips.svelte";
   import PositionGrid from "./components/PositionGrid.svelte";
 
-  // ── State ─────────────────────────────────────────────────────────────
 
   let selectedGroup = $state<PositionGroup>("all");
 
@@ -57,7 +56,6 @@
     orientationMap = updated;
   }
 
-  // ── Derived ───────────────────────────────────────────────────────────
 
   const bluePropType = $derived.by(() => {
     const settings = getSettings();

@@ -45,7 +45,6 @@
     pathPolicy: getAnimationVisibilityManager(),
   });
 
-  // ── Shell state ───────────────────────────────────────────────────
   let viewerMode = $state<ViewerMode>("mandala");
 
   // Honor prefers-reduced-motion for the harness's own JS transitions.
@@ -251,7 +250,6 @@
     color: #e2e8f0;
   }
 
-  /* ── Out-of-frame harness ───────────────────────────────────────── */
   .harness {
     display: flex;
     flex-wrap: wrap;
@@ -342,7 +340,6 @@
   }
   .fresh-btn:active { transform: scale(0.96); }
 
-  /* ── Device frame ───────────────────────────────────────────────── */
   .phone {
     max-width: 100%;
     border-radius: 44px;
@@ -465,7 +462,6 @@
     100% { opacity: 0; transform: scale(1.25); }
   }
 
-  /* ── States ─────────────────────────────────────────────────────── */
   .state {
     margin: auto;
     display: flex;

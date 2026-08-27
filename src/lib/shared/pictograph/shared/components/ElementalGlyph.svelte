@@ -86,9 +86,6 @@ embedded within the elemental shape. Known non-Type1 letters are rejected.
   const centerX = $derived(glyphBox.x + glyphBox.width / 2);
   const centerY = $derived(glyphBox.y + glyphBox.height / 2);
 
-  // ============================================================================
-  // ELEMENTAL TYPE CHANGE ANIMATION
-  // ============================================================================
   // Track when elemental type changes to trigger a subtle scale-pulse animation.
 
   let prevElementalType: ElementalType | null | undefined;

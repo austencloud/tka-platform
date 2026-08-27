@@ -79,7 +79,6 @@ function base45Decode(str: string): Uint8Array {
   return new Uint8Array(output);
 }
 
-// ── Public API ───────────────────────────────────────────────────────
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();

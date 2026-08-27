@@ -49,7 +49,6 @@ const TIMEOUTS = {
   FINAL_SETTLE: 500,
 } as const;
 
-// ─── Resolve which routes to capture ──────────────────────────────────────────
 
 function resolveRoutes(): RouteConfig[] {
   const publicOnly = process.env.SCREENSHOT_PUBLIC === "true";
@@ -65,7 +64,6 @@ function resolveRoutes(): RouteConfig[] {
   return pool;
 }
 
-// ─── Resolve auth credentials ─────────────────────────────────────────────────
 
 interface Credentials {
   email: string;

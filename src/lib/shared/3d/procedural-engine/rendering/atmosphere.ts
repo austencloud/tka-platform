@@ -18,9 +18,6 @@ import {
   type PerspectiveCamera,
 } from "three";
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 export interface SkyConfig {
   skyColor: string;
@@ -36,9 +33,6 @@ export interface FogConfig {
   useExp2: boolean;
 }
 
-// ============================================================================
-// DEFAULT CONFIGS
-// ============================================================================
 
 const DEFAULT_SKY_CONFIG: SkyConfig = {
   skyColor: "#4a90c2",
@@ -91,9 +85,6 @@ const BIOME_FOG_CONFIGS: Record<string, FogConfig> = {
   },
 };
 
-// ============================================================================
-// ATMOSPHERE MANAGER
-// ============================================================================
 
 export class AtmosphereManager {
   private scene: Scene;
@@ -190,9 +181,6 @@ export class AtmosphereManager {
     }
   }
 
-  /**
-   * Get fog config for biome
-   */
   getFogConfig(biome: string): FogConfig {
     return BIOME_FOG_CONFIGS[biome] || BIOME_FOG_CONFIGS.default!;
   }

@@ -13,9 +13,7 @@
   import { desktopState } from "../../state/desktop-state.svelte";
   import RetroButton from "../primitives/RetroButton.svelte";
 
-  /* ------------------------------------------------------------------ */
   /* Props                                                               */
-  /* ------------------------------------------------------------------ */
 
   let {
     onsuccess = undefined,
@@ -25,18 +23,14 @@
     onfail?: () => void;
   } = $props();
 
-  /* ------------------------------------------------------------------ */
   /* Local state                                                         */
-  /* ------------------------------------------------------------------ */
 
   let email = $state("");
   let password = $state("");
   let errorMessage = $state("");
   let isSubmitting = $state(false);
 
-  /* ------------------------------------------------------------------ */
   /* Auth handler helpers                                                */
-  /* ------------------------------------------------------------------ */
 
   function handleSuccess() {
     // authState watcher in RetroDesktop will populate display name / email
@@ -45,9 +39,7 @@
     onsuccess?.();
   }
 
-  /* ------------------------------------------------------------------ */
   /* Email / password sign-in                                            */
-  /* ------------------------------------------------------------------ */
 
   async function handleEmailSignIn() {
     if (!email.trim() || !password) return;
@@ -69,9 +61,7 @@
     }
   }
 
-  /* ------------------------------------------------------------------ */
   /* Google sign-in                                                       */
-  /* ------------------------------------------------------------------ */
 
   async function handleGoogleSignIn() {
     isSubmitting = true;
@@ -91,9 +81,7 @@
     }
   }
 
-  /* ------------------------------------------------------------------ */
   /* Keyboard: Enter submits                                              */
-  /* ------------------------------------------------------------------ */
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === "Enter" && !isSubmitting) {
@@ -194,9 +182,7 @@
 </div>
 
 <style>
-  /* ------------------------------------------------------------------ */
   /* Modal overlay -- dims the desktop behind the dialog                  */
-  /* ------------------------------------------------------------------ */
   .login-overlay {
     position: absolute;
     inset: 0;
@@ -207,9 +193,7 @@
     justify-content: center;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Dialog window -- classic Win95 look                                  */
-  /* ------------------------------------------------------------------ */
   .login-dialog {
     width: 380px;
     max-width: 90%;
@@ -219,9 +203,7 @@
     box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #808080;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Title bar                                                            */
-  /* ------------------------------------------------------------------ */
   .title-bar {
     background: linear-gradient(90deg, #000080, #1084d0);
     padding: 2px 4px;
@@ -237,16 +219,12 @@
     font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
   }
 
-  /* ------------------------------------------------------------------ */
   /* Dialog body                                                          */
-  /* ------------------------------------------------------------------ */
   .dialog-body {
     padding: 12px;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Instructions row (icon + text)                                       */
-  /* ------------------------------------------------------------------ */
   .instructions-row {
     display: flex;
     align-items: flex-start;
@@ -267,9 +245,7 @@
     line-height: 1.4;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Form field grid                                                      */
-  /* ------------------------------------------------------------------ */
   .field-grid {
     display: grid;
     grid-template-columns: 80px 1fr;
@@ -308,9 +284,7 @@
     outline: none;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Error area                                                           */
-  /* ------------------------------------------------------------------ */
   .error-area {
     margin-bottom: 8px;
     padding: 4px 6px;
@@ -325,9 +299,7 @@
     line-height: 1.3;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Separator                                                            */
-  /* ------------------------------------------------------------------ */
   .separator {
     border: none;
     border-top: 1px solid #808080;
@@ -335,18 +307,14 @@
     margin: 10px 0;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Google sign-in row                                                   */
-  /* ------------------------------------------------------------------ */
   .google-row {
     display: flex;
     justify-content: center;
     margin-bottom: 12px;
   }
 
-  /* ------------------------------------------------------------------ */
   /* OK / Cancel button row                                               */
-  /* ------------------------------------------------------------------ */
   .button-row {
     display: flex;
     justify-content: flex-end;

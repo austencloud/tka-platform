@@ -2,7 +2,6 @@ import { LocomotionMode } from './fish-locomotion';
 
 export { LocomotionMode };
 
-// ── Trophic roles ──────────────────────────────────────────────────────
 
 export enum TrophicRole {
 	ApexPredator = 0,
@@ -13,7 +12,6 @@ export enum TrophicRole {
 	Neutral = 5,
 }
 
-// ── Species configuration ──────────────────────────────────────────────
 
 export interface FishSpeciesConfig {
 	name: string;
@@ -100,7 +98,6 @@ export const RESIDENT_FISH_COUNT = RESIDENT_SPECIES.reduce(
 	0,
 );
 
-// ── Threat / hunt matrices ─────────────────────────────────────────────
 
 // 6x6 threat matrix: THREAT_MATRIX[myRole * 6 + neighborRole] = 1.0 means neighborRole threatens myRole
 // prettier-ignore
@@ -134,7 +131,6 @@ export function isPrey(myRole: TrophicRole, neighborRole: TrophicRole): boolean 
 	return HUNT_MATRIX[myRole * 6 + neighborRole] === 1;
 }
 
-// ── Species rotation manager ───────────────────────────────────────────
 
 export interface SlotAllocation {
 	startIndex: number;

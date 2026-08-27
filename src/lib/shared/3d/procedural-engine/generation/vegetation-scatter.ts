@@ -26,9 +26,6 @@ import { getBiomeVegetationConfig, getCategoryRulesForBiome } from "../vegetatio
  */
 export type VegetationBiomeType = "plains" | "forest" | "mountains" | "desert" | "ocean";
 
-// ============================================================================
-// VEGETATION TYPES
-// ============================================================================
 
 /**
  * All available vegetation types in the realm
@@ -59,9 +56,6 @@ export interface VegetationInstance {
   scale: number;     // Uniform scale factor
 }
 
-// ============================================================================
-// VEGETATION RULES
-// ============================================================================
 
 /**
  * Configuration for a single vegetation type's placement rules
@@ -374,9 +368,6 @@ export function getRulesForBiome(biome: VegetationBiomeType): VegetationRule[] {
     .sort((a, b) => b.priority - a.priority);
 }
 
-// ============================================================================
-// POISSON DISK SAMPLING
-// ============================================================================
 
 /**
  * Poisson disk sample point with metadata

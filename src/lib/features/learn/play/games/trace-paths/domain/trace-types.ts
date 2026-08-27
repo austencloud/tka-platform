@@ -128,9 +128,7 @@ export type TraceSource =
   | { readonly kind: "sequence"; readonly sequence: SequenceData }
   | { readonly kind: "hand-path"; readonly handPath: HandPathData };
 
-// ---------------------------------------------------------------------------
 // Conversion result
-// ---------------------------------------------------------------------------
 
 /**
  * Why a conversion refused. Content in the wild is not always traceable — a
@@ -162,9 +160,7 @@ export type TraceConversionResult =
   | { readonly ok: true; readonly round: TraceRound }
   | { readonly ok: false; readonly error: TraceConversionError };
 
-// ---------------------------------------------------------------------------
 // Evaluation output (produced by the evaluator, consumed by the results view)
-// ---------------------------------------------------------------------------
 
 /** The first place a hand left the route, if it did. Null-when-clean. */
 export interface TraceDivergence {

@@ -146,14 +146,12 @@ export class PromoVideoExporter {
         // Render frame via callback
         renderFrame(normalizedTime);
 
-        // Render to canvas
         this.renderer.render(this.scene!, this.camera!);
 
         // Copy to offscreen canvas
         const rendererCanvas = this.renderer.domElement;
         offscreenCtx.drawImage(rendererCanvas, 0, 0, width, height);
 
-        // Create video frame
         const videoFrame = new VideoFrame(offscreenCanvas, {
           timestamp: frameIndex * frameTime * 1_000_000, // microseconds
           duration: frameTime * 1_000_000,
@@ -189,7 +187,6 @@ export class PromoVideoExporter {
       await output.finalize();
       const videoBuffer = (output.target as BufferTarget).buffer!;
 
-      // Create blob
       const blob = new Blob([videoBuffer], { type: "video/mp4" });
       const url = URL.createObjectURL(blob);
 

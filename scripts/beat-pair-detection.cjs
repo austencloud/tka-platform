@@ -174,9 +174,6 @@ function compareBeatPair(beat1, beat2) {
   return transformations;
 }
 
-/**
- * Build a graph of all beat pair relationships
- */
 function buildBeatPairGraph(beats) {
   const graph = {};
 
@@ -263,7 +260,6 @@ function detectLOOPWithBeatPairs(sequence) {
     return { loopType: null, components: [], analysis: "too_short" };
   }
 
-  // Build the beat pair graph
   const graph = buildBeatPairGraph(beats);
 
   // Group beats by letter

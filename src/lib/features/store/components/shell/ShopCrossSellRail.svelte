@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/shell/ShopCrossSellRail.svelte -->
 <!--
   "More from the line" — the lateral move every product page was missing. A page
   used to dead-end: buy, or leave. This puts the rest of the catalog at the

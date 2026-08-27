@@ -51,9 +51,7 @@ import {
   truncatePolyline,
 } from "./trace-path-sampler";
 
-// ---------------------------------------------------------------------------
 // Geometry contract
-// ---------------------------------------------------------------------------
 
 /**
  * The slice of a round the evaluator actually needs.
@@ -66,9 +64,7 @@ export interface TraceRoundGeometry {
   readonly beats: readonly TraceBeat[];
 }
 
-// ---------------------------------------------------------------------------
 // Config
-// ---------------------------------------------------------------------------
 
 /**
  * Every radius here is a fraction of the stage's shorter side. `trace-config.ts`
@@ -156,9 +152,7 @@ export const DEFAULT_TRACE_EVALUATOR_CONFIG: TraceEvaluatorConfig = {
   accuracyFalloff: TRACE_CORRIDOR_HALF_WIDTH * 1.5,
 };
 
-// ---------------------------------------------------------------------------
 // Public surface
-// ---------------------------------------------------------------------------
 
 export interface TraceEvaluatorState {
   /** Beat currently being evaluated; equals `totalBeats` once the round is done. */
@@ -186,9 +180,7 @@ export interface TraceEvaluator {
   finish(): TraceMetrics;
 }
 
-// ---------------------------------------------------------------------------
 // Small pure geometry helpers
-// ---------------------------------------------------------------------------
 
 function distance(a: NormalizedPoint, b: NormalizedPoint): number {
   return Math.hypot(a.x - b.x, a.y - b.y);
@@ -327,9 +319,7 @@ function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
-// ---------------------------------------------------------------------------
 // Internals
-// ---------------------------------------------------------------------------
 
 type SlotKind = "move" | "hold" | "absent";
 

@@ -1,4 +1,3 @@
-// tests/unit/film-director/sequence-language.test.ts
 import { describe, expect, it } from "vitest";
 
 import { GenerationMode } from "../../../src/lib/shared/foundation/domain/models/generation/generate-models";

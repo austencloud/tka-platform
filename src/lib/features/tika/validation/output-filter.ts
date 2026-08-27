@@ -127,9 +127,6 @@ export function toDisplayOutput(result: unknown): DisplayOutput | string {
 	return output;
 }
 
-/**
- * Filter an array of tool results.
- */
 export function filterToolResults(results: unknown[]): (DisplayOutput | string)[] {
 	return results.map(toDisplayOutput);
 }

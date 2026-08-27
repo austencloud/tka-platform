@@ -94,9 +94,6 @@
     }
   });
 
-  /**
-   * Initialize camera
-   */
   async function initializeCamera() {
     if (!cameraService) {
       cameraError = "Camera service not loaded";

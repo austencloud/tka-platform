@@ -15,7 +15,6 @@ import path from 'path';
 
 const REPORTS_DIR = path.join(process.cwd(), 'scripts/tika/reports');
 
-// Parse args
 const args = process.argv.slice(2);
 const lastIdx = args.indexOf('--last');
 const lastN = lastIdx >= 0 ? parseInt(args[lastIdx + 1]) : null;

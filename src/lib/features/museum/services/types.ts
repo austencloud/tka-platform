@@ -10,7 +10,6 @@ import type {
 } from "../domain/museum-grid-types";
 import type { RoomDefinition } from "$lib/shared/3d/indoor/domain/room-types";
 
-// === From IMuseumDesignValidator ===
 
 export interface DesignViolation {
   roomId: string;
@@ -20,14 +19,12 @@ export interface DesignViolation {
   exhibitRefId?: string;
 }
 
-// === From IMuseumGridBuilder ===
 
 export interface MuseumGridBuildResult {
   grid: MuseumGrid;
   validation: ValidationResult;
 }
 
-// === From IMuseumModelLoader ===
 
 export interface MuseumModelDefinition {
   /** Asset path relative to the static root, e.g. "/assets/museum/models/furniture/bench.glb" */
@@ -41,7 +38,6 @@ export interface MuseumModelDefinition {
 export type MuseumModelRole = MuseumFurnitureRole;
 
 
-// === From IMuseumRoomSerializer ===
 
 export interface SerializationResult {
   rooms: RoomNode[];
@@ -53,7 +49,6 @@ export interface ValidationError {
   message: string;
 }
 
-// === From IPlaqueTextureGenerator ===
 
 export interface PlaqueContent {
   title: string;
@@ -64,7 +59,6 @@ export interface PlaqueContent {
 
 export type PlaqueSize = "standard" | "large" | "dev-whiteboard";
 
-// === From IRoomLifecycleManager ===
 
 export enum RoomState {
   Unvisited = "unvisited",
@@ -89,7 +83,6 @@ export interface LifecycleUpdate {
   priorities: Map<string, number>;
 }
 
-// === From IRoomStreamingManager ===
 
 export interface StreamingUpdate {
   /** Room IDs that should be loaded (not already loaded) */
@@ -100,7 +93,6 @@ export interface StreamingUpdate {
   activeSet: Set<string>;
 }
 
-// === From ITileGridAnalyzer ===
 
 export interface AnalyzedMuseum {
 	rooms: RoomDefinition[];
@@ -137,7 +129,6 @@ export interface ConnectionDef {
 	position: [number, number, number];
 }
 
-// === From IWallSegmentStamper ===
 
 export interface DoorPosition {
 	x: number;

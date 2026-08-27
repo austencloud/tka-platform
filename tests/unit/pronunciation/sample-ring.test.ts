@@ -1,4 +1,3 @@
-// tests/unit/pronunciation/sample-ring.test.ts
 import { describe, expect, it } from "vitest";
 
 import { SampleRing } from "$lib/features/lab/pronunciation-recorder/domain/sample-ring";

@@ -95,7 +95,6 @@
         throw new Error("No frames could be extracted from the video");
       }
 
-      // Compute duration from last frame timestamp
       const lastFrame = frames[frames.length - 1];
       const duration = lastFrame?.timestamp ?? 0;
 

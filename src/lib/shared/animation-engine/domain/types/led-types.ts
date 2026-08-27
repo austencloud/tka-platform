@@ -22,7 +22,6 @@ export type { LedShutter };
 export const PROP_BLUE = "#2196f3";
 export const PROP_RED = "#f44336";
 
-// ─── Device ───────────────────────────────────────────────────────────────────
 
 export type LedDeviceKind = "capsule" | "pixel-staff";
 
@@ -72,7 +71,6 @@ export function clampCycleDuration(value: number): number {
 
 export const DEFAULT_CYCLE_DURATION = 3;
 
-// ─── Look ─────────────────────────────────────────────────────────────────────
 
 /**
  * How the light is captured, not how each LED is drawn.
@@ -100,7 +98,6 @@ export interface LedLook {
   brightness: number;
 }
 
-// ─── Config ───────────────────────────────────────────────────────────────────
 
 /**
  * The user-facing LED simulator settings. `LedIntent` in the effects-config
@@ -120,7 +117,6 @@ export interface LedOverlayConfig extends LedSimulatorConfig {
   enabled: boolean;
 }
 
-// ─── Frame input ──────────────────────────────────────────────────────────────
 
 /**
  * One addressable LED for one frame, produced by the LED sampler.
@@ -161,7 +157,6 @@ export interface LedFrameInput {
   canvasHeight: number;
 }
 
-// ─── Defaults ─────────────────────────────────────────────────────────────────
 
 /**
  * Discrete brightness levels matching physical LED prop controls.

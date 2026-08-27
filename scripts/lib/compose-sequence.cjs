@@ -10,9 +10,7 @@
 
 const { randomUUID } = require("crypto");
 
-// ---------------------------------------------------------------------------
 // Enum values (mirrored from TypeScript sources so we stay in CJS land)
-// ---------------------------------------------------------------------------
 
 const GridLocation = {
   NORTH: "n",
@@ -59,9 +57,7 @@ const INTERCARDINAL_LOCATIONS = new Set([
   GridLocation.NORTHWEST,
 ]);
 
-// ---------------------------------------------------------------------------
 // ContentHasher
-// ---------------------------------------------------------------------------
 
 const BASE62_CHARS =
   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";

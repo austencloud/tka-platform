@@ -31,17 +31,11 @@ export function createPerformanceMetricsState(): PerformanceMetricsState {
   });
 
   return {
-    // ============================================================================
-    // GETTERS
-    // ============================================================================
 
     get performanceMetrics() {
       return performanceMetrics;
     },
 
-    // ============================================================================
-    // ACTIONS
-    // ============================================================================
 
     updateInitializationTime(time: number): void {
       performanceMetrics.initializationTime = time;

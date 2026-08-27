@@ -91,15 +91,12 @@ export class PromoSceneManager {
     width: number,
     height: number
   ): Promise<void> {
-    // Create scene
     this.scene = new Scene();
 
-    // Create camera
     this.camera = new PerspectiveCamera(50, width / height, 0.1, 1000);
     this.camera.position.set(0, 0, 5);
     this.camera.lookAt(0, 0, 0);
 
-    // Create renderer
     this.renderer = new WebGLRenderer({
       canvas,
       antialias: true,

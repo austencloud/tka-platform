@@ -521,9 +521,6 @@ captureEffectDiagnostics to the context menu.
     object-fit: contain;
   }
 
-  /* ===========================================
-     REDUCED MOTION
-     =========================================== */
 
   @media (prefers-reduced-motion: reduce) {
     .canvas-wrapper,

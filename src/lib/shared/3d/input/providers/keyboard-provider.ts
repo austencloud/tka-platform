@@ -30,9 +30,7 @@ export class KeyboardProvider implements IInputProvider {
 		this.config = { ...DEFAULT_INPUT_CONFIG, ...config };
 	}
 
-	// =========================================================================
 	// IInputProvider implementation
-	// =========================================================================
 
 	getLookDelta(): LookDelta {
 		// Keyboard doesn't provide look input
@@ -94,9 +92,7 @@ export class KeyboardProvider implements IInputProvider {
 		this.disable();
 	}
 
-	// =========================================================================
 	// Internal helpers
-	// =========================================================================
 
 	private isKeyHeld(code: string): boolean {
 		return this.keys.has(code);
@@ -116,9 +112,7 @@ export class KeyboardProvider implements IInputProvider {
 		);
 	}
 
-	// =========================================================================
 	// Event handlers
-	// =========================================================================
 
 	private handleKeyDown = (e: KeyboardEvent): void => {
 		if (!this.enabled) return;

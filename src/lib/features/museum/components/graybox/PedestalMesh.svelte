@@ -72,7 +72,6 @@
   const bodyH = $derived(height - PEDESTAL_FACE_INSET - 0.01);
   const bodyY = $derived(faceY - 0.01 - bodyH / 2);
 
-  // ── The generated figure ──────────────────────────────────────────────────
   let faceTexture = $state<Texture | null>(null);
 
   $effect(() => {

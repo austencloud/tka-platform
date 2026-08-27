@@ -1,4 +1,3 @@
-// tests/unit/pronunciation/letter-syllables.test.ts
 import { describe, expect, it } from "vitest";
 
 import { Letter } from "$lib/shared/foundation/domain/models/letter";

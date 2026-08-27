@@ -93,7 +93,6 @@ export function createGalleryTagFilterState(deps: GalleryTagFilterDeps) {
     }
   }
 
-  // ─── Tag filtering callbacks ──────────────────────────────────────────────
 
   function toggleTag(tagId: string) {
     const next = new Set(activeTagIds);
@@ -152,7 +151,6 @@ export function createGalleryTagFilterState(deps: GalleryTagFilterDeps) {
     showTagPicker = false;
   }
 
-  /** Apply tag filter to a list of items */
   function applyTagFilter(items: GalleryItem[]): GalleryItem[] {
     const hasFilters =
       activeTagIds.size > 0 || excludeTagIds.size > 0 || untaggedOnly;

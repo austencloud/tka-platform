@@ -42,9 +42,6 @@ export class ChunkZoneManager {
 
   constructor(private deps: ZoneManagerDeps) {}
 
-  // ==========================================================================
-  // REAL TERRAIN ZONES
-  // ==========================================================================
 
   loadRealTerrainZone(data: ImportedTerrainData): void {
     this.realTerrainZone = createRealTerrainZone(data);
@@ -151,9 +148,6 @@ export class ChunkZoneManager {
     this.deps.processQueue();
   }
 
-  // ==========================================================================
-  // STAGE ZONE
-  // ==========================================================================
 
   setStageZone(center: { x: number; z: number }, radius: number, blendWidth: number): void {
     this.stageZone = { center, radius, blendWidth };
@@ -190,9 +184,6 @@ export class ChunkZoneManager {
     return this.stageZone !== null;
   }
 
-  // ==========================================================================
-  // SPAWN CLEARING
-  // ==========================================================================
 
   setSpawnClearing(
     center: { x: number; z: number },
@@ -241,9 +232,6 @@ export class ChunkZoneManager {
     return this.spawnClearingConfig;
   }
 
-  // ==========================================================================
-  // SHARED HELPERS
-  // ==========================================================================
 
   private regenerateChunksInRadius(center: { x: number; z: number }, totalRadius: number): void {
     const { chunkSize } = this.deps.config;

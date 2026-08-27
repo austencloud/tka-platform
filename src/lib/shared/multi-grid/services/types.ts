@@ -2,7 +2,6 @@ import type { PointRef, Vec2 } from "../domain/models/grid-topology";
 import type { GridMode } from "$lib/shared/render/core/types";
 import type { Plane } from "@austencloud/scene-3d";
 
-// --- From TopologyBetaSeparator ---
 
 /** Pixel offsets to apply to each prop to separate them */
 export interface BetaOffset {
@@ -10,7 +9,6 @@ export interface BetaOffset {
   readonly red: Vec2;
 }
 
-// --- From TopologyBuilder ---
 
 export interface GridOptions {
   /** Grid rendering mode (default: "diamond") */
@@ -23,14 +21,12 @@ export interface GridOptions {
   plane?: Plane;
 }
 
-// --- From TopologyPositionEnumerator ---
 
 export interface PositionPair {
   readonly blue: PointRef;
   readonly red: PointRef;
 }
 
-// --- From TopologyPropLoader ---
 
 /** Render-ready prop data for direct SVG rendering */
 export interface TopologyPropRenderData {
@@ -46,7 +42,6 @@ export interface TopologyPropRenderData {
   readonly rotation: number;
 }
 
-// --- From TopologyRenderer ---
 
 export interface ViewBoxData {
   /** SVG viewBox string: "minX minY width height" */

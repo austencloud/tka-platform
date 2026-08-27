@@ -22,7 +22,6 @@ export class AnimalOverlayRenderer extends EffectRenderer {
   }
 }
 
-// ── EffectPlugin descriptor ──────────────────────────────────────────────────
 import type { EffectPlugin } from "./effects/effect-plugin";
 import type { AnimalIntent } from "$lib/shared/effects/domain/effects-config";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";

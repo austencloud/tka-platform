@@ -29,7 +29,6 @@
 
   let mode = $state<"crossfade" | "swap">("crossfade");
 
-  // --- automated zero-shift probe -------------------------------------------
   let probeResult = $state("not run");
   let wrapperEl: HTMLElement;
   let markerEl: HTMLElement;

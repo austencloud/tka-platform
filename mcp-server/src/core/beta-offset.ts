@@ -52,9 +52,6 @@ const BETA_OFFSET_DISTANCE_BOX = 14.93;
 const HAND_BETA_OFFSET_DISTANCE_DIAMOND = 950 / 45;  // ~21.11px
 const HAND_BETA_OFFSET_DISTANCE_BOX = (950 / 45) / Math.sqrt(2);  // ~14.93px
 
-// ============================================================================
-// DIRECTION MAPS
-// ============================================================================
 
 type ColorMap = Record<"blue" | "red", VectorDirection>;
 
@@ -178,9 +175,6 @@ const SHIFT_NON_RADIAL_MAP: Record<string, Record<string, VectorDirection>> = {
   },
 };
 
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
 
 /**
  * Opposite direction lookup table
@@ -196,9 +190,6 @@ const OPPOSITE_DIRECTIONS: Record<VectorDirection, VectorDirection> = {
   [VectorDirection.DOWNRIGHT]: VectorDirection.UPLEFT,
 };
 
-/**
- * Get the opposite direction
- */
 function getOppositeDirection(direction: VectorDirection): VectorDirection {
   return OPPOSITE_DIRECTIONS[direction];
 }
@@ -271,9 +262,6 @@ function normalizeLocation(loc: string): string {
   return loc.toLowerCase();
 }
 
-// ============================================================================
-// MAIN CALCULATION FUNCTION
-// ============================================================================
 
 /**
  * Calculate beta offset for a single motion

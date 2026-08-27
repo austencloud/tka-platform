@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/SleeveArt.svelte -->
 <!--
   CSS stand-in for the waterproof sleeved card holder + lanyard, following the
   BookCoverArt placeholder pattern. Replace with a real product photo once the

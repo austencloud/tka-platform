@@ -89,9 +89,7 @@ export function extractStepPairings(sequence: SequenceData): readonly StepPairin
   }));
 }
 
-// ---------------------------------------------------------------------------
 // Private helpers
-// ---------------------------------------------------------------------------
 
 function extractSoloProp(
   sequence: SequenceData,

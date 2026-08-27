@@ -39,9 +39,6 @@ export type CampObjectType =
 
 export type PlacedObjectType = CampObjectType | (string & {});
 
-/**
- * Create a new PlacedObject with default values
- */
 export function createPlacedObject(
 	sceneId: string,
 	objectType: PlacedObjectType,

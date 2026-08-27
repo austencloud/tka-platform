@@ -6,7 +6,6 @@ import {
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { OrientationOption } from "./level5-lab-types";
 
-// ── Position-to-location mapping ──────────────────────────────────────
 
 /**
  * Maps each centric GridPosition to its [blue, red] hand locations.
@@ -39,7 +38,6 @@ export const POSITION_LOCATIONS: Partial<
   [GridPosition.TERRA1]: [GridLocation.CENTER, GridLocation.CENTER],
 };
 
-// ── Position arrays ───────────────────────────────────────────────────
 
 /** Tau Diamond: perimeter prop at cardinal point (N/E/S/W) */
 export const TAU_DIAMOND_POSITIONS: GridPosition[] = [
@@ -68,7 +66,6 @@ export const TAU_BOX_POSITIONS: GridPosition[] = [
 /** Terra: both hands at center */
 export const TERRA_POSITIONS: GridPosition[] = [GridPosition.TERRA1];
 
-// ── Orientation option arrays ─────────────────────────────────────────
 
 /** Radial orientations for perimeter-positioned props */
 export const RADIAL_ORIENTATIONS: readonly OrientationOption[] = [
@@ -90,7 +87,6 @@ export const COMPASS_ORIENTATIONS: readonly OrientationOption[] = [
   { value: Orientation.CENTER_NW, label: "NW", icon: "fa-arrow-up", rotation: -45 },
 ] as const;
 
-// ── Helper functions ──────────────────────────────────────────────────
 
 const CARDINAL_LOCATIONS: ReadonlySet<GridLocation> = new Set<GridLocation>([
   GridLocation.NORTH,

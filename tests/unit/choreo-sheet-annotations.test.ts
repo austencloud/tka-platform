@@ -1,4 +1,3 @@
-// tests/unit/choreo-sheet-annotations.test.ts
 import { describe, it, expect } from "vitest";
 import {
   bandKey,
@@ -38,7 +37,6 @@ describe("choreo-sheet annotations model", () => {
   });
 });
 
-// ── State-factory annotation editing ─────────────────────────────────────────
 import { createChoreoSheetState } from "$lib/features/write/state/choreo-sheet-state.svelte";
 
 function makeState() {
@@ -90,7 +88,6 @@ describe("annotation editing on the state factory", () => {
   });
 });
 
-// ── Persistence + back-compat ────────────────────────────────────────────────
 import { parseChoreoSheet } from "$lib/features/write/services/choreo-sheet-repository";
 
 describe("choreo-sheet persistence back-compat", () => {

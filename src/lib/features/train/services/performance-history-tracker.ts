@@ -138,7 +138,6 @@ export async function getStatsOverview(): Promise<StatsOverview> {
 
     const totalSessions = allPerformances.length;
 
-    // Calculate total practice time from metadata
     const totalPracticeTime = allPerformances.reduce((sum, p) => {
       return sum + (p.metadata?.sessionDuration ?? 0);
     }, 0);
@@ -221,9 +220,6 @@ export async function getPersonalBest(sequenceId: string): Promise<PersonalBest 
   }
 }
 
-/**
- * Delete a session by ID
- */
 export async function deleteSession(sessionId: string): Promise<void> {
   try {
     await db.trainPerformances.delete(sessionId);

@@ -372,7 +372,6 @@
     gap: 16px;
   }
 
-  /* ─── Modal form ─────────────────────────────────────────────────────────── */
 
   .workshop-form-body {
     padding: 20px;
@@ -450,7 +449,6 @@
     color: #fff;
   }
 
-  /* ─── Image upload ───────────────────────────────────────────────────────── */
 
   .hidden-file-input {
     display: none;

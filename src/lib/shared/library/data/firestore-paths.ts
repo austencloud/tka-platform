@@ -5,9 +5,6 @@
  * Following the pattern from gamification module.
  */
 
-// ============================================================================
-// USER LIBRARY PATHS
-// ============================================================================
 // Firestore paths must have odd segments for collections, even for documents.
 // Structure: users/{userId}/sequences (3 segments = collection)
 

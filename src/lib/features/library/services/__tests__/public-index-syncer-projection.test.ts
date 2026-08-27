@@ -87,9 +87,7 @@ import {
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
-// ---------------------------------------------------------------------------
 // Fixtures
-// ---------------------------------------------------------------------------
 
 const CYCLE: readonly GridLocation[] = [
   GridLocation.NORTH,

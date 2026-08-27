@@ -71,9 +71,7 @@ export function groupSequencesIntoSections(
   return sections;
 }
 
-// ============================================================================
 // Sorting Methods
-// ============================================================================
 
 function sortAlphabetically(sequences: SequenceData[]): SequenceData[] {
   // Use the kinetic alphabet order (Type 1-6 letters in proper TKA sequence)
@@ -108,9 +106,7 @@ function sortByPopularity(sequences: SequenceData[]): SequenceData[] {
   );
 }
 
-// ============================================================================
 // Section Key Generation
-// ============================================================================
 
 function getSectionKey(
   sequence: SequenceData,

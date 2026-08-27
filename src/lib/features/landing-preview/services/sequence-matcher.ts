@@ -228,7 +228,6 @@ export class SequenceMatcher {
     const results: MatchedSequence[] = [];
     const seenIds = new Set<string>();
 
-    // Fetch from publicSequences
     const publicQuery = query(collection(db, "publicSequences"), limit(MAX_FETCH_LIMIT));
     const publicSnapshot = await getDocs(publicQuery);
 

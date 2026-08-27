@@ -23,9 +23,6 @@ import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const debug = createComponentLogger("FirebaseHMR");
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 export interface FirebaseHMRConfig {
   /** Enable debug logging */
@@ -66,9 +63,6 @@ export interface FirebaseHMRMetrics {
   rotationTimes: number[];
 }
 
-// ============================================================================
-// DEFAULT CONFIG
-// ============================================================================
 
 const DEFAULT_CONFIG: FirebaseHMRConfig = {
   debug: import.meta.env?.DEV ?? false,
@@ -76,9 +70,6 @@ const DEFAULT_CONFIG: FirebaseHMRConfig = {
   maxListeners: 500,
 };
 
-// ============================================================================
-// FIREBASE HMR MANAGER
-// ============================================================================
 
 export class FirebaseHMRManager {
   private static instance: FirebaseHMRManager | null = null;
@@ -121,9 +112,6 @@ export class FirebaseHMRManager {
     };
   }
 
-  /**
-   * Get the singleton instance
-   */
   static getInstance(config?: Partial<FirebaseHMRConfig>): FirebaseHMRManager {
     // Check globalThis first to survive HMR module re-evaluation
     if (
@@ -159,9 +147,7 @@ export class FirebaseHMRManager {
     return null;
   }
 
-  // ============================================================================
   // PUBLIC API - State
-  // ============================================================================
 
   /**
    * Check if HMR rotation is in progress
@@ -184,9 +170,6 @@ export class FirebaseHMRManager {
     return this.state.app;
   }
 
-  /**
-   * Get current Auth instance
-   */
   getAuth(): Auth | null {
     return this.state.auth;
   }
@@ -198,9 +181,6 @@ export class FirebaseHMRManager {
     return this.state.firestore;
   }
 
-  /**
-   * Get current Database instance
-   */
   getDatabase(): Database | null {
     return this.state.database;
   }
@@ -212,16 +192,11 @@ export class FirebaseHMRManager {
     return this.state.currentAppId;
   }
 
-  /**
-   * Get metrics for monitoring
-   */
   getMetrics(): Readonly<FirebaseHMRMetrics> {
     return { ...this.metrics };
   }
 
-  // ============================================================================
   // PUBLIC API - Registration
-  // ============================================================================
 
   /**
    * Set the Firebase App instance (called during initialization)

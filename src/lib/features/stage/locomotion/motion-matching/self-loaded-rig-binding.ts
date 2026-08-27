@@ -1,4 +1,3 @@
-// src/lib/features/stage/locomotion/motion-matching/self-loaded-rig-binding.ts
 
 import * as THREE from "three";
 import {

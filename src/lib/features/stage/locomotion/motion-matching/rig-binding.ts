@@ -1,4 +1,3 @@
-// src/lib/features/stage/locomotion/motion-matching/rig-binding.ts
 
 import type { Bone, Object3D, Vector3 } from "three";
 import type { PoseSample } from "./feature-types";

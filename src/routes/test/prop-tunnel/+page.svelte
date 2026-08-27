@@ -66,7 +66,6 @@
   const effectsConfig = createEffectsConfigState(undefined, { persist: false });
   setEffectsConfigContext(effectsConfig);
 
-  // ── Knobs ───────────────────────────────────────────────────
   let propType = $state<PropType>(PropType.SWORD);
   let fold = $state<Fold>(4);
   let mirror = $state(false);
@@ -125,7 +124,6 @@
   const activePanel = $derived(activeEffect === "none" ? null : EFFECT_PANELS[activeEffect] ?? null);
   const noBack = () => {};
 
-  // ── Sequences ───────────────────────────────────────────────
   let base = $state<SequenceData | null>(null);
   let rotated = $state<SequenceData[]>([]); // additional layers beyond base
   let playheadBeat = $state(0);

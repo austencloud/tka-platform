@@ -24,9 +24,7 @@ import { FIRE_PROP_VISIBILITY } from "../fire/fire-prop-visibility";
  *   - Pavel Dobryakov's WebGL-Fluid-Simulation
  */
 
-// ============================================================
 // Shared vertex shader: fullscreen quad via gl_VertexID
-// ============================================================
 
 export const VERTEX_SHADER = `#version 300 es
 precision highp float;
@@ -113,10 +111,8 @@ void main() {
 }
 `;
 
-// ============================================================
 // Advection: Semi-Lagrangian backtracing.
 // Moves a field (velocity, temperature, fuel) through the velocity field.
-// ============================================================
 
 export const ADVECTION_FRAG = `#version 300 es
 precision highp float;
@@ -181,10 +177,8 @@ void main() {
 }
 `;
 
-// ============================================================
 // Curl: compute the scalar curl (vorticity) of 2D velocity field.
 // curl = dVy/dx - dVx/dy
-// ============================================================
 
 export const CURL_FRAG = `#version 300 es
 precision highp float;
@@ -205,10 +199,8 @@ void main() {
 }
 `;
 
-// ============================================================
 // Vorticity confinement: restore small-scale rotational detail
 // lost to numerical diffusion. Adds force along curl gradient.
-// ============================================================
 
 export const VORTICITY_FRAG = `#version 300 es
 precision highp float;
@@ -250,10 +242,8 @@ void main() {
 }
 `;
 
-// ============================================================
 // Buoyancy: hot fluid rises, cool fluid sinks.
 // Applies vertical force proportional to temperature.
-// ============================================================
 
 export const BUOYANCY_FRAG = `#version 300 es
 precision highp float;
@@ -297,7 +287,6 @@ void main() {
 }
 `;
 
-// ============================================================
 // Curl noise turbulence: divergence-free velocity perturbation
 // that targets flame boundaries (where temperature gradient is steep).
 //
@@ -310,7 +299,6 @@ void main() {
 //
 // Reference: Bridson et al., "Curl-Noise for Procedural Fluid Flow"
 // (SIGGRAPH 2007)
-// ============================================================
 
 export const CURL_NOISE_FRAG = `#version 300 es
 precision highp float;
@@ -409,11 +397,9 @@ void main() {
 }
 `;
 
-// ============================================================
 // Combustion + Cooling: fuel burns to produce heat,
 // temperature decays via Stefan-Boltzmann-inspired cooling.
 // Packed: temperature.x = temperature, fuel stored separately.
-// ============================================================
 
 export const COMBUSTION_FRAG = `#version 300 es
 precision highp float;
@@ -484,10 +470,8 @@ void main() {
 }
 `;
 
-// ============================================================
 // Divergence: compute velocity field divergence for pressure solve.
 // div(v) = dVx/dx + dVy/dy
-// ============================================================
 
 export const DIVERGENCE_FRAG = `#version 300 es
 precision highp float;
@@ -508,11 +492,9 @@ void main() {
 }
 `;
 
-// ============================================================
 // Jacobi iteration: iteratively solve pressure Poisson equation.
 // Laplacian(p) = divergence(v)
 // Each iteration relaxes toward the solution.
-// ============================================================
 
 export const JACOBI_FRAG = `#version 300 es
 precision highp float;
@@ -537,10 +519,8 @@ void main() {
 }
 `;
 
-// ============================================================
 // Gradient subtraction: make velocity divergence-free.
 // v_new = v - gradient(pressure)
-// ============================================================
 
 export const GRADIENT_SUBTRACT_FRAG = `#version 300 es
 precision highp float;
@@ -564,9 +544,7 @@ void main() {
 }
 `;
 
-// ============================================================
 // Clear: fill a texture with a uniform value.
-// ============================================================
 
 export const CLEAR_FRAG = `#version 300 es
 precision highp float;
@@ -581,14 +559,12 @@ void main() {
 }
 `;
 
-// ============================================================
 // Display: two-layer fire rendering.
 //   Layer 1: Fluid sim trail (wake behind the moving wick)
 //   Layer 2: Wick cores (always-bright flame at each tip position)
 //
 // The wick itself is always on fire - constant bright flame.
 // Speed only affects how long the trailing wake extends behind it.
-// ============================================================
 
 export const DISPLAY_FRAG = `#version 300 es
 precision highp float;
@@ -903,10 +879,8 @@ void main() {
 }
 `;
 
-// ============================================================
 // Bloom composite: scene + bloom → final output
 // Combines the fire display pass with the bloom mip chain.
-// ============================================================
 
 export const BLOOM_COMPOSITE_FRAG = `#version 300 es
 precision highp float;

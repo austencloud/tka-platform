@@ -77,9 +77,6 @@ export function isAnalyticsEnabled(): boolean {
   return true;
 }
 
-/**
- * Get current environment name
- */
 export function getEnvironmentName(): string {
   if (!browser) return "server";
   return (import.meta.env.PUBLIC_ENVIRONMENT as string) || "development";

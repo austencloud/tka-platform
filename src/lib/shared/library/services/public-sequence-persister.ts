@@ -72,9 +72,7 @@ import {
 import { buildSequenceRevisionRecord } from "$lib/shared/library/services/sequence-revision";
 import type { ArtifactRevisionRef } from "$lib/shared/artifact-revisions/domain/artifact-revision";
 
-// ---------------------------------------------------------------------------
 // Claims
-// ---------------------------------------------------------------------------
 
 export const PUBLIC_SEQUENCE_HASH_COLLECTION = "publicSequenceHashes";
 

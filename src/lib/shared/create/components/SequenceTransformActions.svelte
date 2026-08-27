@@ -520,7 +520,6 @@
 </div>
 
 <style>
-  /* ===== CONTAINER - Flex column with uniform button heights ===== */
   .actions-container {
     --button-row-height: 1fr;
     display: flex;
@@ -535,7 +534,6 @@
     pointer-events: none;
   }
 
-  /* ===== SECTIONS ===== */
   .section {
     display: flex;
     flex-direction: column;
@@ -553,7 +551,6 @@
     flex-shrink: 0;
   }
 
-  /* ===== SECTION GRID ===== */
   .section-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -569,7 +566,6 @@
     gap: 4px;
   }
 
-  /* ===== BUTTON BASE STYLES ===== */
   /* Desktop: horizontal layout (icon left, label right) for compact rows */
   .grid-btn {
     display: flex;
@@ -870,7 +866,6 @@
     flex: 0 1 clamp(140px, 30cqw, 264px);
   }
 
-  /* ===== BUTTON COLORS - CSS custom properties for each button ===== */
   .grid-btn.mirror {
     --btn-color: 139, 92, 246;
   } /* Purple */
@@ -915,7 +910,6 @@
     --btn-color: 124, 58, 237;
   } /* Violet */
 
-  /* ===== SHARED COLOR APPLICATION - applies --btn-color to all buttons ===== */
   .grid-btn[class] {
     background: linear-gradient(
       135deg,
@@ -939,7 +933,6 @@
     background: rgb(var(--btn-color));
   }
 
-  /* ===== SPECIAL STATES ===== */
 
   /* Shift Start unavailable */
   .grid-btn.shift-start.unavailable {
@@ -987,7 +980,6 @@
     }
   }
 
-  /* ===== HELP MODE CONTAINER ===== */
   .actions-container.help-mode {
     /* Override disabled state - all buttons are interactive in help mode */
     opacity: 1;

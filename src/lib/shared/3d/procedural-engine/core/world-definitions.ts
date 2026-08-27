@@ -7,9 +7,6 @@
 
 import type { RealmConfig } from "./world-config";
 
-// ============================================================================
-// FLOW FEST SIM EARTH SITE
-// ============================================================================
 
 /**
  * Flow Fest Sim Earth Site
@@ -60,9 +57,6 @@ export const FLOW_FEST_SIM_CONFIG: RealmConfig = {
 /** @deprecated Internal compatibility name while the disabled feature folder migrates. */
 export const HANNONS_CAMP_CONFIG = FLOW_FEST_SIM_CONFIG;
 
-// ============================================================================
-// PERFORMANCE STAGE
-// ============================================================================
 
 /**
  * Performance Stage
@@ -125,9 +119,6 @@ export const PERFORMANCE_STAGE_CONFIG: RealmConfig = {
   },
 };
 
-// ============================================================================
-// PROCEDURAL WORLD
-// ============================================================================
 
 /**
  * Infinite Procedural World
@@ -189,9 +180,6 @@ export const PROCEDURAL_WORLD_CONFIG: RealmConfig = {
   },
 };
 
-// ============================================================================
-// FLAT TESTING REALM
-// ============================================================================
 
 /**
  * Flat Testing Realm
@@ -237,9 +225,6 @@ export const FLAT_TESTING_CONFIG: RealmConfig = {
   },
 };
 
-// ============================================================================
-// MUSEUM GROUNDS
-// ============================================================================
 
 /**
  * Museum Grounds
@@ -300,9 +285,7 @@ export const MUSEUM_GROUNDS_CONFIG: RealmConfig = {
   },
 };
 
-// ============================================================================
 // ARCHIVE - THE KINETIC ARCHIVE (Wing 1: Discovery Chamber)
-// ============================================================================
 
 /**
  * Archive Wing 1 - Discovery Chamber
@@ -364,9 +347,6 @@ export const ARCHIVE_WING1_CONFIG: RealmConfig = {
   },
 };
 
-// ============================================================================
-// REALM REGISTRY
-// ============================================================================
 
 /**
  * All available realms
@@ -380,9 +360,6 @@ export const REALM_CONFIGS: Record<string, RealmConfig> = {
   "archive-wing1": ARCHIVE_WING1_CONFIG,
 };
 
-/**
- * Get realm config by ID
- */
 export function getRealmConfig(id: string): RealmConfig | null {
   return REALM_CONFIGS[id] ?? null;
 }
@@ -394,9 +371,6 @@ export function listRealmIds(): string[] {
   return Object.keys(REALM_CONFIGS);
 }
 
-/**
- * Get default realm config
- */
 export function getDefaultRealmConfig(): RealmConfig {
   return PROCEDURAL_WORLD_CONFIG;
 }

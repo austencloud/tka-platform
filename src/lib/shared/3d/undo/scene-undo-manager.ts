@@ -29,9 +29,7 @@ export class SceneUndoManager {
     this.domains.set(key, handler as DomainHandler);
   }
 
-  // =========================================================================
   // State Getters
-  // =========================================================================
 
   get canUndo(): boolean {
     return this.undoStack.length > 0;
@@ -55,9 +53,7 @@ export class SceneUndoManager {
     return this.undoStack.length;
   }
 
-  // =========================================================================
   // Core Operations
-  // =========================================================================
 
   captureState(type: SceneUndoOperationType, description: string): void {
     if (this.undoDisabled) return;

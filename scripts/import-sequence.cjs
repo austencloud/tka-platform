@@ -21,9 +21,7 @@ const { pathToFileURL } = require("url");
 const crypto = require("crypto");
 const { decomposeSequence } = require("./lib/compose-sequence.cjs");
 
-// ---------------------------------------------------------------------------
 // Parse CLI args
-// ---------------------------------------------------------------------------
 
 let jsonPath = null;
 let useStdin = false;
@@ -62,9 +60,7 @@ function parseCliArgs() {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Constants
-// ---------------------------------------------------------------------------
 
 const AUSTEN_UID = "PBp3GSBO6igCKPwJyLZNmVEmamI3";
 
@@ -109,9 +105,7 @@ function stampNewSequenceTimestamps(data, fieldValue) {
   };
 }
 
-// ---------------------------------------------------------------------------
 // LOOP Detection
-// ---------------------------------------------------------------------------
 
 // Maps LOOP component IDs to the loopType enum values used in Firestore
 const COMPONENT_TO_LOOP_TYPE = {

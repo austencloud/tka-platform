@@ -76,9 +76,6 @@ export function createGlobalArrowAdjustmentState() {
       return _getAdjustment(key);
     },
 
-    /**
-     * Get adjustment by string key
-     */
     getAdjustmentByKey(keyString: string): { x: number; y: number } | null {
       const adjustment = adjustmentsMap.get(keyString);
       if (!adjustment) {
@@ -87,9 +84,6 @@ export function createGlobalArrowAdjustmentState() {
       return { x: adjustment.adjustmentX, y: adjustment.adjustmentY };
     },
 
-    /**
-     * Get full adjustment data by key
-     */
     getFullAdjustment(key: GlobalAdjustmentKey): GlobalArrowAdjustment | null {
       const keyString = generateAdjustmentKeyString(key);
       return adjustmentsMap.get(keyString) ?? null;
@@ -208,9 +202,6 @@ export function createGlobalArrowAdjustmentState() {
       adjustmentsMap = newMap;
     },
 
-    /**
-     * Remove an adjustment from the cache
-     */
     removeAdjustment(key: GlobalAdjustmentKey): void {
       const keyString = generateAdjustmentKeyString(key);
       if (adjustmentsMap.has(keyString)) {

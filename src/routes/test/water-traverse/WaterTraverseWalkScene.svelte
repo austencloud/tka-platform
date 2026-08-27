@@ -107,7 +107,6 @@
   /** How fast the walk actually moves, in m/s. Pacing is measured against it. */
   const WALK_SPEED = 4.2;
 
-  // ── Palette ─────────────────────────────────────────────────────────────────
 
   /**
    * Five greys and two instruments.
@@ -264,7 +263,6 @@
       : new Quaternion(),
   }));
 
-  // ── Instruments ─────────────────────────────────────────────────────────────
 
   /** Floor elevation on the centreline at a given Z, from the route samples. */
   function routeYAt(z: number): number {

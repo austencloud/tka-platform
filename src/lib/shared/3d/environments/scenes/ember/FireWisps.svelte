@@ -139,7 +139,6 @@
       }
       w.prevPositions[0] = { x: w.x, y: w.y, z: w.z };
 
-      // Update drift phase
       w.driftPhase += delta * config.driftSpeed;
 
       // Figure-8 drift pattern

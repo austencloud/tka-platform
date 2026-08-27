@@ -38,7 +38,6 @@
     userProportionsState.setStaffLengthCm(lengthCm);
   }
 
-  // Apply custom height
   function applyCustomHeight() {
     userProportionsState.setHeightFeetInches(
       customHeightFeet,
@@ -46,7 +45,6 @@
     );
   }
 
-  // Apply custom staff length
   function applyCustomStaff() {
     userProportionsState.setStaffLengthInches(customStaffInches);
   }

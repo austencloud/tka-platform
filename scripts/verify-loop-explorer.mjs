@@ -53,9 +53,7 @@ const ROOT = path.resolve(__dirname, "..");
 const K = Number(process.argv.find((a) => a.startsWith("--k="))?.slice(4) ?? 25);
 const RETRIES = 3; // matches spec's self-verifying generation N=3 before curated fallback
 
-// ---------------------------------------------------------------------------
 // Imports — Node-reachable engine + MCP-server generation path only.
-// ---------------------------------------------------------------------------
 
 const serverContext = await import(
   path.join(ROOT, "mcp-server/dist/src/shared/server-context.js").replace(/\\/g, "/").replace(/^([A-Za-z]:)/, "file:///$1")
@@ -73,13 +71,11 @@ const { MCPVariationProvider } = await import(
   path.join(ROOT, "mcp-server/dist/src/core/MCPVariationProvider.js").replace(/\\/g, "/").replace(/^([A-Za-z]:)/, "file:///$1")
 );
 
-// ---------------------------------------------------------------------------
 // 17-combo table (mirrors loop-type-utils.ts IMPLEMENTED_COMBOS exactly —
 // the SSOT for which component sets are real/generatable). The app strings
 // ARE the engine LOOPType enum values except STRICT_REWOUND (app) which maps
 // to the engine's REWOUND ("rewound"), so combo.appLoopType is used for
 // display/report labels and combo.engineLoopType drives generation.
-// ---------------------------------------------------------------------------
 
 const COMBOS = [
   { components: ["rotated"], appLoopType: "rotated" },
@@ -119,11 +115,9 @@ function toEngineLoopType(appLoopType) {
   return appLoopType === "strict_rewound" ? EngineLOOPType.REWOUND : appLoopType;
 }
 
-// ---------------------------------------------------------------------------
 // Generation: same Node path as generateViaEngine (mcp-server), rebuilt here
 // with the FULL 17-combo table (the MCP tool's own LOOP_TYPE_MAP is missing
 // mirrored_rotated_swapped, which is the harness's whole point to catch).
-// ---------------------------------------------------------------------------
 
 /**
  * Wire-form spec builder — mirrors loop-type-utils.ts buildLoopSpec() exactly
@@ -190,10 +184,8 @@ function generateOne({ appLoopType, components, period, length, level, allPictog
   return { rawSteps: buildResult.sequence };
 }
 
-// ---------------------------------------------------------------------------
 // Circularity gate (position + orientation closure) — see file header on why
 // this is inlined rather than importing the app's isSeamlesslyLoopable.
-// ---------------------------------------------------------------------------
 
 function isApproxSeamlesslyLoopable(rawSteps) {
   if (rawSteps.length < 2) return false;
@@ -205,9 +197,7 @@ function isApproxSeamlesslyLoopable(rawSteps) {
   return orientClose("blue") && orientClose("red");
 }
 
-// ---------------------------------------------------------------------------
 // Detection cross-check
-// ---------------------------------------------------------------------------
 
 function detectPrimary(rawSteps) {
   try {
@@ -238,9 +228,7 @@ function sameComponentSet(a, b) {
   return sa.every((c, i) => c === sb[i]);
 }
 
-// ---------------------------------------------------------------------------
 // Main sweep
-// ---------------------------------------------------------------------------
 
 const allPictographs = serverContext.ensureDataLoaded("diamond");
 console.log(`Loaded ${allPictographs.length} pictographs (diamond).`);

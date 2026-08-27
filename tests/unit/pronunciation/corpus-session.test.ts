@@ -1,4 +1,3 @@
-// tests/unit/pronunciation/corpus-session.test.ts
 import { describe, expect, it } from "vitest";
 
 import { Letter } from "$lib/shared/foundation/domain/models/letter";

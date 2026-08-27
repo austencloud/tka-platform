@@ -101,9 +101,6 @@
   type CreateModuleState = ReturnType<typeof CreateModuleStateType>;
   type ConstructTabState = ReturnType<typeof ConstructTabStateType>;
 
-  // ============================================================================
-  // PROPS
-  // ============================================================================
   let {
     onTabAccessibilityChange,
     onCurrentWordChange,
@@ -112,9 +109,7 @@
     onCurrentWordChange?: (word: string) => void;
   } = $props();
 
-  // ============================================================================
   // SERVICES & STATE (Resolved via DI)
-  // ============================================================================
   let services: CreateModuleOrchestrators | null = $state(null);
   let handlers: CreateModuleHandlers | null = $state(null);
   let effectCoordinator: CreateModuleEffectCoordinator | null = $state(null);
@@ -130,9 +125,6 @@
   // Settings service for user preferences
   let settingsService: SettingsState | null = $state(null);
 
-  // ============================================================================
-  // COMPONENT STATE
-  // ============================================================================
   let panelState = createPanelCoordinationState();
   const constructTutorialState = createConstructTutorialState();
   let animatingStepNumber = $state<number | null>(null);
@@ -185,9 +177,6 @@
       CreateModuleState.canShowActionButtons()
   );
 
-  // ============================================================================
-  // CONTEXT PROVISION
-  // ============================================================================
   setContext("panelState", panelState);
 
   const layoutContext = {
@@ -340,9 +329,6 @@
     }
   });
 
-  // ============================================================================
-  // EFFECT COORDINATOR SETUP
-  // ============================================================================
   function setupEffectCoordinator(): void {
     if (!effectCoordinator || !services) return;
 
@@ -383,9 +369,6 @@
     });
   }
 
-  // ============================================================================
-  // LIFECYCLE
-  // ============================================================================
   onMount(() => {
     let checkIsMobile: (() => void) | null = null;
 

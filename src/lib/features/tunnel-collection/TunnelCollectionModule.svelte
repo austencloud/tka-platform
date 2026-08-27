@@ -64,7 +64,6 @@
     selected ? currentTunnelRevisionRef(selected) : null
   );
 
-  // ── Focus management + SR announcements for the SPA phase swap ──
   let rootEl = $state<HTMLDivElement | null>(null);
   let backBtnEl = $state<HTMLButtonElement | null>(null);
   let lastCardId: string | null = null;
@@ -74,7 +73,6 @@
   let confirmingDelete = $state<string | null>(null);
   let deleteTimer: ReturnType<typeof setTimeout> | undefined;
 
-  // ── Inline rename ──
   // Keyed by id rather than a boolean, because the same edit is reachable from
   // the gallery card and from the detail title. Only one runs at a time, and
   // the phase decides which surface owns the field — on mobile the gallery
@@ -674,7 +672,6 @@
     border: 0;
   }
 
-  /* ── Gallery ── */
   .gallery-view {
     width: 100%;
     height: 100%;
@@ -888,7 +885,6 @@
     color: var(--theme-text, white);
   }
 
-  /* ── Empty / loading ── */
   .empty-state,
   .loading-state {
     display: flex;
@@ -926,7 +922,6 @@
     margin: 0;
   }
 
-  /* ── Detail layout ── */
   .detail-layout {
     display: flex;
     height: 100%;

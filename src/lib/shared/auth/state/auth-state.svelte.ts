@@ -71,9 +71,6 @@ interface AuthState {
  */
 type ProfileFieldUpdateResult = { success: true; message: string };
 
-// ============================================================================
-// HMR STATE PRESERVATION
-// ============================================================================
 // Without this, every HMR update resets auth state to uninitialized, which
 // triggers the full auth → Firestore → settings → theme cascade.
 const hmrAuthData = import.meta.hot?.data as

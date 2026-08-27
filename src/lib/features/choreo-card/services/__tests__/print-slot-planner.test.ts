@@ -1,4 +1,3 @@
-// src/lib/features/choreo-card/services/__tests__/print-slot-planner.test.ts
 import { describe, it, expect } from "vitest";
 import { planPrintSlots } from "../print-slot-planner";
 import type { CardPair } from "../types";

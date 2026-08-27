@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/front-door/ShopShelfFilter.svelte -->
 <!--
   The shelf switch above the catalog: All, then one chip per shelf that actually
   has products, each carrying its count.

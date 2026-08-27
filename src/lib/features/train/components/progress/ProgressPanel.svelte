@@ -219,9 +219,6 @@
     text-align: center;
   }
 
-  /* ========================================
-	   EMPTY STATE - Engaging Placeholder
-	   ======================================== */
 
   .empty-state {
     display: flex;
@@ -541,9 +538,6 @@
     transform: translateX(4px);
   }
 
-  /* ========================================
-	   HAS DATA STYLES
-	   ======================================== */
 
   .section {
     display: flex;
@@ -559,9 +553,6 @@
     border-bottom: 1px solid var(--theme-stroke, var(--theme-stroke));
   }
 
-  /* ========================================
-	   RESPONSIVE
-	   ======================================== */
 
   @media (max-width: 480px) {
     .progress-panel {

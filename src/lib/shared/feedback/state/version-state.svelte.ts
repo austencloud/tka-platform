@@ -43,9 +43,6 @@ export interface VersionState {
   closePreparePanel: () => void;
 }
 
-/**
- * Create version state with reactive runes
- */
 export function createVersionState(): VersionState {
   // Reactive state
   let versions = $state<AppVersion[]>([]);

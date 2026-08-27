@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/SampleCardCarousel.svelte -->
 <script lang="ts">
   interface Props {
     imageUrls: string[];

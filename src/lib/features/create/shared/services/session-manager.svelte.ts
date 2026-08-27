@@ -76,9 +76,6 @@ export class SessionManager {
     };
   }
 
-  /**
-   * Create a new session
-   */
   async createSession(): Promise<SequenceSession | null> {
     return this.runExclusive(async () => {
       if (this.currentSession) return this.currentSession;

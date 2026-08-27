@@ -71,9 +71,6 @@ export class OptionLoader {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 import { positionAnalyzer } from "./position-analyzer";
 

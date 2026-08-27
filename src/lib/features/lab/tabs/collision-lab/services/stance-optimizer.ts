@@ -324,10 +324,8 @@ export class StanceOptimizer {
     return a;
   }
 
-  // -----------------------------------------------------------------------
   // Single coordinate-descent pass from a starting point. Returns the best
   // stance found and the loss/sim result for it.
-  // -----------------------------------------------------------------------
 
   private descend(
     evaluate: (s: StancePose) => SimResult,
@@ -395,19 +393,15 @@ export class StanceOptimizer {
     };
   }
 
-  // -----------------------------------------------------------------------
   // Loss function - combines simulator outputs into a single scalar that
   // the optimizer minimizes. The weights are the heart of the "what is a
   // good stance" judgment.
-  // -----------------------------------------------------------------------
 
   private lossFrom(sim: SimResult, reachTol = 0): number {
     return computeStanceLoss(sim, reachTol);
   }
 
-  // -----------------------------------------------------------------------
   // Helpers
-  // -----------------------------------------------------------------------
 
   private clampInPlace(stance: StancePose, bounds: OptimizerBounds): void {
     stance.footOffsetX = clamp(

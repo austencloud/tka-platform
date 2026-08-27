@@ -1,4 +1,3 @@
-// src/lib/features/assemble-lab/services/svg-prop-animator.ts
 
 import { PI } from "$lib/shared/foundation/domain/math-constants";
 import type { AnimationParams } from "$lib/shared/assemble-lab/domain/types";

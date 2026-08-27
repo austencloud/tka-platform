@@ -5,9 +5,6 @@
  * Each realm has its own terrain, physics, spawn, and feature settings.
  */
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 /**
  * Terrain configuration
@@ -155,9 +152,6 @@ export interface RealmConfig {
   spawnClearing?: SpawnClearingConfig;
 }
 
-// ============================================================================
-// DEFAULTS
-// ============================================================================
 
 /**
  * Default physics configuration
@@ -189,9 +183,6 @@ export const DEFAULT_FEATURES: FeatureConfig = {
   satelliteImagery: false,
 };
 
-// ============================================================================
-// UTILITIES
-// ============================================================================
 
 /**
  * Merge partial config with defaults
@@ -209,9 +200,6 @@ export function createRealmConfig(partial: Partial<RealmConfig> & { id: string; 
   };
 }
 
-/**
- * Validate realm configuration
- */
 export function validateRealmConfig(config: RealmConfig): string[] {
   const errors: string[] = [];
 

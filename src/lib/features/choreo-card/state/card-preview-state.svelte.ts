@@ -41,29 +41,24 @@ function persist(key: string, value: string | null) {
 export function createCardPreviewState(
   _allCatalogs: Catalog[]
 ) {
-  // ── Navigation ──────────────────────────────────────────────────────────────
   let level = $state<0 | 1 | 2>(0);
   let selectedSource = $state<CardPreviewSource | null>(
     (getStored(STORAGE_SOURCE) as CardPreviewSource) ?? null
   );
   let selectedCatalog = $state<Catalog | null>(null);
 
-  // ── Card configuration ───────────────────────────────────────────────────────
   let cardSize = $state<CardSizeId>(
     (getStored(STORAGE_CARD_SIZE) as CardSizeId) ?? 'poker'
   );
 
-  // ── Subset filters ───────────────────────────────────────────────────────────
   let selectedFamilyIds = $state<string[]>([]);
   let startPositionFilter = $state<string | null>(null);
 
-  // ── Sequences ────────────────────────────────────────────────────────────────
   let sequences = $state<SequenceData[]>([]);
   let isLoading = $state(false);
   let renderProgress = $state(0);
   let renderTotal = $state(0);
 
-  // ── Derived ──────────────────────────────────────────────────────────────────
 
   const isLargeCatalog = $derived(
     (selectedCatalog?.totalSequences ?? 0) >= LARGE_CATALOG_THRESHOLD
@@ -107,7 +102,6 @@ export function createCardPreviewState(
     return crumbs;
   });
 
-  // ── Private helpers ──────────────────────────────────────────────────────────
 
   async function loadCatalogSequencesForCatalog(catalog: Catalog) {
     isLoading = true;
@@ -136,7 +130,6 @@ export function createCardPreviewState(
     }
   }
 
-  // ── Public API ───────────────────────────────────────────────────────────────
 
   return {
     // Getters

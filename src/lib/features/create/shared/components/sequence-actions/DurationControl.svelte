@@ -145,10 +145,6 @@
 </div>
 
 <style>
-  /* ============================================================================
-     DURATION CONTROL - Full-width integrated banner
-     Visually connects to prop control cards below
-     ============================================================================ */
 
   .duration-control {
     display: flex;
@@ -247,9 +243,6 @@
     width: 56px;
   }
 
-  /* ============================================================================
-     CONTROL BUTTONS - Neutral theme matching the integrated design
-     ============================================================================ */
 
   .ctrl-btn {
     display: flex;
@@ -302,9 +295,6 @@
     font-size: 0.9rem;
   }
 
-  /* ============================================================================
-     COMPACT MODE - Smaller buttons
-     ============================================================================ */
 
   .duration-control.compact .ctrl-btn {
     width: var(--min-touch-target, 44px);
@@ -319,9 +309,6 @@
     font-size: 0.75rem;
   }
 
-  /* ============================================================================
-     RESPONSIVE
-     ============================================================================ */
 
   /* The iPhone-width editor has room for one clear toolbar. Keeping the label
      beside the controls returns an entire row to the pictograph stage. */
@@ -370,9 +357,6 @@
     }
   }
 
-  /* ============================================================================
-     REDUCED MOTION
-     ============================================================================ */
 
   @media (prefers-reduced-motion: reduce) {
     .ctrl-btn {

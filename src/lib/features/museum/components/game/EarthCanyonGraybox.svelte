@@ -64,7 +64,6 @@
     onLightPlanChange,
   }: Props = $props();
 
-  // ── Palette ───────────────────────────────────────────────────────────────
   /**
    * Dust-grey canyon rock — nothing like Fire's basalt, but kept DARK on
    * purpose. At pale values the rim blew out under its own fill and the tone
@@ -246,7 +245,6 @@
     };
   }
 
-  // ── Box helpers ───────────────────────────────────────────────────────────
   interface Box {
     id: string;
     pos: [number, number, number];
@@ -386,7 +384,6 @@
     };
   }
 
-  // ── Scene assembly ────────────────────────────────────────────────────────
   interface Scene {
     boxes: Box[];
     cylinders: Cyl[];

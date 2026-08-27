@@ -162,7 +162,6 @@ instead of showing an empty shell.
   let smartBuilderOpen = $state(false);
   let smartEditTarget = $state<LibraryCollection | null>(null);
 
-  // ── "All" shelf ──────────────────────────────────────────────────────────
   // The library pile itself, pinned above Favorites (it's the superset).
   // Synthetic — not a Firestore doc. Its id "all" can't collide with real
   // collections (Firestore auto-ids are 20 chars; system ids use "system_").
@@ -358,7 +357,6 @@ instead of showing an empty shell.
     browseNavigationState.viewCollections();
   }
 
-  // ── "Art" shelf ──────────────────────────────────────────────────────────
   // The three Art collections (tunnels, 3D scenes, mandalas) as category
   // cards — a count + latest-poster cover per category. Selecting one opens
   // its gallery IN the detail pane, exactly like a sequence collection: same
@@ -1083,7 +1081,6 @@ instead of showing an empty shell.
     font-size: 24px;
   }
 
-  /* ── Phone list ─────────────────────────────────────────────────── */
 
   .collections-list {
     display: flex;

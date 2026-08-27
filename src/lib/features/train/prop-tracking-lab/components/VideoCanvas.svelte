@@ -145,7 +145,6 @@
 		drawStart = null;
 	}
 
-	// Use drawn box or current drawing box for display
 	let displayBox = $derived(drawnBox ?? currentBox);
 </script>
 

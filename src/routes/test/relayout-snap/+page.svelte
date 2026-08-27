@@ -34,7 +34,6 @@
     })();
   });
 
-  // ── DevTools measurement probe ──
   // window.__snap.run() toggles includeStart and samples rects every rAF for
   // ~700ms, returning { preview: [...frames], reflowingCells, summary }.
   function rects() {

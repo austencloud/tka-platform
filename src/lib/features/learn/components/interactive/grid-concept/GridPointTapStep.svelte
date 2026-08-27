@@ -224,7 +224,6 @@ import type { TapPhase } from './grid-experience-state.svelte';
 		height: auto;
 	}
 
-	/* ─── Tap target ─── */
 	.tap-target {
 		fill: transparent;
 		cursor: pointer;
@@ -247,7 +246,6 @@ import type { TapPhase } from './grid-experience-state.svelte';
 		stroke-dasharray: 8 4;
 	}
 
-	/* ─── Point visual states ─── */
 	.tap-point {
 		fill: var(--theme-accent, #22d3ee);
 		pointer-events: none;
@@ -298,7 +296,6 @@ import type { TapPhase } from './grid-experience-state.svelte';
 		animation: materializeRing 0.4s cubic-bezier(0, 0, 0.2, 1) forwards;
 	}
 
-	/* ─── Floating label ─── */
 	.tap-label {
 		font-size: 26px;
 		font-weight: 600;
@@ -308,7 +305,6 @@ import type { TapPhase } from './grid-experience-state.svelte';
 		pointer-events: none;
 	}
 
-	/* ─── Completion rings ─── */
 	.completion-ring {
 		fill: none;
 		stroke: var(--theme-accent, #22d3ee);
@@ -327,7 +323,6 @@ import type { TapPhase } from './grid-experience-state.svelte';
 		animation: ripple 0.8s cubic-bezier(0, 0, 0.2, 1) 0.15s forwards;
 	}
 
-	/* ─── Animations ─── */
 
 	/* Gentle breathing: slow opacity cycle, no scale */
 	@keyframes breathe {
@@ -393,7 +388,6 @@ import type { TapPhase } from './grid-experience-state.svelte';
 		}
 	}
 
-	/* ─── Entry animation ─── */
 	.anim-item {
 		opacity: 0;
 		transform: translateY(12px);
@@ -409,7 +403,6 @@ import type { TapPhase } from './grid-experience-state.svelte';
 		to { opacity: 1; transform: translateY(0); }
 	}
 
-	/* ─── Responsive ─── */
 	@media (max-width: 768px) {
 		.tap-title { font-size: 1.75rem; }
 		.tap-instruction { font-size: 1rem; }
@@ -421,7 +414,6 @@ import type { TapPhase } from './grid-experience-state.svelte';
 		.tap-grid-container { max-width: 400px; }
 	}
 
-	/* ─── Reduced motion ─── */
 	@media (prefers-reduced-motion: reduce) {
 		.tap-point.pulsing { animation: none; opacity: 0.5; }
 		.tap-point.ring.pulsing { animation: none; stroke-opacity: 0.5; }

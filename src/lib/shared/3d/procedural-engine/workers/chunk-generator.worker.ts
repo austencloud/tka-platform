@@ -85,9 +85,6 @@ let spawnClearing: {
   };
 } | null = null;
 
-// ============================================================================
-// CHUNK GENERATION
-// ============================================================================
 
 function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   const { chunkX, chunkY, chunkZ, worldSeed, chunkSize, resolution, lod, erosion } = msg;
@@ -452,9 +449,6 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   };
 }
 
-// ============================================================================
-// BLEND WEIGHT CALCULATION
-// ============================================================================
 
 interface BlendWeights {
   grass: number;
@@ -524,9 +518,6 @@ function calculateSlopeFromNormal(nx: number, ny: number, _nz: number): number {
   return 1 - Math.abs(ny);
 }
 
-// ============================================================================
-// WORKER MESSAGE HANDLER
-// ============================================================================
 
 self.onmessage = (event: MessageEvent<WorkerMessage>) => {
   const msg = event.data;

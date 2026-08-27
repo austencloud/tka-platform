@@ -52,7 +52,6 @@ export class AgeVerifier {
 				ageVerifiedAt: serverTimestamp()
 			}, { merge: true });
 
-			// Update cache
 			this.verificationCache.set(userId, true);
 		} catch (error) {
 			console.error('[AgeVerifier] Error recording verification:', error);

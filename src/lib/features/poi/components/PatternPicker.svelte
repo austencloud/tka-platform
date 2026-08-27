@@ -1,4 +1,3 @@
-<!-- src/lib/features/poi/components/PatternPicker.svelte -->
 <script lang="ts">
   import { getPoiContext } from "../context/poi-context";
 

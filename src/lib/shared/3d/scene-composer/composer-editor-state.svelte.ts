@@ -1,4 +1,3 @@
-// src/lib/shared/3d/scene-composer/composer-editor-state.svelte.ts
 
 import { Vector3, type Object3D } from "three";
 import type CameraControls from "camera-controls";

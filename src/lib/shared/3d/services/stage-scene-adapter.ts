@@ -80,9 +80,7 @@ export interface ISceneOrchestrator {
   onFormationCue(callback: FormationCueCallback): () => void;
 }
 
-// ============================================================================
 // Internal Types
-// ============================================================================
 
 /**
  * Camera keyframe from a camera track clip
@@ -112,9 +110,7 @@ export function createStageSceneAdapter(
   let prevPlayhead = -1;
   let prevIsPlaying = false;
   let prevFormation: FormationPreset = "grid-2x2";
-  // =========================================================================
   // Performer Track Methods
-  // =========================================================================
 
   /**
    * Get all tracks that are performer tracks (type === "performer")
@@ -196,9 +192,7 @@ export function createStageSceneAdapter(
     return result;
   }
 
-  // =========================================================================
   // Formation Track Methods
-  // =========================================================================
 
   /**
    * Get the formation track (type === "formation")
@@ -250,9 +244,7 @@ export function createStageSceneAdapter(
     return "grid-2x2";
   }
 
-  // =========================================================================
   // Camera Track Methods
-  // =========================================================================
 
   /**
    * Get the camera track (type === "camera")
@@ -353,9 +345,7 @@ export function createStageSceneAdapter(
     }
   }
 
-  // =========================================================================
   // Helpers
-  // =========================================================================
 
   function lerp(a: number, b: number, t: number): number {
     return a + (b - a) * t;
@@ -375,9 +365,7 @@ export function createStageSceneAdapter(
     return getCameraTrack() !== null;
   }
 
-  // =========================================================================
   // Event Subscriptions
-  // =========================================================================
 
   function onPlayheadChange(callback: PlayheadChangeCallback): () => void {
     playheadCallbacks.add(callback);
@@ -422,9 +410,7 @@ export function createStageSceneAdapter(
     }
   }
 
-  // =========================================================================
   // Return ISceneOrchestrator Implementation
-  // =========================================================================
 
   return {
     // Read-only accessors

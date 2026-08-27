@@ -58,7 +58,6 @@
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
 
-  // ── Motion authoring ────────────────────────────────────────────────────────
   // Pro rides the CW handpath (prop CW, in→in); anti counter-rotates (prop CCW)
   // and flips the thumb every letter, so its legs alternate in→out / out→in.
   type Leg = [GridLocation, GridLocation];

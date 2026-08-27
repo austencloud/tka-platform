@@ -1,4 +1,3 @@
-// src/routes/test/film-director/_lib/resolve-directives.ts
 import {
   normalizeDirective,
   type DirectiveValue,

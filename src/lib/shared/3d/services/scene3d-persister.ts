@@ -93,7 +93,6 @@ export function loadScene3DState(): Partial<Scene3DPersistedState> {
   }
 }
 
-/** Clear all persisted state */
 export function clearScene3DState(): void {
   localStorage.removeItem(STORAGE_KEY);
 }

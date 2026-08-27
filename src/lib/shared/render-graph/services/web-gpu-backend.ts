@@ -215,7 +215,6 @@ export class WebGPUBackend implements RenderBackend {
     };
   }
 
-  // ─── Private ────────────────────────────────────────────────────
 
   private computeDt(time: number): number {
     if (this.previousTime < 0) {
@@ -285,7 +284,6 @@ export class WebGPUBackend implements RenderBackend {
     }
   }
 
-  // ─── Effect Executors ───────────────────────────────────────────
 
   private executeFirePass(payload: FirePassPayload, dt: number): void {
     if (!this.fireExecutor) {
@@ -363,7 +361,6 @@ export class WebGPUBackend implements RenderBackend {
     this.getOverlay().executeSilk(payload, dt, presentView, canvas.width, canvas.height);
   }
 
-  // ─── Pipeline Compilation ───────────────────────────────────────
 
   private compilePipelines(): void {
     this.compileFullscreenPipeline(
@@ -559,7 +556,6 @@ export class WebGPUBackend implements RenderBackend {
     this.pipelines.set("trail-mesh", { pipeline, bindGroupLayout });
   }
 
-  // ─── Texture Management ─────────────────────────────────────────
 
   private allocateScratchTextures(w: number, h: number): void {
     const halfW = Math.max(1, Math.floor(w / BLOOM_DOWNSAMPLE));
@@ -639,7 +635,6 @@ export class WebGPUBackend implements RenderBackend {
     this.meshBufferSize = size;
   }
 
-  // ─── Utilities ──────────────────────────────────────────────────
 
   private warnUnsupportedOnce(kind: RenderPassKind): void {
     if (this.unsupportedKindsWarned.has(kind)) return;

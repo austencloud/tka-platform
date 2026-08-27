@@ -384,9 +384,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     isMain: false, // Settings is in sidebar footer, not main module list
     sections: SETTINGS_TABS, // Profile, Props, Background, Visibility, Misc, AI tabs
   },
-  // ============================================================================
   // REMOVED: Standalone 3D modules (now unified under Realm)
-  // ============================================================================
   // - infinite-worlds → Now accessible via Realm destination picker
   // - museum → Now accessible via Realm destination picker (Gallery destination)
   // - gallery3d → Retired, merged into Gallery destination

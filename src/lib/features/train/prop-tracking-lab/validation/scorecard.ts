@@ -69,7 +69,6 @@ export interface ScorecardReport {
   notes: string[];
 }
 
-// --- Field comparison ----------------------------------------------------------
 
 /** Snap a turn count to the quarter-turn lattice so 1.499 vs 1.5 doesn't fail. */
 function roundQuarter(x: number): number {
@@ -121,7 +120,6 @@ function beatSimilarity(detected: BeatNotation, truth: GroundTruthBeat): number 
   return scored === 0 ? 0 : matched / scored;
 }
 
-// --- Alignment -------------------------------------------------------------------
 
 /**
  * Beat segmentation is untuned, so detected beat counts routinely disagree
@@ -179,7 +177,6 @@ function alignBeats(detected: BeatNotation[], truth: GroundTruthBeat[]): Aligned
   return steps.reverse();
 }
 
-// --- Core scoring -------------------------------------------------------------------
 
 function emptyPerField(): Record<FieldName, { matched: number; scored: number }> {
   return {
@@ -273,7 +270,6 @@ function scoreCore(detected: BeatNotation[], truthBeats: GroundTruthBeat[]): Cor
   };
 }
 
-// --- Mirror hypothesis -----------------------------------------------------------------
 
 const MIRROR_LOCATION: Record<GridLocation, GridLocation> = {
   n: 'n',
@@ -320,7 +316,6 @@ export function mirrorBeatNotation(b: BeatNotation): BeatNotation {
   return { blue: mirrorStaff(b.blue), red: mirrorStaff(b.red) };
 }
 
-// --- Entry point ----------------------------------------------------------------------
 
 /**
  * Diff detected notation against a ground-truth label.

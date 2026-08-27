@@ -48,18 +48,14 @@ export class FireDefaultsLoader {
 	private globalPhysicsValue: FirePhysicsParams | null = null;
 	private observers: Array<() => void> = [];
 
-	// ------------------------------------------------------------------
 	// Firestore document reference
-	// ------------------------------------------------------------------
 
 	private async getDocRef() {
 		const firestore = await getFirestoreInstance();
 		return doc(firestore, FIRESTORE_DOC_PATH);
 	}
 
-	// ------------------------------------------------------------------
 	// load()
-	// ------------------------------------------------------------------
 
 	async load(): Promise<void> {
 		try {

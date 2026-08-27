@@ -33,9 +33,6 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { HandPathTrace, HandSkew } from "./types";
 
-// ============================================================================
-// DIRECTION LOOKUP
-// ============================================================================
 
 // The 8 compass points in clockwise order. Any step from point[i] to point[i+1]
 // (mod 8) is clockwise. The reverse is counter-clockwise.
@@ -55,9 +52,6 @@ const LOCATION_BY_VALUE: Record<string, GridLocation> = Object.fromEntries(
   Object.values(GridLocation).map((v) => [v, v as GridLocation])
 ) as Record<string, GridLocation>;
 
-// ============================================================================
-// PUBLIC API
-// ============================================================================
 
 /**
  * Parses a hand-path ID into blue and red GridLocation arrays.

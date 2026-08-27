@@ -119,7 +119,4 @@ export class PositionAnalyzer {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 export const positionAnalyzer = new PositionAnalyzer();

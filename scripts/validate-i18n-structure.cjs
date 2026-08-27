@@ -35,9 +35,7 @@ const args = process.argv.slice(2);
 const CI_MODE = args.includes("--ci");
 const FIX_MODE = args.includes("--fix");
 
-// =============================================================================
 // Parse module definitions from TypeScript source
-// =============================================================================
 
 function parseModuleDefinitions() {
   const src = fs.readFileSync(MODULE_DEFS_FILE, "utf-8");
@@ -118,9 +116,7 @@ function extractTopLevelObjects(arrayStr) {
   return objects;
 }
 
-// =============================================================================
 // Parse tab definitions from TypeScript source
-// =============================================================================
 
 function parseTabDefinitions() {
   const src = fs.readFileSync(TAB_DEFS_FILE, "utf-8");
@@ -161,17 +157,13 @@ function parseTabDefinitions() {
   return tabGroups;
 }
 
-// =============================================================================
 // Normalize ID to translation key format (lowercase, - → _)
-// =============================================================================
 
 function normalize(id) {
   return id.toLowerCase().replace(/-/g, "_");
 }
 
-// =============================================================================
 // Main
-// =============================================================================
 
 function main() {
   const messages = JSON.parse(fs.readFileSync(MESSAGES_FILE, "utf-8"));

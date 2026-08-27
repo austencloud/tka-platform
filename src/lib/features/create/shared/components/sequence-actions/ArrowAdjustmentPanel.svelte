@@ -101,7 +101,6 @@
     );
   });
 
-  // Get default save layer from orchestrator
   const defaultSaveLayer = $derived.by((): 1 | 2 | 3 => {
     if (!adjustmentOrchestrator) return 1;
     return adjustmentOrchestrator.getDefaultSaveLayer(

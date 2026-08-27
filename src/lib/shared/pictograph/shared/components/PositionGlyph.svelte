@@ -167,15 +167,11 @@ Based on legacy start_to_end_pos_glyph.py implementation.
   const endX = scaledLetterWidth + scaledArrowWidth + SPACING;
   const endY = $derived(centerLine - scaledLetterHeight / 2 + endYOffset); // Center on line + viewBox compensation
 
-  // Calculate total width for centering
   const totalWidth =
     scaledLetterWidth + scaledArrowWidth + scaledLetterWidth + SPACING;
   // Use centerX prop for horizontal centering (supports expanded timeline cells)
   const groupX = $derived(centerX - totalWidth / 2);
 
-  // ============================================================================
-  // POSITION CHANGE ANIMATION
-  // ============================================================================
   // Track when start/end positions change to trigger a subtle scale-pulse animation.
 
   // Matches the golden step ring's guideStepRingIn duration so the two beat

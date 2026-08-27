@@ -80,7 +80,6 @@ export class DoomLoader {
 		}
 	}
 
-	// ── Private helpers ──────────────────────────────────────
 
 	/** Inject the js-dos stylesheet once. */
 	private injectCss(): void {

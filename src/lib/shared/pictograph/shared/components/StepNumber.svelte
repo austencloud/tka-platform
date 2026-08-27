@@ -32,7 +32,6 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     darkMode?: boolean;
   }>();
 
-  // Get centralized visibility manager for dark mode state
   const visibilityManager = getAnimationVisibilityManager();
 
   // Track dark mode from centralized state (polls visibility manager)
@@ -98,9 +97,6 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     return stepNumber?.toString() || "";
   });
 
-  // ============================================================================
-  // STEP NUMBER CHANGE ANIMATION
-  // ============================================================================
   // Track when step number changes to trigger a subtle scale-pulse animation.
 
   let prevStepNumber = $state<number | null | undefined>(undefined);

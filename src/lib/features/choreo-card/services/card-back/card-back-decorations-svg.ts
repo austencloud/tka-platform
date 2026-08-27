@@ -12,9 +12,7 @@
 
 import { getSvgImageCache } from "$lib/shared/render/services/svg-image-cache";
 
-// ---------------------------------------------------------------------------
 // Step 1 — buildDecorationsSVG
-// ---------------------------------------------------------------------------
 
 /**
  * Build the decoration SVG string for a given theme.
@@ -29,9 +27,7 @@ export function buildDecorationsSVG(theme: string, w: number, h: number): string
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 500 700" preserveAspectRatio="none">${inner}</svg>`;
 }
 
-// ---------------------------------------------------------------------------
 // Internal: assemble per-theme inner markup
-// ---------------------------------------------------------------------------
 
 function buildInner(theme: string): string {
   switch (theme) {
@@ -47,9 +43,6 @@ function buildInner(theme: string): string {
   }
 }
 
-// ---------------------------------------------------------------------------
-// COSMIC
-// ---------------------------------------------------------------------------
 
 function buildCosmic(): string {
   let s = "";
@@ -192,9 +185,6 @@ function buildCosmic(): string {
   return s;
 }
 
-// ---------------------------------------------------------------------------
-// OCEAN
-// ---------------------------------------------------------------------------
 
 function buildOcean(): string {
   let s = "";
@@ -356,9 +346,6 @@ function buildOcean(): string {
   return s;
 }
 
-// ---------------------------------------------------------------------------
-// WINTER
-// ---------------------------------------------------------------------------
 
 function buildWinter(): string {
   const flakes = [
@@ -395,9 +382,6 @@ function buildWinter(): string {
   return s;
 }
 
-// ---------------------------------------------------------------------------
-// EMBER
-// ---------------------------------------------------------------------------
 
 function buildEmber(): string {
   let s = "";
@@ -422,9 +406,6 @@ function buildEmber(): string {
   return s;
 }
 
-// ---------------------------------------------------------------------------
-// BLOSSOM
-// ---------------------------------------------------------------------------
 
 function buildBlossom(): string {
   let s = "";
@@ -465,9 +446,6 @@ function buildBlossom(): string {
   return s;
 }
 
-// ---------------------------------------------------------------------------
-// FOREST
-// ---------------------------------------------------------------------------
 
 function buildForest(): string {
   let s = "";
@@ -524,9 +502,6 @@ function buildForest(): string {
   return s;
 }
 
-// ---------------------------------------------------------------------------
-// AUTUMN
-// ---------------------------------------------------------------------------
 
 // Leaf path data — copied verbatim from CardBackDecorations.svelte
 const MAPLE_LEAF_PATH =
@@ -573,9 +548,7 @@ function buildAutumn(): string {
   return s;
 }
 
-// ---------------------------------------------------------------------------
 // Step 2 — rasterizeDecorations
-// ---------------------------------------------------------------------------
 
 /**
  * Rasterize the decorations for `theme` into an `ImageBitmap`.

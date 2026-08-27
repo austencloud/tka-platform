@@ -90,7 +90,6 @@ export class WakeWordDetector {
   /** AudioContext for the command mode entry chime */
   private audioContext: AudioContext | null = null;
 
-  // ── Public API ──────────────────────────────────────────────
 
   start(): void {
     if (this.listening) return;
@@ -165,7 +164,6 @@ export class WakeWordDetector {
     return () => this.stateCallbacks.delete(callback);
   }
 
-  // ── Internals ───────────────────────────────────────────────
 
   private setState(next: WakeWordState): void {
     if (next === this.state) return;

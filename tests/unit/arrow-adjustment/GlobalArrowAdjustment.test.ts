@@ -439,7 +439,6 @@ describe("Cascading Lookup Priority", () => {
   it("skips Layer 3 check for staff + staff", () => {
     const store: MockStore = new Map();
 
-    // Add adjustments at all layers
     store.set(generateAdjustmentKeyString(baseKey), { x: 10, y: 10 }); // Layer 1
     // Even if we somehow had a Layer 3 for staff+staff, it should be skipped
     store.set(

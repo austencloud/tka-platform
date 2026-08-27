@@ -51,7 +51,6 @@ export class NodeArrowSvgLoader implements IArrowSvgLoader {
     // Use explicit theme mode if provided, default to light
     const themeMode = options?.themeMode ?? "light";
 
-    // Create cache key including color AND theme mode
     const transformedCacheKey = `${path}:${motionData.color}:${themeMode}`;
 
     // Check transformed cache first

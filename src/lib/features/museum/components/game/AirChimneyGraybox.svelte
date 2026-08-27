@@ -48,7 +48,6 @@
     onLightPlanChange,
   }: Props = $props();
 
-  // ── Palette ───────────────────────────────────────────────────────────────
   // Graybox values, not final art.
   const STONE = "#4a515c";
   const STONE_LIT = "#69727f";
@@ -101,7 +100,6 @@
     for (const material of Object.values(materials)) material.dispose();
   });
 
-  // ── Box helpers ───────────────────────────────────────────────────────────
   interface Box {
     id: string;
     pos: [number, number, number];
@@ -157,7 +155,6 @@
     };
   }
 
-  // ── Scene assembly ────────────────────────────────────────────────────────
   interface Scene {
     boxes: Box[];
     lights: Lamp[];

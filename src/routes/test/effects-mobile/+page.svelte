@@ -386,7 +386,6 @@
   }
   button { cursor: pointer; font-family: inherit; }
 
-  /* ── shared tray bits ── */
   .tray {
     flex: 0 0 auto; padding: 10px 12px 8px;
     background: rgba(18, 18, 28, 0.97); border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -436,7 +435,6 @@
   .hint { font-size: 10px; color: #778; }
   .cur-tray { gap: 6px; }
 
-  /* ── A drill-down ── */
   .aview { display: flex; flex-direction: column; gap: 10px; height: 100%; }
   .a-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: #889; }
   .grid {
@@ -460,7 +458,6 @@
   .a-fxicon { font-size: 18px; }
   .a-name { font-size: 15px; font-weight: 700; color: #fff; }
 
-  /* ── B snap sheet ── */
   .sheet {
     position: absolute; left: 0; right: 0; bottom: 68px;
     background: rgba(18, 18, 28, 0.97); border-top: 1px solid rgba(255, 255, 255, 0.12);
@@ -484,7 +481,6 @@
   .deep-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: #889; margin-top: 2px; }
   .deep-hint { color: #556; font-weight: 600; letter-spacing: 0.02em; }
 
-  /* ── C segmented ── */
   .seg {
     display: flex; gap: 4px; padding: 3px; border-radius: 10px;
     background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08);

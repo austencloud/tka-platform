@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/TnDTrilogyPage.svelte -->
 <!--
   Timing & Direction trilogy: ONE listing over the TKA 1/2/3 volume SKUs
   (products with listing === "tnd-trilogy"). Buyer picks a volume, sees the
@@ -235,7 +234,6 @@
 </ShopProductShell>
 
 <style>
-  /* ---------- preview stage ---------- */
   /* The stage BOX is the shell's (border, radius, padding, reserved height).
      This is only what goes inside it. */
   .stage {
@@ -283,7 +281,6 @@
     border: 1px solid rgba(255, 255, 255, 0.35);
   }
 
-  /* ---------- volume picker ---------- */
   /* .field/.field-label are shared with StarterPackPage and live in
      config-page.css. */
   .volume-grid {

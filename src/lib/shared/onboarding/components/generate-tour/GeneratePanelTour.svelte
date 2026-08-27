@@ -304,7 +304,6 @@
     position: relative;
   }
 
-  /* ===== Mini Card Grid ===== */
   .card-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
@@ -384,7 +383,6 @@
     animation: cardPulse 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  /* ===== Info Section ===== */
   /* Outer container holds layout space; inner content transitions in/out */
   .tour-info {
     position: relative;
@@ -542,7 +540,6 @@
     background: var(--theme-accent, #3b82f6);
   }
 
-  /* ===== Footer ===== */
   .tour-dots {
     display: flex;
     gap: 5px;
@@ -577,7 +574,6 @@
     margin-left: 4px;
   }
 
-  /* ===== Mobile ===== */
   @media (max-width: 520px) {
     :global(dialog.tour-modal) {
       width: calc(100% - 24px) !important;

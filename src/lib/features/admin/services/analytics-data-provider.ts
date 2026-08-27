@@ -50,9 +50,7 @@ export class AnalyticsDataProvider {
     }
   }
 
-  // ============================================================================
   // USER METRICS (delegated to UserMetricsAnalyzer)
-  // ============================================================================
 
   async getSummaryMetrics(
     timeRange: AnalyticsTimeRange
@@ -70,9 +68,7 @@ export class AnalyticsDataProvider {
     return this.userMetricsAnalyzer.getContentStatistics();
   }
 
-  // ============================================================================
   // ACTIVITY ANALYTICS (delegated to EventActivityAnalyzer)
-  // ============================================================================
 
   async getUserActivity(
     timeRange: AnalyticsTimeRange
@@ -108,9 +104,7 @@ export class AnalyticsDataProvider {
     return this.eventActivityAnalyzer.getRecentActivity(limit);
   }
 
-  // ============================================================================
   // CONTENT QUERIES (delegated to ContentQueryAnalyzer)
-  // ============================================================================
 
   async getTopSequences(limit: number): Promise<TopSequenceData[]> {
     if (!(await this.isFirestoreAvailable())) {

@@ -64,7 +64,6 @@ export function tileCentredOffset(metresFromInteriorMin: number): number {
  */
 export const EYE_ABOVE_FLOOR = 1.6;
 
-// ── Datums ──────────────────────────────────────────────────────────────────
 
 export const WATERLINE_Y = -1.5;
 /**
@@ -129,13 +128,11 @@ export const ALCOVE_X_FRACTIONS = [0.22, 0.5, 0.78] as const;
 /** Alcove shelf centre, metres south of the grotto's north interior edge. */
 export const ALCOVE_Z_OFFSET_M = 2.0;
 
-// ── Room ids ────────────────────────────────────────────────────────────────
 
 export const APPROACH_ROOM_ID = "cave-water-approach";
 export const GALLERY_ROOM_ID = "cave-water-gallery";
 export const GROTTO_ROOM_ID = "cave-water";
 
-// ── Grotto band proportions ─────────────────────────────────────────────────
 // Fractions of the compiled interior, authored against the design spec's
 // 25 × 22 m grotto so the bands keep their proportions if the room resizes.
 
@@ -169,7 +166,6 @@ const TILE_ROUNDING_SLOP = TILE / 2;
 /** Depth of the grotto's exit ramp up to the museum datum at the Fire door. */
 const EXIT_RAMP_RUN = 2.0;
 
-// ── Types ───────────────────────────────────────────────────────────────────
 
 export interface WorldRect {
   minX: number;
@@ -277,7 +273,6 @@ export interface DrownedGalleryLayout {
   gallery: WorldRect;
   grotto: WorldRect;
 
-  // ── gallery ──
   /** Descent stair at the gallery's south door: SHALLOWS_Y → GALLERY_FLOOR_Y. */
   descentStair: WorldRect;
   /** The part of the descent stair above the landing datum — an open shaft. */
@@ -305,7 +300,6 @@ export interface DrownedGalleryLayout {
   openShafts: WorldRect[];
   bloomAnchor: Point2;
 
-  // ── grotto ──
   shore: WorldRect;
   channel: WorldRect;
   procession: WorldRect;
@@ -328,11 +322,9 @@ export interface DrownedGalleryLayout {
   /** The wing's exhibit furniture: the opener pair and the three case triptychs. */
   exhibitFixtures: ExhibitFixture[];
 
-  // ── corridors ──
   approachCorridor: WorldRect[];
   galleryCorridor: WorldRect[];
 
-  // ── everything the graybox renders ──
   floorRects: FloorRect[];
   wallRects: WallRect[];
   ceilingRects: CeilingRect[];
@@ -343,7 +335,6 @@ export interface DrownedGalleryLayout {
   /** Union bbox of the water bay. elevationAt throws inside it when nothing matches. */
   bayBounds: WorldRect;
 
-  // ── probes for tests ──
   probes: {
     apron: Point2;
     procession: Point2;
@@ -359,7 +350,6 @@ export interface DrownedGalleryLayout {
   };
 }
 
-// ── Small helpers ───────────────────────────────────────────────────────────
 
 /** The room's interior as the union of its interior tiles' cells. */
 export function interiorWorldRect(b: {

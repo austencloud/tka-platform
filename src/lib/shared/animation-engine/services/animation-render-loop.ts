@@ -55,12 +55,10 @@ import {
   type MandalaOverlayConfig,
 } from "$lib/shared/mandala/domain/mandala-overlay-types";
 
-// ============================================================================
 // Longtask observer singleton - one PerformanceObserver shared across every
 // AnimationRenderLoop instance. Without this, each loop attaches its own
 // observer and every main-thread stall produces N duplicate log lines where
 // N is the number of live AnimatorCanvas instances on the page.
-// ============================================================================
 type LongTaskListener = (durationMs: number) => void;
 const longTaskListeners = new Set<LongTaskListener>();
 let longTaskObserverInstalled = false;

@@ -11,9 +11,7 @@
  * - Motion visibility (blue/red)
  */
 
-// ============================================================================
 // TYPES - Re-export from canonical source in animate module
-// ============================================================================
 
 // Import types from the canonical source
 import {
@@ -58,9 +56,6 @@ export interface AnimationSettings {
   trail: TrailSettings;
 }
 
-// ============================================================================
-// DEFAULTS
-// ============================================================================
 
 import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -87,9 +82,6 @@ export const DEFAULT_ANIMATION_SETTINGS: AnimationSettings = {
   trail: { ...DEFAULT_TRAIL_SETTINGS },
 };
 
-// ============================================================================
-// PERSISTENCE
-// ============================================================================
 
 import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
 
@@ -169,9 +161,6 @@ function loadSettings(): AnimationSettings {
   return settings;
 }
 
-// ============================================================================
-// STATE FACTORY
-// ============================================================================
 
 export type AnimationSettingsState = {
   // Read-only access
@@ -352,9 +341,6 @@ export function createAnimationSettingsState(
   };
 }
 
-// ============================================================================
-// HMR STATE PRESERVATION
-// ============================================================================
 // Without this, every HMR update recreates the singleton fresh, resetting
 // BPM, trail settings, and other animation state the user has configured.
 
@@ -362,9 +348,6 @@ const hmrSettingsData = import.meta.hot?.data as
   | { animationSettings?: AnimationSettingsState }
   | undefined;
 
-// ============================================================================
-// SINGLETON INSTANCE
-// ============================================================================
 
 /**
  * Global animation settings state instance.

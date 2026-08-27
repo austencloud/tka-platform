@@ -151,9 +151,7 @@ export function computeFireVisualCacheKey(
   });
 }
 
-// ============================================================
 // Active instance tracking for adaptive quality
-// ============================================================
 
 /** Number of currently active fire renderer instances across all animation engines */
 let activeFireInstanceCount = 0;
@@ -233,16 +231,12 @@ export function computeFirePresentationResolution(
   return [align(safeWidth), align(safeHeight)];
 }
 
-// ============================================================
 // Framebuffer pair for ping-pong rendering
-// ============================================================
 
 type DoubleFBO = FluidField;
 type FBOAttachment = FluidAttachment;
 
-// ============================================================
 // Shader program with cached uniform locations
-// ============================================================
 
 type ShaderProgram = FluidProgram;
 

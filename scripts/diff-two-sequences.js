@@ -15,7 +15,6 @@ function deepDiff(a, b, path = "") {
     diffs.push({ path, a, b });
     return diffs;
   }
-  // Handle arrays
   if (Array.isArray(a) || Array.isArray(b)) {
     const maxLen = Math.max(a?.length || 0, b?.length || 0);
     for (let i = 0; i < maxLen; i++) {

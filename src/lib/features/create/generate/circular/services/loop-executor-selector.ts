@@ -117,9 +117,6 @@ export class LOOPExecutorSelector {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import { strictRotatedLOOPExecutor } from "./strict-rotated-loop-executor";
 import { strictMirroredLOOPExecutor } from "./strict-mirrored-loop-executor";
 import { strictFlippedLOOPExecutor } from "./strict-flipped-loop-executor";

@@ -73,9 +73,6 @@ function mapDocToTag(docData: DocumentData, id: string): LibraryTag {
   };
 }
 
-// ============================================================
-// CRUD OPERATIONS
-// ============================================================
 
 export async function createUserTag(
   name: string,
@@ -169,7 +166,6 @@ export async function updateTag(
     const userId = getAuthenticatedUserId();
     const docRef = doc(firestore, getUserTagPath(userId, tagId));
 
-    // Get existing
     const existing = await getTag(tagId);
     if (!existing) {
       throw new TagError("Tag not found", "NOT_FOUND", tagId);
@@ -219,9 +215,6 @@ export async function deleteTag(tagId: string): Promise<void> {
   }
 }
 
-// ============================================================
-// TAG NORMALIZATION & DEDUPLICATION
-// ============================================================
 
 export function normalizeTagName(name: string): string {
   return name.trim().toLowerCase();
@@ -254,9 +247,6 @@ export async function findTagByName(name: string): Promise<LibraryTag | null> {
   }
 }
 
-// ============================================================
-// USE COUNT MANAGEMENT
-// ============================================================
 
 export async function incrementUseCount(tagId: string): Promise<void> {
   try {
@@ -290,9 +280,6 @@ export async function decrementUseCount(tagId: string): Promise<void> {
   }
 }
 
-// ============================================================
-// REAL-TIME SUBSCRIPTIONS
-// ============================================================
 
 export function subscribeToTags(callback: (tags: LibraryTag[]) => void): () => void {
   const userId = getAuthenticatedUserId();

@@ -25,7 +25,6 @@
 	let pendingDeleteId = $state<string | null>(null);
 	let pendingDeleteName = $state("");
 
-	// Load on mount
 	onMount(() => {
 		browseState.loadCompositions();
 	});

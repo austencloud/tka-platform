@@ -15,7 +15,6 @@ import type {
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
-// Import handlers
 import { removeStep } from "./step-operations/step-removal-handler";
 import { applyBatchChanges } from "./step-operations/batch-edit-handler";
 import { updateStepOrientation } from "./step-operations/orientation-handler";
@@ -175,9 +174,6 @@ export class StepOperator {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 
 export const stepOperator = new StepOperator(motionQueryHandler);

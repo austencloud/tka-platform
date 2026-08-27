@@ -48,7 +48,6 @@
     onNext,
   }: Props = $props();
 
-  // ===== Derived =====
   const displayIndex = $derived(currentIndex + 1);
   const needsEditing = $derived(item?.needsEditing ?? false);
 </script>

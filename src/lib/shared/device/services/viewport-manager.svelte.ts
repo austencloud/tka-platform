@@ -131,7 +131,4 @@ export class ViewportManager {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 export const viewportManager = new ViewportManager();

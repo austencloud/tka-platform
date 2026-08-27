@@ -45,7 +45,6 @@ export class LetterTransitionGraph {
     // Create browser data provider wrapping the letter query handler
     const dataProvider = new BrowserDataProvider(this.letterQueryHandler);
 
-    // Create and initialize the shared transition graph
     this.sharedGraph = new TransitionGraph(dataProvider);
     await this.sharedGraph.initialize();
     this.initialized = true;
@@ -149,7 +148,4 @@ export class LetterTransitionGraph {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 export const letterTransitionGraph = new LetterTransitionGraph();

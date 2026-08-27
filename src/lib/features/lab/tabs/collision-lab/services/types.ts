@@ -1,4 +1,3 @@
-// --- From StanceOptimizer ---
 /**
  * StanceOptimizer
  *
@@ -59,7 +58,6 @@ export interface OptimizerResult {
   feasible: boolean;
 }
 
-// --- From StanceSimulator ---
 /**
  * StanceSimulator
  *

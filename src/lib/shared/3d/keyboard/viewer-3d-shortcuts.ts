@@ -225,9 +225,6 @@ export function createViewer3DShortcuts(
  */
 export const SPEED_PRESETS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
 
-/**
- * Get next speed up value
- */
 export function getNextSpeedUp(current: number): number {
   const currentIndex = SPEED_PRESETS.findIndex((s) => s >= current);
   if (currentIndex === -1 || currentIndex >= SPEED_PRESETS.length - 1) {
@@ -236,9 +233,6 @@ export function getNextSpeedUp(current: number): number {
   return SPEED_PRESETS[currentIndex + 1] ?? 2;
 }
 
-/**
- * Get next speed down value
- */
 export function getNextSpeedDown(current: number): number {
   const currentIndex = SPEED_PRESETS.findIndex((s) => s >= current);
   if (currentIndex <= 0) {

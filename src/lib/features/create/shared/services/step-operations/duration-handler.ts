@@ -65,7 +65,6 @@ export function updateStepDuration(
     return;
   }
 
-  // Create updated step data
   const updatedStepData = {
     ...stepData,
     duration: roundedDuration,

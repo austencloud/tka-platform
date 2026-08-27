@@ -273,7 +273,6 @@
     gap: 6px;
   }
 
-  /* ── Section heading ─────────────────────────────────── */
   .section-heading {
     font-size: 13px;
     font-weight: 700;
@@ -282,7 +281,6 @@
     color: rgba(255, 255, 255, 0.7);
   }
 
-  /* ── Accordion trigger ───────────────────────────────── */
   .accordion-row {
     display: flex;
     align-items: center;
@@ -335,7 +333,6 @@
     transform: rotate(90deg);
   }
 
-  /* ── Collapsible body ────────────────────────────────── */
   .accordion-body {
     display: flex;
     flex-direction: column;
@@ -353,7 +350,6 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  /* ── Preset chip grid ────────────────────────────────── */
   .chip-grid {
     display: flex;
     flex-wrap: wrap;
@@ -395,7 +391,6 @@
     flex-shrink: 0;
   }
 
-  /* ── Scope selector ──────────────────────────────────── */
   .scope-section {
     display: flex;
     align-items: center;
@@ -447,7 +442,6 @@
   }
   .scope-seg i { font-size: 14px; }
 
-  /* ── Channel matrix ──────────────────────────────────── */
   .matrix-rows {
     display: flex;
     flex-direction: column;
@@ -548,7 +542,6 @@
     color: var(--effort-color);
   }
 
-  /* ── Motion preferences ──────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
     .accordion-body { animation: none; }
     .chevron { transition: none; }

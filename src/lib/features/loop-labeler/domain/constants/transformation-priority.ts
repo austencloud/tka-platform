@@ -3,15 +3,11 @@
  * Simpler explanations come first (higher priority).
  */
 export const TRANSFORMATION_PRIORITY = [
-  // ==============================================
   // IDENTITY (highest priority - simplest explanation)
-  // ==============================================
   "repeated", // Literally the same motion repeated, no transformation
 
-  // ==============================================
   // SAME-COLOR TRANSFORMATIONS (high priority)
   // These are simpler explanations - both props do the same thing
-  // ==============================================
 
   // Pure rotations (same colors)
   "rotated_90_cw",
@@ -29,10 +25,8 @@ export const TRANSFORMATION_PRIORITY = [
   // Pure inversion (same colors, same positions)
   "inverted",
 
-  // ==============================================
   // SWAPPED TRANSFORMATIONS (lower priority)
   // More complex - props swap roles
-  // ==============================================
 
   // Rotation + swap
   "rotated_90_cw_swapped",

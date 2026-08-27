@@ -395,7 +395,6 @@ export class OverlayEffectsExecutor {
     this.compositeAccumToScreen(accum.read, canvas.width, canvas.height);
   }
 
-  // ── Lifecycle ────────────────────────────────────────────────────────
 
   dispose(): void {
     const gl = this.gl;

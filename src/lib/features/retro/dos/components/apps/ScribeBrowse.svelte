@@ -20,9 +20,7 @@
   import { createMockPictographData } from "../../../shared/data/mock-pictograph-data";
   import type { DosFile } from "../../domain/dos-types";
 
-  /* ------------------------------------------------------------------ */
   /* Props                                                               */
-  /* ------------------------------------------------------------------ */
 
   interface Props {
     /** Called when Browse mode finishes and should return to menu */
@@ -31,17 +29,13 @@
 
   let { onreturn }: Props = $props();
 
-  /* ------------------------------------------------------------------ */
   /* Services                                                            */
-  /* ------------------------------------------------------------------ */
 
   const fs = new DosFileSystem();
   const renderer = new BrailleHybridRenderer();
   const soundManager = new DosSoundManager();
 
-  /* ------------------------------------------------------------------ */
   /* Internal state                                                      */
-  /* ------------------------------------------------------------------ */
 
   /**
    * Internal phase of the browse UI.
@@ -56,9 +50,7 @@
   /** The .SEQ files discovered from the SEQUENCES directory. */
   let seqFiles: DosFile[] = [];
 
-  /* ------------------------------------------------------------------ */
   /* Directory listing                                                   */
-  /* ------------------------------------------------------------------ */
 
   /** Navigate into SEQUENCES and read .SEQ files. */
   function loadSequenceFiles(): void {

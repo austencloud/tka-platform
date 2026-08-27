@@ -16,9 +16,7 @@ export const uiState = $state({
   showDebugPanel: false, // Admin-only debug console
 });
 
-// ============================================================================
 // MODULE STATE (Primary API)
-// ============================================================================
 
 export function getActiveModule(): TabId | null {
   return uiState.activeModule;
@@ -36,10 +34,8 @@ export function isModuleActive(module: string): boolean {
   return uiState.activeModule === module;
 }
 
-// ============================================================================
 // LEGACY TAB API (for backwards compatibility)
 // @deprecated Use module functions instead
-// ============================================================================
 
 /** @deprecated Use getActiveModule() instead */
 export function getActiveTab(): TabId | null {
@@ -61,11 +57,9 @@ export function isTabActive(module: string): boolean {
   return isModuleActive(module);
 }
 
-// ============================================================================
 // SETTINGS STATE (DEPRECATED - Settings is now a module)
 // These functions are deprecated. Use handleModuleChange("settings") instead.
 // The settings panel has been replaced with a full module at ModuleId="settings"
-// ============================================================================
 
 /** @deprecated Settings is now a module. Use handleModuleChange("settings") instead */
 export function getShowSettings(): boolean {
@@ -129,9 +123,6 @@ export function toggleSettingsDialog(mode?: "mobile" | "desktop"): void {
   toggleShowSettings();
 }
 
-// ============================================================================
-// FULLSCREEN STATE
-// ============================================================================
 
 export function getIsFullScreen(): boolean {
   return uiState.isFullScreen;
@@ -141,9 +132,6 @@ export function setFullScreen(fullScreen: boolean): void {
   uiState.isFullScreen = fullScreen;
 }
 
-// ============================================================================
-// TRANSITION STATE
-// ============================================================================
 
 export function getIsTransitioning(): boolean {
   return uiState.isTransitioning;
@@ -153,9 +141,6 @@ export function setIsTransitioning(isTransitioning: boolean): void {
   uiState.isTransitioning = isTransitioning;
 }
 
-// ============================================================================
-// MODULE LOADING STATE
-// ============================================================================
 
 export function getIsWaitingForModuleLoad(): boolean {
   return uiState.isWaitingForModuleLoad;
@@ -175,9 +160,7 @@ export function setIsWaitingForTabLoad(waiting: boolean): void {
   setIsWaitingForModuleLoad(waiting);
 }
 
-// ============================================================================
 // DEBUG PANEL STATE (Admin Only)
-// ============================================================================
 
 export function getShowDebugPanel(): boolean {
   return uiState.showDebugPanel;
@@ -199,9 +182,6 @@ export function closeDebugPanel(): void {
   uiState.showDebugPanel = false;
 }
 
-// ============================================================================
-// RESET STATE
-// ============================================================================
 
 export function resetUIState(): void {
   uiState.activeModule = "create";

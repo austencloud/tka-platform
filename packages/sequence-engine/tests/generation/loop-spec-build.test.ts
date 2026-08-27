@@ -41,10 +41,8 @@ const BOX_CSV_PATH = path.resolve(
   "../../../../static/data/pictographs/BoxPictographDataframe.csv"
 );
 
-// ---------------------------------------------------------------------------
 // Real dataset provider — copied verbatim (pattern) from
 // scripts/generate-loop-audit-fixtures.mjs's loadVariations/CsvVariationProvider.
-// ---------------------------------------------------------------------------
 
 function loadVariations(csvPath: string): PictographData[] {
   const lines = readFileSync(csvPath, "utf8").split("\n");

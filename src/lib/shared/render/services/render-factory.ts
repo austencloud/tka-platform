@@ -17,9 +17,6 @@ export function createRenderCanvas(width: number, height: number): OffscreenCanv
   return new OffscreenCanvas(width, height);
 }
 
-/**
- * Load an ImageBitmap from a Blob
- */
 export async function loadImageFromBlob(blob: Blob): Promise<ImageBitmap> {
   return createImageBitmap(blob);
 }

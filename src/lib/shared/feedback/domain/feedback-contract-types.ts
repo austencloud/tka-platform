@@ -4,7 +4,6 @@
 
 import type { FeedbackItem, FeedbackStatus, FeedbackType, FeedbackPriority, StagedImageState } from "$lib/shared/feedback/domain/models/feedback-models";
 
-// === From IClaimStatusDeriver ===
 
 export type ClaimHealth =
   | "active"      // Has claim, not stale
@@ -36,7 +35,6 @@ export interface EffectiveStatus {
   claimTokenShort?: string;
 }
 
-// === From IFeedbackEditor ===
 
 export interface EditSnapshot {
   type: FeedbackType;
@@ -57,7 +55,6 @@ export interface ValidationResult {
   errors: Record<string, string>;
 }
 
-// === From IFeedbackQueryService ===
 
 export interface FeedbackQueryResult {
   items: FeedbackItem[];
@@ -65,7 +62,6 @@ export interface FeedbackQueryResult {
   hasMore: boolean;
 }
 
-// === From IFeedbackTypeResolver ===
 
 export interface FeedbackTypeConfig {
   label: string;
@@ -74,11 +70,9 @@ export interface FeedbackTypeConfig {
   placeholder: string;
 }
 
-// === From IFormDraftPersister ===
 
 export type DraftSaveStatus = "idle" | "saving" | "saved";
 
-// === From IImageStager ===
 
 export type StagedProgressCallback = (state: StagedImageState) => void;
 
@@ -91,11 +85,9 @@ export interface StagedUploadHandle {
   storagePath: string;
 }
 
-// === From ISwimLaneDeriver ===
 
 export type SwimLane = 'critical' | 'normal' | 'internal' | 'backlog';
 
-// === From IVoiceRecorder ===
 
 export interface VoiceRecordingResult {
 	blob: Blob;

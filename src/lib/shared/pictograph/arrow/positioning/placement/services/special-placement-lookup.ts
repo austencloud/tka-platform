@@ -239,10 +239,6 @@ export class SpecialPlacementLookup {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 // Use this instead of specialPlacementLookup to avoid DI container rebuilds.
-// ============================================================================
 
 export const specialPlacementLookup = new SpecialPlacementLookup();

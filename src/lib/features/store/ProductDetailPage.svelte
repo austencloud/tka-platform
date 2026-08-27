@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/ProductDetailPage.svelte -->
 <!--
   The generic SKU page: whatever the catalog sells that has no bespoke listing
   of its own (the printed guide, one-off decks, future merch). Chrome belongs

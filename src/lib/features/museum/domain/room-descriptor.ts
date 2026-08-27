@@ -19,7 +19,6 @@ import type {
   TorchPosition,
 } from "../services/museum-geometry-builder";
 
-// ── Serialized tile bucket types ──
 
 /**
  * A single entry from a floor or wall bucket, stored as a plain array
@@ -48,7 +47,6 @@ export interface SerializedTileBuckets {
   totalWallInstances: number;
 }
 
-// ── RoomDescriptor ──
 
 /**
  * Everything needed to rebuild a room's geometry without re-bucketing tiles.
@@ -70,7 +68,6 @@ export interface RoomDescriptor {
   materialKeys: string[];
 }
 
-// ── Factory ──
 
 /**
  * Converts the output of bucketMuseumTiles() into a RoomDescriptor.
@@ -131,7 +128,6 @@ export function createRoomDescriptor(
   };
 }
 
-// ── Serialization helpers ──
 
 /**
  * Turns a descriptor into a JSON string for storage (IndexedDB, sessionStorage).

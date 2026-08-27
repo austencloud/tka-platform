@@ -1,4 +1,3 @@
-// src/lib/shared/gamification/services/prop-collection-persistence.ts
 /**
  * Guest persistence for the prop collection. localStorage only — members use
  * Firestore (owned by PropUnlockManager). Mirrors the house localStorage idiom

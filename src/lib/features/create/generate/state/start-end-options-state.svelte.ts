@@ -123,7 +123,6 @@ function clearSessionOptions(): void {
   }
 }
 
-// ===== Default Options =====
 const DEFAULT_OPTIONS: StartEndOptions = {
   blockedStartPositions: [],
   startPosition: null,
@@ -135,7 +134,6 @@ const DEFAULT_OPTIONS: StartEndOptions = {
   redStartOrientation: Orientation.IN,
 };
 
-// ===== State Creator =====
 
 /**
  * Creates reactive state for start/end position options

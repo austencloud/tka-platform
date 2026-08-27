@@ -519,7 +519,6 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
     background: transparent;
   }
 
-  /* ====== MOBILE PLACEHOLDER ====== */
   .mobile-placeholder {
     display: flex;
     align-items: center;
@@ -555,7 +554,6 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
-  /* ====== DESKTOP SPLIT-VIEW ====== */
   .desktop-content {
     display: grid;
     grid-template-columns: 1fr clamp(280px, 20vw, 340px);

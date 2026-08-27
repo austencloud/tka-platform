@@ -68,9 +68,7 @@ competing ones.
   });
   setTracePathsContext(trace);
 
-  // ---------------------------------------------------------------------
   // Content resolution
-  // ---------------------------------------------------------------------
 
   /**
    * The four cardinal grid locations. This is the diamond grid the app defaults

@@ -17,9 +17,6 @@ import {
   STATIC_NON_RADIAL_COUNTER_CLOCKWISE_MAP,
 } from "@tka/render-core";
 
-// ============================================================================
-// ARROW ROTATION MAPS
-// ============================================================================
 
 /**
  * PRO rotation maps - exact values from ProAntiRotationMaps.ts
@@ -145,9 +142,6 @@ export const dashNoRotationMap: Record<string, number> = {
 export const floatClockwiseMap = proClockwiseMap;
 export const floatCounterClockwiseMap = proCounterClockwiseMap;
 
-// ============================================================================
-// ARROW LOCATION CALCULATION
-// ============================================================================
 
 /**
  * Direction pairs mapping for shift arrows (PRO/ANTI/FLOAT)
@@ -245,9 +239,6 @@ export function calculateArrowLocation(
   }
 }
 
-// ============================================================================
-// ARROW ROTATION CALCULATION
-// ============================================================================
 
 /**
  * Select rotation map based on motion type and rotation direction

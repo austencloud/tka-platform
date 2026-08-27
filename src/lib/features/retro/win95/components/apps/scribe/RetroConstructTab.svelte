@@ -21,27 +21,21 @@
     onstatuschange?: (status: string) => void;
   } = $props();
 
-  /* ------------------------------------------------------------------ */
   /* Types                                                               */
-  /* ------------------------------------------------------------------ */
 
   interface Beat {
     letter: string;
     pictograph: RetroPictographData;
   }
 
-  /* ------------------------------------------------------------------ */
   /* State                                                               */
-  /* ------------------------------------------------------------------ */
 
   let phase = $state<"start" | "build">("start");
   let startPosition = $state<string | null>(null);
   let beats = $state<Beat[]>([]);
   let selectedStepIndex = $state(-1);
 
-  /* ------------------------------------------------------------------ */
   /* Start positions (Alpha / Beta / Gamma)                              */
-  /* ------------------------------------------------------------------ */
 
   const startPositions = [
     { id: "alpha", label: "Alpha", description: "Hands opposite" },
@@ -125,9 +119,7 @@
 
 <div class="construct-tab">
   {#if phase === "start"}
-    <!-- ============================================================= -->
     <!-- Phase 1: Start Position Picker                                  -->
-    <!-- ============================================================= -->
     <div class="start-picker">
       <fieldset class="start-fieldset">
         <legend>Choose Start Position</legend>
@@ -155,9 +147,7 @@
       </div>
     </div>
   {:else}
-    <!-- ============================================================= -->
     <!-- Phase 2: Build Mode - workspace + option picker                 -->
-    <!-- ============================================================= -->
 
     <!-- Workspace: beat display strip -->
     <div class="workspace">
@@ -241,9 +231,7 @@
     padding: 4px;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Phase 1: Start Position Picker                                      */
-  /* ------------------------------------------------------------------ */
   .start-picker {
     display: flex;
     flex-direction: column;
@@ -320,9 +308,7 @@
     margin: 0;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Phase 2: Workspace (beat strip)                                     */
-  /* ------------------------------------------------------------------ */
   .workspace {
     flex-shrink: 0;
   }
@@ -378,9 +364,7 @@
     white-space: nowrap;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Option Picker                                                       */
-  /* ------------------------------------------------------------------ */
   .options-fieldset {
     flex: 1;
     min-height: 0;

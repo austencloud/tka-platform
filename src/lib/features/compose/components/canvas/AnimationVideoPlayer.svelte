@@ -63,7 +63,6 @@
   // Timer refs for cleanup
   let switchToVideoTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // Check for cached video on mount
   onMount(async () => {
     if (sequenceData) {
       const cached = await generationCoordinator.checkCachedVideo(sequenceData);
@@ -95,7 +94,6 @@
       videoResult = null;
       videoProgress = null;
 
-      // Check for cached video
       generationCoordinator.checkCachedVideo(sequenceData).then((cached) => {
         if (cached) {
           videoResult = cached;
@@ -225,7 +223,6 @@
     }
   }
 
-  // Handle video errors
   function handleVideoError(event: Event) {
     hasError = true;
     const video = event.target as HTMLVideoElement;

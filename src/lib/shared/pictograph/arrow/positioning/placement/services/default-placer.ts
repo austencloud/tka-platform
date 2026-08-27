@@ -70,7 +70,6 @@ export class DefaultPlacer {
       // Lazy load only the grid mode + prop we need
       await this.placementDataService.ensureLoaded(gridMode, propType);
 
-      // Get the adjustment from the data service
       const adjustment = await this.placementDataService.getDefaultAdjustment(
         motionType,
         placementKey,

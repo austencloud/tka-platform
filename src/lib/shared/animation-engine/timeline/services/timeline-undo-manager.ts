@@ -33,9 +33,7 @@ export class TimelineUndoManager {
     this.getCurrentProject = getCurrentProject;
   }
 
-  // =========================================================================
   // State Getters
-  // =========================================================================
 
   get canUndo(): boolean {
     return this.undoStack.length > 0;
@@ -63,9 +61,7 @@ export class TimelineUndoManager {
     return this.redoStack.length;
   }
 
-  // =========================================================================
   // Core Operations
-  // =========================================================================
 
   captureState(type: TimelineUndoOperationType, description: string): void {
     if (!this.getCurrentProject) {
@@ -97,7 +93,6 @@ export class TimelineUndoManager {
       timestamp: Date.now(),
     };
 
-    // Add to undo stack
     this.undoStack.push(this.pendingEntry);
 
     // Trim if over max size
@@ -155,9 +150,7 @@ export class TimelineUndoManager {
     this.save();
   }
 
-  // =========================================================================
   // Persistence
-  // =========================================================================
 
   save(): void {
     if (typeof window === "undefined") return;
@@ -212,9 +205,7 @@ export class TimelineUndoManager {
     }
   }
 
-  // =========================================================================
   // Observable
-  // =========================================================================
 
   subscribe(callback: () => void): () => void {
     this.subscribers.add(callback);
@@ -223,9 +214,7 @@ export class TimelineUndoManager {
     };
   }
 
-  // =========================================================================
   // Private Helpers
-  // =========================================================================
 
   private notifySubscribers(): void {
     for (const callback of this.subscribers) {

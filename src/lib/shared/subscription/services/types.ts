@@ -1,4 +1,3 @@
-// --- From PremiumGateChecker ---
 import type { CapabilityFeatureId } from "$lib/shared/auth/domain/models/feature-flag";
 export interface NudgeConfig {
 	capability: CapabilityFeatureId;
@@ -15,7 +14,6 @@ export interface PremiumGateResult {
 
 
 
-// --- From SubscriptionManager ---
 export type SubscriptionStatus =
   | "active"
   | "canceled"

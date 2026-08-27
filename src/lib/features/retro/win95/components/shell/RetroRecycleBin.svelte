@@ -24,9 +24,7 @@
   } from "../../adapters/recycle-adapter";
   import type { RecycleBinItem } from "../../adapters/recycle-adapter";
 
-  /* ------------------------------------------------------------------ */
   /* Props                                                               */
-  /* ------------------------------------------------------------------ */
 
   let {
     onclose,
@@ -34,9 +32,7 @@
     onclose?: () => void;
   } = $props();
 
-  /* ------------------------------------------------------------------ */
   /* State                                                               */
-  /* ------------------------------------------------------------------ */
 
   let items = $state<RecycleBinItem[]>([]);
   let isLoading = $state(true);
@@ -51,9 +47,7 @@
     onconfirm: () => Promise<void>;
   } | null>(null);
 
-  /* ------------------------------------------------------------------ */
   /* Lore: Order files that can never be restored                        */
-  /* ------------------------------------------------------------------ */
 
   const ORDER_FILES = [
     "ORDER7.DOC \u2014 File corrupted during suppression event",
@@ -66,9 +60,7 @@
     "STAFFLST.CSV \u2014 Partial recovery: 3 of 247 records readable",
   ];
 
-  /* ------------------------------------------------------------------ */
   /* Combined list: real items first, then Order lore files              */
-  /* ------------------------------------------------------------------ */
 
   const listItems = $derived([
     ...items.map((item) => {
@@ -301,9 +293,7 @@
     background: var(--retro-button-face, #c0c0c0);
   }
 
-  /* ------------------------------------------------------------------ */
   /* Toolbar                                                             */
-  /* ------------------------------------------------------------------ */
   .recyclebin-toolbar {
     display: flex;
     align-items: center;
@@ -320,9 +310,7 @@
     margin: 0 2px;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Confirm prompt                                                      */
-  /* ------------------------------------------------------------------ */
   .recyclebin-confirm {
     display: flex;
     align-items: center;
@@ -348,9 +336,7 @@
     flex-shrink: 0;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Column headers                                                      */
-  /* ------------------------------------------------------------------ */
   .recyclebin-headers {
     display: flex;
     gap: 0;
@@ -383,9 +369,7 @@
     font-weight: bold;
   }
 
-  /* ------------------------------------------------------------------ */
   /* File list                                                           */
-  /* ------------------------------------------------------------------ */
   .recyclebin-list {
     flex: 1;
     min-height: 0;
@@ -393,9 +377,7 @@
     overflow: hidden;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Loading / error message                                             */
-  /* ------------------------------------------------------------------ */
   .recyclebin-message {
     display: flex;
     align-items: center;
@@ -414,9 +396,7 @@
     color: var(--semantic-error, #cc0000);
   }
 
-  /* ------------------------------------------------------------------ */
   /* Status bar                                                          */
-  /* ------------------------------------------------------------------ */
   .recyclebin-statusbar {
     flex-shrink: 0;
   }

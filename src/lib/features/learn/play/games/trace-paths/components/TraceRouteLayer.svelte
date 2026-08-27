@@ -342,7 +342,6 @@ Three things it is careful about:
     opacity: 0.85;
   }
 
-  /* ── Tap Route stops ─────────────────────────────────────────────── */
 
   .tap-stop circle {
     fill: color-mix(in srgb, var(--hand-color) 14%, transparent);

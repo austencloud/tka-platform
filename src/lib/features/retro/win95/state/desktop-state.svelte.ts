@@ -46,9 +46,7 @@ class DesktopState {
 		items: RetroContextMenuItem[];
 	} | null>(null);
 
-	/* ------------------------------------------------------------------ */
 	/* Shell settings (Control Panel ↔ desktop wiring)                    */
-	/* ------------------------------------------------------------------ */
 
 	/** CRT overlay: horizontal scanline bands. */
 	crtScanlines = $state(true);
@@ -74,9 +72,7 @@ class DesktopState {
 	/** Double-click speed in milliseconds. */
 	doubleClickSpeed = $state(500);
 
-	/* ------------------------------------------------------------------ */
 	/* Auth state                                                          */
-	/* ------------------------------------------------------------------ */
 
 	/** Whether the user has authenticated (gates the desktop). */
 	isAuthenticated = $state(false);

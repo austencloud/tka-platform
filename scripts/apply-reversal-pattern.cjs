@@ -10,9 +10,7 @@
  * seed scripts) that can't import TypeScript directly.
  */
 
-// ---------------------------------------------------------------------------
 // Pattern definitions (inlined from TypeScript config — keep in sync)
-// ---------------------------------------------------------------------------
 
 /**
  * All 15 reversal patterns.
@@ -24,7 +22,6 @@
  * display and filtering rather than something enforced at the code level.
  */
 const REVERSAL_PATTERNS = {
-  // ── Uniform patterns ───────────────────────────────────────────────────
   "continuous":    { sequence: "----", period: 1 },
   "book":          { sequence: "PPPP", period: 1 },
   "red-book":      { sequence: "RRRR", period: 1 },
@@ -50,9 +47,7 @@ const REVERSAL_PATTERNS = {
   "sparse-weave-3": { sequence: "RBRPBRBPBRBPRBRPBRBPRBRPRBRPBRBP",         period: 32 },
 };
 
-// ---------------------------------------------------------------------------
 // applyReversalToMotion
-// ---------------------------------------------------------------------------
 
 /**
  * Flips a motion type if the hand is being reversed.
@@ -78,9 +73,7 @@ function applyReversalToMotion(motionType, isReversed) {
   }
 }
 
-// ---------------------------------------------------------------------------
 // getReversalFlagsForBeat
-// ---------------------------------------------------------------------------
 
 /**
  * Returns which hands are reversed for a given beat index.
@@ -115,9 +108,6 @@ function getReversalFlagsForBeat(patternSequence, beatIndex) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// applyReversalPattern
-// ---------------------------------------------------------------------------
 
 /**
  * Applies a named reversal pattern to an array of step objects in-place.

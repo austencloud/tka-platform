@@ -98,7 +98,6 @@ export interface GaitReport {
   /** Ground plane the analysis settled on, world Y. */
   groundY: number;
 
-  // -- Is it walking at all --------------------------------------------
   stances: Stance[];
   /** Steps per minute, counting each foot's touchdown. */
   cadence: number;
@@ -121,14 +120,12 @@ export interface GaitReport {
    */
   doubleSupportFraction: number;
 
-  // -- The gliding ------------------------------------------------------
   /** Ground a planted foot covered while planted, metres, worst step. */
   peakSlip: number;
   meanSlip: number;
   /** Slip as a share of the step it belongs to. Over ~0.15 reads as skating. */
   slipRatio: number;
 
-  // -- The heel ---------------------------------------------------------
   /** Worst heel rise above foot-flat during a stance, metres. */
   peakHeelLift: number;
   /**
@@ -139,13 +136,11 @@ export interface GaitReport {
   /** A rig without a ToeBase cannot answer the heel question at all. */
   hasToes: boolean;
 
-  // -- The twitches -----------------------------------------------------
   twitches: Twitch[];
   twitchesPerSecond: number;
   /** RMS knee jerk, degrees/second squared, both legs. */
   kneeJerkRms: number;
 
-  // -- The teleports ----------------------------------------------------
   jolts: Jolt[];
   joltsPerSecond: number;
   /** Worst body-local joint acceleration in the buffer, m/s squared. */
@@ -155,12 +150,10 @@ export interface GaitReport {
   /** How far the worst one moved in a single frame, metres. */
   peakJoltStep: number;
 
-  // -- Walking on the spot ----------------------------------------------
   /** Seconds the feet kept cycling while the root was not going anywhere. */
   inPlaceCyclingSeconds: number;
   inPlaceCyclingFraction: number;
 
-  // -- Weight -----------------------------------------------------------
   /**
    * Peak-to-peak lateral sway of the pelvis off its own travel line, metres.
    * Real walking runs 0.06-0.10; near zero is a body that never commits its
@@ -607,7 +600,6 @@ export function analyzeGait(
   const stances = extractStances(frames, ground, thresholds);
   const hasToes = frames[0]!.left.toe !== null;
 
-  // -- Step geometry --
   const stepLengths: number[] = [];
   for (let i = 1; i < stances.length; i++) {
     if (stances[i]!.foot === stances[i - 1]!.foot) continue;
@@ -666,12 +658,10 @@ export function analyzeGait(
     }
   }
 
-  // -- Slip --
   const slips = stances.map((s) => s.slip);
   const peakSlip = slips.length > 0 ? Math.max(...slips) : 0;
   const meanSlip = mean(slips);
 
-  // -- Heel --
   let peakHeelLift = 0;
   let heelLiftBehindHips = 0;
   for (const stance of stances) {

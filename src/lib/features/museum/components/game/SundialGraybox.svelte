@@ -66,7 +66,6 @@
     visible = true,
   }: Props = $props();
 
-  // ── Palette ───────────────────────────────────────────────────────────────
   // Graybox values, not final art. The RING floor is the pale one, and that is
   // not a taste call: the performers stand at r=6.5, so at zenith their prop
   // paths drop straight down onto the ring between r=4 and r=9. That ring is
@@ -87,7 +86,6 @@
   /** Layer the visitor's shadow proxy lives on — cast, never seen. */
   const SHADOW_ONLY_LAYER = 1;
 
-  // ── Shared geometry + materials ───────────────────────────────────────────
   const unitBox = new BoxGeometry(1, 1, 1);
 
   const materials = {
@@ -208,7 +206,6 @@
     };
   }
 
-  // ── Scene assembly ────────────────────────────────────────────────────────
 
   interface Arc {
     id: string;

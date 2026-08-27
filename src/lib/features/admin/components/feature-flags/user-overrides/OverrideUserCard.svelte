@@ -25,7 +25,6 @@
     accentColor = getCachedOrFallbackColor(user.avatar, user.displayName);
   });
 
-  // Calculate override counts
   const overrideCounts = $derived(() => {
     const grants = user.featureOverrides?.enabledFeatures?.length ?? 0;
     const denies = user.featureOverrides?.disabledFeatures?.length ?? 0;

@@ -169,7 +169,6 @@ export class CameraMovementController {
 			moveDir.normalize();
 		}
 
-		// Calculate speed
 		let speed = this.config.moveSpeed;
 		if (input.sprint) speed *= this.config.sprintMultiplier;
 		if (input.crouch) speed *= this.config.crouchMultiplier;
@@ -204,7 +203,6 @@ export class CameraMovementController {
 				this.isGrounded = false;
 			}
 
-			// Apply velocity
 			this.playerPosition.x += this.velocity.x * deltaTime;
 			this.playerPosition.y += this.velocity.y * deltaTime;
 			this.playerPosition.z += this.velocity.z * deltaTime;

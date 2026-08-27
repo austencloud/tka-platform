@@ -1,7 +1,6 @@
 <script module lang="ts">
   import { BoxGeometry, CanvasTexture, MeshStandardMaterial } from "three";
 
-  // ── Module-level caches - shared across all plaque instances ──
   // Keyed by size string; only 3 possible sizes so at most 3 entries.
   const geoCache = new Map<string, { plaqueGeo: BoxGeometry; frameGeo: BoxGeometry }>();
 
@@ -83,7 +82,6 @@
 
   const PLAQUE_Y = 1.2; // eye level
 
-  // ── Shared geometries and frame material from module cache ──
   const { plaqueGeo, frameGeo } = getOrCreateGeos(size);
   const isWhiteboard = size === "dev-whiteboard";
   const frameMat = getOrCreateFrameMat(isWhiteboard);
@@ -103,7 +101,6 @@
     emissiveMap: texture,
   });
 
-  // ── Push plaque flush against wall ──
   // The wallOffset from parent positions the plaque center on the tile.
   // Add an extra nudge so the plaque back face touches the wall surface.
   const dims = PLAQUE_DIMS[size];

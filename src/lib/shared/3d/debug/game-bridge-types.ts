@@ -5,9 +5,6 @@
  * Shared between client and server.
  */
 
-// ============================================================================
-// PRIMITIVES
-// ============================================================================
 
 export interface Vector3 {
   x: number;
@@ -20,9 +17,6 @@ export interface Rotation {
   pitch: number; // X-axis rotation (radians)
 }
 
-// ============================================================================
-// GAME STATE
-// ============================================================================
 
 export interface GameState {
   position: Vector3;
@@ -75,9 +69,6 @@ export interface PlaybackState {
   sequenceName: string | null;
 }
 
-// ============================================================================
-// PERFORMER
-// ============================================================================
 
 /**
  * Minimal performer interface for what game-bridge needs.
@@ -112,9 +103,6 @@ export interface PerformerManager {
   setSpeed: (speed: number) => void;
 }
 
-// ============================================================================
-// BRIDGE PROTOCOL
-// ============================================================================
 
 export interface BridgeRequest {
   type: "request";
@@ -144,9 +132,6 @@ export interface BridgeAuth {
 
 export type BridgeMessage = BridgeRequest | BridgeResponse | BridgeEvent | BridgeAuth;
 
-// ============================================================================
-// EVENTS
-// ============================================================================
 
 export type GameEventType =
   | "collision"
@@ -204,9 +189,6 @@ export type GameEvent =
   | PlaybackStateChangedEvent
   | PerformerChangedEvent;
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
 
 export interface GameBridgeConfig {
   /** WebSocket URL (default: from env or ws://localhost:9876) */
@@ -243,9 +225,6 @@ export const DEFAULT_BRIDGE_CONFIG: Required<GameBridgeConfig> = {
   debug: false,
 };
 
-// ============================================================================
-// BINDINGS INTERFACE
-// ============================================================================
 
 export interface PhysicsBindings {
   getPlayerPosition: () => Vector3 | null;

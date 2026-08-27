@@ -35,7 +35,6 @@ export interface GroundTruthSequence {
   beats: GroundTruthBeat[];
 }
 
-// --- Value normalization tables ------------------------------------------
 
 /** Case-insensitive lookup: lowercased spelling -> canonical enum value. */
 function buildLookup(values: readonly string[]): Map<string, string> {
@@ -66,7 +65,6 @@ LOCATION_LOOKUP.set('southwest', 'sw');
 LOCATION_LOOKUP.set('west', 'w');
 LOCATION_LOOKUP.set('northwest', 'nw');
 
-// --- Error reporting -------------------------------------------------------
 
 /** Throw a validation error that names exactly where the bad value lives. */
 function invalid(

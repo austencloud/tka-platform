@@ -32,12 +32,10 @@ const DEFAULT_DURATION: Record<"warning" | "info", number> = {
   info: 5000,
 };
 
-// ─── State ───────────────────────────────────────────────────────────────────
 
 let toasts = $state<ErrorToastItem[]>([]);
 const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
-// ─── Derived ─────────────────────────────────────────────────────────────────
 
 function getErrorToasts(): ErrorToastItem[] {
   return toasts;
@@ -51,7 +49,6 @@ function getOverflowCount(): number {
   return Math.max(0, toasts.length - MAX_VISIBLE);
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function generateId(): string {
   return `et-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;

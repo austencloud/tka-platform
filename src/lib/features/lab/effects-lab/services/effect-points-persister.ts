@@ -45,9 +45,7 @@ export class EffectPointsPersister {
 	// One toast per failure burst - reset on the next successful write
 	private writeFailureNotified = false;
 
-	// ------------------------------------------------------------------
 	// load()
-	// ------------------------------------------------------------------
 
 	async load(): Promise<void> {
 		// Always read localStorage first as an immediate cache

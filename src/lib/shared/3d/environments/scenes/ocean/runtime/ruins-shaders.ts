@@ -6,7 +6,6 @@ import {
   type WebGLProgramParametersWithUniforms,
 } from "three";
 
-// ── Dais stone ───────────────────────────────────────────────────────────
 // The procedural weathered-limestone look for the ruins dais, injected into a
 // MeshStandardMaterial through onBeforeCompile rather than authored as a raw
 // ShaderMaterial.

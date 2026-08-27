@@ -38,16 +38,10 @@ import {
   isVegetationCategory,
 } from "../domain/vegetation-categories";
 
-// ============================================================================
-// CONSTANTS
-// ============================================================================
 
 const MANIFEST_PATH = "/models/vegetation/manifest.json";
 const MODEL_BASE_PATH = "/models/vegetation/";
 
-// ============================================================================
-// MODEL REGISTRY
-// ============================================================================
 
 export class ModelRegistry {
   private loader: GLTFLoader;
@@ -61,9 +55,6 @@ export class ModelRegistry {
     this.loader = new GLTFLoader();
   }
 
-  // ==========================================================================
-  // INITIALIZATION
-  // ==========================================================================
 
   async initialize(): Promise<void> {
     if (this.initialized) return;

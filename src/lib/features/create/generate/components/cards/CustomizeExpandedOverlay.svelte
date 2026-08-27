@@ -184,7 +184,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     },
   ]);
 
-  // ─── Row values ───
   const startPosDisplay = $derived.by(() => {
     if (!startEndOptions) return "Any";
     if (currentPreset === StartPositionPreset.ANY) return "Any";
@@ -506,7 +505,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     color: rgba(255, 255, 255, 0.55);
   }
 
-  /* ─── Detail bodies ─── */
 
   /* `spread` distributes a short form down the pane instead of leaving it
      stacked at the top with 700px of nothing under it. `grid-fill` lets a
@@ -628,7 +626,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     color: color-mix(in srgb, var(--prop-red, #ef4444) 75%, white);
   }
 
-  /* ─── Reduced motion ─── */
 
   @media (prefers-reduced-motion: reduce) {
     .reset-button {

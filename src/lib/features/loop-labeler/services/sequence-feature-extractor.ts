@@ -358,7 +358,6 @@ export class SequenceFeatureExtractor {
     };
   }
 
-  // === Private Helpers ===
 
   private getValidBeats(sequence: SequenceData): StepData[] {
     if (!sequence.steps) {

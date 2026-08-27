@@ -1,4 +1,3 @@
-// generate-ocean-placements.cjs
 // Generates realistic reef placements for the ocean scene and writes placements.ts
 // Run: node scripts/generate-ocean-placements.cjs
 
@@ -16,7 +15,6 @@ function mulberry32(seed) {
 	};
 }
 
-// ── Placement grid for collision detection ─────────────────────────────────
 class PlacementGrid {
 	constructor(cellSize = 2.0) {
 		this.cells = new Map();

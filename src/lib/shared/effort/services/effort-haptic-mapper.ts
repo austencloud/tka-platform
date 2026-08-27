@@ -73,9 +73,7 @@ export function getIOSPulseCount(effortId: EffortId, params?: EffortParams): num
 	}
 }
 
-// =======================================================================
 // Strategy 1: Acceleration-based (monotonic Laban efforts)
-// =======================================================================
 
 function generateFromAcceleration(
 	effortId: EffortId,
@@ -221,9 +219,7 @@ function mergeAdjacentPulses(pattern: number[]): number[] {
 	return merged;
 }
 
-// =======================================================================
 // Strategy 2: Peak-based (oscillating efforts)
-// =======================================================================
 
 /**
  * Find peaks and valleys in the curve and create a haptic pulse
@@ -387,9 +383,7 @@ function eventsToPattern(
 	return pattern.length === 0 ? [30] : pattern;
 }
 
-// =======================================================================
 // Special case: linear
-// =======================================================================
 
 function generateLinearPattern(durationMs: number): number[] {
 	const pulseCount = 4;

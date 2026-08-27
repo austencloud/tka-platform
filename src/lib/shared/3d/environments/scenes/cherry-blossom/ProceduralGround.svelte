@@ -56,7 +56,6 @@
     return val;
   }
 
-  // --- Geometry with baked vertex colors ---
 
   let geometry = $state<PlaneGeometry | undefined>(undefined);
 

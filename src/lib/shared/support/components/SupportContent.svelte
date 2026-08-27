@@ -34,7 +34,6 @@
     variant?: "page" | "modal";
   } = $props();
 
-  // ── Suggested amounts ──────────────────────────────────────────────────────
   type Tier = "5" | "15" | "custom";
   const AMOUNT_OPTIONS: { value: Tier; label: string }[] = [
     { value: "5", label: "Coffee · $5" },
@@ -315,7 +314,6 @@
     background: rgba(255, 255, 255, 0.28);
   }
 
-  /* ── amounts ── */
   .amounts {
     width: 100%;
     margin: 0 auto 18px;

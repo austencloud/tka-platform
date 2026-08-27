@@ -10,9 +10,6 @@ import * as admin from 'firebase-admin';
 // In-memory data store
 const mockData: Map<string, Map<string, Record<string, unknown>>> = new Map();
 
-/**
- * Clear all mock data between tests
- */
 export function clearMockData(): void {
   mockData.clear();
 }
@@ -41,16 +38,10 @@ export function getMockDoc(
   return mockData.get(collection)?.get(docId);
 }
 
-/**
- * Delete mock document
- */
 export function deleteMockDoc(collection: string, docId: string): void {
   mockData.get(collection)?.delete(docId);
 }
 
-/**
- * Get all documents in a collection
- */
 export function getMockCollection(
   collection: string
 ): Array<{ id: string; data: Record<string, unknown> }> {
@@ -78,9 +69,6 @@ export function timestampMinutesAgo(minutes: number): admin.firestore.Timestamp 
   return mockTimestamp(new Date(Date.now() - minutes * 60 * 1000));
 }
 
-/**
- * Create a timestamp from hours ago
- */
 export function timestampHoursAgo(hours: number): admin.firestore.Timestamp {
   return mockTimestamp(new Date(Date.now() - hours * 60 * 60 * 1000));
 }

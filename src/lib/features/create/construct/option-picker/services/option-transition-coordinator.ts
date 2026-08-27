@@ -19,7 +19,6 @@ export class OptionTransitionCoordinator {
     // Cancel any existing transitions
     this.cancelActiveTransition();
 
-    // Start transition
     this._isFadingOut = true;
     this._isTransitioning = true;
 
@@ -51,7 +50,6 @@ export class OptionTransitionCoordinator {
     // Cancel any existing transitions
     this.cancelActiveTransition();
 
-    // Start transition
     this._isFadingOut = true;
     this._isTransitioning = true;
 
@@ -113,7 +111,4 @@ export class OptionTransitionCoordinator {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 export const optionTransitionCoordinator = new OptionTransitionCoordinator();

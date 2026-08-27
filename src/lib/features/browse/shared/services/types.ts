@@ -7,7 +7,6 @@ import type { SoloPropData } from "$lib/shared/foundation/domain/models/solo-pro
 import type { HandPathData } from "$lib/shared/foundation/domain/models/hand-path-data";
 import type { BrowseEngine } from "$lib/shared/browse/engine/types";
 
-// === From IBrowseDataSource ===
 
 export interface BrowseQueryResult {
   /** Full sequences (used for combined modes) */
@@ -18,7 +17,6 @@ export interface BrowseQueryResult {
   readonly handPaths: HandPathData[];
 }
 
-// === From IBrowseEventHandler ===
 
 export interface BrowseEventHandlerParams {
   engine: BrowseEngine;
@@ -27,7 +25,6 @@ export interface BrowseEventHandlerParams {
   setError: (error: string | null) => void;
 }
 
-// === From IOptimizedBrowser ===
 
 export interface SequenceMetadata {
   id: string;

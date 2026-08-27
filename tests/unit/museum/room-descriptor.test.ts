@@ -7,7 +7,6 @@ import {
 } from "$lib/features/museum/domain/room-descriptor";
 import type { MuseumGeometryDryRun } from "$lib/features/museum/services/museum-geometry-builder";
 
-// ── Test fixture ──
 
 /**
  * Minimal dry-run that covers all bucket types without needing a real grid.
@@ -65,7 +64,6 @@ function makeDryRun(): MuseumGeometryDryRun {
   };
 }
 
-// ── Helpers ──
 
 function assertDescriptorShape(desc: RoomDescriptor): void {
   expect(typeof desc.roomId).toBe("string");
@@ -77,7 +75,6 @@ function assertDescriptorShape(desc: RoomDescriptor): void {
   expect(Array.isArray(desc.fixtures.plaques)).toBe(true);
 }
 
-// ── Tests ──
 
 describe("createRoomDescriptor", () => {
   it("converts floor buckets to plain arrays", () => {

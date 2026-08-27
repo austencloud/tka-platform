@@ -1,4 +1,3 @@
-// src/lib/shared/3d/scene-composer/__tests__/registry.test.ts
 import { describe, it, expect, beforeEach } from "vitest";
 import { SceneComposerRegistry } from "../registry";
 import type { SceneComposerPlugin, ComposerCatalog, SurfaceRules } from "../types";

@@ -55,7 +55,6 @@ import {
 const TILE = TILE_METRES;
 const HALF = TILE / 2;
 
-// ── Room ids ────────────────────────────────────────────────────────────────
 
 export const SUN_ROOM_ID = "cave-sun";
 export const AIR_ROOM_ID_FOR_SUN = "cave-air";
@@ -157,7 +156,6 @@ export const SUN_CORRIDOR_CEILING_Y = 2.6;
  */
 export const SUN_MEDALLION_RADIUS_M = 4.0;
 
-// ── The spiral crossing ─────────────────────────────────────────────────────
 
 /** Radius where the crossing leaves the rim. */
 export const CROSSING_OUTER_R = 9;
@@ -192,14 +190,12 @@ export const MIN_PILLAR_CLEARANCE = 0.5;
  */
 export const CROSSING_END_INSET = 0;
 
-// ── The sun ─────────────────────────────────────────────────────────────────
 
 /** Elevation at the chamber centre: dead overhead. */
 export const SUN_ZENITH_DEG = 90;
 /** Elevation at the chamber wall: dawn, raking the room end to end. */
 export const SUN_HORIZON_DEG = 8;
 
-// ── The eye ─────────────────────────────────────────────────────────────────
 
 /** The lift at dead centre — stand here and the ground carries you to Moon. */
 export const EYE_RADIUS_M = 1.0;
@@ -211,7 +207,6 @@ export const EYE_TOP_Y = SUN_CEILING_Y - 0.6;
  */
 export const EYE_SPEED = 1.2;
 
-// ── Types ───────────────────────────────────────────────────────────────────
 
 export interface SundialPillar {
   id: string;
@@ -245,7 +240,6 @@ export interface SundialLayout {
   /** Ramped walks from each real door tile to the chamber rim. */
   approaches: FloorRect[];
 
-  // ── everything the graybox renders ──
   floorRects: FloorRect[];
   wallRects: WallRect[];
   ceilingRects: CeilingRect[];
@@ -273,7 +267,6 @@ export interface SundialLayout {
   };
 }
 
-// ── Small helpers ───────────────────────────────────────────────────────────
 
 const cx = (r: WorldRect) => (r.minX + r.maxX) / 2;
 const cz = (r: WorldRect) => (r.minZ + r.maxZ) / 2;
@@ -299,7 +292,6 @@ function angleDelta(a: number, b: number): number {
   return Math.atan2(Math.sin(d), Math.cos(d));
 }
 
-// ── Layout ──────────────────────────────────────────────────────────────────
 
 export function buildSundialLayout(grid: MuseumGrid): SundialLayout | null {
   const sunWing = grid.wings.find((w) => w.id === SUN_ROOM_ID);

@@ -239,7 +239,6 @@
     }
   }
 
-  /* ── short landscape ──────────────────────────────────────────────────── */
   .map-band.compact {
     margin-bottom: 1.25em;
   }

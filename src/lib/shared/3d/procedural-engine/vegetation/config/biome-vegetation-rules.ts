@@ -9,9 +9,6 @@ import type { VegetationCategory, ManifestBiome } from "../domain/vegetation-cat
 import { CATEGORY_SPACING, CATEGORY_SCALE_RANGES } from "../domain/vegetation-categories";
 import { BiomeType } from "../../generation/biome-system";
 
-// ============================================================================
-// CATEGORY RULE TYPES
-// ============================================================================
 
 /**
  * Configuration for a vegetation category within a biome
@@ -47,21 +44,16 @@ export interface BiomeVegetationConfig {
   categories: CategorySpawnRule[];
 }
 
-// ============================================================================
-// BIOME VEGETATION RULES
-// ============================================================================
 
 /**
  * Vegetation rules mapped by BiomeType
  */
 export const BIOME_VEGETATION_RULES: Record<BiomeType, BiomeVegetationConfig> = {
-  // === WATER BIOMES ===
   [BiomeType.Ocean]: {
     densityMultiplier: 0,
     categories: [],
   },
 
-  // === COASTAL BIOMES ===
   [BiomeType.Beach]: {
     densityMultiplier: 0.1,
     categories: [
@@ -78,7 +70,6 @@ export const BIOME_VEGETATION_RULES: Record<BiomeType, BiomeVegetationConfig> = 
     ],
   },
 
-  // === HOT BIOMES ===
   [BiomeType.Desert]: {
     densityMultiplier: 0.08,
     categories: [
@@ -108,7 +99,6 @@ export const BIOME_VEGETATION_RULES: Record<BiomeType, BiomeVegetationConfig> = 
     ],
   },
 
-  // === TEMPERATE BIOMES ===
   [BiomeType.Grassland]: {
     densityMultiplier: 0.5,
     categories: [
@@ -141,7 +131,6 @@ export const BIOME_VEGETATION_RULES: Record<BiomeType, BiomeVegetationConfig> = 
     ],
   },
 
-  // === COLD BIOMES ===
   [BiomeType.Taiga]: {
     densityMultiplier: 0.55,
     categories: [
@@ -161,7 +150,6 @@ export const BIOME_VEGETATION_RULES: Record<BiomeType, BiomeVegetationConfig> = 
     ],
   },
 
-  // === MOUNTAIN BIOMES ===
   [BiomeType.Mountain]: {
     densityMultiplier: 0.2,
     categories: [
@@ -189,13 +177,7 @@ export const BIOME_VEGETATION_RULES: Record<BiomeType, BiomeVegetationConfig> = 
   },
 };
 
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
 
-/**
- * Get vegetation rules for a biome
- */
 export function getBiomeVegetationConfig(biome: BiomeType): BiomeVegetationConfig {
   return BIOME_VEGETATION_RULES[biome];
 }
@@ -240,16 +222,10 @@ export function biomeTypeToManifestBiome(biome: BiomeType): ManifestBiome {
   }
 }
 
-/**
- * Get the spacing for a category
- */
 export function getCategorySpacing(category: VegetationCategory): number {
   return CATEGORY_SPACING[category];
 }
 
-/**
- * Get the scale range for a category
- */
 export function getCategoryScaleRange(category: VegetationCategory): [number, number] {
   return CATEGORY_SCALE_RANGES[category];
 }

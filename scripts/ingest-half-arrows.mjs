@@ -1,4 +1,3 @@
-// scripts/ingest-half-arrows.mjs
 // Run:      npx tsx scripts/ingest-half-arrows.mjs
 // Selftest: npx tsx scripts/ingest-half-arrows.mjs --selftest
 //

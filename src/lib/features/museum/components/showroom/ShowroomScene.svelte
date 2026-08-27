@@ -6,7 +6,6 @@
     TextureLoader,
   } from "three";
 
-  // ── Model catalog ──
   const MODEL_BASE = "/assets/museum/models/furniture";
   const MODELS = [
     "bench", "benchCushion", "benchCushionLow", "chair", "chairCushion",
@@ -36,7 +35,6 @@
   const PEDESTAL_HEIGHT = 0.4;
   const MODEL_SCALE = 2.0; // Scale up Kenney models for visibility
 
-  // ── Shared loaders - instantiated once for the lifetime of the module ──
   const loader = new GLTFLoader();
   const texLoader = new TextureLoader();
 
@@ -58,7 +56,6 @@
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
   import MuseumMirror from "../game/MuseumMirror.svelte";
 
-  // ── Load all models ──
   interface LoadedItem {
     name: string;
     model: Group;

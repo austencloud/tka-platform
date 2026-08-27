@@ -31,7 +31,6 @@
 
   const logger = createComponentLogger("VideoRecordCoordinator");
 
-  // Get context
   const ctx = getCreateModuleContext();
   const { CreateModuleState, panelState } = ctx;
 

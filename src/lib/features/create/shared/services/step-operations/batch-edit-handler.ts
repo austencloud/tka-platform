@@ -16,9 +16,6 @@ import {
 
 const logger = createComponentLogger("BatchEdit");
 
-/**
- * Apply batch changes to all selected steps
- */
 export function applyBatchChanges(
   changes: BatchEditChanges,
   createModuleState: ICreateModuleState

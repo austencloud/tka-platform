@@ -17,9 +17,6 @@ import {
 
 const COLLAPSE_STATE_KEY = "tka_animation_collapse_states";
 
-// ============================================================================
-// TRAIL SETTINGS PERSISTENCE
-// ============================================================================
 
 /**
  * Load trail settings from localStorage
@@ -78,9 +75,6 @@ export function saveTrailSettings(settings: TrailSettings): void {
   }
 }
 
-// ============================================================================
-// COLLAPSE STATE PERSISTENCE
-// ============================================================================
 
 export interface CollapseStates {
   playback: boolean;

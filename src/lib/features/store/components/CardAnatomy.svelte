@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/CardAnatomy.svelte -->
 <script lang="ts">
   /**
    * Front + back of a real Choreo Card for the marketing page.

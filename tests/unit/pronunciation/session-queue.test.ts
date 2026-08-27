@@ -1,4 +1,3 @@
-// tests/unit/pronunciation/session-queue.test.ts
 import { describe, expect, it } from "vitest";
 
 import { createSessionQueue, REQUEUE_DISTANCE, MAX_ATTEMPTS } from "$lib/features/lab/pronunciation-recorder/domain/session-queue";

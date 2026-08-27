@@ -35,7 +35,6 @@
 
   const led = $derived(effectsState?.led ?? null);
 
-  // ─── Device ────────────────────────────────────────────────────────────────
   // One row of four props, not a kind-toggle plus a conditional count row: the
   // four options ARE the supported devices, and a single exactly-one control
   // can never layout-shift when the selection changes.
@@ -64,7 +63,6 @@
     effectsState.updateEffect("led", { device });
   }
 
-  // ─── Pattern ───────────────────────────────────────────────────────────────
 
   /** How many of the shared params each generator actually reads. */
   const COLOR_SLOTS: Record<string, number> = {

@@ -19,9 +19,7 @@ const {
   calculateEndOrientation,
 } = require("../packages/sequence-engine/dist/core/orientation/OrientationCalculator.js");
 
-// ============================================================================
 // Firebase Admin Setup
-// ============================================================================
 
 const serviceAccountPath = path.join(__dirname, "..", "serviceAccountKey.json");
 let db;
@@ -39,9 +37,7 @@ try {
   process.exit(1);
 }
 
-// ============================================================================
 // CLI Arguments
-// ============================================================================
 
 const args = process.argv.slice(2);
 function getArg(name) {

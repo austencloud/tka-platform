@@ -270,7 +270,6 @@ Variation support:
     cardHoverPreview.isActive(displayedSequence.id)
   );
 
-  // ── Play/stop morph ────────────────────────────────────────────────
   // The static thumbnail is one baked <img>, so its header/grid/cells can't
   // carry view-transition-names directly. SheetMorphOverlay sprite-crops the
   // same image into named regions for the frames around the transition, and
@@ -444,7 +443,6 @@ Variation support:
     });
   });
 
-  // ── Context menu ───────────────────────────────────────────────────
   let contextMenuState: ContextMenuState = $state({ open: false });
 
   let removeConfirmOpen = $state(false);
@@ -596,7 +594,6 @@ Variation support:
     !!onPrimaryAction || !!onSelectionStart || !!onSelectionToggle
   );
 
-  // ── Shared-element morph name ──────────────────────────────────────
   // The same sequence is on screen twice whenever an overlay stacks over a
   // grid: the variation picker modal, the "add sequences" sheet, the smart
   // collection builder. Two elements carrying `sequence-<id>` abort the next

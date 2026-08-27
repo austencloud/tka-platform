@@ -257,9 +257,6 @@
 </Drawer>
 
 <style>
-  /* ============================================================================
-     DRAWER STYLING - Refined Minimal Design
-     ============================================================================ */
   :global(.module-switcher-drawer) {
     /* Drawer fills viewport appropriately based on placement */
     --sheet-bg: var(--theme-panel-bg);
@@ -313,9 +310,6 @@
     min-height: 0;
   }
 
-  /* ============================================================================
-     CONTAINER - Fills drawer height
-     ============================================================================ */
   .module-switcher-container {
     display: flex;
     flex-direction: column;
@@ -324,9 +318,6 @@
     min-height: 0;
   }
 
-  /* ============================================================================
-     HEADER - Refined Minimal
-     ============================================================================ */
   .module-switcher-header {
     display: flex;
     align-items: center;
@@ -422,9 +413,6 @@
     background: var(--theme-card-hover-bg, var(--theme-card-bg));
   }
 
-  /* ============================================================================
-     CONTENT - Fill available space with generous padding
-     ============================================================================ */
   .module-switcher-content {
     padding: 20px 20px 40px; /* More generous padding for modern spacious feel */
     overflow-y: auto;
@@ -438,9 +426,6 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  /* ============================================================================
-     RESPONSIVE ADJUSTMENTS
-     ============================================================================ */
 
   /* Landscape mobile - optimize for left drawer */
   @media (max-height: 600px) and (orientation: landscape) {
@@ -497,9 +482,6 @@
     }
   }
 
-  /* ============================================================================
-     ACCESSIBILITY
-     ============================================================================ */
   @media (prefers-reduced-motion: reduce) {
     .close-button {
       transition: none;
@@ -523,9 +505,6 @@
     }
   }
 
-  /* ============================================================================
-     ACCOUNT FOOTER - Pinned at bottom of drawer
-     ============================================================================ */
   .account-footer {
     flex-shrink: 0;
     padding: 12px 20px max(20px, env(safe-area-inset-bottom));
@@ -626,9 +605,6 @@
     border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
   }
 
-  /* ============================================================================
-     ACCOUNT FOOTER ACTIONS - Inline row of quick actions
-     ============================================================================ */
   .account-footer-actions {
     display: flex;
     align-items: stretch;

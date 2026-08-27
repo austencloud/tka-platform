@@ -132,7 +132,6 @@ describe("onLibraryMutated cleanup", () => {
   });
 });
 
-// --- Sequence Added Events ---
 
 const fakeSequence = { id: "seq-new", name: "TEST" } as SequenceData;
 
@@ -224,7 +223,6 @@ describe("onLibrarySequenceAdded cleanup", () => {
   });
 });
 
-// --- Sequence Updated Events ---
 
 describe("notifyLibrarySequenceUpdated", () => {
   it("dispatches an event named 'tka:library-sequence-updated'", () => {

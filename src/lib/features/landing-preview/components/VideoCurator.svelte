@@ -30,7 +30,6 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
   // Video cache for instant playback
   const videoCache = getVideoCache();
 
-  // === CORE STATE ===
   let videos = $state<ShowcaseVideo[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
@@ -38,7 +37,6 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
   let quickPerformers = $state<UserProfile[]>([]);
   let cacheStats = $state({ count: 0, totalSize: 0 });
 
-  // === FILTER STATE ===
   let filterCategory = $state<string>("all");
   let filterPerformer = $state<string>("all");
   let filterHasWord = $state<string>("all");
@@ -48,14 +46,12 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
   let newCategoryLabel = $state("");
   let newCategoryColor = $state("#6366f1");
 
-  // === EDIT MODAL STATE ===
   let editingVideo = $state<ShowcaseVideo | null>(null);
   let editTitle = $state("");
   let editCategory = $state("");
   let editTags = $state("");
   let saving = $state(false);
 
-  // === VIDEO EDITOR CONTROLLER ===
   let editorController = $state<ReturnType<typeof createVideoEditorController> | null>(null);
 
   // Initialize controller when data is loaded
@@ -94,7 +90,6 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
     }
   });
 
-  // === DERIVED STATE ===
   const uncuratedVideos = $derived.by(() =>
     videos.filter((v) => !v.excluded && (!v.category || v.performers.length === 0))
   );
@@ -159,7 +154,6 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
     linked: videos.filter((v) => v.linkedSequences.length > 0).length,
   });
 
-  // === DATA LOADING ===
   async function loadVideos() {
     loading = true;
     error = null;
@@ -195,7 +189,6 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
     }
   }
 
-  // === CATEGORY MANAGEMENT ===
   async function addCategory() {
     if (!newCategoryLabel.trim()) return;
     const id = newCategoryLabel.toLowerCase().replace(/\s+/g, "-");

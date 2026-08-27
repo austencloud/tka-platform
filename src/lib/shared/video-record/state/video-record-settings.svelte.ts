@@ -49,9 +49,6 @@ const settingsPersistence = createPersistenceHelper({
   defaultValue: DEFAULT_SETTINGS,
 });
 
-/**
- * Create video record settings state
- */
 export function createVideoRecordSettings() {
   let settings = $state<VideoRecordSettings>(settingsPersistence.load());
 

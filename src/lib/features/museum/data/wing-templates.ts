@@ -20,7 +20,6 @@ export interface WingTemplate {
 	theme: WingTheme;
 }
 
-// ── Helpers ──
 
 function wall(x: number, y: number): [string, MuseumTile] {
 	return [tileKey(x, y), { type: "wall" }];
@@ -241,7 +240,6 @@ function buildGrandChamber(): WingTemplate {
 	};
 }
 
-// ── Exported template list ──
 
 export const WING_TEMPLATES: WingTemplate[] = [
 	buildSmallCave(),

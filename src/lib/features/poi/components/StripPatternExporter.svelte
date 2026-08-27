@@ -1,4 +1,3 @@
-<!-- src/lib/features/poi/components/StripPatternExporter.svelte -->
 <script lang="ts">
   import { getPoiContext } from "../context/poi-context";
 

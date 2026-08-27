@@ -117,7 +117,6 @@ export function buildCustomizeSummary(
     if (!facts.includes(fact)) facts.push(fact);
   };
 
-  // ─── Style ───
   if (input.constraintPreset !== baseline.constraintPreset) {
     push(`Props: ${STYLE_AXIS_LABELS[input.constraintPreset]}`);
   }

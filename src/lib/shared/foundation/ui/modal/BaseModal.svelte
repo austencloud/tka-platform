@@ -22,13 +22,11 @@
   import { FocusRestore, focusFirstOrContainer } from "./helpers/focus-restore";
   import "./modal-tokens.css";
 
-  // ===== Types =====
   type CloseReason = "backdrop" | "escape" | "programmatic" | "button";
   type ModalSize = "sm" | "md" | "lg" | "xl" | "full" | "fit" | "module-grid";
   type ModalPosition = "center" | "top";
   type ModalAnimation = "pop" | "slide" | "none";
 
-  // ===== Props =====
   interface Props {
     // Control
     open: boolean;
@@ -75,7 +73,6 @@
     footer,
   }: Props = $props();
 
-  // ===== State =====
   let dialogElement = $state<HTMLDialogElement | null>(null);
   let shouldRender = $state(false);
   let hasEntered = $state(false);
@@ -84,7 +81,6 @@
   let modalId = $state(generateModalId());
   let exitTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // ===== Helpers =====
   let focusRestore: FocusRestore | null = null;
   let handlersInitialized = false;
 
@@ -94,7 +90,6 @@
     focusRestore = new FocusRestore({ enabled: restoreFocus });
   }
 
-  // ===== Close Handler =====
   function closeModal(reason: CloseReason) {
     if (!open) return;
 
@@ -105,7 +100,6 @@
     onclose?.(reason);
   }
 
-  // ===== Native Dialog Event Handlers =====
   function handleDialogClose(event: Event) {
     // Native dialog was closed (e.g., via form[method="dialog"])
     closeModal("programmatic");
@@ -147,7 +141,6 @@
     }
   }
 
-  // ===== State Change Effect =====
   $effect(() => {
     const currentOpen = open;
     const previouslyOpen = untrack(() => wasOpen);
@@ -220,7 +213,6 @@
     focusRestore?.setEnabled(restoreFocus);
   });
 
-  // ===== Cleanup on unmount =====
   onMount(() => {
     return () => {
       if (exitTimer !== null) {

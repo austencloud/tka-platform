@@ -51,9 +51,6 @@ export class ConversationManager {
     });
   }
 
-  // ============================================================================
-  // PRIVATE HELPERS
-  // ============================================================================
 
   private getCurrentUserId(): string {
     if (userPreviewState.isActive && userPreviewState.data.profile) {

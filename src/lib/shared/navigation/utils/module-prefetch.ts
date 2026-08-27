@@ -83,7 +83,6 @@ function prefetchModule(moduleId: string): void {
   const modulePath = MODULE_PATHS[moduleId];
   if (!modulePath) return;
 
-  // Create modulepreload link
   const link = document.createElement("link");
   link.rel = "modulepreload";
   link.href = modulePath;

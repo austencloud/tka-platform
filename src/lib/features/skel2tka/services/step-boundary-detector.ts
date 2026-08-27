@@ -60,7 +60,6 @@ function groupByPosition(
       red === currentGroup?.redLocation;
 
     if (!samePosition) {
-      // Start a new group
       currentGroup = {
         frames: [frame],
         blueLocation: blue,

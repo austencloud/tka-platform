@@ -1,4 +1,3 @@
-// --- From ExportOrchestrator ---
 /**
  * ExportOrchestrator
  *
@@ -25,7 +24,6 @@ export interface AnimationExportDependencies {
   animationState: AnimationPanelState;
 }
 
-// --- From ExportUrlManager ---
 /**
  * ExportUrlManager
  *

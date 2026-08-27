@@ -104,7 +104,6 @@ export function swipeGesture(
     state.isSwiping = false;
   }
 
-  // Add event listeners
   node.addEventListener("touchstart", handleTouchStart, { passive: true });
   node.addEventListener("touchmove", handleTouchMove, { passive: false });
   node.addEventListener("touchend", handleTouchEnd, { passive: true });

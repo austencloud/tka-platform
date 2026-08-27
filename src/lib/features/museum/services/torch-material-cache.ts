@@ -120,9 +120,7 @@ const CONE_FRAGMENT = /* glsl */ `
   }
 `;
 
-// ---------------------------------------------------------------------------
 // Module-level template materials (compiled once per page load)
-// ---------------------------------------------------------------------------
 
 let templateFlame: ShaderMaterial | null = null;
 let templateCone: ShaderMaterial | null = null;

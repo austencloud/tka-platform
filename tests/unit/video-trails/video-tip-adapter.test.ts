@@ -1,4 +1,3 @@
-// tests/unit/video-trails/video-tip-adapter.test.ts
 
 import { describe, it, expect, beforeEach } from "vitest";
 import { VideoTipAdapter } from "$lib/features/video/video-trails/services/video-tip-adapter";

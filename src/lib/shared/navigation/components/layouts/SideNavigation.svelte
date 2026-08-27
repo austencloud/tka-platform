@@ -134,9 +134,6 @@
     pointer-events: none;
   }
 
-  /* ============================================================================
-     SECTIONS CONTAINER
-     ============================================================================ */
   .sections {
     display: flex;
     flex-direction: column;
@@ -165,9 +162,6 @@
     pointer-events: none;
   }
 
-  /* ============================================================================
-     BUTTON SIZING FOR SIDE LAYOUT
-     ============================================================================ */
   .side-navigation :global(.nav-button.section) {
     padding: 8px;
     min-width: var(--min-touch-target);
@@ -214,9 +208,6 @@
     display: none !important;
   }
 
-  /* ============================================================================
-     ACCESSIBILITY
-     ============================================================================ */
   /* High contrast mode */
   @media (prefers-contrast: high) {
     .side-navigation {

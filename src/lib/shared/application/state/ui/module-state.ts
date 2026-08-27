@@ -56,7 +56,6 @@ function syncBothStateSystems(moduleId: ModuleId, targetTab?: string): void {
  * Uses the feature flag service for role-based access control
  */
 function isModuleAccessible(moduleId: ModuleId): boolean {
-  // Use the feature flag service for access control
   // This checks the user's role against the module's minimum required role
   return featureFlagService.canAccessModule(moduleId);
 }

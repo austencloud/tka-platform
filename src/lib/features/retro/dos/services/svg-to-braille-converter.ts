@@ -17,9 +17,6 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import type { IDirectRenderer } from "$lib/shared/render/services/IDirectRenderer";
 import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
 
-// ============================================================================
-// BRAILLE ENCODING
-// ============================================================================
 
 const BRAILLE_OFFSET = 0x2800;
 
@@ -31,7 +28,6 @@ const PIXEL_MAP = [
 	[0x40, 0x80], // row 3
 ];
 
-// ============================================================================
 // COLOR DETECTION
 //
 // The Canvas2DDirectRenderer uses these colors:
@@ -43,7 +39,6 @@ const PIXEL_MAP = [
 // We classify pixels by comparing color channels. A pixel is "blue" if
 // B channel dominates, "red" if R channel dominates, and "structural"
 // if all channels are roughly equal (gray/white).
-// ============================================================================
 
 const COLOR_BLUE = 1;
 const COLOR_RED = 2;
@@ -71,9 +66,7 @@ function classifyPixel(r: number, g: number, b: number, a: number): number {
 	return COLOR_STRUCTURAL;
 }
 
-// ============================================================================
 // CSS CLASSES (matching DOS terminal)
-// ============================================================================
 
 const CSS_BLUE = "dos-blue";
 const CSS_RED = "dos-red";
@@ -88,9 +81,6 @@ function _colorIdToCss(colorId: number): string {
 	}
 }
 
-// ============================================================================
-// CONVERTER
-// ============================================================================
 
 /**
  * Braille character grid dimensions.

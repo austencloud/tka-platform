@@ -89,7 +89,6 @@
 
   .play-btn:hover { filter: brightness(1.1); }
 
-  /* --- Styled seek bar --- */
 
   .seek-bar {
     -webkit-appearance: none;
@@ -130,7 +129,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* --- Speed pill buttons --- */
 
   .speed-pills {
     display: flex;

@@ -45,9 +45,6 @@ export interface ForkAttribution {
  * Stored at: users/{userId}/sequences/{sequenceId}
  */
 export interface LibrarySequence extends SequenceData {
-  // ============================================================
-  // OWNERSHIP & ATTRIBUTION
-  // ============================================================
 
   /** User ID of the library owner */
   readonly ownerId: string;
@@ -58,9 +55,6 @@ export interface LibrarySequence extends SequenceData {
   /** Fork attribution (only present if source === "forked") */
   readonly forkAttribution?: ForkAttribution;
 
-  // ============================================================
-  // VISIBILITY & SHARING
-  // ============================================================
 
   /** Current visibility state (defaults to "public") */
   readonly visibility: SequenceVisibility;
@@ -71,9 +65,6 @@ export interface LibrarySequence extends SequenceData {
   /** Whether sequence is featured (admin-controlled) */
   readonly isFeatured?: boolean;
 
-  // ============================================================
-  // ORGANIZATION
-  // ============================================================
 
   /** Collection IDs this sequence belongs to */
   readonly collectionIds: readonly string[];
@@ -87,9 +78,7 @@ export interface LibrarySequence extends SequenceData {
   /** User's personal notes about this sequence */
   readonly notes?: string;
 
-  // ============================================================
   // ENGAGEMENT METRICS (denormalized for sorting/display)
-  // ============================================================
 
   /** Number of times this has been forked by others */
   readonly forkCount: number;
@@ -100,9 +89,6 @@ export interface LibrarySequence extends SequenceData {
   /** Number of users who starred/liked this */
   readonly starCount: number;
 
-  // ============================================================
-  // SYNC & CONFLICT DETECTION
-  // ============================================================
 
   /**
    * Monotonically increasing version counter for conflict detection.
@@ -132,9 +118,6 @@ export interface LibrarySequence extends SequenceData {
    */
   readonly contentHashVersion?: number;
 
-  // ============================================================
-  // SOFT DELETE (RECYCLE BIN)
-  // ============================================================
 
   /** When the sequence was soft-deleted. Null means not deleted. */
   readonly deletedAt?: Date | null;
@@ -142,9 +125,6 @@ export interface LibrarySequence extends SequenceData {
   /** Whether the sequence is in the recycle bin */
   readonly isDeleted?: boolean;
 
-  // ============================================================
-  // TIMESTAMPS
-  // ============================================================
 
   /**
    * Original creation date - when this exact sequence was first saved anywhere.
@@ -180,9 +160,6 @@ export interface CreateLibrarySequenceOptions {
   birthday?: Date;
 }
 
-/**
- * Create a new LibrarySequence from SequenceData
- */
 export function createLibrarySequence(
   sequenceData: SequenceData,
   ownerId: string,
@@ -209,9 +186,6 @@ export function createLibrarySequence(
   };
 }
 
-/**
- * Update a LibrarySequence immutably
- */
 export function updateLibrarySequence(
   sequence: LibrarySequence,
   updates: Partial<LibrarySequence>

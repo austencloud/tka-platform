@@ -261,7 +261,6 @@ Props:
       !isColorHidden(turnColors.bottom)
   );
 
-  // Get image paths
   const topImagePath = $derived(getTurnNumberImagePath(parsedTurns.top));
   const bottomImagePath = $derived(getTurnNumberImagePath(parsedTurns.bottom));
 

@@ -65,7 +65,6 @@
     justify-content: center;
   }
 
-  /* --- Bar variant --- */
 
   .centered-message {
     display: flex;
@@ -73,7 +72,6 @@
     justify-content: center;
   }
 
-  /* --- Card variant --- */
 
   .centered-card {
     display: flex;
@@ -86,7 +84,6 @@
     border-radius: 16px;
   }
 
-  /* --- Skeleton variant --- */
 
   .skeleton-layout {
     width: 100%;
@@ -103,7 +100,6 @@
     gap: 10px;
   }
 
-  /* --- Message text --- */
 
   .message-text {
     font-size: var(--font-size-sm, 14px);

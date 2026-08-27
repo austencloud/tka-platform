@@ -50,7 +50,6 @@ function twoOctaveNoise(px: number, py: number, seed: number): number {
   );
 }
 
-// --- Hex color parsing ---
 
 function parseHex(hex: string): [number, number, number] {
   const s = hex.trim().replace(/^#/, "");

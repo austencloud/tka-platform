@@ -4,9 +4,7 @@
  * Defines types, interfaces, and display configurations for the user reporting system.
  */
 
-// ============================================================================
 // Core Types
-// ============================================================================
 
 export type ReportCategory =
 	| 'harassment'
@@ -24,9 +22,7 @@ export type ReportResolution =
 	| 'content_removed'
 	| 'escalated';
 
-// ============================================================================
 // Interfaces
-// ============================================================================
 
 export interface UserReport {
 	id: string;
@@ -83,9 +79,7 @@ export interface PaginatedReportsResult {
 	lastDoc: unknown; // Firestore DocumentSnapshot for cursor pagination
 }
 
-// ============================================================================
 // Display Configuration
-// ============================================================================
 
 export interface CategoryConfig {
 	label: string;
@@ -185,9 +179,7 @@ export const REPORT_RESOLUTIONS: Record<ReportResolution, ResolutionConfig> = {
 	}
 };
 
-// ============================================================================
 // Utility Functions
-// ============================================================================
 
 export function getCategoryConfig(category: ReportCategory): CategoryConfig {
 	return REPORT_CATEGORIES[category];

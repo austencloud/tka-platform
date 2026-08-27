@@ -221,7 +221,6 @@
     color: var(--theme-text-muted, #9aa6b8);
   }
 
-  /* ── Chooser tiles ─────────────────────────────────────────────── */
   /* Phone: one column, same rhythm as the old stacked flow. */
   .hero-grid {
     display: grid;

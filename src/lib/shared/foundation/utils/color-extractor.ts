@@ -155,7 +155,6 @@ function sampleImageColors(img: HTMLImageElement): string {
     const brightness = (r + g + b) / 3;
     if (brightness < 30 || brightness > 225) continue;
 
-    // Calculate saturation
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
     const saturation = max === 0 ? 0 : (max - min) / max;

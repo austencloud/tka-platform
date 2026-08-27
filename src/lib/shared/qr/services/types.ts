@@ -1,7 +1,6 @@
 import type { AuthoredHand } from "$lib/shared/foundation/domain/models/authored-hand";
 import type { SoloPropData } from "$lib/shared/foundation/domain/models/solo-prop-data";
 
-// --- From CompositionalEncoder ---
 export const LOOP_TYPE_TAGS: Record<string, string> = {
   rotated: "sr",
   mirrored: "sm",
@@ -32,7 +31,6 @@ export interface ICompositionalDecoder {
   isRecipeEncoded(encoded: string): boolean;
 }
 
-// --- From QRCodeGenerator ---
 export type QRDotsType =
   | "square"
   | "dots"
@@ -150,7 +148,6 @@ export const DEFAULT_QR_STYLE: QRCodeStyle = {
   errorCorrectionLevel: "M",
 };
 
-// --- From ShortCodeManager ---
 /** Shape of a short-code record from Firestore or the static snapshot. */
 export interface ShortCodeData {
   sequence: string;

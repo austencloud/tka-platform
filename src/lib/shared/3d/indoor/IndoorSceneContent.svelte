@@ -43,9 +43,6 @@
     getCeilingMaterial,
   } from "./domain/material-registry";
 
-  // ============================================================================
-  // PROPS
-  // ============================================================================
 
   interface Props {
     room: SolvedRoom;
@@ -58,9 +55,6 @@
 
   const props: Props = $props();
 
-  // ============================================================================
-  // STATE
-  // ============================================================================
 
   let physicsState: PhysicsWorldState | null = null;
   let playerState: PlayerControllerState | null = null;
@@ -133,9 +127,6 @@
     },
   };
 
-  // ============================================================================
-  // PHYSICS INITIALIZATION
-  // ============================================================================
 
   onMount(async () => {
     // 1. Initialize physics world
@@ -178,9 +169,7 @@
     isInitialized = true;
   });
 
-  // ============================================================================
   // FRAME LOOP (physics only - UCC handles its own camera/input loop)
-  // ============================================================================
 
   useTask((delta) => {
     if (!isInitialized || !physicsState?.world || isDisposed) return;
@@ -192,9 +181,6 @@
     props.onPositionChange?.(playerPosition);
   });
 
-  // ============================================================================
-  // CLEANUP
-  // ============================================================================
 
   onDestroy(() => {
     isDisposed = true;
@@ -208,9 +194,6 @@
     }
   });
 
-  // ============================================================================
-  // MATERIAL HELPERS
-  // ============================================================================
 
   const wallMats = $derived(
     props.room.walls.map((w) => getWallMaterial(w.materialId)),

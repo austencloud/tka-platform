@@ -71,9 +71,6 @@ export class MirroredRotatedInvertedSwappedLOOPExecutor implements ILOOPExecutor
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import { strictRotatedLOOPExecutor } from "./strict-rotated-loop-executor";
 import { mirroredSwappedInvertedLOOPExecutor } from "./mirrored-swapped-inverted-loop-executor";
 

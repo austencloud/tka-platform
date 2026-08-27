@@ -15,9 +15,6 @@ import {
   type ReflectionAxis,
 } from "./position-maps/strict-loop-position-maps.js";
 
-// ============================================================
-// DOMAIN
-// ============================================================
 
 /**
  * The space in which a LOOP component operates.
@@ -28,9 +25,6 @@ import {
  */
 export type LOOPDomain = "location" | "orientation" | "both";
 
-// ============================================================
-// COMPONENTS
-// ============================================================
 
 /**
  * Canonical LOOP component primitives.
@@ -48,7 +42,6 @@ export enum LOOPComponent {
   INVERTED = "inverted", // PRO ↔ ANTI motion direction flip
   REWOUND = "rewound", // Time reversal (plays backward)
 
-  // --- Reserved orientation primitives ---
   // Detected by the engine but NEVER surfaced to UI consumers.
   // Use RESERVED_ORIENTATION_PRIMITIVES to filter these out.
   ZONE_HOLD_INVERT = "zone_hold_invert", // all steps stay in the same radial zone; orientations invert in-zone
@@ -67,9 +60,6 @@ export const RESERVED_ORIENTATION_PRIMITIVES = new Set<LOOPComponent>([
   LOOPComponent.ZONE_CROSS,
 ]);
 
-// ============================================================
-// RUNTIME TYPES
-// ============================================================
 
 /** How a component is applied: expand multiplies length by `period`;
  *  overlay applies in place over the final sequence (x1 length).
@@ -111,9 +101,7 @@ export interface LOOPSpec {
   readonly red?: PropLOOPSpec;
 }
 
-// ============================================================
 // WIRE FORMAT TYPES (JSON / Firestore safe)
-// ============================================================
 
 /**
  * Wire form of a single component spec (plain object, JSON-serializable).
@@ -142,9 +130,7 @@ export interface LOOPSpecWire {
   red?: PropLOOPSpecWire;
 }
 
-// ============================================================
 // WIRE ↔ RUNTIME CONVERTERS
-// ============================================================
 
 function propSpecToWire(spec: PropLOOPSpec): PropLOOPSpecWire {
   const wire: PropLOOPSpecWire = {};
@@ -200,9 +186,6 @@ export function loopSpecFromWire(wire: LOOPSpecWire): LOOPSpec {
   };
 }
 
-// ============================================================
-// PERIOD CONSTANTS & UTILITIES
-// ============================================================
 
 /** Two-pass cycle (180° rotation or any halved pattern). */
 export const PERIOD_HALVED = 2;
@@ -253,9 +236,6 @@ export function loopSpecPeriod(spec: LOOPSpec): number {
   return periods.reduce(lcm, 1);
 }
 
-// ============================================================
-// HELPER CONSTRUCTORS
-// ============================================================
 
 /**
  * Build a PropLOOPSpec with a single active component at the given period.
@@ -386,9 +366,6 @@ export function loopSpecWithReflectionAxis(
  */
 export const EMPTY_PROP_SPEC: PropLOOPSpec = { components: new Map() };
 
-// ============================================================
-// LEGACY CONVERTER
-// ============================================================
 
 /**
  * Convert a legacy flat LOOPType string + integer period to a compositional LOOPSpec.
@@ -458,9 +435,6 @@ export function loopSpecFromLegacyRhythm(
   return symmetricSpec(components);
 }
 
-// ============================================================
-// VALIDATION
-// ============================================================
 
 /**
  * A validation error from validateLOOPSpec.

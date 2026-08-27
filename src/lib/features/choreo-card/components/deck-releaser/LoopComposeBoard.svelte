@@ -318,7 +318,6 @@
     gap: 8px;
   }
 
-  /* ── Live recipe ── */
   .recipe {
     display: flex;
     flex-direction: column;
@@ -378,7 +377,6 @@
     letter-spacing: 0.05em;
   }
 
-  /* ── Customize disclosure body ── */
   .customize {
     display: flex;
     flex-direction: column;

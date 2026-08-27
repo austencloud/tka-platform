@@ -10,7 +10,6 @@ export interface ShareOptions {
   format: "PNG" | "JPEG" | "WebP";
   quality: number; // 0-1 for JPEG/WebP
 
-  // === CONTENT OPTIONS ===
   includeStartPosition: boolean;
   addStepNumbers: boolean;
   addUserInfo: boolean;
@@ -18,13 +17,11 @@ export interface ShareOptions {
   addDifficultyLevel: boolean;
   customName?: string; // Optional custom name for header
 
-  // === VISUAL OPTIONS ===
   stepSize: number; // Size of each beat in pixels
   margin: number; // Margin around the sequence
   backgroundColor: string;
   darkMode: boolean; // Dark mode toggle (affects grid, text colors)
 
-  // === FOOTER ===
   notes: string;
 
   showNotes?: boolean;

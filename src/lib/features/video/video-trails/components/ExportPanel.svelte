@@ -167,7 +167,6 @@
     gap: 4px;
   }
 
-  /* --- Custom select dropdown --- */
 
   .select-row {
     display: flex;
@@ -237,7 +236,6 @@
     color: var(--theme-accent, #f43f5e);
   }
 
-  /* --- Action buttons --- */
 
   .export-btn,
   .download-btn {

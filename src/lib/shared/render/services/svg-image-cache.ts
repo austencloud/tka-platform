@@ -52,7 +52,6 @@ export class SvgImageCache {
       return pending;
     }
 
-    // Start loading
     const loadPromise = this.svgToImage(svgString);
     this.pendingLoads.set(key, loadPromise);
 
@@ -65,9 +64,6 @@ export class SvgImageCache {
     }
   }
 
-  /**
-   * Get or create an image from an SVG URL
-   */
   async getImageFromUrl(url: string): Promise<DrawableImage> {
     // Check cache first
     const cached = this.cache.get(url);
@@ -81,7 +77,6 @@ export class SvgImageCache {
       return pending;
     }
 
-    // Start loading
     const loadPromise = this.loadImageFromUrl(url);
     this.pendingLoads.set(url, loadPromise);
 

@@ -32,7 +32,6 @@ export function getStaticPictographPath(key: PictographFileKey): string {
   // URL-encode the letter for safety (handles Σ-, Φ-, etc.)
   const safeLetter = encodeURIComponent(letter);
 
-  // Build filename
   const filename = propType ? `${variation}-${propType}.png` : `${variation}.png`;
 
   return `/pictographs/${gridMode}/${safeLetter}/${filename}`;

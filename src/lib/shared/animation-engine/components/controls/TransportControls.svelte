@@ -281,9 +281,6 @@
     font-size: var(--font-size-lg);
   }
 
-  /* ===========================
-     RESPONSIVE
-     =========================== */
 
   @media (max-width: 480px) {
     .transport-controls {

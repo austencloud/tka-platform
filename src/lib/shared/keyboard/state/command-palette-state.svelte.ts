@@ -8,9 +8,6 @@
 
 import type { CommandPaletteItem } from "../domain/types/keyboard-types";
 
-/**
- * Create command palette state
- */
 export function createCommandPaletteState() {
   // Search query
   let query = $state("");

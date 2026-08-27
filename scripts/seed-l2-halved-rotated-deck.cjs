@@ -28,9 +28,7 @@ const MAX_TURNS = 1;
 const DEFAULT_STARTS = ["alpha1", "beta5", "gamma11"];
 const DECK_ID = "l2-halved-rotated-4beat-t1";
 
-// ============================================================================
 // CSV Loading
-// ============================================================================
 
 const CSV_PATH = path.join(
   __dirname, "..", "static", "data", "pictographs", "DiamondPictographDataframe.csv"

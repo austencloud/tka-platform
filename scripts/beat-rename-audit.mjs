@@ -26,9 +26,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { glob } from "node:fs/promises";
 
-// ---------------------------------------------------------------------------
 // Rule 1 — File-path KEEP zones (musical / BPM / audio / video)
-// ---------------------------------------------------------------------------
 const KEEP_PATHS = [
   "src/lib/features/compose/",
   "src/lib/features/video/",
@@ -54,9 +52,7 @@ const NAMED_RENAME_EXCEPTIONS = [
   "src/lib/features/compose/services/contracts/IAnimationPlaybackControllerFactory.ts",
 ];
 
-// ---------------------------------------------------------------------------
 // Rule 2 — File-path RENAME zones (sequence domain)
-// ---------------------------------------------------------------------------
 const RENAME_PATHS = [
   "packages/sequence-engine/",
   "packages/tka-types/",
@@ -86,9 +82,7 @@ const RENAME_PATHS = [
   "src/lib/shared/animation-engine/",
 ];
 
-// ---------------------------------------------------------------------------
 // Rule 3 — Identifier-name heuristics
-// ---------------------------------------------------------------------------
 const RENAME_IDENT_TRIGGERS = [
   "beatIndex",
   "beatNumber",
@@ -134,9 +128,7 @@ const KEEP_IDENT_TRIGGERS = [
   "beatSubdivision",
 ];
 
-// ---------------------------------------------------------------------------
 // Ambiguity Catalog — spec Section 6
-// ---------------------------------------------------------------------------
 // Each entry describes an identifier pattern and its default action per spec.
 // "default" of REVIEW means always flag; "default" of RENAME/KEEP means auto
 // after the catalog-documented per-site verification.
@@ -234,9 +226,7 @@ const AMBIGUITY_CATALOG = [
   },
 ];
 
-// ---------------------------------------------------------------------------
 // Identifier-token regex
-// ---------------------------------------------------------------------------
 // Matches any identifier containing 'beat' or 'Beat' (case-sensitive on the
 // leading 'B'/'b' to avoid matching inside user-facing strings like
 // "Beats Per Minute" only when they are wrapped in a quoted literal).

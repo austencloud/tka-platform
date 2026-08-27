@@ -153,9 +153,6 @@ export interface ReviewResult {
   autoApprove: boolean;
 }
 
-/**
- * Create a new session from messages
- */
 export function createTikaSession(
   userId: string,
   messages: UIMessage[],

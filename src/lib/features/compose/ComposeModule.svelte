@@ -24,7 +24,6 @@
   import { arrangeGridState } from "./tabs/arrange/state/arrange-grid-state.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 
-  // Import tab components
   import ArrangeTab from "./tabs/arrange/ArrangeTab.svelte";
   import BrowseTab from "./tabs/browse/CompositionBrowseTab.svelte";
   import TimelinePanel from "./timeline/components/TimelinePanel.svelte";
@@ -62,7 +61,6 @@
     // TODO: Sync composition ID to URL when viewing saved compositions
   });
 
-  // Initialize on mount
   onMount(() => {
     // Resolve services
     try {

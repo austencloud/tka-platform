@@ -116,7 +116,6 @@ import { getSequenceAnimationOrchestrator } from "$lib/shared/animation-engine/g
     const fullStepRange = totalSteps + 1; // +1 for start position
     const beat = sourcePosition * fullStepRange;
 
-    // Handle looping
     if (activeClip.loop) {
       return beat % fullStepRange;
     }

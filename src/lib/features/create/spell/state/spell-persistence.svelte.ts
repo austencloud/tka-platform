@@ -17,9 +17,6 @@ import { DEFAULT_SPELL_PREFERENCES } from "$lib/shared/create/domain/spell-const
 import { debounce } from "$lib/shared/utils/debounce";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
-// ============================================================================
-// VERSIONING
-// ============================================================================
 
 /**
  * Current schema version
@@ -41,9 +38,6 @@ const LEGACY_KEYS = [
   "tka_spell_current_sequence",
 ];
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 /**
  * Spell Tab Persisted State
@@ -59,9 +53,6 @@ export interface SpellPersistedState {
   wizardPhase?: "preferences" | "generating" | "results";
 }
 
-// ============================================================================
-// VALIDATION
-// ============================================================================
 
 /**
  * Validate preferences object
@@ -71,9 +62,6 @@ function isValidPreferences(data: unknown): data is SpellPreferences {
   return true;
 }
 
-// ============================================================================
-// MIGRATION
-// ============================================================================
 
 /**
  * Migrate data from old schema versions
@@ -93,9 +81,6 @@ function migrateData(version: number): void {
   }
 }
 
-// ============================================================================
-// SAVE/LOAD
-// ============================================================================
 
 // Saving happens silently in the background on every change, so when the
 // browser's storage is full the user would keep typing assuming their word
@@ -175,7 +160,6 @@ export function loadSpellState(): SpellPersistedState {
   if (!browser) return defaultState;
 
   try {
-    // Check version
     const versionStr = localStorage.getItem(STORAGE_KEYS.VERSION);
     const version = versionStr ? parseInt(versionStr, 10) : 0;
 

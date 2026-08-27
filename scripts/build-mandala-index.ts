@@ -1,4 +1,3 @@
-// scripts/build-mandala-index.ts
 // Walks catalog decks, computes mandala fingerprints, writes static/data/mandala-index.json.
 // Usage: npx tsx --tsconfig scripts/tsconfig.json scripts/build-mandala-index.ts [deckIdSubstring]
 import admin from "firebase-admin";

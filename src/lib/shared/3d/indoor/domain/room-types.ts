@@ -143,7 +143,6 @@ export interface ColliderDefinition {
 	size: [number, number, number];
 }
 
-// ── Constants ──
 
 export const GRID_CELL = 0.5;
 

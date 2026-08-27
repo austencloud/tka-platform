@@ -34,7 +34,6 @@
   import type { PreferenceItem } from "$lib/features/feedback/components/notifications/preference-item";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
-  // --- Types ---
 
   interface Overview {
     visitors: [number, number, number]; // today, 7d, 30d
@@ -56,7 +55,6 @@
     displayName: string | null;
   }
 
-  // --- State ---
 
   let loading = $state(true);
   let loadError = $state<string | null>(null);
@@ -80,7 +78,6 @@
 
   const nameCache = new Map<string, string | null>();
 
-  // --- Data fetching ---
 
   async function pulseQuery(
     type: string,

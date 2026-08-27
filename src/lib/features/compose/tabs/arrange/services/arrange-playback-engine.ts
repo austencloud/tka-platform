@@ -109,7 +109,6 @@ export class ArrangePlaybackEngine {
     this.totalStepsGetter = null;
   }
 
-  // ---------------------------------------------------------------------------
 
   private startContinuousLoop(): void {
     const tick = (now: number) => {

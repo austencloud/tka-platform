@@ -158,7 +158,6 @@
     }
   }
 
-  // Add entry
   function startAdd(cat: ChangelogCategory) {
     addingToCategory = cat;
     newEntryText = "";
@@ -180,7 +179,6 @@
     onVersionUpdated?.();
   }
 
-  // Save/delete
   async function handleSave(cat: ChangelogCategory, idx: number, text: string) {
     if (!version) return;
     const entries = version.changelogEntries || [];

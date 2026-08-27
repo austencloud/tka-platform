@@ -1,5 +1,4 @@
 
-// --- From IEffectPointsPersister ---
 /**
  * Shared effect point persistence.
  *

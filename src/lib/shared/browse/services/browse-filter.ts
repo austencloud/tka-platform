@@ -19,9 +19,7 @@ import { resolveBrowseDate } from "$lib/shared/browse/services/browse-date";
 import { deriveTnDFromPictograph } from "$lib/shared/pictograph/shared/domain/utils/tnd-deriver";
 import { TnDMode } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
-// ---------------------------------------------------------------------------
 // Collection membership
-// ---------------------------------------------------------------------------
 // COLLECTION filters need a collection's member ids — feature data this pure
 // module must not import. collections-state registers a resolver at startup;
 // reading it inside the engine's $derived pipeline makes membership changes
@@ -141,9 +139,6 @@ export function getFilterOptions(
   }
 }
 
-// ============================================================================
-// Filter Functions
-// ============================================================================
 
 function filterByStartingLetter(
   sequences: SequenceData[],
@@ -271,7 +266,6 @@ function filterByDifficulty(
     return sequences;
   }
 
-  // Convert filter value to number
   const targetLevel =
     typeof filterValue === "number"
       ? filterValue
@@ -605,9 +599,7 @@ function filterByLOOPComponent(
   );
 }
 
-// ============================================================================
 // TnD family filtering
-// ============================================================================
 
 /** TnDMode → familyId (the TND_ELEMENTS ids). Mirrors deck-composer's map —
  * kept local so shared/browse doesn't import a feature-layer service. */
@@ -658,9 +650,7 @@ function filterByTnDFamily(
   );
 }
 
-// ============================================================================
 // Max turn intensity filtering (ceiling)
-// ============================================================================
 
 // Max numeric turn is pure over immutable steps — memoize per sequence object,
 // same rationale as the TnD-family cache (counts recompute far more often than
@@ -716,9 +706,7 @@ function filterByReversalPattern(
   );
 }
 
-// ============================================================================
 // Helper Functions
-// ============================================================================
 
 function getUniqueAuthors(sequences: SequenceData[]): string[] {
   const authors = new Set<string>();

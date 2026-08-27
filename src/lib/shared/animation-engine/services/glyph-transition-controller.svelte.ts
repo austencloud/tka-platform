@@ -113,7 +113,6 @@ export class GlyphTransitionController {
       clearTimeout(this.newLetterTimeoutId);
       this.newLetterTimeoutId = null;
     }
-    // Reset state
     this.state.displayedLetter = null;
     this.state.displayedTurnsTuple = "(s, 0, 0)";
     this.state.displayedStepNumber = null;

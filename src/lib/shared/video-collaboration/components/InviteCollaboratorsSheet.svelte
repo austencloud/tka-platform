@@ -89,7 +89,6 @@
       );
       hapticService?.trigger("success");
 
-      // Remove from search results
       searchResults = searchResults.filter((u: EnhancedUserProfile) => u.id !== user.id);
 
       onInviteSent?.();

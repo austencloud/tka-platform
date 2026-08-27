@@ -306,7 +306,6 @@
     font-size: 0.8rem;
   }
 
-  /* ── Image strip ── */
   .image-strip {
     --chip-size: 72px;
     display: flex;
@@ -331,7 +330,6 @@
     }
   }
 
-  /* ── Image chip ── */
   .image-chip {
     position: relative;
     flex-shrink: 0;
@@ -367,7 +365,6 @@
     opacity: 0.5;
   }
 
-  /* ── Progress bar ── */
   .chip-progress {
     position: absolute;
     bottom: 0;
@@ -387,7 +384,6 @@
     border-radius: 0 2px 2px 0;
   }
 
-  /* ── Badges ── */
   .chip-badge {
     position: absolute;
     bottom: 5px;
@@ -422,7 +418,6 @@
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
   }
 
-  /* ── Remove button ── */
   .chip-remove {
     position: absolute;
     top: 4px;
@@ -505,7 +500,6 @@
     cursor: not-allowed;
   }
 
-  /* ── Reduced motion ── */
   @media (prefers-reduced-motion: reduce) {
     .chip-progress::after {
       transition: none;

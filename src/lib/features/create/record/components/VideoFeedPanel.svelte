@@ -197,7 +197,6 @@ Features square aspect ratio for consistent layout and settings dialog for camer
 
   // Lifecycle
   onMount(async () => {
-    // Check for camera support
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       error = "Camera access is not supported in this browser.";
       isLoading = false;

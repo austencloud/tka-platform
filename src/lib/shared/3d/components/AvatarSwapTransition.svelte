@@ -34,12 +34,10 @@
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
   import { getPerformerColor } from "../constants/performer-colors";
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // SWITCH THIS TO COMPARE MODES:
   //   "fade" = opacity crossfade (avatar only, props stay)
   //   "pop"  = instant hide + particle burst
   const MODE: "fade" | "pop" = "pop";
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   interface Props {
     performer: AvatarInstanceState;
@@ -77,7 +75,6 @@
     void prepareAvatar(performer.avatarModelId).catch(() => {});
   });
 
-  // ── Particles ──
   const pos: Vector3[] = [];
   const vel: Vector3[] = [];
   const life = new Float32Array(N);

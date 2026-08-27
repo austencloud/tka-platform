@@ -105,9 +105,6 @@ interface AdminDb {
   runTransaction<T>(fn: (t: AdminTransaction) => Promise<T>): Promise<T>;
 }
 
-// ---------------------------------------------------------------------------
-// CLI
-// ---------------------------------------------------------------------------
 
 const argv = process.argv.slice(2);
 const APPLY = argv.includes("--apply");
@@ -129,9 +126,7 @@ if (APPLY && process.env.TKA_ADMIN !== "1") {
   process.exit(1);
 }
 
-// ---------------------------------------------------------------------------
 // Classification model
-// ---------------------------------------------------------------------------
 
 type Classification =
   | "IN_SYNC"
@@ -180,9 +175,7 @@ function timestampMillis(value: unknown): number | null {
   return null;
 }
 
-// ---------------------------------------------------------------------------
 // Context preparation (Admin-SDK replica of the runtime preparer)
-// ---------------------------------------------------------------------------
 
 const profileCache = new Map<string, { displayName: string; avatarUrl?: string }>();
 const tagNameCache = new Map<string, Map<string, string>>();

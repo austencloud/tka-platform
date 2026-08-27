@@ -14,14 +14,12 @@ import {
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
-// ───────────────────────────────────────────────────────────────────────────
 // Seed classes per §4.2: each base seed's grid-correct family (diamond | box).
 // Mirror-half seeds share a letter multiset (MP/PM, DJ/JD, …). When both halves
 // collapse onto the SAME family in a grid, only the canonical (word-sorts-first)
 // seed is kept for that grid — diamond quarter-opp keeps MP/NQ/OR (not PM/QN/RO),
 // box quarter-opp keeps DJ/EK/FL (not JD/KE/LF). The dropped half still appears in
 // the OTHER family it lands in per grid (PM → box split-opp; JD → diamond split-opp).
-// ───────────────────────────────────────────────────────────────────────────
 function seedClass(
   seedId: string,
   diamond: string | null,
@@ -63,9 +61,7 @@ const seedsIn = (familyId: string, grids: ("diamond" | "box")[]): string[] => {
   return (fam?.entries ?? []).map((e) => e.sequenceId).sort();
 };
 
-// ───────────────────────────────────────────────────────────────────────────
 // getTnDFamilyOptions — grid-aware grouping by computed element
-// ───────────────────────────────────────────────────────────────────────────
 describe("getTnDFamilyOptions (grid-aware)", () => {
   it("diamond grouping keeps canonical gamma seeds (MP/NQ/OR), drops mirror PM/QN/RO", () => {
     expect(seedsIn("quarter-opp", ["diamond"])).toEqual(["MP", "NQ", "OR"]);
@@ -117,9 +113,7 @@ describe("getTnDFamilyOptions (grid-aware)", () => {
   });
 });
 
-// ───────────────────────────────────────────────────────────────────────────
 // Family counts per grid selection (§6 test 7)
-// ───────────────────────────────────────────────────────────────────────────
 describe("getTnDFamilyOptions — counts per grid selection", () => {
   it("diamond-only: quarter-opp counts 3 (canonical γ seeds, mirror half deduped)", () => {
     const opts = getTnDFamilyOptions(SEED_CLASSES, ["diamond"]);
@@ -142,9 +136,7 @@ describe("getTnDFamilyOptions — counts per grid selection", () => {
   });
 });
 
-// ───────────────────────────────────────────────────────────────────────────
 // buildTnDCards — emits grid-correct content (§6 tests 4 & 5)
-// ───────────────────────────────────────────────────────────────────────────
 describe("buildTnDCards — box quarter-opp content (§6 test 4)", () => {
   it("Box + Quarter-Opp emits canonical DJ/EK/FL, no mirror JD/KE/LF, no MP/NQ/OR", () => {
     const families = getTnDFamilyOptions(SEED_CLASSES, ["box"]);
@@ -183,9 +175,7 @@ describe("buildTnDCards — diamond canonical gamma half (§6 test 6 regression 
   });
 });
 
-// ───────────────────────────────────────────────────────────────────────────
 // buildTnDCards — cartesian enumeration (preserved behavior)
-// ───────────────────────────────────────────────────────────────────────────
 describe("buildTnDCards — cartesian over patterns × registers", () => {
   it("emits seed × pattern × register cards with variation.turnPattern", () => {
     const families = getTnDFamilyOptions(SEED_CLASSES, ["box"]); // box tog-opp: MP/NQ/OR
@@ -227,9 +217,7 @@ describe("getTnDTurnPatternOptions (TURN_VALUES²)", () => {
   });
 });
 
-// ───────────────────────────────────────────────────────────────────────────
 // classifyTnDSeedForGrid — first rotating step drives the element (diamond)
-// ───────────────────────────────────────────────────────────────────────────
 describe("classifyTnDSeedForGrid", () => {
   function seqWithFirstStep(
     blue: { start: GridLocation; end: GridLocation },

@@ -1443,7 +1443,6 @@
     align-items: flex-start;
   }
 
-  /* ===== Play phase ===== */
   .play-pane {
     height: 100%;
     display: flex;

@@ -139,7 +139,6 @@ export function computeAutoOrbitShot(
   return { eye, target: center };
 }
 
-// ── Choreographer Camera Shots ────────────────────────────────────
 
 /** Elevation angle from horizontal — 36° matches the ideal choreographer sightline. */
 const CHOREO_POLAR_RAD = (36 * Math.PI) / 180;

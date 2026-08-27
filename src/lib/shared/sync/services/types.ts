@@ -2,7 +2,6 @@ import type { SyncedRoomState } from "../domain/sync-types";
 import {  } from "../domain/sync-types";
 import type { SyncMessage } from "../domain/sync-messages";
 
-// --- From IMobileConnectionAdapter ---
 /**
  * IMobileConnectionAdapter
  *
@@ -103,7 +102,6 @@ export const DEFAULT_MOBILE_CONNECTION_CONFIG: MobileConnectionConfig = {
  * Interface for mobile-optimized WebRTC connection handling.
  */
 
-// --- From IMessageBatcher ---
 /**
  * IMessageBatcher
  *
@@ -186,7 +184,6 @@ export interface BatchFlushEvent {
  * Interface for message batching.
  */
 
-// --- From INetworkStatusMonitor ---
 /**
  * INetworkStatusMonitor
  *
@@ -263,7 +260,6 @@ export interface NetworkStatusChangeEvent {
  * Interface for network status monitoring.
  */
 
-// --- From IAdaptiveHeartbeat ---
 /**
  * IAdaptiveHeartbeat
  *
@@ -340,7 +336,6 @@ export interface HeartbeatEvent {
  * Interface for adaptive heartbeat management.
  */
 
-// --- From IStateMerger ---
 /**
  * State Merger Contract
  *
@@ -367,7 +362,6 @@ export interface MergeResult {
  * Interface for CRDT-based state merging.
  */
 
-// --- From ISequenceLocalCache ---
 /**
  * ISequenceLocalCache
  *
@@ -383,7 +377,6 @@ export interface SequenceLocalCacheStats {
   sizeBytes: number;
 }
 
-// --- From IPlaybackPositionCalculator ---
 /**
  * Playback Position Calculator Contract
  *

@@ -146,9 +146,6 @@ export const tkaShowcasePreset: AnimationPreset = {
  */
 export const ANIMATION_PRESETS: AnimationPreset[] = [tkaShowcasePreset];
 
-/**
- * Get a preset by ID
- */
 export function getPresetById(id: string): AnimationPreset | undefined {
   return ANIMATION_PRESETS.find((preset) => preset.id === id);
 }

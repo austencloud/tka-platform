@@ -72,15 +72,12 @@ export class StepComparisonOrchestrator {
     const repeated = checkRepeated(b1Blue, b1Red, b2Blue, b2Red);
     allTransformations.push(...repeated.transformations);
 
-    // Check rotations
     const rotations = checkRotations(b1Blue, b1Red, b2Blue, b2Red);
     allTransformations.push(...rotations.transformations);
 
-    // Check reflections
     const reflections = checkReflections(b1Blue, b1Red, b2Blue, b2Red);
     allTransformations.push(...reflections.transformations);
 
-    // Check swap/invert
     const swapInvert = checkSwapInvert(b1Blue, b1Red, b2Blue, b2Red);
     allTransformations.push(...swapInvert.transformations);
 
@@ -175,8 +172,5 @@ export class StepComparisonOrchestrator {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 
 export const stepComparisonOrchestrator = new StepComparisonOrchestrator();

@@ -67,9 +67,7 @@ export function createSavePanelState(deps: SavePanelDeps) {
 
   const headerTitle = "Save to Library";
 
-  // ---------------------------------------------------------------------------
   // Reactive state
-  // ---------------------------------------------------------------------------
 
   let isOpen = $state(false);
   let isSaving = $state(false);
@@ -100,9 +98,7 @@ export function createSavePanelState(deps: SavePanelDeps) {
   // Exact duplicate
   let isExactDuplicate = $state(false);
 
-  // ---------------------------------------------------------------------------
   // Derived values
-  // ---------------------------------------------------------------------------
 
   const isBottomSheet = $derived(!ctx.layout.shouldUseSideBySideLayout);
 
@@ -201,9 +197,7 @@ export function createSavePanelState(deps: SavePanelDeps) {
       !isMixed
   );
 
-  // ---------------------------------------------------------------------------
   // Data-logic effects (no DOM references)
-  // ---------------------------------------------------------------------------
 
   // Sync isOpen with show prop
   $effect(() => {

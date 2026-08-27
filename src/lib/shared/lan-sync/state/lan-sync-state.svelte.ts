@@ -109,7 +109,6 @@ class LanSyncState {
 		this._playbackState = coordinator.playbackState;
 	}
 
-	/** Create a new sync room */
 	async createRoom(initialState: Partial<SyncedPlaybackState> = {}): Promise<string> {
 		if (!this._coordinator) {
 			throw new Error('LAN sync not initialized');
@@ -204,7 +203,6 @@ class LanSyncState {
 		this._sequenceMismatchWarning = null;
 	}
 
-	/** Initialize discovery service */
 	initializeDiscovery(discovery: SyncRoomDiscovery): void {
 		if (this._discovery) {
 			// Already initialized
@@ -219,7 +217,6 @@ class LanSyncState {
 		});
 		this.unsubscribers.push(unsub);
 
-		// Start discovery
 		discovery.startDiscovery().catch((err) => {
 			console.error('[LanSyncState] Failed to start discovery:', err);
 		});

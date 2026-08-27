@@ -257,24 +257,20 @@
     --kb-space-lg: clamp(20px, 5cqi, 32px);
     --kb-space-xl: clamp(28px, 7cqi, 48px);
 
-    /* ===== FLUID TYPOGRAPHY - Accessible minimum sizes ===== */
     --kb-text-xs: clamp(0.8125rem, 2cqi, 0.875rem); /* min 13px */
     --kb-text-sm: clamp(0.875rem, 2.5cqi, 1rem); /* min 14px */
     --kb-text-base: clamp(1rem, 3cqi, 1.125rem); /* min 16px */
     --kb-text-lg: clamp(1.125rem, 3.5cqi, 1.25rem); /* min 18px */
 
-    /* ===== FLUID RADII ===== */
     --kb-radius-sm: clamp(6px, 1.5cqi, 10px);
     --kb-radius-md: clamp(10px, 2.5cqi, 16px);
     --kb-radius-lg: clamp(14px, 3.5cqi, 20px);
     --kb-radius-full: 999px;
 
-    /* ===== COLORS ===== */
     --kb-text: var(--theme-text);
     --kb-text-muted: color-mix(in srgb, var(--theme-text) 75%, transparent);
     --kb-text-subtle: var(--theme-text-dim);
 
-    /* ===== TRANSITIONS ===== */
     --spring-smooth: cubic-bezier(0.4, 0, 0.2, 1);
     --spring-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 
@@ -299,7 +295,6 @@
     overflow: hidden;
   }
 
-  /* ===== LOADING SKELETON ===== */
   .loading-overlay {
     position: absolute;
     inset: 0;
@@ -388,7 +383,6 @@
     }
   }
 
-  /* ===== UNDO HINT ===== */
   .undo-hint {
     position: absolute;
     bottom: clamp(16px, 4cqi, 24px);

@@ -210,7 +210,6 @@
 {/if}
 
 <style>
-  /* ── shared list ──────────────────────────────────────────────────────── */
   .history-list {
     display: flex;
     flex-direction: column;
@@ -310,7 +309,6 @@
     text-align: center;
   }
 
-  /* ── popover variant ──────────────────────────────────────────────────── */
   /* Icon-only, square — sits in the dense actions row next to Revert/Save and
      adds minimal width (a labelled button tipped the footer onto a 2nd line). */
   .trigger-btn {

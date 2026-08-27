@@ -102,9 +102,7 @@ export interface LayerStepInput {
   } | null;
 }
 
-// ---------------------------------------------------------------------------
 // Where an orientation sits
-// ---------------------------------------------------------------------------
 
 /**
  * Position on the 8-point orientation cycle, folded to four classes:
@@ -146,9 +144,7 @@ export function collapseLayer(layer: LayerId): CollapsedLayerId {
   return layer === 4 ? 3 : (layer as CollapsedLayerId);
 }
 
-// ---------------------------------------------------------------------------
 // What a motion does to the layer
-// ---------------------------------------------------------------------------
 
 const HALF_STEPS_PER_TURN = 4; // one turn is 180 degrees; the cycle steps 45 at a time
 
@@ -226,9 +222,7 @@ export function flipVectorOf(step: LayerStepInput | null | undefined): FlipVecto
   return ".";
 }
 
-// ---------------------------------------------------------------------------
 // Walking the four layers
-// ---------------------------------------------------------------------------
 
 // Moving from a layer by a flip is the same shape as flipping two switches, so
 // the whole thing is a four-by-four table and nothing more. Reading it: from
@@ -362,9 +356,7 @@ export function mirrorPattern(pattern: LayerPattern): LayerPattern {
   };
 }
 
-// ---------------------------------------------------------------------------
 // Reading it back
-// ---------------------------------------------------------------------------
 
 export function layerMetrics(signature: readonly LayerId[]): LayerMetrics {
   if (signature.length === 0) {

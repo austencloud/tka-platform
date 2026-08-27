@@ -13,9 +13,6 @@ import {
 } from "./enums.js";
 import { getHandPointCoordinates, type Coordinates } from "./grid-coordinates.js";
 
-// ============================================================================
-// PROP ROTATION ANGLE MAPS
-// ============================================================================
 
 /**
  * Diamond grid rotation angles by orientation and location
@@ -192,9 +189,6 @@ const BOX_ANGLE_MAP: Record<Orientation, Record<GridLocation, number>> = {
   },
 } as Record<Orientation, Record<GridLocation, number>>;
 
-// ============================================================================
-// PROP PLACEMENT INTERFACE
-// ============================================================================
 
 export interface PropPlacement {
   x: number;
@@ -202,9 +196,6 @@ export interface PropPlacement {
   rotation: number;
 }
 
-// ============================================================================
-// PROP PLACEMENT FUNCTIONS
-// ============================================================================
 
 /**
  * Get the appropriate angle map based on grid mode and location

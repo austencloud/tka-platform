@@ -278,7 +278,6 @@ export class Sparkles2DRenderer {
     }
   }
 
-  // ── Sprite authoring + cache ───────────────────────────────────────────
 
   /**
    * Soft radial halo in the particle's color, authored once per quantized color
@@ -318,7 +317,6 @@ export class Sparkles2DRenderer {
     return canvas;
   }
 
-  // ── Spawning ───────────────────────────────────────────────────────────
 
   private spawnFromTip(
     params: Sparkles2DParams,

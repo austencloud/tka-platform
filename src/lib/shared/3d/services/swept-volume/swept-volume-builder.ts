@@ -1,4 +1,3 @@
-// src/lib/shared/3d/services/swept-volume/swept-volume-builder.ts
 
 import { Vector3, Quaternion, Euler } from "three";
 import { STAGE } from "@austencloud/scene-3d";

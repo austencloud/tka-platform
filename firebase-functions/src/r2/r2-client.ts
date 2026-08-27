@@ -23,9 +23,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-// ============================================================================
 // Constants
-// ============================================================================
 
 /** Single-file presigned URL expiry: 15 minutes */
 export const PRESIGN_EXPIRES_SINGLE = 900;
@@ -39,9 +37,7 @@ export const MAX_VIDEO_FILE_SIZE = 500 * 1024 * 1024;
 /** Maximum thumbnail file size: 10 MB */
 export const MAX_THUMBNAIL_FILE_SIZE = 10 * 1024 * 1024;
 
-// ============================================================================
 // Client factory
-// ============================================================================
 
 let cachedClient: S3Client | null = null;
 

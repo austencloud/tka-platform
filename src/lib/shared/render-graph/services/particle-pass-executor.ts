@@ -20,7 +20,6 @@ import type {
 } from "../domain/particle-pass";
 import type { ShaderLibrary } from "./shader-library";
 
-// ── Constants ───────────────────────────────────────────────────────────
 
 const MAX_PARTICLES = 2048;
 const VERTEX_STRIDE_FLOATS = 10;
@@ -31,7 +30,6 @@ const SHAPE_MAP: Record<string, number> = {
   circle: 0, quad: 1, streak: 2, petal: 3, crystal: 4, spark: 5,
 };
 
-// ── Particle state ──────────────────────────────────────────────────────
 
 interface Particle {
   x: number; y: number;

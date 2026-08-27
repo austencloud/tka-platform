@@ -205,7 +205,6 @@
     }
   }
 
-  /* ── Guest hatch ─────────────────────────────────────────────────────── */
 
   .guest-hatch {
     display: flex;
@@ -252,7 +251,6 @@
     text-align: center;
   }
 
-  /* ── Success beat ────────────────────────────────────────────────────── */
 
   .success-card {
     box-sizing: border-box;

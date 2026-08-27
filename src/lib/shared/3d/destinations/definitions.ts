@@ -137,16 +137,10 @@ export const DESTINATION_CATEGORIES: DestinationCategory[] = [
   },
 ];
 
-/**
- * Get destination by ID
- */
 export function getDestination(id: string): Destination | undefined {
   return DESTINATIONS.find((dest) => dest.id === id);
 }
 
-/**
- * Get destinations by category
- */
 export function getDestinationsByCategory(categoryId: string): Destination[] {
   return DESTINATIONS.filter((dest) => dest.category === categoryId);
 }

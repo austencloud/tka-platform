@@ -67,7 +67,6 @@
   // below, whose component arrives asynchronously after first render.
   const moduleCache = new SvelteMap<string, Component<any>>();
 
-  // ── Keep-alive host wiring ────────────────────────────────────────────────
   // Certain heavy modules must survive module switches instead of being
   // destroyed/recreated by {#key activeModule}. The controller tracks
   // mount/visibility/eviction; we render those modules in a persistent host
@@ -192,9 +191,7 @@
     video: () => import("../../features/video/VideoModule.svelte"),
     // Lab module - ALL experiments consolidated here (Skew, Poi, Realm, Terrain, Mandala, Backgrounds, Landing)
     lab: () => import("../../features/lab/LabModule.svelte"),
-    // ========================================================================
     // BACKWARDS COMPAT: Old standalone experimental modules now redirect to Lab
-    // ========================================================================
     skewlab: () => import("../../features/levels/LevelsModule.svelte"),
     "poi-lab": () => import("../../features/levels/LevelsModule.svelte"),
     retro: () => import("../../features/retro/RetroModule.svelte"),
@@ -207,9 +204,7 @@
     "landing-preview": () => import("../../features/lab/LabModule.svelte"),
     // Stage module - multi-performer formation locomotion
     stage: () => import("../../features/stage/StageModule.svelte"),
-    // ========================================================================
     // REMOVED: Standalone 3D modules (now accessible via Realm destinations)
-    // ========================================================================
     // gallery3d → Removed, use Realm → Gallery destination
     // infinite-worlds → Removed, use Realm → Worlds destination
     // museum → Removed (Museum Navigator archived, use Realm → Gallery)

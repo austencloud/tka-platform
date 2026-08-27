@@ -339,9 +339,7 @@ connectFirebaseProductToEmulator("auth", () =>
 // Register with HMR manager
 hmrManager.setAuth(auth);
 
-// ============================================================================
 // FIRESTORE (LAZY, HMR-SAFE)
-// ============================================================================
 
 let firestoreInstance: Firestore | null = null;
 let firestoreInitPromise: Promise<Firestore> | null = null;

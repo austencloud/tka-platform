@@ -88,9 +88,6 @@ const DEFAULT_SIZING: Omit<
  */
 const FIT_ALL_MAX_COLUMNS = 8;
 
-/**
- * Calculate responsive grid layout
- */
 export function calculateGridLayout(
   stepCount: number,
   containerWidth: number,
@@ -455,7 +452,6 @@ export function calculateTimelineRows(
       currentRow.totalDuration + duration > rowCapacity &&
       currentRow.steps.length > 0
     ) {
-      // Start new row
       rows.push(currentRow);
       currentRow = {
         rowIndex: rows.length,

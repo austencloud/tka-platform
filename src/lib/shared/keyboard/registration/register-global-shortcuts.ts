@@ -48,7 +48,6 @@ export function registerGlobalShortcuts(
   service: KeyboardShortcutManager,
   state: ReturnType<typeof createKeyboardShortcutState>
 ) {
-  // Get accessible modules
   const moduleDefinitions = getModuleDefinitions();
   const isAdmin = authState.isAdmin;
 

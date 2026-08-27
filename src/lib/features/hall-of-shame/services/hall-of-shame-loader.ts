@@ -39,7 +39,6 @@ export class HallOfShameLoader {
 			const firestore = await getFirestoreInstance();
 			const collectionRef = collection(firestore, this.COLLECTION);
 
-			// Build query constraints
 			const constraints: Parameters<typeof query>[1][] = [
 				where('status', '==', 'approved'),
 				where('hidden', '==', false)
@@ -55,7 +54,6 @@ export class HallOfShameLoader {
 				constraints.push(where('ownerId', '==', params.ownerId));
 			}
 
-			// Add sorting
 			switch (params.sortBy) {
 				case 'newest':
 					constraints.push(orderBy('approvedAt', 'desc'));

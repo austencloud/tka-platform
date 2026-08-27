@@ -20,16 +20,12 @@ import type { SequenceSection } from "$lib/shared/browse/domain/models/browse-mo
 import type { BrowseViewMode } from "$lib/shared/browse/domain/browse-view-mode";
 import type { FilterConnective } from "$lib/shared/browse/services/multi-filter";
 
-// ---------------------------------------------------------------------------
 // Sequence Source
-// ---------------------------------------------------------------------------
 
 /** Where the engine loads sequences from. */
 export type SequenceSource = "community" | "my-library";
 
-// ---------------------------------------------------------------------------
 // Active Filter (engine-owned, includes `locked`)
-// ---------------------------------------------------------------------------
 
 /**
  * A single active filter. Engine's own type — extends the existing
@@ -50,9 +46,7 @@ export interface ActiveFilter {
   locked: boolean;
 }
 
-// ---------------------------------------------------------------------------
 // Section Grouping
-// ---------------------------------------------------------------------------
 
 /** How sequences are grouped into sections. */
 export type SectionGroupBy =
@@ -64,9 +58,7 @@ export type SectionGroupBy =
   | "tnd-family"
   | "none";
 
-// ---------------------------------------------------------------------------
 // Persisted State
-// ---------------------------------------------------------------------------
 
 /** Shape written to / read from localStorage under `persistKey`. */
 export interface PersistedEngineState {
@@ -86,9 +78,7 @@ export interface PersistedEngineState {
   viewMode?: BrowseViewMode;
 }
 
-// ---------------------------------------------------------------------------
 // Config
-// ---------------------------------------------------------------------------
 
 /**
  * Configuration passed to `createBrowseEngine()`.
@@ -158,9 +148,7 @@ export interface BrowseEngineConfig {
   ) => Promise<readonly SequenceData[]>;
 }
 
-// ---------------------------------------------------------------------------
 // Engine
-// ---------------------------------------------------------------------------
 
 /**
  * The headless browse engine returned by `createBrowseEngine()`.
@@ -248,7 +236,6 @@ export interface BrowseEngine {
   /** LOOP type counts: { loopType: count, _total, _circular, _non_circular }. */
   readonly loopTypeCounts: Readonly<Record<string, number>>;
 
-  // --- Methods ---
 
   /** Load initial data for current source. Call on mount. */
   initialize(): Promise<void>;
@@ -325,7 +312,6 @@ export interface BrowseEngine {
   /** Enable or disable section grouping. */
   setSectionsEnabled(enabled: boolean): void;
 
-  /** Set the section grouping strategy. */
   setSectionGroupBy(groupBy: SectionGroupBy): void;
 
   /** Set the browse view mode (props/hands × combined/solo). */

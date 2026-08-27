@@ -180,7 +180,6 @@
     {/if}
   </div>
 
-  <!-- ── Codex ───────────────────────────────────────────────────────── -->
   <div class="chapter-group">
     <a
       class="chapter-title"
@@ -193,7 +192,6 @@
     </a>
   </div>
 
-  <!-- ── Downloads ───────────────────────────────────────────────────── -->
   <div class="chapter-group">
     <div class="group-heading"><span>Downloads</span></div>
     <ul class="section-list">

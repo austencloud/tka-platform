@@ -57,9 +57,7 @@ import type {
 import type { SimPropTarget } from "../src/lib/features/lab/tabs/collision-lab/services/contracts/IStanceSimulator";
 import { Plane } from "../src/lib/shared/3d/domain/enums/Plane";
 
-// ──────────────────────────────────────────────────────────────────────
 // Argument parsing
-// ──────────────────────────────────────────────────────────────────────
 
 interface Args {
   heightM: number;
@@ -92,11 +90,9 @@ function parseArgs(): Args {
   return args;
 }
 
-// ──────────────────────────────────────────────────────────────────────
 // Duplicate of poseToOptimizerInput from the state factory. Lives here
 // so this script doesn't have to import a .svelte.ts file (which tsx
 // can't compile directly).
-// ──────────────────────────────────────────────────────────────────────
 
 const STAFF_HALF_LENGTH = 0.43;
 const STAFF_RADIUS = 0.012;
@@ -182,9 +178,7 @@ const BOUNDS: OptimizerBounds = {
   },
 };
 
-// ──────────────────────────────────────────────────────────────────────
 // Main
-// ──────────────────────────────────────────────────────────────────────
 
 function main() {
   const args = parseArgs();

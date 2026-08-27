@@ -60,9 +60,7 @@ beforeAll(async () => {
   await loadPictographDatasetForTests();
 }, 60_000);
 
-// ---------------------------------------------------------------------------
 // Stub providers
-// ---------------------------------------------------------------------------
 
 /** Ψ alpha5>beta1 and Φ beta5>alpha5 — the two-way pinch. */
 const bothWays: AmbientOptionProvider = {

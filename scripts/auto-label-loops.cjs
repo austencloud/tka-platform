@@ -36,9 +36,7 @@ function initFirebase() {
   }
 }
 
-// ============================================================================
 // LOOP Detection Logic (from validate-loop-detection.cjs)
-// ============================================================================
 
 // Beat-pair graph transformation maps (includes 90° and 270° rotations)
 // Note: "CCW" = counterclockwise as viewed from above
@@ -408,9 +406,7 @@ function detectRotationDirection(beats) {
   return null;
 }
 
-// ============================================================================
 // Beat-Pair Graph Detection (for modular patterns)
-// ============================================================================
 
 /**
  * Compare two beats and identify ALL transformations between them
@@ -451,10 +447,8 @@ function compareBeatPair(beat1, beat2) {
     // (e.g., a symmetric pattern that is both repeated AND rotated+swapped)
   }
 
-  // ============================================================
   // Check COMPOUND transformations first (rotation + swap)
   // These are the most common LOOP patterns
-  // ============================================================
 
   // ROTATED + SWAPPED position checks (colors swapped)
   const positions180Swapped =
@@ -527,9 +521,7 @@ function compareBeatPair(beat1, beat2) {
     transformations.push("mirrored_swapped");
   }
 
-  // ============================================================
   // Check simple position transformations (same colors)
-  // ============================================================
 
   // 90° rotation (CCW) - check positions
   const positions90CCW =
@@ -654,9 +646,6 @@ function compareBeatPair(beat1, beat2) {
   return transformations;
 }
 
-/**
- * Build a graph of all beat pair relationships
- */
 function buildBeatPairGraph(beats) {
   const graph = {};
 

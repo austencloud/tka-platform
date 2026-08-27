@@ -153,9 +153,6 @@ export function buildFeatureHierarchy(
   return { modules, capabilities };
 }
 
-/**
- * Get override state for a feature
- */
 export function getOverrideState(
   featureId: FeatureId,
   overrides?: UserFeatureOverrides

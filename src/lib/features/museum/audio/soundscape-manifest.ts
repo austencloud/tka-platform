@@ -48,7 +48,6 @@ export interface WingSoundscape {
 	defaultCandidateId?: string;
 }
 
-// ── Curated Wing Pool ──
 // Each wing's first candidate is the original hand-picked track.
 // The API fetcher appends more candidates via soundscape-candidates.generated.ts.
 

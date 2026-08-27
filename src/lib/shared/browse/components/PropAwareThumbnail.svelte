@@ -275,9 +275,6 @@
     }
   });
 
-  /**
-   * Handle successful image load
-   */
   function handleImageLoad() {
     // Image loaded successfully
   }

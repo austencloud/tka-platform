@@ -938,7 +938,6 @@
     border-color: oklch(0.6 0.08 270 / 0.5);
   }
 
-  /* ── five-wing bands ── */
   .wing-band {
     display: flex;
     align-items: baseline;
@@ -1132,7 +1131,6 @@
     text-align: center;
   }
 
-  /* ── feature bento ── */
   .bento {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));

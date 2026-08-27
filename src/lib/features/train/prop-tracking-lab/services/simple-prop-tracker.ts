@@ -275,7 +275,6 @@ export class SimplePropTracker {
 			y: tipPixel.y / height
 		};
 
-		// Calculate angle from centroid to tip
 		const angle = Math.atan2(tip.y - centroid.y, tip.x - centroid.x);
 
 		return { centroid, tip, angle };

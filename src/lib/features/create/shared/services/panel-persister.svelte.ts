@@ -195,7 +195,4 @@ export class PanelPersister {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 export const panelPersister = new PanelPersister();

@@ -82,7 +82,6 @@
     )
   );
 
-  // --- Adapters bridging TKA services to the package seam -------------------
   function onHaptic() {
     hapticService?.trigger("selection");
   }

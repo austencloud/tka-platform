@@ -37,7 +37,6 @@
     /** Embedded demos can pin turns from outside the picker. In that case the
      *  filter remains useful, but showing local turn controls would be a lie. */
     showTurnControls?: boolean;
-    // Filter
     showFilter: boolean;
     isContinuousOnly: boolean;
     onToggleContinuous?: (value: boolean) => void;

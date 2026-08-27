@@ -141,7 +141,6 @@
   onMount(() => {
     if (!browser) return;
 
-    // Initialize settings service
     settingsService = settingsServiceSingleton;
 
     const checkViewport = () => {

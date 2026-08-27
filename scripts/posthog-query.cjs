@@ -16,7 +16,6 @@ const https = require("https");
 const DEFAULT_API_HOST = "us.posthog.com";
 const DEFAULT_PROJECT_ID = "299320";
 
-// --- CLI Arg Parsing ---
 
 function parseArgs(argv) {
   const args = argv.slice(2);
@@ -41,7 +40,6 @@ function parseArgs(argv) {
   return result;
 }
 
-// --- Period to HogQL date expression ---
 
 function periodToDateExpr(period) {
   switch (period) {

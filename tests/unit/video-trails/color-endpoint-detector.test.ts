@@ -1,4 +1,3 @@
-// tests/unit/video-trails/color-endpoint-detector.test.ts
 
 import { describe, it, expect, beforeAll } from "vitest";
 import { ColorEndpointDetector } from "$lib/features/video/video-trails/services/color-endpoint-detector";

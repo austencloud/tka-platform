@@ -769,7 +769,6 @@
     --fx-accent-text: #c5ddff;
   }
 
-  /* ── Sidebar layout ─────────────────────────────────────────────────────── */
   /* Named so the inspector can recompose against the width it actually gets,
      in every host, instead of only inside Post Studio's own container. */
   .effects-panel {

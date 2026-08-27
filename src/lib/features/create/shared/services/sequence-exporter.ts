@@ -106,9 +106,6 @@ export function createCondensedSequence(
   return condensed;
 }
 
-// ============================================================================
-// MODULE-PRIVATE HELPERS
-// ============================================================================
 
 function extractStartPosition(startPos: StepData): CondensedStartPosition {
   const letter = startPos.letter ?? "";

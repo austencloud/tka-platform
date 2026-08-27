@@ -54,7 +54,6 @@
     { id: "punch",       file: "punch-card.html",      year: "~1976 AD",   title: "Line Printer",         color: "#33AA55" },
   ];
 
-  // ── Era renderer contract ──
   //
   // Each iframe sends {type:"ready"} on load. We respond by posting
   // {type:"pictograph", data: RetroPictographData}. The bridge script in
@@ -77,7 +76,6 @@
     redHand: RetroHandPayload;
   }
 
-  // ── State ──
 
   let allPictographs = $state<PictographData[]>([]);
   let currentIndex = $state(0);
@@ -136,7 +134,6 @@
     woodblock: "", blueprint: "", deco: "", bauhaus: "", punch: "",
   });
 
-  // ── Helpers ──
 
   function pictographId(p: PictographData): string {
     const b = p.motions?.[MotionColor.BLUE];
@@ -542,7 +539,6 @@
     min-height: 0;
   }
 
-  /* ── Toolbar ── */
 
   .toolbar {
     padding: 8px 12px;

@@ -43,9 +43,6 @@ const ROTATE_POS_90_CW: Record<string, string> = {
 import { calculateOrientations, calculateEndOrientation, getHandpathDirection } from "../packages/sequence-engine/src/core/orientation/OrientationCalculator.js";
 import type { SequenceStep } from "../packages/sequence-engine/src/core/types/sequence-engine-types.js";
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,9 +55,6 @@ const SERVICE_ACCOUNT_PATH = path.resolve(PROJECT_ROOT, "serviceAccountKey.json"
 const DECK_ID = "l1-quartered-loop";
 const DRY_RUN = process.argv.includes("--dry-run");
 
-// ============================================================================
-// LETTER TYPE CLASSIFICATION
-// ============================================================================
 
 const LETTER_TYPES: Record<string, number> = {
   A: 1, B: 1, C: 1, D: 1, E: 1, F: 1,
@@ -83,9 +77,7 @@ const TYPE_NAMES: Record<number, string> = {
   6: "Static",
 };
 
-// ============================================================================
 // PHASE 1 — LOAD CSV DATA
-// ============================================================================
 
 /** Port of MCP server's loadDataframe() from server-context.ts */
 function loadDiamondDataframe(): PictographData[] {
@@ -153,9 +145,7 @@ function loadDiamondDataframe(): PictographData[] {
   return pictographs;
 }
 
-// ============================================================================
 // PHASE 2 — BUILD ADJACENCY MAP
-// ============================================================================
 
 function buildAdjacencyMap(
   pictographs: PictographData[]
@@ -169,9 +159,7 @@ function buildAdjacencyMap(
   return adj;
 }
 
-// ============================================================================
 // PHASE 3 — ENUMERATE VALID 2-BEAT SEEDS & EXECUTE LOOP
-// ============================================================================
 
 /** Convert a PictographData edge into a SequenceStep for the loop executor */
 function edgeToStep(edge: PictographData, stepNumber: number): SequenceStep {
@@ -219,9 +207,6 @@ function buildStartPositionStep(edge: PictographData): SequenceStep {
   };
 }
 
-// ============================================================================
-// POSITION FIX-UP
-// ============================================================================
 
 /**
  * The MCP executor's derivePositionFromLocations is a simplified heuristic

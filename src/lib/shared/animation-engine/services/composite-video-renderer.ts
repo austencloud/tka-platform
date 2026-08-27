@@ -154,7 +154,6 @@ export class CompositeVideoRenderer {
     const ctx = targetCanvas.getContext("2d");
     if (!ctx) throw new Error("Failed to get 2D context");
 
-    // Clear target canvas
     ctx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
 
     // Set black background
@@ -266,9 +265,6 @@ export class CompositeVideoRenderer {
     this.gridLayout = null;
   }
 
-  // ========================================================================
-  // PRIVATE HELPER METHODS
-  // ========================================================================
 
   /**
    * Draw an image centered within a bounding box (maintains aspect ratio)

@@ -58,9 +58,7 @@ interface TrackedTrailSource {
   tipIndex: number;
 }
 
-// ============================================================================
 // CIRCULAR BUFFER (inlined for O(1) trail point management)
-// ============================================================================
 
 /**
  * High-performance ring buffer for managing trail points.
@@ -141,9 +139,6 @@ class CircularBuffer<T> {
   }
 }
 
-// ============================================================================
-// TRAIL CAPTURE CONSTANTS
-// ============================================================================
 
 /** Wait for panel open and textures before capturing first point */
 const INITIALIZATION_DELAY_MS = 500;
@@ -170,9 +165,6 @@ const DEFAULT_BUFFER_CAPACITY = 1000;
 const DEFAULT_PROP_WIDTH = 252.8;
 const DEFAULT_PROP_HEIGHT = 77.8;
 
-// ============================================================================
-// TRAIL CAPTURE SERVICE
-// ============================================================================
 
 /**
  * Last captured point tracking for distance-based sampling
@@ -361,7 +353,6 @@ export class TrailCapturer {
 
     if (shouldClearOnLoop && loopDetected) {
       this.clearTrails();
-      // Reset animation start time
       this.animationStartTime = currentTime;
     }
 
@@ -421,7 +412,6 @@ export class TrailCapturer {
     const buffer = this.getBufferForProp(propIndex, layerIndex);
     const allPoints = buffer.toArray();
 
-    // Filter points for this specific tip
     return allPoints.filter((p) => p.tipIndex === tipIndex);
   }
 
@@ -507,9 +497,6 @@ export class TrailCapturer {
     this.totalPointsCaptured = 0;
   }
 
-  // ============================================================================
-  // PRIVATE METHODS
-  // ============================================================================
 
   /**
    * Get the appropriate buffer for a prop index and layer

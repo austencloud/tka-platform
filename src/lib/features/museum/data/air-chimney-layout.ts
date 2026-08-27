@@ -60,7 +60,6 @@ import {
 const TILE = TILE_METRES;
 const HALF = TILE / 2;
 
-// ── Room ids ────────────────────────────────────────────────────────────────
 
 export const AIR_ROOM_ID = "cave-air";
 export const EARTH_ROOM_ID = "cave-earth";
@@ -174,7 +173,6 @@ export function airLedgeStationOffsets(
   });
 }
 
-// ── Types ───────────────────────────────────────────────────────────────────
 
 export interface AirLedge {
   id: string;
@@ -206,7 +204,6 @@ export interface AirChimneyLayout {
   /** Three performer ledges, low → high, alternating walls. */
   ledges: AirLedge[];
 
-  // ── everything the graybox renders ──
   floorRects: FloorRect[];
   wallRects: WallRect[];
   ceilingRects: CeilingRect[];
@@ -231,7 +228,6 @@ export interface AirChimneyLayout {
   };
 }
 
-// ── Small helpers ───────────────────────────────────────────────────────────
 
 const cx = (r: WorldRect) => (r.minX + r.maxX) / 2;
 const cz = (r: WorldRect) => (r.minZ + r.maxZ) / 2;
@@ -252,7 +248,6 @@ function outerWorldRect(b: {
   };
 }
 
-// ── Layout ──────────────────────────────────────────────────────────────────
 
 export function buildAirChimneyLayout(grid: MuseumGrid): AirChimneyLayout | null {
   const airWing = grid.wings.find((w) => w.id === AIR_ROOM_ID);

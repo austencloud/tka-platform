@@ -3,9 +3,6 @@
  * Geometry values match static/images/grid/diamond_grid.svg
  */
 
-// =============================================================================
-// GEOMETRY
-// =============================================================================
 
 export const GRID = {
 	SIZE: 950,
@@ -19,9 +16,7 @@ export const GRID = {
 	INTERCARDINAL_LABEL_OFFSET: 120
 } as const;
 
-// =============================================================================
 // TIMING - Unified for smooth synchronized animations
-// =============================================================================
 
 export const TIMING = {
 	/** Main transition duration for all phase changes */
@@ -40,9 +35,6 @@ export const TIMING = {
 	EASING_SOFT: 'cubic-bezier(0.25, 1, 0.5, 1)'
 } as const;
 
-// =============================================================================
-// RESPONSIVE OFFSETS
-// =============================================================================
 
 export const RESPONSIVE = {
 	/** Desktop: horizontal split */
@@ -71,9 +63,6 @@ export const RESPONSIVE = {
 	}
 } as const;
 
-// =============================================================================
-// DERIVED POINT POSITIONS
-// =============================================================================
 
 const { CENTER, OUTER_RADIUS, HAND_RADIUS, INTERCARDINAL_LABEL_OFFSET } = GRID;
 
@@ -128,9 +117,6 @@ export const INTERCARDINAL_LABELS = [
 	{ id: 'NW', x: CENTER - diagOffset, y: CENTER - diagOffset }
 ] as const;
 
-// =============================================================================
-// TYPES
-// =============================================================================
 
 export type Phase = 'intro' | 'split' | 'diamond-labels' | 'box-labels' | 'merged' | 'split-highlight';
 export type HighlightPhase = 'none' | 'center' | 'hand' | 'outer';

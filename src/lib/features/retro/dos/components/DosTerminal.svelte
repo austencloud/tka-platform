@@ -29,23 +29,17 @@
   import ScribeConfig from "./apps/ScribeConfig.svelte";
   import "../styles/dos-terminal.css";
 
-  /* ------------------------------------------------------------------ */
   /* Services                                                            */
-  /* ------------------------------------------------------------------ */
 
   const fileSystem = new DosFileSystem();
   const commandParser = new CommandParser(fileSystem);
 
-  /* ------------------------------------------------------------------ */
   /* Element references                                                  */
-  /* ------------------------------------------------------------------ */
 
   let outputEl: HTMLDivElement | undefined = $state();
   let terminalEl: HTMLDivElement | undefined = $state();
 
-  /* ------------------------------------------------------------------ */
   /* Auto-scroll to bottom when lines change                             */
-  /* ------------------------------------------------------------------ */
 
   $effect(() => {
     // Read lines.length to subscribe to buffer changes
@@ -64,9 +58,7 @@
     return () => cancelAnimationFrame(rafId);
   });
 
-  /* ------------------------------------------------------------------ */
   /* Keyboard input handler                                              */
-  /* ------------------------------------------------------------------ */
 
   function handleKeydown(event: KeyboardEvent): void {
     if (!terminalState.inputEnabled) return;
@@ -107,9 +99,7 @@
     }
   }
 
-  /* ------------------------------------------------------------------ */
   /* ESC key handling                                                     */
-  /* ------------------------------------------------------------------ */
 
   function handleEscape(): void {
     if (terminalState.mode === "scribe") {
@@ -129,9 +119,7 @@
     }
   }
 
-  /* ------------------------------------------------------------------ */
   /* Submit current input                                                */
-  /* ------------------------------------------------------------------ */
 
   function submitInput(): void {
     const input = terminalState.inputText.trim();

@@ -124,7 +124,6 @@
     a: ControlDockLink | ControlDockAction
   ): a is ControlDockLink => "href" in a;
 
-  // ── Tray open/close plumbing ──
   const trayOpen = $derived(!!(activeTab && tray));
   function closeTray(): void {
     if (activeTab) onTabSelect(activeTab); // every consumer toggles on re-select
@@ -165,7 +164,6 @@
     return () => swipe.detach();
   });
 
-  // ── Tray body height animation ──
   // The tray content swaps (tab -> tab) and grows/shrinks in place (revealing
   // options within a tab). Both used to snap the tray — and the media hero above
   // it — to the new height instantly. Measure the active content's natural
@@ -190,7 +188,6 @@
     return () => ro.disconnect();
   });
 
-  // ── Persistent scroll rail ──
   // Touch browsers use overlay scrollbars that only fade in DURING a scroll, so
   // a capped tray gave no signal that more options exist below the fold. This
   // custom rail is visible from the moment an overflowing tray opens (the

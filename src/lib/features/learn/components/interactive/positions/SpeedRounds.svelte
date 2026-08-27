@@ -20,9 +20,7 @@ Builds automaticity through speed pressure and streak mechanics.
   import { GridMode } from '$lib/shared/pictograph/grid/domain/enums/grid-enums';
 import { onDestroy } from 'svelte';
 
-  // =========================================================================
   // Props
-  // =========================================================================
 
   interface Props {
     experienceState: PositionsExperienceStateManager;
@@ -33,9 +31,7 @@ import { onDestroy } from 'svelte';
 
   const hapticService = getHapticFeedback();
 
-  // =========================================================================
   // Question Pool - Tiered by Difficulty
-  // =========================================================================
 
   /** Obvious positions: opposite cardinals (alpha), same cardinal (beta), adjacent cardinals (gamma). */
   const OBVIOUS_POOL: PositionQuestion[] = [
@@ -57,9 +53,7 @@ import { onDestroy } from 'svelte';
   /** Full pool includes all positions (same as mixed for current data set). */
   const FULL_POOL: PositionQuestion[] = MIXED_POOL;
 
-  // =========================================================================
   // Core State
-  // =========================================================================
 
   let totalAttempted = $state(0);
   let totalCorrect = $state(0);
@@ -73,9 +67,7 @@ import { onDestroy } from 'svelte';
   let currentQuestion = $state<PositionQuestion>(pickQuestion());
   let questionKey = $state(0); // Forces re-render of visualizer on new question
 
-  // =========================================================================
   // Difficulty Derived from Streak
-  // =========================================================================
 
   const displayTimeMs = $derived.by(() => {
     if (streak < 5) return 3000;
@@ -91,9 +83,7 @@ import { onDestroy } from 'svelte';
     return FULL_POOL;
   }
 
-  // =========================================================================
   // Question Generation
-  // =========================================================================
 
   function pickQuestion(): PositionQuestion {
     const pool = getPool();
@@ -112,9 +102,7 @@ import { onDestroy } from 'svelte';
     startTimer();
   }
 
-  // =========================================================================
   // Timer (requestAnimationFrame countdown)
-  // =========================================================================
 
   let timerRafId: number | null = null;
   let timerStartTime = 0;
@@ -148,9 +136,7 @@ import { onDestroy } from 'svelte';
     }
   }
 
-  // =========================================================================
   // Answer Handling
-  // =========================================================================
 
   function handleAnswer(answer: PositionType) {
     if (feedbackState !== 'idle') return;
@@ -197,9 +183,7 @@ import { onDestroy } from 'svelte';
     }, 1200);
   }
 
-  // =========================================================================
   // Keyboard Input
-  // =========================================================================
 
   function handleKeydown(event: KeyboardEvent) {
     if (showSummary) return;
@@ -217,9 +201,7 @@ import { onDestroy } from 'svelte';
     }
   }
 
-  // =========================================================================
   // Done / Summary
-  // =========================================================================
 
   function handleDone() {
     cancelTimer();
@@ -239,9 +221,7 @@ import { onDestroy } from 'svelte';
     totalAttempted > 0 ? Math.round((totalCorrect / totalAttempted) * 100) : 0
   );
 
-  // =========================================================================
   // Zone Feedback Classes
-  // =========================================================================
 
   function zoneClass(type: PositionType): string {
     if (feedbackState === 'correct' && selectedAnswer === type) return 'zone-correct';
@@ -252,9 +232,7 @@ import { onDestroy } from 'svelte';
     return '';
   }
 
-  // =========================================================================
   // Lifecycle
-  // =========================================================================
 
   // Start the first question timer
   startTimer();
@@ -377,7 +355,6 @@ import { onDestroy } from 'svelte';
     margin: 0 auto;
   }
 
-  /* ===== Zone Buttons ===== */
 
   .top-zone {
     display: flex;
@@ -462,7 +439,6 @@ import { onDestroy } from 'svelte';
     box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
   }
 
-  /* ===== Pictograph Container ===== */
 
   .pictograph-container {
     display: flex;
@@ -473,7 +449,6 @@ import { onDestroy } from 'svelte';
     flex-shrink: 0;
   }
 
-  /* ===== Countdown Bar ===== */
 
   .countdown-track {
     width: 100%;
@@ -494,7 +469,6 @@ import { onDestroy } from 'svelte';
     background: var(--semantic-error, #ef4444);
   }
 
-  /* ===== Bottom Row ===== */
 
   .bottom-row {
     display: flex;
@@ -521,7 +495,6 @@ import { onDestroy } from 'svelte';
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
-  /* ===== Summary ===== */
 
   .summary {
     display: flex;
@@ -578,7 +551,6 @@ import { onDestroy } from 'svelte';
     opacity: 0.9;
   }
 
-  /* ===== Reduced Motion ===== */
 
   @media (prefers-reduced-motion: reduce) {
     .zone-button {

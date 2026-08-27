@@ -64,9 +64,6 @@ export interface MusicPlayerState {
   error: string | null;
 }
 
-/**
- * Create default music player state
- */
 export function createDefaultMusicPlayerState(): MusicPlayerState {
   return {
     isPlaying: false,
@@ -81,9 +78,6 @@ export function createDefaultMusicPlayerState(): MusicPlayerState {
   };
 }
 
-/**
- * Create an empty act
- */
 export function createEmptyAct(name: string = "Untitled Act"): ActData {
   const now = new Date();
   return {

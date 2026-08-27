@@ -39,9 +39,7 @@ import { findScenePropFamily } from "../domain/scene-prop-catalog";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PerformerDomainSnapshot } from "../undo/scene-undo-types";
 
-// ============================================
 // Position Constants (all in meters)
-// ============================================
 
 /** Default Z position for avatars - same as grid plane so hands are at prop positions */
 const FIGURE_Z = 0;
@@ -150,9 +148,6 @@ export function makeStandaloneDeps(): AvatarInstanceDeps {
   return _standaloneDeps;
 }
 
-/**
- * Create per-avatar animation state
- */
 export function createAvatarInstanceState(
   config: AvatarInstanceConfig,
   deps: AvatarInstanceDeps
@@ -174,15 +169,11 @@ export function createAvatarInstanceState(
   // User-assigned display name. null = inherit the avatar model's name.
   let displayName = $state<string | null>(config.name ?? null);
 
-  // ============================================
   // Performer Settings (declared early so derived computations can read them)
-  // ============================================
 
   let _settings = $state<PerformerSettings>(makeDefaultPerformerSettings());
 
-  // ============================================
   // Effective Value Getters (cascade resolution: null → inherit from defaults)
-  // ============================================
 
   const effectiveProp = $derived(_settings.prop ?? getDefaults().prop);
   const effectivePropBuild = $derived<PropBuild>({
@@ -198,15 +189,11 @@ export function createAvatarInstanceState(
   const rawEffect = $derived(_settings.effect);
   // effectivePlaneMode/BluePlane/RedPlane defined after plane state declarations below
 
-  // ============================================
   // Override Detection
-  // ============================================
 
   // NOTE: hasOverride for planes is defined after planeMode declaration below
 
-  // ============================================
   // Locomotion State
-  // ============================================
 
   // Full 3D position (replacing positionX)
   const position = $state({

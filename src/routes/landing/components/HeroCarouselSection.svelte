@@ -12,7 +12,6 @@
   import { onMount, onDestroy } from "svelte";
   import { LANDING_VIDEOS } from "../landing-videos";
 
-  // ─── Internal video shape used by this component ─────────────────────────────
 
   interface CarouselEntry {
     src: string;
@@ -20,7 +19,6 @@
     label: string;
   }
 
-  // ─── State ───────────────────────────────────────────────────────────────────
 
   const entries: CarouselEntry[] = LANDING_VIDEOS;
 
@@ -42,11 +40,9 @@
   let autoTimer: ReturnType<typeof setInterval> | null = null;
   let rafHandle: number | null = null;
 
-  // ─── Derived ─────────────────────────────────────────────────────────────────
 
   const currentEntry = $derived(entries[currentIndex] ?? null);
 
-  // ─── Crossfade engine ─────────────────────────────────────────────────────────
 
   function getNextIndex(from: number): number {
     return (from + 1) % entries.length;
@@ -172,7 +168,6 @@
     startAutoTimer();
   }
 
-  // ─── Navigation ───────────────────────────────────────────────────────────────
 
   async function goNext() {
     await crossfadeTo(getNextIndex(currentIndex));
@@ -190,7 +185,6 @@
     resetTimer();
   }
 
-  // ─── Lifecycle ────────────────────────────────────────────────────────────────
 
   onMount(() => {
     if (entries.length > 1) {
@@ -431,7 +425,6 @@
     order: 4;
   }
 
-  /* ── Title block ────────────────────────────────────────────────────────────── */
 
   .title-block {
     margin-bottom: clamp(16px, 3vw, 32px);
@@ -482,7 +475,6 @@
     min-height: 0;
   }
 
-  /* ── Carousel stage ─────────────────────────────────────────────────────────── */
 
   .carousel-stage {
     position: relative;
@@ -509,7 +501,6 @@
     animation-delay: 0.3s;
   }
 
-  /* ── Video layers ───────────────────────────────────────────────────────────── */
 
   .video-layers {
     position: absolute;
@@ -526,7 +517,6 @@
     transition: opacity 0.05s linear;
   }
 
-  /* ── Placeholder / error ────────────────────────────────────────────────────── */
 
   .placeholder {
     position: absolute;
@@ -545,7 +535,6 @@
     opacity: 0.4;
   }
 
-  /* ── Nav buttons ────────────────────────────────────────────────────────────── */
 
   .nav-btn {
     position: absolute;
@@ -595,7 +584,6 @@
     pointer-events: none;
   }
 
-  /* ── Carousel footer ────────────────────────────────────────────────────────── */
 
   .carousel-footer {
     display: flex;
@@ -607,7 +595,6 @@
     animation-delay: 0.5s;
   }
 
-  /* ── Dots ───────────────────────────────────────────────────────────────────── */
 
   .dots {
     display: flex;
@@ -641,7 +628,6 @@
     transform: scale(1.15);
   }
 
-  /* ── Credit line ─────────────────────────────────────────────────────────────── */
 
   .credit {
     font-size: var(--font-size-compact, 12px);
@@ -658,7 +644,6 @@
     opacity: 0.4;
   }
 
-  /* ── Hero quick links ───────────────────────────────────────────────────────── */
 
   .hero-links {
     display: flex;
@@ -753,7 +738,6 @@
     font-size: 0.9rem;
   }
 
-  /* ── Entrance animation ─────────────────────────────────────────────────────── */
 
   @keyframes fade-up {
     from {
@@ -926,7 +910,6 @@
     }
   }
 
-  /* ── Responsive ─────────────────────────────────────────────────────────────── */
 
   /* ── Mobile: title near the top, video as the hero, links pinned to the foot.
         (On desktop the stack is a centred group; on phones it spreads to fill.) */
@@ -1024,7 +1007,6 @@
     }
   }
 
-  /* ── Reduced motion ─────────────────────────────────────────────────────────── */
 
   @media (prefers-reduced-motion: reduce) {
     .title-block,

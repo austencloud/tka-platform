@@ -36,9 +36,6 @@ import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
 
 // HMR Test Comment - This should trigger a full reload
 
-// ============================================================================
-// SETTINGS
-// ============================================================================
 
 // Default prop presets for new users (10 commonly-used configurations)
 const DEFAULT_PROP_PRESETS: PropPreset[] = [
@@ -131,9 +128,6 @@ export function isSettingsPreviewMode(): boolean {
   return userPreviewState.isActive && userPreviewState.data.settings !== null;
 }
 
-// ============================================================================
-// PERFORMANCE
-// ============================================================================
 
 const performanceMetrics = $state({
   initializationTime: 0,
@@ -145,9 +139,6 @@ export function getPerformanceMetrics() {
   return performanceMetrics;
 }
 
-// ============================================================================
-// DERIVED STATE
-// ============================================================================
 
 export function getIsReady() {
   return (
@@ -159,7 +150,6 @@ export function getCanUseApp() {
   return getIsReady() && !getShowSettings();
 }
 
-// ============================================================================
 /**
  * Update a single setting key-value pair.
  * This is the preferred method for individual setting updates as it avoids
@@ -225,16 +215,12 @@ export function updateMemoryUsage(): void {
   }
 }
 
-// ============================================================================
-// APPLICATION LIFECYCLE
-// ============================================================================
 
 export async function restoreApplicationState(): Promise<void> {
   try {
     // Preload cached module services first to prevent UI flicker
     preloadCachedModuleServices();
 
-    // Initialize module persistence and restore saved module
     await initializeModulePersistence();
   } catch (error) {
     console.warn("⚠️ Failed to restore application state:", error);
@@ -242,9 +228,6 @@ export async function restoreApplicationState(): Promise<void> {
   }
 }
 
-// ============================================================================
-// UTILITIES & DEBUG
-// ============================================================================
 
 // Performance snapshot for debugging
 export function createPerformanceSnapshot(): PerformanceSnapshot {
@@ -284,23 +267,17 @@ export function debugSettings(): void {
 
 // Reset all application state to defaults
 export function resetAppState(): void {
-  // Reset UI state
   resetUIState();
 
-  // Reset initialization state
   resetInitializationState();
 
   // Reset performance metrics
   resetMetrics();
 
-  // Reset settings
   // TODO: Implement resetToDefaults in SettingsState interface
   console.warn("resetToDefaults not implemented in SettingsState");
 }
 
-// ============================================================================
-// DEVELOPMENT HELPERS
-// ============================================================================
 
 declare global {
   interface Window {

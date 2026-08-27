@@ -1,12 +1,9 @@
-// --- Constants ---
 // Enable debug logging via URL parameter (e.g., ?debug=foldable)
 export const DEBUG_MODE =
   typeof window !== "undefined" &&
   window.location.search.includes("debug=foldable");
 
-// ============================================================================
 // BREAKPOINTS - Single source of truth for all device size thresholds
-// ============================================================================
 // Every file that checks viewport width against a device category MUST
 // import from here. Grep for raw pixel values (768, 1024, etc.) to find
 // violations.

@@ -231,11 +231,7 @@ export class ArrowLifecycleManager {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 // Use this instead of arrowLifecycleManager to avoid DI container rebuilds.
-// ============================================================================
 
 import { arrowSvgLoader } from "../../rendering/services/arrow-svg-loader";
 

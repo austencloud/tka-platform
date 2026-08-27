@@ -17,9 +17,7 @@ export interface EasingSample {
 	value: number;
 }
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function getDefault(effortId: EffortId, key: string): number {
 	const effort = EFFORTS.find((e) => e.id === effortId);
@@ -35,9 +33,7 @@ function resolve(
 	return params?.[key] ?? getDefault(effortId, key);
 }
 
-// ---------------------------------------------------------------------------
 // Baseline
-// ---------------------------------------------------------------------------
 
 function linear(t: number): number {
 	if (t <= 0) return 0;
@@ -45,9 +41,7 @@ function linear(t: number): number {
 	return t;
 }
 
-// ---------------------------------------------------------------------------
 // Laban efforts - delegate to applyLabanEasing
-// ---------------------------------------------------------------------------
 
 function glide(t: number, params?: EffortParams): number {
 	return applyLabanEasing(
@@ -103,9 +97,7 @@ function punch(t: number, params?: EffortParams): number {
 	);
 }
 
-// ---------------------------------------------------------------------------
 // Animation efforts
-// ---------------------------------------------------------------------------
 
 /**
  * Elastic ease-out: overshoot then settle.
@@ -195,9 +187,7 @@ function anticipation(t: number, params?: EffortParams): number {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // Dispatch
-// ---------------------------------------------------------------------------
 
 const EFFORT_FNS: Record<
 	EffortId,

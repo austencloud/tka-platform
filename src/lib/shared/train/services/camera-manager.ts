@@ -44,7 +44,6 @@ export class CameraManager {
       console.warn("Could not enumerate cameras:", error);
     }
 
-    // Create video element
     this._videoElement = document.createElement("video");
     this._videoElement.setAttribute("playsinline", "true");
     this._videoElement.setAttribute("autoplay", "true");

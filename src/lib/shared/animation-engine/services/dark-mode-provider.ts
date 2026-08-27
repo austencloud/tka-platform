@@ -23,7 +23,6 @@ export class DarkModeProvider {
       callback(this.manager.isDarkMode());
     };
 
-    // Register with the manager
     this.manager.registerObserver(observer);
 
     // Store for cleanup

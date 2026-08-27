@@ -28,9 +28,6 @@ export class CreateModuleHandlers {
     private StepOperator: StepOperator
   ) {}
 
-  /**
-   * Handle option selection from option viewer
-   */
   async handleOptionSelected(option: PictographData): Promise<void> {
     try {
       await this.CreateModuleOrchestrator.selectOption(option);
@@ -45,9 +42,6 @@ export class CreateModuleHandlers {
     }
   }
 
-  /**
-   * Handle video record button click
-   */
   handleOpenVideoRecordPanel(panelState: PanelCoordinationState): void {
     panelState.openVideoRecordPanel();
   }
@@ -100,9 +94,6 @@ export class CreateModuleHandlers {
     }
   }
 
-  /**
-   * Handle open filter panel button click
-   */
   handleOpenFilterPanel(panelState: PanelCoordinationState): void {
     panelState.openFilterPanel();
   }
@@ -115,9 +106,6 @@ export class CreateModuleHandlers {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import { createModuleOrchestrator } from "./create-module-orchestrator";
 import { stepOperator } from "./step-operator";
 

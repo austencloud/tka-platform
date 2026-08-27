@@ -11,7 +11,6 @@
  * Each enum value corresponds to an available prop SVG file in /images/props/
  */
 export enum PropType {
-  // === STAFF FAMILY ===
   STAFF = "staff",
   SIMPLESTAFF = "simple_staff",
   BIGSTAFF = "bigstaff",
@@ -27,40 +26,30 @@ export enum PropType {
   // is, so fire and trails come off the burning part instead of the far rim.
   FIRE_DOUBLE_STAFF = "fire_double_staff",
 
-  // === CLUB FAMILY ===
   CLUB = "club",
   BIGCLUB = "bigclub",
 
-  // === FAN FAMILY ===
   FAN = "fan",
   BIGFAN = "bigfan",
 
-  // === TRIAD FAMILY ===
   TRIAD = "triad",
   BIGTRIAD = "bigtriad",
 
-  // === HOOP FAMILY ===
   MINIHOOP = "minihoop",
   BIGHOOP = "bighoop",
 
-  // === BUUGENG FAMILY ===
   BUUGENG = "buugeng",
   BIGBUUGENG = "bigbuugeng",
 
-  // === TRIGENG FAMILY ===
   TRIGENG = "trigeng",
 
-  // === HAND ===
   HAND = "hand",
 
-  // === TRIQUETRA FAMILY ===
   TRIQUETRA = "triquetra",
   TRIQUETRA2 = "triquetra2",
 
-  // === SWORD ===
   SWORD = "sword",
 
-  // === SICKLES ===
   // A matched pair of directly gripped competition kamas. The blade apex is
   // the one tracked tip; the handle establishes the prop's readable angle.
   SICKLES = "sickles",
@@ -75,32 +64,25 @@ export enum PropType {
   ENERGY_SABER = "energy_saber",
   ENERGY_STAFF = "energy_staff",
 
-  // === CHICKEN FAMILY ===
   CHICKEN = "chicken",
   BIGCHICKEN = "bigchicken",
 
-  // === GUITAR FAMILY ===
   GUITAR = "guitar",
   UKULELE = "ukulele",
 
-  // === DOUBLESTAR FAMILY ===
   DOUBLESTAR = "doublestar",
   BIGDOUBLESTAR = "bigdoublestar",
 
-  // === EIGHTRINGS FAMILY ===
   EIGHTRINGS = "eightrings",
   BIGEIGHTRINGS = "bigeightrings",
 
-  // === CONTACT BALL FAMILY ===
   CONTACTBALL = "contactball",
   BIGCONTACTBALL = "bigcontactball",
   DOUBLECONTACTBALL = "doublecontactball",
   BIGDOUBLECONTACTBALL = "bigdoublecontactball",
 
-  // === QUIAD ===
   QUIAD = "quiad",
 
-  // === TORCH FAMILY ===
   TORCH = "torch",
   BIGTORCH = "bigtorch",
 

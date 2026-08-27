@@ -25,9 +25,6 @@ import { EraRendererBase } from "../../shared/services/era-renderer-base";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { DrawableImage } from '$lib/shared/render/services/svg-image-cache';
 
-// ============================================================================
-// WINDOWS 16-COLOR PALETTE
-// ============================================================================
 
 interface PaletteColor {
 	r: number;
@@ -54,9 +51,7 @@ const WIN16_PALETTE: readonly PaletteColor[] = [
 	{ r: 0xff, g: 0xff, b: 0xff }, // 15 White
 ] as const;
 
-// ============================================================================
 // BAYER DITHERING MATRIX (4x4)
-// ============================================================================
 
 const BAYER_4X4 = [
 	[0, 8, 2, 10],
@@ -65,9 +60,6 @@ const BAYER_4X4 = [
 	[15, 7, 13, 5],
 ] as const;
 
-// ============================================================================
-// WIN95 VISUAL CONSTANTS
-// ============================================================================
 
 /**
  * The TKA rendering system uses a 950×950 coordinate space.
@@ -90,18 +82,13 @@ const GRID_DOT_RADIUS_VB = 25; // Matches modern renderer
 const BLUE_COLOR = "#0000FF";
 const RED_COLOR  = "#FF0000";
 
-// ============================================================================
-// PIXEL RENDERER
-// ============================================================================
 
 export class PixelRenderer extends EraRendererBase {
 	constructor(preparer: PictographPreparer) {
 		super(preparer);
 	}
 
-	// --------------------------------------------------------------------------
 	// Primary entry point
-	// --------------------------------------------------------------------------
 
 	async render(
 		canvas: HTMLCanvasElement,
@@ -141,9 +128,7 @@ export class PixelRenderer extends EraRendererBase {
 		this.applyDithering(ctx, size);
 	}
 
-	// --------------------------------------------------------------------------
 	// Placeholder - Win95-styled silver "?" card
-	// --------------------------------------------------------------------------
 
 	override renderPlaceholder(canvas: HTMLCanvasElement, size: number = 128): void {
 		canvas.width = size;

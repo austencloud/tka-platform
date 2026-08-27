@@ -69,7 +69,6 @@
     onSeek?.(Math.max(0, Math.min(totalDuration, seekTime)));
   }
 
-  // Start drag
   function startDrag(clientX: number) {
     isDragging = true;
     dragStartX = clientX;

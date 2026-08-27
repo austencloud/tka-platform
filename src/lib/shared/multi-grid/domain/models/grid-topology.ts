@@ -14,9 +14,6 @@
 import type { GridLocation, GridMode } from "$lib/shared/render/core/types";
 import type { Plane } from "@austencloud/scene-3d";
 
-// ============================================================================
-// GEOMETRY
-// ============================================================================
 
 /** Immutable 2D vector in abstract units (radius=1.0 = distance from center to hand point) */
 export interface Vec2 {
@@ -24,9 +21,6 @@ export interface Vec2 {
   readonly y: number;
 }
 
-// ============================================================================
-// GRID PLACEMENT
-// ============================================================================
 
 /**
  * A single grid's placement within the topology.
@@ -47,9 +41,6 @@ export interface GridPlacement {
   readonly plane?: Plane;
 }
 
-// ============================================================================
-// POINT REFERENCES
-// ============================================================================
 
 /**
  * A reference to a specific point on a specific grid.
@@ -84,9 +75,6 @@ export type Junction = WorldPoint & {
   readonly refs: readonly [PointRef, PointRef, ...PointRef[]];
 };
 
-// ============================================================================
-// TOPOLOGY
-// ============================================================================
 
 /**
  * Complete topology: all grids, all world points, all junctions.
@@ -101,9 +89,6 @@ export interface GridTopology {
   readonly junctions: readonly Junction[];
 }
 
-// ============================================================================
-// CONJOIN CONSTRAINT
-// ============================================================================
 
 /**
  * A constraint declaring that two grid:location pairs should share the same world point.

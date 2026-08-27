@@ -89,18 +89,12 @@ export class CreateModuleEventHandler {
     this.awaitCurrentSequenceCallback = awaitCurrentSequence ?? null;
   }
 
-  /**
-   * Set callback to add option to history
-   */
   setAddOptionToHistoryCallback(
     addOptionToHistory: (stepIndex: number, stepData: StepData) => void
   ): void {
     this.addOptionToHistoryCallback = addOptionToHistory;
   }
 
-  /**
-   * Set callback to push undo snapshot
-   */
   setPushUndoSnapshotCallback(
     pushUndoSnapshot: (type: UndoOperationType, metadata?: unknown) => void
   ): void {

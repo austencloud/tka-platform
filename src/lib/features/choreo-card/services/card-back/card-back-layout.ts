@@ -144,7 +144,6 @@ export function computeCardBackLayout(
   const height = dims.height - 2 * borderPx;  // .back content-box block size
   const cqi = width / 100;      // cqi resolves against border-frame content-box
 
-  // ── BRAND ────────────────────────────────────────────────────────────────
   // .brand-slot { top: 3.2cqi; left: 0; right: 0; }
   // Height approximated — see JSDoc concern above.
   const brandTop = 3.2 * cqi;
@@ -156,7 +155,6 @@ export function computeCardBackLayout(
     h: brandHeight,
   };
 
-  // ── TOP-LEFT GLYPH ───────────────────────────────────────────────────────
   // .corner.top-left { top: 3.2cqi; left: 3.2cqi; }
   // .glyph-box { width: 10cqi; height: 6cqi; }
   const topLeftGlyph: Placement = {
@@ -166,7 +164,6 @@ export function computeCardBackLayout(
     h: 6 * cqi,
   };
 
-  // ── TOP-RIGHT GLYPH ──────────────────────────────────────────────────────
   // .corner.top-right { top: 3.2cqi; right: 3.2cqi; }
   // .glyph-box { width: 10cqi; height: 6cqi; }
   // x = width - right_offset - element_width = width - 3.2cqi - 10cqi
@@ -177,7 +174,6 @@ export function computeCardBackLayout(
     h: 6 * cqi,
   };
 
-  // ── MANDALA ──────────────────────────────────────────────────────────────
   // .content { position: absolute; inset: 10cqi 3.2cqi 30cqi; }
   //   → top:10cqi, right:3.2cqi, bottom:30cqi, left:3.2cqi
   const contentLeft = 3.2 * cqi;
@@ -197,7 +193,6 @@ export function computeCardBackLayout(
     h: mandalaSize,
   };
 
-  // ── LOOP ROW ─────────────────────────────────────────────────────────────
   // .loop-row { position:absolute; bottom:28cqi; left:3cqi; right:3cqi;
   //             justify-content:center; gap:6cqi; }
   // .loop-icon-cell { width: 9cqi; height: 9cqi; }
@@ -226,7 +221,6 @@ export function computeCardBackLayout(
     h: iconSize,
   }));
 
-  // ── LEVEL BADGE ──────────────────────────────────────────────────────────
   // .level-badge-slot { position:absolute; bottom:18cqi; left:0; right:0;
   //                     justify-content:center; }
   // DifficultyBadge size="7cqi" — 7cqi × 7cqi square centered horizontally.
@@ -238,7 +232,6 @@ export function computeCardBackLayout(
     h: badgeSize,
   };
 
-  // ── START POSITION ───────────────────────────────────────────────────────
   // .corner.bottom-left { bottom: 2cqi; left: 3.2cqi; }
   // .start-pos-picto { width: 12cqi !important; height: 12cqi !important; }
   const startPosSize = 12 * cqi;
@@ -249,7 +242,6 @@ export function computeCardBackLayout(
     h: startPosSize,
   };
 
-  // ── STEP COUNT ───────────────────────────────────────────────────────────
   // .corner.bottom-right { bottom: 2cqi; right: 3.2cqi; }
   // .corner-label { font-size: 9cqi; line-height: 1; }
   // Width is digit-count dependent — allocated as 20cqi right-aligned slot.
@@ -263,7 +255,6 @@ export function computeCardBackLayout(
     h: stepCountH,
   };
 
-  // ── URL ──────────────────────────────────────────────────────────────────
   // .url-slot { position:absolute; bottom:2.8cqi; left:0; right:0; flex-column centered; }
   // Height approximated — see LAYOUT CONCERN in JSDoc.
   const urlHeight = 8 * cqi; // ornament(~1.6) + gap(0.6) + url(3.0) + gap(0.6) + year(2.2)

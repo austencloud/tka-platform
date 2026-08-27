@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/CardMockupPreview.svelte -->
 <script lang="ts">
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import DeckFanCover from "./DeckFanCover.svelte";

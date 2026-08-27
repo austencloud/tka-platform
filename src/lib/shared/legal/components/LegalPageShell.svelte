@@ -223,7 +223,6 @@
     }
   }
 
-  /* ---- Reduced motion ---- */
   @media (prefers-reduced-motion: reduce) {
     .back-link,
     .logo-chip,

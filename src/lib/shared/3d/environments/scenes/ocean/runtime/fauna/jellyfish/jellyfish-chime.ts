@@ -1,7 +1,6 @@
 import { browser } from "$app/environment";
 import { sceneAudioState } from "../../../../../../state/scene-audio-state.svelte";
 
-// ── Musical key ──────────────────────────────────────────────────────────────
 // Major pentatonic — no wrong notes, so taps always harmonize no matter the
 // order they're played in. Offsets in semitones from the root.
 const MAJOR_PENTATONIC = [0, 2, 4, 7, 9];
@@ -32,7 +31,6 @@ export function buildPentatonicNotes(count: number): number[] {
   return out;
 }
 
-// ── Bell synth ───────────────────────────────────────────────────────────────
 // Additive inharmonic partials → per-partial exponential decay → lowpass
 // (underwater muffle) → stereo pan → master, with a shared convolver reverb tail.
 // A soft, mellow bell: fundamental dominant with gentle upper partials. Kept

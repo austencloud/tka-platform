@@ -49,10 +49,8 @@ export class PromoOrchestrator {
     height: number
   ): Promise<void> {
     try {
-      // Initialize scene
       await this.sceneManager.initialize(canvas, width, height);
 
-      // Initialize video exporter with scene refs
       const refs = this.sceneManager.getSceneRefs();
       if (refs.renderer && refs.scene && refs.camera) {
         this.videoExporter.initialize(refs.renderer, refs.scene, refs.camera);
@@ -145,7 +143,6 @@ export class PromoOrchestrator {
 
   preview(onProgress?: AnimationProgressCallback): void {
     this.animationController.play((progress, currentTime) => {
-      // Update screenshot for current time
       this.screenshotInjector.updateForTime(progress);
 
       // Forward progress callback
@@ -186,7 +183,6 @@ export class PromoOrchestrator {
     // Stop preview if running
     this.stopPreview();
 
-    // Get animation duration
     const playbackState = this.animationController.getPlaybackState();
     const duration = playbackState.duration;
 
@@ -198,7 +194,6 @@ export class PromoOrchestrator {
           // Seek animation to this time
           this.animationController.seek(normalizedTime);
 
-          // Update screenshot for current time
           this.screenshotInjector.updateForTime(normalizedTime);
 
           // Render is handled by the exporter
@@ -263,7 +258,6 @@ export class PromoOrchestrator {
     this.videoExporter.dispose();
     this.sceneManager.dispose();
 
-    // Clear subscribers
     this.subscribers.clear();
   }
 

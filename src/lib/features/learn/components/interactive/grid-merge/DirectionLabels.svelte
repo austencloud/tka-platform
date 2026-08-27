@@ -231,7 +231,6 @@
 		}
 	}
 
-	/* === RESPONSIVE === */
 	@media (max-width: 700px) {
 		.label {
 			font-size: 38px;
@@ -244,7 +243,6 @@
 		}
 	}
 
-	/* === REDUCED MOTION === */
 	@media (prefers-reduced-motion: reduce) {
 		.label {
 			transition: none;

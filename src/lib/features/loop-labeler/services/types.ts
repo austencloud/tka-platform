@@ -5,7 +5,6 @@
 import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { TransformationIntervals } from "../domain/models/label-models";
 
-// === From ITransformationAnalyzer ===
 
 export interface AxisAlternatingResult {
   isAxisAlternating: boolean;
@@ -55,7 +54,6 @@ export interface ModularAnalysisResult {
   description: string;
 }
 
-// === From ILayeredPathDetector ===
 
 export interface HandPathCycle {
   /** Which hand this cycle describes */
@@ -125,7 +123,6 @@ export interface LayeredPathResult {
   confidence: number;
 }
 
-// === From IStepDataConverter ===
 
 export interface RawStepData {
   beat?: number;
@@ -168,7 +165,6 @@ export interface SequenceEntry {
   };
 }
 
-// === From ILOOPDesignator ===
 
 export type ComponentId =
   | "rotated"
@@ -191,7 +187,6 @@ export interface SectionDesignation {
   period?: Period | null; // Only relevant when "rotated" component is selected
 }
 
-// === From IStepPairAnalyzer ===
 
 export interface LetterRelationshipInfo {
   letter1: string;
@@ -217,7 +212,6 @@ export interface StepPairRelationship {
   letterRelationship?: LetterRelationshipInfo;
 }
 
-// === From ISequenceLoader ===
 
 export type FilterMode = "all" | "needsVerification" | "verified";
 export interface SequenceStats {
@@ -226,7 +220,6 @@ export interface SequenceStats {
   verified: number;
 }
 
-// === From ILabelFormatter ===
 
 export interface LOOPDesignationInput {
   components: ComponentId[];
@@ -235,7 +228,6 @@ export interface LOOPDesignationInput {
   transformationIntervals?: TransformationIntervals;
 }
 
-// === From ILOOPLabelsFirebaseRepository ===
 
 export interface LabeledSequence {
   word: string;
@@ -250,7 +242,6 @@ export interface LabeledSequence {
   notes: string;
 }
 
-// === From ICandidateFormatter ===
 
 export interface FormattedTransformations {
   primary: string[];

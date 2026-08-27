@@ -31,9 +31,6 @@ export interface DurationCategoryInfo {
   readonly color: string;
 }
 
-/**
- * Get display info for a category
- */
 export function getCategoryInfo(category: DurationCategory): DurationCategoryInfo {
   switch (category) {
     case "accent":
@@ -79,9 +76,6 @@ export interface DurationTemplateDefinition {
   readonly generator: (stepCount: number) => DurationPatternEntry[];
 }
 
-// =============================================================================
-// HELPER GENERATORS
-// =============================================================================
 
 /**
  * Generate uniform pattern (same duration for all steps)
@@ -174,9 +168,6 @@ function _generateGradualPattern(
   return entries;
 }
 
-// =============================================================================
-// TEMPLATE DEFINITIONS
-// =============================================================================
 
 const TEMPLATE_DEFINITIONS: readonly DurationTemplateDefinition[] = [
   {
@@ -229,9 +220,6 @@ const TEMPLATE_DEFINITIONS: readonly DurationTemplateDefinition[] = [
   },
 ];
 
-// =============================================================================
-// PUBLIC API
-// =============================================================================
 
 /**
  * Look up a single template by its ID
@@ -253,9 +241,6 @@ export function getTemplatesForStepCount(
   );
 }
 
-/**
- * Get templates filtered by category
- */
 export function getTemplatesByCategory(
   stepCount: number,
   category: DurationCategory | "all"
@@ -284,9 +269,6 @@ export function templateToPattern(
   };
 }
 
-/**
- * Get all unique categories from available templates
- */
 export function getAvailableCategories(stepCount: number): DurationCategory[] {
   const templates = getTemplatesForStepCount(stepCount);
   const categories = new Set(templates.map((t) => t.category));

@@ -105,9 +105,7 @@ export const backgroundBuilderState = {
   },
 };
 
-// ============================================================================
 // Lab Settings Persistence
-// ============================================================================
 
 /**
  * Get current lab settings from app settings, with defaults applied
@@ -123,9 +121,7 @@ function saveLabSettings(settings: BackgroundLabSettings): void {
   void settingsService.updateSetting("backgroundLabSettings", settings);
 }
 
-// ============================================================================
 // Cosmic Lab Settings
-// ============================================================================
 
 export function getCosmicSettings(): CosmicLabSettings {
   const labSettings = getLabSettings();
@@ -141,9 +137,7 @@ export function updateCosmicSettings(
   saveLabSettings({ ...labSettings, cosmic: updated });
 }
 
-// ============================================================================
 // Forest Lab Settings
-// ============================================================================
 
 export function getForestSettings(): ForestLabSettings {
   const labSettings = getLabSettings();
@@ -159,9 +153,7 @@ export function updateForestSettings(
   saveLabSettings({ ...labSettings, forest: updated });
 }
 
-// ============================================================================
 // Blossom Lab Settings
-// ============================================================================
 
 export function getBlossomSettings(): BlossomLabSettings {
   const labSettings = getLabSettings();
@@ -177,9 +169,7 @@ export function updateBlossomSettings(
   saveLabSettings({ ...labSettings, blossom: updated });
 }
 
-// ============================================================================
 // Rainbow Lab Settings
-// ============================================================================
 
 export function getRainbowSettings(): RainbowLabSettings {
   const labSettings = getLabSettings();
@@ -195,9 +185,7 @@ export function updateRainbowSettings(
   saveLabSettings({ ...labSettings, rainbow: updated });
 }
 
-// ============================================================================
 // Ember Lab Settings
-// ============================================================================
 
 export function getEmberSettings(): EmberLabSettings {
   const labSettings = getLabSettings();
@@ -211,9 +199,7 @@ export function updateEmberSettings(settings: Partial<EmberLabSettings>): void {
   saveLabSettings({ ...labSettings, ember: updated });
 }
 
-// ============================================================================
 // Celestial Lab Settings
-// ============================================================================
 
 export function getCelestialLabSettings(): CelestialLabSettings {
   const labSettings = getLabSettings();
@@ -229,9 +215,7 @@ export function updateCelestialLabSettings(
   saveLabSettings({ ...labSettings, celestial: updated });
 }
 
-// ============================================================================
 // Void Lab Settings
-// ============================================================================
 
 export function getVoidLabSettings(): VoidLabSettings {
   const labSettings = getLabSettings();

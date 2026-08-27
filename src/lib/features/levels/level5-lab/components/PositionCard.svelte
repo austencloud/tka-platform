@@ -197,7 +197,6 @@
     aspect-ratio: 1;
   }
 
-  /* ── Per-card orientation pickers ─────────────────────────── */
 
   .orientation-row {
     display: flex;
@@ -281,7 +280,6 @@
     font-size: 0.625rem;
   }
 
-  /* ── Footer ───────────────────────────────────────────────── */
 
   .card-footer {
     display: flex;

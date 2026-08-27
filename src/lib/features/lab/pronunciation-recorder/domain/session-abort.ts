@@ -1,4 +1,3 @@
-// src/lib/features/lab/pronunciation-recorder/domain/session-abort.ts
 export type ReadOutcome = "ok" | "fail";
 export type AbortReason = "early-failures" | "consecutive-failures";
 

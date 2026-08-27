@@ -93,7 +93,6 @@ function detectUserLevel(question: string): 'beginner' | 'intermediate' | 'advan
 		return 'advanced';
 	}
 
-	// Check for beginner signals
 	if (BEGINNER_SIGNALS.some((pattern) => pattern.test(normalized))) {
 		return 'beginner';
 	}

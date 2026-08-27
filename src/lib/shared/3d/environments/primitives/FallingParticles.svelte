@@ -557,7 +557,6 @@
       // Update position
       p.position.add(_tempVel.copy(p.velocity).multiplyScalar(delta));
 
-      // Update rotation
       p.rotation += p.rotationSpeed * delta;
 
       // Firefly pulsing - realistic blink pattern (mostly dark, occasional flash)

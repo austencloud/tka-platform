@@ -1,8 +1,5 @@
 import type { PropPlacementData } from "../models/prop-placement-data";
 
-/**
- * Create PropPlacementData with default values
- */
 export function createPropPlacementData(
   data: Partial<PropPlacementData> = {}
 ): PropPlacementData {

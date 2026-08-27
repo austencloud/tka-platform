@@ -1,4 +1,3 @@
-// tests/unit/video-trails/detection-corrector.test.ts
 
 import { describe, it, expect } from "vitest";
 import { applyCorrections } from "$lib/features/video/video-trails/services/detection-corrector";

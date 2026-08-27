@@ -183,7 +183,6 @@ function computeTipPosition(handPos, staffAngle, tipOffset, gridRadius) {
   return { x: tipX, y: tipY };
 }
 
-// ─── Mandala generator ─────────────────────────────────────────────────────
 
 function generateMandalaPath(beats, color, tipOffset, gridRadius, samplesPerBeat) {
   const points = [];

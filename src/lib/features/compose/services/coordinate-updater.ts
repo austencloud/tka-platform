@@ -41,9 +41,6 @@ export function calculateCoordinatesFromAngle(centerPathAngle: number): {
   };
 }
 
-/**
- * Calculate angle from x,y coordinates
- */
 export function calculateAngleFromCoordinates(x: number, y: number): number {
   const centerX = GRID_CENTER;
   const centerY = GRID_CENTER;

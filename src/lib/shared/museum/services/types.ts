@@ -4,14 +4,12 @@
 
 import type { ExhibitSlot } from "$lib/shared/museum/domain/museum-types";
 
-// === From IInteractionDetector ===
 
 export interface InteractionTarget {
   slot: ExhibitSlot;
   distance: number;
 }
 
-// === From IMuseumPersister ===
 
 export interface MuseumMetadata {
   name: string;

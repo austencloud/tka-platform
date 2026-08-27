@@ -26,7 +26,6 @@ import type {
 import type { FBO, FBOPool, PingPongPair } from "./fbo-pool";
 import type { CompiledProgram, ShaderLibrary } from "./shader-library";
 
-// ── Simulation constants ─────────────────────────────────────────────────
 
 const SIM_SIZE = 256;
 const JACOBI_ITERATIONS = 12;
@@ -53,7 +52,6 @@ const DEFAULT_MID: [number, number, number] = [1.0, 0.6, 0.1];
 const DEFAULT_HOT: [number, number, number] = [1.0, 0.85, 0.4];
 const DEFAULT_CORE: [number, number, number] = [1.0, 0.95, 0.85];
 
-// ── Executor ─────────────────────────────────────────────────────────────
 
 export class FirePassExecutor {
   private gl: WebGL2RenderingContext;
@@ -88,7 +86,6 @@ export class FirePassExecutor {
     this.emptyVAO = emptyVAO;
   }
 
-  // ── Public API ──────────────────────────────────────────────────────────
 
   execute(payload: FirePassPayload, dt: number): void {
     const gl = this.gl;

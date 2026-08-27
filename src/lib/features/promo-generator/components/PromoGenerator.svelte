@@ -92,7 +92,6 @@
     { id: "4k", label: "4K", dims: "3840×2160" },
   ];
 
-  // Initialize on mount
   onMount(async () => {
     if (!canvas || !canvasContainer) return;
 

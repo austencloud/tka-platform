@@ -135,7 +135,6 @@
       }
       availableLetters = Array.from(uniqueLetters).sort();
 
-      // Load saved state
       const savedState = loadState();
       if (savedState.mode) {
         mode = savedState.mode;

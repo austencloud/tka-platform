@@ -47,9 +47,6 @@ import { Vector3, Quaternion, Euler } from "three";
 import { CameraMode } from "$lib/shared/3d/camera/types";
 import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
 
-// ============================================================================
-// SYSTEM CONTEXT
-// ============================================================================
 
 /**
  * Shared context passed to all systems
@@ -63,9 +60,6 @@ export interface SystemContext {
   playerController: PlayerControllerState | null;
 }
 
-// ============================================================================
-// INPUT SYSTEM
-// ============================================================================
 
 /**
  * Keyboard state
@@ -172,9 +166,6 @@ export function getPointerLocked(): boolean {
   return isPointerLocked;
 }
 
-// ============================================================================
-// CAMERA SYSTEM
-// ============================================================================
 
 const MOUSE_SENSITIVITY = 0.002;
 
@@ -234,9 +225,6 @@ export function cameraSystem(ctx: SystemContext): void {
   }
 }
 
-// ============================================================================
-// MOVEMENT SYSTEM
-// ============================================================================
 
 const MOVE_SPEED = 5;
 const SPRINT_MULTIPLIER = 2;
@@ -303,12 +291,10 @@ function movementSystemPhysics(ctx: SystemContext): void {
       moveDir.normalize().multiplyScalar(speed * ctx.deltaTime);
     }
 
-    // Handle jumping
     if (input.jump && pc.isGrounded && verticalVelocity <= 0) {
       verticalVelocity = JUMP_FORCE;
     }
 
-    // Apply gravity
     if (!pc.isGrounded) {
       verticalVelocity -= GRAVITY * ctx.deltaTime;
       verticalVelocity = Math.max(verticalVelocity, -50); // Terminal velocity
@@ -391,9 +377,6 @@ function movementSystemFallback(ctx: SystemContext): void {
   }
 }
 
-// ============================================================================
-// PHYSICS SYSTEM
-// ============================================================================
 
 /**
  * Step physics simulation and sync with ECS
@@ -412,9 +395,6 @@ export function physicsSystem(ctx: SystemContext): void {
   syncPhysicsToECS();
 }
 
-// ============================================================================
-// RENDER SYNC SYSTEM
-// ============================================================================
 
 const tempPosition = new Vector3(); // eslint-disable-line @typescript-eslint/no-unused-vars
 const tempQuaternion = new Quaternion(); // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -438,7 +418,6 @@ export function renderSyncSystem(ctx: SystemContext): void {
       transform.position[2] ?? 0
     );
 
-    // Update rotation
     obj.quaternion.set(
       transform.rotation[0] ?? 0,
       transform.rotation[1] ?? 0,
@@ -446,7 +425,6 @@ export function renderSyncSystem(ctx: SystemContext): void {
       transform.rotation[3] ?? 1
     );
 
-    // Update scale
     obj.scale.set(
       transform.scale[0] ?? 1,
       transform.scale[1] ?? 1,
@@ -473,9 +451,6 @@ export function renderSyncSystem(ctx: SystemContext): void {
   }
 }
 
-// ============================================================================
-// LOD SYSTEM
-// ============================================================================
 
 /**
  * Update LOD levels based on camera distance
@@ -509,9 +484,6 @@ export function lodSystem(ctx: SystemContext): void {
   }
 }
 
-// ============================================================================
-// SYSTEM PIPELINE
-// ============================================================================
 
 /**
  * Run all systems in order

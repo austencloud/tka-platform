@@ -41,9 +41,7 @@ import {
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
-// ---------------------------------------------------------------------------
 // Fixtures
-// ---------------------------------------------------------------------------
 
 /** A four-position cycle so every beat has genuinely distinct motion content. */
 const CYCLE: readonly GridLocation[] = [

@@ -10,7 +10,6 @@ import type {
 } from "../domain/voice-session-types";
 import type { VoiceCommand, VoiceCommandCategory, CommandResult } from "../domain/voice-command-types";
 
-// === From IVoiceSessionRecorder ===
 
 export interface RecordEventParams {
   transcript: string;
@@ -25,7 +24,6 @@ export interface RecordEventParams {
 }
 export type SessionEndedCallback = (session: VoiceSession) => void;
 
-// === From ICommandDispatcher ===
 
 export interface IVoiceCommandHandler {
   /** Which command categories this handler can execute */

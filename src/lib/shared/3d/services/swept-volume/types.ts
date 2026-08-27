@@ -1,4 +1,3 @@
-// src/lib/shared/3d/services/swept-volume/types.ts
 
 import type { SimPropTarget } from "$lib/features/lab/tabs/collision-lab/services/types";
 

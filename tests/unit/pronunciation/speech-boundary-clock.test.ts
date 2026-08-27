@@ -1,4 +1,3 @@
-// tests/unit/pronunciation/speech-boundary-clock.test.ts
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Letter } from "$lib/shared/foundation/domain/models/letter";

@@ -66,7 +66,6 @@ const PARAM_ALIASES: Record<string, GeneratorParam> = {
   turns: "turnIntensity",
   intensity: "turnIntensity",
   spinning: "turnIntensity",
-  // loopType
   "loop type": "loopType",
   loop: "loopType",
   "loop kind": "loopType",
@@ -75,9 +74,7 @@ const PARAM_ALIASES: Record<string, GeneratorParam> = {
   "slice size": "period",
 };
 
-// ============================================================================
 // Value alias maps per parameter
-// ============================================================================
 
 const MODE_ALIASES: Record<string, string> = {
   freeform: "freeform",

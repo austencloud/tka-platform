@@ -29,9 +29,7 @@ export interface PropPlacement {
   readonly red: PointRef;
 }
 
-// ============================================================================
 // LEGACY CONSTANTS (migrated from conjoined-lab, needed for rendering)
-// ============================================================================
 
 /**
  * Strict hand point absolute coordinates within a 950x950 grid.

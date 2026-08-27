@@ -11,9 +11,6 @@ import type { ObjectDefinition } from "$lib/shared/3d/procedural-engine/objects/
 import { OCEAN_PLACEMENTS } from "./placements";
 import { createMetadataSceneObjectAdapter } from "$lib/shared/3d/scene-composer/metadata-scene-object-adapter";
 
-// ─────────────────────────────────────────────────────────────
-// CORALS
-// ─────────────────────────────────────────────────────────────
 const coralItems: ObjectDefinition[] = [
   {
     key: "coral-0",
@@ -129,9 +126,6 @@ const coralItems: ObjectDefinition[] = [
   },
 ];
 
-// ─────────────────────────────────────────────────────────────
-// FLORA
-// ─────────────────────────────────────────────────────────────
 const floraItems: ObjectDefinition[] = [
   {
     key: "seaweed",
@@ -163,9 +157,6 @@ const floraItems: ObjectDefinition[] = [
   },
 ];
 
-// ─────────────────────────────────────────────────────────────
-// DECORATIONS
-// ─────────────────────────────────────────────────────────────
 const decorationItems: ObjectDefinition[] = [
   {
     key: "starfish",
@@ -225,9 +216,6 @@ const decorationItems: ObjectDefinition[] = [
   },
 ];
 
-// ─────────────────────────────────────────────────────────────
-// ROCKS
-// ─────────────────────────────────────────────────────────────
 const rockItems: ObjectDefinition[] = [
   {
     key: "rock-0",
@@ -315,9 +303,6 @@ const rockItems: ObjectDefinition[] = [
   },
 ];
 
-// ─────────────────────────────────────────────────────────────
-// MESHY FORMATIONS
-// ─────────────────────────────────────────────────────────────
 const formationItems: ObjectDefinition[] = [
   {
     key: "meshy-basalt-pinnacle",
@@ -579,9 +564,6 @@ const currentCompositionItems: ObjectDefinition[] = [
   })),
 ];
 
-// ─────────────────────────────────────────────────────────────
-// CATALOG ASSEMBLY
-// ─────────────────────────────────────────────────────────────
 const categories: CatalogCategory[] = [
   { id: "corals", label: "Corals", icon: "fa-circle-nodes", items: coralItems },
   { id: "flora", label: "Flora", icon: "fa-leaf", items: floraItems },

@@ -96,7 +96,6 @@ export function hasRevisionsCached(key: string): boolean {
   return state.revisionAvailability.get(key) ?? false;
 }
 
-// ── Load ──────────────────────────────────────────────────────────────────
 
 /** One collection read; safe to call from multiple hosts (reader/print/book) -
  *  re-entrant while a load is already in flight. */
@@ -128,7 +127,6 @@ export async function loadOverrides(): Promise<Map<string, StepData[]>> {
   }
 }
 
-// ── Revision bookkeeping ──────────────────────────────────────────────────
 
 /** Snapshot the doc's CURRENT state (before it's overwritten) into revisions.
  *  When no override doc exists yet, snapshots the "authored" pseudo-revision

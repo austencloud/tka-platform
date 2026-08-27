@@ -44,7 +44,6 @@
   let hapticService: HapticFeedback | null = $state(null);
   let tagController: ScreenshotTagController | null = $state(null);
 
-  // ─── State domains ──────────────────────────────────────────────────────────
 
   const tagFilter = createGalleryTagFilterState({
     getHapticService: () => hapticService,
@@ -123,7 +122,6 @@
     }
   }
 
-  // ─── Data model & filtering ────────────────────────────────────────────────
 
   type FilterCategory = "all" | DeviceCategory;
 

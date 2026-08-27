@@ -242,7 +242,6 @@
   <T.PlaneGeometry args={[ROOM_DEPTH, CEILING_Y]} />
 </T.Mesh>
 
-<!-- ============ A · coal bed ============ -->
 <T.Group position.x={x("bed")}>
   {#each bedKerb as kerb, i (i)}
     <T.Mesh position={[kerb.x, 0.075, kerb.z]} material={iron}>
@@ -290,7 +289,6 @@
   </T.Group>
 </T.Group>
 
-<!-- ============ B · banked coal wall ============ -->
 <T.Group position={[x("wall"), 0, BACK_Z + 0.06]}>
   <FirstFireCoalWall
     bayWidth={WALL_W}
@@ -300,7 +298,6 @@
   />
 </T.Group>
 
-<!-- ============ C · chain lamp ============ -->
 <!-- Three of them, receding. A single fixture can only answer "does this read
      as a lamp"; the actual brief is that they MARK THE WAY, and one lamp
      cannot mark anything. Spaced 3.4m, which is roughly four walking paces -
@@ -342,7 +339,6 @@
   {/each}
 </T.Group>
 
-<!-- ============ D · furnace vent ============ -->
 <T.Group position={[x("furnace"), 0, BACK_Z + 0.06]}>
   <!-- Recess interior, set back so the mouth has depth to it. -->
   <T.Mesh position={[0, FURNACE_SILL + FURNACE_H / 2, -0.5]} material={basalt}>
@@ -424,7 +420,6 @@
   </T.Group>
 </T.Group>
 
-<!-- ============ E · quench vent ============ -->
 <T.Group position={[x("steam"), 0, -1.2]}>
   <FirstFireSteamVent ceilingY={CEILING_Y} material={iron} />
 </T.Group>

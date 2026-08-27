@@ -201,7 +201,6 @@
     outline-offset: -2px;
   }
 
-  /* ── portrait ─────────────────────────────────────────────────────────── */
   .portrait {
     padding: 1.1em 0.6em 0.9em;
     /* A real surface, not a transparent hit area. Without it the faces and
@@ -239,7 +238,6 @@
     line-height: 1.25;
   }
 
-  /* ── index ────────────────────────────────────────────────────────────── */
   .index {
     flex-direction: row;
     align-items: center;
@@ -266,7 +264,6 @@
     flex: 1;
   }
 
-  /* ── shared ───────────────────────────────────────────────────────────── */
   .face {
     position: relative;
     flex: 0 0 auto;

@@ -38,9 +38,7 @@ import type {
   TraceSegment,
 } from "$lib/features/learn/play/games/trace-paths/domain/trace-types";
 
-// ---------------------------------------------------------------------------
 // Fixtures
-// ---------------------------------------------------------------------------
 
 /** One hand's motion for one beat. Equal endpoints build a genuine STATIC. */
 function handMotion(

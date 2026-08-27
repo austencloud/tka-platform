@@ -17,7 +17,6 @@ export class DosSoundManager {
 	private volume = 0.3;
 	private muted = false;
 
-	// ---------- public API ----------
 
 	/** General confirmation beep. 800 Hz, 50ms. */
 	beep(): void {
@@ -80,7 +79,6 @@ export class DosSoundManager {
 		return this.muted;
 	}
 
-	// ---------- internals ----------
 
 	/**
 	 * Lazy-create the AudioContext. Returns null when running

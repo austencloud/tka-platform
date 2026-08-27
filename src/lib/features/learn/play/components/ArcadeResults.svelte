@@ -53,7 +53,6 @@ heavier 400ms beat on the last one → best line → stats → actions.
 
   const reduced = reducedMotion();
 
-  // --- Reveal choreography ---------------------------------------------
   const gradeScale = new Spring(reduced ? 1 : 0, {
     stiffness: 0.2,
     damping: 0.45,

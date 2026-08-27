@@ -24,9 +24,6 @@ const {
   COLLECTIONS,
 } = config;
 
-// ============================================================================
-// READ / DISPLAY OPERATIONS
-// ============================================================================
 
 async function getItemById(docId) {
   const fullId = await resolveAndValidateId(docId);

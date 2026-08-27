@@ -177,7 +177,6 @@
     background: #34343f;
   }
 
-  /* ── Buttons ─────────────────────────────────────────────────────────────── */
   .btn {
     display: inline-flex;
     align-items: center;
@@ -268,7 +267,6 @@
     font-style: italic;
   }
 
-  /* ── Hint caption under the pill ─────────────────────────────────────────── */
   .hint {
     pointer-events: auto;
     margin: 0;

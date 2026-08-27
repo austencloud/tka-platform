@@ -29,7 +29,6 @@ import { getMuseumPerformanceRecorder } from "../get-museum-performance-recorder
 
 const performanceRecorder = getMuseumPerformanceRecorder();
 
-// ── Types ──
 
 export interface PerRoomBuckets {
   corridorBucket: MuseumGeometryDryRun;
@@ -65,7 +64,6 @@ export class MuseumGeometryStreamer {
   lastPlayerRoomId: string | null = null;
   currentPlayerRoomId: string | null = null;
 
-  // ── Worker state ──
   private readonly worker: Worker;
   private readonly pendingBuilds = new Map<string, PendingBuild>();
   private firstRoomActivated = false;

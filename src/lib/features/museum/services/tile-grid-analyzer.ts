@@ -59,7 +59,6 @@ function toWallMaterial(theme: string): WallMaterialId {
   }
 }
 
-// ── Main analyzer ──
 
 export function analyze(grid: MuseumGrid): AnalyzedMuseum {
   const rooms: RoomDefinition[] = [];

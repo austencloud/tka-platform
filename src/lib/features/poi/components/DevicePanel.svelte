@@ -1,4 +1,3 @@
-<!-- src/lib/features/poi/components/DevicePanel.svelte -->
 <script lang="ts">
   import { getPoiContext } from "../context/poi-context";
   import type { PoiDeviceInfo } from "../domain/device-types";

@@ -206,7 +206,6 @@ export function drawPathCommands(
           const sweepFlag = args[i + 4] ?? 0;
           const [x, y] = abs(args[i + 5] ?? 0, args[i + 6] ?? 0);
 
-          // Convert arc to bezier curves
           const curves = arcToBezier(
             currentX, currentY,
             x, y,

@@ -2,7 +2,6 @@ import type { GridCell } from "../state/arrange-grid-state.svelte";
 import type { TransformType } from "$lib/shared/animation-engine/domain/compose-types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
-// --- From IArrangeUndoManager ---
 /**
  * IArrangeUndoManager - Contract for Arrange tab undo/redo
  *
@@ -67,7 +66,6 @@ export interface ArrangeUndoEntry {
  * Undo manager interface for Arrange grid operations
  */
 
-// --- From IArrangeKeyboardHandler ---
 /**
  * IArrangeKeyboardHandler - Contract for arrange tab keyboard shortcuts
  *
@@ -114,7 +112,6 @@ export interface KeyboardCallbacks {
   transformLayer(layerIndex: number, transformType: TransformType): void;
 }
 
-// --- From IArrangeLayerTransformer ---
 /**
  * IArrangeLayerTransformer - Contract for sequence transform operations
  *
@@ -130,7 +127,6 @@ export interface TransformResult {
   error?: string;
 }
 
-// --- From IArrangeGridSerializer ---
 /**
  * IArrangeGridSerializer - Serializes grid state to a human-readable template format.
  *
@@ -147,7 +143,6 @@ export interface SerializationContext {
   gridCols: number;
 }
 
-// --- From IArrangeCompositionConverter ---
 /**
  * IArrangeCompositionConverter
  *

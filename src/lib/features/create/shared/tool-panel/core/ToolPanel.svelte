@@ -33,9 +33,6 @@
   import ConstructGenerateToggle from "../../workspace-panel/shared/components/buttons/ConstructGenerateToggle.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
-  // ============================================================================
-  // PROPS
-  // ============================================================================
 
   const {
     createModuleState,
@@ -49,9 +46,6 @@
     isFilterPanelOpen = false,
   }: IToolPanelProps = $props();
 
-  // ============================================================================
-  // REACTIVE STATE
-  // ============================================================================
 
   // Derived from props
   let activeToolPanel = $derived(createModuleState.activeSection);
@@ -95,15 +89,11 @@
     previousStep: () => {},
   });
 
-  // ============================================================================
-  // LIFECYCLE
-  // ============================================================================
 
   onMount(() => {
     hapticService = getHapticFeedback();
     deviceDetector = getDeviceDetector();
 
-    // Initialize navigation layout
     if (deviceDetector) {
       updateNavigationLayout();
 
@@ -127,9 +117,6 @@
         : (deviceLayout as "top" | "bottom" | "right");
   }
 
-  // ============================================================================
-  // DERIVED STATE
-  // ============================================================================
 
   const isSequenceStateInitialized = $derived(
     createModuleState.sequenceState.isInitialized
@@ -180,9 +167,6 @@
       constructTabState.isPickerStateLoading
   );
 
-  // ============================================================================
-  // EFFECTS
-  // ============================================================================
 
   // Keep picker state in sync with Construct tab's own sequence state
   // This ensures the StartPositionPicker shows when sequence is empty
@@ -204,17 +188,12 @@
     }
   });
 
-  // ============================================================================
   // PUBLIC API (Exposed to parent)
-  // ============================================================================
 
   export function getAnimationStateRef() {
     return animationStateRef;
   }
 
-  // ============================================================================
-  // EVENT HANDLERS
-  // ============================================================================
 
   function handleNavigateToAdvanced() {
     hapticService?.trigger("selection");
@@ -225,9 +204,6 @@
   }
 </script>
 
-<!-- ============================================================================ -->
-<!-- TEMPLATE -->
-<!-- ============================================================================ -->
 
 <div
   class="tool-panel"
@@ -301,9 +277,6 @@
   {/if}
 </div>
 
-<!-- ============================================================================ -->
-<!-- STYLES -->
-<!-- ============================================================================ -->
 
 <style>
   .tool-panel {

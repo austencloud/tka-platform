@@ -45,7 +45,6 @@ export class SequenceAligner {
       return this.emptyAlignment(0.0);
     }
 
-    // Build similarity matrix
     const simMatrix = this.buildSimilarityMatrix(stepsA, stepsB, opts);
 
     // Run Needleman-Wunsch
@@ -82,7 +81,6 @@ export class SequenceAligner {
       };
     }
 
-    // Build similarity matrix
     const simMatrix = this.buildSimilarityMatrix(stepsA, stepsB, opts);
 
     // Run Smith-Waterman
@@ -161,9 +159,7 @@ export class SequenceAligner {
     };
   }
 
-  // ============================================================================
   // PRIVATE: Similarity Matrix
-  // ============================================================================
 
   private buildSimilarityMatrix(
     stepsA: readonly Step[],
@@ -262,9 +258,7 @@ export class SequenceAligner {
     return Math.min(1.0, result.similarity * 1.1);
   }
 
-  // ============================================================================
   // PRIVATE: Needleman-Wunsch (Global Alignment)
-  // ============================================================================
 
   private needlemanWunsch(
     simMatrix: { scores: number[][] },
@@ -276,7 +270,6 @@ export class SequenceAligner {
     const n = simMatrix.scores.length;
     const m = simMatrix.scores[0]?.length || 0;
 
-    // Initialize DP matrix
     const dpMatrix: number[][] = Array.from({ length: n + 1 }, () =>
       Array(m + 1).fill(0)
     );
@@ -388,9 +381,7 @@ export class SequenceAligner {
     return alignment;
   }
 
-  // ============================================================================
   // PRIVATE: Smith-Waterman (Local Alignment)
-  // ============================================================================
 
   private smithWaterman(
     simMatrix: { scores: number[][] },
@@ -511,9 +502,7 @@ export class SequenceAligner {
     };
   }
 
-  // ============================================================================
   // PRIVATE: Helpers
-  // ============================================================================
 
   private rotateSteps(steps: readonly StepData[], offset: number): readonly StepData[] {
     if (offset === 0 || steps.length === 0) {

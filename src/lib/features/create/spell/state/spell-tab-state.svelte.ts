@@ -55,9 +55,7 @@ export function createSpellTabState(
   SequenceTransformer?: SequenceTransformer,
   sequenceValidationService?: SequenceValidator
 ) {
-  // ============================================================================
   // REACTIVE STATE (Spell-specific)
-  // ============================================================================
 
   let isLoading = $state(false);
   let error = $state<string | null>(null);
@@ -135,9 +133,6 @@ export function createSpellTabState(
       })
     : null;
 
-  // ============================================================================
-  // DERIVED STATE
-  // ============================================================================
 
   const hasError = $derived(error !== null);
   const hasSequence = $derived(() => {
@@ -163,9 +158,6 @@ export function createSpellTabState(
     preferences.makeCircular && circularizationOptions.length > 0
   );
 
-  // ============================================================================
-  // INITIALIZATION
-  // ============================================================================
 
   /**
    * Initialize spell tab - called from component onMount
@@ -228,9 +220,7 @@ export function createSpellTabState(
     }
   }
 
-  // ============================================================================
   // STATE MUTATIONS - Core
-  // ============================================================================
 
   function setLoading(loading: boolean) {
     isLoading = loading;
@@ -265,9 +255,7 @@ export function createSpellTabState(
     }
   }
 
-  // ============================================================================
   // STATE MUTATIONS - Spell-specific
-  // ============================================================================
 
   function setInputWord(word: string) {
     inputWord = word;
@@ -397,9 +385,6 @@ export function createSpellTabState(
     }
   }
 
-  // ============================================================================
-  // PUBLIC API
-  // ============================================================================
 
   return {
     // Readonly state access - Core

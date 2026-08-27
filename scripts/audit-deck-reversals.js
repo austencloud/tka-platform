@@ -34,9 +34,7 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// ---------------------------------------------------------------------------
 // Reversal detection (mirrors src/lib/shared/create/services/reversal-detector.ts)
-// ---------------------------------------------------------------------------
 
 function getMotion(step, color) {
   if (!step) return null;
@@ -110,9 +108,7 @@ function detectReversals(seq) {
   return reversals;
 }
 
-// ---------------------------------------------------------------------------
 // Main scan
-// ---------------------------------------------------------------------------
 
 async function main() {
   console.log("=== Deck Reversal Audit ===\n");

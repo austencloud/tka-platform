@@ -83,16 +83,13 @@
       terrainPhysics.addStageGroundCollider(0, 0, stageRadius + stageBlendWidth, STAGE_HEIGHT);
     }
 
-    // Initialize vegetation manager
     vegetationManager = new VegetationManager(scene.current, { useGLTFModels: true });
     await vegetationManager.initWithModels();
 
-    // Initialize atmosphere
     atmosphereManager = new AtmosphereManager(scene.current);
     atmosphereManager.createSky();
     atmosphereManager.setFog("forest");
 
-    // Initialize chunk manager
     chunkManager = new ChunkManager(seed, {
       chunkSize,
       viewDistance,
@@ -104,12 +101,10 @@
     // Set stage zone for terrain flattening
     chunkManager.setStageZone({ x: 0, z: 0 }, stageRadius, stageBlendWidth);
 
-    // Handle chunk loaded
     chunkManager.onChunkLoaded = (key, state) => {
       if (state.meshData) {
         createChunkMesh(state, key);
 
-        // Create terrain collider
         const chunk = state.entity.chunk;
         if (chunk && terrainPhysics) {
           terrainPhysics.addChunkCollider(
@@ -120,7 +115,6 @@
           );
         }
 
-        // Add vegetation
         if (chunk && vegetationManager && state.meshData.vegetation.length > 0) {
           const chunkWorldX = chunk.chunkX * chunkSize;
           const chunkWorldZ = chunk.chunkZ * chunkSize;
@@ -134,9 +128,7 @@
       }
     };
 
-    // Handle chunk unloaded
     chunkManager.onChunkUnloaded = (key) => {
-      // Remove mesh from scene
       const mesh = chunkMeshes.get(key);
       if (mesh) {
         scene.current.remove(mesh);
@@ -153,7 +145,6 @@
       const chunkZ = parts[2] ?? 0;
       terrainPhysics?.removeChunkCollider(chunkX, chunkZ);
 
-      // Remove vegetation
       vegetationManager?.removeChunkVegetation(key);
     };
 

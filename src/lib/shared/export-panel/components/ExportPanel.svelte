@@ -83,7 +83,6 @@
     }
   }
 
-  // Handle mode change
   function handleModeChange(mode: "single" | "composite") {
     panelState.mode = mode;
     if (panelState.settingsPanelOpen) {

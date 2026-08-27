@@ -127,7 +127,6 @@ export class ThumbnailRenderer {
     // Derive start position if missing
     const sequenceWithStartPos = this.ensureStartPosition(fullSequence);
 
-    // Build render options
     const renderOptions = this.buildRenderOptions(input, options);
 
     // Pre-render the QR bitmap on the main thread when requested. The worker

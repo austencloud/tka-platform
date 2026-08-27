@@ -36,7 +36,6 @@
 
   const hapticService = getHapticFeedback();
 
-  // Get icon for current display view
   const viewIcon = $derived(() => {
     switch (displayView) {
       case "camera-canvas":
@@ -50,7 +49,6 @@
     }
   });
 
-  // Get label for current display view
   const viewLabel = $derived(() => {
     switch (displayView) {
       case "camera-canvas":
@@ -64,7 +62,6 @@
     }
   });
 
-  // Get icon for current practice mode
   const modeIcon = $derived(() => {
     switch (practiceMode) {
       case PracticeMode.ADAPTIVE:
@@ -78,7 +75,6 @@
     }
   });
 
-  // Get label for current practice mode
   const modeLabel = $derived(() => {
     switch (practiceMode) {
       case PracticeMode.ADAPTIVE:

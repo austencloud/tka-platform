@@ -28,9 +28,6 @@ export class Canvas2DFadeManager {
     this.fadeDurationMs = fadeDurationMs;
   }
 
-  /**
-   * Start a new fade transition
-   */
   startFadeTransition(): void {
     this.isFading = true;
     this.fadeProgress = 0;

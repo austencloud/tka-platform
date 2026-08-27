@@ -85,7 +85,6 @@ export class ImageComposer {
     this.qrCodeGenerator = generator;
   }
 
-  // --- Passthroughs for the parallel card-front render path -----------------
   // composeCardFrontParallel runs cell rasterization on a worker pool but reuses
   // this composer for glyph preload, visibility resolution, chrome deps, the
   // duration badge, and the per-cell main-thread fallback. These thin accessors

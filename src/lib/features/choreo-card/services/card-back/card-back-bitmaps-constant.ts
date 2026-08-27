@@ -78,7 +78,6 @@ export const LOOP_ICONS: Record<string, { fa: string; color: string; label: stri
   [LOOPComponent.REWOUND]:  { fa: "fas fa-backward",   color: "#00bcd4", label: "Rewound" },
 };
 
-// ── Cache infrastructure ───────────────────────────────────────────────────
 
 /**
  * The function the cache wrappers use to actually produce a bitmap. Indirection

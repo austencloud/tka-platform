@@ -43,7 +43,6 @@ even when Svelte recreates the component instance.
     PropType.TRIGENG,
   ]);
 
-  // Get centralized visibility manager for transform state
   const visibilityManager = getAnimationVisibilityManager();
 
   // Track transform state to disable transitions during sequence transforms

@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/front-door/ShopFrontDoor.svelte -->
 <!--
   /shop — the catalog front door.
 

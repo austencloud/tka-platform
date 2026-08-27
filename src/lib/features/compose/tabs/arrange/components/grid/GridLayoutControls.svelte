@@ -124,7 +124,6 @@
 </script>
 
 <div class="grid-layout-controls">
-  <!-- ── Dimension readout ── -->
   <div class="dim-readout">
     <div class="dim-pair">
       <button class="dim-step" onclick={() => stepCols(-1)} disabled={gridCols <= 1} aria-label="Fewer columns">
@@ -161,7 +160,6 @@
     </div>
   {/if}
 
-  <!-- ── Preset cards ── -->
   <div class="preset-grid">
     {#each presets as preset (preset.id)}
       {@const active = isPresetActive(preset)}
@@ -203,7 +201,6 @@
     padding: 12px 10px;
   }
 
-  /* ── Dimension readout ── */
   .dim-readout {
     display: flex;
     align-items: center;
@@ -284,7 +281,6 @@
     margin-top: -6px;
   }
 
-  /* ── Confirmation ── */
   .confirm-bar {
     display: flex;
     align-items: center;
@@ -337,7 +333,6 @@
 
   .confirm-btn:focus-visible { outline: 2px solid var(--theme-accent, #8b5cf6); outline-offset: 2px; }
 
-  /* ── Preset cards ── */
   .preset-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);

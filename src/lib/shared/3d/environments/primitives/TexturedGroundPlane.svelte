@@ -59,7 +59,6 @@
 
   const textureLoader = useLoader(TextureLoader);
 
-  // Load all texture maps
   const diffuseTex = $derived(textureLoader.load(diffuseMap));
   const normalTex = $derived(normalMap ? textureLoader.load(normalMap) : null);
   const roughnessTex = $derived(
@@ -79,7 +78,6 @@
     tex.needsUpdate = true;
   }
 
-  // Apply diffuse map
   $effect(() => {
     const tex = $diffuseTex;
     const mat = materialRef;
@@ -122,7 +120,6 @@
     }
   });
 
-  // Apply AO map
   $effect(() => {
     const tex = aoTex ? $aoTex : null;
     const mat = materialRef;

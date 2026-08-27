@@ -24,7 +24,6 @@ import {
 import { Plane } from "@austencloud/scene-3d";
 import type { PropState3D } from "@austencloud/scene-3d";
 
-// ── Constants ─────────────────────────────────────────────────────────────────
 
 const GRID_RADIUS = 0.57;
 const STAFF_HALF = 0.475;
@@ -58,7 +57,6 @@ function computePropRotation(
   return [euler.x, euler.y, euler.z];
 }
 
-// ── Hierarchy Builder ─────────────────────────────────────────────────────────
 
 /**
  * Builds a minimal PerformerRig scene graph and returns the propAnchor Group.
@@ -127,7 +125,6 @@ function buildRigHierarchy(opts: {
   return propAnchor;
 }
 
-// ── Snapshot Shape ────────────────────────────────────────────────────────────
 
 interface PropSnapshotEntry {
   label: string;
@@ -140,7 +137,6 @@ interface PropSnapshotEntry {
   lateralOffset: number;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function assertWorldPosition(
   propAnchor: Group,

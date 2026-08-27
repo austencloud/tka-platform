@@ -11,9 +11,6 @@ import type { ThemeMode } from "../../settings/utils/background-theme-calculator
 // Reactive state for theme mode - defaults to dark
 let currentThemeMode = $state<ThemeMode>("dark");
 
-/**
- * Get the current theme mode reactively
- */
 export function getThemeMode(): ThemeMode {
   return currentThemeMode;
 }

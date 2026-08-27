@@ -31,14 +31,12 @@
 
   let { isOpen = $bindable(false) }: { isOpen: boolean } = $props();
 
-  // ─── Local state ─────────────────────────────────────────────────────────────
 
   let gridMode = $state<GridMode>(GridMode.DIAMOND);
   let showCenter = $state(false);
   let selectedLocation = $state<GridLocation>(GridLocation.SOUTH);
   let selectedOrientation = $state<Orientation>(Orientation.IN);
 
-  // ─── Hand point data for tappable overlay ───────────────────────────────────
 
   type HandPoint = { key: GridLocation; x: number; y: number; label: string };
 
@@ -91,7 +89,6 @@
 
   const isCenter = $derived(selectedLocation === GridLocation.CENTER);
 
-  // ─── PictographData for PictographContainer ─────────────────────────────────
 
   // Build a minimal PictographData with one blue static motion at the selected
   // location/orientation. PictographContainer handles all rendering: grid SVG,
@@ -272,7 +269,6 @@
     line-height: 1.5;
   }
 
-  /* ─── Grid area with pictograph + tappable overlay ──────────────────────── */
 
   .grid-area {
     width: 100%;

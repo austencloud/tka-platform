@@ -49,7 +49,6 @@
     reversalPattern: ResolvedReversalPattern | null;
     onReversalChange: (p: ResolvedReversalPattern) => void;
     onDraw: () => void;
-    /* ── LOOP board ── */
     weights: StepCountWeight[];
     totalCards: number;
     sources: SourceSummary[];
@@ -198,7 +197,6 @@
     container-name: proto;
   }
 
-  /* ── Header ── */
   .head {
     display: flex;
     align-items: center;
@@ -289,7 +287,6 @@
     letter-spacing: 0.05em;
   }
 
-  /* ── Draw ── */
   .draw {
     display: flex;
     align-items: center;

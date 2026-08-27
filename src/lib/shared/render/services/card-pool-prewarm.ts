@@ -1,4 +1,3 @@
-// src/lib/shared/render/services/card-pool-prewarm.ts
 //
 // Pre-warm the OffscreenCanvas card-render pool the moment a deck's sequences
 // are known (before the print preview mounts), so the ~5s asset-bundle seed

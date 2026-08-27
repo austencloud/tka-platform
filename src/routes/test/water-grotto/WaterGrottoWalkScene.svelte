@@ -73,7 +73,6 @@
 
   const { layout, colliders, spawn } = buildWaterGrottoSetup();
 
-  // ── Palette ───────────────────────────────────────────────────────────────
 
   /**
    * Three greys, separated by VALUE only, in the order a visitor reads a room:

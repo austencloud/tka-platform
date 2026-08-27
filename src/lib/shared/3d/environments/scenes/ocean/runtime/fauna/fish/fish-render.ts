@@ -17,14 +17,12 @@ import type { FishSpeciesConfig } from "./fish-species";
 import vertexShader from "../../../shaders/fish/fish-vertex.vert?raw";
 import fragmentShader from "../../../shaders/fish/fish-fragment.frag?raw";
 
-// ── Extracted model from GLB ───────────────────────────────────────────
 
 export interface ExtractedModel {
   geometry: BufferGeometry;
   diffuseMap: Texture | null;
 }
 
-// ── Render system interface ────────────────────────────────────────────
 
 export interface FishRenderSystem {
   meshes: InstancedMesh[];
@@ -72,7 +70,6 @@ export interface FishRenderSystem {
   dispose(): void;
 }
 
-// ── Geometry helpers ───────────────────────────────────────────────────
 
 function normalizeGeometry(geo: BufferGeometry): BufferGeometry {
   geo.computeBoundingBox();
@@ -212,7 +209,6 @@ function createFishMaterial(
   });
 }
 
-// ── Render system factory ──────────────────────────────────────────────
 
 export function createFishRenderSystem(): FishRenderSystem {
   const dracoLoader = new DRACOLoader();

@@ -13,10 +13,8 @@ import type { ConceptCategory, LearnConcept } from "./types";
  * Based on "The Kinetic Alphabet Level 1" curriculum
  */
 export const TKA_CONCEPTS: LearnConcept[] = [
-  // ============================================================================
   // FOUNDATION CATEGORY
   // Core building blocks - understanding the grid and basic positions/motions
-  // ============================================================================
   {
     id: "grid",
     order: 1,
@@ -243,10 +241,8 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     ],
   },
 
-  // ============================================================================
   // LETTERS CATEGORY
   // Learning the alphabet - categorizing motions into letters
-  // ============================================================================
   {
     id: "letter-codex-intro",
     order: 14,
@@ -393,10 +389,8 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     ],
   },
 
-  // ============================================================================
   // COMBINATIONS CATEGORY
   // Putting letters together into words, sequences, and patterns
-  // ============================================================================
   {
     id: "words-alpha-beta",
     order: 22,
@@ -511,10 +505,8 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     ],
   },
 
-  // ============================================================================
   // ADVANCED CATEGORY
   // Optional mastery concepts for dedicated learners
-  // ============================================================================
   {
     id: "motion-type-mastery",
     order: 28,
@@ -576,18 +568,12 @@ export const CONCEPT_CATEGORIES: Record<
   },
 };
 
-/**
- * Get concepts by category
- */
 export function getConceptsByCategory(
   category: ConceptCategory
 ): LearnConcept[] {
   return TKA_CONCEPTS.filter((concept) => concept.category === category);
 }
 
-/**
- * Get concept by ID
- */
 export function getConceptById(id: string): LearnConcept | undefined {
   return TKA_CONCEPTS.find((concept) => concept.id === id);
 }
@@ -600,9 +586,6 @@ export function getNextConcept(currentId: string): LearnConcept | undefined {
   return TKA_CONCEPTS[currentIndex + 1];
 }
 
-/**
- * Get previous concept
- */
 export function getPreviousConcept(
   currentId: string
 ): LearnConcept | undefined {

@@ -52,7 +52,6 @@ export class CommandPalette {
       // Only search available commands
       if (command.available !== true) continue;
 
-      // Calculate relevance score
       const score = this.calculateRelevance(command, normalizedQuery);
 
       if (score > 0) {

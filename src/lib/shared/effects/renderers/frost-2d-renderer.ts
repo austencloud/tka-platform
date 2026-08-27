@@ -2,7 +2,6 @@ import type { Frost2DParams } from "../translators/canvas2d-types";
 import type { EmitterTip } from "./emitter-tip";
 import { emitterId } from "./emitter-tip";
 
-// ── Aura particle ───────────────────────────────────────────────────────
 
 interface FrostParticle {
   x: number;
@@ -18,7 +17,6 @@ interface FrostParticle {
   kind: 0 | 1; // 0 = aura glow, 1 = bright sparkle
 }
 
-// ── Crystal sprite ──────────────────────────────────────────────────────
 
 interface FrostCrystal {
   x: number;
@@ -31,7 +29,6 @@ interface FrostCrystal {
   shapeTier: 0 | 1 | 2; // hex plate, faceted star, dendrite snowflake
 }
 
-// ── Trail sample for crystal growth ─────────────────────────────────────
 
 interface TrailSample {
   x: number;
@@ -116,7 +113,6 @@ export class Frost2DRenderer {
     }
   }
 
-  // ── Trail path tracking ─────────────────────────────────────────────
 
   private updateTrailPath(
     id: string,
@@ -199,7 +195,6 @@ export class Frost2DRenderer {
     return 2;
   }
 
-  // ── Aura particle spawning ──────────────────────────────────────────
 
   private spawnAuraParticles(
     params: Frost2DParams,
@@ -255,7 +250,6 @@ export class Frost2DRenderer {
     }
   }
 
-  // ── Integration ─────────────────────────────────────────────────────
 
   private integrateParticles(dt: number): void {
     const drag = 0.94;

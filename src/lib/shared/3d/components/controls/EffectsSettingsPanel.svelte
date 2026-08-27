@@ -213,7 +213,6 @@
       (scene3DRender.motion.blur || scene3DRender.motion.speedLines ? 1 : 0)
   );
 
-  // --- Curated per-effect tuning ---
   // The tuned params live in the shared EffectsConfig (global by design), so the
   // sliders show whenever an effect with a curated 3D knob set is the active
   // one — in every scope, no double-click. The currently-enabled chip IS the

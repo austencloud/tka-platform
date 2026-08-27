@@ -23,7 +23,6 @@ const marketingChrome = readSource(
   "src/lib/shared/landing/components/MarketingChrome.svelte"
 );
 
-// --- Collect every href the homepage manifest links to ---------------------
 
 interface HrefEntry {
   href: string;

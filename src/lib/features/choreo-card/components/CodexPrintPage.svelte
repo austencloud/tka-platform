@@ -342,7 +342,6 @@
   }
   .guide-bold { font-weight: 600; }
 
-  /* ── Sidebar ── */
   .control-sidebar {
     display: flex;
     flex-direction: column;

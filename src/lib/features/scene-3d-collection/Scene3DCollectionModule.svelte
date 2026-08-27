@@ -409,7 +409,6 @@
     border: 0;
   }
 
-  /* ── Gallery ── */
   .gallery-view {
     width: 100%;
     height: 100%;
@@ -515,7 +514,6 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
   }
 
-  /* ── Empty / loading ── */
   .empty-state,
   .loading-state {
     display: flex;
@@ -553,7 +551,6 @@
     margin: 0;
   }
 
-  /* ── Detail layout ── */
   .detail-layout {
     display: flex;
     height: 100%;

@@ -37,23 +37,14 @@ export function createAvatarSyncState(
   // Cleanup function for effect root
   let cleanupEffects: (() => void) | null = null;
 
-  /**
-   * Get current master avatar
-   */
   function getMaster() {
     return masterAvatarId === "avatar1" ? avatar1 : avatar2;
   }
 
-  /**
-   * Get current follower avatar
-   */
   function getFollower() {
     return masterAvatarId === "avatar1" ? avatar2 : avatar1;
   }
 
-  /**
-   * Calculate follower beat with offset and wrapping
-   */
   function calculateFollowerBeat(
     masterStep: number,
     totalSteps: number
@@ -183,9 +174,6 @@ export function createAvatarSyncState(
     }
   }
 
-  /**
-   * Get offset description for UI
-   */
   function getOffsetDescription(): string {
     const followerName = masterAvatarId === "avatar1" ? "Avatar 2" : "Avatar 1";
     if (stepOffset === 0) {

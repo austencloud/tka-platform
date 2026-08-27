@@ -53,7 +53,6 @@
     backgroundSystem = new BlossomBackgroundSystem();
     backgroundSystem.initialize(dimensions, quality);
 
-    // Apply time of day
     backgroundSystem.setTimeOfDay(timeOfDay);
 
     // Apply user's saved layer settings (don't overwrite with preset defaults)

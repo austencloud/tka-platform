@@ -33,7 +33,6 @@
   color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
 }
 
-/* ---------- section grammar ---------- */
 /* The heading voice for the shell's below-the-fold slots (how it works,
    details). Snippets are compiled in the HOST's scope, so scoped styles in
    ShopProductShell cannot reach them — this plain stylesheet is what keeps two
@@ -73,7 +72,6 @@
   color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
 }
 
-/* ---------- fixed spec line ---------- */
 /* The beta run's unchangeable facts, printed under the price on both LOOP
    pages. Information, not dead buttons. */
 .shop-product-shell .spec-line {

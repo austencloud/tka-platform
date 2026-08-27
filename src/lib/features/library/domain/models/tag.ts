@@ -41,9 +41,6 @@ export interface CreateTagOptions {
   icon?: string;
 }
 
-/**
- * Create a new tag
- */
 export function createTag(
   name: string,
   ownerId: string,
@@ -59,9 +56,6 @@ export function createTag(
   };
 }
 
-/**
- * Update a tag's use count
- */
 export function updateTagUseCount(tag: LibraryTag, delta: number): LibraryTag {
   return {
     ...tag,

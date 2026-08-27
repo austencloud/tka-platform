@@ -1,4 +1,3 @@
-// src/lib/features/video/video-trails/services/led-threshold-detector.ts
 
 import type { IEndpointDetector } from "./IEndpointDetector";
 import type { DetectedEndpoint, DetectionConfig, DetectorCapabilities } from "../domain/types";

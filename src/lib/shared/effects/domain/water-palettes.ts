@@ -112,7 +112,6 @@ export function deriveCustomPalette(hex: string): WaterPalette {
   return { id: "custom", core, edge, highlight, splashTint, puddleTint };
 }
 
-/* --- HSL helpers --- */
 
 interface Hsl {
   h: number;

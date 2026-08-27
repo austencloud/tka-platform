@@ -12,9 +12,7 @@ import {
 } from "$lib/shared/animation-engine/domain/types/trail-types";
 import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 
-// ============================================================================
 // Grid Layout
-// ============================================================================
 
 /**
  * Grid layout configuration
@@ -42,9 +40,7 @@ export const LAYOUT_PRESETS = {
 
 export type LayoutPresetKey = keyof typeof LAYOUT_PRESETS;
 
-// ============================================================================
 // Cell Media Types
-// ============================================================================
 
 /**
  * Media type that can be assigned to a composition cell.
@@ -58,9 +54,7 @@ export type CellMediaType =
   | "viewer-3d"       // 3D animation viewer
   | "empty";          // Placeholder/empty cell
 
-// ============================================================================
 // Transform Types
-// ============================================================================
 
 /**
  * Transform operations that can be applied to a sequence layer.
@@ -87,9 +81,7 @@ export interface AppliedTransform {
   timestamp: number;
 }
 
-// ============================================================================
 // Tunnel (Layered Sequence) Configuration
-// ============================================================================
 
 /**
  * Prop color configuration for a tunnel layer
@@ -148,9 +140,7 @@ export function getTunnelLayerColors(layerIndex: number): PropColors {
   return TUNNEL_LAYER_COLORS[layerIndex % TUNNEL_LAYER_COLORS.length] ?? DEFAULT_PROP_COLORS;
 }
 
-// ============================================================================
 // Cell Configuration
-// ============================================================================
 
 /**
  * Cell content type

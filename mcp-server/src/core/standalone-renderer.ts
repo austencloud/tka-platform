@@ -55,9 +55,7 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// ============================================================================
 // CONSTANTS (matching Canvas2DDirectRenderer.ts exactly)
-// ============================================================================
 
 const VIEWBOX_SIZE = 950;
 const CENTER = VIEWBOX_SIZE / 2; // 475
@@ -246,9 +244,6 @@ const VTG_TO_ELEMENTAL: Record<VTGMode, ElementalType> = {
   QO: "moon", // Quarter Opp
 };
 
-// ============================================================================
-// INTERFACES
-// ============================================================================
 
 export interface MotionInput {
   motionType: string;
@@ -295,9 +290,6 @@ export interface RenderVisibilityOptions {
   inline?: boolean;
 }
 
-// ============================================================================
-// RENDERER CLASS
-// ============================================================================
 
 export class StandaloneRenderer {
   private projectRoot: string;

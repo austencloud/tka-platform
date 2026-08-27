@@ -80,7 +80,6 @@
     inVisuals && location?.view === "detail" ? location.contextId : undefined
   );
 
-  // ---- list state -----------------------------------------------------------
 
   let byType = $state<Record<string, PublicArtifactEnvelope[]>>({});
   let listLoading = $state(true);
@@ -465,7 +464,6 @@
     opacity: 0.8;
   }
 
-  /* ---- gallery wall ---- */
 
   .list-shell {
     flex: 1;
@@ -700,7 +698,6 @@
     }
   }
 
-  /* ---- detail ---- */
 
   .detail-shell {
     display: flex;

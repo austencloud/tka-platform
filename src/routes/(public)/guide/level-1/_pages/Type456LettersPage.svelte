@@ -59,7 +59,6 @@
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
 
-  // ── Motion authoring ────────────────────────────────────────────────────────
   const dash = (color: MotionColor, from: GridLocation, to: GridLocation) =>
     createMotionData({
       motionType: MotionType.DASH,

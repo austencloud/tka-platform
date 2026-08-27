@@ -78,9 +78,6 @@ class LibraryStateManager {
   private state = $state<LibraryStateData>(this.getInitialState());
   private readonly STORAGE_KEY = "tka-library-state";
 
-  // ============================================================
-  // PERSISTENCE
-  // ============================================================
 
   private loadPersistedState(): Partial<LibraryStateData> | null {
     try {
@@ -110,9 +107,6 @@ class LibraryStateManager {
     }
   }
 
-  // ============================================================
-  // HMR SUPPORT
-  // ============================================================
 
   private getInitialState(): LibraryStateData {
     // Preserve state across HMR reloads (not full page refresh)
@@ -144,9 +138,6 @@ class LibraryStateManager {
     };
   }
 
-  // ============================================================
-  // GETTERS
-  // ============================================================
 
   get activeSection() {
     return this.state.activeSection;
@@ -270,7 +261,6 @@ class LibraryStateManager {
       result = result.filter((seq) => seq.source === filters.source);
     }
 
-    // Filter by collection
     if (filters.collectionId) {
       result = result.filter((seq) =>
         seq.collectionIds.includes(filters.collectionId!)
@@ -289,7 +279,6 @@ class LibraryStateManager {
       });
     }
 
-    // Sort
     result.sort((a, b) => {
       // Special handling for "word" sort - use kinetic alphabet order
       if (filters.sortBy === "word") {

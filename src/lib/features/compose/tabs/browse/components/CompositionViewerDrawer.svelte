@@ -217,9 +217,6 @@ import { resolveThumbnail } from "$lib/features/compose/tabs/browse/services/com
 		background: var(--theme-panel-bg, #0a0a14);
 	}
 
-	/* ===========================
-	   HEADER
-	   =========================== */
 
 	.viewer-header {
 		position: relative;
@@ -283,11 +280,6 @@ import { resolveThumbnail } from "$lib/features/compose/tabs/browse/services/com
 		flex-shrink: 0;
 	}
 
-	/* ===========================
-	   PREVIEW SECTION
-	   Fills all space between header and info bar.
-	   Grid is centered and constrained to fit.
-	   =========================== */
 
 	.preview-section {
 		flex: 1;

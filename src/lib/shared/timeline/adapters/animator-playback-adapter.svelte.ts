@@ -73,7 +73,6 @@ export function computeBeatMarkerPositions(durations: number[]): number[] {
   return positions;
 }
 
-// ── Adapter factory ────────────────────────────────────────────────────
 
 export interface AnimatorPlaybackParams {
   getCurrentStep: () => number;

@@ -50,9 +50,6 @@ export interface IAnimatorLoader {
    */
   loadAnimatorServices(): AnimatorServiceLoadResult;
 
-  /**
-   * Load animation renderer.
-   */
   loadAnimationRenderer(): AnimationRendererLoadResult;
 
   /** @deprecated Use loadAnimationRenderer() instead */

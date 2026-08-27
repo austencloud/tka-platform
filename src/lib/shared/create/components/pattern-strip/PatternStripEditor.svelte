@@ -482,7 +482,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* ─── Sentence mode ─── */
 
   /* ONE card, not a stack of loose fragments. The sentence, the two controls
      that write it, and the result it produces are one thought, and they were

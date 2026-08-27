@@ -102,7 +102,6 @@ const SCORES = {
   "2026-07-22-trail-hand-tracking-mode": [4, "S"],
   "2026-07-23-first-session-exception-remediation": [4, "S"],
 
-  // ---- backlog/ ----
   "2026-04-27-kickstarter-campaign-design": [3, "L"],
   "2026-05-05-edge-ssr-migration-design": [2, "L"],
   "2026-05-12-beta-offset-swap-design": [3, "M"],

@@ -254,9 +254,7 @@ function shuffle<T>(arr: T[], rng: () => number = Math.random): void {
   }
 }
 
-// ---------------------------------------------------------------------------
 // TnD deck helpers
-// ---------------------------------------------------------------------------
 
 export interface TnDSequenceEntry {
   sequenceId: string;

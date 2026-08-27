@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/BookCoverArt.svelte -->
 <!--
   The book's REAL cover in the shop: renders the locked Level 1 guide cover
   (GuideCover, navy edition — mandala emblem, trio arc, byline) inside a

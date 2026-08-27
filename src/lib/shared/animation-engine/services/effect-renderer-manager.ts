@@ -106,7 +106,6 @@ export class EffectRendererManager {
   fireTipTracker: FireTipTracker | null = null;
   ledSampler: LedSampler | null = null;
 
-  // ── Configs ─────────────────────────────────────────────────────────
   fireConfig: FireOverlayConfig = { ...DEFAULT_FIRE_CONFIG };
   ledConfig: LedOverlayConfig = structuredClone(DEFAULT_LED_CONFIG);
   private ledInitPending = false;
@@ -147,11 +146,9 @@ export class EffectRendererManager {
    */
   private warmHidden = new Set<OverlayEffectId>();
 
-  // ── Per-cell maps ───────────────────────────────────────────────────
   cellTipEffectMap: TipEffectMap | undefined = undefined;
   cellTipEffortMap: TipEffortMap | undefined = undefined;
 
-  // ── Previous-frame flags for change detection ───────────────────────
   /** Map from effect name to whether tips are currently enabled. LED uses ledConfig.enabled instead. */
   private prevEffectEnabled: Map<OverlayEffectId, boolean> = new Map(
     OVERLAY_PLUGINS.map((p) => [p.id as OverlayEffectId, false])
@@ -216,7 +213,6 @@ export class EffectRendererManager {
       shouldKeepInactiveWebglRenderersWarm();
   }
 
-  // ── Public registry accessor ────────────────────────────────────────
 
   /** Get a renderer by effect id. Returns null if not initialized. */
   getRenderer(id: EffectType): EffectRendererLike | null {
@@ -273,7 +269,6 @@ export class EffectRendererManager {
     return this.prevEffectEnabled.get(effect) ?? false;
   }
 
-  // ── Generic Overlay Sync ────────────────────────────────────────────
 
   /**
    * Generic init/destroy lifecycle for a single registry-driven overlay effect.

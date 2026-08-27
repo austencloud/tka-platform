@@ -142,7 +142,6 @@
     };
   });
 
-  // ── Moon reflection column ─────────────────────────────────────────────
   //
   // A real planar reflection would cost a second render of the whole scene. The
   // moon is the only thing bright enough to reflect at dusk, so it is drawn

@@ -30,7 +30,6 @@ function main() {
 
   const [word, selectedText, lens, rejectedJson] = args;
 
-  // Validate lens
   const validLenses = ['DEADPAN', 'ABSURDIST', 'SARDONIC', 'DICTIONARY', 'DOMAIN', 'ACRONYM', 'DARK', 'ROLEPLAY', 'META'];
   if (!validLenses.includes(lens.toUpperCase())) {
     console.error(`Invalid lens: ${lens}`);

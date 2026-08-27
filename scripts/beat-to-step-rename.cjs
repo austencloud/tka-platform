@@ -16,7 +16,6 @@ const EXTENSIONS = ['.ts', '.svelte', '.js'];
 
 // Patterns to replace (order matters - longer patterns first)
 const REPLACEMENTS = [
-  // ===== LONGER COMPOUND PATTERNS FIRST =====
 
   // Index patterns (must come before simple 'beatIndex')
   ['currentBeatIndex', 'currentStepIndex'],
@@ -360,7 +359,6 @@ const REPLACEMENTS = [
   ['importedBeats', 'importedSteps'],
   ['exportedBeats', 'exportedSteps'],
 
-  // ===== ADDITIONAL PATTERNS FROM CODEBASE ANALYSIS =====
 
   // Previous/matching patterns (LOOP executors)
   ['previousMatchingBeat', 'previousMatchingStep'],
@@ -487,7 +485,6 @@ const REPLACEMENTS = [
   ['mockBeat', 'mockStep'],
   ['testBeat', 'testStep'],
 
-  // ===== MISSING PATTERNS FROM CODEBASE SCAN =====
 
   // Data patterns
   ['currentBeatData', 'currentStepData'],
@@ -527,7 +524,6 @@ const REPLACEMENTS = [
   ['beatConverter', 'stepConverter'],
   ['BeatConverter', 'StepConverter'],
 
-  // ===== ADDITIONAL PATTERNS FROM SECOND SCAN =====
 
   // Pair patterns (case variations)
   ['beatpair', 'steppair'],
@@ -579,7 +575,6 @@ const REPLACEMENTS = [
   ['minBeat', 'minStep'],
   ['maxBeat', 'maxStep'],
 
-  // ===== THIRD ROUND OF PATTERNS =====
 
   // Data patterns
   ['RawBeatData', 'RawStepData'],
@@ -639,7 +634,6 @@ const REPLACEMENTS = [
   ['startingPositionBeat', 'startingPositionStep'],
   ['updatedStartingPositionBeat', 'updatedStartingPositionStep'],
 
-  // ===== FOURTH ROUND =====
 
   // Interface patterns
   ['IBeatPairAnalyzer', 'IStepPairAnalyzer'],
@@ -701,7 +695,6 @@ const REPLACEMENTS = [
   ['previousBeatsRef', 'previousStepsRef'],
   ['ggBeatIndex', 'ggStepIndex'],
 
-  // ===== FIFTH ROUND =====
   ['newlyAddedBeatIndex', 'newlyAddedStepIndex'],
   ['firstBeatAnalyzer', 'firstStepAnalyzer'],
   ['emptyBeats', 'emptySteps'],
@@ -715,7 +708,6 @@ const REPLACEMENTS = [
   ['clipBeatPosition', 'clipStepPosition'],
   ['toPublicBeatPairs', 'toPublicStepPairs'],
 
-  // ===== FILE RENAME RELATED PATTERNS =====
 
   // Converters
   ['BeatDataConverter', 'StepDataConverter'],
@@ -785,7 +777,6 @@ const REPLACEMENTS = [
   ['workingBeatData', 'workingStepData'],
   ['getBeatDataForSequence', 'getStepDataForSequence'],
 
-  // ===== MORE REMAINING PATTERNS =====
   ['onRemoveBeatPairDesignation', 'onRemoveStepPairDesignation'],
   ['beatTrackingFrameId', 'stepTrackingFrameId'],
   ['beatsGenerated', 'stepsGenerated'],
@@ -811,7 +802,6 @@ const REPLACEMENTS = [
   ['generateStepTimestamps', 'generateStepTimestamps'],
   ['beatConverter', 'stepConverter'],
 
-  // ===== SIXTH ROUND - MORE REMAINING PATTERNS =====
 
   // Count patterns
   ['maxBeatCount', 'maxStepCount'],
@@ -953,7 +943,6 @@ const REPLACEMENTS = [
   ['stepNumberRenderer', 'stepNumberRenderer'],
   ['drawStepNumber', 'drawStepNumber'],
 
-  // ===== SEVENTH ROUND - REMAINING PATTERNS =====
 
   // Expected/get number patterns
   ['expectedBeatNumber', 'expectedStepNumber'],
@@ -996,7 +985,6 @@ const REPLACEMENTS = [
   ['canvasBeat', 'canvasStep'],
   ['renderBeat', 'renderStep'],
 
-  // ===== EIGHTH ROUND =====
 
   // Selection patterns with BeatNumber
   ['initialBeatNumber', 'initialStepNumber'],
@@ -1036,7 +1024,6 @@ const REPLACEMENTS = [
   ['beatReversals', 'stepReversals'],
   ['BeatReversals', 'StepReversals'],
 
-  // ===== NINTH ROUND =====
 
   // Index methods
   ['getCurrentBeatIndex', 'getCurrentStepIndex'],

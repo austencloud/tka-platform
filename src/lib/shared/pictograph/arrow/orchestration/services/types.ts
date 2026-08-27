@@ -1,4 +1,3 @@
-// --- From ArrowLifecycleManager ---
 /**
  * Arrow Lifecycle Manager Contract
  *

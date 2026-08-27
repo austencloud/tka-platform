@@ -1,4 +1,3 @@
-// --- From GalleryItemAdapter ---
 /**
  * GalleryItemAdapter
  *
@@ -21,7 +20,6 @@ export interface GalleryItem {
   capturedAt: Date | null;
 }
 
-// --- From ScreenshotOrchestrator ---
 /**
  * ScreenshotOrchestrator - Coordinates on-demand screenshot captures
  * from the Lab UI via the Vite dev server endpoints.
@@ -72,7 +70,6 @@ export interface CaptureStartResult {
   total: number;
 }
 
-// --- From ScreenshotUploader ---
 /**
  * ScreenshotUploader
  *
@@ -111,7 +108,6 @@ export interface UploadScreenshotParams {
   height: number;
 }
 
-// --- From ScreenshotUploadOrchestrator ---
 /**
  * ScreenshotUploadOrchestrator
  *

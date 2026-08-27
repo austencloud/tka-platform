@@ -19,9 +19,7 @@ const admin = require("firebase-admin");
 const { readFileSync, writeFileSync, mkdirSync, existsSync } = require("fs");
 const path = require("path");
 
-// ---------------------------------------------------------------------------
 // Firebase Admin initialization (matches project convention)
-// ---------------------------------------------------------------------------
 
 const SERVICE_ACCOUNT_PATH = path.join(__dirname, "..", "serviceAccountKey.json");
 
@@ -41,9 +39,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// ---------------------------------------------------------------------------
 // Configuration
-// ---------------------------------------------------------------------------
 
 const SCHEMA_VERSION = 2;
 const BATCH_SIZE = 500;
@@ -56,9 +52,7 @@ const COLLECTION_MAP = {
   publicSequences: { file: "public-sequences.json", skinny: false },
 };
 
-// ---------------------------------------------------------------------------
 // CLI arg parsing
-// ---------------------------------------------------------------------------
 
 const collectionsArg = process.argv.find((a) => a.startsWith("--collections="));
 const requestedCollections = collectionsArg

@@ -1,4 +1,3 @@
-// src/lib/shared/auth/services/guest-identity.ts
 import { signInAnonymously } from "firebase/auth";
 import { getAuthInstance } from "$lib/shared/auth/firebase";
 import {

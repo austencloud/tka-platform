@@ -16,9 +16,7 @@ import { buildVisualSequenceSaveMenuItem } from "$lib/shared/library/services/vi
 import { TrailMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
 
-// ============================================================================
 // Callbacks Interface
-// ============================================================================
 
 export interface CellContextMenuCallbacks {
   onTransform: (type: TransformType, hand: "left" | "right" | "both") => void;
@@ -34,9 +32,7 @@ export interface CellContextMenuCallbacks {
   onOpenEffortMatrix?: () => void;
 }
 
-// ============================================================================
 // Private Builders
-// ============================================================================
 
 /** Tracks radio state for "Apply To" within a single menu build */
 let currentHand: "left" | "right" | "both" = "both";

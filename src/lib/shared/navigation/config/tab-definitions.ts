@@ -499,7 +499,6 @@ export const SETTINGS_TABS: Section[] = [
   },
 ];
 
-// ============================================================================
 // Feedback tabs configuration
 // User-facing tabs first (submit, my-feedback), admin-only tabs last (tracker, manage)
 export const FEEDBACK_TABS: Section[] = [

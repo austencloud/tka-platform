@@ -28,9 +28,7 @@ import type {
 } from "../../domain/types/charcoal-spark-types";
 import { DEFAULT_CHARCOAL_PARAMS } from "../../domain/types/charcoal-spark-types";
 
-// ============================================================================
 // Constants
-// ============================================================================
 
 const MAX_DPR = 2;
 
@@ -40,9 +38,7 @@ const MAX_DPR = 2;
  * canvas size from FireFrameInput.canvasWidth / canvasHeight each frame.
  */
 
-// ============================================================================
 // Shader Sources (GLSL 300 ES)
-// ============================================================================
 
 const SPARK_VERTEX = /* glsl */ `#version 300 es
 precision highp float;
@@ -130,9 +126,7 @@ void main() {
 }
 `;
 
-// ============================================================================
 // Shader program helper
-// ============================================================================
 
 interface ShaderProgram {
 	program: WebGLProgram;
@@ -140,9 +134,7 @@ interface ShaderProgram {
 	attributes: Map<string, number>;
 }
 
-// ============================================================================
 // CharcoalSparkRenderer
-// ============================================================================
 
 export class CharcoalSparkRenderer {
 	private canvas: HTMLCanvasElement | null = null;
@@ -265,9 +257,7 @@ export class CharcoalSparkRenderer {
 	private emissionScale = 1;
 	private spawnsThisFrame = 0;
 
-	// ======================================================================
 	// IFireOverlayRenderer implementation
-	// ======================================================================
 
 	initialize(container: HTMLElement, width: number, height: number): boolean {
 		this.canvas = document.createElement("canvas");
@@ -410,7 +400,6 @@ export class CharcoalSparkRenderer {
 
 		this.applyEmissionBudget(params, simDt);
 
-		// Render
 		this.draw(input, params);
 	}
 
@@ -455,9 +444,7 @@ export class CharcoalSparkRenderer {
 		return this.gl;
 	}
 
-	// ======================================================================
 	// Parameter updates
-	// ======================================================================
 
 	/** Update spark params from external sliders. Only reallocates pool when maxParticles changes. */
 	setParams(params: CharcoalSparkParams): void {
@@ -470,9 +457,7 @@ export class CharcoalSparkRenderer {
 		}
 	}
 
-	// ======================================================================
 	// Particle pool
-	// ======================================================================
 
 	private allocateParticlePool(count: number): void {
 		this.maxParticles = count;
@@ -498,9 +483,7 @@ export class CharcoalSparkRenderer {
 		this.colorData = new Float32Array(count * 4);
 	}
 
-	// ======================================================================
 	// Emission
-	// ======================================================================
 
 	/**
 	 * Place the spawn origin for particle `index` of a batch of `count`.

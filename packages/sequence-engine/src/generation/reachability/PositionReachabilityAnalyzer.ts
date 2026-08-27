@@ -72,7 +72,6 @@ export class PositionReachabilityAnalyzer {
       };
     }
 
-    // --- Backward pass ---
     // reachableAt[i] = set of positions that, as the startPosition of step i,
     // can eventually reach a requiredEndPosition by step seedLength-1.
     const reachableAt: Set<string>[] = new Array(seedLength);
@@ -116,7 +115,6 @@ export class PositionReachabilityAnalyzer {
       }
     }
 
-    // --- Forward cleanup pass ---
     // A position at step i is only useful if it can be reached from some
     // position at step i-1 (which itself was reachable). This prunes positions
     // that survived the backward pass but have no valid incoming path.
@@ -137,7 +135,6 @@ export class PositionReachabilityAnalyzer {
       reachableAt[i] = forwardReachable;
     }
 
-    // --- Feasibility check ---
     let emptyStepIndex: number | undefined;
     for (let i = 0; i < seedLength; i++) {
       if (reachableAt[i]!.size === 0) {

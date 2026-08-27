@@ -24,7 +24,6 @@ import { PropPipeline } from "../prop-pipeline";
 import type { CanvasLifecycleManager } from "../canvas-lifecycle-manager";
 
 export class PropSystem {
-  // ── Owned services ──────────────────────────────────────────────────────────
   readonly propTypeManager = new PropTypeManager();
   readonly propPipeline = new PropPipeline(this.propTypeManager);
 
@@ -36,7 +35,6 @@ export class PropSystem {
     private readonly deps: { lifecycleManager: CanvasLifecycleManager }
   ) {}
 
-  // ── Public accessor used by engine.buildFrameParams ─────────────────────────
   get prevDarkMode(): boolean {
     return this._prevDarkMode;
   }
@@ -68,7 +66,6 @@ export class PropSystem {
     );
   }
 
-  // ── Dark-mode texture reload ─────────────────────────────────────────────────
 
   /**
    * Reload prop textures when dark mode has changed, then trigger a re-render.

@@ -17,7 +17,6 @@
   import type { PurchaseState } from "$lib/features/store/domain/purchase-state";
   import type { Product } from "$lib/features/store/domain/models/product";
 
-  // ── fixtures ──────────────────────────────────────────────────────────────
   function fixture(overrides: Partial<Product> = {}): Product {
     return {
       id: "fixture",
@@ -101,7 +100,6 @@
 
   let checkoutNote = $state("");
 
-  // ── harness controls ──────────────────────────────────────────────────────
   let purchaseState = $state<PurchaseState>("notify");
   let showDock = $state(false);
   let pageState = $state<"ready" | "loading" | "error">("ready");

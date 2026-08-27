@@ -19,9 +19,7 @@ import { readFileSync, existsSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 
-// ---------------------------------------------------------------------------
 // Configuration
-// ---------------------------------------------------------------------------
 
 // CLI API key — unrestricted by referrer, limited to Identity Toolkit + Firestore + Token Service.
 // The web app uses a separate key with referrer restrictions.
@@ -43,9 +41,7 @@ const OAUTH_CONFIG = {
 const CREDENTIALS_PATH = join(homedir(), ".tka", "credentials.json");
 const SERVICE_ACCOUNT_PATH = "./serviceAccountKey.json";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 /**
  * POST a form-encoded request over HTTPS. Returns parsed JSON.

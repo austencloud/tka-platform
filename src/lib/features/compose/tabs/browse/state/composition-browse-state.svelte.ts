@@ -12,9 +12,7 @@ import { getComposition as dexieGetComposition } from "../../../services/dexie-c
 import { compositionSyncer } from "../../../services/composition-syncer";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
-// ============================================================================
 // Types
-// ============================================================================
 
 export interface CompositionBrowseItem {
 	id: string;
@@ -43,9 +41,7 @@ export type CompositionSortMethod = "date" | "name" | "cellCount";
 export type SortDirection = "asc" | "desc";
 export type BrowseViewMode = "grid" | "detail";
 
-// ============================================================================
 // Conversion
-// ============================================================================
 
 function inferModeFromComposition(composition: Composition): AnimationMode {
 	const { rows, cols } = composition.layout;
@@ -89,9 +85,7 @@ function compositionToBrowseItem(composition: Composition): CompositionBrowseIte
 	};
 }
 
-// ============================================================================
 // State Factory
-// ============================================================================
 
 export function createCompositionBrowseState() {
 	// Core data

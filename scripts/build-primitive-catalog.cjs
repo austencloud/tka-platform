@@ -1,4 +1,3 @@
-// scripts/build-primitive-catalog.cjs
 // Stage A primitive catalog builder — populates from public-sequences.json.
 //
 // Usage: node scripts/build-primitive-catalog.cjs
@@ -27,9 +26,7 @@ const OUTPUT_PATH = path.resolve(
   '../src/lib/features/sticker-lab/data/primitive-catalog.json'
 );
 
-// ---------------------------------------------------------------------------
 // 1. Read public-sequences.json
-// ---------------------------------------------------------------------------
 if (!fs.existsSync(INPUT_PATH)) {
   console.error(`[build-primitive-catalog] ERROR: ${INPUT_PATH} not found.`);
   process.exit(1);

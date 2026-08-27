@@ -25,9 +25,7 @@ import {
 
 const PREVIEW_CONTEXT_KEY = Symbol("user-preview");
 
-// ============================================================================
 // Types
-// ============================================================================
 
 export interface UserPreviewContext {
   /** Whether preview mode is active */
@@ -82,9 +80,7 @@ export interface UserPreviewContext {
   loadSection(section: LazySection): Promise<void>;
 }
 
-// ============================================================================
 // Context Implementation
-// ============================================================================
 
 function createPreviewContext(): UserPreviewContext {
   return {
@@ -176,9 +172,7 @@ function createPreviewContext(): UserPreviewContext {
   };
 }
 
-// ============================================================================
 // Context Hooks
-// ============================================================================
 
 /**
  * Initialize the user preview context.

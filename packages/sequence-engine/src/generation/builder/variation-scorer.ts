@@ -60,7 +60,6 @@ export function scoreVariation(
     softWeightSum += weight;
   }
 
-  // Calculate total score
   // Hard constraint failure = 0 score
   // Otherwise, weighted average of soft constraints
   const softScore = softWeightSum > 0 ? softScoreSum / softWeightSum : 1.0;

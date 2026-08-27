@@ -16,13 +16,7 @@ import { DEFAULT_PLAYER_CONFIG } from "./types";
 import { castRay } from "./rapier-world";
 import { SCALE } from "@austencloud/scene-3d";
 
-// ============================================================================
-// PLAYER CONTROLLER CREATION
-// ============================================================================
 
-/**
- * Create the player physics controller
- */
 export function createPlayerController(
 	physicsState: PhysicsWorldState,
 	config: Partial<PlayerControllerConfig> = {},
@@ -56,14 +50,12 @@ export function createPlayerController(
 
 	state.rigidBody = world.createRigidBody(rigidBodyDesc);
 
-	// Create capsule collider
 	const colliderDesc = RAPIER.ColliderDesc.capsule(cfg.halfHeight, cfg.radius)
 		.setFriction(0.0) // Character controller handles friction
 		.setRestitution(0.0);
 
 	state.collider = world.createCollider(colliderDesc, state.rigidBody);
 
-	// Create the character controller
 	state.controller = world.createCharacterController(cfg.offset);
 
 	// Configure the controller
@@ -82,9 +74,6 @@ export function createPlayerController(
 	return state;
 }
 
-// ============================================================================
-// MOVEMENT
-// ============================================================================
 
 /**
  * Move the player using the character controller
@@ -145,7 +134,6 @@ export function movePlayer(
 	// Get current position
 	const currentPos = playerState.rigidBody.translation();
 
-	// Apply the movement
 	playerState.rigidBody.setNextKinematicTranslation({
 		x: currentPos.x + correctedMovement.x,
 		y: currentPos.y + correctedMovement.y,
@@ -173,9 +161,6 @@ export function movePlayer(
 	}
 }
 
-// ============================================================================
-// UTILITIES
-// ============================================================================
 
 /**
  * Get the player's current position
@@ -209,9 +194,6 @@ export function teleportPlayer(
 	playerState.velocity = { x: 0, y: 0, z: 0 };
 }
 
-/**
- * Get the player's velocity
- */
 export function getPlayerVelocity(
 	playerState: PlayerControllerState,
 ): { x: number; y: number; z: number } {
@@ -246,9 +228,6 @@ export function setNoclip(playerState: PlayerControllerState, enabled: boolean):
 	}
 }
 
-// ============================================================================
-// CROUCH COLLIDER
-// ============================================================================
 
 /**
  * Resize the player capsule between standing and crouching heights.
@@ -286,9 +265,6 @@ export function setCrouch(
 	playerState.rigidBody.setTranslation({ x: pos.x, y: newY, z: pos.z }, true);
 }
 
-// ============================================================================
-// GROUND SNAPPING
-// ============================================================================
 
 /**
  * Raycast down to find ground and teleport player to stand on it.
@@ -329,9 +305,6 @@ export function snapToGround(
 	return false;
 }
 
-// ============================================================================
-// CLEANUP
-// ============================================================================
 
 /**
  * Dispose the player controller

@@ -59,9 +59,6 @@ export class OptionSorter {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import { positionAnalyzer } from "./position-analyzer";
 
 export const optionSorter = new OptionSorter(positionAnalyzer);

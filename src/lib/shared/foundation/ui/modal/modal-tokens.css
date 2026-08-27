@@ -8,21 +8,17 @@
  */
 
 :root {
-  /* ===== Durations ===== */
   --modal-duration-in: 350ms;
   --modal-duration-out: 200ms;
   --modal-duration-content: 350ms;
 
-  /* ===== Easings ===== */
   --modal-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --modal-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --modal-ease-content: cubic-bezier(0.22, 1, 0.36, 1);
 
-  /* ===== Backdrop ===== */
   --modal-backdrop-bg: rgba(0, 0, 0, 0.75);
   --modal-backdrop-blur: 8px;
 
-  /* ===== Sizes ===== */
   --modal-width-sm: 360px;
   --modal-width-md: 480px;
   --modal-width-lg: 640px;
@@ -30,18 +26,15 @@
   --modal-width-full: min(95vw, 900px);
   --modal-width-fit: 480px;
 
-  /* ===== Spacing ===== */
   --modal-padding: 24px;
   --modal-padding-mobile: 20px;
   --modal-gap: 18px;
   --modal-border-radius: 20px;
   --modal-border-radius-mobile: 16px;
 
-  /* ===== Content Animation Stagger ===== */
   --modal-stagger-base: 0.05s;
 }
 
-/* ===== Base Modal Styles ===== */
 dialog.base-modal {
   /* Reset browser defaults */
   border: none;
@@ -106,13 +99,11 @@ dialog.base-modal[data-dragging="true"] {
   }
 }
 
-/* ===== Exit Animation State ===== */
 dialog.base-modal[data-closing="true"] {
   opacity: 0;
   transform: scale(0.95) translateY(10px);
 }
 
-/* ===== Size Variants ===== */
 dialog.base-modal[data-size="sm"] {
   width: var(--modal-width-sm);
   max-height: min(85vh, 500px);
@@ -204,13 +195,11 @@ dialog.base-modal[data-size="module-grid"] {
   );
 }
 
-/* ===== Position Variants ===== */
 dialog.base-modal[data-position="top"] {
   margin-top: 10vh;
   margin-bottom: auto;
 }
 
-/* ===== Animation Variants ===== */
 
 /* Pop animation (default) - springy entrance */
 dialog.base-modal[data-animation="pop"] {
@@ -246,7 +235,6 @@ dialog.base-modal[data-animation="none"] {
   animation: none;
 }
 
-/* ===== Backdrop Styles ===== */
 dialog.base-modal::backdrop {
   background: var(--modal-backdrop-bg);
   backdrop-filter: blur(var(--modal-backdrop-blur));
@@ -275,7 +263,6 @@ dialog.base-modal[data-closing="true"]::backdrop {
   -webkit-backdrop-filter: blur(0);
 }
 
-/* ===== Content Animation System ===== */
 
 /* Staggered content animations - only when modal has entered */
 dialog.base-modal[data-entered="true"] [data-animate] {
@@ -375,7 +362,6 @@ dialog.base-modal[data-entered="true"] [data-animate-icon] {
   }
 }
 
-/* ===== Reduced Motion ===== */
 @media (prefers-reduced-motion: reduce) {
   dialog.base-modal,
   dialog.base-modal::backdrop {

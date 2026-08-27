@@ -143,9 +143,6 @@ async function verifyPublicMemberInTransaction(
   return ownSnapshot;
 }
 
-// ============================================================
-// SYSTEM COLLECTIONS
-// ============================================================
 
 export async function ensureSystemCollections(): Promise<void> {
   const firestore = await getFirestoreInstance();
@@ -197,9 +194,6 @@ export async function getFavoritesCollection(): Promise<LibraryCollection> {
   return getSystemCollection("favorites");
 }
 
-// ============================================================
-// CRUD OPERATIONS
-// ============================================================
 
 export async function createUserCollection(
   name: string,
@@ -1241,9 +1235,6 @@ export async function removeSequencesFromCollection(
   }
 }
 
-// ============================================================
-// REAL-TIME SUBSCRIPTIONS
-// ============================================================
 
 export function subscribeToCollections(
   callback: (collections: LibraryCollection[]) => void
@@ -1368,9 +1359,6 @@ export function subscribeToCollection(
   };
 }
 
-// ============================================================
-// REORDERING
-// ============================================================
 
 export async function reorderCollections(
   collectionIds: string[]
@@ -1396,9 +1384,6 @@ export async function reorderCollections(
   }
 }
 
-// ============================================================
-// FAVORITES
-// ============================================================
 
 export async function toggleFavorite(sequenceId: string): Promise<boolean> {
   const favoritesCollection = await getFavoritesCollection();
@@ -1428,10 +1413,8 @@ export async function getFavoriteIds(): Promise<Set<string>> {
   return new Set(favoritesCollection.sequenceIds);
 }
 
-// ============================================================
 // PUBLIC COLLECTIONS - delegated to public-collection-loader
 // New code should use public-collection-loader directly.
-// ============================================================
 
 export async function getUserPublicCollections(
   userId: string

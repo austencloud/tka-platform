@@ -31,9 +31,6 @@ export const BASE_WORDS: BaseWord[] = [
 
 export const BASE_WORD_MAP = new Map(BASE_WORDS.map((bw) => [bw.id, bw]));
 
-/**
- * Get base word by ID
- */
 export function getBaseWord(id: string): BaseWord | undefined {
   return BASE_WORD_MAP.get(id.toLowerCase());
 }

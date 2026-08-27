@@ -110,9 +110,6 @@ export function createToggleCardState<T>(props: {
     }
   }
 
-  /**
-   * Handle toggle to a specific value
-   */
   function handleToggle(value: T) {
     const activeOption = props.getActiveOption();
     if (value !== activeOption) {
@@ -179,7 +176,6 @@ export function createToggleCardState<T>(props: {
     const deltaY = Math.abs(touch.clientY - touchState.startY);
     const duration = Date.now() - touchState.startTime;
 
-    // Reset tracking
     touchState.isTracking = false;
 
     // If movement is within tolerance and duration is short enough, treat as tap

@@ -107,10 +107,6 @@
     gap: 6px;
   }
 
-  /* ============================================================================
-     PROP CARD - Glass-morphism colored panels
-     Unified styling for all blue/red control contexts
-     ============================================================================ */
 
   .prop-card {
     flex: 1;
@@ -171,9 +167,6 @@
     box-shadow: 0 4px 16px rgba(239, 68, 68, 0.2);
   }
 
-  /* ============================================================================
-     PROP LABEL - Consistent header for both cards
-     ============================================================================ */
 
   .prop-label {
     font-size: 0.75rem;
@@ -230,10 +223,6 @@
     min-height: auto;
   }
 
-  /* ============================================================================
-     CSS CUSTOM PROPERTIES - Exposed for child styling
-     Children can use these to match the card's color theme
-     ============================================================================ */
 
   .prop-card.blue {
     --prop-color: var(--semantic-info);
@@ -245,9 +234,6 @@
     --prop-color-rgb: 239, 68, 68;
   }
 
-  /* ============================================================================
-     REDUCED MOTION
-     ============================================================================ */
 
   @media (prefers-reduced-motion: reduce) {
     .prop-card {

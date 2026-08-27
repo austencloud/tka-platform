@@ -827,7 +827,6 @@
     margin-top: 12px;
   }
 
-  /* ── Stats ── */
   .stats {
     max-width: 1000px;
     margin: 0 auto 16px;
@@ -865,7 +864,6 @@
     border-radius: 5px 0 0 5px;
   }
 
-  /* ── Matrix ── */
   .matrix {
     display: grid;
     grid-template-columns: 64px repeat(8, minmax(0, 1fr)) 56px;
@@ -976,7 +974,6 @@
     pointer-events: none;
   }
 
-  /* ── Variations panel ── */
   .variations {
     max-width: 1400px;
     margin: 0 auto;

@@ -73,9 +73,6 @@ export interface ResponsiveSettings {
   navigationLayout: NavigationLayout;
   isLandscapeMobile: boolean;
 }
-// ============================================================================
-// BREAKPOINT CONFIGURATION
-// ============================================================================
 
 export interface BreakpointConfig {
   smallMobile: number;

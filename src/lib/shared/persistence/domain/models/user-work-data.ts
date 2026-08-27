@@ -71,9 +71,6 @@ export function isUserWorkData(obj: unknown): obj is UserWorkData {
   );
 }
 
-/**
- * Create a new UserWorkData instance with defaults
- */
 export function createUserWorkData(
   type: UserWorkType,
   data: unknown,

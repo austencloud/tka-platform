@@ -97,7 +97,6 @@ export function createConstructAttractAct(opts: {
   // ordinary automatic cycles still begin from a clean slate.
   let continueCurrentBoard = false;
 
-  // ---- Personality beats --------------------------------------------------
 
   /** Watch the just-picked step land: drift over and rest BESIDE the newest
    *  workspace cell — deliberately no hover mark, because brightening the

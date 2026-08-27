@@ -90,7 +90,6 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
 
   const persisted = loadPersistedState();
 
-  // ─── Shared playback state ────────────────────────────────────────────
   let sequenceService: SequenceRepository | null = null;
   let playbackController: AnimationPlaybackController | null = null;
   let playback = $state<EndlessPlaybackState | null>(null);
@@ -149,7 +148,6 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   let currentStepData = $derived((playback?.currentStepData ?? null) as StepData | StartPositionData | null);
   let gridMode = $derived((playback?.gridMode ?? null) as GridMode | null);
 
-  // ─── Persistence ──────────────────────────────────────────────────────
   $effect(() => {
     void bpm;
     void sequence;
@@ -170,7 +168,6 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     }
   });
 
-  // ─── Initialization ───────────────────────────────────────────────────
   onMount(async () => {
     window.addEventListener("keydown", handleKeydown);
     try {
@@ -252,7 +249,6 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     effectsConfigState.setTipEffectMap(savedEffectMap);
   });
 
-  // ─── Sequence loading ─────────────────────────────────────────────────
   async function handleSequenceSelected(seq: SequenceData) {
     showPicker = false;
     sequence = seq;
@@ -297,7 +293,6 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     return seq;
   }
 
-  // ─── Playback controls ────────────────────────────────────────────────
   function togglePlayback() {
     playbackController?.togglePlayback();
   }
@@ -334,7 +329,6 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     await playback?.shuffle();
   }
 
-  // ─── Copy / Save / History ─────────────────────────────────────
   const MAX_HISTORY = 30;
   const copier = getClaudeCodeCopier();
 
@@ -401,7 +395,6 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     openSequenceViewer(seq, { returnPath: "/effects-lab", returnLabel: "Effects Lab" });
   }
 
-  // ─── Keyboard shortcuts ────────────────────────────────────────────
   function handleKeydown(e: KeyboardEvent) {
     const tag = (e.target as HTMLElement)?.tagName;
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;

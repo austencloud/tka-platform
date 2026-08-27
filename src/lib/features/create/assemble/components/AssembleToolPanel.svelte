@@ -291,7 +291,6 @@
     text-align: center;
   }
 
-  /* ── Mobile ── */
   @container tool-panel (max-width: 768px) {
     .assemble-tool-panel {
       padding: 0;

@@ -210,7 +210,6 @@
     min-height: 0;
   }
 
-  /* ── Hero ───────────────────────────────────────────── */
 
   .hero {
     position: relative;
@@ -254,7 +253,6 @@
     pointer-events: none;
   }
 
-  /* ── Main content column ─────────────────────────────── */
 
   .main-col {
     flex: 1;
@@ -282,7 +280,6 @@
     border-radius: 3px;
   }
 
-  /* ── Title bar ──────────────────────────────────────── */
 
   .title-bar {
     display: flex;
@@ -362,7 +359,6 @@
     color: var(--theme-accent, #6366f1);
   }
 
-  /* ── Info chips ─────────────────────────────────────── */
 
   .info-row {
     display: flex;
@@ -396,7 +392,6 @@
 
   .info-chip.deadline i { color: var(--semantic-warning, #eab308); }
 
-  /* ── Description ────────────────────────────────────── */
 
   .description {
     margin: 0;
@@ -405,7 +400,6 @@
     line-height: 1.6;
   }
 
-  /* ── Bottom row ─────────────────────────────────────── */
 
   .bottom-row {
     display: flex;
@@ -477,7 +471,6 @@
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
   }
 
-  /* ── Tracker side panel ──────────────────────────────── */
 
   .tracker-side {
     width: 340px;
@@ -503,7 +496,6 @@
     opacity: 0.7;
   }
 
-  /* ── Responsive ─────────────────────────────────────── */
 
   @media (max-width: 600px) {
     .hero { aspect-ratio: 16 / 9; }
@@ -515,7 +507,6 @@
     .bottom-row { flex-direction: column; }
   }
 
-  /* ── Reduced motion ─────────────────────────────────── */
 
   @media (prefers-reduced-motion: reduce) {
     .hero-img,

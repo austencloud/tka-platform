@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/ShopEntryArt.svelte -->
 <!--
   The art inside any storefront art box — the catalog front door's tiles, its
   hero, and the cross-sell rail on every product page all render through this

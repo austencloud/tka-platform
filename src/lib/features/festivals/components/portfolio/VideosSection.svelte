@@ -114,7 +114,6 @@
     color: var(--theme-text, #ffffff);
   }
 
-  /* ─── Video grid ─────────────────────────────────────────────────────────── */
 
   .video-grid {
     display: grid;

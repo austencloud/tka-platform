@@ -194,29 +194,24 @@
 
 <style>
   .kanban-column {
-    /* ===== FLUID SPACING ===== */
     --kc-space-2xs: clamp(4px, 1cqi, 8px);
     --kc-space-xs: clamp(8px, 2cqi, 12px);
     --kc-space-sm: clamp(12px, 3cqi, 18px);
     --kc-space-md: clamp(16px, 4cqi, 28px);
 
-    /* ===== FLUID TYPOGRAPHY - Accessible minimums ===== */
     --kc-text-xs: clamp(0.8125rem, 2cqi, 0.875rem); /* min 13px */
     --kc-text-sm: clamp(0.875rem, 2.5cqi, 1rem); /* min 14px */
     --kc-text-base: clamp(1rem, 3cqi, 1.125rem); /* min 16px */
     --kc-text-lg: clamp(1.125rem, 3.5cqi, 1.25rem); /* min 18px */
 
-    /* ===== FLUID RADII ===== */
     --kc-radius-sm: clamp(8px, 2cqi, 12px);
     --kc-radius-md: clamp(12px, 3cqi, 18px);
     --kc-radius-lg: clamp(16px, 4cqi, 24px);
 
-    /* ===== COLORS ===== */
     --kc-text: var(--theme-text);
     --kc-text-muted: color-mix(in srgb, var(--theme-text) 75%, transparent);
     --kc-text-subtle: var(--theme-text-dim);
 
-    /* ===== TRANSITIONS ===== */
     --spring-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 
     position: relative;
@@ -421,7 +416,6 @@
     background: var(--scrollbar-accent-hover);
   }
 
-  /* ===== EMPTY STATE ===== */
   .empty-state {
     display: flex;
     flex-direction: column;
@@ -560,7 +554,6 @@
     }
   }
 
-  /* ===== Reduced Motion ===== */
   @media (prefers-reduced-motion: reduce) {
     .kanban-column,
     .drop-indicator {

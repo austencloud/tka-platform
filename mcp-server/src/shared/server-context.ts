@@ -16,9 +16,6 @@ import type { MotionData, PictographData, GridMode } from "../types/pictograph.j
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ============================================================================
-// USER PREFERENCES
-// ============================================================================
 
 /**
  * User preferences for pictograph rendering.
@@ -77,9 +74,6 @@ export function updatePreferences(partial: Partial<UserPreferences>): void {
   currentPreferences = { ...currentPreferences, ...partial };
 }
 
-// ============================================================================
-// IMAGE UTILITIES
-// ============================================================================
 
 /**
  * Resolve a user-writable temp directory. os.tmpdir() can return

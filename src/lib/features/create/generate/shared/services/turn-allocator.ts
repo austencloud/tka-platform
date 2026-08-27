@@ -22,9 +22,6 @@ export class TurnAllocator {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import { loopParameterProvider } from "./loop-parameter-provider";
 
 export const turnAllocator = new TurnAllocator(loopParameterProvider);

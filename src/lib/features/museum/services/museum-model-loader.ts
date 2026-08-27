@@ -26,7 +26,6 @@ export class MuseumModelLoader {
   /** In-flight loads - prevents duplicate fetches for the same path. */
   private pending = new Map<string, Promise<Group>>();
 
-  // ── Public API ──
 
   async load(role: MuseumFurnitureRole, tintLift = 0): Promise<Group> {
     const def = getFurnitureObjectByRole(role);

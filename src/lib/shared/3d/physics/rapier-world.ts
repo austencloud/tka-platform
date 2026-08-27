@@ -22,9 +22,6 @@ import type {
 	GroundCheckResult,
 } from "./types";
 
-// ============================================================================
-// INITIALIZATION
-// ============================================================================
 
 /**
  * Create the physics world state
@@ -58,13 +55,7 @@ export async function initPhysicsWorld(
 
 }
 
-// ============================================================================
-// RIGID BODY CREATION
-// ============================================================================
 
-/**
- * Create a rigid body with collider
- */
 export function createRigidBody(
 	state: PhysicsWorldState,
 	bodyConfig: RigidBodyConfig,
@@ -114,7 +105,6 @@ export function createRigidBody(
 		rigidBodyDesc.setCcdEnabled(true);
 	}
 
-	// Create the rigid body
 	const rigidBody = state.world.createRigidBody(rigidBodyDesc);
 
 	// Create collider description
@@ -183,9 +173,6 @@ export function createRigidBody(
 	};
 }
 
-// ============================================================================
-// SIMULATION
-// ============================================================================
 
 /**
  * Step the physics simulation
@@ -198,9 +185,6 @@ export function stepPhysics(state: PhysicsWorldState, deltaTime: number): void {
 	state.world.step();
 }
 
-// ============================================================================
-// RAYCASTING
-// ============================================================================
 
 /**
  * Ray cast into the physics world
@@ -287,9 +271,6 @@ export function checkGrounded(
 	};
 }
 
-// ============================================================================
-// STAGE-SPECIFIC HELPERS
-// ============================================================================
 
 import { STAGE } from "@austencloud/scene-3d";
 
@@ -314,9 +295,6 @@ export function createStageGround(state: PhysicsWorldState): void {
 	state.world.createCollider(groundColliderDesc);
 }
 
-// ============================================================================
-// CLEANUP
-// ============================================================================
 
 /**
  * Remove a rigid body from the physics world

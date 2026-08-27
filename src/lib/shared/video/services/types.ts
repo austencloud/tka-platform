@@ -1,6 +1,5 @@
 
 
-// --- From ITrainingDataStore ---
 /**
  * Shared training data store interface.
  *
@@ -72,7 +71,6 @@ export interface TrainingDataEntry {
 	notes?: string;
 }
 
-// --- From IVideoCache ---
 /**
  * IVideoCache
  *
@@ -104,7 +102,6 @@ export interface CachedVideo {
   lastAccessed: Date;
 }
 
-// --- From IFrameExtractor ---
 /**
  * Shared frame extractor interface.
  *
@@ -132,7 +129,6 @@ export interface FrameExtractionConfig {
 	fps: number;
 }
 
-// --- From IVideoSourceProvider ---
 /**
  * Shared video source provider interface.
  *

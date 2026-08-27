@@ -49,7 +49,6 @@ const TILE = TILE_METRES;
 /** See elevationAt: how far tile rounding lets the player drift past a rect edge. */
 const TILE_ROUNDING_SLOP = TILE / 2;
 
-// ── Room ids ────────────────────────────────────────────────────────────────
 
 export const FIRE_ROOM_ID = "cave-fire";
 export const GROTTO_ROOM_ID = "cave-water";
@@ -96,7 +95,6 @@ const ASH_SOUTH_MARGIN = 1.5;
 /** Station anchors across the shore, west → east. */
 const STATION_X_FRACTIONS = [0.2, 0.5, 0.8] as const;
 
-// ── Types ───────────────────────────────────────────────────────────────────
 
 export interface FirstFireLayout {
   /** Interior world rect of the fire chamber. */
@@ -104,19 +102,16 @@ export interface FirstFireLayout {
   /** Corridor tiles between the grotto's east door and the fire west door. */
   corridor: WorldRect[];
 
-  // ── the crossing ──
   /** Ramp from the corridor datum onto the bridge. */
   approachRamp: WorldRect;
   bridge: WorldRect;
   /** Blocked lava bands flanking the bridge, north then south. */
   lavaStream: WorldRect[];
 
-  // ── the crack ──
   crackWest: WorldRect;
   crackBend: WorldRect;
   crackEast: WorldRect;
 
-  // ── the amphitheatre ──
   amphitheatre: WorldRect;
   /** Flat bench terraces, south (−0.8) → north (−1.8). */
   terraces: WorldRect[];
@@ -136,7 +131,6 @@ export interface FirstFireLayout {
   /** Every interior tile that is neither floor, water nor stair. */
   rockFill: WorldRect[];
 
-  // ── everything the graybox renders ──
   floorRects: FloorRect[];
   wallRects: WallRect[];
   ceilingRects: CeilingRect[];
@@ -158,7 +152,6 @@ export interface FirstFireLayout {
   };
 }
 
-// ── Shared anchor expression ────────────────────────────────────────────────
 
 /**
  * Station offsets in metres from the fire chamber's interior minimum corner.
@@ -182,7 +175,6 @@ function amphitheatreMinOffset(): number {
   return APPROACH_RUN + BRIDGE_RUN + CRACK_LEG * 3;
 }
 
-// ── Small helpers ───────────────────────────────────────────────────────────
 
 const cx = (r: WorldRect) => (r.minX + r.maxX) / 2;
 const cz = (r: WorldRect) => (r.minZ + r.maxZ) / 2;
@@ -214,7 +206,6 @@ function spanAround(
   return { min, max };
 }
 
-// ── Layout ──────────────────────────────────────────────────────────────────
 
 export function buildFirstFireLayout(grid: MuseumGrid): FirstFireLayout | null {
   const fireWing = grid.wings.find((w) => w.id === FIRE_ROOM_ID);

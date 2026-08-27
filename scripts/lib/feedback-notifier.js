@@ -13,9 +13,7 @@
 
 import { ADMIN_USER_ID, ADMIN_USER, NOTIFICATION_EVENTS } from "../../config/feedback.config.js";
 
-// ---------------------------------------------------------------------------
 // Event Labels
-// ---------------------------------------------------------------------------
 
 const EVENT_LABELS = {
   claim: "claimed",
@@ -24,9 +22,7 @@ const EVENT_LABELS = {
   note: "added a note to",
 };
 
-// ---------------------------------------------------------------------------
 // Conversation ID
-// ---------------------------------------------------------------------------
 
 const SYSTEM_CONVERSATION_ID = `feedback-notifications-${ADMIN_USER_ID}`;
 
@@ -112,9 +108,7 @@ async function sendEmailNotification(db, { event, actor, feedbackItem, details }
   });
 }
 
-// ---------------------------------------------------------------------------
 // Public API
-// ---------------------------------------------------------------------------
 
 /**
  * Notify the admin about a feedback event.

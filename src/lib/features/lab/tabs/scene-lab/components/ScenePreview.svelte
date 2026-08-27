@@ -58,7 +58,6 @@
   let camMode = $state<CamMode>("orbit");
   let pointerLocked = $state(false);
 
-  // ── Compose mode helpers ──
   let editorRef: ReturnType<typeof GenericSceneEditor> | undefined = $state();
   const activePlugin = $derived(composerRegistry.get(labState.sceneId));
   const canCompose = $derived(!!activePlugin);

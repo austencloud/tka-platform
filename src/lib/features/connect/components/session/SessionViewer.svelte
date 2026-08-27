@@ -111,7 +111,6 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
 				ctrl.seekToStep(sync.currentStep);
 			}
 
-			// Apply speed
 			const localSpeed = animStateRef?.speed ?? 1;
 			if (sync.speed !== undefined && sync.speed !== localSpeed) {
 				ctrl.setSpeed(sync.speed);

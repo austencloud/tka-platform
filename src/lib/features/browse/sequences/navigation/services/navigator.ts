@@ -166,14 +166,12 @@ export function filterSequencesByNavigation(
         }
         break;
       case "level":
-        // Filter by difficulty level
         if (typeof item === "object" && item && "value" in item) {
           const level = (item as { value: string }).value;
           return sequences.filter((seq) => seq.difficultyLevel === level);
         }
         break;
       case "author":
-        // Filter by author
         if (typeof item === "object" && item && "value" in item) {
           const author = (item as { value: string }).value;
           return sequences.filter((seq) => seq.author === author);

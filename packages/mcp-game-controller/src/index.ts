@@ -17,7 +17,6 @@ const WS_PORT = parseInt(process.env.GAME_WS_PORT ?? "9876", 10);
 async function main() {
   console.error("[MCP Game Controller] Starting...");
 
-  // Create MCP server
   const server = new McpServer({
     name: "mcp-game-controller",
     version: "1.0.0",
@@ -29,7 +28,6 @@ async function main() {
   // Create subscription manager for event forwarding
   const subscriptions = new SubscriptionManager(server, bridge);
 
-  // Register all tools
   registerAllTools(server, bridge);
 
   // Register event resources for subscriptions

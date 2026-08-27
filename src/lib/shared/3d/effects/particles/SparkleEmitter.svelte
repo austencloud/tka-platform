@@ -115,7 +115,6 @@
       }
     }
 
-    // Update particles
     const surviving: Particle[] = [];
 
     for (const p of particles) {

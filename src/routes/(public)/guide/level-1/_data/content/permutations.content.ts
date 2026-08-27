@@ -28,7 +28,6 @@ const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 const NOROT = RotationDirection.NO_ROTATION;
 
-// ── Step authoring - copied from _pages/LoopsPage.svelte ───────────────────
 const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
 type HandStep = { t: "pro" | "anti" | "dash" | "static"; from: GridLocation; to: GridLocation; so: Orientation };
 const handMotion = (color: MotionColor, h: HandStep) => {

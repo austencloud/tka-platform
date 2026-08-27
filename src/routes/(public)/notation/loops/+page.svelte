@@ -487,7 +487,6 @@
     color: oklch(0.68 0.16 25);
   }
 
-  /* ── icon legend ── */
   .icon-legend {
     list-style: none;
     margin: 1.4rem 0;

@@ -22,9 +22,7 @@
   import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
   import { DosSoundManager } from "../../services/dos-sound-manager";
 
-  /* ------------------------------------------------------------------ */
   /* Props                                                               */
-  /* ------------------------------------------------------------------ */
 
   interface Props {
     /** Called when Cards mode finishes and should return to menu */
@@ -33,16 +31,12 @@
 
   let { onreturn }: Props = $props();
 
-  /* ------------------------------------------------------------------ */
   /* Services                                                            */
-  /* ------------------------------------------------------------------ */
 
   const renderer = new BrailleHybridRenderer();
   const soundManager = new DosSoundManager();
 
-  /* ------------------------------------------------------------------ */
   /* Card data                                                           */
-  /* ------------------------------------------------------------------ */
 
   interface DosCard {
     readonly word: string;
@@ -96,9 +90,7 @@
     },
   ];
 
-  /* ------------------------------------------------------------------ */
   /* State                                                               */
-  /* ------------------------------------------------------------------ */
 
   /** Whether the user is viewing a card or the list. */
   type CardsView = "list" | "card";
@@ -106,9 +98,7 @@
   let currentView: CardsView = "list";
   let currentIndex: number = 0;
 
-  /* ------------------------------------------------------------------ */
   /* Box-drawing constants                                               */
-  /* ------------------------------------------------------------------ */
 
   /** Card frame width (interior content width, excluding border chars) */
   const FRAME_WIDTH = 42;
@@ -123,9 +113,7 @@
   const ML = "\u2560"; // mid-left tee
   const MR = "\u2563"; // mid-right tee
 
-  /* ------------------------------------------------------------------ */
   /* Drawing helpers                                                     */
-  /* ------------------------------------------------------------------ */
 
   /** Build a horizontal border line */
   function hBorder(left: string, right: string): string {
@@ -145,9 +133,7 @@
     return contentLine("");
   }
 
-  /* ------------------------------------------------------------------ */
   /* List view                                                           */
-  /* ------------------------------------------------------------------ */
 
   function drawList(): void {
     terminalState.writeBlank();

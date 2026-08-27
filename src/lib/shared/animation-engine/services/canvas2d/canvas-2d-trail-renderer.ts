@@ -22,9 +22,7 @@ import type { QualityHints } from "$lib/shared/animation-engine/domain/types/qua
 import type { AdditionalLayerRenderData } from "$lib/shared/animation-engine/services/canvas-2d-animation-renderer";
 import { DEFAULT_CANVAS_SIZE } from "$lib/shared/animation-engine/services/canvas-resizer.svelte";
 
-// ============================================================================
 // CATMULL-ROM SPLINE (pure math, no framework dependencies)
-// ============================================================================
 
 interface Point2D {
   x: number;
@@ -113,13 +111,7 @@ function createSmoothCurve(
   return result;
 }
 
-// ============================================================================
-// CANVAS 2D TRAIL RENDERER
-// ============================================================================
 
-// ============================================================================
-// TRAIL RENDERING CONSTANTS
-// ============================================================================
 
 /** Exponent for fade curve - holds brightness longer, then drops sharply */
 const FADE_EXPONENT = 2.5;

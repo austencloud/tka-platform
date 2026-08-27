@@ -19,7 +19,6 @@ import { proceduralKitProvider } from "./kit-piece-provider";
 import { loadKitWallSection, buildGlbWalls } from "./museum-kit-glb";
 import type { BatchTransfer } from "../workers/geometry-worker-protocol";
 
-// ── Constants ──
 
 const TILE_SIZE = 0.5;
 const WALL_HEIGHT = 4.5;
@@ -91,7 +90,6 @@ const WALL_TEXTURE_MAP: Partial<Record<WingTheme, string>> = {
   modern: "Plaster001",
 };
 
-// ── Plaque placement data ──
 
 const PLAQUE_YAW: Record<string, number> = {
   south: 0,
@@ -107,7 +105,6 @@ const PLAQUE_WALL_SHIFT: Record<string, { x: number; z: number }> = {
   west: { x: -TILE_SIZE * 0.4, z: 0 },
 };
 
-// ── Types ──
 
 interface TileBucket {
   positions: { x: number; z: number }[];
@@ -167,7 +164,6 @@ export interface BatchedMeshData {
   instanceIds?: number[];
 }
 
-// ── Yield helper ──
 
 function yieldToMain(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));

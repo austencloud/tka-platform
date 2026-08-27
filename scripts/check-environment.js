@@ -13,7 +13,6 @@ import { readFileSync, existsSync } from "fs";
 function checkEnvironment() {
   console.log("\n🔍 Current Environment Status\n");
 
-  // Get current branch
   try {
     const branch = execSync("git rev-parse --abbrev-ref HEAD", {
       encoding: "utf8",

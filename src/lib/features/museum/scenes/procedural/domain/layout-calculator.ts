@@ -26,9 +26,7 @@ import type {
 import { MUSEUM_DEFAULTS } from "./museum-types";
 import { TEMPLATES } from "./pavilion-templates";
 
-// ---------------------------------------------------------------------------
 // Constants
-// ---------------------------------------------------------------------------
 
 /** Base clearing radius for a single pavilion. Scales with pavilion count. */
 const BASE_CLEARING_RADIUS = 12;
@@ -47,9 +45,7 @@ const PAVILION_SEQUENCE: PavilionTemplate[] = [ // eslint-disable-line @typescri
   "quad",
 ];
 
-// ---------------------------------------------------------------------------
 // Public API
-// ---------------------------------------------------------------------------
 
 export function calculateMuseumLayout(exhibitCount: number): MuseumGroundsLayout {
   const pavilionTemplates = selectPavilionTemplates(exhibitCount);
@@ -61,9 +57,7 @@ export function calculateMuseumLayout(exhibitCount: number): MuseumGroundsLayout
   return { clearingCenter, clearingRadius, pavilions };
 }
 
-// ---------------------------------------------------------------------------
 // Pavilion selection
-// ---------------------------------------------------------------------------
 
 /**
  * Determines which pavilion types to include based on exhibit count.
@@ -97,17 +91,13 @@ function totalCapacity(templates: PavilionTemplate[]): number {
   return templates.reduce((sum, t) => sum + TEMPLATES[t].maxSlots, 0);
 }
 
-// ---------------------------------------------------------------------------
 // Clearing radius
-// ---------------------------------------------------------------------------
 
 function computeClearingRadius(pavilionCount: number): number {
   return BASE_CLEARING_RADIUS + (pavilionCount - 1) * RADIUS_PER_PAVILION;
 }
 
-// ---------------------------------------------------------------------------
 // Pavilion placement (semicircle facing spawn / +Z)
-// ---------------------------------------------------------------------------
 
 /**
  * Places pavilions in a semicircle on the far side of the clearing (negative Z),

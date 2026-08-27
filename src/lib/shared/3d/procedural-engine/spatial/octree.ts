@@ -11,9 +11,6 @@
  * - Streaming-ready (each node can be loaded/unloaded independently)
  */
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 /**
  * Axis-aligned bounding box
@@ -57,9 +54,6 @@ export interface Frustum {
   planes: Array<{ normal: { x: number; y: number; z: number }; distance: number }>;
 }
 
-// ============================================================================
-// OCTREE CLASS
-// ============================================================================
 
 export class Octree {
   private nodes: Map<number, OctreeNode> = new Map();
@@ -76,7 +70,6 @@ export class Octree {
       minNodeSize: config.minNodeSize ?? 1,
     };
 
-    // Create root node
     const halfSize = this.config.worldSize / 2;
     this.rootId = this.createNode({
       minX: -halfSize,
@@ -88,9 +81,6 @@ export class Octree {
     }, 0, null);
   }
 
-  // ==========================================================================
-  // NODE MANAGEMENT
-  // ==========================================================================
 
   private createNode(bounds: AABB, depth: number, parentId: number | null): number {
     const id = this.nextNodeId++;
@@ -152,9 +142,6 @@ export class Octree {
     return this.entityPositions.get(entityId) ?? { x: 0, y: 0, z: 0 };
   }
 
-  // ==========================================================================
-  // INSERTION
-  // ==========================================================================
 
   /**
    * Insert an entity into the octree
@@ -247,9 +234,6 @@ export class Octree {
     this.entityPositions.delete(entityId);
   }
 
-  // ==========================================================================
-  // QUERIES
-  // ==========================================================================
 
   /**
    * Query all entities within a radius of a point
@@ -313,7 +297,6 @@ export class Octree {
     if (!this.intersectsFrustum(node.bounds, frustum)) return;
 
     if (node.isLeaf) {
-      // Add all entities in this node
       results.push(...node.entityIds);
     } else {
       // Recurse into children
@@ -341,9 +324,6 @@ export class Octree {
     }
   }
 
-  // ==========================================================================
-  // LOD QUERIES
-  // ==========================================================================
 
   /**
    * Get nodes at a specific LOD level based on distance from camera
@@ -394,9 +374,6 @@ export class Octree {
     }
   }
 
-  // ==========================================================================
-  // GEOMETRY HELPERS
-  // ==========================================================================
 
   private containsPoint(bounds: AABB, point: { x: number; y: number; z: number }): boolean {
     return (
@@ -436,9 +413,6 @@ export class Octree {
     return Math.sqrt(dx * dx + dy * dy + dz * dz);
   }
 
-  // ==========================================================================
-  // STATISTICS
-  // ==========================================================================
 
   getStats(): { nodeCount: number; entityCount: number; maxDepth: number; leafNodes: number } {
     let maxDepth = 0;

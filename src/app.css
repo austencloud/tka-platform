@@ -551,10 +551,6 @@ h6 {
   --z-priority: 900;
   --z-debug: 1000;
 
-  /* ========================================
-     SHEET SYSTEM - Design Tokens
-     Unified styling for Drawer components
-     ======================================== */
 
   /* Z-Index Hierarchy (legacy — migrate to --z-* scale) */
   --sheet-z-modal: 1200;
@@ -1293,10 +1289,6 @@ body.blossom {
   animation: none;
 }
 
-/* ========================================
-   VIEW TRANSITIONS - Module-to-Module Navigation
-   Emphasized horizontal slide with depth for major navigation
-   ======================================== */
 
 /* Slide LEFT - Going to a module on the right */
 .module-slide-left::view-transition-old(root) {

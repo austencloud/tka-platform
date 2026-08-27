@@ -64,7 +64,6 @@
   padding: 0 1.5rem;
 }
 
-/* === Diagrams / figures === */
 .print-doc .guide-diagram img {
   background: #fafafa;
   border: 1px solid #e4e4e7;
@@ -73,7 +72,6 @@
   color: #555;
 }
 
-/* === Pictograph grid labels === */
 .print-doc .guide-pictograph-grid .row-label,
 .print-doc .guide-pictograph-grid .column-header {
   color: #333;
@@ -100,7 +98,6 @@
   color: #333;
 }
 
-/* === Cover block === */
 .print-cover {
   text-align: center;
   padding: 0.4in 0 0.5in;
@@ -164,7 +161,6 @@
   }
 }
 
-/* === Print page setup + breaks === */
 @media print {
   /* margin:0 - each GuidePage is a true 8.5×11 sheet and supplies its own 0.6in
      margin via .page-body padding, so the recto/verso footer prints where it

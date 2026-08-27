@@ -61,7 +61,6 @@ export class RewoundLOOPExecutor implements ILOOPExecutor {
     const originalSteps = [...sequence];
     const originalLength = originalSteps.length;
 
-    // Create reversed steps
     const reversedSteps: StepData[] = [];
     const beatsToReverse = [...originalSteps].reverse();
 

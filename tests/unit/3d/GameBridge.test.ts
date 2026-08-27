@@ -1,4 +1,3 @@
-// tests/unit/3d/GameBridge.test.ts
 import { describe, it, expect, vi } from "vitest";
 import { GameBridge } from "$lib/shared/3d/debug/game-bridge";
 import type {
@@ -12,7 +11,6 @@ import type {
   BridgeResponse,
 } from "$lib/shared/3d/debug/game-bridge-types";
 
-// ── Mock Factories ──
 
 function createMockPerformer(overrides: Partial<PerformerLike> = {}): PerformerLike {
   return {

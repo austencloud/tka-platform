@@ -41,9 +41,7 @@ export class PointerLockProvider implements IInputProvider {
 		this.config = { ...DEFAULT_INPUT_CONFIG, ...config };
 	}
 
-	// =========================================================================
 	// IInputProvider implementation
-	// =========================================================================
 
 	getLookDelta(): LookDelta {
 		const delta = { ...this.lookDelta };
@@ -107,9 +105,7 @@ export class PointerLockProvider implements IInputProvider {
 		this.disable();
 	}
 
-	// =========================================================================
 	// Public API
-	// =========================================================================
 
 	/**
 	 * Request pointer lock (call from user gesture)
@@ -142,9 +138,7 @@ export class PointerLockProvider implements IInputProvider {
 		return this.fallbackMode;
 	}
 
-	// =========================================================================
 	// Internal helpers
-	// =========================================================================
 
 	private reset(): void {
 		this.lookDelta = { yaw: 0, pitch: 0 };
@@ -152,9 +146,7 @@ export class PointerLockProvider implements IInputProvider {
 		this.isDragging = false;
 	}
 
-	// =========================================================================
 	// Event handlers
-	// =========================================================================
 
 	private handleClick = async (): Promise<void> => {
 		if (!this.enabled) return;

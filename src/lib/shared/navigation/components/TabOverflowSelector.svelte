@@ -251,9 +251,6 @@
     scale: 0.95;
   }
 
-  /* ============================================================================
-     TAB GRID - Responsive grid layout
-     ============================================================================ */
   .tab-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -267,9 +264,6 @@
     }
   }
 
-  /* ============================================================================
-     TAB OPTIONS - Individual tab buttons in popover
-     ============================================================================ */
   .tab-option {
     position: relative;
     display: flex;
@@ -360,9 +354,6 @@
     color: var(--theme-accent, var(--theme-accent));
   }
 
-  /* ============================================================================
-     ACCESSIBILITY
-     ============================================================================ */
 
   /* High contrast mode */
   @media (prefers-contrast: high) {

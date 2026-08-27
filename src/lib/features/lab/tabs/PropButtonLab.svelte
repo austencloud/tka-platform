@@ -122,7 +122,6 @@
     $state.snapshot(getSettings().compositionRecipeOverrides ?? {})
   );
 
-  // --- Undo / Redo ---
   type Snapshot = Record<string, CompositionRecipe>;
   let undoStack = $state<Snapshot[]>([]);
   let redoStack = $state<Snapshot[]>([]);
@@ -422,9 +421,6 @@
 </div>
 
 <style>
-  /* ================================================================
-     ROOT LAYOUT
-     ================================================================ */
   .prop-button-lab {
     display: flex;
     flex-direction: column;
@@ -434,9 +430,6 @@
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
   }
 
-  /* ================================================================
-     HEADER
-     ================================================================ */
   .lab-header {
     margin-bottom: 16px;
     display: flex;
@@ -685,9 +678,6 @@
     border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 35%, transparent);
   }
 
-  /* ================================================================
-     PRESETS GALLERY
-     ================================================================ */
   .presets-section {
     padding: 16px 20px;
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
@@ -751,9 +741,6 @@
     letter-spacing: 0.3px;
   }
 
-  /* ================================================================
-     GROUP ROTATION
-     ================================================================ */
   .group-rotation {
     display: flex;
     align-items: center;
@@ -812,9 +799,6 @@
     outline-offset: 2px;
   }
 
-  /* ================================================================
-     BLUE / RED COLUMNS
-     ================================================================ */
   .color-columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -862,7 +846,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* --- Custom slider --- */
   .field-row input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
@@ -907,7 +890,6 @@
     border-radius: 3px;
   }
 
-  /* --- Number input --- */
   .field-row input[type="number"] {
     width: 60px;
     min-width: 48px;
@@ -948,9 +930,6 @@
     -moz-appearance: textfield;
   }
 
-  /* ================================================================
-     PAIR SCALE ROW
-     ================================================================ */
   .pair-scale-row {
     margin-top: 4px;
     padding-top: 12px;
@@ -961,9 +940,6 @@
     min-width: 72px;
   }
 
-  /* ================================================================
-     RESPONSIVE
-     ================================================================ */
   @media (max-width: 600px) {
     .prop-button-lab {
       padding: 16px;
@@ -983,9 +959,6 @@
     }
   }
 
-  /* ================================================================
-     ACCESSIBILITY
-     ================================================================ */
   @media (prefers-reduced-motion: reduce) {
     .family-card,
     .rot-btn,

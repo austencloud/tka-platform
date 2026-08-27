@@ -116,7 +116,6 @@ export type PlaybackState = {
   setMobileToolView: (view: MobileToolView) => void;
   toggleMobileToolView: () => void;
 
-  // Reset
   reset: () => void;
 };
 

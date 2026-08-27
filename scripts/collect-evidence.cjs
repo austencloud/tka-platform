@@ -21,9 +21,6 @@ const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 
-// ---------------------------------------------------------------------------
-// CLI
-// ---------------------------------------------------------------------------
 
 const args = process.argv.slice(2);
 const scope = args.find((a) => !a.startsWith("--"));

@@ -1,7 +1,6 @@
 import type { Direction } from "./museum-grid-types";
 import type { ScreenDecade } from "./layout-types";
 
-// ── Segment types ──
 
 export type DoorSegment = {
 	type: "door";
@@ -64,7 +63,6 @@ export type WallDefinition = {
 	alignment?: "start" | "center" | "end";
 };
 
-// ── Dimension computation ──
 
 const EXHIBIT_WIDTH: Record<ExhibitSegment["size"], number> = {
 	standard: 2,

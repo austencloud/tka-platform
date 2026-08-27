@@ -51,9 +51,6 @@
 {/if}
 
 <style>
-  /* ===========================
-     MOBILE HEADER - Floating buttons
-     =========================== */
   .mobile-header {
     position: absolute;
     top: 4px;
@@ -104,9 +101,6 @@
     transform: scale(0.95);
   }
 
-  /* ===========================
-     DESKTOP HEADER - Centered title with top-right close button
-     =========================== */
   .desktop-header {
     position: relative;
     display: flex;

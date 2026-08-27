@@ -4,7 +4,6 @@
 
 import type { PresenceLocation } from "$lib/shared/presence/domain/models/presence-models";
 
-// === From IAuditLogger ===
 
 export type AuditActionType =
   | "role_changed"
@@ -27,7 +26,6 @@ export interface AuditLogEntry {
   details?: Record<string, unknown>; // additional metadata
 }
 
-// === From ISystemStateManager ===
 
 export interface CachedUserMetadata {
   id: string;
@@ -80,7 +78,6 @@ export interface SystemState {
   expiresAt: number;
 }
 
-// === From IAnalyticsDataProvider ===
 
 export interface SummaryMetrics {
   totalUsers: number;
@@ -138,7 +135,6 @@ export interface RecentActivityEvent {
   };
 }
 
-// === From IPostHogAnalyticsProvider ===
 
 export interface PostHogSummaryMetrics {
   totalUsers: number;
@@ -162,7 +158,6 @@ export interface PostHogDashboardLinks {
   events: string;
 }
 
-// === From IPostHogUserAnalytics ===
 
 export interface UserEngagementSummary {
   /** Evidence source used for this window */
@@ -278,7 +273,6 @@ export interface PostHogReplayAccess {
 
 export type TimePeriod = "today" | "week" | "month" | "all";
 
-// === From IUserActivityTracker ===
 
 export interface UserWithActivity {
   userId: string;

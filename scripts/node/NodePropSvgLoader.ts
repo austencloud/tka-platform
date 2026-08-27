@@ -52,7 +52,6 @@ export class NodePropSvgLoader implements IPropSvgLoader {
       // Use explicit theme mode if provided, default to light
       const themeMode = options?.themeMode ?? "light";
 
-      // Create cache key including color AND theme mode
       const suffix = useAnimatedVersion ? "_animated" : "";
       const path = `/images/props/pictograph/${propType}${suffix}.svg`;
       const transformedCacheKey = `${path}:${color}:${themeMode}`;

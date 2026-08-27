@@ -36,9 +36,7 @@ export class VoiceSessionReplayer {
     };
   }
 
-  // --------------------------------------------------------------------------
   // Per-Event Comparison
-  // --------------------------------------------------------------------------
 
   private compareEvent(event: VoiceSessionEvent): ReplayEventComparison {
     const context: CommandContext = {
@@ -79,9 +77,7 @@ export class VoiceSessionReplayer {
     };
   }
 
-  // --------------------------------------------------------------------------
   // Diff Classification
-  // --------------------------------------------------------------------------
 
   private classifyDiff(
     originalWasUnresolved: boolean,
@@ -134,9 +130,7 @@ export class VoiceSessionReplayer {
     );
   }
 
-  // --------------------------------------------------------------------------
   // Summary
-  // --------------------------------------------------------------------------
 
   private computeSummary(comparisons: ReplayEventComparison[]): ReplaySessionSummary {
     let sameCount = 0;

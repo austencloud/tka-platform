@@ -51,10 +51,8 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
   const { viewer3DState, accessibilityHelper } = deps;
   const measuredVideoUrls = new Set<string>();
 
-  // ── Export options ──
   const exportOptions = getExportOptionsState();
 
-  // ── Export state ──
   let animationCanvas = $state<HTMLCanvasElement | null>(null);
 
   // ── 3D recording UI state ──

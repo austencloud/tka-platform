@@ -123,9 +123,7 @@
 
   const { scene } = useThrelte();
 
-  // ========================================
   // All positions and scales in METERS (1 unit = 1 meter)
-  // ========================================
 
   // Scene feature context - gate campfire/tent visibility and report loading readiness
   let sceneFeatures = $state<ReturnType<typeof getSceneFeatureContext> | null>(

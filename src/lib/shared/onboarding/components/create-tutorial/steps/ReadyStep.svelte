@@ -237,7 +237,6 @@
     line-height: 1.5;
   }
 
-  /* ── Desktop layout ── */
 
   .desktop-only {
     display: grid;
@@ -582,7 +581,6 @@
     line-height: 1.4;
   }
 
-  /* ── Mobile accordion ── */
 
   .accordion-list {
     display: none;
@@ -645,7 +643,6 @@
     line-height: 1.45;
   }
 
-  /* ── Go button ── */
 
   .go-button {
     display: flex;
@@ -731,7 +728,6 @@
     }
   }
 
-  /* ── Reduced motion ── */
 
   @media (prefers-reduced-motion: reduce) {
     .mock-button.glow.accent,

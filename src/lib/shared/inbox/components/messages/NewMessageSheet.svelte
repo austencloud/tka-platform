@@ -102,7 +102,6 @@
     isLoadingSuggestions = true;
 
     try {
-      // Load followed users
       if (currentUserId) {
         followedUsers = await getFollowing(currentUserId, 20);
       }
@@ -147,7 +146,6 @@
         avatar: user.photoURL,
       },
     ];
-    // Clear search
     searchUserId = "";
     searchUserDisplay = "";
     error = null;

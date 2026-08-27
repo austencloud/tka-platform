@@ -158,7 +158,6 @@
   // Track if handlers have been initialized (lazy creation)
   let handlersInitialized = $state(false);
 
-  // Compute effective placement based on layout mode
   // When respectLayoutMode is true and on mobile, use bottom regardless of specified placement
   // This ensures consistent UX across the app: bottom sheets on mobile, side drawers on desktop
   const effectivePlacement = $derived.by(() => {
@@ -246,7 +245,6 @@
     if (handlersInitialized) return;
     handlersInitialized = true;
 
-    // Create SwipeToDismiss
     swipeToDismiss = new SwipeToDismiss({
       placement: effectivePlacement,
       dismissible,
@@ -258,7 +256,6 @@
       onDragEnd: handleDragEnd,
     });
 
-    // Create FocusTrap
     focusTrap = new FocusTrap({
       initialFocus: initialFocusElement ?? undefined,
       focusContainerOnInitial: focusContainerOnOpen,
@@ -266,7 +263,6 @@
       setInertOnSiblings: setInertOnSiblings,
     });
 
-    // Create DrawerEffects
     drawerEffects = new DrawerEffects({
       scaleBackground,
       preventScroll,

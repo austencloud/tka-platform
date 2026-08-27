@@ -120,9 +120,7 @@
     visibleModules = ordered;
   });
 
-  // ============================================================================
   // DRAG AND DROP with svelte-dnd-action
-  // ============================================================================
 
   // Handle drag events from svelte-dnd-action
   function handleDndConsider(e: CustomEvent<{ items: ModuleDefinition[] }>) {
@@ -153,9 +151,6 @@
     element.style.zIndex = "999999";
   }
 
-  // ============================================================================
-  // MODAL CONTROLS
-  // ============================================================================
   function openModal() {
     hapticService?.trigger("selection");
     open = true;
@@ -166,9 +161,7 @@
     open = false;
   }
 
-  // ============================================================================
   // MODULE VISIBILITY - Now uses global feature flags
-  // ============================================================================
 
   /**
    * Enable a module globally (sets feature flag enabled: true)
@@ -505,9 +498,6 @@
 </BaseModal>
 
 <style>
-  /* ============================================================================
-     TRIGGER BUTTON
-     ============================================================================ */
   .toggle-trigger {
     width: 100%;
     display: flex;
@@ -572,9 +562,6 @@
     outline-offset: 2px;
   }
 
-  /* ============================================================================
-     MODAL HEADER
-     ============================================================================ */
   .modal-header {
     display: flex;
     align-items: center;
@@ -615,9 +602,6 @@
     outline-offset: 2px;
   }
 
-  /* ============================================================================
-     SECTIONS CONTAINER
-     ============================================================================ */
   .sections-container {
     display: flex;
     flex-direction: column;
@@ -707,9 +691,6 @@
     margin-top: 4px;
   }
 
-  /* ============================================================================
-     MODULE GRIDS
-     ============================================================================ */
   .module-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
@@ -729,9 +710,6 @@
     min-height: 60px;
   }
 
-  /* ============================================================================
-     MODULE CELLS - Uniform sizing
-     ============================================================================ */
   .module-cell {
     position: relative;
     display: flex;
@@ -965,9 +943,6 @@
     pointer-events: none;
   }
 
-  /* ============================================================================
-     HIDDEN MODULE CELLS
-     ============================================================================ */
   .hidden-module-cell {
     opacity: 0.85;
     cursor: pointer;
@@ -1057,9 +1032,6 @@
     border-radius: inherit;
   }
 
-  /* ============================================================================
-     DISABLED STATE
-     ============================================================================ */
   .module-cell:disabled,
   .remove-button:disabled {
     cursor: not-allowed;
@@ -1067,18 +1039,12 @@
     opacity: 0.5;
   }
 
-  /* ============================================================================
-     FOCUS STYLES
-     ============================================================================ */
   .module-cell:focus-visible,
   .remove-button:focus-visible {
     outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
 
-  /* ============================================================================
-     RESPONSIVE
-     ============================================================================ */
   @media (min-width: 768px) {
     .module-grid {
       grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
@@ -1159,9 +1125,6 @@
     }
   }
 
-  /* ============================================================================
-     REDUCED MOTION
-     ============================================================================ */
   @media (prefers-reduced-motion: reduce) {
     .toggle-trigger,
     .button-icon,

@@ -29,9 +29,6 @@ export async function handleMainTabTransition(
   setActiveToolPanel(targetTab);
 }
 
-/**
- * Get transition functions for Svelte transitions
- */
 export function getSectionTransitions() {
   return {
     in: (_node: Element) => ({

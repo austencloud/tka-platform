@@ -73,7 +73,6 @@ export function calculateFitSize(params: GridFitParams): GridFitResult {
   const columns = Math.min(columnCount, Math.max(itemCount, 1));
   const rows = Math.ceil(itemCount / columns) || 1;
 
-  // Calculate gap space
   const totalWidthGapSpace = (columns - 1) * gridGap;
   const totalHeightGapSpace = (rows - 1) * gridGap;
 

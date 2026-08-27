@@ -1,4 +1,3 @@
-// src/lib/shared/gamification/domain/prop-collection.ts
 /**
  * Pure helpers over the user's prop collection. No I/O — the manager owns
  * persistence; these functions are deterministic and unit-tested.
