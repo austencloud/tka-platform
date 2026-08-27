@@ -4,8 +4,15 @@
   A gallery of the kaleidoscope tunnels the user saved from the sequence viewer
   ("Save tunnel" button in the tunnel settings, or right-click the tunnel canvas).
   Selecting one opens a detail view that reproduces it live in-page
-  (TunnelDetailPreview) with meta chips, inline rename, open-in-viewer, and a
-  two-tap delete.
+  (TunnelDetailPreview) with meta chips, open-in-viewer, and a two-tap delete.
+
+  A saved tunnel takes its name from what it IS — cast, props, effects, rates —
+  so most of them arrive already named something reasonable and nobody edits
+  them. The ones you DO want to name are the ones you are trying to tell apart,
+  and that happens while you are looking at the gallery. So the name is the
+  rename control, on the card and in the detail alike: click it and it becomes a
+  field. Right-click a card for the same thing plus Edit choreography, matching
+  how collection cards behave one panel over.
 
   Mirrors MandalaModule's gallery/detail structure; phase swaps ride the shared
   Crossfade primitive (both phases remount by design — the detail preview is
@@ -20,6 +27,11 @@
   import TunnelPublicationControls from "./components/TunnelPublicationControls.svelte";
   import PanelSpinner from "$lib/shared/components/panel/PanelSpinner.svelte";
   import CollectionGalleryDetail from "$lib/shared/modules/CollectionGalleryDetail.svelte";
+  import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
+  import type {
+    ContextMenuEntry,
+    ContextMenuState,
+  } from "$lib/shared/components/context-menu/context-menu-types";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import { imageCount } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -63,9 +75,18 @@
   let deleteTimer: ReturnType<typeof setTimeout> | undefined;
 
   // ── Inline rename ──
-  let renaming = $state(false);
+  // Keyed by id rather than a boolean, because the same edit is reachable from
+  // the gallery card and from the detail title. Only one runs at a time, and
+  // the phase decides which surface owns the field — on mobile the gallery
+  // stays mounted under the detail drawer, so an unguarded id would render two
+  // inputs bound to one value and commit the rename twice on blur.
+  let renamingId = $state<string | null>(null);
   let renameValue = $state("");
   let renameInputEl = $state<HTMLInputElement | null>(null);
+
+  // Right-click a card, the way collection cards behave.
+  let menuState = $state<ContextMenuState>({ open: false });
+  let menuTarget = $state<CollectedTunnel | null>(null);
 
   // Real-world footage belongs to this exact saved snapshot. It loads only
   // after someone opens a tunnel, so a gallery of posters never fans out into
@@ -120,7 +141,7 @@
     selected = t;
     lastCardId = t.id;
     confirmingDelete = null;
-    renaming = false;
+    renamingId = null;
     phase = "detail";
     void loadVideos(t);
     announce = `Opened ${t.name}`;
@@ -132,7 +153,7 @@
     phase = "gallery";
     selected = null;
     confirmingDelete = null;
-    renaming = false;
+    renamingId = null;
     uploadOpen = false;
     tunnelVideos = [];
     videosError = "";
@@ -193,10 +214,10 @@
     }
   }
 
-  function startRename() {
-    if (!selected) return;
-    renameValue = selected.name;
-    renaming = true;
+  function startRename(tunnel: CollectedTunnel) {
+    if (tunnelCollectionState.isReadOnlyPreview) return;
+    renamingId = tunnel.id;
+    renameValue = tunnel.name;
     void tick().then(() => {
       renameInputEl?.focus();
       renameInputEl?.select();
@@ -204,13 +225,19 @@
   }
 
   async function commitRename() {
-    if (!renaming || !selected) return;
-    renaming = false;
+    const id = renamingId;
+    if (!id) return;
+    renamingId = null;
+    const before =
+      items.find((tunnel) => tunnel.id === id) ??
+      (selected?.id === id ? selected : null);
     const next = renameValue.trim();
-    if (!next || next === selected.name) return;
+    if (!next || next === before?.name) return;
     try {
-      const renamed = await tunnelCollectionState.rename(selected.id, next);
-      if (renamed) selected = renamed;
+      const renamed = await tunnelCollectionState.rename(id, next);
+      // The gallery reads straight off the store, but the detail view holds its
+      // own copy of the entry and has to be handed the renamed one.
+      if (renamed && selected?.id === id) selected = renamed;
     } catch (error) {
       console.warn("[TunnelCollection] Rename failed:", error);
       toast.error("Couldn't rename the tunnel — try again");
@@ -223,12 +250,38 @@
       void commitRename();
     } else if (e.key === "Escape") {
       e.stopPropagation(); // don't also back out of the detail view
-      renaming = false;
+      renamingId = null;
     }
   }
 
+  function openCardMenu(tunnel: CollectedTunnel, e: MouseEvent) {
+    if (tunnelCollectionState.isReadOnlyPreview) return;
+    e.preventDefault();
+    menuTarget = tunnel;
+    menuState = { open: true, x: e.clientX, y: e.clientY };
+  }
+
+  const menuItems: ContextMenuEntry[] = $derived.by(() => {
+    const tunnel = menuTarget;
+    if (!tunnel) return [];
+    return [
+      {
+        id: "rename",
+        label: "Rename",
+        icon: "fa-pen",
+        action: () => startRename(tunnel),
+      },
+      {
+        id: "edit-choreography",
+        label: "Edit choreography",
+        icon: "fa-people-arrows-left-right",
+        action: () => void editChoreography(tunnel, "gallery-card"),
+      },
+    ];
+  });
+
   function handleWindowKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape" && phase === "detail" && !renaming) {
+    if (e.key === "Escape" && phase === "detail" && !renamingId) {
       void back();
     }
   }
@@ -287,7 +340,11 @@
         </header>
         <div class="gallery-grid">
           {#each items as item, i (item.id)}
-            <article class="gallery-card" data-card-id={item.id}>
+            <article
+              class="gallery-card"
+              data-card-id={item.id}
+              oncontextmenu={(e) => openCardMenu(item, e)}
+            >
               <button
                 type="button"
                 class="gallery-card-open"
@@ -302,8 +359,42 @@
                     <i class="fas fa-fan thumb-fallback" aria-hidden="true"></i>
                   {/if}
                 </div>
-                <span class="card-label"><TkaLabel text={item.name} darkMode /></span>
               </button>
+
+              <!-- The name sits OUTSIDE the open button so it can be its own
+                   control: a button inside a button is not valid, and folding
+                   the two together is what made renaming a detail-view errand. -->
+              <div class="card-name-slot">
+                {#if phase === "gallery" && renamingId === item.id}
+                  <input
+                    type="text"
+                    class="card-name-input"
+                    bind:this={renameInputEl}
+                    bind:value={renameValue}
+                    onkeydown={handleRenameKeydown}
+                    onblur={() => void commitRename()}
+                    maxlength="60"
+                    aria-label="Tunnel name"
+                  />
+                {:else if tunnelCollectionState.isReadOnlyPreview}
+                  <span class="card-label"
+                    ><TkaLabel text={item.name} darkMode /></span
+                  >
+                {:else}
+                  <button
+                    type="button"
+                    class="card-rename"
+                    onclick={() => startRename(item)}
+                    aria-label="Rename {item.name}"
+                    title="Rename"
+                  >
+                    <span class="card-label"
+                      ><TkaLabel text={item.name} darkMode /></span
+                    >
+                    <i class="fas fa-pen card-rename-icon" aria-hidden="true"></i>
+                  </button>
+                {/if}
+              </div>
               {#if !tunnelCollectionState.isReadOnlyPreview}
                 <button
                   type="button"
@@ -347,8 +438,7 @@
         <div class="detail-panel">
           <div class="detail-info">
             <div class="name-row">
-              {#if renaming}
-                <!-- svelte-ignore a11y_autofocus -->
+              {#if renamingId === selected.id}
                 <input
                   type="text"
                   class="name-input"
@@ -359,20 +449,29 @@
                   maxlength="60"
                   aria-label="Tunnel name"
                 />
-              {:else}
+              {:else if tunnelCollectionState.isReadOnlyPreview}
                 <h2 class="detail-name" title={selected.name}>
                   <TkaLabel text={selected.name} darkMode fitToParent={false} />
                 </h2>
-                {#if !tunnelCollectionState.isReadOnlyPreview}
+              {:else}
+                <h2 class="detail-name">
                   <button
                     type="button"
-                    class="rename-btn"
-                    onclick={startRename}
-                    aria-label="Rename tunnel"
+                    class="name-edit"
+                    onclick={() => startRename(selected!)}
+                    aria-label="Rename {selected.name}"
+                    title="Rename"
                   >
-                    <i class="fas fa-pen" aria-hidden="true"></i>
+                    <span class="name-edit-text">
+                      <TkaLabel
+                        text={selected.name}
+                        darkMode
+                        fitToParent={false}
+                      />
+                    </span>
+                    <i class="fas fa-pen rename-icon" aria-hidden="true"></i>
                   </button>
-                {/if}
+                </h2>
               {/if}
             </div>
             <span class="detail-date">{dateLabel}</span>
@@ -529,6 +628,12 @@
     {/if}
   {/snippet}
 
+  <ContextMenu
+    {menuState}
+    items={menuItems}
+    onClose={() => (menuState = { open: false })}
+  />
+
   {#if selected}
     <VideoUploadSheet
       show={uploadOpen}
@@ -615,12 +720,9 @@
   }
 
   .gallery-card-open {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
+    display: block;
     width: 100%;
-    padding: 16px 12px 14px;
+    padding: 16px 12px 8px;
     border: 0;
     background: transparent;
     color: inherit;
@@ -708,14 +810,82 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.25));
   }
 
+  .card-name-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0 10px 10px;
+  }
+
+  /* The name IS the rename control, so it carries a control's box: hover fills
+     it in, the pencil is there at rest to say the name can be changed, and the
+     resting state stays quiet enough that seven cards do not read as a form. */
+  .card-rename {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    max-width: 100%;
+    min-height: var(--min-touch-target, 44px);
+    padding: 4px 10px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
+  }
+
+  .card-rename-icon {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
+    transition: color var(--duration-fast, 150ms) var(--ease-out, ease);
+  }
+
+  @media (hover: hover) {
+    .card-rename:hover {
+      background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+      border-color: var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    }
+    .card-rename:hover .card-rename-icon {
+      color: var(--theme-accent, #22d3ee);
+    }
+  }
+
+  .card-rename:focus-visible {
+    outline: 2px solid var(--theme-accent, #22d3ee);
+    outline-offset: 2px;
+  }
+
+  /* Same box as the button it replaces, so committing a name never resizes the
+     card or shunts the grid (no-layout-shift). */
+  .card-name-input {
+    width: 100%;
+    min-width: 0;
+    min-height: var(--min-touch-target, 44px);
+    padding: 4px 10px;
+    border: 1px solid var(--theme-accent, #22d3ee);
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    color: var(--theme-text, white);
+    font-family: inherit;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    text-align: center;
+    outline: none;
+  }
+
   .card-label {
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: var(--font-size-compact, 13px);
+    font-size: var(--font-size-min, 14px);
     font-weight: 500;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    color: var(--theme-text, white);
   }
 
   /* ── Empty / loading ── */
@@ -846,14 +1016,50 @@
   }
 
   .detail-name {
+    display: flex;
+    align-items: center;
     margin: 0;
+    min-width: 0;
     font-size: 20px;
     font-weight: 600;
     color: var(--theme-text, white);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* Negative inset so the title still lines up with the date under it — the
+     control's padding is affordance, not indentation. */
+  .name-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 100%;
     min-width: 0;
+    min-height: var(--min-touch-target, 44px);
+    margin-left: -10px;
+    padding: 2px 10px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
+  }
+
+  .name-edit-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rename-icon {
+    flex-shrink: 0;
+    font-size: 13px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
+    transition: color var(--duration-fast, 150ms) var(--ease-out, ease);
   }
 
   .name-input {
@@ -870,29 +1076,16 @@
     outline: none;
   }
 
-  .rename-btn {
-    flex-shrink: 0;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 10px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
-    font-size: 13px;
-    cursor: pointer;
-    transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
-  }
   @media (hover: hover) {
-    .rename-btn:hover {
-      color: var(--theme-text, white);
+    .name-edit:hover {
       background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-      border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+      border-color: var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    }
+    .name-edit:hover .rename-icon {
+      color: var(--theme-accent, #22d3ee);
     }
   }
-  .rename-btn:focus-visible {
+  .name-edit:focus-visible {
     outline: 2px solid var(--theme-accent, #22d3ee);
     outline-offset: 2px;
   }
@@ -1180,15 +1373,16 @@
       gap: 28px;
     }
     .gallery-card {
-      gap: 14px;
-      padding: 20px 16px 18px;
       border-radius: 18px;
+    }
+    .gallery-card-open {
+      padding: 20px 16px 10px;
+    }
+    .card-name-slot {
+      padding: 0 14px 14px;
     }
     .card-thumb {
       border-radius: 14px;
-    }
-    .card-label {
-      font-size: var(--font-size-min, 14px);
     }
     .detail-panel {
       width: 440px;
@@ -1228,6 +1422,68 @@
     }
   }
 
+  /* 4K at 100%, or a TV across the room: nothing is scaling for us up here, so
+     the cards have to grow rather than multiply. auto-fill against the 260px
+     floor above does the opposite — at a 3200px container it emits eleven
+     267px columns for seven tunnels, a thin ribbon of cards SMALLER than the
+     same gallery at 2560. Raise the floor and the extra width goes into the
+     poster and the name instead of into empty tracks. */
+  @container (min-width: 2600px) {
+    .gallery-view {
+      padding: 72px 96px;
+    }
+    .gallery-title {
+      font-size: 30px;
+    }
+    .gallery-count {
+      font-size: 17px;
+      padding: 4px 18px;
+    }
+    .gallery-grid {
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 36px;
+    }
+    .gallery-card {
+      border-radius: 24px;
+    }
+    .gallery-card-open {
+      padding: 26px 20px 12px;
+    }
+    .card-name-slot {
+      padding: 0 18px 18px;
+    }
+    .card-thumb {
+      border-radius: 18px;
+    }
+    .card-label,
+    .card-name-input {
+      font-size: 17px;
+    }
+    .card-rename-icon {
+      font-size: 13px;
+    }
+    .gallery-card-edit {
+      padding: 14px 16px;
+      font-size: 15px;
+    }
+    .detail-panel {
+      width: 560px;
+      padding: 52px 44px;
+      gap: 32px;
+    }
+    .detail-name,
+    .name-input {
+      font-size: 32px;
+    }
+    .rename-icon {
+      font-size: 16px;
+    }
+    .action-btn {
+      min-height: 64px;
+      font-size: 18px;
+    }
+  }
+
   @container (max-width: 768px) {
     .gallery-view {
       padding: 20px;
@@ -1260,9 +1516,11 @@
       grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
       gap: 10px;
     }
-    .gallery-card {
-      padding: 10px 8px;
-      gap: 8px;
+    .gallery-card-open {
+      padding: 10px 8px 6px;
+    }
+    .card-name-slot {
+      padding: 0 8px 8px;
     }
   }
 
@@ -1270,7 +1528,10 @@
     .gallery-card,
     .action-btn,
     .back-btn,
-    .rename-btn,
+    .card-rename,
+    .card-rename-icon,
+    .name-edit,
+    .rename-icon,
     .card-thumb img {
       transition: none !important;
     }
