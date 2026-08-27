@@ -51,7 +51,7 @@
     /**
      * Buugeng chirality seam, forwarded to the grid. The sheet is opened per
      * hand, so hosts pass the hand this sheet is editing and it writes that
-     * hand only — blue Standard beside red Mirrored is the pairing that nests.
+     * hand only — blue A beside red B is the pairing that nests.
      */
     chirality?: PropChiralitySeam;
   }>();

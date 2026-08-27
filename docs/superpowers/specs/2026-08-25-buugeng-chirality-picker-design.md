@@ -75,8 +75,16 @@ Each segment renders the currently selected prop's own art through
 `scaleX(-1)`. No change to the primitive is needed; the slot already exists and
 already documents that the option's `label` keeps owning the accessible name.
 
-Visible words are **Standard** and **Mirrored**. The art carries the actual
-difference; the words carry it for anyone who cannot resolve the small glyph.
+Visible labels are **A** and **B**, matching what pictograph-inspect already
+prints (`sequence-actions/pictograph-inspect/formatters.ts`). Neither handedness
+is canonical — which SVG happens to be the base asset is the only thing that
+would make one "standard" — so a neutral index tells the truth where
+Standard/Mirrored implied a deviation from a norm that does not exist. The MCP
+glossary has no `chirality` term, so no canonical vocabulary is being overridden.
+
+The art carries the actual difference and is sized to say so; the letter carries
+it for anyone who cannot resolve the glyph, and gives each segment an accessible
+name.
 
 The row renders only when the selected prop is buugeng-family, and it mounts in
 the picker's existing bottom dock — the same slot `premium-nudge-dock` already

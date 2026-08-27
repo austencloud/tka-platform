@@ -87,22 +87,22 @@
       class:compact
       class:flipped
       onclick={toggleChirality}
-      aria-label="{color} buugeng chirality: {flipped
-        ? 'mirrored'
-        : 'standard'}"
+      aria-label="{color} buugeng chirality: {flipped ? 'B' : 'A'}"
       aria-pressed={flipped}
     >
       <i class="fas fa-arrows-left-right" aria-hidden="true"></i>
       {#if !compact}
         <!--
-          Ghost-sizer: both words occupy the same grid cell so the cell is as
-          wide as the longer of them and the row never shifts on toggle
-          (.claude/rules/no-layout-shift.md).
+          Ghost-sizer: both values occupy the same grid cell so the cell is as
+          wide as the wider of them and the row never shifts on toggle
+          (.claude/rules/no-layout-shift.md). A and B are near-identical widths
+          today, but the sizer is what keeps that a fact about the font rather
+          than something the layout depends on.
         -->
         <span class="chirality-word">
-          <span class="sizer" aria-hidden="true">Mirrored</span>
-          <span class="sizer" aria-hidden="true">Standard</span>
-          <span class="live">{flipped ? "Mirrored" : "Standard"}</span>
+          <span class="sizer" aria-hidden="true">B</span>
+          <span class="sizer" aria-hidden="true">A</span>
+          <span class="live">{flipped ? "B" : "A"}</span>
         </span>
       {/if}
     </button>

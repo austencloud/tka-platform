@@ -79,9 +79,11 @@ describe("buugeng chirality is owned by the prop picker", () => {
     // other web default.
     expect(row).toContain("SegmentedControl");
     expect(row).not.toContain('type="checkbox"');
-    // Colour alone is not the cue: both segments carry a word.
-    expect(row).toContain("Standard");
-    expect(row).toContain("Mirrored");
+    // Colour alone is not the cue: both segments carry a label. A and B rather
+    // than Standard and Mirrored — neither handedness is canonical, and the
+    // pictograph-inspect readout already prints the pair as A / B.
+    expect(row).toMatch(/\{ value: "a" as const, label: "A" \}/);
+    expect(row).toMatch(/\{ value: "b" as const, label: "B" \}/);
   });
 
   it("the row gives every hand its own control", () => {

@@ -23,6 +23,12 @@
   — through the primitive's existing optionContent slot. Colour plus the
   control's aria-label carry which hand it is, so the words Blue and Red stay
   off the face (chip-primitives.md, Blue / Red Prop Identity).
+
+  The two are named A and B, matching what pictograph-inspect already prints
+  (sequence-actions/pictograph-inspect/formatters.ts). Neither handedness is
+  the canonical one — which SVG happens to be the base asset is the only thing
+  that would make one "standard" — so a neutral index tells the truth where
+  Standard/Mirrored implied a deviation from a norm that does not exist.
 -->
 <script lang="ts">
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -33,7 +39,7 @@
     PropChiralityHandState,
   } from "./prop-chirality-seam";
 
-  type Chirality = "standard" | "mirrored";
+  type Chirality = "a" | "b";
 
   let {
     propType,
@@ -50,12 +56,12 @@
   const displayInfo = $derived(getPropTypeDisplayInfo(propType));
 
   const options = [
-    { value: "standard" as const, label: "Standard" },
-    { value: "mirrored" as const, label: "Mirrored" },
+    { value: "a" as const, label: "A" },
+    { value: "b" as const, label: "B" },
   ];
 
   function valueFor(flipped: boolean): Chirality {
-    return flipped ? "mirrored" : "standard";
+    return flipped ? "b" : "a";
   }
 </script>
 
@@ -67,7 +73,7 @@
         <SegmentedControl
           {options}
           value={valueFor(state.flipped)}
-          onchange={(next) => onChange(state.hand, next === "mirrored")}
+          onchange={(next) => onChange(state.hand, next === "b")}
           color={state.hand}
           semantics="radiogroup"
           ariaLabel="{state.hand === 'red' ? 'Red' : 'Blue'} buugeng chirality"
@@ -77,11 +83,9 @@
               src={displayInfo.image}
               alt=""
               class="chirality-art"
-              class:mirrored={option === "mirrored"}
+              class:mirrored={option === "b"}
             />
-            <span class="chirality-word"
-              >{option === "mirrored" ? "Mirrored" : "Standard"}</span
-            >
+            <span class="chirality-word">{option === "b" ? "B" : "A"}</span>
           {/snippet}
         </SegmentedControl>
       </div>
@@ -111,7 +115,7 @@
     flex-wrap: wrap;
     justify-content: center;
     /* Wide enough that two controls read as two groups. At 10px the four
-       segments ran together as one Standard/Mirrored/Standard/Mirrored bar. */
+       segments ran together as one A/B/A/B bar. */
     gap: 20px;
     flex: 1;
     min-width: 0;
@@ -120,12 +124,14 @@
   /* Each hand's control is a two-option selector, not a progress bar. Without
      a ceiling it stretches to whatever the host panel is wide — the exact
      failure .claude/rules/visual-verification-mandatory.md opens with. The
-     15rem basis is what makes the pair wrap to one per line on a narrow sheet
-     instead of squeezing both words to ellipses. */
+     ceiling is sized for a glyph and a letter: once the words became A and B
+     the shape is what the segment is really showing, so the control hugs it
+     instead of stranding 250px of empty track. The 11rem basis is what still
+     wraps the pair one per line on the narrowest sheet. */
   .chirality-hand {
-    flex: 1 1 15rem;
+    flex: 0 1 11rem;
     min-width: 0;
-    max-width: 22rem;
+    max-width: 13rem;
     padding: 4px;
     border-radius: 14px;
     /* The wash and ring make the whole control unmistakably one hand's, which
@@ -158,8 +164,8 @@
   }
 
   .chirality-art {
-    width: 26px;
-    height: 26px;
+    width: 34px;
+    height: 34px;
     object-fit: contain;
     flex-shrink: 0;
   }
@@ -182,8 +188,8 @@
   }
 
   /* Narrow hosts stack the pair one per line, so the word moves above them
-     instead of disappearing. Hiding it left two identical Standard/Mirrored
-     pairs with nothing on screen saying what they set. */
+     instead of disappearing. Hiding it left two identical A/B pairs with
+     nothing on screen saying what they set. */
   @container prop-grid (max-width: 340px) {
     .chirality-row {
       flex-direction: column;
