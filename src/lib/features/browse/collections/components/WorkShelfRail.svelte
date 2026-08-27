@@ -80,8 +80,10 @@
       disabled: shelfId === "shared" && !sharedAvailable,
       ariaLabel:
         shelfId === "shared" && !sharedAvailable
-          ? "Shared, no collections yet"
-          : shelves[shelfId].label,
+          ? `${shelves[shelfId].shortLabel}, ${shelves[shelfId].label}, no collections yet`
+          : shelves[shelfId].shortLabel === shelves[shelfId].label
+            ? shelves[shelfId].label
+            : `${shelves[shelfId].shortLabel}, ${shelves[shelfId].label}`,
     }))
   );
 </script>
