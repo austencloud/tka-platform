@@ -318,10 +318,21 @@
   // route state owns every inner destination and its complete URL.
   $effect(() => {
     const navTab = navigationState.activeTab;
+    // Wait for Browse's own route state to resolve the URL. This effect is
+    // registered before onMount, so on a cold load it runs while
+    // currentLocation is still null and activePrimary is only its "explore"
+    // default. Acting on that default answered "the outer tab says you, the
+    // inner route says explore" with selectPrimary("you"), which resets the
+    // section to sequences and rewrites the address bar — turning a reload of
+    // /browse/you/visuals/tunnels into /browse/you/sequences before
+    // initialize() ever read the real path.
+    const location = browseNavigationState.currentLocation;
+    if (!location) return;
+
     const newPrimary: BrowsePrimary =
       navTab === "you" || navTab === "library" ? "you" : "explore";
 
-    if (newPrimary !== activePrimary && !browseNavigationState.isNavigating) {
+    if (newPrimary !== location.primary && !browseNavigationState.isNavigating) {
       // The outer tab click already pushed /browse/{primary}; replace that
       // entry with the explicit inner route instead of adding a second click.
       browseNavigationState.selectPrimary(newPrimary, true);
