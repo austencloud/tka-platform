@@ -139,7 +139,7 @@ export const load: PageServerLoad = () => {
       // The two canonical guide sheets, and nothing else: the Codex is a
       // pictorial index of the Level 1 dataframe.
       letters: [...BASE_ALPHABET_LETTERS],
-      // One sentence per letter, composed from canonical domain facts at
+      // One description per letter, composed from canonical domain facts at
       // prerender time so the detail overlay can say what a letter IS without
       // pulling @tka/domain into the browser. See _data/letter-descriptions.
       descriptions: LETTER_DESCRIPTIONS,

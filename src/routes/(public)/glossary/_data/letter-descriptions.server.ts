@@ -2,7 +2,7 @@
 //
 // WHY THIS IS A SERVER MODULE: every fact here comes from `@tka/domain`, which
 // the glossary deliberately keeps server-side (see +page.server.ts). The page is
-// prerendered, so the 47 finished sentences ship as static payload and the
+// prerendered, so the 47 finished descriptions ship as static payload and the
 // 500 KB domain package never reaches the browser.
 //
 // NOTHING IS AUTHORED HERE. Each sentence is assembled from canonical parts:
