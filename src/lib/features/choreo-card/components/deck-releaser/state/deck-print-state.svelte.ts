@@ -377,7 +377,7 @@ export function createDeckPrintState(
           }
         );
       } catch (error) {
-        await throwAfterRecordingFailedRun(run, error);
+        return throwAfterRecordingFailedRun(run, error);
       }
       await run.complete();
       return { blob, printRunId: run.printRunId };
@@ -485,7 +485,7 @@ export function createDeckPrintState(
           }
         );
       } catch (error) {
-        await throwAfterRecordingFailedRun(run, error);
+        return throwAfterRecordingFailedRun(run, error);
       }
       await run.complete();
       deps.download(
