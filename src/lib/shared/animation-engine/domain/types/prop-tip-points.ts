@@ -109,7 +109,7 @@ const BIGCLUB_TIP_POINTS: PropTipConfig = {
 
 // ─── Fan Family ───────────────────────────────────────────────────────────────
 
-const FAN_TIP_POINTS: PropTipConfig = {
+export const FAN_TIP_POINTS: PropTipConfig = {
   points: [
     // The five visible outer-rim/rib intersections, on the 260 x 207
     // pictograph fan. The outer rib lands at 130 — the club's reach.
@@ -133,7 +133,7 @@ const BIGFAN_TIP_POINTS: PropTipConfig = {
 
 // ─── Triad Family ─────────────────────────────────────────────────────────────
 
-const TRIAD_TIP_POINTS: PropTipConfig = {
+export const TRIAD_TIP_POINTS: PropTipConfig = {
   points: [
     { dx: 107.8, dy: 0 },
     { dx: -53.9, dy: -93.7 },
@@ -325,7 +325,7 @@ const BIGEIGHTRINGS_TIP_POINTS: PropTipConfig = {
 
 // ─── Quiad ────────────────────────────────────────────────────────────────────
 
-const QUIAD_TIP_POINTS: PropTipConfig = {
+export const QUIAD_TIP_POINTS: PropTipConfig = {
   points: [
     { dx: 104.17, dy: 0 },
     { dx: 0, dy: -104.17 },

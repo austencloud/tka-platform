@@ -897,6 +897,17 @@ def build_asset() -> tuple[
     root["tka_day_dimensions_m"] = [DAY_WIDTH_M, DAY_HEIGHT_M, DAY_DEPTH_M]
     root["tka_day_ring_diameter_m"] = 0.044
     root["tka_fire_dimensions_m"] = [FIRE_WIDTH_M, FIRE_HEIGHT_M]
+    fire_reference = json.loads(DOODLEGRIP_FIRE_REFERENCE.read_text())
+    fire_geometry = fire_reference["geometry_m"]
+    outer_x, outer_y = fire_geometry["outer_wick_center"]
+    diagonal_x, diagonal_y = fire_geometry["diagonal_wick_center"]
+    root["tka_wick_centers_m"] = [
+        [-outer_x, outer_y, 0.0],
+        [-diagonal_x, diagonal_y, 0.0],
+        [0.0, fire_geometry["center_wick_center_y"], 0.0],
+        [diagonal_x, diagonal_y, 0.0],
+        [outer_x, outer_y, 0.0],
+    ]
 
     groups = {
         "fire": add_empty("Fan_Fire", root),

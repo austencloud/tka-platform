@@ -58,6 +58,7 @@
   import {
     PROP_COLORS,
     PropType,
+    propFinishState,
     userProportionsState,
     type PropState3D,
   } from "@austencloud/scene-3d";
@@ -185,12 +186,18 @@
    * exist on the prop in hand.
    */
   const blueTipSlots = $derived(
-    resolvePropTipAnchors3D(bluePropType, staffHalfLength).map(
+    resolvePropTipAnchors3D(bluePropType, staffHalfLength, {
+      fanBuild: propFinishState.fanBuild,
+      finish: propFinishState.finish,
+    }).map(
       (anchor) => anchor.effectTipIndex
     )
   );
   const redTipSlots = $derived(
-    resolvePropTipAnchors3D(redPropType, staffHalfLength).map(
+    resolvePropTipAnchors3D(redPropType, staffHalfLength, {
+      fanBuild: propFinishState.fanBuild,
+      finish: propFinishState.finish,
+    }).map(
       (anchor) => anchor.effectTipIndex
     )
   );

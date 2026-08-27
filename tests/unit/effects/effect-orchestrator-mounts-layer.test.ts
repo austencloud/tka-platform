@@ -106,10 +106,10 @@ describe("EffectsLayer follows the 3D effect selection, not the 2D one", () => {
     // A club has one end. Enumerating [[0,0],[0,1],[1,0],[1,1]] lit effects for
     // ends the prop does not have.
     expect(orchestratorSource).toMatch(
-      /resolvePropTipAnchors3D\(bluePropType,\s*staffHalfLength\)/
+      /resolvePropTipAnchors3D\(bluePropType,\s*staffHalfLength,\s*\{/
     );
     expect(orchestratorSource).toMatch(
-      /resolvePropTipAnchors3D\(redPropType,\s*staffHalfLength\)/
+      /resolvePropTipAnchors3D\(redPropType,\s*staffHalfLength,\s*\{/
     );
   });
 });

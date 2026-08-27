@@ -7,7 +7,7 @@ import {
 import { resolvePropTipAnchors3D } from "$lib/shared/3d/effects/prop-tip-geometry-3d";
 import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 import type { TipPositionData3D } from "$lib/shared/3d/effects/types";
-import { PropType } from "@austencloud/scene-3d";
+import { PropType, propFinishState } from "@austencloud/scene-3d";
 
 function makePropState(x: number, y: number, z: number) {
 	return {
@@ -168,6 +168,28 @@ describe("TipPositionBridge3D", () => {
 		);
 		expect(result.tips[0].speed).toBe(0);
 		expect(result.tips[1].speed).toBe(0);
+	});
+
+	it("keeps velocity history independent for fan emitters sharing slot 1", () => {
+		const previousBuild = propFinishState.fanBuild;
+		propFinishState.setFanBuild("fire");
+		try {
+			const bridge = new TipPositionBridge3D();
+			const result = bridge.update(
+				0,
+				makePropState(0, 0, 0),
+				{ x: 0, y: 0, z: 0 },
+				0.5,
+				1 / 60,
+				PropType.FAN
+			);
+
+			expect(result.tips).toHaveLength(5);
+			expect(result.tips.every((tip) => tip.tipIndex === 1)).toBe(true);
+			expect(result.tips.every((tip) => tip.speed === 0)).toBe(true);
+		} finally {
+			propFinishState.setFanBuild(previousBuild);
+		}
 	});
 
 	it("computes jerk from velocity changes", () => {
@@ -347,59 +369,60 @@ describe("resolveTrailSources3D", () => {
 
 describe("resolvePropTipAnchors3D", () => {
 	const halfLength = 0.4318; // Austen's 34in staff
+	const build = { fanBuild: "pictograph", finish: "day" } as const;
 
 	it("keeps both ends for the staff family", () => {
-		expect(resolvePropTipAnchors3D(PropType.STAFF, halfLength)).toEqual([
-			{ effectTipIndex: 0, axialOffset: -halfLength },
-			{ effectTipIndex: 1, axialOffset: halfLength },
+		expect(resolvePropTipAnchors3D(PropType.STAFF, halfLength, build)).toEqual([
+			{ effectTipIndex: 0, offset: { x: 0, y: -halfLength, z: 0 } },
+			{ effectTipIndex: 1, offset: { x: 0, y: halfLength, z: 0 } },
 		]);
 	});
 
 	it("gives a club one tip, at the club's own cap reach", () => {
-		const anchors = resolvePropTipAnchors3D(PropType.CLUB, halfLength);
+		const anchors = resolvePropTipAnchors3D(PropType.CLUB, halfLength, build);
 
 		expect(anchors).toHaveLength(1);
 		expect(anchors[0].effectTipIndex).toBe(1);
 		// club-profile.ts CLUB_REACH_M - an absolute 52cm club, not half a staff.
-		expect(anchors[0].axialOffset).toBeCloseTo(0.50343, 5);
+		expect(anchors[0].offset.y).toBeCloseTo(0.50343, 5);
 	});
 
 	it.each([
-		PropType.FAN,
 		PropType.SWORD,
 		PropType.MINIHOOP,
-		PropType.TRIAD,
 		PropType.TORCH,
 		PropType.CHICKEN,
 		PropType.GUITAR,
 		PropType.UKULELE,
 	])("gives %s exactly one tip, on the thumb slot", (propType) => {
-		const anchors = resolvePropTipAnchors3D(propType, halfLength);
+		const anchors = resolvePropTipAnchors3D(propType, halfLength, build);
 
 		expect(anchors).toHaveLength(1);
 		expect(anchors[0].effectTipIndex).toBe(1);
-		expect(anchors[0].axialOffset).toBeGreaterThan(0);
+		expect(anchors[0].offset.y).toBeGreaterThan(0);
 	});
 
 	it("places the ukulele tip at its authored headstock-tip grip", () => {
-		expect(resolvePropTipAnchors3D(PropType.UKULELE, halfLength)).toEqual([
-			{ effectTipIndex: 1, axialOffset: 0.015 },
+		expect(resolvePropTipAnchors3D(PropType.UKULELE, halfLength, build)).toEqual([
+			{ effectTipIndex: 1, offset: { x: 0, y: 0.015, z: 0 } },
 		]);
 	});
 
 	it("emits from the ball itself for a contact ball, and from the hand for a bare hand", () => {
 		for (const propType of [PropType.CONTACTBALL, PropType.HAND]) {
-			const anchors = resolvePropTipAnchors3D(propType, halfLength);
-			expect(anchors).toEqual([{ effectTipIndex: 1, axialOffset: 0 }]);
+			const anchors = resolvePropTipAnchors3D(propType, halfLength, build);
+			expect(anchors).toEqual([
+				{ effectTipIndex: 1, offset: { x: 0, y: 0, z: 0 } },
+			]);
 		}
 	});
 
 	it("keeps both ends for the bilateral props the 2D registry does not list", () => {
 		expect(
-			resolvePropTipAnchors3D(PropType.FRACTALGENG, halfLength)
+			resolvePropTipAnchors3D(PropType.FRACTALGENG, halfLength, build)
 		).toHaveLength(2);
 		expect(
-			resolvePropTipAnchors3D(PropType.DOUBLECONTACTBALL, halfLength)
+			resolvePropTipAnchors3D(PropType.DOUBLECONTACTBALL, halfLength, build)
 		).toHaveLength(2);
 	});
 

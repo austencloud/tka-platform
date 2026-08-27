@@ -13,6 +13,7 @@
   import {
     AUSTEN_STAFF,
     PropType,
+    propFinishState,
     type PropState3D,
   } from "@austencloud/scene-3d";
   import { getEffectsConfigContext as getUnifiedEffectsState } from "$lib/shared/effects/state/effects-config-context";
@@ -235,17 +236,22 @@
     );
     const finalQuat = propState.worldRotation.clone().multiply(horizontalQuat);
 
-    // After this combined rotation, the staff's Y axis points in the staff direction
-    const localAxis = new Vector3(0, 1, 0);
-    const worldAxis = localAxis.applyQuaternion(finalQuat);
-
-    const anchors = resolvePropTipAnchors3D(propType, halfLength);
+    const anchors = resolvePropTipAnchors3D(propType, halfLength, {
+      fanBuild: propFinishState.fanBuild,
+      finish: propFinishState.finish,
+    });
     const endAt = (slot: 0 | 1): Vector3 | null => {
       const anchor = anchors.find((a) => a.effectTipIndex === slot);
       return anchor
         ? center
             .clone()
-            .add(worldAxis.clone().multiplyScalar(anchor.axialOffset))
+            .add(
+              new Vector3(
+                anchor.offset.x,
+                anchor.offset.y,
+                anchor.offset.z
+              ).applyQuaternion(finalQuat)
+            )
         : null;
     };
 

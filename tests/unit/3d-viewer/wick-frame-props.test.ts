@@ -13,6 +13,7 @@ import {
 /** The staff length every reach ratio is a fraction of, in metres. */
 const STAFF_LENGTH_M = 0.8636;
 const STAFF_HALF_M = STAFF_LENGTH_M / 2;
+const BUILD = { fanBuild: "pictograph", finish: "day" } as const;
 
 /** Radius of a tip point from the hand, in pictograph units. */
 function reach2D(propType: string, index: number): number {
@@ -56,24 +57,31 @@ describe("wick-frame props", () => {
     expect(TRIAD_PROP.armLength).toBe(TRIAD_ARM_LENGTH);
   });
 
-  it("puts the quiad's tracked emitter on its own arm end, not the triad's", () => {
-    const [anchor] = resolvePropTipAnchors3D(PropType.QUIAD, STAFF_HALF_M);
+  it("puts all four quiad emitters on its canonical arm ends", () => {
+    const anchors = resolvePropTipAnchors3D(PropType.QUIAD, STAFF_HALF_M, BUILD);
+    const [anchor] = anchors;
 
+    expect(anchors).toHaveLength(4);
     expect(anchor.effectTipIndex).toBe(1);
-    expect(anchor.axialOffset).toBeCloseTo(STAFF_LENGTH_M * QUIAD_ARM_LENGTH, 6);
+    expect(anchor.offset.y).toBeCloseTo(STAFF_LENGTH_M * (104.17 / 252.8), 6);
 
     // The 3D reach used to borrow TRIAD_REACH_RATIO, which was only right while
     // the quiad was rendering as a three-armed prop.
     const [triadAnchor] = resolvePropTipAnchors3D(
       PropType.TRIAD,
-      STAFF_HALF_M
+      STAFF_HALF_M,
+      BUILD
     );
-    expect(anchor.axialOffset).toBeLessThan(triadAnchor.axialOffset);
+    expect(anchor.offset.y).toBeLessThan(triadAnchor.offset.y);
   });
 
   it("tracks the sword's tip at the GLB blade apex", () => {
     // sword.glb puts 20.98in of blade forward of the guard on a 34.00in prop.
-    const [anchor] = resolvePropTipAnchors3D(PropType.SWORD, STAFF_HALF_M);
-    expect(anchor.axialOffset).toBeCloseTo(STAFF_LENGTH_M * (20.98 / 34), 4);
+    const [anchor] = resolvePropTipAnchors3D(
+      PropType.SWORD,
+      STAFF_HALF_M,
+      BUILD
+    );
+    expect(anchor.offset.y).toBeCloseTo(STAFF_LENGTH_M * (20.98 / 34), 4);
   });
 });

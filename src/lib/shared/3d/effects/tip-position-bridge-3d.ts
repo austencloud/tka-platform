@@ -5,6 +5,7 @@ import {
 	propTipAnchorSignature3D,
 	resolvePropTipAnchors3D,
 } from "./prop-tip-geometry-3d";
+import { propFinishState } from "@austencloud/scene-3d";
 
 export type TrailSourceId3D = "left-end" | "right-end" | "hand";
 
@@ -154,7 +155,6 @@ export class TipPositionBridge3D {
 	private history = new Map<string, TipHistory>();
 	private anchorSignatures = new Map<number, string>();
 	private readonly tempQuat = new Quaternion();
-	private readonly tempAxis = new Vector3();
 
 	update(
 		propIndex: number,
@@ -182,12 +182,14 @@ export class TipPositionBridge3D {
 			new Euler(0, 0, Math.PI / 2)
 		);
 		const finalQuat = rotation.multiply(horizontalQuat);
-		this.tempAxis.set(0, 1, 0).applyQuaternion(finalQuat);
 
 		// Effect assignments use the canonical logical order: Pinky/LEFT_END is
 		// tip 0, Thumb/RIGHT_END is tip 1. The prop mesh's positive axis points
 		// toward the thumb end, which is the end a single-ended prop keeps.
-		const anchors = resolvePropTipAnchors3D(propType, staffHalfLength);
+		const anchors = resolvePropTipAnchors3D(propType, staffHalfLength, {
+			fanBuild: propFinishState.fanBuild,
+			finish: propFinishState.finish,
+		});
 
 		// Swapping the prop mid-playback moves a tip discontinuously. Dropping
 		// this prop's history turns that into one zero-velocity frame instead of
@@ -195,17 +197,23 @@ export class TipPositionBridge3D {
 		const signature = propTipAnchorSignature3D(anchors);
 		if (this.anchorSignatures.get(propIndex) !== signature) {
 			this.anchorSignatures.set(propIndex, signature);
-			this.history.delete(`${propIndex}-0`);
-			this.history.delete(`${propIndex}-1`);
+			for (const key of this.history.keys()) {
+				if (key.startsWith(`${propIndex}-`)) this.history.delete(key);
+			}
 		}
 
-		const tips: TipPositionData3D[] = anchors.map((anchor) =>
+		const tips: TipPositionData3D[] = anchors.map((anchor, emitterOrdinal) =>
 			this.computeTipData(
 				propIndex,
 				anchor.effectTipIndex,
 				center
 					.clone()
-					.add(this.tempAxis.clone().multiplyScalar(anchor.axialOffset)),
+					.add(
+						new Vector3(anchor.offset.x, anchor.offset.y, anchor.offset.z).applyQuaternion(
+							finalQuat
+						)
+					),
+				emitterOrdinal,
 				deltaTime
 			)
 		);
@@ -222,9 +230,10 @@ export class TipPositionBridge3D {
 		propIndex: number,
 		tipIndex: 0 | 1,
 		position: Vector3,
+		emitterOrdinal: number,
 		deltaTime: number
 	): TipPositionData3D {
-		const key = `${propIndex}-${tipIndex}`;
+		const key = `${propIndex}-${tipIndex}-${emitterOrdinal}`;
 		let hist = this.history.get(key);
 
 		if (!hist) {

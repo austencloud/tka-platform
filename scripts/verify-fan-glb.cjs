@@ -10,6 +10,16 @@ const glbPath = path.join(
   "props",
   "fan.glb"
 );
+const tipGeometryPath = path.join(
+  __dirname,
+  "..",
+  "src",
+  "lib",
+  "shared",
+  "3d",
+  "effects",
+  "prop-build-tip-geometry-3d.ts"
+);
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message);
@@ -83,6 +93,7 @@ function collectScene(document, binary) {
   const nodeParent = new Map();
   const meshNodes = [];
   const meshBounds = new Map();
+  const nodeWorldMatrices = new Map();
   let vertexCount = 0;
   let triangleCount = 0;
   let primitiveCount = 0;
@@ -90,6 +101,7 @@ function collectScene(document, binary) {
   function visit(nodeIndex, parentMatrix, parentIndex = null) {
     const node = document.nodes[nodeIndex];
     const worldMatrix = parentMatrix.clone().multiply(nodeMatrix(node));
+    nodeWorldMatrices.set(nodeIndex, worldMatrix);
     nodeParent.set(nodeIndex, parentIndex);
     if (node.mesh !== undefined) {
       meshNodes.push(nodeIndex);
@@ -148,6 +160,7 @@ function collectScene(document, binary) {
     nodeParent,
     meshNodes,
     meshBounds,
+    nodeWorldMatrices,
     vertexCount,
     triangleCount,
     primitiveCount,
@@ -387,6 +400,39 @@ invariant(
   rootTranslation.length() < 1e-6,
   `Hand pivot moved away from the origin: ${rootTranslation.toArray()}`
 );
+
+if (root.extras?.tka_wick_centers_m) {
+  const source = fs.readFileSync(tipGeometryPath, "utf8");
+  const constantBody = source.match(
+    /FAN_FIRE_WICK_CENTERS_M\s*=\s*\[([\s\S]*?)\]\s*as const/
+  );
+  invariant(constantBody, "TypeScript fire-wick constants are missing");
+  const typeScriptCenters = [...constantBody[1].matchAll(
+    /\{\s*x:\s*(-?[\d.]+),\s*y:\s*(-?[\d.]+),\s*z:\s*(-?[\d.]+)\s*\}/g
+  )].map((match) => match.slice(1).map(Number));
+  const bakedCenters = root.extras.tka_wick_centers_m;
+  invariant(typeScriptCenters.length === 5, "TypeScript must define five fire wicks");
+  invariant(bakedCenters.length === 5, "GLB extras must define five fire wicks");
+  for (let index = 0; index < 5; index += 1) {
+    const nodeIndex = nodeIndexByName.get(`Fan_Fire_Wick_${index + 1}`);
+    const nodeCenter = new Vector3().setFromMatrixPosition(
+      stats.nodeWorldMatrices.get(nodeIndex)
+    );
+    for (let axis = 0; axis < 3; axis += 1) {
+      invariant(
+        Math.abs(typeScriptCenters[index][axis] - bakedCenters[index][axis]) < 1e-7,
+        `TypeScript wick ${index + 1} does not match the baked GLB extras`
+      );
+      invariant(
+        Math.abs(typeScriptCenters[index][axis] - nodeCenter.getComponent(axis)) < 1e-7,
+        `TypeScript wick ${index + 1} does not match its GLB world position`
+      );
+    }
+  }
+  console.log("FAN_WICK_CENTERS=verified-typescript-extras-nodes");
+} else {
+  console.log("FAN_WICK_CENTERS=skipped-current-glb-has-no-tka_wick_centers_m-extras");
+}
 
 invariant(bytes.length >= 40_000, `fan.glb is suspiciously small: ${bytes.length}`);
 invariant(bytes.length <= 2_000_000, `fan.glb is too large: ${bytes.length}`);

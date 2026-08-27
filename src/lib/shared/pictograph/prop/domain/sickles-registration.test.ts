@@ -41,8 +41,13 @@ describe("Sickles prop registration", () => {
     expect(getTipPointsBaseline(PropType.SICKLES).points).toEqual([
       { dx: 192, dy: 0 },
     ]);
-    expect(resolvePropTipAnchors3D(PropType.SICKLES, 0.4318)).toEqual([
-      { effectTipIndex: 1, axialOffset: 0.274416 },
+    expect(
+      resolvePropTipAnchors3D(PropType.SICKLES, 0.4318, {
+        fanBuild: "pictograph",
+        finish: "day",
+      })
+    ).toEqual([
+      { effectTipIndex: 1, offset: { x: 0, y: 0.274416, z: 0 } },
     ]);
   });
 

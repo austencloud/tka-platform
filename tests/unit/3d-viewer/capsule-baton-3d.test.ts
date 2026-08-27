@@ -9,6 +9,7 @@ import { resolvePropModel } from "../../../node_modules/@austencloud/scene-3d/sr
 /** The staff length the 3D rig hands the tip bridge, in metres. */
 const STAFF_LENGTH_M = 0.8636;
 const STAFF_HALF_M = STAFF_LENGTH_M / 2;
+const BUILD = { fanBuild: "pictograph", finish: "day" } as const;
 
 /**
  * `capsule-baton.glb`'s own numbers, printed by
@@ -46,7 +47,8 @@ describe("capsule baton 3D", () => {
   it("emits from the two lit caps, not from a staff's ends", () => {
     const anchors = resolvePropTipAnchors3D(
       PropType.CAPSULE_BATON,
-      STAFF_HALF_M
+      STAFF_HALF_M,
+      BUILD
     );
 
     expect(anchors).toHaveLength(2);
@@ -55,19 +57,19 @@ describe("capsule baton 3D", () => {
     // Both emitters land on the capsule inside the cap, 22mm inboard of the
     // closed end. The two-ended default is +/- staffHalfLength, which on this
     // prop lands exactly on the cap tip, where the real light is not.
-    expect(anchors[1].axialOffset).toBeCloseTo(GLOW_CENTRE_M, 6);
-    expect(anchors[0].axialOffset).toBeCloseTo(-GLOW_CENTRE_M, 6);
-    expect(anchors[1].axialOffset).toBeLessThan(CAP_TIP_M);
-    expect(anchors[1].axialOffset).not.toBeCloseTo(STAFF_HALF_M, 4);
+    expect(anchors[1].offset.y).toBeCloseTo(GLOW_CENTRE_M, 6);
+    expect(anchors[0].offset.y).toBeCloseTo(-GLOW_CENTRE_M, 6);
+    expect(anchors[1].offset.y).toBeLessThan(CAP_TIP_M);
+    expect(anchors[1].offset.y).not.toBeCloseTo(STAFF_HALF_M, 4);
   });
 
   it("keeps the staff family on the plain half-length pair", () => {
     // The baton's entry must not become the two-ended default.
     for (const propType of [PropType.STAFF, PropType.DOUBLESTAR]) {
-      const anchors = resolvePropTipAnchors3D(propType, STAFF_HALF_M);
+      const anchors = resolvePropTipAnchors3D(propType, STAFF_HALF_M, BUILD);
       expect(anchors).toHaveLength(2);
-      expect(anchors[1].axialOffset).toBeCloseTo(STAFF_HALF_M, 6);
-      expect(anchors[0].axialOffset).toBeCloseTo(-STAFF_HALF_M, 6);
+      expect(anchors[1].offset.y).toBeCloseTo(STAFF_HALF_M, 6);
+      expect(anchors[0].offset.y).toBeCloseTo(-STAFF_HALF_M, 6);
     }
   });
 });

@@ -1,6 +1,10 @@
 import { PropType } from "@austencloud/scene-3d";
 import { propTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 import { getTipPointsBaseline } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
+import {
+  resolveBuildTipAnchors3D,
+  type PropBuildTipGeometry3D,
+} from "./prop-build-tip-geometry-3d";
 
 /**
  * Where a prop's tracked effect emitters sit along its own axis, in 3D.
@@ -24,11 +28,8 @@ import { getTipPointsBaseline } from "$lib/shared/animation-engine/domain/types/
 export interface PropTipAnchor3D {
   /** Effect-assignment slot: 0 = pinky/left end, 1 = thumb/right end. */
   readonly effectTipIndex: 0 | 1;
-  /**
-   * Signed offset from the prop's pivot along its local +Y axis, in metres.
-   * The pivot is the hand for every prop the 3D scene draws.
-   */
-  readonly axialOffset: number;
+  /** Prop-local metres from the hand pivot: +Y reach, +X across. */
+  readonly offset: { readonly x: number; readonly y: number; readonly z: number };
 }
 /** `Prop3D.svelte` renders every "big" procedural variant at this scale. */
 const BIG_SCALE = 1.4;
@@ -217,20 +218,32 @@ function twoEndedReach3D(
  */
 export function resolvePropTipAnchors3D(
   propType: string | undefined,
-  staffHalfLength: number
+  staffHalfLength: number,
+  build: PropBuildTipGeometry3D
 ): PropTipAnchor3D[] {
+  const buildAnchors = resolveBuildTipAnchors3D(
+    propType,
+    staffHalfLength * 2,
+    build
+  );
+  if (buildAnchors) return buildAnchors;
+
   if (isTwoEnded3D(propType)) {
     const reach = twoEndedReach3D(propType, staffHalfLength);
     return [
-      { effectTipIndex: 0, axialOffset: -reach },
-      { effectTipIndex: 1, axialOffset: reach },
+      { effectTipIndex: 0, offset: { x: 0, y: -reach, z: 0 } },
+      { effectTipIndex: 1, offset: { x: 0, y: reach, z: 0 } },
     ];
   }
 
   return [
     {
       effectTipIndex: 1,
-      axialOffset: singleEndedReach3D(propType, staffHalfLength),
+      offset: {
+        x: 0,
+        y: singleEndedReach3D(propType, staffHalfLength),
+        z: 0,
+      },
     },
   ];
 }
@@ -240,6 +253,9 @@ export function propTipAnchorSignature3D(
   anchors: readonly PropTipAnchor3D[]
 ): string {
   return anchors
-    .map((anchor) => `${anchor.effectTipIndex}@${anchor.axialOffset.toFixed(5)}`)
+    .map(
+      (anchor) =>
+        `${anchor.effectTipIndex}@${anchor.offset.x.toFixed(5)},${anchor.offset.y.toFixed(5)},${anchor.offset.z.toFixed(5)}`
+    )
     .join("|");
 }
