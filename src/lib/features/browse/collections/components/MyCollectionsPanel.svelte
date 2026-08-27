@@ -547,6 +547,10 @@ instead of showing an empty shell.
     <CollectionCard
       collection={f}
       readonly
+      countLabel={f.id === "founding_tka-1"
+        ? unitLabel(f.sequenceCount, "letter", "letters")
+        : unitLabel(f.sequenceCount, "sequence", "sequences")}
+      minimalMetadata
       selected={!!sel && sel.id === f.id && !sel.ownerId}
       onOpen={() => openCollection(f.id, f.name)}
     />
