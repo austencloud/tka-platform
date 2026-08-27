@@ -62,8 +62,13 @@ export class DeepLinker {
   /** Internal storage for deep link data (replaces deepLinkStore) */
   private storedData: StoredDeepLinkData | null = null;
 
-  /** Stale data threshold in milliseconds */
-  private static readonly STALE_THRESHOLD_MS = 5000;
+  /**
+   * Deep-link data is held only in memory, but a cold Create module load can
+   * legitimately take more than five seconds on a phone. Keep the handoff
+   * alive for one minute so initialization latency cannot silently discard a
+   * URL the person just opened.
+   */
+  private static readonly STALE_THRESHOLD_MS = 60_000;
 
   initialize(): void {
     if (!browser) {
