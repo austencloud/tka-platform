@@ -1,39 +1,8 @@
-<script module lang="ts">
-  /**
-   * Dismiss contract for the bottom sheet, extracted so it's unit-testable
-   * without mounting Svelte. Escape closes; a pointerdown outside the panel
-   * closes; pointerdown inside is ignored. An optional `isExempt` predicate
-   * lets a caller spare targets that live outside the panel subtree but must
-   * not trigger dismissal anyway (e.g. a portalled top-layer dialog opened
-   * from within the sheet) - honored by both handlers, since a modal can
-   * capture Escape as easily as a pointerdown.
-   */
-  export function createSheetDismiss(
-    onClose: () => void,
-    getPanel: () => HTMLElement | null = () => null,
-    isExempt: (target: EventTarget | null) => boolean = () => false
-  ) {
-    return {
-      onKeydown(e: KeyboardEvent) {
-        if (e.key !== "Escape") return;
-        if (isExempt(e.target)) return;
-        onClose();
-      },
-      onBackdropPointerDown(e: PointerEvent) {
-        const panel = getPanel();
-        if (panel && e.target instanceof Node && panel.contains(e.target))
-          return;
-        if (isExempt(e.target)) return;
-        onClose();
-      },
-    };
-  }
-</script>
-
 <script lang="ts">
   import { fly, fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import type { Snippet } from "svelte";
+  import { createSheetDismiss } from "./sheet-dismiss";
 
   interface Props {
     open: boolean;

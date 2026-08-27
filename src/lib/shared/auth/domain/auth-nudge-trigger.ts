@@ -14,6 +14,7 @@ export type AuthNudgeTrigger =
   | "saved-setups"
   | "share-setup"
   | "share-sequence"
+  | "share-collection"
   | "viewer-signin-publish"
   | "viewer-signin-download"
   | "viewer-signin-account"
@@ -66,6 +67,9 @@ export const AUTH_NUDGE_TEXTS: Record<AuthNudgeTrigger, string> = {
     "Create a free account to share your setup with the community.",
   "share-sequence":
     "Create a free account to send sequences, make links, and share or download Choreo Cards.",
+  // Guests can build collections, but sending one through the inbox names the
+  // sender, so it needs a full account just like sharing a setup does.
+  "share-collection": "Create a free account to share your collections.",
   // Sequence viewer / /q scan funnel - the three reasons that actually reach
   // the shared AuthModal (publish/download require a full account per
   // gated-action-policy.ts; account is the /q header chip's plain sign-in).
@@ -160,6 +164,11 @@ const AUTH_PROMPT_CONTENTS: Record<AuthNudgeTrigger, AuthPromptContent> = {
     key: "share-sequence",
     title: "Share this sequence",
     body: "Sign in or create an account to send it, make a link, or download a Choreo Card.",
+  },
+  "share-collection": {
+    key: "share-collection",
+    title: "Share this collection",
+    body: "Sign in or create an account to send this collection.",
   },
   "viewer-signin-publish": {
     key: "viewer-signin-publish",

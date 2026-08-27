@@ -65,7 +65,8 @@ export function seabedReliefAt(x: number, z: number): number {
   const at = (cx: number, cz: number): number => {
     if (cz < 0 || cz >= field.rows) return 0;
     if (cx < 0 || cx >= field.cols) return 0;
-    return field.relief[cz][cx];
+    // In-bounds by the two guards above; the lattice is rows × cols dense.
+    return field.relief[cz]![cx]!;
   };
 
   const a = at(x0, z0);
@@ -109,7 +110,8 @@ export function buildSeabedMesh(baseFloorYAt: (z: number) => number): SeabedMesh
     for (let col = 0; col < cols; col += 1) {
       const i = (row * cols + col) * 3;
       vertices[i] = minX + col * step;
-      vertices[i + 1] = baseY + field.relief[row][col];
+      // In-bounds by the loop limits; the lattice is rows × cols dense.
+      vertices[i + 1] = baseY + field.relief[row]![col]!;
       vertices[i + 2] = z;
     }
   }

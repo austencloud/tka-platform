@@ -9,7 +9,7 @@ import {
   suggestCopyCounts,
 } from "../../../services/print-copy-suggester";
 import type { CardPair } from "../../../services/types";
-import type { PrintSide } from "../../print-preview/PrintPanel.svelte";
+import type { PrintSide } from "../../print-preview/print-side";
 import {
   buildDeckPrintMetadata,
   normalizeDeckFooters,
@@ -377,7 +377,7 @@ export function createDeckPrintState(
           }
         );
       } catch (error) {
-        await throwAfterRecordingFailedRun(run, error);
+        return throwAfterRecordingFailedRun(run, error);
       }
       await run.complete();
       return { blob, printRunId: run.printRunId };
@@ -485,7 +485,7 @@ export function createDeckPrintState(
           }
         );
       } catch (error) {
-        await throwAfterRecordingFailedRun(run, error);
+        return throwAfterRecordingFailedRun(run, error);
       }
       await run.complete();
       deps.download(

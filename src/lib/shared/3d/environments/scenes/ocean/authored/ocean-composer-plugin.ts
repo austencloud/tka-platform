@@ -518,7 +518,7 @@ const currentCompositionItems: ObjectDefinition[] = [
     canScale: true,
     color: 0x23734c,
   },
-  ...[
+  ...([
     ["ph-boulder-01", "Boulder", "/models/ocean/polyhaven/boulder_01.glb"],
     [
       "ph-coast-rocks-05",
@@ -532,7 +532,7 @@ const currentCompositionItems: ObjectDefinition[] = [
       "/models/ocean/polyhaven/sand_rocks_small_01.glb",
     ],
     ["ph-stone-01", "Seabed Stone", "/models/ocean/polyhaven/stone_01.glb"],
-  ].map(([key, name, modelPath]) => ({
+  ] as const).map(([key, name, modelPath]) => ({
     key,
     name,
     type: "prop" as const,
@@ -546,7 +546,7 @@ const currentCompositionItems: ObjectDefinition[] = [
     canScale: true,
     color: 0x526270,
   })),
-  ...[
+  ...([
     [
       "struct-coral-arch",
       "Coral Arch",
@@ -563,7 +563,7 @@ const currentCompositionItems: ObjectDefinition[] = [
       "/models/ocean/structures/coral-tower.glb",
     ],
     ["struct-reef-wall", "Reef Wall", "/models/ocean/structures/reef-wall.glb"],
-  ].map(([key, name, modelPath]) => ({
+  ] as const).map(([key, name, modelPath]) => ({
     key,
     name,
     type: "prop" as const,

@@ -279,10 +279,14 @@ function isInsideCourt(
   let inside = false;
   const outline = court.blenderOutline;
   for (let i = 0, j = outline.length - 1; i < outline.length; j = i, i += 1) {
-    const ax = outline[i].x;
-    const az = -outline[i].y;
-    const bx = outline[j].x;
-    const bz = -outline[j].y;
+    // Both indices stay inside the outline: i by the loop bound, j because it
+    // trails i (starting at the closing vertex).
+    const vertexA = outline[i]!;
+    const vertexB = outline[j]!;
+    const ax = vertexA.x;
+    const az = -vertexA.y;
+    const bx = vertexB.x;
+    const bz = -vertexB.y;
     const straddles = az > position.z !== bz > position.z;
     if (!straddles) continue;
     const crossingX = ax + ((position.z - az) / (bz - az)) * (bx - ax);

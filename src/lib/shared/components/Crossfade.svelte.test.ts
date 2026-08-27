@@ -55,4 +55,17 @@ describe("Crossfade interruption", () => {
     const box = container.querySelector<HTMLElement>(".crossfade");
     expect(box!.getBoundingClientRect().height).toBeCloseTo(100, 0);
   });
+
+  it("eases a taller layer back down instead of snapping to the short height", async () => {
+    render(CrossfadeTestHarness);
+
+    await page.getByRole("button", { name: "Measure collapse" }).click();
+    await settle();
+
+    const midpoint = Number(
+      page.getByTestId("collapse-midpoint").element().textContent
+    );
+    expect(midpoint).toBeGreaterThan(60);
+    expect(midpoint).toBeLessThan(160);
+  });
 });

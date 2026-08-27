@@ -54,6 +54,9 @@ export type WallSegment =
 	| SignSegment
 	| GapSegment;
 
+/** The four walls a room defines segments for, as keyed in `RoomNode.walls`. */
+export type WallName = "north" | "south" | "east" | "west";
+
 export type WallDefinition = {
 	segments: WallSegment[];
 	minMargin: number;

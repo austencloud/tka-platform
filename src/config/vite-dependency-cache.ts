@@ -35,6 +35,7 @@ export function resolveViteDevPort(
 ): number {
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
+    if (argument === undefined) continue;
 
     if (argument === "--port") {
       const port = parsePort(argv[index + 1]);

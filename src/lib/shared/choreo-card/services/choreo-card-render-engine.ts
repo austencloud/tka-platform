@@ -632,7 +632,7 @@ export function createChoreoCardRenderEngine(
           imageUrl: newUrls.get(cell.index) ?? cell.imageUrl,
         }));
         await new Promise<void>((resolve) => {
-          requestAnimationFrame(() => requestAnimationFrame(resolve));
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
         });
         crossfader.beginCrossfade(deps.darkMode, mode);
         crossfader.scheduleCrossfadeEnd(() => {

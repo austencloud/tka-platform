@@ -5,8 +5,6 @@ export interface AutumnFireflyCluster {
   position: [number, number];
   area: { width: number; height: number; depth: number };
   weight: number;
-  fallSpeed: number;
-  colors: readonly [string, string, string, string];
 }
 
 export interface AutumnLeafEmitter {
@@ -20,6 +18,8 @@ export interface AutumnLeafEmitter {
   position: [number, number];
   area: { width: number; height: number; depth: number };
   weight: number;
+  fallSpeed: number;
+  colors: readonly [string, string, string, string];
 }
 
 export const AUTUMN_FIREFLY_CLUSTERS: readonly AutumnFireflyCluster[] =
