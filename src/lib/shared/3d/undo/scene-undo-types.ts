@@ -80,6 +80,7 @@ export interface PerformerDomainSnapshot {
     effortId: EffortId | null;
     effect: EffectType | null;
     staffLengthCm: number | null;
+    propBuild: Partial<import("@austencloud/scene-3d").PropBuild> | null;
   };
   planes: {
     customBluePlane: Plane | null;

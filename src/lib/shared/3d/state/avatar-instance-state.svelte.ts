@@ -7,7 +7,7 @@
 
 import type { MotionConfig3D } from "../domain/models/motion-data-3d";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { Plane } from "@austencloud/scene-3d";
+import { Plane, propFinishState, type PropBuild } from "@austencloud/scene-3d";
 import { PlaneMode } from "@austencloud/scene-3d";
 import { PLANE_MODE_CONFIGS, type PlaneModeConfig } from "@austencloud/scene-3d";
 import { createPlaybackState } from "./playback-state.svelte";
@@ -183,6 +183,10 @@ export function createAvatarInstanceState(
   // ============================================
 
   const effectiveProp = $derived(_settings.prop ?? getDefaults().prop);
+  const effectivePropBuild = $derived<PropBuild>({
+    ...propFinishState.build,
+    ...(_settings.propBuild ?? {}),
+  });
   const effectiveEffortId = $derived(_settings.effortId ?? getDefaults().effortId);
   // The per-performer effect OVERRIDE only. `null` means "inherit the global
   // default" - the inherited value (config.tipEffectMap wildcard) is resolved
@@ -272,13 +276,14 @@ export function createAvatarInstanceState(
   // Override detection (all categories)
   const hasOverride = $derived<OverrideState>({
     prop: _settings.prop !== null,
+    propBuild: _settings.propBuild !== null,
     effects: _settings.effect !== null,
     effort: _settings.effortId !== null,
     planes: planeMode !== null,
   });
 
   const hasAnyOverride = $derived(
-    hasOverride.prop || hasOverride.effects || hasOverride.effort || hasOverride.planes
+    hasOverride.prop || hasOverride.propBuild || hasOverride.effects || hasOverride.effort || hasOverride.planes
   );
 
   // Per-beat plane overrides. Key = beat index, value = { blue?, red? }
@@ -818,6 +823,7 @@ export function createAvatarInstanceState(
         effortId: _settings.effortId,
         effect: _settings.effect,
         staffLengthCm: _settings.staffLengthCm,
+        propBuild: $state.snapshot(_settings.propBuild),
       },
       planes: {
         customBluePlane,
@@ -834,6 +840,7 @@ export function createAvatarInstanceState(
       effortId: snap.settings.effortId,
       effect: snap.settings.effect,
       staffLengthCm: snap.settings.staffLengthCm,
+      propBuild: snap.settings.propBuild,
     };
     customBluePlane = snap.planes.customBluePlane;
     customRedPlane = snap.planes.customRedPlane;
@@ -892,6 +899,16 @@ export function createAvatarInstanceState(
     }, "staff-length");
   }
 
+  function setPropBuild(propBuild: Partial<PropBuild>): void {
+    const before = $state.snapshot(_settings);
+    _settings = { ..._settings, propBuild };
+    const after = $state.snapshot(_settings);
+    sceneUndo.pushSelfRestoringEntry("change-prop-build", "Prop build", {
+      undo: () => { _settings = before; },
+      redo: () => { _settings = after; },
+    });
+  }
+
   // ============================================
   // Reset Methods (clear overrides → inherit from defaults)
   // ============================================
@@ -901,6 +918,16 @@ export function createAvatarInstanceState(
     _settings = { ..._settings, prop: null };
     const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntry("change-prop", "Reset prop to default", {
+      undo: () => { _settings = before; },
+      redo: () => { _settings = after; },
+    });
+  }
+
+  function resetPropBuild(): void {
+    const before = $state.snapshot(_settings);
+    _settings = { ..._settings, propBuild: null };
+    const after = $state.snapshot(_settings);
+    sceneUndo.pushSelfRestoringEntry("change-prop-build", "Reset prop build to default", {
       undo: () => { _settings = before; },
       redo: () => { _settings = after; },
     });
@@ -941,7 +968,7 @@ export function createAvatarInstanceState(
 
   function resetAllOverrides(): void {
     const beforeSnap = capturePerformerSnapshot();
-    _settings = { prop: null, effortId: null, effect: null, staffLengthCm: _settings.staffLengthCm };
+    _settings = { prop: null, propBuild: null, effortId: null, effect: null, staffLengthCm: _settings.staffLengthCm };
     planeMode = null;
     customBluePlane = null;
     customRedPlane = null;
@@ -1147,9 +1174,11 @@ export function createAvatarInstanceState(
     setProp,
     setEffect,
     setStaffLengthCm,
+    setPropBuild,
 
     // Effective values (resolved cascade: null → inherit from viewer defaults)
     get effectiveProp() { return effectiveProp; },
+    get effectivePropBuild() { return effectivePropBuild; },
     get effectiveEffortId() { return effectiveEffortId; },
     /** Per-performer effect override; null = inherit the global default. */
     get rawEffect() { return rawEffect; },
@@ -1163,6 +1192,7 @@ export function createAvatarInstanceState(
 
     // Reset methods (clear overrides → inherit from defaults)
     resetProp,
+    resetPropBuild,
     resetEffort,
     resetEffects,
     resetPlanes,

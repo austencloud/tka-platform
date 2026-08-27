@@ -38,6 +38,12 @@ describe("fan appearance state", () => {
     expect(propFinishState.fanBuild).toBe("day");
     expect(propFinishState.fanFrameColor).toBe("white");
     expect(propFinishState.fanCover).toBe("covered");
+    expect(propFinishState.build).toEqual({
+      finish: "day",
+      fanBuild: "day",
+      fanFrameColor: "white",
+      fanCover: "covered",
+    });
 
     propFinishState.set("fire");
     expect(propFinishState.fanBuild).toBe("day");

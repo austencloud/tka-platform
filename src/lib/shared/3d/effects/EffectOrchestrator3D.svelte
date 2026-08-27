@@ -61,6 +61,7 @@
     propFinishState,
     userProportionsState,
     type PropState3D,
+    type PropBuild,
   } from "@austencloud/scene-3d";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
@@ -114,6 +115,7 @@
     redPropType?: PropType;
     isPlaying: boolean;
     staffHalfLength?: number;
+    propBuild?: PropBuild;
     /**
      * Fractional animation step index. Only Ghost (inside EffectsLayer) reads
      * it — it needs step onsets to know when to capture a phantom. Rigs that
@@ -157,6 +159,7 @@
     redPropType = PropType.STAFF,
     isPlaying,
     staffHalfLength = 0.5,
+    propBuild: propBuildOverride,
     currentStep = 0,
     totalSteps = 0,
     seamlesslyLoopable = false,
@@ -169,6 +172,8 @@
     qualityTierOverride,
     trailConfig = {},
   }: Props = $props();
+
+  const propBuild = $derived(propBuildOverride ?? propFinishState.build);
 
   const { scene, camera } = useThrelte();
   const qualityTierDetector = getQualityTierDetector();
@@ -186,18 +191,12 @@
    * exist on the prop in hand.
    */
   const blueTipSlots = $derived(
-    resolvePropTipAnchors3D(bluePropType, staffHalfLength, {
-      fanBuild: propFinishState.fanBuild,
-      finish: propFinishState.finish,
-    }).map(
+    resolvePropTipAnchors3D(bluePropType, staffHalfLength, propBuild).map(
       (anchor) => anchor.effectTipIndex
     )
   );
   const redTipSlots = $derived(
-    resolvePropTipAnchors3D(redPropType, staffHalfLength, {
-      fanBuild: propFinishState.fanBuild,
-      finish: propFinishState.finish,
-    }).map(
+    resolvePropTipAnchors3D(redPropType, staffHalfLength, propBuild).map(
       (anchor) => anchor.effectTipIndex
     )
   );
@@ -789,7 +788,8 @@
         blueRigCenter,
         staffHalfLength,
         dt,
-        bluePropType
+        bluePropType,
+        propBuild
       );
       blueEffectTips = result.tips;
       result.tips.forEach((tip) => {
@@ -881,7 +881,8 @@
         redRigCenter,
         staffHalfLength,
         dt,
-        redPropType
+        redPropType,
+        propBuild
       );
       redEffectTips = result.tips;
       result.tips.forEach((tip) => {
@@ -1201,4 +1202,5 @@
   {totalSteps}
   {seamlesslyLoopable}
   {qualityTier}
+  {propBuild}
 />

@@ -5,6 +5,7 @@
     getAvatarModelPath,
     prepareAvatarForDisplay,
     type AvatarId,
+    type PropBuild,
   } from "@austencloud/scene-3d";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
   import { getPerformerColor } from "../../constants/performer-colors";
@@ -244,6 +245,11 @@
       : null;
   });
 
+  const currentPropBuild = $derived.by<PropBuild | undefined>(() => {
+    if (!isAllMode) return performer?.effectivePropBuild;
+    return allPerformers[0]?.effectivePropBuild;
+  });
+
   function applyToScope(fn: (p: typeof performer) => void) {
     if (isAllMode) {
       for (const p of allPerformers) fn(p);
@@ -281,6 +287,12 @@
       "prop_type",
       previous,
       propType
+    );
+  }
+
+  function handlePropBuildChange(propBuild: PropBuild): void {
+    writeParameter({ field: "propBuild", value: propBuild }, (p) =>
+      p?.setPropBuild(propBuild)
     );
   }
 
@@ -433,6 +445,8 @@
         <div class="prop-section">
           <ScenePropPicker
             {currentProp}
+            build={currentPropBuild}
+            onBuildChange={handlePropBuildChange}
             accentColor={performerColor}
             onSelect={handlePropSelect}
           />

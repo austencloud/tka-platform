@@ -1,4 +1,4 @@
-import type { AvatarId } from "@austencloud/scene-3d";
+import type { AvatarId, PropBuild } from "@austencloud/scene-3d";
 import type { EffectType } from "$lib/shared/effects/domain/effects-config";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -21,6 +21,7 @@ export type PerformerHubTab =
 export type PerformerHubEdit =
   | { performerIndex: number | null; field: "avatarId"; value: AvatarId }
   | { performerIndex: number | null; field: "prop"; value: PropType }
+  | { performerIndex: number | null; field: "propBuild"; value: PropBuild }
   | { performerIndex: number | null; field: "effort"; value: EffortId }
   | { performerIndex: number | null; field: "staffLengthCm"; value: number }
   | { performerIndex: number | null; field: "effect"; value: EffectType };

@@ -1,6 +1,6 @@
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { Plane, PlaneMode } from "@austencloud/scene-3d";
+import { Plane, PlaneMode, type PropBuild } from "@austencloud/scene-3d";
 import type { EffectType } from "$lib/shared/effects/domain/effects-config";
 
 export interface DefaultPerformerSettings {
@@ -21,12 +21,14 @@ export interface PerformerSettings {
    */
   effect: EffectType | null;
   staffLengthCm: number | null;
+  propBuild: Partial<PropBuild> | null;
 }
 
-export type CascadeCategory = "prop" | "effects" | "effort" | "planes";
+export type CascadeCategory = "prop" | "propBuild" | "effects" | "effort" | "planes";
 
 export interface OverrideState {
   prop: boolean;
+  propBuild: boolean;
   effects: boolean;
   effort: boolean;
   planes: boolean;
@@ -38,6 +40,7 @@ export function makeDefaultPerformerSettings(): PerformerSettings {
     prop: null,
     effect: null,
     staffLengthCm: null,
+    propBuild: null,
   };
 }
 

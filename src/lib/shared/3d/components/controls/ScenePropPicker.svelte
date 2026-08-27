@@ -9,9 +9,8 @@
 
   Everything it offers comes from `scene-prop-catalog.ts`: which props exist,
   how they group into families, which builds each family has, and the rendered
-  picture of every build. Finish and fan appearance are read and written
-  through the scene package's `propFinishState`, which is global — the build a
-  person picks here is the build the scene renders everywhere.
+  picture of every build. A host can provide a performer's resolved build and
+  update seam; hosts that omit it edit the scene default instead.
 
   Hosts differ only in width. The tile grid recomposes from a three-column
   vertical layout in a narrow inspector panel to a seven-column row in a wide
@@ -26,6 +25,7 @@
     type FanCover,
     type FanFrameColor,
     type PropFinish,
+    type PropBuild,
   } from "@austencloud/scene-3d";
   import { tick } from "svelte";
 
@@ -60,6 +60,10 @@
      * performer wants it; a studio whose whole subject is the prop does not.
      */
     showBareHands?: boolean;
+    /** Resolved build for a performer-scoped host. Omit for the scene default. */
+    build?: PropBuild;
+    /** Writes a performer override. Omit to write the scene default. */
+    onBuildChange?: (build: PropBuild) => void;
   }
 
   let {
@@ -67,7 +71,11 @@
     onSelect,
     accentColor,
     showBareHands = true,
+    build: buildOverride,
+    onBuildChange,
   }: Props = $props();
+
+  const build = $derived(buildOverride ?? propFinishState.build);
 
   const selectedFamily = $derived(
     currentProp === null ? undefined : findScenePropFamily(currentProp)
@@ -87,10 +95,10 @@
     scenePropType !== null && propHasFanAppearanceOptions(scenePropType)
   );
   const showFanFrameColors = $derived(
-    showFanAppearance && propFinishState.fanBuild === "day"
+    showFanAppearance && build.fanBuild === "day"
   );
   const showFanCover = $derived(
-    showFanAppearance && propFinishState.fanBuild !== "pictograph"
+    showFanAppearance && build.fanBuild !== "pictograph"
   );
   const showBuildControls = $derived(
     showFinishes || showFanAppearance || selectedFamily !== undefined
@@ -107,7 +115,7 @@
     [
       buildPanelKey,
       currentProp,
-      propFinishState.fanBuild,
+      build.fanBuild,
       showFinishes,
       showFanFrameColors,
       showFanCover,
@@ -115,24 +123,24 @@
   );
 
   const fanBuildContext = $derived(
-    propFinishState.fanBuild === "day" ? "Day fan" : "Fire fan"
+    build.fanBuild === "day" ? "Day fan" : "Fire fan"
   );
   const finishOptions = $derived(
     finishPreviewOptions(currentProp ?? PropType.TRIAD)
   );
   const fanBuildOptions = $derived(
     fanBuildPreviewOptions(
-      propFinishState.fanFrameColor,
-      propFinishState.fanCover
+      build.fanFrameColor,
+      build.fanCover
     )
   );
   const fanFrameOptions = $derived(
-    fanFramePreviewOptions(propFinishState.fanCover)
+    fanFramePreviewOptions(build.fanCover)
   );
   const fanCoverOptions = $derived(
     fanCoverPreviewOptions(
-      propFinishState.fanBuild === "day" ? "day" : "fire",
-      propFinishState.fanFrameColor
+      build.fanBuild === "day" ? "day" : "fire",
+      build.fanFrameColor
     )
   );
   const familyOptions = $derived(
@@ -150,18 +158,22 @@
   }
 
   function chooseFinish(finish: PropFinish): void {
+    if (onBuildChange) return onBuildChange({ ...build, finish });
     propFinishState.set(finish);
   }
 
-  function chooseFanBuild(build: FanBuild): void {
-    propFinishState.setFanBuild(build);
+  function chooseFanBuild(fanBuild: FanBuild): void {
+    if (onBuildChange) return onBuildChange({ ...build, fanBuild });
+    propFinishState.setFanBuild(fanBuild);
   }
 
   function chooseFanFrameColor(color: FanFrameColor): void {
+    if (onBuildChange) return onBuildChange({ ...build, fanFrameColor: color });
     propFinishState.setFanFrameColor(color);
   }
 
   function chooseFanCover(cover: FanCover): void {
+    if (onBuildChange) return onBuildChange({ ...build, fanCover: cover });
     propFinishState.setFanCover(cover);
   }
 
@@ -220,7 +232,7 @@
           <div class="fan-build-primary" data-build-layout-key="fan-build">
             <PropBuildPicker
               label="Build"
-              value={propFinishState.fanBuild}
+              value={build.fanBuild}
               options={fanBuildOptions}
               onchange={chooseFanBuild}
             />
@@ -252,7 +264,7 @@
                   >
                     <PropBuildPicker
                       label="Frame color"
-                      value={propFinishState.fanFrameColor}
+                      value={build.fanFrameColor}
                       options={fanFrameOptions}
                       onchange={chooseFanFrameColor}
                       density="secondary"
@@ -266,7 +278,7 @@
                   >
                     <PropBuildPicker
                       label="Wick cover"
-                      value={propFinishState.fanCover}
+                      value={build.fanCover}
                       options={fanCoverOptions}
                       onchange={chooseFanCover}
                       density="secondary"
@@ -298,7 +310,7 @@
               >
                 <PropBuildPicker
                   label="Finish"
-                  value={propFinishState.finish}
+                  value={build.finish}
                   options={finishOptions}
                   onchange={chooseFinish}
                   density="secondary"
@@ -312,7 +324,7 @@
             >
               <PropBuildPicker
                 label="Finish"
-                value={propFinishState.finish}
+                value={build.finish}
                 options={finishOptions}
                 onchange={chooseFinish}
               />

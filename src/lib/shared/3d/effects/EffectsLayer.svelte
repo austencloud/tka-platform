@@ -14,6 +14,7 @@
     AUSTEN_STAFF,
     PropType,
     propFinishState,
+    type PropBuild,
     type PropState3D,
   } from "@austencloud/scene-3d";
   import { getEffectsConfigContext as getUnifiedEffectsState } from "$lib/shared/effects/state/effects-config-context";
@@ -94,6 +95,7 @@
     seamlesslyLoopable?: boolean;
     /** Shared adaptive quality tier for bounded Ghost prop pools. */
     qualityTier?: QualityTier;
+    propBuild?: PropBuild;
   }
 
   let {
@@ -113,7 +115,10 @@
     totalSteps = 0,
     seamlesslyLoopable = false,
     qualityTier = QualityTier.MEDIUM,
+    propBuild: propBuildOverride,
   }: Props = $props();
+
+  const propBuild = $derived(propBuildOverride ?? propFinishState.build);
 
   const unifiedState = getUnifiedEffectsState();
   const scene3DRender = getScene3DRenderContext();
@@ -236,10 +241,7 @@
     );
     const finalQuat = propState.worldRotation.clone().multiply(horizontalQuat);
 
-    const anchors = resolvePropTipAnchors3D(propType, halfLength, {
-      fanBuild: propFinishState.fanBuild,
-      finish: propFinishState.finish,
-    });
+    const anchors = resolvePropTipAnchors3D(propType, halfLength, propBuild);
     const endAt = (slot: 0 | 1): Vector3 | null => {
       const anchor = anchors.find((a) => a.effectTipIndex === slot);
       return anchor

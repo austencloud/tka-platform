@@ -15,6 +15,7 @@ describe("AvatarInstanceState — performer settings", () => {
     expect(a.settings.effortId).toBeNull();
     expect(a.settings.prop).toBeNull();
     expect(a.settings.effect).toBeNull();
+    expect(a.settings.propBuild).toBeNull();
   });
 
   it("effective values resolve to defaults when raw settings are null", () => {
@@ -74,6 +75,14 @@ describe("AvatarInstanceState — performer settings", () => {
     expect(a.settings.prop).toBeNull();
   });
 
+  it("sets and resets a partial prop build override", () => {
+    const a = createAvatarInstanceState(makeConfig(), makeDeps());
+    a.setPropBuild({ fanBuild: "fire", fanCover: "bare" });
+    expect(a.settings.propBuild).toEqual({ fanBuild: "fire", fanCover: "bare" });
+    a.resetPropBuild();
+    expect(a.settings.propBuild).toBeNull();
+  });
+
   it("resetEffort clears effort override to null", () => {
     const a = createAvatarInstanceState(makeConfig(), makeDeps());
     a.setEffort("glide");
@@ -108,10 +117,12 @@ describe("AvatarInstanceState — performer settings", () => {
     a.setEffort("glide");
     a.setEffect("trails");
     a.setStaffLengthCm(120);
+    a.setPropBuild({ finish: "day" });
     a.resetAllOverrides();
     expect(a.settings.prop).toBeNull();
     expect(a.settings.effortId).toBeNull();
     expect(a.settings.effect).toBeNull();
     expect(a.settings.staffLengthCm).toBe(120);
+    expect(a.settings.propBuild).toBeNull();
   });
 });

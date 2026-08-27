@@ -695,6 +695,7 @@
       {@const perfStaffCm = performer.settings.staffLengthCm}
       {@const propLength =
         perfStaffCm != null ? cmToUnits(perfStaffCm) : undefined}
+      {@const propBuild = performer.effectivePropBuild}
       <!-- Per-performer effect cascade: this performer's override, else the
          global default (effects-config wildcard). This is what makes the
          Performer Hub effect selection actually reach the renderer. -->
@@ -740,6 +741,7 @@
             redPropState={performer.redPropState}
             tipEffectMap={perfTipMap}
             {propLength}
+            {propBuild}
             isPlaying={isPlaying && i < performerCount}
             enableLocomotion={enablePerformerLocomotion}
             enableFootPlanting={enablePerformerLocomotion}
@@ -798,6 +800,7 @@
                     )}
                     isPlaying={rigPlaying}
                     {staffHalfLength}
+                    {propBuild}
                     tipEffectMap={perfTipMap}
                     {blueHandPos}
                     {redHandPos}

@@ -5,7 +5,7 @@ import {
 	propTipAnchorSignature3D,
 	resolvePropTipAnchors3D,
 } from "./prop-tip-geometry-3d";
-import { propFinishState } from "@austencloud/scene-3d";
+import { propFinishState, type PropBuild } from "@austencloud/scene-3d";
 
 export type TrailSourceId3D = "left-end" | "right-end" | "hand";
 
@@ -162,7 +162,8 @@ export class TipPositionBridge3D {
 		rigLocalCenter: { x: number; y: number; z: number },
 		staffHalfLength: number,
 		deltaTime: number,
-		propType?: string
+		propType?: string,
+		build: PropBuild = propFinishState.build
 	): PropTipPositions3D {
 		const center = new Vector3(
 			rigLocalCenter.x,
@@ -186,10 +187,7 @@ export class TipPositionBridge3D {
 		// Effect assignments use the canonical logical order: Pinky/LEFT_END is
 		// tip 0, Thumb/RIGHT_END is tip 1. The prop mesh's positive axis points
 		// toward the thumb end, which is the end a single-ended prop keeps.
-		const anchors = resolvePropTipAnchors3D(propType, staffHalfLength, {
-			fanBuild: propFinishState.fanBuild,
-			finish: propFinishState.finish,
-		});
+		const anchors = resolvePropTipAnchors3D(propType, staffHalfLength, build);
 
 		// Swapping the prop mid-playback moves a tip discontinuously. Dropping
 		// this prop's history turns that into one zero-velocity frame instead of
