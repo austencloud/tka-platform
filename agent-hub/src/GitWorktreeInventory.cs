@@ -13,6 +13,7 @@ enum GitWorktreeActivity
     ReadyToMerge,
     WaitingForPrimary,
     InProgress,
+    CleanupCandidate,
     Stale,
     Diverged,
     Conflicts,
@@ -197,7 +198,7 @@ sealed class GitWorktreeInventoryController
         bool detached, GitProjectStatus status, bool compared, int ahead, int behind, bool primaryReady)
     {
         if (!exists) return GitWorktreeActivity.Missing;
-        if (prunable) return GitWorktreeActivity.Stale;
+        if (prunable) return GitWorktreeActivity.Missing;
         if (locked) return GitWorktreeActivity.Locked;
         if (status == null || status.State == GitProjectState.Error || !compared) return GitWorktreeActivity.Error;
         if (status.HasConflicts) return GitWorktreeActivity.Conflicts;
@@ -205,7 +206,7 @@ sealed class GitWorktreeInventoryController
         if (primary) return status.ChangedFiles == 0 ? GitWorktreeActivity.PrimaryClean : GitWorktreeActivity.PrimaryBlocked;
         if (detached) return GitWorktreeActivity.Detached;
         if (status.ChangedFiles > 0) return GitWorktreeActivity.InProgress;
-        if (ahead == 0) return GitWorktreeActivity.Stale;
+        if (ahead == 0) return GitWorktreeActivity.CleanupCandidate;
         if (behind > 0) return GitWorktreeActivity.Diverged;
         return primaryReady ? GitWorktreeActivity.ReadyToMerge : GitWorktreeActivity.WaitingForPrimary;
     }
@@ -224,14 +225,16 @@ sealed class GitWorktreeInventoryController
                 ? "Clean and fast-forwardable, but the primary checkout is dirty. Preserve this worktree."
                 : "Clean and fast-forwardable, but the primary checkout is not on main. Preserve this worktree.";
         if (activity == GitWorktreeActivity.InProgress) return changed + " changed file(s) are still in progress.";
-        if (activity == GitWorktreeActivity.Stale) return "Clean with no commits beyond main, or marked prunable by Git. Review before cleanup.";
+        if (activity == GitWorktreeActivity.CleanupCandidate)
+            return "Clean with no commits beyond main. Review before deliberate cleanup; Agent Hub will not remove it.";
+        if (activity == GitWorktreeActivity.Stale) return "Preserved for review. Agent Hub cannot infer owner activity.";
         if (activity == GitWorktreeActivity.Diverged)
             return ahead + " commit(s) ahead and " + behind + " behind main. Integration needs review.";
         if (activity == GitWorktreeActivity.Conflicts) return "Conflicts need attention. Preserve this worktree.";
         if (activity == GitWorktreeActivity.OperationInProgress) return "A Git operation is in progress. Preserve this worktree.";
         if (activity == GitWorktreeActivity.Detached) return "Detached HEAD. Attach or preserve the commit before cleanup.";
         if (activity == GitWorktreeActivity.Locked) return "Git marks this worktree as locked.";
-        if (activity == GitWorktreeActivity.Missing) return "The registered worktree path is missing. Review it before pruning.";
+        if (activity == GitWorktreeActivity.Missing) return "Git marks this worktree registration as prunable or its path is missing. Review it before pruning.";
         return "Git could not classify this worktree safely.";
     }
 
@@ -313,8 +316,9 @@ sealed class GitWorktreeInventoryController
         if (Classify(false, true, false, false, false, dirty, true, 1, 0, true) != GitWorktreeActivity.InProgress) failures++;
         if (Classify(false, true, false, false, false, clean, true, 2, 0, true) != GitWorktreeActivity.ReadyToMerge) failures++;
         if (Classify(false, true, false, false, false, clean, true, 2, 0, false) != GitWorktreeActivity.WaitingForPrimary) failures++;
-        if (Classify(false, true, false, false, false, clean, true, 0, 4, true) != GitWorktreeActivity.Stale) failures++;
+        if (Classify(false, true, false, false, false, clean, true, 0, 4, true) != GitWorktreeActivity.CleanupCandidate) failures++;
         if (Classify(false, true, false, false, false, clean, true, 2, 1, true) != GitWorktreeActivity.Diverged) failures++;
+        if (Classify(false, true, false, false, false, clean, true, 0, 0, true) != GitWorktreeActivity.CleanupCandidate) failures++;
         return failures;
     }
 

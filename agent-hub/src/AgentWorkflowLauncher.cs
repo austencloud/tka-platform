@@ -141,7 +141,7 @@ static class AgentWorkflowLauncher
             " -Title " + HiddenProcessRunner.QuoteArgument(workflow.SessionTitle);
     }
 
-    static string ResolveCodexExecutable()
+    internal static string ResolveCodexExecutable()
     {
         string tkaCodex = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -174,5 +174,62 @@ static class AgentWorkflowLauncher
         if (args.IndexOf("-Project \"E:\\project with space\"", StringComparison.Ordinal) < 0) failures++;
         if (args.IndexOf("-Title \"Session Triage\"", StringComparison.Ordinal) < 0) failures++;
         return failures;
+    }
+}
+
+// `codex app <path>` is the public local handoff that opens a workspace in
+// Codex Desktop. It intentionally does not claim to resume or create a task:
+// the installed CLI exposes no Desktop navigation-by-thread contract.
+sealed class CodexDesktopWorkspaceLaunchResult
+{
+    public readonly bool Succeeded;
+    public readonly string Detail;
+
+    public CodexDesktopWorkspaceLaunchResult(bool succeeded, string detail)
+    {
+        Succeeded = succeeded;
+        Detail = detail ?? "";
+    }
+}
+
+static class CodexDesktopWorkspaceLauncher
+{
+    public static CodexDesktopWorkspaceLaunchResult Launch(string worktreePath)
+    {
+        string path;
+        try { path = Path.GetFullPath(worktreePath ?? ""); }
+        catch (Exception ex) { return new CodexDesktopWorkspaceLaunchResult(false, ex.Message); }
+        if (!Directory.Exists(path))
+            return new CodexDesktopWorkspaceLaunchResult(false, "This worktree folder is unavailable.");
+
+        string codex = AgentWorkflowLauncher.ResolveCodexExecutable();
+        if (string.IsNullOrEmpty(codex))
+            return new CodexDesktopWorkspaceLaunchResult(false, "Codex is not installed.");
+
+        try
+        {
+            var start = new ProcessStartInfo(codex, BuildArguments(path));
+            start.WorkingDirectory = path;
+            start.UseShellExecute = true;
+            Process process = Process.Start(start);
+            if (process == null)
+                return new CodexDesktopWorkspaceLaunchResult(false, "Codex Desktop did not accept the workspace request.");
+            return new CodexDesktopWorkspaceLaunchResult(true, "Asked Codex Desktop to open this worktree.");
+        }
+        catch (Exception ex)
+        {
+            return new CodexDesktopWorkspaceLaunchResult(false, ex.Message);
+        }
+    }
+
+    internal static string BuildArguments(string worktreePath)
+    {
+        return "app " + HiddenProcessRunner.QuoteArgument(worktreePath);
+    }
+
+    public static int SelfTest()
+    {
+        string arguments = BuildArguments("C:\\worktrees\\task one");
+        return arguments == "app \"C:\\worktrees\\task one\"" ? 0 : 1;
     }
 }

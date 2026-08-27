@@ -26,12 +26,16 @@ sealed class ProjectCommandCenter : Border
     readonly Button _sessionsButton;
     readonly TextBlock _workflowStatus;
     readonly TextBlock _worktreeSummary;
+    readonly TextBlock _worktreeNextActions;
+    readonly TextBlock _worktreeStatus;
     readonly StackPanel _worktreeRows;
     readonly ScrollViewer _worktreeScroll;
     readonly ScrollViewer _outerScroll;
     readonly StackPanel _content;
     readonly Button _worktreeToggle;
     readonly Action _layoutChanged;
+    readonly Action<GitWorktreeItem> _openWorktreeInCodex;
+    readonly System.Collections.Generic.List<Button> _worktreeButtons = new System.Collections.Generic.List<Button>();
     bool _worktreesExpanded = true;
 
     public ProjectCommandCenter(
@@ -43,11 +47,13 @@ sealed class ProjectCommandCenter : Border
         Action openFeedback,
         Action openSpec,
         Action openSessions,
+        Action<GitWorktreeItem> openWorktreeInCodex,
         Action layoutChanged)
     {
         _hasServer = hasServer;
         _serverPort = serverPort;
         _layoutChanged = layoutChanged;
+        _openWorktreeInCodex = openWorktreeInCodex;
         CornerRadius = new CornerRadius(18);
         Background = Brush("#FF16171B");
         BorderBrush = Brush("#40FFFFFF");
@@ -213,6 +219,28 @@ sealed class ProjectCommandCenter : Border
         workspaceHeader.Children.Add(_worktreeToggle);
         workspaceContent.Children.Add(workspaceHeader);
 
+        _worktreeNextActions = new TextBlock
+        {
+            Text = "Next actions are loading",
+            Foreground = Brush("#FF9899A2"),
+            FontSize = 11,
+            FontFamily = Font(),
+            Margin = new Thickness(0, 5, 0, 0),
+            TextTrimming = TextTrimming.CharacterEllipsis
+        };
+        workspaceContent.Children.Add(_worktreeNextActions);
+
+        _worktreeStatus = new TextBlock
+        {
+            Text = "Open Codex opens the worktree workspace; no Desktop task is claimed.",
+            Foreground = Brush("#FF7E8089"),
+            FontSize = 11,
+            FontFamily = Font(),
+            Margin = new Thickness(0, 3, 0, 0),
+            TextTrimming = TextTrimming.CharacterEllipsis
+        };
+        workspaceContent.Children.Add(_worktreeStatus);
+
         _worktreeRows = new StackPanel { Margin = new Thickness(0, 9, 0, 0) };
         _worktreeScroll = new ScrollViewer
         {
@@ -375,9 +403,11 @@ sealed class ProjectCommandCenter : Border
     {
         if (inventory == null) inventory = GitWorktreeInventory.Checking();
         _worktreeRows.Children.Clear();
+        _worktreeButtons.Clear();
         if (inventory.IsChecking)
         {
             _worktreeSummary.Text = "Checking";
+            _worktreeNextActions.Text = "Checking Git state";
             _worktreeRows.Children.Add(WorktreeMessage("Reading primary and task worktrees", false));
             NotifyLayoutChanged();
             return;
@@ -385,6 +415,7 @@ sealed class ProjectCommandCenter : Border
         if (inventory.Items.Count == 0)
         {
             _worktreeSummary.Text = "Unavailable";
+            _worktreeNextActions.Text = "No worktree action is available";
             _worktreeRows.Children.Add(WorktreeMessage(
                 string.IsNullOrEmpty(inventory.Detail) ? "Worktree inventory unavailable" : inventory.Detail, true));
             NotifyLayoutChanged();
@@ -393,10 +424,21 @@ sealed class ProjectCommandCenter : Border
 
         int taskCount = Math.Max(0, inventory.Items.Count - 1);
         _worktreeSummary.Text = taskCount == 1 ? "1 task worktree" : taskCount + " task worktrees";
+        _worktreeNextActions.Text = NextActionSummary(inventory.Items);
         for (int i = 0; i < inventory.Items.Count; i++)
             _worktreeRows.Children.Add(BuildWorktreeRow(inventory.Items[i], i == inventory.Items.Count - 1));
         ToolTip = inventory.Detail;
         NotifyLayoutChanged();
+    }
+
+    public void RenderWorktreeLaunch(bool busy, string message, bool isError)
+    {
+        for (int i = 0; i < _worktreeButtons.Count; i++)
+            _worktreeButtons[i].IsEnabled = !busy;
+        _worktreeStatus.Text = string.IsNullOrEmpty(message)
+            ? "Open Codex opens the worktree workspace; no Desktop task is claimed."
+            : message;
+        _worktreeStatus.Foreground = Brush(isError ? "#FFFF8A94" : busy ? "#FFB9A3FF" : "#FF9FD7B6");
     }
 
     public bool WorktreesExpanded { get { return _worktreesExpanded; } }
@@ -450,7 +492,7 @@ sealed class ProjectCommandCenter : Border
         if (_layoutChanged != null) _layoutChanged();
     }
 
-    static FrameworkElement BuildWorktreeRow(GitWorktreeItem item, bool last)
+    FrameworkElement BuildWorktreeRow(GitWorktreeItem item, bool last)
     {
         var row = new Border
         {
@@ -466,6 +508,7 @@ sealed class ProjectCommandCenter : Border
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(57) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(88) });
 
         var role = new TextBlock
         {
@@ -485,6 +528,16 @@ sealed class ProjectCommandCenter : Border
             FontWeight = FontWeights.SemiBold,
             FontFamily = Font(),
             TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        identity.Children.Add(new TextBlock
+        {
+            Text = item.Detail,
+            Foreground = Brush("#FF93959E"),
+            FontSize = 10,
+            FontFamily = Font(),
+            TextWrapping = TextWrapping.Wrap,
+            MaxWidth = 225,
+            Margin = new Thickness(0, 3, 0, 0)
         });
         identity.Children.Add(new TextBlock
         {
@@ -511,6 +564,18 @@ sealed class ProjectCommandCenter : Border
         grid.Children.Add(role);
         grid.Children.Add(identity);
         grid.Children.Add(state);
+        var open = CompactButton("Open Codex", "Open " + item.Branch + " worktree in Codex Desktop", delegate
+        {
+            if (_openWorktreeInCodex != null) _openWorktreeInCodex(item);
+        });
+        open.Width = 82;
+        open.Height = 30;
+        open.FontSize = 10;
+        open.Background = Brush("#FF2F6FED");
+        open.IsEnabled = item.Activity != GitWorktreeActivity.Missing;
+        Grid.SetColumn(open, 3);
+        grid.Children.Add(open);
+        _worktreeButtons.Add(open);
         row.Child = grid;
         return row;
     }
@@ -548,6 +613,7 @@ sealed class ProjectCommandCenter : Border
         if (item.Activity == GitWorktreeActivity.ReadyToMerge) return "Ready to merge";
         if (item.Activity == GitWorktreeActivity.WaitingForPrimary) return "Waiting on primary";
         if (item.Activity == GitWorktreeActivity.InProgress) return item.ChangedFiles + " changed · in progress";
+        if (item.Activity == GitWorktreeActivity.CleanupCandidate) return "Cleanup candidate";
         if (item.Activity == GitWorktreeActivity.Stale) return "Stale · review";
         if (item.Activity == GitWorktreeActivity.Diverged) return "Diverged ↑" + item.AheadOfMain + " ↓" + item.BehindMain;
         if (item.Activity == GitWorktreeActivity.Conflicts) return "Conflicts";
@@ -564,7 +630,32 @@ sealed class ProjectCommandCenter : Border
         if (activity == GitWorktreeActivity.PrimaryBlocked || activity == GitWorktreeActivity.InProgress ||
             activity == GitWorktreeActivity.WaitingForPrimary || activity == GitWorktreeActivity.Locked) return "#FFFFBE63";
         if (activity == GitWorktreeActivity.Stale) return "#FF9B9DA6";
+        if (activity == GitWorktreeActivity.CleanupCandidate) return "#FF9B9DA6";
         return "#FFFF7E88";
+    }
+
+    static string NextActionSummary(System.Collections.Generic.IList<GitWorktreeItem> items)
+    {
+        int continueCount = 0;
+        int reviewCount = 0;
+        int cleanupCount = 0;
+        for (int i = 0; i < items.Count; i++)
+        {
+            GitWorktreeActivity activity = items[i].Activity;
+            if (activity == GitWorktreeActivity.InProgress || activity == GitWorktreeActivity.Conflicts ||
+                activity == GitWorktreeActivity.OperationInProgress || activity == GitWorktreeActivity.Detached)
+                continueCount++;
+            else if (activity == GitWorktreeActivity.ReadyToMerge || activity == GitWorktreeActivity.WaitingForPrimary ||
+                activity == GitWorktreeActivity.Diverged || activity == GitWorktreeActivity.PrimaryBlocked ||
+                activity == GitWorktreeActivity.Locked || activity == GitWorktreeActivity.Missing || activity == GitWorktreeActivity.Error)
+                reviewCount++;
+            else if (activity == GitWorktreeActivity.CleanupCandidate) cleanupCount++;
+        }
+        var parts = new System.Collections.Generic.List<string>();
+        if (continueCount > 0) parts.Add(continueCount + " continue");
+        if (reviewCount > 0) parts.Add(reviewCount + " review/integrate");
+        if (cleanupCount > 0) parts.Add(cleanupCount + " cleanup candidate");
+        return parts.Count == 0 ? "No task worktree needs action" : "Next: " + string.Join(" · ", parts.ToArray());
     }
 
     static void SetWorkflowButtonEnabled(Button button, bool enabled, string color)

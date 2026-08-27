@@ -70,6 +70,8 @@ class Popup : Window
     int _gitGeneration;
     int _workflowGeneration;
     bool _workflowBusy;
+    int _worktreeLaunchGeneration;
+    bool _worktreeLaunchBusy;
 
     [STAThread]
     static void Main(string[] argv)
@@ -86,7 +88,7 @@ class Popup : Window
         }
         if (HasArg(argv, "SelfTestWorkflow"))
         {
-            Environment.ExitCode = AgentWorkflowLauncher.SelfTest();
+            Environment.ExitCode = AgentWorkflowLauncher.SelfTest() + CodexDesktopWorkspaceLauncher.SelfTest();
             return;
         }
         if (HasArg(argv, "SelfTestWorktrees"))
@@ -672,6 +674,7 @@ class Popup : Window
             delegate { LaunchWorkflow(AgentWorkflowKind.Feedback, "mouse"); },
             delegate { LaunchWorkflow(AgentWorkflowKind.Spec, "mouse"); },
             delegate { LaunchWorkflow(AgentWorkflowKind.Sessions, "mouse"); },
+            delegate(GitWorktreeItem item) { OpenWorktreeInCodex(item, "mouse"); },
             RequestLayoutReflow);
         _card = _commandCenter;
         UpdateServerVisual();
@@ -706,6 +709,38 @@ class Popup : Window
                 {
                     closeTimer.Stop();
                     if (generation == _workflowGeneration && IsVisible) HideIt();
+                };
+                closeTimer.Start();
+            }));
+        });
+    }
+
+    void OpenWorktreeInCodex(GitWorktreeItem item, string source)
+    {
+        if (item == null || _commandCenter == null || _worktreeLaunchBusy) return;
+        int generation = ++_worktreeLaunchGeneration;
+        string path = item.Path;
+        _worktreeLaunchBusy = true;
+        _commandCenter.RenderWorktreeLaunch(true, "Asking Codex Desktop to open " + item.Branch + "...", false);
+        Log("Codex workspace handoff requested by " + source + " for " + path);
+
+        ThreadPool.QueueUserWorkItem(delegate
+        {
+            CodexDesktopWorkspaceLaunchResult result = CodexDesktopWorkspaceLauncher.Launch(path);
+            Dispatcher.BeginInvoke(new Action(delegate
+            {
+                if (generation != _worktreeLaunchGeneration) return;
+                _worktreeLaunchBusy = false;
+                if (_commandCenter == null) return;
+                _commandCenter.RenderWorktreeLaunch(false, result.Detail, !result.Succeeded);
+                Log("Codex workspace handoff " + (result.Succeeded ? "requested" : "failed") + ": " + result.Detail);
+                if (!result.Succeeded) return;
+
+                var closeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+                closeTimer.Tick += delegate
+                {
+                    closeTimer.Stop();
+                    if (generation == _worktreeLaunchGeneration && IsVisible) HideIt();
                 };
                 closeTimer.Start();
             }));
