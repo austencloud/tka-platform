@@ -39,7 +39,7 @@ describe("shortOrientation", () => {
 		expect(shortOrientation("clock")).toBe("cl");
 		expect(shortOrientation("counter")).toBe("cn");
 	});
-	it("maps level 6 interradials to 3-char forms", () => {
+	it("maps level 4 interradials to 3-char forms", () => {
 		expect(shortOrientation("clock_in")).toBe("cli");
 		expect(shortOrientation("clock_out")).toBe("clo");
 		expect(shortOrientation("counter_in")).toBe("cni");

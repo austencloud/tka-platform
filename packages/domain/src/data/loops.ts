@@ -139,7 +139,7 @@ export const LOOP_FIXED_POINTS: LoopFixedPointEntry[] = [
   {
     transform: "ROTATE 180deg",
     fixedPositions: ["terra1"],
-    note: "No standard L1-L4 position is a fixed point under 180deg rotation. Only terra1 (both hands at center, L5) maps to itself.",
+    note: "No standard L1-L5 position is a fixed point under 180deg rotation. Only terra1 (both hands at center, L6) maps to itself.",
   },
   {
     transform: "INVERTED",
@@ -158,18 +158,18 @@ export const LOOP_COMPOUND_FIXED_POINTS: LoopFixedPointEntry[] = [
   { transform: "SWAP/INVERTED", fixedPositions: ["beta1", "beta2", "beta3", "beta4", "beta5", "beta6", "beta7", "beta8"] },
   { transform: "MIRROR/SWAP", fixedPositions: ["beta1", "beta5"] },
   { transform: "FLIP/SWAP", fixedPositions: ["beta3", "beta7"] },
-  { transform: "MIRROR/FLIP", fixedPositions: [], note: "No L1-L4 fixed points. terra1 only at L5." },
+  { transform: "MIRROR/FLIP", fixedPositions: [], note: "No L1-L5 fixed points. terra1 only at L6." },
   { transform: "MIRROR/SWAP/INVERTED", fixedPositions: ["beta1", "beta5"] },
   { transform: "FLIP/SWAP/INVERTED", fixedPositions: ["beta3", "beta7"] },
 ];
 
 /**
  * Proof that ROTATE is always the innermost layer.
- * No standard L1-L4 grid position is a fixed point under 180deg rotation.
+ * No standard L1-L5 grid position is a fixed point under 180deg rotation.
  */
 export const LOOP_ROTATE_ALWAYS_INNER = {
-  statement: "ROTATE cannot be an outer transform from any standard L1-L4 position. It must be the innermost structural layer or standalone.",
-  proof: "alpha1 -> alpha5 (moves), beta3 -> beta7 (moves), gamma1 -> gamma5 (moves). Only terra1 (L5 center) maps to itself.",
+  statement: "ROTATE cannot be an outer transform from any standard L1-L5 position. It must be the innermost structural layer or standalone.",
+  proof: "alpha1 -> alpha5 (moves), beta3 -> beta7 (moves), gamma1 -> gamma5 (moves). Only terra1 (L6 center) maps to itself.",
   implication: "For ROTATE as INNER, the seed goes S -> ROTATE(S), which is always a different position, producing non-degenerate structure from any starting point. Geometric transforms (MIRROR, FLIP, SWAP) can layer on top as outer.",
 } as const;
 
@@ -207,7 +207,7 @@ export const LOOP_COMPOSABILITY_MATRICES: Record<string, LoopComposabilityEntry[
 export const LOOP_COMPOSITIONAL_KEY_RESULTS = [
   "Order matters. SWAP + MIRROR/INV (valid from alpha1) and MIRROR/INV + SWAP (valid from beta3, not alpha1) are different compositions. They are NOT interchangeable.",
   "Beta is the universal connector. All beta positions are SWAP fixed points. beta1/beta5 additionally support MIRROR as outer. beta3/beta7 support FLIP as outer.",
-  "ROTATE is always the innermost layer. No L1-L4 position is a 180deg rotation fixed point. Rotation produces non-degenerate structure from any position.",
+  "ROTATE is always the innermost layer. No L1-L5 position is a 180deg rotation fixed point. Rotation produces non-degenerate structure from any position.",
   "INVERTED is always free. It has no positional constraint (all positions are fixed points). It can be added to any outer transform via / without restricting valid starting positions.",
   "The current flat detection ({MIRRORED, SWAPPED, INVERTED}) loses information. The same component set can correspond to different compositional structures depending on starting position and construction order.",
 ] as const;

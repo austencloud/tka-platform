@@ -28,7 +28,7 @@ export const GRID_MODE_DEFINITIONS: Record<string, GridModeDefinition> = {
     description: "Uses the center point of the grid. At least one hand at the center.",
     points: ["Center point", "Any of the 8 outer points (cardinal or intercardinal)"],
     positions: ["Tau (one hand at center, one elsewhere)", "Terra (both hands at center)"],
-    keyFact: "Centric is Level 4. Introduces the 9th grid point and the hash hand path.",
+    keyFact: "Centric is Level 6. Introduces the 9th grid point and the hash hand path.",
     level: 4,
   },
 };

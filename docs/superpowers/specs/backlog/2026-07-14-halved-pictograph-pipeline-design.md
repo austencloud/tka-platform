@@ -10,6 +10,15 @@ last_triaged: 2026-08-02
 ---
 # Halved Pictograph Pipeline — Design
 
+> **Level renumber, 2026-08-27.** Interradial orientations and quarter turns
+> moved to **Level 4**; the center point moved to **Level 6**. This document
+> predates that change and its level numbers are unrewritten because its
+> arithmetic prose is load-bearing: wherever it says **L6** for interradials or
+> quarter turns, read **L4**, and where it says **L4** for center orientations,
+> read **L6**. The order is now L4 interradials and quarter turns, L5 skewed
+> grid, L6 centric grid, L7 conjoined grids. Off-lattice halving is still
+> exclusively a quarter-turn phenomenon; only the level label changed.
+
 - **Date:** 2026-07-14
 - **Status:** Design (approved to spec; implementation not started)
 - **Author:** Austen + Claude

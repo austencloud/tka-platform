@@ -81,7 +81,7 @@ Float is a prop rotation type where the prop holds its absolute spatial angle wh
 Hash is a hand path where the hand moves in a straight line to or from the center grid point. It's a "half-dash."
 
 **Key properties:**
-- Introduced at Level 5 with the center grid point
+- Introduced at Level 6 with the center grid point
 - Same straight-line geometry as dash
 - At 0 turns: no rotation, no direction (1 state)
 - At 1+ turns: CW or CCW (2 states per turn count)
@@ -130,7 +130,7 @@ Other static props (fans, clubs, buugeng) work with TKA because they're gripped 
 
   "what are interradials": `## What are Interradial Orientations?
 
-Interradials are the 4 orientations at 45° between the cardinal orientations. Introduced at Level 6.
+Interradials are the 4 orientations at 45° between the cardinal orientations. Introduced at Level 4.
 
 **The 4 interradial orientations:**
 - **clockIn** - between clock and in
@@ -141,7 +141,7 @@ Interradials are the 4 orientations at 45° between the cardinal orientations. I
 **Key properties:**
 - Complete the 8-point radial cycle: in → clockIn → clock → clockOut → out → counterOut → counter → counterIn
 - Produced by quarter turns (0.25, 0.75, 1.25, etc.)
-- Level 6 completes single-grid orientation freedom before conjoined grids at Level 7`,
+- Level 4 completes orientation freedom before the grid itself expands at Levels 5 and 6`,
 };
 
 export function getCommonAnswer(question: string): string | null {

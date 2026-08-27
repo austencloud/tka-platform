@@ -33,14 +33,14 @@
   const heroSequence = NOTATION_LOOP_TEASER_SEQUENCE;
 
   // Fixed-point table, grounded in MCP get_domain_topic("loop"). Rotation has
-  // no L1-L4 fixed point, which is WHY it can never sit outside another
+  // no L1-L5 fixed point, which is WHY it can never sit outside another
   // transform (see "Rotation is always innermost" below) — shown as an
   // empty cell here, not omitted, so the absence itself reads as data.
   const FIXED_POINTS: { transform: string; positions: string }[] = [
     { transform: "Mirrored", positions: "alpha1, alpha5, beta1, beta5" },
     { transform: "Flipped", positions: "alpha3, alpha7, beta3, beta7" },
     { transform: "Swapped", positions: "all beta" },
-    { transform: "Rotated", positions: "none at L1-L4" },
+    { transform: "Rotated", positions: "none at L1-L5" },
     { transform: "Inverted", positions: "all positions" },
   ];
 
@@ -228,7 +228,7 @@
 
     <div class="prose">
       <p>
-        Rotated has no fixed point anywhere on the L1-L4 grid. Every standard position
+        Rotated has no fixed point anywhere on the L1-L5 grid. Every standard position
         moves when the pattern rotates 180 degrees. That's not a design choice; it's the
         reason rotation can never sit outermost. It only ever works as the innermost
         layer, the thing everything else gets built on top of.

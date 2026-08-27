@@ -57,7 +57,7 @@ export const DIAMOND_PROP_ANGLES: Record<
     nw: 0,
     c: 0,
   },
-  // Interradial orientations (Level 6)
+  // Interradial orientations (Level 4)
   clockIn: {
     n: 45,
     s: 225,
@@ -102,7 +102,7 @@ export const DIAMOND_PROP_ANGLES: Record<
     nw: 0,
     c: 0,
   },
-  // Centric orientations (Level 5 - prop at center, pointing toward compass direction)
+  // Centric orientations (Level 6 - prop at center, pointing toward compass direction)
   // SVG convention: 0=east, 90=south, 180=west, 270=north (clockwise)
   centerN: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 270 },
   centerNE: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 315 },
@@ -165,7 +165,7 @@ export const BOX_PROP_ANGLES: Record<
     w: 0,
     c: 0,
   },
-  // Interradial orientations (Level 6)
+  // Interradial orientations (Level 4)
   clockIn: {
     ne: 90,
     nw: 0,
@@ -210,7 +210,7 @@ export const BOX_PROP_ANGLES: Record<
     w: 0,
     c: 0,
   },
-  // Centric orientations (Level 5 - prop at center, pointing toward compass direction)
+  // Centric orientations (Level 6 - prop at center, pointing toward compass direction)
   // SVG convention: 0=east, 90=south, 180=west, 270=north (clockwise)
   centerN: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 270 },
   centerNE: { n: 0, s: 0, w: 0, e: 0, ne: 0, se: 0, sw: 0, nw: 0, c: 315 },

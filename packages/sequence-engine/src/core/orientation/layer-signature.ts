@@ -109,7 +109,7 @@ export interface LayerStepInput {
 /**
  * Position on the 8-point orientation cycle, folded to four classes:
  * 0 = radial (in/out), 2 = non-radial (clock/counter), 1 and 3 = the halfway
- * orientations that only exist at level 6. Returns null for centre-family
+ * orientations that only exist at level 4. Returns null for centre-family
  * orientations, which are off this cycle entirely.
  */
 export function orientationClass(
@@ -163,7 +163,7 @@ const HALF_STEPS_PER_TURN = 4; // one turn is 180 degrees; the cycle steps 45 at
  * only when the hand actually travels around the circle: a float whose hand
  * crosses through the middle or stays put leaves the prop where it was.
  *
- * Quarter turns (level 6 only) move an odd number of positions and land on the
+ * Quarter turns (level 4 only) move an odd number of positions and land on the
  * halfway orientations, and that is the one case where which way the prop spins
  * changes the answer. Turns are ADDITIONAL rotation on top of the base rotation
  * the motion type already carries, so the added quarter turns follow the prop's

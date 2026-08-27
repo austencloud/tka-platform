@@ -60,12 +60,12 @@ export type Orientation =
   | "out"
   | "clock"
   | "counter"
-  // Interradial orientations (Level 6 - 45° between cardinal orientations)
+  // Interradial orientations (Level 4 - 45° between cardinal orientations)
   | "clockIn"
   | "clockOut"
   | "counterIn"
   | "counterOut"
-  // Centric orientations (Level 4 - prop at center)
+  // Centric orientations (Level 6 - prop at center)
   | "centerN"
   | "centerNE"
   | "centerE"

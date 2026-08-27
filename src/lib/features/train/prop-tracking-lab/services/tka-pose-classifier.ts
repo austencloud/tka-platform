@@ -40,7 +40,7 @@ const LOCATIONS: GridLocation[] = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
 const CARDINALS = new Set<GridLocation>(['n', 'e', 's', 'w']);
 
 export interface ClassifierConfig {
-  /** Round turns to this increment. 0.5 = half-turn (L3); 0.25 = quarter (L6). */
+  /** Round turns to this increment. 0.5 = half-turn (L3); 0.25 = quarter (L4). */
   turnIncrement: number;
   /** |cos angle| above this = radial (in/out); below = nonradial (clock/counter). */
   radialDotThreshold: number;

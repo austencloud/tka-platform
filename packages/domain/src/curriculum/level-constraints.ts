@@ -15,13 +15,13 @@ export function getLevelConstraints(majorLevel: MajorLevel): string {
     constraints.push("Level 3 terms: half turn, 90°, non-radial, clock, counter, cw, ccw, float");
   }
   if (majorLevel >= 4) {
-    constraints.push("Level 4 terms: center, center point, 5-point grid, centric, hash, half-dash, tau, terra");
+    constraints.push("Level 4 terms: interradial, clockIn, clockOut, counterIn, counterOut, quarter turn, 45°, 8-point radial cycle");
   }
   if (majorLevel >= 5) {
-    constraints.push("Level 5 terms: skew, skewed, mixed grid, +/-, double skew, zeta, eta, 8-point grid, 9-point grid");
+    constraints.push("Level 5 terms: skew, skewed, mixed grid, +/-, double skew, zeta, eta, 8-point grid");
   }
   if (majorLevel >= 6) {
-    constraints.push("Level 6 terms: interradial, clockIn, clockOut, counterIn, counterOut, quarter turn, 45°, 8-point radial cycle");
+    constraints.push("Level 6 terms: center, center point, 9-point grid, centric, hash, half-dash, tau, terra");
   }
   if (majorLevel >= 7) {
     constraints.push("Level 7 terms: conjoined, dual grid, junction point, dash+, dash++, extended dash, inter-grid position");
@@ -65,31 +65,31 @@ DO NOT use concepts from Level 3+ (half turns, float, clock/counter, skews, etc.
 - Float motion type (prop holds absolute spatial angle)
 - Expanded position variations
 
-DO NOT use concepts from Level 4+ (center point, skews, etc.).`;
+DO NOT use concepts from Level 4+ (quarter turns, interradials, skews, center point, etc.).`;
 
     case 4:
-      return `The user is at Level 4 (Centric). They know Levels 1-3 plus:
-- Center grid point (5-point grid)
-- Hash hand path (straight line to/from center)
-- Tau and terra positions
-- Center orientations (compass-based)
+      return `The user is at Level 4 (Interradial Orientations). They know Levels 1-3 plus:
+- 8 orientations (4 cardinal + 4 interradial)
+- Quarter turns producing interradial orientations
+- Complete orientation freedom, still on the 4-point grid
 
-DO NOT use concepts from Level 5+ (skewed grid, zeta/eta, conjoined, etc.).`;
+DO NOT use concepts from Level 5+ (skewed grid, zeta/eta, center point, conjoined, etc.).`;
 
     case 5:
       return `The user is at Level 5 (Skewed Grid). They know Levels 1-4 plus:
-- 8-point grid (mixing diamond/box), now 9-point with center
+- 8-point grid (mixing diamond/box)
 - Zeta and eta positions
 - Skew modifiers (+/-)
 - Extended and shortened shift arcs
 
-DO NOT use concepts from Level 6+ (interradials, conjoined grids, etc.).`;
+DO NOT use concepts from Level 6+ (center point, hash, tau/terra, conjoined grids, etc.).`;
 
     case 6:
-      return `The user is at Level 6 (Interradial Orientations). They know Levels 1-5 plus:
-- 8 orientations (4 cardinal + 4 interradial)
-- Quarter turns producing interradial orientations
-- Complete single-grid 2D orientation freedom
+      return `The user is at Level 6 (Centric). They know Levels 1-5 plus:
+- Center grid point (9-point grid)
+- Hash hand path (straight line to/from center)
+- Tau and terra positions
+- Center orientations (compass-based, absolute rather than center-relative)
 
 DO NOT use concepts from Level 7+ (conjoined grids, extended dashes, 3D, etc.).`;
 

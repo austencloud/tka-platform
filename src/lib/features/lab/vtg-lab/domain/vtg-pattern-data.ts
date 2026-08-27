@@ -406,11 +406,11 @@ export const BEYOND_VTG_ITEMS: BeyondVtgItem[] = [
 		tkaFeature: "Letter Types 2\u20136",
 	},
 	{
-		title: "Centric Positions (Level 4)",
+		title: "Interradial Orientations (Level 4)",
 		description:
-			"At least one hand at the center of the grid. Creates Tau (one hand center) and Terra (both hands center) positions.",
-		icon: "fa-bullseye",
-		tkaFeature: "Level 4: Tau & Terra",
+			"Prop orientations at 45° between cardinal orientations: clockIn, clockOut, counterIn, counterOut. Reached by a quarter turn, and relevant for poi gravity and advanced manipulation.",
+		icon: "fa-magnet",
+		tkaFeature: "Level 4: Interradial",
 	},
 	{
 		title: "Skewed Positions (Level 5)",
@@ -420,11 +420,11 @@ export const BEYOND_VTG_ITEMS: BeyondVtgItem[] = [
 		tkaFeature: "Level 5: Zeta & Eta",
 	},
 	{
-		title: "Interradial Orientations (Level 6)",
+		title: "Centric Positions (Level 6)",
 		description:
-			"Prop orientations at 45\u00b0 between cardinal orientations: clockIn, clockOut, counterIn, counterOut. Relevant for poi gravity and advanced manipulation.",
-		icon: "fa-magnet",
-		tkaFeature: "Level 6: Interradial",
+			"At least one hand at the center of the grid. Creates Tau (one hand center) and Terra (both hands center) positions.",
+		icon: "fa-bullseye",
+		tkaFeature: "Level 6: Tau & Terra",
 	},
 	{
 		title: "Exact Position Tracking",

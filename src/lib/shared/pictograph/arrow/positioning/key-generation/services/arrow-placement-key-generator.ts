@@ -70,7 +70,7 @@ function detectLayerInfo(pictographData: PictographData): {
     : undefined;
 
   const radialOrientations = ["in", "out"];
-  // Level 6 interradials share the established layer-2 placement baseline.
+  // Level 4 interradials share the established layer-2 placement baseline.
   // Dedicated quarter-turn glyphs encode their exact staff axis; the placement
   // cascade still needs a real default key instead of falling through to the
   // bare motion type and silently returning {0,0}.

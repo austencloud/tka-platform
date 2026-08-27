@@ -45,7 +45,7 @@ You understand the complete arrow positioning pipeline:
 
 ### Full-motion quarter-turn glyphs (August 2026)
 
-Level 6 `turns: 0.25` motions stay on the normal five-tier full-arrow path;
+Level 4 `turns: 0.25` motions stay on the normal five-tier full-arrow path;
 they are not `motion.segment` frames. The shared render-core
 `arrow-asset-path.ts` resolver owns their browser/MCP asset selection and exact
 numeric filename formatting. PRO, ANTI, STATIC, and DASH have authored `0.25`

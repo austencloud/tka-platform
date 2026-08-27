@@ -9,10 +9,10 @@
  * radial cycle.
  *
  * Radial orientations only (cardinal + interradial). Center-family ("spun",
- * L4) orientations return null — deferred to the physical-pose fallback,
+ * L6) orientations return null — deferred to the physical-pose fallback,
  * out of scope for this phase. The bijection itself also returns null when
  * the sampled staff angle lands off the 45deg lattice (no legal orientation
- * exists at that t — e.g. halving an L6 quarter-turn).
+ * exists at that t — e.g. halving an L4 quarter-turn).
  *
  * At t=1 this must equal the shipped discrete algebra `calculateEndOrientation`
  * — pinned by a dataset-wide invariant test across real pictograph data.
@@ -56,7 +56,7 @@ function pathShapeFor(type: MotionType): "arc" | "linear" {
 /**
  * The prop's orientation at fraction t in [0,1] along a motion, or null when the
  * physical staff angle lands off the 45deg lattice (no legal orientation exists
- * at that t — e.g. halving an L6 quarter-turn) or the motion is a center/"spun"
+ * at that t — e.g. halving an L4 quarter-turn) or the motion is a center/"spun"
  * orientation (deferred, Phase 1 scope). At t=1 this equals calculateEndOrientation.
  */
 export function calculateOrientationAt(

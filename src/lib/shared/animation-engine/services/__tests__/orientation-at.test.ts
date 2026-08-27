@@ -122,7 +122,7 @@ describe("calculateOrientationAt — decidability boundary", () => {
     }
   });
 
-  it("halving an L6 quarter-turn is off-lattice (null)", () => {
+  it("halving an L4 quarter-turn is off-lattice (null)", () => {
     for (const turns of [0.25, 0.75]) {
       expect(calculateOrientationAt({ ...base, turns }, 0.5)).toBeNull();
     }

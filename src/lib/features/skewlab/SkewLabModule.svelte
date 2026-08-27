@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Skew Lab (L4) Module
+   * Skew Lab (L5) Module
    *
    * Admin-only experimental sandbox for validating skewed position rendering.
    * Has two tabs:

@@ -75,7 +75,7 @@ export const VERTICAL_MIRROR_POSITION_MAP: Record<string, string> = {
   eta5: "eta13", eta6: "eta12", eta7: "eta11", eta8: "eta10",
   eta9: "eta1", eta10: "eta8", eta11: "eta7", eta12: "eta6",
   eta13: "eta5", eta14: "eta4", eta15: "eta3", eta16: "eta2",
-  // Tau and Terra - TODO: proper mirror logic when Level 4 is fully specified
+  // Tau and Terra - TODO: proper mirror logic when Level 6 is fully specified
   tau1: "tau1", tau2: "tau2", tau3: "tau3", tau4: "tau4",
   tau5: "tau5", tau6: "tau6", tau7: "tau7", tau8: "tau8",
   tau9: "tau9", tau10: "tau10", tau11: "tau11", tau12: "tau12",
@@ -120,7 +120,7 @@ export const HORIZONTAL_MIRROR_POSITION_MAP: Record<string, string> = {
   eta5: "eta9", eta6: "eta16", eta7: "eta15", eta8: "eta14",
   eta9: "eta5", eta10: "eta4", eta11: "eta3", eta12: "eta2",
   eta13: "eta1", eta14: "eta8", eta15: "eta7", eta16: "eta6",
-  // Tau and Terra - TODO: proper horizontal mirror logic when Level 4 is fully specified
+  // Tau and Terra - TODO: proper horizontal mirror logic when Level 6 is fully specified
   tau1: "tau1", tau2: "tau2", tau3: "tau3", tau4: "tau4",
   tau5: "tau5", tau6: "tau6", tau7: "tau7", tau8: "tau8",
   tau9: "tau9", tau10: "tau10", tau11: "tau11", tau12: "tau12",

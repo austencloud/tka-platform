@@ -101,7 +101,7 @@ const POSITION_LOCATIONS: Record<GridPosition, [GridLocation, GridLocation]> = {
   [GridPosition.ETA15]: [GridLocation.NORTHWEST, GridLocation.WEST],
   [GridPosition.ETA16]: [GridLocation.NORTH, GridLocation.NORTHWEST],
 
-  // Tau positions - one hand at center, one at perimeter (Level 4)
+  // Tau positions - one hand at center, one at perimeter (Level 6)
   // TAU1-8: Blue at center, red at perimeter
   [GridPosition.TAU1]: [GridLocation.CENTER, GridLocation.NORTH],
   [GridPosition.TAU2]: [GridLocation.CENTER, GridLocation.NORTHEAST],

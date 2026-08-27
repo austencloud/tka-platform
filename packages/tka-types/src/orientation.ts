@@ -4,9 +4,9 @@
  * Four families, all grounded in packages/sequence-engine/src/core/types/sequence-engine-types.ts:
  *   - Radial (L1 / L2 base): `in`, `out`
  *   - Nonradial (L3): `clock`, `counter`
- *   - Interradial (L6 — 45 degrees between cardinal orientations):
+ *   - Interradial (L4 — 45 degrees between cardinal orientations):
  *       `clockIn`, `clockOut`, `counterIn`, `counterOut`
- *   - Centric (L4 — prop at the center point, facing a compass heading):
+ *   - Centric (L6 — prop at the center point, facing a compass heading):
  *       `centerN`, `centerNE`, `centerE`, `centerSE`,
  *       `centerS`, `centerSW`, `centerW`, `centerNW`
  */

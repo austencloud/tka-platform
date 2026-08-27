@@ -164,45 +164,36 @@ export const KNOWLEDGE_GRAPH: KnowledgeConcept[] = [
   },
 
   // ═══════════════════════════════════════════════════════════════════
-  // LEVEL 4: Centric
-  // Center grid point. Hash motion. Tau/terra positions.
+  // LEVEL 4: Interradial Orientations (completes orientation freedom)
+  // 8 orientations. Quarter turns. Full 8-point radial cycle.
   // ═══════════════════════════════════════════════════════════════════
 
   {
     id: "4.1",
     level: 4,
     subLevel: 1,
-    name: "Center Point",
+    name: "Interradial Orientations",
     prerequisites: ["3.4"],
-    terms: ["center", "center point", "5-point grid", "centric"],
-    description: "The 5th grid location at the center of the grid",
+    terms: ["interradial", "clockIn", "clockOut", "counterIn", "counterOut"],
+    description: "4 orientations at 45° between the cardinal orientations",
   },
   {
     id: "4.2",
     level: 4,
     subLevel: 2,
-    name: "Hash Motion",
+    name: "Quarter Turns",
     prerequisites: ["4.1"],
-    terms: ["hash", "half-dash", "center motion"],
-    description: "Straight-line path to/from the center point",
+    terms: ["quarter turn", "45°", "0.25 turn", "0.75 turn"],
+    description: "Turn values that produce interradial orientations",
   },
   {
     id: "4.3",
     level: 4,
     subLevel: 3,
-    name: "Tau and Terra Positions",
+    name: "8-Point Radial Cycle",
     prerequisites: ["4.2"],
-    terms: ["tau", "terra", "τ", "center position"],
-    description: "New positions involving the center point",
-  },
-  {
-    id: "4.4",
-    level: 4,
-    subLevel: 4,
-    name: "Center Orientations",
-    prerequisites: ["4.3"],
-    terms: ["centerN", "centerNE", "centerE", "centerSE", "centerS", "centerSW", "centerW", "centerNW"],
-    description: "8 compass-based orientations for the center grid point",
+    terms: ["radial cycle", "8-step cycle", "RADIAL_CW_CYCLE"],
+    description: "The complete cycle: in → clockIn → clock → clockOut → out → counterOut → counter → counterIn",
   },
 
   // ═══════════════════════════════════════════════════════════════════
@@ -215,7 +206,7 @@ export const KNOWLEDGE_GRAPH: KnowledgeConcept[] = [
     level: 5,
     subLevel: 1,
     name: "Grid Mode Mixing",
-    prerequisites: ["4.4"],
+    prerequisites: ["4.3"],
     terms: ["skew", "skewed", "mixed grid", "diamond-box", "grid mode", "8-point grid"],
     description: "Combining diamond and box grid modes into the full 8-point grid",
   },
@@ -248,36 +239,45 @@ export const KNOWLEDGE_GRAPH: KnowledgeConcept[] = [
   },
 
   // ═══════════════════════════════════════════════════════════════════
-  // LEVEL 6: Interradial Orientations (completes single-grid 2D)
-  // 8 orientations. Quarter turns. Full orientation freedom.
+  // LEVEL 6: Centric Grid (completes the single grid)
+  // Center grid point. Hash motion. Tau/terra positions.
   // ═══════════════════════════════════════════════════════════════════
 
   {
     id: "6.1",
     level: 6,
     subLevel: 1,
-    name: "Interradial Orientations",
+    name: "Center Point",
     prerequisites: ["5.4"],
-    terms: ["interradial", "clockIn", "clockOut", "counterIn", "counterOut"],
-    description: "4 orientations at 45° between the cardinal orientations",
+    terms: ["center", "center point", "5-point grid", "centric"],
+    description: "The 5th grid location at the center of the grid",
   },
   {
     id: "6.2",
     level: 6,
     subLevel: 2,
-    name: "Quarter Turns",
+    name: "Hash Motion",
     prerequisites: ["6.1"],
-    terms: ["quarter turn", "45°", "0.25 turn", "0.75 turn"],
-    description: "Turn values that produce interradial orientations",
+    terms: ["hash", "half-dash", "center motion"],
+    description: "Straight-line path to/from the center point",
   },
   {
     id: "6.3",
     level: 6,
     subLevel: 3,
-    name: "8-Point Radial Cycle",
+    name: "Tau and Terra Positions",
     prerequisites: ["6.2"],
-    terms: ["radial cycle", "8-step cycle", "RADIAL_CW_CYCLE"],
-    description: "The complete cycle: in → clockIn → clock → clockOut → out → counterOut → counter → counterIn",
+    terms: ["tau", "terra", "τ", "center position"],
+    description: "New positions involving the center point",
+  },
+  {
+    id: "6.4",
+    level: 6,
+    subLevel: 4,
+    name: "Center Orientations",
+    prerequisites: ["6.3"],
+    terms: ["centerN", "centerNE", "centerE", "centerSE", "centerS", "centerSW", "centerW", "centerNW"],
+    description: "8 compass-based orientations for the center grid point",
   },
 
   // ═══════════════════════════════════════════════════════════════════
@@ -290,7 +290,7 @@ export const KNOWLEDGE_GRAPH: KnowledgeConcept[] = [
     level: 7,
     subLevel: 1,
     name: "Conjoined Grids",
-    prerequisites: ["6.3"],
+    prerequisites: ["6.4"],
     terms: ["conjoined", "conjoined grid", "dual grid", "junction point"],
     description: "Two grids sharing a common junction point",
   },

@@ -307,7 +307,7 @@
       "externalRefs": ["https://www.thekineticalphabet.com/"],
       "categories": ["Flow arts theory", "Notation systems"],
       "relevanceToVTG": "high",
-      "notes": "AI generated. The article says TKA was introduced 'around 2022' by Austen Cloud. Level system shown here is outdated compared to MEMORY.md (which has revised levels with L6=interradials, L7=conjoined grids). The wiki says L6=conjoined, L7=interradials. The Poi_notation article also has a wrong date (~2018)."
+      "notes": "AI generated. The article says TKA was introduced 'around 2022' by Austen Cloud. Level system shown here is outdated compared to TKA canon (revised 2026-08-27: L4=interradials, L5=skewed grid, L6=centric grid, L7=conjoined grids). The wiki says L6=conjoined, L7=interradials. The Poi_notation article also has a wrong date (~2018)."
     },
     {
       "title": "Driving style",
@@ -1396,7 +1396,7 @@
     },
     {
       "article": "The_Kinetic_Alphabet.wiki",
-      "issue": "Level system shown (L6=conjoined, L7=interradials) is outdated compared to MEMORY.md's revised system (L6=interradials, L7=conjoined). Also, the article's 'Flipped' LOOP transformation is listed in the main TKA article but not in the LOOP article.",
+      "issue": "Level system shown (L6=conjoined, L7=interradials) is outdated compared to TKA canon (revised 2026-08-27: L4=interradials, L5=skewed grid, L6=centric grid, L7=conjoined grids). Also, the article's 'Flipped' LOOP transformation is listed in the main TKA article but not in the LOOP article.",
       "severity": "medium"
     },
     {

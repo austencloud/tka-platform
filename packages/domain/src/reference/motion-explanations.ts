@@ -27,7 +27,7 @@ export const MOTION_TYPE_DEFINITIONS: Record<string, MotionTypeDefinition> = {
     description: "The hand moves in a straight line to or from the center grid point. A 'half-dash'.",
     gridMovement: "Between perimeter and center via straight line",
     distance: "1 radius (perimeter to center or center to perimeter)",
-    keyFact: "Hash is introduced at Level 5 with the center grid point. Same straight-line geometry as dash.",
+    keyFact: "Hash is introduced at Level 6 with the center grid point. Same straight-line geometry as dash.",
     level: 5,
   },
   float: {

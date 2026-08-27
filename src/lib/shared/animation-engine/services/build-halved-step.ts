@@ -20,7 +20,7 @@
  *     hand's own `MotionColor` explicitly (the function defaults to RED, so
  *     a blue hand passed without the 3rd arg would silently compute red's
  *     angle). A null result means the physical staff angle at t is off the
- *     45deg lattice (no legal Orientation exists there — e.g. an L6
+ *     45deg lattice (no legal Orientation exists there — e.g. an L4
  *     quarter-turn) and bails the whole step.
  *
  * On t !== 0.5: this function ALWAYS returns null. The signature keeps a `t`
@@ -161,7 +161,7 @@ function halveMotion(motion: MotionData, t: number): MotionData | null {
   // (0 for S<->N, PI/2 for E<->W), so a radial label computed against it can't
   // be rendered back to the correct physical angle by location+orientation
   // alone (that lossiness is what drew dash-half props 90deg off). The
-  // center-family (L5 centric) orientations are ABSOLUTE and survive the
+  // center-family (L6 centric) orientations are ABSOLUTE and survive the
   // roundtrip — PropRotAngleManager's CENTRIC_ANGLE_MAP and the arrow
   // segment-rotation branch both render them by compass angle directly.
   const halfwayOrientation =

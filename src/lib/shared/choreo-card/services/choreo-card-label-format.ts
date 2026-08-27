@@ -13,7 +13,7 @@ export function formatSoloTurns(turns: number | "fl" | undefined | null): string
 }
 
 /** Short-form orientation label. Level 1-3 are "in", "out", "cl", "cn".
- *  Level 6 interradials collapse to 2-char forms. Returns null if unknown. */
+ *  Level 4 interradials collapse to 2-char forms. Returns null if unknown. */
 export function shortOrientation(ori: string | undefined | null): string | null {
 	if (!ori) return null;
 	switch (ori) {

@@ -85,7 +85,7 @@ describe("minLength", () => {
       ).toBe(4);
     });
 
-    it("Period 8 (future L5/L6) returns finite value", () => {
+    it("Period 8 (future L5 grid / L7 wheel) returns finite value", () => {
       expect(
         minLength({ loopType: LOOPType.ROTATED, period: 8, level: 5 })
       ).toBe(16);

@@ -94,6 +94,12 @@ pnpm exec svelte-check --tsconfig ./tsconfig.json
 
 ### Interradials are Level 6
 
+> **Superseded 2026-08-27.** Interradials moved to **Level 4** and the center
+> point to **Level 6**. The order is now L4 interradials and quarter turns, L5
+> skewed grid, L6 centric grid, L7 conjoined grids. See the `level-system`
+> domain topic for the reasoning. The paragraph below is kept as the record of
+> what this handoff was written against.
+
 Commit `8c91fcf7e7` resolves the historical drift. Current canon is:
 
 - Level 6: interradial orientations, completing one 2D grid.
@@ -269,8 +275,9 @@ All decisions below are Austen's calls from 2026-08-01 through 2026-08-03.
   separate quantities. The wall plane may advance when the pose requires chest
   clearance, and the performer's torso and shoulders may contribute.
 - **Use performer/avatar language.** Do not assign the model a gender.
-- **Level 6 is interradials; Level 7 is conjoined grids.** The curriculum
-  completes one grid before expanding it.
+- **Level 4 is interradials; Level 7 is conjoined grids.** (This handoff was
+  written when interradials were Level 6; they moved to 4 on 2026-08-27.) The
+  curriculum completes one grid before expanding it.
 - **No outreach yet.** Austen will write any eventual message personally.
 
 ## Gotchas

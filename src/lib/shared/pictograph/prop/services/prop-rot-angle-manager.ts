@@ -55,7 +55,7 @@ export class PropRotAngleManager {
       [GridLocation.EAST]: 270,
       [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
-    // Interradial orientations (Level 6) - interpolated angles
+    // Interradial orientations (Level 4) - interpolated angles
     // Note: These are approximate; exact values may need refinement
     [Orientation.CLOCK_IN]: {
       [GridLocation.NORTH]: 45,
@@ -99,7 +99,7 @@ export class PropRotAngleManager {
   /**
    * Centric angle map: center orientations → SVG rotation angle.
    * SVG convention: 0=east, 90=south, 180=west, 270=north (clockwise).
-   * Used when a prop is at GridLocation.CENTER (Level 5 Tau/Terra positions).
+   * Used when a prop is at GridLocation.CENTER (Level 6 Tau/Terra positions).
    */
   private static readonly CENTRIC_ANGLE_MAP: Record<Orientation, number> = {
     // Center orientations - prop points toward compass direction
@@ -155,7 +155,7 @@ export class PropRotAngleManager {
       [GridLocation.SOUTHEAST]: 315,
       [GridLocation.CENTER]: 0,
     } as Record<GridLocation, number>,
-    // Interradial orientations (Level 6) - interpolated angles
+    // Interradial orientations (Level 4) - interpolated angles
     // Note: These are approximate; exact values may need refinement
     [Orientation.CLOCK_IN]: {
       [GridLocation.NORTHEAST]: 90,

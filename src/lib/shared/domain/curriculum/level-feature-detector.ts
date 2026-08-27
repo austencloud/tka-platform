@@ -8,12 +8,16 @@
  * the caller should treat level as unknown rather than guessing L1.
  *
  * Features checked:
- *   L4 - center grid location ("c"), tau/terra positions, centric grid mode,
- *        hash motions, skew modifier on dash
+ *   L4 - interradial orientations (clockIn, clockOut, counterIn, counterOut)
+ *        and quarter turns (any turns value not a multiple of 0.5)
  *   L5 - zeta/eta positions, skewed or 8point grid mode, skew modifier on shift
- *   L6 - interradial orientations (clockIn, clockOut, counterIn, counterOut)
+ *   L6 - center grid location ("c"), tau/terra positions, centric grid mode,
+ *        hash motions, skew modifier on dash
  *   L7 - trigrid grid mode (conjoined)
  *   L8 - any motion/step carrying a `plane` field
+ *
+ * Levels 4 and 6 traded places in Aug 2026: interradials moved down to 4 and
+ * the center point up to 6. See the `level-system` domain topic for why.
  *
  * Feature lists come from:
  *   - src/lib/shared/pictograph/grid/domain/enums/grid-enums.ts
@@ -51,6 +55,7 @@ interface MotionLike {
   startOrientation?: string;
   endOrientation?: string;
   motionType?: string;
+  turns?: number;
   skewDirection?: string;
   skew?: string;
   plane?: string;
@@ -75,7 +80,7 @@ export function detectLevelFeatures(sequence: SequenceData): LevelFeatureReport 
 
   if (sequence.gridMode && HIGH_LEVEL_GRID_MODES.has(sequence.gridMode)) {
     const mode = sequence.gridMode;
-    if (mode === "centric") note(4, `gridMode:${mode}`);
+    if (mode === "centric") note(6, `gridMode:${mode}`);
     else if (mode === "skewed" || mode === "8point") note(5, `gridMode:${mode}`);
     else if (mode === "trigrid") note(7, `gridMode:${mode}`);
   }
@@ -108,8 +113,8 @@ function scanStep(step: StepLike, note: (level: number, feature: string) => void
 function scanPosition(position: string, note: (level: number, feature: string) => void): void {
   if (position.startsWith("zeta")) note(5, `position:${position}`);
   else if (position.startsWith("eta")) note(5, `position:${position}`);
-  else if (position.startsWith("tau")) note(4, `position:${position}`);
-  else if (position.startsWith("terra")) note(4, `position:${position}`);
+  else if (position.startsWith("tau")) note(6, `position:${position}`);
+  else if (position.startsWith("terra")) note(6, `position:${position}`);
 }
 
 function scanMotion(
@@ -117,23 +122,32 @@ function scanMotion(
   color: string,
   note: (level: number, feature: string) => void,
 ): void {
-  if (motion.startLocation === "c") note(4, `${color}.startLocation:center`);
-  if (motion.endLocation === "c") note(4, `${color}.endLocation:center`);
+  if (motion.startLocation === "c") note(6, `${color}.startLocation:center`);
+  if (motion.endLocation === "c") note(6, `${color}.endLocation:center`);
 
   if (motion.motionType && HASH_MOTION_TYPES.has(motion.motionType)) {
-    note(4, `${color}.motionType:${motion.motionType}`);
+    note(6, `${color}.motionType:${motion.motionType}`);
   }
 
   for (const ori of [motion.startOrientation, motion.endOrientation]) {
     if (!ori) continue;
-    if (INTERRADIAL_ORIENTATIONS.has(ori)) note(6, `${color}.orientation:${ori}`);
-    else if (CENTER_ORIENTATIONS.has(ori)) note(4, `${color}.orientation:${ori}`);
+    if (INTERRADIAL_ORIENTATIONS.has(ori)) note(4, `${color}.orientation:${ori}`);
+    else if (CENTER_ORIENTATIONS.has(ori)) note(6, `${color}.orientation:${ori}`);
+  }
+
+  // Quarter turns are the defining L4 feature. Orientation alone almost always
+  // catches them (a quarter turn lands interradial), but turns is the direct
+  // signal and stays correct if a motion carries turns without orientations.
+  // A quarter turn is one whose doubled value is not a whole number: 0.25 and
+  // 0.75 qualify, 0.5 and 1 do not, and a negative float sentinel does not.
+  if (typeof motion.turns === "number" && !Number.isInteger(motion.turns * 2)) {
+    note(4, `${color}.turns:${motion.turns}`);
   }
 
   const skew = motion.skewDirection ?? motion.skew;
   if (skew === "+" || skew === "-") {
     const type = motion.motionType ?? "";
-    if (type === "dash") note(4, `${color}.dash${skew}`);
+    if (type === "dash") note(6, `${color}.dash${skew}`);
     else note(5, `${color}.skew${skew}`);
   }
 

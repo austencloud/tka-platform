@@ -40,7 +40,7 @@ export interface ChipLegality {
 
 /**
  * FLIPPED and REWOUND compose with nothing today (see loop-type-utils.ts
- * IMPLEMENTED_COMBOS comment: mirror+flip has no fixed points at L1–L4 and
+ * IMPLEMENTED_COMBOS comment: mirror+flip has no fixed points at L1–L5 and
  * degenerates to a 180° rotation; rewound combos have no designed semantics
  * yet). Named here so the picker's why-tooltip can quote a real reason
  * instead of a generic "not supported".

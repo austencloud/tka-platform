@@ -74,25 +74,25 @@ export const POSITION_DEFINITIONS: Record<PositionName, PositionDefinition> = {
     name: "Tau (τ)",
     symbol: "τ",
     angle: "variable",
-    description: "One hand is at the center grid point, the other at a non-center point. Introduced in Level 4 with centric grid mode. Not yet implemented in Flow Arts Composer.",
+    description: "One hand is at the center grid point, the other at a non-center point. Introduced in Level 6 with centric grid mode. Not yet implemented in Flow Arts Composer.",
     gridDescription: "The center point is the 9th grid location. Tau positions have one hand there and one at any of the 8 outer points.",
     examples: [
       "One hand at center, one at N",
       "One hand at center, one at NE",
     ],
-    level: 4,
+    level: 6,
     keyFact: "Introduces the center grid point. One hand anchored at center.",
   },
   terra: {
     name: "Terra",
     symbol: "⊕",
     angle: "0° (both at center)",
-    description: "Both hands are at the center grid point. Introduced in Level 4 with centric grid mode. Not yet implemented in Flow Arts Composer.",
+    description: "Both hands are at the center grid point. Introduced in Level 6 with centric grid mode. Not yet implemented in Flow Arts Composer.",
     gridDescription: "Both props stacked at the center of the grid. Similar to beta (both at same point) but at the unique center location.",
     examples: [
       "Both hands at center",
     ],
-    level: 4,
+    level: 6,
     keyFact: "Like beta, but at center. Both hands at the unique center point.",
   },
 } as const;
@@ -103,7 +103,7 @@ export const FOUNDATION_POSITIONS: PositionName[] = ["alpha", "beta", "gamma"];
 /** Positions introduced at Level 5 (skewed grid) */
 export const SKEWED_POSITIONS: PositionName[] = ["zeta", "eta"];
 
-/** Positions introduced at Level 4 (centric grid) */
+/** Positions introduced at Level 6 (centric grid) */
 export const CENTRIC_POSITIONS: PositionName[] = ["tau", "terra"];
 
 /** All position names */

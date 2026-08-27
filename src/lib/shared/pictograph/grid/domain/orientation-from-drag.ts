@@ -25,7 +25,7 @@ import PropRotAngleManager from "../../prop/services/prop-rot-angle-manager";
 export const DRAG_AIM_DEAD_ZONE = 60;
 
 /** The four radial/tangential orientations a start position can use. The
- *  interradial set (CLOCK_IN and friends) is Level 6 and deliberately absent —
+ *  interradial set (CLOCK_IN and friends) is Level 4 and deliberately absent —
  *  an 8-way snap is twitchy on touch, and those angles are marked approximate
  *  in the rotation manager. */
 const SNAP_ORIENTATIONS: readonly Orientation[] = [

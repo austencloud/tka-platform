@@ -73,7 +73,7 @@ export const TYPE_DEFINITIONS: Record<number, TypeDefinition> = {
     motionPattern: { blue: "static OR dash", red: "dash OR static" },
     letterCount: 3,
     letters: "Φ, Ψ, Λ",
-    registeredExtensions: "τ- (Tau-Dash, Level 4; no dataframe variations yet)",
+    registeredExtensions: "τ- (Tau-Dash, Level 6; no dataframe variations yet)",
     keyFact: "The Level 1 dataframe has 3 letters. Tau-Dash is a registered Type 4 extension, not a letter type.",
   },
   5: {

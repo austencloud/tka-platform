@@ -41,7 +41,7 @@ TKA is a **radial system** -- all orientations are measured from the prop to the
 
 ### The Parameter Space
 
-The TKA parameter space is precise and finite: 9 grid locations (8 perimeter + center), 8 center-relative orientations (4 radial/nonradial + 4 interradial at L6+), and rotation increments down to 45 degrees (quarter turns at L6). What TKA does NOT enumerate: grip changes, body movement, behind-the-back passes, contact rolling, tosses, or 3D planes below Level 8.
+The TKA parameter space is precise and finite: 9 grid locations (8 perimeter + center), 8 center-relative orientations (4 radial/nonradial + 4 interradial at L4+), and rotation increments down to 45 degrees (quarter turns at L4). What TKA does NOT enumerate: grip changes, body movement, behind-the-back passes, contact rolling, tosses, or 3D planes below Level 8.
 
 TKA is for **dual-wielded** props. Contact staff (balancing/rolling on body) is NOT part of TKA.`,
   },
@@ -76,7 +76,7 @@ Adding 1+ turns to any motion type introduces CW/CCW direction (2 states per tur
 
 TKA defines 1 turn as 180 degrees of additional prop rotation beyond base behavior. This is a deliberate pedagogical choice:
 
-- If 1 turn = 360 degrees, quarter turns (Level 6) would be 1/8 turns -- fractional chaos
+- If 1 turn = 360 degrees, quarter turns (Level 4) would be 1/8 turns -- fractional chaos
 - If 1 turn = 90 degrees, Level 2 would need 6 turn values (0-6) instead of the clean 0-3
 - At 180 degrees, the math stays clean at every level: whole turns 0-3 are small integers, half turns (90 degrees) produce cardinal orientation shifts, and quarter turns (45 degrees) produce interradial orientations
 
@@ -129,7 +129,7 @@ paths moves a prop between radial and nonradial. Only the turn values do:
   exactly the step between radial and nonradial.
 - **A float changes layer only when its hand travels around the circle.** A float
   whose hand crosses through the middle or stays put leaves the prop alone.
-- **Quarter turns (Level 6) land on interradial orientations**, which sit off this
+- **Quarter turns (Level 4) land on interradial orientations**, which sit off this
   four-way reading entirely.
 
 Because of this, the turn pattern is worth naming on its own. The same pattern
@@ -169,9 +169,9 @@ See also: **orientation-algebra** for the per-prop rules this is built on, and
 | Pro, Static | Preserves orientation | Reverses orientation |
 | Anti, Dash, Hash | Reverses orientation | Preserves orientation |
 
-"Reverses" means in<->out, clock<->counter (and interradial pairs at L6+: clockIn<->counterOut, clockOut<->counterIn).
+"Reverses" means in<->out, clock<->counter (and interradial pairs at L4+: clockIn<->counterOut, clockOut<->counterIn).
 
-### Fractional Turns (Half-turns at L3+, Quarter-turns at L6+)
+### Fractional Turns (Half-turns at L3+, Quarter-turns at L4+)
 
 Half turns (0.5, 1.5, 2.5) produce orientations 90 degrees from the start. Quarter turns (0.25, 0.75, 1.25, ...) produce interradial orientations using the 8-point radial cycle:
 
@@ -210,9 +210,11 @@ Given maximum turn count T (number of distinct turn values) and float availabili
 **L1: 0 turns only, 4-point grid, no float** -> 6 states per perimeter point
 **L2: Whole turns 0-3, 4-point grid, no float** -> 30 states
 **L3: Half-turns (7 values), 4-point grid, float** -> 56 states
-**L4: Same turns as L3, 5-point grid (4 perimeter + center), float** -> 69 from perimeter, 65 from center
-**L5: Same turns, 9-point grid (8 perimeter + center)** -> 129 from perimeter, 117 from center
-**Ceiling (L6+): Quarter-turns (13 values), 9-point grid** -> 237 from perimeter, 225 from center
+**L4: Quarter-turns (13 values), 4-point grid, float** -> 104 states
+**L5: Same turns, 8-point grid (perimeter only, no center)** -> 212 states
+**Ceiling (L6+): Same turns, 9-point grid (8 perimeter + center)** -> 237 from perimeter, 225 from center
+
+Note the shape of the ladder: L4 refines the turn count without touching the grid, L5 doubles the grid without touching the turn count, and L6 adds the single point that opens a second kind of starting location.
 
 ### Summary Table
 
@@ -221,11 +223,11 @@ Given maximum turn count T (number of distinct turn values) and float availabili
 | L1 | 4-pt | 1 (0 only) | No | **6** | -- |
 | L2 | 4-pt | 4 (0,1,2,3) | No | **30** | -- |
 | L3 | 4-pt | 7 (0-3 + halves) | Yes | **56** | -- |
-| L4 | 5-pt | 7 | Yes | **69** | **65** |
-| L5 | 9-pt | 7 | Yes | **129** | **117** |
-| Ceiling | 9-pt | 13 (0-3 + quarters) | Yes | **237** | **225** |
+| L4 | 4-pt | 13 (0-3 + quarters) | Yes | **104** | -- |
+| L5 | 8-pt | 13 | Yes | **212** | -- |
+| L6 (ceiling) | 9-pt | 13 | Yes | **237** | **225** |
 
-The original estimate of 214 possibilities was based on incorrect assumptions (0-turn dash/static counted as having CW/CCW direction, and no center point). The validated ceiling is 237 from perimeter, 225 from center.
+The original estimate of 214 possibilities was based on incorrect assumptions (0-turn dash/static counted as having CW/CCW direction, and no center point). The validated ceiling is 237 from perimeter, 225 from center, and under the current order the ladder reaches that ceiling exactly at L6 -- there is no separate above-the-levels ceiling row.
 
 ### Detailed Breakdowns
 
@@ -235,14 +237,14 @@ The original estimate of 214 possibilities was based on incorrect assumptions (0
 
 **L3 (56 states):** T=7. Shift: 2 x (2*7+1) = 30. Dash: 1 x 13 = 13. Static: 13.
 
-**L4 from perimeter (69):** 5-point grid (4 perimeter + center). Shift: 2 x 15 = 30. Dash: 13. Hash (to center): 13. Static: 13.
-**L4 from center (65):** Hash (to 4 perimeter): 4 x 13 = 52. Static: 13.
+**L4 (104 states):** T=13, still the 4-point grid. Shift: 2 x 27 = 54. Dash: 25. Static: 25.
 
-**L5 from perimeter (129):** 9-point grid (8 perimeter + center). Shift: 6 x 15 = 90. Dash: 13. Hash (to center): 13. Static: 13.
-**L5 from center (117):** Hash (to 8 perimeter): 8 x 13 = 104. Static: 13.
+**L5 (212 states):** T=13, 8-point grid, no center yet. Shift: 6 x 27 = 162. Dash: 25. Static: 25.
 
-**Ceiling from perimeter (237):** T=13. Shift: 6 x 27 = 162. Dash: 25. Hash: 25. Static: 25.
-**Ceiling from center (225):** Hash: 8 x 25 = 200. Static: 25.`,
+**L6 from perimeter (237):** 9-point grid (8 perimeter + center). Shift: 6 x 27 = 162. Dash: 25. Hash (to center): 25. Static: 25.
+**L6 from center (225):** Hash (to 8 perimeter): 8 x 25 = 200. Static: 25.
+
+Shift destinations exclude the origin itself and its opposite point (the dash destination): 2 on a 4-point grid, 6 on an 8-point grid.`,
   },
 
   "hand-path-modifiers": {
@@ -265,9 +267,9 @@ Three fundamental hand path families, distinguished by geometry:
 
 Both shifts and dashes support **path length modifiers** displayed per-hand in the turns column of the TKA glyph.
 
-**For dashes (L4+/L7+):**
+**For dashes (L6+/L7+):**
 - (none): Standard dash -- perimeter to opposite perimeter (L1+)
-- -: Dash- (hash) -- perimeter to center or center to perimeter (L4+)
+- -: Dash- (hash) -- perimeter to center or center to perimeter (L6+)
 - +: Dash+ -- perimeter to center of *other* grid (L7+)
 - ++: Dash++ -- perimeter to opposite perimeter of *other* grid (L7+)
 
@@ -298,7 +300,7 @@ The letter type system classifies by **hand path family** (shift, dash, static):
 
 When two grids share a junction point (Level 7), new straight-line paths emerge crossing the grid boundary. Dash+/++ follow straight-line trajectories (not curved arcs), so they follow dash rotation rules. No new letters needed -- existing letter classification covers all combinations.
 
-**Dash- vs Dash+:** Dash- (L4) goes to center of *same* grid. Dash+ (L7) goes to center of *other* grid. Both are straight-line paths to a center point.
+**Dash- vs Dash+:** Dash- (L6) goes to center of *same* grid. Dash+ (L7) goes to center of *other* grid. Both are straight-line paths to a center point.
 
 ### Skews (L5+ only, 8-point grid)
 
@@ -315,19 +317,21 @@ Skews support all three shift motion types (pro, anti, float). Theoretically unb
     title: "Level System",
     content: `## Level System
 
-### Locked-In Order (Feb 2026)
+### Locked-In Order (revised Aug 2026)
 
 | Level | Concept | What it adds | Arc |
 |-------|---------|-------------|-----|
 | 1 | Foundation | 0 turns, alpha + beta + gamma positions | Foundation |
 | 2 | Whole turns | 0-3 whole turns | Foundation |
 | 3 | Half turns + float | Halves, float motion type | Foundation |
-| 4 | Centric | Center point, hash hand path, tau/terra positions | New grid point |
+| 4 | Interradial orientations | 8 orientations, quarter turns, completes orientation freedom | Angular precision |
 | 5 | Skewed grid | 8-point grid, zeta + eta (cross-grid asymmetry), skew+ and skew- | Grid mixing |
-| 6 | Interradial orientations | 8 orientations, quarter turns, completes single-grid 2D | Orientation freedom |
+| 6 | Centric | Center point, hash hand path, tau/terra positions, completes single-grid 2D | New grid point |
 | 7 | Conjoined grids | Dual grids sharing a junction point, extended dashes | Canvas expansion |
 | 8 | Atomics | Multi-plane / 3D (wall, wheel, overhead) | New dimension |
 | 9 | Rubik's cube | Skewed across intersecting planes | 3D COMPLETE |
+
+Levels 4 and 6 traded places with the February 2026 order, which ran centric at 4 and interradials at 6. See "Why This Order" below for what changed and what it cost.
 
 ### Why This Order
 
@@ -336,23 +340,28 @@ Skews support all three shift motion types (pro, anti, float). Theoretically unb
 - Learners encounter asymmetry (leader/follower) immediately -- it is foundational, not advanced
 - L5's skewed grid adds cross-grid asymmetry (zeta, eta) where one hand is on diamond and the other on box, not asymmetry in general
 
-**Centric before skewed (L4 before L5):**
-- Center point adds 1 new location and 1 new hand path (hash) -- a +23% state space expansion
-- Skewed grid adds 4 new locations and introduces grid mode mixing -- a +87% expansion
-- Centric motions are intuitive and commonly reached for before skewed positions
-- Skewed grid shares cognitive complexity with interradials (L6), grouping the "hard 2D" together
+**Interradials directly after the turn ladder (L4):**
+- Quarter turns are a refinement of turn count, continuous with L2's whole turns and L3's halves. L4 finishes the turn ladder before the grid changes at all, so each of the first four levels changes exactly one thing.
+- Orientation freedom completes (4 values to 8) on the familiar 4-point grid, where the learner already knows every location.
+- Four of the eight center orientations -- centerNE, centerSE, centerSW, centerNW -- are only reachable through a 45-degree quantity, whether by quarter turn or by a hash in from an intercardinal point. Putting interradials first means the center point never arrives before the ladder can produce its own vocabulary. Under the February order, L4 declared four orientations that neither L4 nor anything below it could reach.
 
-**Interradials before conjoined (L6 before L7):**
-- Complete all orientation freedom within one grid before expanding beyond one grid
-- "Complete then expand" -- master the full orientation vocabulary (4 to 8) before doubling the spatial canvas
-- Interradials are a precision concept best learned on familiar single-grid territory
-- Conjoined grids at L7 bridge naturally to L8's multi-plane expansion
+**Skewed before centric (L5 before L6):**
+- L4 doubles the prop's angular resolution; L5 doubles the hand path's, from 90-degree segments to 45-degree ones. The same idea applied to the two axes of the system, taught back to back.
+- Skewed recombines locations the learner already stands on: diamond's cardinals and box's intercardinals. It invents no new grid point, no new hand-path family, and no new orientation vocabulary. It is a wider pattern in a language already known.
+- Skewed shares its cognitive character with interradials, so the two 45-degree concepts sit adjacent rather than with a level between them.
+- The cost, stated plainly: skewed is the larger arithmetic jump. Going 4-point to 8-point roughly doubles the state space (56 to 212 across L4 and L5), while the center point adds only about 12% more from the perimeter. The February order put the smaller expansion first for that reason. The current order trades a bigger arithmetic step for a smaller conceptual one, on the grounds that what the learner must newly understand matters more to a notation ladder than how many states become expressible.
+
+**Centric last on the single grid (L6):**
+- The center is the one place where the coordinate system itself changes. Orientation there is absolute (centerN through centerNW) rather than center-relative, because a prop at the center has no center to face. That is a second orientation vocabulary, not a larger version of the first.
+- It introduces a new hand-path family, hash (dash-), which exists only because the center exists.
+- Arriving after L5, the center is reachable by hash from all eight perimeter points rather than four, and its diagonal orientations have two routes in: quarter turn from L4, or hash from an intercardinal from L5.
+- L7 consumes the center point directly -- conjoined grids share a junction and admit patterns with two center points. Centric immediately before L7 hands it straight to the level built on top of it.
 
 **Conjoined before 3D (L7 before L8):**
 - Conjoined grids expand spatial canvas while staying in 2D, easing the transition
-- All single-grid 2D knowledge (including interradials) carries forward into conjoined and then into 3D
+- All single-grid 2D knowledge (orientations, skews, and the center point) carries forward into conjoined and then into 3D
 
-**Symmetry:** L6 completes orientation freedom, L7 completes spatial expansion in 2D. L9 completes 3D the same way -- precision pass after dimensional expansion (atomics at L8).`,
+**Symmetry:** L4 completes orientation freedom, L6 completes the single grid, L7 completes spatial expansion in 2D. L9 completes 3D the same way -- precision pass after dimensional expansion (atomics at L8).`,
   },
 
   "skewed-letters": {
@@ -498,7 +507,7 @@ A component is **orientation-domain** only if it is the identity on position spa
 
 - **Inverted** — position-identity at ALL positions. \`applyOverlayInversion\` flips motionType (pro↔anti) and rotationDirection and leaves hand locations untouched on every step, so an Inverted LOOP repeats its positions identically each pass; only the prop's orientation cycles. The unique **pure orientation-domain** transform (verified: inverted seeds through gamma/alpha still pin).
 - **Rotated / Reflection / Swapped** are all **position-moving**, each the identity only on a subset:
-  - Rotated — no L1–L4 fixed point (always the inner layer).
+  - Rotated — no L1–L5 fixed point (always the inner layer).
   - Reflection — fixed points depend on the selected axis.
   - Swapped — fixed at beta (+terra1); it reflects via hand identity (\`SWAPPED_POSITION_MAP\`: alpha7↔alpha3, gamma9↔gamma3), so it MOVES any non-beta step.
 - **Rewound** — temporal (second half reversed), neither space.
@@ -785,7 +794,7 @@ Compound letters are pairs that complete each other to create circular (LOOP) mo
 | **clock** | Nonradial | Prop faces clockwise (perpendicular to center axis) |
 | **counter** | Nonradial | Prop faces counter-clockwise |
 
-### Interradial Orientations (4, L6+)
+### Interradial Orientations (4, L4+)
 
 At 45 degrees between radial and nonradial:
 - **clockIn**: between clock and in
@@ -793,7 +802,7 @@ At 45 degrees between radial and nonradial:
 - **counterIn**: between counter and in
 - **counterOut**: between counter and out
 
-### Center Orientations (8, L5+)
+### Center Orientations (8, L6+)
 
 For the center point, orientation uses compass directions: centerN, centerNE, centerE, centerSE, centerS, centerSW, centerW, centerNW.
 

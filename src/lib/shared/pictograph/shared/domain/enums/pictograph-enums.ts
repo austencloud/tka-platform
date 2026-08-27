@@ -53,13 +53,13 @@ export enum HandPath {
 /**
  * Path length modifier for shifts and dashes.
  *
- * For dashes (L4+): modifies straight-line distance.
- *
  * For shifts (L5+): modifies arc length on 8-point grid.
  *   - PLUS (skew+): Extended arc (e.g., S to NE, spanning 3 segments)
  *   - MINUS (skew-): Shortened arc (less than one standard segment)
- *   - PLUS (dash+, L6): Extended to cross-grid destination
- *   - MINUS (dash-): Shortened to center = hash
+ *
+ * For dashes: modifies straight-line distance.
+ *   - MINUS (dash-, L6): Shortened to center = hash, so it needs the center point
+ *   - PLUS (dash+, L7): Extended to cross-grid destination, so it needs a second grid
  *
  * Displayed per-hand in the turns column of the TKA glyph.
  */
@@ -93,7 +93,7 @@ export type RotationDirection =
  * - CLOCK: Perpendicular, 90° clockwise from radial
  * - COUNTER: Perpendicular, 90° counter-clockwise from radial
  *
- * Interradial orientations (Level 6 - 45° between cardinal orientations):
+ * Interradial orientations (Level 4 - 45° between cardinal orientations):
  * - CLOCK_IN: Between CLOCK and IN (gravity at NE)
  * - CLOCK_OUT: Between CLOCK and OUT (gravity at SE)
  * - COUNTER_IN: Between COUNTER and IN (gravity at NW)
@@ -106,7 +106,7 @@ export const Orientation = {
   // Non-radial orientations (Level 3)
   CLOCK: "clock",
   COUNTER: "counter",
-  // Centric orientations (Level 4 - prop at center, points toward compass direction)
+  // Centric orientations (Level 6 - prop at center, points toward compass direction)
   CENTER_N: "centerN",
   CENTER_NE: "centerNE",
   CENTER_E: "centerE",
@@ -115,7 +115,7 @@ export const Orientation = {
   CENTER_SW: "centerSW",
   CENTER_W: "centerW",
   CENTER_NW: "centerNW",
-  // Interradial orientations (Level 6)
+  // Interradial orientations (Level 4)
   CLOCK_IN: "clockIn",
   CLOCK_OUT: "clockOut",
   COUNTER_IN: "counterIn",

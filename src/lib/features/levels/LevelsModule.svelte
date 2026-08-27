@@ -6,10 +6,14 @@
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { LEVELS_TABS } from "$lib/shared/navigation/config/tab-definitions";
 
+  // Directory names are historical and no longer track the level they serve:
+  // level6-lab holds the interradial lab (now L4) and level5-lab holds the
+  // centric lab (now L6). Levels 4 and 6 traded places in Aug 2026 - see the
+  // `level-system` domain topic. Renaming the directories is a separate change.
   const tabComponents: Record<string, () => Promise<{ default: any }>> = {
-    level4: () => import("$lib/features/levels/level5-lab/Level5LabModule.svelte"),
+    level4: () => import("$lib/features/levels/level6-lab/Level6LabModule.svelte"),
     level5: () => import("$lib/features/skewlab/SkewLabModule.svelte"),
-    level6: () => import("$lib/features/levels/level6-lab/Level6LabModule.svelte"),
+    level6: () => import("$lib/features/levels/level5-lab/Level5LabModule.svelte"),
     "conjoined-grid": () => import("$lib/features/levels/conjoined-grid/ConjoinedGridTab.svelte"),
     poi: () => import("$lib/features/levels/poi-lab/PoiLabModule.svelte"),
   };

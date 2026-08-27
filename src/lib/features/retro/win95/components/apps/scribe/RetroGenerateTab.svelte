@@ -63,7 +63,7 @@
     { value: "1", label: "Level 1 - Beginner" },
     { value: "2", label: "Level 2 - Intermediate" },
     { value: "3", label: "Level 3 - Advanced" },
-    { value: "4", label: "Level 4 - Centric" },
+    { value: "4", label: "Level 4 - Interradials" },
   ];
 
   const lengthOptions = [

@@ -45,7 +45,7 @@ describe("switchOrientation", () => {
     expect(switchOrientation("out")).toBe("in");
     expect(switchOrientation("clock")).toBe("counter");
     expect(switchOrientation("counter")).toBe("clock");
-    // Interradial (L6) pairs
+    // Interradial (L4) pairs
     expect(switchOrientation("clockIn")).toBe("counterOut");
     expect(switchOrientation("counterOut")).toBe("clockIn");
     expect(switchOrientation("clockOut")).toBe("counterIn");
@@ -226,7 +226,7 @@ describe("calculateEndOrientation — fractional radial cycle", () => {
 });
 
 /**
- * FIXED — interradial (L6) and center (L4) start orientations.
+ * FIXED — interradial (L4) and center (L6) start orientations.
  *
  * calculateEndOrientation used to normalize the start orientation with a
  * blanket `startOrientation.toLowerCase()`, but switchOrientation's map and
@@ -236,7 +236,7 @@ describe("calculateEndOrientation — fractional radial cycle", () => {
  * Only the four cardinal radial orientations (in/out/clock/counter), which are
  * already lowercase, behaved correctly through calculateEndOrientation.
  *
- * Impact (before the fix): Level 4 (center) and Level 6 (interradial)
+ * Impact (before the fix): Level 6 (center) and Level 4 (interradial)
  * orientation propagation was silently wrong. switchOrientation itself was
  * always fine when called with the canonical camelCase — the defect was
  * purely the internal lowercasing in calculateEndOrientation.

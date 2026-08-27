@@ -52,7 +52,7 @@ export function staffAngleToOrientation(
 }
 
 /**
- * The center-family (L5 centric) orientations by absolute compass angle,
+ * The center-family (L6 centric) orientations by absolute compass angle,
  * 45deg steps CW from east. SVG/engine convention: 0=east, 90=south,
  * 180=west, 270=north — the same values PropRotAngleManager's
  * CENTRIC_ANGLE_MAP and rotation-maps.ts render with.

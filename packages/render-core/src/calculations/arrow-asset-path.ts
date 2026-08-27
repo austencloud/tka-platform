@@ -88,7 +88,7 @@ function resolveOrientationFolder({
 
 /**
  * Resolve a full-motion arrow beneath the static asset root. Both the browser
- * renderer and the MCP renderer use this path, so Level 6 axis selection
+ * renderer and the MCP renderer use this path, so Level 4 axis selection
  * cannot drift between interactive and generated pictographs.
  */
 export function resolveFullArrowAssetPath(

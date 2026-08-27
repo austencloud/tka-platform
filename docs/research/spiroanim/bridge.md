@@ -83,7 +83,7 @@ above) to decode a pasted spiroanim URL into a TKA sequence.
 
 The v9 editor artifact in `editor-v9-quarter-turn-club-loop.json` proves this
 path is not limited to the integer-turn concept builders. The editor's
-45-degree frame arcs pair cleanly into Level 6 quarter-turn motions. TKA's
+45-degree frame arcs pair cleanly into Level 4 quarter-turn motions. TKA's
 continuous animator already accepts the resulting 0.25-turn values; the bridge
 record keeps explicit interradial endpoints so persistence and rendering do not
 lose that geometry.

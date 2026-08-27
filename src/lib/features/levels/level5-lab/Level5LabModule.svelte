@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Level 4 Lab Module
+   * Level 6 Lab Module (directory name `level5-lab` is historical)
    *
    * Admin-only sandbox for validating centric position rendering.
    * Renders all 17 Tau/Terra positions as static pictographs with
@@ -101,7 +101,7 @@
 <div class="level5-lab">
   <header class="header">
     <div class="title-row">
-      <h1>Level 4</h1>
+      <h1>Level 6</h1>
       <span class="badge">Admin</span>
     </div>
     <p class="description">

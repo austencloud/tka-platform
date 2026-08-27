@@ -26,10 +26,10 @@ export interface DomainGlossary {
   reversal: string;
   // Level 3+
   float: string;
-  // Level 5+
+  // Level 6+
   hash: string;
   // Compounds
   compound: string;
-  // Level 6+
+  // Level 4+
   interradial: string;
 }

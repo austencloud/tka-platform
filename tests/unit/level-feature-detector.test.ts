@@ -57,7 +57,7 @@ describe("detectLevelFeatures", () => {
     expect(report.minLevel).toBe(1);
   });
 
-  it("flags center location as L4", () => {
+  it("flags center location as L6", () => {
     const s = seq({
       gridMode: "centric",
       steps: [stepWith({
@@ -67,18 +67,18 @@ describe("detectLevelFeatures", () => {
     });
     const report = detectLevelFeatures(s);
     expect(report.beyondLevel3).toBe(true);
-    expect(report.minLevel).toBe(4);
+    expect(report.minLevel).toBe(6);
     expect(report.features.some((f) => f.includes("center"))).toBe(true);
     expect(report.features.some((f) => f.includes("gridMode:centric"))).toBe(true);
   });
 
-  it("flags tau/terra positions as L4", () => {
+  it("flags tau/terra positions as L6", () => {
     const s = seq({
       steps: [stepWith({}, { startPosition: "tau3", endPosition: "terra1" })] as unknown as SequenceData["steps"],
     });
     const report = detectLevelFeatures(s);
     expect(report.beyondLevel3).toBe(true);
-    expect(report.minLevel).toBe(4);
+    expect(report.minLevel).toBe(6);
   });
 
   it("flags zeta/eta positions as L5", () => {
@@ -98,7 +98,7 @@ describe("detectLevelFeatures", () => {
     expect(report.minLevel).toBe(5);
   });
 
-  it("flags interradial orientations as L6", () => {
+  it("flags interradial orientations as L4", () => {
     const s = seq({
       steps: [stepWith({
         blue: { startOrientation: "in", endOrientation: "clockIn" },
@@ -107,7 +107,44 @@ describe("detectLevelFeatures", () => {
     });
     const report = detectLevelFeatures(s);
     expect(report.beyondLevel3).toBe(true);
-    expect(report.minLevel).toBe(6);
+    expect(report.minLevel).toBe(4);
+  });
+
+  it("flags quarter turns as L4 even without orientations", () => {
+    const s = seq({
+      steps: [stepWith({
+        blue: { startLocation: "n", endLocation: "e", motionType: "pro", turns: 0.25 },
+      })] as unknown as SequenceData["steps"],
+    });
+    const report = detectLevelFeatures(s);
+    expect(report.beyondLevel3).toBe(true);
+    expect(report.minLevel).toBe(4);
+    expect(report.features.some((f) => f.includes("turns:0.25"))).toBe(true);
+  });
+
+  it("does NOT flag whole or half turns as L4", () => {
+    const s = seq({
+      gridMode: "diamond",
+      steps: [stepWith({
+        blue: { startLocation: "n", endLocation: "e", motionType: "pro", turns: 1.5 },
+        red:  { startLocation: "s", endLocation: "w", motionType: "anti", turns: 2 },
+      })] as unknown as SequenceData["steps"],
+    });
+    const report = detectLevelFeatures(s);
+    expect(report.beyondLevel3).toBe(false);
+    expect(report.minLevel).toBe(1);
+  });
+
+  it("does NOT flag a negative float sentinel as a quarter turn", () => {
+    const s = seq({
+      gridMode: "diamond",
+      steps: [stepWith({
+        blue: { startLocation: "n", endLocation: "e", motionType: "float", turns: -1 },
+      })] as unknown as SequenceData["steps"],
+    });
+    const report = detectLevelFeatures(s);
+    expect(report.beyondLevel3).toBe(false);
+    expect(report.minLevel).toBe(1);
   });
 
   it("flags trigrid grid mode as L7", () => {

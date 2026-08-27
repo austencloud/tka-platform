@@ -28,9 +28,9 @@ get to change any of this; it must realize it exactly. Per hand, per step:
 |---|---|
 | Grid location (start, end) | 9 locations: 8 perimeter + center |
 | Motion type | pro, anti, dash, static, float (+ hash, + L5 skews) |
-| Turns (additional rotation) | 0–3 whole; half (90°); quarter (45°, L6+). **1 turn = 180°** |
+| Turns (additional rotation) | 0–3 whole; half (90°); quarter (45°, L4+). **1 turn = 180°** |
 | Rotation direction | CW / CCW (only meaningful at ≥1 turn, or as pro/anti base at 0) |
-| Orientation | 8 center-relative: 4 radial/nonradial + 4 interradial (L6+) |
+| Orientation | 8 center-relative: 4 radial/nonradial + 4 interradial (L4+) |
 | Start orientation (sequence-level) | one of the above, carried forward |
 
 Base-rotation fact that shapes everything downstream: at 0 turns a **shift**

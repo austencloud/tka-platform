@@ -65,10 +65,10 @@
 | `out` | L1/L2 | Radial outward |
 | `clock` | L3 | Clockwise tangent |
 | `counter` | L3 | Counter-clockwise tangent |
-| `clockIn` | L6 | 45° between clock and in |
-| `clockOut` | L6 | 45° between clock and out |
-| `counterIn` | L6 | 45° between counter and in |
-| `counterOut` | L6 | 45° between counter and out |
+| `clockIn` | L4 | 45° between clock and in |
+| `clockOut` | L4 | 45° between clock and out |
+| `counterIn` | L4 | 45° between counter and in |
+| `counterOut` | L4 | 45° between counter and out |
 
 ### location (grid points)
 Cardinal: `n`, `e`, `s`, `w`

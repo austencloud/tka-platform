@@ -134,13 +134,13 @@ describe("calculatePropRotation — cardinal results are valid angles", () => {
 });
 
 /**
- * KNOWN BUG — interradial (L6) and center (L4) prop angles.
+ * KNOWN BUG — interradial (L4) and center (L6) prop angles.
  *
  * Same root cause as calculateEndOrientation: calculatePropRotation lowercases
  * the orientation (`orientation.toLowerCase()`) but DIAMOND_PROP_ANGLES /
  * BOX_PROP_ANGLES are keyed with camelCase for interradial (`clockIn`...) and
  * center (`centerN`...) orientations. The lowercased key misses, the function
- * logs `Unknown orientation: <ori>` and returns 0 — so every L4/L6 prop angle
+ * logs `Unknown orientation: <ori>` and returns 0 — so every L4 / L6 prop angle
  * collapses to 0 degrees.
  *
  * The it.fails specs below assert the canonical angles and flip red when the

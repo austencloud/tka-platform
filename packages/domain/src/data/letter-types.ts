@@ -54,7 +54,7 @@ export const LETTER_TYPES: Record<string, LetterTypeDefinition> = {
     characteristics: [
       "Creates dramatic position changes",
       "Uses Greek letters Phi, Psi, Lambda",
-      "3 Level 1 letters, plus the Level 4 Tau-Dash extension",
+      "3 Level 1 letters, plus the Level 6 Tau-Dash extension",
       "Phi = diverging (angular separation increases): beta→alpha, or eta→zeta on 8-point grid",
       "Psi = converging (angular separation decreases): alpha→beta, or zeta→eta on 8-point grid",
       "Lambda = angle preserved (gamma→gamma). Cannot be skewed (gamma requires both hands on same grid)"

@@ -67,9 +67,14 @@ export const DIFFICULTY_LEVELS: Record<DifficultyLevel, DifficultyLevelConfig> =
       shadowColor: "45deg 93% 47%",
       textColor: "black",
     },
+    // Levels 4 and 6 traded places in Aug 2026 (see the `level-system` domain
+    // topic). This table stops at 5 because `DifficultyLevel` does, and the
+    // centric grid that now holds L6 is not implemented yet. Gradients are
+    // unchanged - the shipping calculator never returns above 3, so no card has
+    // ever rendered one of these badges.
     4: {
       level: 4,
-      name: "Skews",
+      name: "Interradials",
       description: "Deep purple",
       gradient: `linear-gradient(135deg,
       rgb(200, 162, 200) 0%,
@@ -81,7 +86,7 @@ export const DIFFICULTY_LEVELS: Record<DifficultyLevel, DifficultyLevelConfig> =
     },
     5: {
       level: 5,
-      name: "Center",
+      name: "Skews",
       description: "Hot red",
       gradient: `linear-gradient(135deg,
       rgb(255, 90, 40) 0%,

@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Level 6 Lab Module
+   * Level 4 Lab Module (directory name `level6-lab` is historical)
    *
    * Admin-only experimental sandbox for validating interradial orientation rendering
    * at intercardinal positions (NE/SE/SW/NW). Shows static pictographs in box mode
@@ -238,7 +238,7 @@
 <div class="level6-lab">
   <header class="header">
     <div class="title-row">
-      <h1>Level 6</h1>
+      <h1>Level 4</h1>
       <span class="badge">Admin</span>
     </div>
     <p class="description">

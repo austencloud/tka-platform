@@ -12,7 +12,7 @@ The Level 1 pictograph dataframe contains **47 base letters** organized into **6
 | 5 | Dual-Dash | Both hands dash | 3 | Φ-, Ψ-, Λ- |
 | 6 | Static | Both hands stationary | 3 | α, β, γ |
 
-Higher levels can register extensions before their pictograph variations enter the dataframe. **Tau-Dash (τ-) is a registered Level 4 extension of Type 4**, not an additional letter type.
+Higher levels can register extensions before their pictograph variations enter the dataframe. **Tau-Dash (τ-) is a registered Level 6 extension of Type 4**, not an additional letter type.
 
 **Key insight:** Types are defined by the specific motion types (shift, dash, static), not by whether hands "move" or "stay still."
 
