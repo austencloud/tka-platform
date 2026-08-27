@@ -228,6 +228,18 @@ describe("museum rendering performance contract", () => {
     );
   });
 
+  it("starts the deferred 3D mount even when the tab becomes hidden", () => {
+    const museumModule = read("src/lib/features/museum/MuseumModule.svelte");
+
+    expect(museumModule).toContain("if (document.hidden)");
+    expect(museumModule).toContain(
+      'document.addEventListener("visibilitychange", onVisibilityChange)'
+    );
+    expect(museumModule).toContain("cancelAnimationFrame(rafId)");
+    expect(museumModule).toContain("startDeferred();");
+    expect(museumModule).toContain("clearTimeout(timeoutId)");
+  });
+
   it("passes each museum's real room graph into the geometry streamer", () => {
     const officialMuseum = read("src/lib/features/museum/MuseumModule.svelte");
     const personalMuseum = read(
