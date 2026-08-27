@@ -65,9 +65,22 @@ wording.
 10. Remove promotional filler and feature-list slogans.
 11. Link every new feature and improvement to its live production URL
     (`https://tkaflowarts.com/...`) as an inline markdown link on the
-    destination word. Verify each route against the router before linking —
-    module surfaces resolve as `/{module}/{tab}`. Bug fixes only need a link
-    when the fixed surface has a stable URL worth visiting.
+    destination word. Bug fixes only need a link when the fixed surface has a
+    stable URL worth visiting.
+12. **A link lands on the thing it names, not on the room that contains it.**
+    `/{module}/{tab}` is the floor, not the answer. When the entry names a
+    specific background, prop, sequence, scene, or preset, find the deep-link
+    parameter that selects it and use it. Verify the parameter in the router or
+    the component that reads it — do not guess a query string. Worked example:
+    `Blossom background` links to `/settings/theme?theme=blossom`, because
+    `SettingsModule.svelte` reads `?theme=` through `getShowroomThemeFromId`
+    and hands it to `ThemeShowroom` as `initialPreview`. Linking that entry to
+    bare `/settings/theme` drops the reader on a tab of ten themes and makes
+    them hunt for the one the note is about.
+13. When no deep link exists, link the nearest real surface and leave it there.
+    Never invent a parameter the app does not read, and never link a `test/`
+    route — those are not user-facing. A shallow-but-true link beats a precise
+    lie.
 
 ### Examples
 
