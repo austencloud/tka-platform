@@ -84,3 +84,56 @@ describe("URL state writes", () => {
     expect(navigation.replaceState).not.toHaveBeenCalled();
   });
 });
+
+describe("URL writes issued before the router is initialized", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    appPage.state = {};
+    window.history.replaceState({}, "", "/learn/concepts/unknown");
+  });
+
+  function routerNotReadyOnce(spy: typeof navigation.replaceState) {
+    spy.mockImplementationOnce(() => {
+      throw new Error(
+        "Cannot call replaceState(...) before router is initialized"
+      );
+    });
+  }
+
+  it("swallows the early failure and retries on the next task", async () => {
+    routerNotReadyOnce(navigation.replaceState);
+
+    expect(() => writeUrl("/learn/concepts")).not.toThrow();
+    expect(navigation.replaceState).toHaveBeenCalledTimes(1);
+
+    await vi.waitFor(() =>
+      expect(navigation.replaceState).toHaveBeenCalledTimes(2)
+    );
+    expect(navigation.replaceState.mock.calls[1]?.[0]).toBe("/learn/concepts");
+  });
+
+  it("drops a stale deferred write when a newer one supersedes it", async () => {
+    routerNotReadyOnce(navigation.replaceState);
+    writeUrl("/learn/concepts");
+
+    writeUrl("/learn/concepts/grid");
+
+    await vi.waitFor(() =>
+      expect(navigation.replaceState).toHaveBeenCalledTimes(2)
+    );
+    expect(navigation.replaceState.mock.calls[1]?.[0]).toBe(
+      "/learn/concepts/grid"
+    );
+    expect(navigation.replaceState).toHaveBeenCalledTimes(2);
+  });
+
+  it("still surfaces failures that are not router-readiness", () => {
+    navigation.replaceState.mockImplementationOnce(() => {
+      throw new Error("Could not serialize state");
+    });
+
+    expect(() => writeUrl("/learn/concepts")).toThrow(
+      "Could not serialize state"
+    );
+  });
+});
