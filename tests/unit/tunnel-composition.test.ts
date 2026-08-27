@@ -7,6 +7,7 @@ import {
   createDerivedTunnelPerformer,
   createIndependentTunnelPerformer,
   createTunnelComposition,
+  primaryTunnelSourceSequenceId,
   resolveTunnelLayerPlans,
   tunnelCompositionCycleSteps,
   validateTunnelComposition,
@@ -235,5 +236,22 @@ describe("tunnel composition", () => {
         createTunnelComposition([performerOne, performerTwo])
       )
     ).toBe(40);
+  });
+
+  it("uses authored source lineage instead of a constructed realization id", () => {
+    const performer = createIndependentTunnelPerformer(
+      sequence("shape-matrix:realization", 4),
+      0,
+      "Performer 1",
+      { sourceSequenceId: "l1-tnd-base-word" }
+    );
+    const composition = createTunnelComposition([performer]);
+
+    expect(primaryTunnelSourceSequenceId(composition, "viewer-fallback")).toBe(
+      "l1-tnd-base-word"
+    );
+    expect(primaryTunnelSourceSequenceId(null, "viewer-fallback")).toBe(
+      "viewer-fallback"
+    );
   });
 });

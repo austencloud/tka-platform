@@ -73,6 +73,65 @@ describe("tunnel creator draft", () => {
     );
   });
 
+  it("round-trips Shape Matrix source lineage in performer history", () => {
+    const provenance = {
+      kind: "shape-matrix-realization" as const,
+      version: 1 as const,
+      baseSequenceId: "base-sequence",
+      mode: "QO" as const,
+      blueFlower: {
+        style: "pro" as const,
+        turns: 1,
+        ori: "in" as const,
+        grid: "diamond" as const,
+        petals: 2,
+      },
+      redFlower: {
+        style: "anti" as const,
+        turns: 1,
+        ori: "out" as const,
+        grid: "diamond" as const,
+        petals: 4,
+      },
+    };
+    const draft: TunnelCreatorDraft = {
+      version: TUNNEL_CREATOR_DRAFT_VERSION,
+      mode: "linked",
+      composition: null,
+      relationship: {
+        rotationSteps: 0,
+        reflect: "none",
+        invert: false,
+        rewind: false,
+      },
+      sourceStates: [
+        {
+          performerId: "performer-1",
+          label: "Performer 1",
+          independentSequence: sequence,
+          origin: "picked",
+          sourceSequenceId: provenance.baseSequenceId,
+          provenance,
+          previous: [
+            {
+              sequence,
+              origin: "picked",
+              sourceSequenceId: provenance.baseSequenceId,
+              provenance,
+            },
+          ],
+        },
+      ],
+      workspace: { activePanel: null, generationTargetId: null },
+      editingTunnel: null,
+      presentation,
+    };
+
+    expect(parseTunnelCreatorDraft(JSON.parse(JSON.stringify(draft)))).toEqual(
+      draft
+    );
+  });
+
   it("migrates a version-one draft without losing its composition", () => {
     const legacy = {
       version: 1,

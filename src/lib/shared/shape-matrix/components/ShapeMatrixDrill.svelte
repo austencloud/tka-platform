@@ -50,7 +50,11 @@
     buildModeRealizations,
     type ModeRealization,
   } from "../services/build-mode-realizations";
-  import { flowerKey, flowerLabel, type Flower } from "../domain/flower-signature";
+  import {
+    flowerKey,
+    flowerLabel,
+    type Flower,
+  } from "../domain/flower-signature";
   import type { ShapeMatrixData } from "../services/shape-matrix-flowers";
   import type { VtgMode } from "../services/shape-matrix-realizations";
   import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
@@ -59,13 +63,23 @@
     HERO_TRAIL_PRESET,
     HERO_TIP_EFFECT_MAP,
   } from "$lib/shared/landing/data/hero-trail-preset";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
 
   interface Props {
     /** Nullable: the drill renders its own "Pick a cell" state before any click. */
     pair: { blue: Flower; red: Flower } | null;
     data: ShapeMatrixData;
+    /** Optional composing surface action. The public archive remains a viewer;
+     *  pickers can receive the exact realization this drill already built. */
+    onselectRealization?: (realization: ModeRealization) => void;
+    selectLabel?: string;
   }
-  let { pair, data }: Props = $props();
+  let {
+    pair,
+    data,
+    onselectRealization,
+    selectLabel = "Use this realization",
+  }: Props = $props();
 
   // Sticky across pair changes by design (spec: "Selection persistence").
   let selectedMode = $state<VtgMode | null>(null);
@@ -73,7 +87,9 @@
   let building = $state(false);
   let buildError = $state(false);
 
-  const pairKey = $derived(pair ? `${flowerKey(pair.blue)}|${flowerKey(pair.red)}` : null);
+  const pairKey = $derived(
+    pair ? `${flowerKey(pair.blue)}|${flowerKey(pair.red)}` : null
+  );
 
   // The cell's mandala: blue hand's flower merged with red hand's flower — the
   // exact merge renderCell uses for the grid tiles, so the hero IS the cell.
@@ -137,12 +153,18 @@
   });
 
   const activeReal = $derived(
-    selectedMode ? (realizations.find((r) => r.mode === selectedMode) ?? null) : null,
+    selectedMode
+      ? (realizations.find((r) => r.mode === selectedMode) ?? null)
+      : null
   );
   // Mode picked but absent from a completed build (a dropped mode is never
   // substituted) → same caption-line error as a failed build.
   const modeMissing = $derived(
-    selectedMode !== null && pair !== null && !building && !buildError && !activeReal,
+    selectedMode !== null &&
+      pair !== null &&
+      !building &&
+      !buildError &&
+      !activeReal
   );
 
   function elementName(raw: string): string {
@@ -170,9 +192,7 @@
             <div class="player-layer">
               <LazyMount
                 loader={() =>
-                  import(
-                    "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
-                  )}
+                  import("$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte")}
                 active={true}
                 props={{
                   sequence: activeReal.seq,
@@ -193,7 +213,9 @@
       {:else}
         <div class="hero-hint">
           <p class="hint-lead">Pick a cell</p>
-          <p class="hint-sub">Its shape opens here. Each element traces it live.</p>
+          <p class="hint-sub">
+            Its shape opens here. Each element traces it live.
+          </p>
         </div>
       {/if}
     </div>
@@ -201,9 +223,14 @@
 
   <!-- One reserved caption line: never collapses, so chip picks and cell
        switches shift nothing (no-layout-shift.md). -->
-  <p class="caption" style={activeReal ? `--el: ${activeReal.element.accentColor}` : undefined}>
+  <p
+    class="caption"
+    style={activeReal ? `--el: ${activeReal.element.accentColor}` : undefined}
+  >
     {#if buildError || modeMissing}
-      <span class="cap-err">Could not build this realization. Reload and try again.</span>
+      <span class="cap-err"
+        >Could not build this realization. Reload and try again.</span
+      >
     {:else if activeReal}
       <span class="cap-element">{elementName(activeReal.element.element)}</span>
       <span class="cap-sep">·</span>
@@ -217,6 +244,19 @@
       </span>
     {/if}
   </p>
+
+  {#if onselectRealization}
+    <div class="select-action" class:available={activeReal !== null}>
+      <PanelButton
+        variant="primary"
+        disabled={!activeReal}
+        onclick={() => activeReal && onselectRealization(activeReal)}
+      >
+        <i class="fas fa-person-running" aria-hidden="true"></i>
+        {selectLabel}
+      </PanelButton>
+    </div>
+  {/if}
 </section>
 
 <style>
@@ -292,6 +332,17 @@
     line-height: 1.5;
     text-align: center;
     color: oklch(0.85 0.02 270);
+  }
+  .select-action {
+    flex-shrink: 0;
+    min-height: var(--min-touch-target, 44px);
+    visibility: hidden;
+  }
+  .select-action.available {
+    visibility: visible;
+  }
+  .select-action :global(.panel-btn) {
+    width: 100%;
   }
   .cap-element {
     font-weight: 700;

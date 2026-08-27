@@ -1,7 +1,9 @@
 import { z } from "zod";
 import {
   TunnelCompositionSchema,
+  TunnelSourceProvenanceSchema,
   type TunnelComposition,
+  type TunnelSourceProvenance,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
@@ -31,6 +33,8 @@ export interface TunnelWorkspaceDraft {
 export interface TunnelSourceHistoryEntry {
   sequence: SequenceData;
   origin: TunnelSourceOrigin;
+  sourceSequenceId?: string;
+  provenance?: TunnelSourceProvenance;
 }
 
 export interface TunnelPerformerSourceDraft {
@@ -38,6 +42,8 @@ export interface TunnelPerformerSourceDraft {
   label: string;
   independentSequence: SequenceData | null;
   origin: TunnelSourceOrigin | null;
+  sourceSequenceId: string | null;
+  provenance: TunnelSourceProvenance | null;
   previous: TunnelSourceHistoryEntry[];
 }
 
@@ -88,10 +94,16 @@ const SourceStatesSchema = z.array(
     label: z.string().min(1),
     independentSequence: SequenceSnapshotSchema.nullable(),
     origin: z.enum(["picked", "generated"]).nullable(),
+    sourceSequenceId: z.string().min(1).nullable().optional().default(null),
+    provenance: TunnelSourceProvenanceSchema.nullable()
+      .optional()
+      .default(null),
     previous: z.array(
       z.object({
         sequence: SequenceSnapshotSchema,
         origin: z.enum(["picked", "generated"]),
+        sourceSequenceId: z.string().min(1).optional(),
+        provenance: TunnelSourceProvenanceSchema.optional(),
       })
     ),
   })

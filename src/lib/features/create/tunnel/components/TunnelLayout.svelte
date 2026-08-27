@@ -21,6 +21,8 @@
   import type { TunnelCreatorMode } from "../state/tunnel-creator-state.svelte";
   import TunnelPerformerCard from "./TunnelPerformerCard.svelte";
   import TunnelRelationshipEditor from "./TunnelRelationshipEditor.svelte";
+  import ShapeMatrixTunnelSourcePicker from "./ShapeMatrixTunnelSourcePicker.svelte";
+  import type { ModeRealization } from "$lib/shared/shape-matrix/services/build-mode-realizations";
 
   type TunnelInspector = "settings" | "pairing" | "generation";
 
@@ -72,6 +74,7 @@
   let rootHeight = $state(800);
   let reduceMotion = $state(false);
   let inspectorColumn = $state<TunnelInspector | null>(null);
+  let shapeMatrixTarget = $state<string | null>(null);
 
   const compact = $derived(rootWidth < 720);
   const canInlineInspector = $derived(rootWidth >= 1000 && rootHeight >= 700);
@@ -225,6 +228,19 @@
     if (creator.pickerTarget) {
       creator.setPerformerSequence(creator.pickerTarget, sequence, "picked");
     }
+  }
+
+  function selectShapeMatrixRealization(realization: ModeRealization): void {
+    if (!shapeMatrixTarget) return;
+    creator.setPerformerSequence(
+      shapeMatrixTarget,
+      realization.source.sequence,
+      "picked",
+      {
+        sourceSequenceId: realization.source.sourceSequenceId,
+        provenance: realization.source.provenance,
+      }
+    );
   }
 
   function changeProp(prop: PropType): void {
@@ -381,6 +397,8 @@
         {bluePropType}
         {redPropType}
         onChoose={() => performerOneId && creator.openPicker(performerOneId)}
+        onChooseShapeMatrix={() =>
+          performerOneId && (shapeMatrixTarget = performerOneId)}
         onGenerateNow={() =>
           performerOneId && void generatePerformer(performerOneId)}
         onEditGeneration={() =>
@@ -409,6 +427,8 @@
         {bluePropType}
         {redPropType}
         onChoose={() => performerTwoId && creator.openPicker(performerTwoId)}
+        onChooseShapeMatrix={() =>
+          performerTwoId && (shapeMatrixTarget = performerTwoId)}
         onGenerateNow={() =>
           performerTwoId && void generatePerformer(performerTwoId)}
         onEditGeneration={() =>
@@ -561,6 +581,16 @@
   onSelect={selectPickedSequence}
   title={`Choose ${creator.performerSlots.find((slot) => slot.id === creator.pickerTarget)?.label ?? "Performer 1"} Sequence`}
 />
+
+{#if shapeMatrixTarget}
+  <ShapeMatrixTunnelSourcePicker
+    targetLabel={creator.performerSlots.find(
+      (slot) => slot.id === shapeMatrixTarget
+    )?.label ?? "Performer"}
+    onSelect={selectShapeMatrixRealization}
+    onClose={() => (shapeMatrixTarget = null)}
+  />
+{/if}
 
 <style>
   .tunnel-container {

@@ -1,5 +1,5 @@
 import type { CollectedTunnel } from "../domain/tunnel-collection-types";
-import { collectedTunnelSequence } from "../domain/collected-tunnel-source";
+import { collectedTunnelViewerSequence } from "../domain/collected-tunnel-source";
 import { openSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
 import { persistViewerMode } from "$lib/shared/sequence-viewer/services/viewer-state-persistence";
 import { stageTunnelSnapshotForViewer } from "$lib/shared/sequence-viewer/tunnel/stage-tunnel-snapshot-for-viewer";
@@ -73,7 +73,7 @@ export function openTunnelInViewer(
   //    composition passes `undefined` here and the tunnel controller falls back
   //    to a one-performer cast around this same sequence — see
   //    collected-tunnel-source.ts for why that fallback now has one owner.
-  openSequenceOverlay(collectedTunnelSequence(tunnel), {
+  openSequenceOverlay(collectedTunnelViewerSequence(tunnel), {
     initialBpm: snap.playback.bpm,
     initialPlaybackMode: snap.playback.playbackMode,
     tunnelComposition: tunnel.composition,

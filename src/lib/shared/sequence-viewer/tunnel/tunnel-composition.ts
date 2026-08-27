@@ -9,15 +9,29 @@ import {
   type CopyOp,
   type TunnelConfig,
 } from "./tunnel-config";
+import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
+import type { VtgMode } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
 
 export const TUNNEL_COMPOSITION_VERSION = 1;
 export const MAX_AUTHORED_TUNNEL_PERFORMERS = 8;
 export const MAX_TUNNEL_CYCLE_STEPS = 256;
 
+export interface ShapeMatrixTunnelSourceProvenance {
+  kind: "shape-matrix-realization";
+  version: 1;
+  baseSequenceId: string;
+  mode: VtgMode;
+  blueFlower: Flower;
+  redFlower: Flower;
+}
+
+export type TunnelSourceProvenance = ShapeMatrixTunnelSourceProvenance;
+
 export interface IndependentTunnelSource {
   kind: "independent";
   sequence: SequenceData;
   sourceSequenceId?: string;
+  provenance?: TunnelSourceProvenance;
 }
 
 export interface DerivedTunnelSource {
@@ -27,8 +41,7 @@ export interface DerivedTunnelSource {
 }
 
 export type TunnelPerformerSource =
-  | IndependentTunnelSource
-  | DerivedTunnelSource;
+  IndependentTunnelSource | DerivedTunnelSource;
 
 export interface TunnelPerformerTiming {
   stepOffset: number;
@@ -108,6 +121,23 @@ const TunnelConfigSchema = z.object({
   speedOverrides: z.record(z.string(), z.number()),
 });
 
+const FlowerSchema = z.object({
+  style: z.enum(["pro", "anti"]),
+  turns: z.number().nonnegative(),
+  ori: z.enum(["in", "out"]),
+  grid: z.enum(["diamond", "box"]),
+  petals: z.number().int().nonnegative(),
+});
+
+export const TunnelSourceProvenanceSchema = z.object({
+  kind: z.literal("shape-matrix-realization"),
+  version: z.literal(1),
+  baseSequenceId: z.string().min(1),
+  mode: z.enum(["SS", "TS", "QS", "SO", "TO", "QO"]),
+  blueFlower: FlowerSchema,
+  redFlower: FlowerSchema,
+});
+
 const TunnelPerformerSchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
@@ -116,6 +146,7 @@ const TunnelPerformerSchema = z.object({
       kind: z.literal("independent"),
       sequence: TunnelSequenceSchema,
       sourceSequenceId: z.string().optional(),
+      provenance: TunnelSourceProvenanceSchema.optional(),
     }),
     z.object({
       kind: z.literal("derived"),
@@ -153,7 +184,11 @@ function randomId(prefix: string): string {
 export function createIndependentTunnelPerformer(
   sequence: SequenceData,
   index: number,
-  label = `Performer ${index + 1}`
+  label = `Performer ${index + 1}`,
+  source: {
+    sourceSequenceId?: string;
+    provenance?: TunnelSourceProvenance;
+  } = {}
 ): TunnelPerformer {
   return {
     id: randomId("performer"),
@@ -161,7 +196,12 @@ export function createIndependentTunnelPerformer(
     source: {
       kind: "independent",
       sequence,
-      ...(sequence.id ? { sourceSequenceId: sequence.id } : {}),
+      ...(source.sourceSequenceId
+        ? { sourceSequenceId: source.sourceSequenceId }
+        : sequence.id
+          ? { sourceSequenceId: sequence.id }
+          : {}),
+      ...(source.provenance ? { provenance: source.provenance } : {}),
     },
     timing: { stepOffset: 0, speed: 1 },
   };
@@ -202,6 +242,23 @@ export function createTunnelComposition(
   };
 }
 
+/** The real lineage id for the primary authored source, with the mounted
+ * sequence as the fallback for legacy or ad-hoc viewer compositions. */
+export function primaryTunnelSourceSequenceId(
+  composition: TunnelComposition | null | undefined,
+  fallbackSequenceId: string
+): string {
+  const independent = composition?.performers.find(
+    (performer) => performer.source.kind === "independent"
+  );
+  if (independent?.source.kind !== "independent") return fallbackSequenceId;
+  return (
+    independent.source.sourceSequenceId ||
+    independent.source.sequence.id ||
+    fallbackSequenceId
+  );
+}
+
 export function cloneTunnelComposition(
   composition: TunnelComposition
 ): TunnelComposition {
@@ -217,7 +274,20 @@ function clonePerformer(performer: TunnelPerformer): TunnelPerformer {
     ...performer,
     source:
       performer.source.kind === "independent"
-        ? { ...performer.source }
+        ? {
+            ...performer.source,
+            ...(performer.source.provenance
+              ? {
+                  provenance: {
+                    ...performer.source.provenance,
+                    blueFlower: {
+                      ...performer.source.provenance.blueFlower,
+                    },
+                    redFlower: { ...performer.source.provenance.redFlower },
+                  },
+                }
+              : {}),
+          }
         : {
             ...performer.source,
             transforms: performer.source.transforms.map((op) => ({ ...op })),

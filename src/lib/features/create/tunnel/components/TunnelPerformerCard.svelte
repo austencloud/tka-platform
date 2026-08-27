@@ -22,6 +22,7 @@
     sourceOrigin = null,
     previousCount = 0,
     onChoose,
+    onChooseShapeMatrix,
     onGenerateNow,
     onEditGeneration,
     onPrevious,
@@ -41,6 +42,7 @@
     sourceOrigin?: TunnelSourceOrigin | null;
     previousCount?: number;
     onChoose: () => void;
+    onChooseShapeMatrix?: () => void;
     onGenerateNow?: () => void;
     onEditGeneration?: () => void;
     onPrevious?: () => void;
@@ -159,6 +161,16 @@
           <i class="fas fa-folder-open" aria-hidden="true"></i>
           <span class="action-label">Choose</span>
         </PanelButton>
+        {#if onChooseShapeMatrix}
+          <PanelButton
+            variant="secondary"
+            onclick={onChooseShapeMatrix}
+            ariaLabel={`Choose a Shape Matrix realization for ${label}`}
+          >
+            <i class="fas fa-shapes" aria-hidden="true"></i>
+            <span class="action-label">Shape Matrix</span>
+          </PanelButton>
+        {/if}
       </div>
     {/if}
   </header>
@@ -206,6 +218,16 @@
               <i class="fas fa-folder-open" aria-hidden="true"></i>
               Choose existing
             </PanelButton>
+            {#if onChooseShapeMatrix}
+              <PanelButton
+                variant="secondary"
+                {disabled}
+                onclick={onChooseShapeMatrix}
+              >
+                <i class="fas fa-shapes" aria-hidden="true"></i>
+                Shape Matrix
+              </PanelButton>
+            {/if}
             {#if onGenerateNow}
               <PanelButton variant="primary" {disabled} onclick={onGenerateNow}>
                 <i class="fas fa-dice" aria-hidden="true"></i>

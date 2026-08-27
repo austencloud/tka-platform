@@ -75,3 +75,20 @@ export function collectedTunnelComposition(
     }
   );
 }
+
+/**
+ * The exact sequence the viewer should mount for a saved tunnel. Authored
+ * tunnels already carry full SequenceData on their independent performer;
+ * rebuilding from the legacy top-level step projection would replace that
+ * identity and discard its source metadata before the user edits or re-saves.
+ */
+export function collectedTunnelViewerSequence(
+  tunnel: CollectedTunnel
+): SequenceData {
+  const independent = tunnel.composition?.performers.find(
+    (performer) => performer.source.kind === "independent"
+  );
+  return independent?.source.kind === "independent"
+    ? independent.source.sequence
+    : collectedTunnelSequence(tunnel);
+}

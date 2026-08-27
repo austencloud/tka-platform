@@ -22,6 +22,7 @@ import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enum
 import {
   collectedTunnelComposition,
   collectedTunnelSequence,
+  collectedTunnelViewerSequence,
 } from "../collected-tunnel-source";
 import type { CollectedTunnel } from "../tunnel-collection-types";
 
@@ -227,5 +228,28 @@ describe("collectedTunnelComposition", () => {
       expect(plan.stepOffset).toBe(before[arm]!.stepOffset);
       expect(plan.speed).toBe(before[arm]!.speed);
     }
+  });
+});
+
+describe("collectedTunnelViewerSequence", () => {
+  it("mounts the authored SequenceData without replacing its identity", () => {
+    const authoredSequence = createSequenceData({
+      id: "shape-matrix:base:SS:blue:red",
+      name: "Matrix realization",
+      word: "AAAA",
+      steps: hydratedSteps,
+      metadata: { exactSourceMarker: "preserve-me" },
+    });
+    const authored = createTunnelComposition([
+      createIndependentTunnelPerformer(authoredSequence, 0),
+    ]);
+    const tunnel = savedTunnel(undefined, { composition: authored });
+
+    expect(collectedTunnelViewerSequence(tunnel)).toBe(authoredSequence);
+    expect(collectedTunnelViewerSequence(tunnel)).toEqual(authoredSequence);
+  });
+
+  it("keeps the legacy step projection for records without a composition", () => {
+    expect(collectedTunnelViewerSequence(savedTunnel()).id).toBe("tunnel-42");
   });
 });

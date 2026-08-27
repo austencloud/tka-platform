@@ -12,6 +12,10 @@ import {
 } from "./tunnel-creator-state.svelte";
 import type { TunnelPresentationState } from "./tunnel-presentation-state.svelte";
 import type { TunnelSnapshot } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
+import type { ShapeMatrixTunnelSourceProvenance } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
+import type { CollectedTunnel } from "$lib/features/tunnel-collection/domain/tunnel-collection-types";
+import { collectedTunnelComposition } from "$lib/features/tunnel-collection/domain/collected-tunnel-source";
+import { tunnelRevisionPayload } from "$lib/features/tunnel-collection/domain/tunnel-revision";
 
 const sequence = {
   id: "sequence-lead",
@@ -300,6 +304,87 @@ describe("tunnel creator edit state", () => {
       true
     );
     expect(restored.leadSequence?.id).toBe("generated-1");
+  });
+
+  it("keeps an exact Shape Matrix source through save, gallery reopen, edit, and save", () => {
+    const provenance: ShapeMatrixTunnelSourceProvenance = {
+      kind: "shape-matrix-realization",
+      version: 1,
+      baseSequenceId: "l1-tnd-AAAA",
+      mode: "SS",
+      blueFlower: {
+        style: "pro",
+        turns: 1,
+        ori: "in",
+        grid: "diamond",
+        petals: 2,
+      },
+      redFlower: {
+        style: "anti",
+        turns: 2,
+        ori: "out",
+        grid: "diamond",
+        petals: 6,
+      },
+    };
+    const realization = {
+      ...sequence,
+      id: "shape-matrix:l1-tnd-AAAA:SS:pro-1-in-diamond:anti-2-out-diamond",
+      steps: [{ id: "realized-step", turn: 2 }],
+      metadata: { realizationMarker: "exact" },
+    } as unknown as SequenceData;
+    const partner = { ...sequence, id: "partner-source" };
+    const state = createState({
+      openComposition: vi.fn(),
+      createId: (() => {
+        let id = 0;
+        return () => `matrix-${++id}`;
+      })(),
+      now: () => 1000,
+    });
+    const leadId = state.performerIdAt(0);
+    const partnerId = state.performerIdAt(1);
+    if (!leadId || !partnerId) return;
+
+    state.setPerformerSequence(leadId, realization, "picked", {
+      sourceSequenceId: provenance.baseSequenceId,
+      provenance,
+    });
+    state.setPerformerSequence(partnerId, partner, "picked");
+    const firstComposition = state.compositionWithFormation(DEFAULT_CONFIG)!;
+    const firstSave = {
+      id: "saved-tunnel",
+      name: "Saved matrix tunnel",
+      steps: [...realization.steps],
+      snapshot: presentationSnapshot,
+      poster: "data:image/webp;base64,AA",
+      createdAt: 1000,
+      composition: firstComposition,
+    } as unknown as CollectedTunnel;
+
+    const reopened = createState({
+      openComposition: vi.fn(),
+      initialComposition: collectedTunnelComposition(firstSave),
+      editingTunnel: { id: firstSave.id, name: firstSave.name },
+      now: () => 2000,
+    });
+    const secondComposition =
+      reopened.compositionWithFormation(DEFAULT_CONFIG)!;
+    const secondSave = {
+      ...firstSave,
+      composition: secondComposition,
+    };
+    const leadSource = secondComposition.performers[0]!.source;
+
+    expect(leadSource.kind).toBe("independent");
+    if (leadSource.kind !== "independent") return;
+    expect(leadSource.sequence).toEqual(realization);
+    expect(leadSource.sequence.id).toBe(realization.id);
+    expect(leadSource.sourceSequenceId).toBe(provenance.baseSequenceId);
+    expect(leadSource.provenance).toEqual(provenance);
+    expect(tunnelRevisionPayload(secondSave).composition).toEqual(
+      secondComposition
+    );
   });
 
   it("persists the active generation workspace and its performer target", () => {

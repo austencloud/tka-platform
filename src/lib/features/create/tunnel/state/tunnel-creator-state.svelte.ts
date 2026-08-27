@@ -5,6 +5,7 @@ import {
   createIndependentTunnelPerformer,
   type TunnelComposition,
   type TunnelPerformer,
+  type TunnelSourceProvenance,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
 import {
   DEFAULT_CONFIG,
@@ -42,6 +43,8 @@ interface TunnelPerformerSlot {
   performer: TunnelPerformer | null;
   independentSequence: SequenceData | null;
   origin: TunnelSourceOrigin | null;
+  sourceSequenceId: string | null;
+  provenance: TunnelSourceProvenance | null;
   previous: TunnelSourceHistoryEntry[];
   timing: TunnelPerformer["timing"];
 }
@@ -104,6 +107,8 @@ export function createTunnelCreatorState(
       (performer?.source.kind === "independent"
         ? performer.source.sequence
         : null);
+    const independentSource =
+      performer?.source.kind === "independent" ? performer.source : null;
     const label = `Performer ${index + 1}`;
 
     return {
@@ -114,6 +119,13 @@ export function createTunnelCreatorState(
       origin:
         sourceState?.origin ??
         (performer?.source.kind === "independent" ? "picked" : null),
+      sourceSequenceId:
+        sourceState?.sourceSequenceId ??
+        independentSource?.sourceSequenceId ??
+        independentSequence?.id ??
+        null,
+      provenance:
+        sourceState?.provenance ?? independentSource?.provenance ?? null,
       previous: sourceState?.previous.map((entry) => ({ ...entry })) ?? [],
       timing: { ...(performer?.timing ?? { stepOffset: 0, speed: 1 }) },
     };
@@ -201,8 +213,17 @@ export function createTunnelCreatorState(
   ): TunnelPerformer {
     const performer = createIndependentTunnelPerformer(
       sequence,
-      slots.indexOf(slot),
-      slot.label
+      Math.max(
+        0,
+        slots.findIndex((candidate) => candidate.id === slot.id)
+      ),
+      slot.label,
+      {
+        ...(slot.sourceSequenceId
+          ? { sourceSequenceId: slot.sourceSequenceId }
+          : {}),
+        ...(slot.provenance ? { provenance: slot.provenance } : {}),
+      }
     );
     performer.id = slot.id;
     performer.timing = { ...slot.timing };
@@ -248,7 +269,11 @@ export function createTunnelCreatorState(
     targetId: string,
     sequence: SequenceData,
     origin: TunnelSourceOrigin,
-    rememberCurrent: boolean
+    rememberCurrent: boolean,
+    source: {
+      sourceSequenceId?: string;
+      provenance?: TunnelSourceProvenance;
+    } = {}
   ): boolean {
     const slot = slots.find((candidate) => candidate.id === targetId);
     if (!slot) return false;
@@ -262,21 +287,30 @@ export function createTunnelCreatorState(
             {
               sequence: slot.independentSequence,
               origin: slot.origin ?? "picked",
+              ...(slot.sourceSequenceId
+                ? { sourceSequenceId: slot.sourceSequenceId }
+                : {}),
+              ...(slot.provenance ? { provenance: slot.provenance } : {}),
             },
           ].slice(-MAX_SOURCE_HISTORY)
         : slot.previous;
+    const nextSlot: TunnelPerformerSlot = {
+      ...slot,
+      independentSequence: sequence,
+      origin,
+      sourceSequenceId: source.sourceSequenceId ?? sequence.id,
+      provenance: source.provenance ?? null,
+      previous,
+    };
     const performer =
       slotIndex !== 1 || mode !== "linked"
-        ? performerFromIndependentSource(slot, sequence)
+        ? performerFromIndependentSource(nextSlot, sequence)
         : slot.performer;
 
     slots = slots.map((candidate, index) =>
       index === slotIndex
         ? {
-            ...candidate,
-            independentSequence: sequence,
-            origin,
-            previous,
+            ...nextSlot,
             performer,
           }
         : candidate
@@ -293,9 +327,13 @@ export function createTunnelCreatorState(
   function setPerformerSequence(
     targetId: string,
     sequence: SequenceData,
-    origin: TunnelSourceOrigin = "picked"
+    origin: TunnelSourceOrigin = "picked",
+    source: {
+      sourceSequenceId?: string;
+      provenance?: TunnelSourceProvenance;
+    } = {}
   ): boolean {
-    return replaceIndependentSequence(targetId, sequence, origin, true);
+    return replaceIndependentSequence(targetId, sequence, origin, true, source);
   }
 
   function setLeadSequence(sequence: SequenceData): void {
@@ -321,7 +359,13 @@ export function createTunnelCreatorState(
       targetId,
       previous.sequence,
       previous.origin,
-      false
+      false,
+      {
+        ...(previous.sourceSequenceId
+          ? { sourceSequenceId: previous.sourceSequenceId }
+          : {}),
+        ...(previous.provenance ? { provenance: previous.provenance } : {}),
+      }
     );
   }
 
@@ -477,6 +521,8 @@ export function createTunnelCreatorState(
         label: slot.label,
         independentSequence: slot.independentSequence,
         origin: slot.origin,
+        sourceSequenceId: slot.sourceSequenceId,
+        provenance: slot.provenance,
         previous: slot.previous.map((entry) => ({ ...entry })),
       })),
       workspace: { activePanel, generationTargetId },

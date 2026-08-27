@@ -62,9 +62,10 @@
   } from "../domain/tunnel-save-deduplication";
   import { reportPostHogLifecycleEvent } from "$lib/shared/analytics/services/posthog-lifecycle-reporter";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-  import type {
-    TunnelComposition,
-    TunnelSaveTarget,
+  import {
+    primaryTunnelSourceSequenceId,
+    type TunnelComposition,
+    type TunnelSaveTarget,
   } from "../tunnel/tunnel-composition";
 
   // Mandala is the static tip-path bloom; Tunnel is the live kaleidoscope. The
@@ -591,6 +592,10 @@
     // readable stamp canonical while retaining an ID even when its source
     // sequence has no word.
     const sourceWord = simplifyRepeatedWord(seq.word ?? "").trim();
+    const sourceSequenceId = primaryTunnelSourceSequenceId(
+      tunnelComposition,
+      seq.id
+    );
     const fingerprint = createTunnelSaveFingerprint(
       seq,
       snapshot,
@@ -640,7 +645,7 @@
         // Lineage stamp: link back to the raw source sequence (spec:
         // 2026-07-12-art-in-library-design.md Unit 3).
         ...(sourceWord ? { sourceWord } : {}),
-        ...(seq.id ? { sourceSequenceId: seq.id } : {}),
+        ...(sourceSequenceId ? { sourceSequenceId } : {}),
       };
       const savedTunnel = tunnelSaveTarget
         ? await tunnelCollectionState.update(tunnelSaveTarget.id, tunnelData)
@@ -667,7 +672,7 @@
               source,
               stepCount: seq.steps.length,
               durability: "cloud",
-              ...(seq.id ? { sourceSequenceId: seq.id } : {}),
+              ...(sourceSequenceId ? { sourceSequenceId } : {}),
             },
           });
         } catch (error) {
