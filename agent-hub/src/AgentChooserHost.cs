@@ -5,20 +5,19 @@
 // The host never exits on selection — it hides and waits for the next ping.
 //
 // Pipe message (UTF8 line): project|name|icon|stampFile|stubStartTicks plus
-// optional development-server manager, app, config, port, and app URL fields.
+// optional development-server manager, app, config, and port fields. A legacy
+// trailing app URL field is accepted and ignored for shortcut compatibility.
 
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
@@ -34,16 +33,15 @@ class Popup : Window
 
     const string PIPE = "AgentChooserPipe";
 
-    string _project, _name, _icon, _lastAgent, _stampFile;
+    string _project, _name, _icon, _stampFile;
     string _serverManager, _serverApp, _serverConfig, _serverConfigurationError;
     int _serverPort;
-    string _appUrl = "";
     long _stubStartTicks;
     long _deactHideTicks; string _deactHideProject = "";
     int _rawX, _rawY;
     bool _ready;
-    Border _card, _claudeBtn, _codexBtn, _serverBtn;
-    TextBlock _serverTitle, _serverSubtitle;
+    Border _card;
+    ProjectCommandCenter _commandCenter;
     Pm2DevServerController _serverControl;
     DevServerState _serverState = DevServerState.Checking;
     int _serverGeneration;
@@ -51,12 +49,9 @@ class Popup : Window
     string _serverActionLabel = "Starting";
     GitProjectController _gitControl;
     GitProjectStatus _gitStatus = GitProjectStatus.Checking();
-    GitActionPanel _gitPanel;
+    GitWorktreeInventoryController _worktreeControl;
+    GitWorktreeInventory _worktreeInventory = GitWorktreeInventory.Checking();
     int _gitGeneration;
-    bool _gitBusy;
-    string _gitBusyAction = "";
-    string _gitFeedback = "";
-    bool _gitFeedbackIsError;
 
     [STAThread]
     static void Main(string[] argv)
@@ -69,6 +64,16 @@ class Popup : Window
         if (HasArg(argv, "SelfTestGit"))
         {
             Environment.ExitCode = GitProjectController.SelfTest();
+            return;
+        }
+        if (HasArg(argv, "SelfTestPrompt"))
+        {
+            Environment.ExitCode = AgentPromptBuilder.SelfTest();
+            return;
+        }
+        if (HasArg(argv, "SelfTestWorktrees"))
+        {
+            Environment.ExitCode = GitWorktreeInventoryController.SelfTest();
             return;
         }
 
@@ -139,7 +144,13 @@ class Popup : Window
         var app = new Application();
         app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
         var win = new Popup();
-        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1800) };
+        int captureDelayMs = 1800;
+        string configuredDelay;
+        int parsedDelay;
+        if (fields.TryGetValue("CaptureDelayMs", out configuredDelay) &&
+            int.TryParse(configuredDelay, out parsedDelay) && parsedDelay >= 250 && parsedDelay <= 15000)
+            captureDelayMs = parsedDelay;
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(captureDelayMs) };
         timer.Tick += delegate
         {
             timer.Stop();
@@ -151,6 +162,7 @@ class Popup : Window
         app.Dispatcher.BeginInvoke(new Action(delegate
         {
             win.ShowFromLine(Line(fields));
+            win.ApplyVisualTestState(fields);
             timer.Start();
         }));
         app.Run();
@@ -283,10 +295,10 @@ class Popup : Window
         // Realize the HWND + JIT the layout + load fonts once, off-screen, so the
         // first real ping paints instantly like every later one.
         Log("prewarm begin");
-        _project = ""; _name = "warmup"; _icon = ""; _lastAgent = "claude";
+        _project = ""; _name = "warmup"; _icon = "";
         _serverManager = ""; _serverApp = ""; _serverConfig = ""; _serverPort = 0; _serverControl = null;
-        _appUrl = "";
-        _gitControl = null; _gitPanel = null; _gitStatus = GitProjectStatus.Checking();
+        _gitControl = null; _gitStatus = GitProjectStatus.Checking();
+        _worktreeControl = null; _worktreeInventory = GitWorktreeInventory.Checking(); _commandCenter = null;
         Content = BuildCard();
         Left = -30000; Top = -30000;
         Show(); UpdateLayout();
@@ -306,12 +318,11 @@ class Popup : Window
         string serverApp = p.Length > 6 ? p[6] : "";
         string serverConfig = p.Length > 7 ? p[7] : "";
         int serverPort = 0; if (p.Length > 8) int.TryParse(p[8], out serverPort);
-        string appUrl = p.Length > 9 ? p[9] : "";
-        ShowFor(project, name, icon, stamp, ticks, serverManager, serverApp, serverConfig, serverPort, appUrl);
+        ShowFor(project, name, icon, stamp, ticks, serverManager, serverApp, serverConfig, serverPort);
     }
 
     void ShowFor(string project, string name, string icon, string stampFile, long stubStartTicks,
-        string serverManager, string serverApp, string serverConfig, int serverPort, string appUrl)
+        string serverManager, string serverApp, string serverConfig, int serverPort)
     {
         // A pin click while the popover is open deactivates it (mousedown) and that
         // SAME click's stub ping lands ~150ms later, re-popping it — the user sees
@@ -329,9 +340,7 @@ class Popup : Window
         _stampFile = stampFile;
         _stubStartTicks = stubStartTicks;
         ConfigureServer(serverManager, serverApp, serverConfig, serverPort);
-        ConfigureApp(appUrl);
         ConfigureGit(project);
-        _lastAgent = ReadLast();
         _ready = false;
         Log("ShowFor " + _name);
         NativePoint cp; GetCursorPos(out cp); _rawX = cp.X; _rawY = cp.Y;
@@ -390,31 +399,20 @@ class Popup : Window
         }
     }
 
-    void ConfigureApp(string url)
-    {
-        _appUrl = "";
-        if (string.IsNullOrEmpty(url)) return;
-        Uri parsed;
-        if (Uri.TryCreate(url, UriKind.Absolute, out parsed) &&
-            (parsed.Scheme == Uri.UriSchemeHttp || parsed.Scheme == Uri.UriSchemeHttps))
-            _appUrl = parsed.AbsoluteUri;
-        else
-            Log("app url rejected: " + url);
-    }
-
     void ConfigureGit(string project)
     {
         _gitGeneration++;
         _gitControl = null;
-        _gitPanel = null;
         _gitStatus = GitProjectStatus.Checking();
-        _gitBusy = false;
-        _gitBusyAction = "";
-        _gitFeedback = "";
-        _gitFeedbackIsError = false;
+        _worktreeControl = null;
+        _worktreeInventory = GitWorktreeInventory.Checking();
         if (string.IsNullOrEmpty(project)) return;
 
-        try { _gitControl = new GitProjectController(project); }
+        try
+        {
+            _gitControl = new GitProjectController(project);
+            _worktreeControl = new GitWorktreeInventoryController(project);
+        }
         catch (Exception ex)
         {
             Log("git configuration failed: " + ex.Message);
@@ -490,187 +488,74 @@ class Popup : Window
     void OnKey(object sender, System.Windows.Input.KeyEventArgs e)
     {
         if (!_ready) return;
-        if (e.Key == System.Windows.Input.Key.D1 || e.Key == System.Windows.Input.Key.NumPad1) Launch("claude");
-        else if (e.Key == System.Windows.Input.Key.D2 || e.Key == System.Windows.Input.Key.NumPad2) Launch("codex");
-        else if (e.Key == System.Windows.Input.Key.D3 || e.Key == System.Windows.Input.Key.NumPad3) ControlServer("keyboard");
-        else if (e.Key == System.Windows.Input.Key.D4 || e.Key == System.Windows.Input.Key.NumPad4) OpenApp("keyboard");
-        else if (e.Key == System.Windows.Input.Key.D5 || e.Key == System.Windows.Input.Key.NumPad5) ControlGit("pull", "keyboard");
-        else if (e.Key == System.Windows.Input.Key.D6 || e.Key == System.Windows.Input.Key.NumPad6) ControlGit("push", "keyboard");
-        else if (e.Key == System.Windows.Input.Key.Enter) Launch(string.IsNullOrEmpty(_lastAgent) ? "claude" : _lastAgent);
-        else if (e.Key == System.Windows.Input.Key.Escape) HideIt();
-    }
-
-    void Launch(string agent)
-    {
-        try
+        bool control = (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) != 0;
+        bool editing = _commandCenter != null && _commandCenter.RequestHasKeyboardFocus;
+        if (e.Key == System.Windows.Input.Key.Escape)
         {
-            string bat = string.IsNullOrEmpty(_project) ? null : Path.Combine(_project, "launchers\\start-" + agent + ".bat");
-            var psi = new ProcessStartInfo();
-            psi.WorkingDirectory = string.IsNullOrEmpty(_project) ? Environment.CurrentDirectory : _project;
-            string terminalLauncher = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AgentTerminalLauncher.exe");
-            if (File.Exists(terminalLauncher))
-            {
-                psi.FileName = terminalLauncher;
-                psi.Arguments = "-Agent " + QuoteProcessArg(agent) + " -Project " + QuoteProcessArg(psi.WorkingDirectory);
-                if (bat != null && File.Exists(bat)) psi.Arguments += " -Bat " + QuoteProcessArg(bat);
-                psi.UseShellExecute = false;
-                psi.CreateNoWindow = true;
-            }
-            else if (bat != null && File.Exists(bat)) { psi.FileName = "cmd.exe"; psi.Arguments = "/c \"" + bat + "\""; psi.UseShellExecute = true; }
-            else
-            {
-                string cli = agent == "codex" ? "codex --dangerously-bypass-approvals-and-sandbox" : "claude --dangerously-skip-permissions";
-                psi.FileName = "cmd.exe"; psi.Arguments = "/k cd /d \"" + psi.WorkingDirectory + "\" ^&^& " + cli;
-                psi.UseShellExecute = true;
-            }
-            Process.Start(psi);
-            Log("launched " + agent + " for " + psi.WorkingDirectory + (File.Exists(terminalLauncher) ? " through colored terminal" : " through fallback"));
+            e.Handled = true;
+            HideIt();
         }
-        catch (Exception ex) { Log("launch failed: " + ex.Message); }
-        WriteLast(agent);
-        HideIt();
+        else if (control && (e.Key == System.Windows.Input.Key.D2 || e.Key == System.Windows.Input.Key.NumPad2))
+        {
+            e.Handled = true;
+            CopyAgentRequest("feedback", "keyboard");
+        }
+        else if (control && (e.Key == System.Windows.Input.Key.D3 || e.Key == System.Windows.Input.Key.NumPad3))
+        {
+            e.Handled = true;
+            CopyAgentRequest("commit", "keyboard");
+        }
+        else if (!editing && (e.Key == System.Windows.Input.Key.D1 || e.Key == System.Windows.Input.Key.NumPad1))
+        {
+            e.Handled = true;
+            ControlServer("keyboard");
+        }
     }
 
     Border BuildCard()
     {
-        _card = new Border();
-        _card.CornerRadius = new CornerRadius(18);
-        _card.Background = Brush("#FF16171B");
-        _card.BorderBrush = Brush("#40FFFFFF");
-        _card.BorderThickness = new Thickness(1);
-        _card.Padding = new Thickness(24);
-        _card.Effect = new DropShadowEffect { BlurRadius = 16, ShadowDepth = 5, Opacity = 0.5, Color = Colors.Black };
-        // Rasterize the card+shadow ONCE so the scale animation transforms a cached
-        // bitmap instead of re-blurring the shadow every frame (kills the stutter).
-        _card.CacheMode = new BitmapCache();
-
         bool hasServer = !string.IsNullOrEmpty(_serverManager);
-        bool hasApp = !string.IsNullOrEmpty(_appUrl);
-        bool hasGit = _gitControl != null;
-
-        var col = new StackPanel { Width = hasServer && hasApp ? 560 : 430 };
-        var head = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 4) };
-        if (!string.IsNullOrEmpty(_icon) && File.Exists(_icon))
-        {
-            try
-            {
-                var bmp = new BitmapImage(); bmp.BeginInit(); bmp.UriSource = new Uri(Path.GetFullPath(_icon)); bmp.CacheOption = BitmapCacheOption.OnLoad; bmp.EndInit();
-                var img = new Image { Source = bmp, Width = 34, Height = 34, Margin = new Thickness(0, 0, 12, 0) };
-                RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
-                head.Children.Add(img);
-            }
-            catch { }
-        }
-        head.Children.Add(new TextBlock { Text = _name, Foreground = Brush("#FFF3F3F6"), FontSize = 20, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, FontFamily = new FontFamily("Segoe UI") });
-        col.Children.Add(head);
-        col.Children.Add(new TextBlock { Text = hasServer || hasApp || hasGit ? "Choose an agent or project action" : "Choose an agent", Foreground = Brush("#FF8B8B95"), FontSize = 12, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 18), FontFamily = new FontFamily("Segoe UI") });
-
-        _claudeBtn = Choice("#FFD97757", "Claude", "Claude Code", "1", "claude");
-        _codexBtn = Choice("#FF10A37F", "Codex", "Codex · Sol", "2", "codex");
-        var tiles = new System.Collections.Generic.List<Border>();
-        tiles.Add(_claudeBtn);
-        tiles.Add(_codexBtn);
-        if (hasServer) { _serverBtn = ServerChoice(); tiles.Add(_serverBtn); }
-        if (hasApp) tiles.Add(AppChoice());
-
-        var grid = new Grid();
-        double gap = tiles.Count == 2 ? 16 : 12;
-        for (int i = 0; i < tiles.Count; i++)
-        {
-            if (i > 0) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(gap) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            Grid.SetColumn(tiles[i], i * 2);
-            grid.Children.Add(tiles[i]);
-        }
-        col.Children.Add(grid);
-
-        if (hasGit)
-        {
-            _gitPanel = new GitActionPanel(
-                delegate { ControlGit("pull", "mouse"); },
-                delegate { ControlGit("push", "mouse"); });
-            col.Children.Add(_gitPanel);
-        }
-
-        Border hi = _lastAgent == "codex" ? _codexBtn : _claudeBtn;
-        hi.BorderBrush = Brush("#FFFFFFFF"); hi.BorderThickness = new Thickness(2);
-
-        var keyHelp = new StringBuilder("1 Claude   ·   2 Codex");
-        if (hasServer) keyHelp.Append("   ·   3 Server");
-        if (hasApp) keyHelp.Append("   ·   4 Open");
-        keyHelp.Append("   ·   Enter last   ·   Esc");
-        string shortcutText = hasServer || hasApp
-            ? keyHelp.ToString()
-            : "1 · Claude     2 · Codex     Enter · " + (_lastAgent ?? "claude") + "     Esc";
-        col.Children.Add(new TextBlock { Text = shortcutText, Foreground = Brush("#FF6C6C74"), FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 18, 0, 0), FontFamily = new FontFamily("Segoe UI") });
-
-        _card.Child = col;
+        _commandCenter = new ProjectCommandCenter(
+            _name,
+            _icon,
+            hasServer,
+            _serverPort,
+            delegate { ControlServer("mouse"); },
+            delegate { CopyAgentRequest("feedback", "mouse"); },
+            delegate { CopyAgentRequest("commit", "mouse"); });
+        _card = _commandCenter;
+        UpdateServerVisual();
+        UpdateWorkspaceVisual();
         return _card;
     }
 
-    Border ServerChoice()
+    void CopyAgentRequest(string kind, string source)
     {
-        var b = new Border { CornerRadius = new CornerRadius(14), Height = 104, Cursor = System.Windows.Input.Cursors.Hand };
-        var sp = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        _serverTitle = new TextBlock { Foreground = Brushes.White, FontSize = 19, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, FontFamily = new FontFamily("Segoe UI") };
-        _serverSubtitle = new TextBlock { Foreground = Brushes.White, Opacity = 0.85, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 3, 0, 0), FontFamily = new FontFamily("Segoe UI") };
-        sp.Children.Add(_serverTitle);
-        sp.Children.Add(_serverSubtitle);
-        sp.Children.Add(new TextBlock { Text = "3", Foreground = Brushes.White, Opacity = 0.6, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 7, 0, 0), FontFamily = new FontFamily("Segoe UI") });
-        b.Child = sp;
-        b.MouseEnter += delegate { if (!_serverBusy) b.Opacity = 0.86; };
-        b.MouseLeave += delegate { b.Opacity = 1.0; };
-        b.MouseLeftButtonUp += delegate { ControlServer("mouse"); };
-        UpdateServerVisual();
-        return b;
-    }
+        if (_commandCenter == null) return;
+        string note = (_commandCenter.RequestText ?? "").Trim();
+        if (string.IsNullOrEmpty(note))
+        {
+            _commandCenter.FocusRequest("Write a short note first.");
+            return;
+        }
 
-    Border AppChoice()
-    {
-        Uri parsed;
-        string host = Uri.TryCreate(_appUrl, UriKind.Absolute, out parsed) ? parsed.Authority : "";
-        var b = new Border { CornerRadius = new CornerRadius(14), Height = 104, Cursor = System.Windows.Input.Cursors.Hand, Background = Brush("#FF5B5BD6") };
-        var sp = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        sp.Children.Add(new TextBlock { Text = "Open app", Foreground = Brushes.White, FontSize = 19, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, FontFamily = new FontFamily("Segoe UI") });
-        sp.Children.Add(new TextBlock { Text = host, Foreground = Brushes.White, Opacity = 0.85, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 3, 0, 0), FontFamily = new FontFamily("Segoe UI") });
-        sp.Children.Add(new TextBlock { Text = "4", Foreground = Brushes.White, Opacity = 0.6, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 7, 0, 0), FontFamily = new FontFamily("Segoe UI") });
-        b.Child = sp;
-        b.ToolTip = "Open " + _appUrl + " in your default browser";
-        b.MouseEnter += delegate { b.Opacity = 0.86; };
-        b.MouseLeave += delegate { b.Opacity = 1.0; };
-        b.MouseLeftButtonUp += delegate { OpenApp("mouse"); };
-        return b;
-    }
-
-    // Opens the page, nothing else. Starting or restarting the server is the
-    // server tile's job — one action per tile, no overlap.
-    void OpenApp(string source)
-    {
-        if (string.IsNullOrEmpty(_appUrl)) return;
-        Log("open app requested by " + source);
-        OpenBrowser(_appUrl);
-        HideIt();
-    }
-
-    void OpenBrowser(string url)
-    {
+        string prompt = kind == "commit"
+            ? AgentPromptBuilder.BuildCommitRequest(_project, note, _gitStatus)
+            : AgentPromptBuilder.BuildFeedback(_project, note, _gitStatus);
         try
         {
-            Uri parsed;
-            // ShellExecute on an arbitrary pipe-supplied string could run anything;
-            // only ever hand it an absolute http(s) URL.
-            if (!Uri.TryCreate(url, UriKind.Absolute, out parsed) ||
-                (parsed.Scheme != Uri.UriSchemeHttp && parsed.Scheme != Uri.UriSchemeHttps))
-            {
-                Log("browser open refused for non-http url: " + url);
-                return;
-            }
-            var psi = new ProcessStartInfo(parsed.AbsoluteUri);
-            psi.UseShellExecute = true;
-            Process.Start(psi);
-            Log("opened " + parsed.AbsoluteUri + " in the default browser");
+            Clipboard.SetText(prompt, TextDataFormat.UnicodeText);
+            string message = kind == "commit"
+                ? "Commit request copied. Paste it into Claude or Codex."
+                : "Feedback request copied. Paste it into Claude or Codex.";
+            _commandCenter.RenderHandoffStatus(message, false);
+            Log(kind + " handoff copied by " + source);
         }
-        catch (Exception ex) { Log("browser open failed: " + ex.Message); }
+        catch (Exception ex)
+        {
+            _commandCenter.RenderHandoffStatus("Clipboard is busy. Try again.", true);
+            Log("handoff copy failed: " + ex.Message);
+        }
     }
 
     void BeginServerStatusCheck()
@@ -689,6 +574,7 @@ class Popup : Window
             Dispatcher.BeginInvoke(new Action(delegate
             {
                 if (generation != _serverGeneration || control != _serverControl) return;
+                if (_serverBusy) return;
                 _serverState = status.State;
                 if (status.State == DevServerState.Error && !string.IsNullOrEmpty(status.Detail))
                     LogServerError(status.Detail);
@@ -716,7 +602,7 @@ class Popup : Window
         }
 
         DevServerState requestedFrom = _serverState;
-        int generation = _serverGeneration;
+        int generation = ++_serverGeneration;
         Pm2DevServerController control = _serverControl;
         _serverBusy = true;
         _serverActionLabel = requestedFrom == DevServerState.Running || requestedFrom == DevServerState.Starting ? "Restarting" : "Starting";
@@ -725,7 +611,14 @@ class Popup : Window
 
         ThreadPool.QueueUserWorkItem(delegate
         {
-            DevServerCommandResult result = control.StartOrRestart(requestedFrom);
+            DevServerCommandResult result = control.StartOrRestart(requestedFrom, delegate(string progress)
+            {
+                Dispatcher.BeginInvoke(new Action(delegate
+                {
+                    if (generation != _serverGeneration || control != _serverControl || !_serverBusy) return;
+                    UpdateServerVisual(progress);
+                }));
+            });
             DevServerStatus status = result.Succeeded ? control.GetStatus() : new DevServerStatus(DevServerState.Error, result.Detail);
             Dispatcher.BeginInvoke(new Action(delegate
             {
@@ -742,45 +635,8 @@ class Popup : Window
     void UpdateServerVisual() { UpdateServerVisual(""); }
     void UpdateServerVisual(string detail)
     {
-        if (_serverBtn == null || _serverTitle == null || _serverSubtitle == null) return;
-        string title, subtitle, color, help;
-        if (_serverState == DevServerState.Running)
-        {
-            title = "Restart"; subtitle = "Running · :" + _serverPort; color = "#FF247A52"; help = "Restart the development server";
-        }
-        else if (_serverState == DevServerState.Offline)
-        {
-            title = "Start"; subtitle = "Offline · :" + _serverPort; color = "#FF2F6FED"; help = "Start the development server";
-        }
-        else if (_serverState == DevServerState.Starting)
-        {
-            title = _serverActionLabel; subtitle = "Server · :" + _serverPort; color = "#FF6657A7"; help = _serverActionLabel + " the development server";
-        }
-        else if (_serverState == DevServerState.External)
-        {
-            title = "Take over"; subtitle = "Running outside PM2"; color = "#FF9A6700"; help = "Move the running development server under PM2";
-        }
-        else if (_serverState == DevServerState.SetupRequired)
-        {
-            title = "PM2 needed"; subtitle = "Install PM2 globally"; color = "#FF555A66"; help = string.IsNullOrEmpty(detail) ? "Run npm install --global pm2, then reopen Agent Hub" : detail;
-        }
-        else if (_serverState == DevServerState.Error)
-        {
-            title = "Retry"; subtitle = "Server failed"; color = "#FFAD343E"; help = string.IsNullOrEmpty(detail) ? "Retry the development server" : detail;
-        }
-        else
-        {
-            title = "Server"; subtitle = "Checking · :" + _serverPort; color = "#FF414652"; help = "Checking the development server";
-        }
-
-        _serverTitle.Text = title;
-        _serverSubtitle.Text = subtitle;
-        _serverBtn.Background = Brush(color);
-        _serverBtn.Opacity = _serverBusy ? 0.78 : 1.0;
-        _serverBtn.Cursor = _serverState == DevServerState.SetupRequired || _serverBusy
-            ? System.Windows.Input.Cursors.Arrow
-            : System.Windows.Input.Cursors.Hand;
-        _serverBtn.ToolTip = help;
+        if (_commandCenter != null)
+            _commandCenter.RenderServer(_serverState, _serverBusy, _serverActionLabel, detail);
     }
 
     void LogServerError(string detail)
@@ -798,67 +654,54 @@ class Popup : Window
 
     void BeginGitStatusCheck()
     {
-        if (_gitControl == null || _gitPanel == null) return;
+        if (_gitControl == null || _worktreeControl == null || _commandCenter == null) return;
         int generation = _gitGeneration;
         GitProjectController control = _gitControl;
-        UpdateGitVisual();
+        GitWorktreeInventoryController worktreeControl = _worktreeControl;
+        UpdateWorkspaceVisual();
         ThreadPool.QueueUserWorkItem(delegate
         {
             GitProjectStatus status = control.GetStatus();
+            GitWorktreeInventory inventory = worktreeControl.GetInventory();
             Dispatcher.BeginInvoke(new Action(delegate
             {
-                if (generation != _gitGeneration || control != _gitControl) return;
+                if (generation != _gitGeneration || control != _gitControl || worktreeControl != _worktreeControl) return;
                 _gitStatus = status;
+                _worktreeInventory = inventory;
                 if (status.State == GitProjectState.Error && !string.IsNullOrEmpty(status.Detail))
                     LogGitError(status.Detail);
-                UpdateGitVisual();
+                if (inventory.Items.Count == 0 && !string.IsNullOrEmpty(inventory.Detail))
+                    LogGitError(inventory.Detail);
+                UpdateWorkspaceVisual();
             }));
         });
     }
 
-    void ControlGit(string action, string source)
+    void UpdateWorkspaceVisual()
     {
-        Log("git " + action + " requested by " + source + " from state " + _gitStatus.State);
-        if (_gitControl == null || _gitPanel == null || _gitBusy) return;
+        if (_commandCenter != null) _commandCenter.RenderWorktrees(_worktreeInventory);
+    }
 
-        bool allowed = action == "pull" ? _gitStatus.CanPull : _gitStatus.CanPush;
-        if (!allowed)
+    public void ApplyVisualTestState(System.Collections.Generic.Dictionary<string, string> fields)
+    {
+        string value;
+        if (fields == null) return;
+        if (fields.TryGetValue("RequestText", out value) && _commandCenter != null)
+            _commandCenter.SetRequestForVisualTest(value);
+        if (!fields.TryGetValue("ServerVisualState", out value) || string.IsNullOrEmpty(value)) return;
+        try
         {
-            _gitFeedback = action == "pull" ? _gitStatus.PullBlockedReason : _gitStatus.PushBlockedReason;
-            _gitFeedbackIsError = false;
-            UpdateGitVisual();
-            return;
+            _serverGeneration++;
+            _serverState = (DevServerState)Enum.Parse(typeof(DevServerState), value, true);
+            _serverBusy = _serverState == DevServerState.Starting;
+            _serverActionLabel = fields.ContainsKey("ServerActionLabel") ? fields["ServerActionLabel"] : "Restarting";
+            string detail = fields.ContainsKey("ServerVisualDetail") ? fields["ServerVisualDetail"] : "";
+            UpdateServerVisual(detail);
         }
-
-        int generation = _gitGeneration;
-        GitProjectController control = _gitControl;
-        _gitBusy = true;
-        _gitBusyAction = action;
-        _gitFeedback = "";
-        _gitFeedbackIsError = false;
-        UpdateGitVisual();
-
-        ThreadPool.QueueUserWorkItem(delegate
+        catch (Exception ex)
         {
-            GitProjectCommandResult result = action == "pull" ? control.Pull() : control.Push();
-            Dispatcher.BeginInvoke(new Action(delegate
-            {
-                if (generation != _gitGeneration || control != _gitControl) return;
-                _gitBusy = false;
-                _gitBusyAction = "";
-                _gitStatus = result.Status ?? control.GetStatus();
-                _gitFeedback = result.Detail;
-                _gitFeedbackIsError = !result.Succeeded;
-                Log("git " + action + " completed success=" + result.Succeeded + " state=" + _gitStatus.State);
-                if (!result.Succeeded) LogGitError(action + ": " + result.Detail);
-                UpdateGitVisual();
-            }));
-        });
-    }
-
-    void UpdateGitVisual()
-    {
-        if (_gitPanel != null) _gitPanel.Render(_gitStatus, _gitBusy ? _gitBusyAction : "", _gitFeedback, _gitFeedbackIsError);
+            Log("visual server state rejected: " + ex.Message);
+        }
     }
 
     void LogGitError(string detail)
@@ -872,65 +715,6 @@ class Popup : Window
         }
         catch { }
         Log("git control failed: " + detail);
-    }
-
-    Border Choice(string bg, string title, string sub, string num, string agent)
-    {
-        var b = new Border { CornerRadius = new CornerRadius(14), Background = Brush(bg), Height = 104, Cursor = System.Windows.Input.Cursors.Hand };
-        var sp = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        sp.Children.Add(new TextBlock { Text = title, Foreground = Brushes.White, FontSize = 19, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, FontFamily = new FontFamily("Segoe UI") });
-        sp.Children.Add(new TextBlock { Text = sub, Foreground = Brushes.White, Opacity = 0.85, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 3, 0, 0), FontFamily = new FontFamily("Segoe UI") });
-        sp.Children.Add(new TextBlock { Text = num, Foreground = Brushes.White, Opacity = 0.6, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 7, 0, 0), FontFamily = new FontFamily("Segoe UI") });
-        b.Child = sp;
-        b.MouseEnter += delegate { b.Opacity = 0.86; };
-        b.MouseLeave += delegate { b.Opacity = 1.0; };
-        b.MouseLeftButtonUp += delegate { Launch(agent); };
-        return b;
-    }
-
-    static string LastFilePath()
-    {
-        string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AgentHub");
-        return Path.Combine(dir, "last.ini");
-    }
-
-    string ReadLast()
-    {
-        try
-        {
-            string f = LastFilePath();
-            if (!string.IsNullOrEmpty(_project) && File.Exists(f))
-            {
-                string key = _project.ToLowerInvariant();
-                foreach (var line in File.ReadAllLines(f))
-                {
-                    int eq = line.IndexOf('=');
-                    if (eq > 0 && line.Substring(0, eq).Trim().ToLowerInvariant() == key) return line.Substring(eq + 1).Trim();
-                }
-            }
-        }
-        catch { }
-        return "claude";
-    }
-
-    void WriteLast(string agent)
-    {
-        try
-        {
-            string f = LastFilePath();
-            Directory.CreateDirectory(Path.GetDirectoryName(f));
-            string key = (_project ?? "").ToLowerInvariant();
-            var lines = File.Exists(f) ? new System.Collections.Generic.List<string>(File.ReadAllLines(f)) : new System.Collections.Generic.List<string>();
-            bool found = false;
-            for (int i = 0; i < lines.Count; i++)
-            {
-                int eq = lines[i].IndexOf('=');
-                if (eq > 0 && lines[i].Substring(0, eq).Trim().ToLowerInvariant() == key) { lines[i] = key + "=" + agent; found = true; break; }
-            }
-            if (!found) lines.Add(key + "=" + agent);
-            File.WriteAllLines(f, lines.ToArray());
-        }
-        catch { }
     }
 
     // Logging is opt-in: create %LOCALAPPDATA%\AgentHub\debug.flag to enable it.
@@ -961,31 +745,4 @@ class Popup : Window
     }
 
     static double Clamp01(double v) { return v < 0 ? 0 : (v > 1 ? 1 : v); }
-    static string QuoteProcessArg(string value)
-    {
-        if (string.IsNullOrEmpty(value)) return "\"\"";
-        var result = new StringBuilder();
-        result.Append('"');
-        int slashes = 0;
-        foreach (char ch in value)
-        {
-            if (ch == '\\') slashes++;
-            else if (ch == '"')
-            {
-                result.Append('\\', slashes * 2 + 1);
-                result.Append('"');
-                slashes = 0;
-            }
-            else
-            {
-                result.Append('\\', slashes);
-                result.Append(ch);
-                slashes = 0;
-            }
-        }
-        result.Append('\\', slashes * 2);
-        result.Append('"');
-        return result.ToString();
-    }
-    static SolidColorBrush Brush(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex)); }
 }

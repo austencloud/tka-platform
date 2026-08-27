@@ -1,8 +1,8 @@
 #Requires -Version 5
 <#
 .SYNOPSIS
-  Installs agent-hub: a taskbar popover that starts Claude, Codex, or a
-  configured development server and provides guarded Git Pull and Push actions.
+  Installs Agent Hub: a taskbar project command center for development-server
+  control and clipboard handoff into Claude or Codex desktop tasks.
 
 .DESCRIPTION
   Compiles the resident host, stub, terminal launcher, and session host with the .NET Framework
@@ -343,11 +343,16 @@ $hostArgs += (Join-Path $Here 'src\AgentChooserHost.cs')
 $hostArgs += (Join-Path $Here 'src\HiddenProcessRunner.cs')
 $hostArgs += (Join-Path $Here 'src\Pm2DevServerController.cs')
 $hostArgs += (Join-Path $Here 'src\GitProjectController.cs')
-$hostArgs += (Join-Path $Here 'src\GitActionPanel.cs')
+$hostArgs += (Join-Path $Here 'src\GitWorktreeInventory.cs')
+$hostArgs += (Join-Path $Here 'src\AgentPromptBuilder.cs')
+$hostArgs += (Join-Path $Here 'src\ProjectCommandCenter.cs')
 
 & $csc @hostArgs
 if ($LASTEXITCODE -ne 0) { throw "Host build failed (csc exit $LASTEXITCODE)" }
 Write-Ok "built AgentChooserHost.exe"
+
+Copy-Item (Join-Path $Here 'src\Pm2Bridge.cjs') (Join-Path $BinDir 'Pm2Bridge.cjs') -Force
+Write-Ok "installed PM2 programmatic bridge"
 
 $serverSelfTest = Start-Process -FilePath (Join-Path $BinDir 'AgentChooserHost.exe') `
     -ArgumentList '-SelfTestServer' -Wait -PassThru -WindowStyle Hidden
@@ -358,6 +363,16 @@ $gitSelfTest = Start-Process -FilePath (Join-Path $BinDir 'AgentChooserHost.exe'
     -ArgumentList '-SelfTestGit' -Wait -PassThru -WindowStyle Hidden
 if ($gitSelfTest.ExitCode -ne 0) { throw "Git control self-test failed ($($gitSelfTest.ExitCode) assertion(s))" }
 Write-Ok "Git control self-test passed"
+
+$promptSelfTest = Start-Process -FilePath (Join-Path $BinDir 'AgentChooserHost.exe') `
+    -ArgumentList '-SelfTestPrompt' -Wait -PassThru -WindowStyle Hidden
+if ($promptSelfTest.ExitCode -ne 0) { throw "Agent handoff self-test failed ($($promptSelfTest.ExitCode) assertion(s))" }
+Write-Ok "agent handoff self-test passed"
+
+$worktreeSelfTest = Start-Process -FilePath (Join-Path $BinDir 'AgentChooserHost.exe') `
+    -ArgumentList '-SelfTestWorktrees' -Wait -PassThru -WindowStyle Hidden
+if ($worktreeSelfTest.ExitCode -ne 0) { throw "Worktree inventory self-test failed ($($worktreeSelfTest.ExitCode) assertion(s))" }
+Write-Ok "worktree inventory self-test passed"
 
 $stubArgs = @('/nologo', '/target:winexe', "/out:$BinDir\AgentChooserStub.exe",
               '/reference:System.dll', '/reference:System.Core.dll',
@@ -452,11 +467,6 @@ foreach ($p in $wanted) {
     if (-not (Test-Path $full)) { continue }
     if (-not $seen.Add($full))  { continue }
     $serverManager = $null; $serverApp = $null; $serverConfig = $null; $serverPort = $null
-    $appUrl = $null
-    if ($p.PSObject.Properties['appUrl'] -and $p.appUrl) {
-        $appUrl = [string]$p.appUrl
-        if ($appUrl -notmatch '^https?://') { throw "Invalid app URL '$appUrl' for $($p.name); it must start with http:// or https://." }
-    }
     if ($null -ne $p.server) {
         $serverManager = [string]$p.server.manager
         $serverApp = [string]$p.server.app
@@ -480,7 +490,6 @@ foreach ($p in $wanted) {
         Name = $p.name; Path = $full; Icon = $p.icon
         ServerManager = $serverManager; ServerApp = $serverApp
         ServerConfig = $serverConfig; ServerPort = $serverPort
-        AppUrl = $appUrl
     })
 }
 
@@ -496,7 +505,6 @@ if (-not $NoAutoDiscover -and (Test-Path $ProjectsRoot)) {
         [void]$resolved.Add([pscustomobject]@{
             Name = $nice; Path = $d.FullName; Icon = "$($d.Name).ico"
             ServerManager = $null; ServerApp = $null; ServerConfig = $null; ServerPort = $null
-            AppUrl = $null
         })
     }
 }
@@ -537,14 +545,12 @@ foreach ($proj in $resolved) {
         $args += ' -ServerManager "{0}" -ServerApp "{1}" -ServerConfig "{2}" -ServerPort "{3}"' -f `
             $proj.ServerManager, $proj.ServerApp, $proj.ServerConfig, $proj.ServerPort
     }
-    if ($proj.AppUrl) { $args += ' -AppUrl "{0}"' -f $proj.AppUrl }
-
     foreach ($dir in @($ShortcutDir, $StartMenu)) {
         $lnk = $shell.CreateShortcut((Join-Path $dir "$($proj.Name).lnk"))
         $lnk.TargetPath       = $stub
         $lnk.Arguments        = $args
         $lnk.WorkingDirectory = $proj.Path
-        $lnk.Description      = "Choose an agent for $($proj.Name)"
+        $lnk.Description      = "Open the project command center for $($proj.Name)"
         if ($icon -and (Test-Path $icon)) { $lnk.IconLocation = "$icon,0" }
         $lnk.Save()
     }
@@ -559,7 +565,7 @@ foreach ($proj in $resolved) {
             $pinned.TargetPath       = $stub
             $pinned.Arguments        = $args
             $pinned.WorkingDirectory = $proj.Path
-            $pinned.Description      = "Choose an agent or server for $($proj.Name)"
+            $pinned.Description      = "Open the project command center for $($proj.Name)"
             if ($icon -and (Test-Path $icon)) { $pinned.IconLocation = "$icon,0" }
             $pinned.Save()
             $pinsRefreshed++
@@ -610,7 +616,7 @@ if ($running -ge 1) { Write-Ok "host running" } else { Write-Warn2 "host did not
 Write-Host ""
 Write-Host "  Done." -ForegroundColor Green
 Write-Host "  Drag shortcuts from $ShortcutDir onto your taskbar to pin them."
-Write-Host "  Click a pin -> 1 = Claude, 2 = Codex, 3 = server, 4 = open app, 5 = Pull, 6 = Push, Enter = last used, Esc = cancel."
+Write-Host "  Click a pin -> 1 = server, Ctrl+2 = copy feedback, Ctrl+3 = copy commit request, Esc = close."
 Write-Host ""
 
 if (-not $NoOpen) { Start-Process explorer.exe $ShortcutDir }

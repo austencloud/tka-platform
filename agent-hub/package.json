@@ -1,7 +1,7 @@
 {
   "name": "@austencloud/agent-hub",
   "version": "1.0.0",
-  "description": "Windows taskbar popover for launching coding agents and controlling project servers and Git sync.",
+  "description": "Windows taskbar command center for development servers and project-aware agent handoff.",
   "keywords": [
     "claude",
     "claude-code",
