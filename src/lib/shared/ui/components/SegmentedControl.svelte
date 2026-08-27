@@ -47,8 +47,8 @@
     color?: "blue" | "red" | "accent";
     /** Size variant */
     size?: "sm" | "md";
-    /** Compact visual shell with a larger invisible pointer target. */
-    density?: "standard" | "compact";
+    /** Compact changes height; tight only trims horizontal padding for narrow rails. */
+    density?: "standard" | "compact" | "tight";
     /** Accessible name for the option group. */
     ariaLabel?: string;
     /** ID of a visible label that names the option group. */
@@ -142,6 +142,7 @@
   class="segmented-control"
   class:sm={size === "sm"}
   class:compact={density === "compact"}
+  class:tight={density === "tight"}
   class:blue={color === "blue"}
   class:red={color === "red"}
   class:accent={color === "accent"}
@@ -390,6 +391,12 @@
     min-height: 32px;
     padding: 0 0.5rem;
     overflow: visible;
+  }
+
+  /* A narrow persistent rail still needs full-size text and touch targets.
+     Tight density gives the labels that room without shrinking either one. */
+  .tight .segment {
+    padding-inline: 0.25rem;
   }
 
   .compact .segment::before {
