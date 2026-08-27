@@ -58,6 +58,11 @@
     /** Custom visible content. The option's label still owns its accessible name. */
     optionContent?: Snippet<[T]>;
     /**
+     * A two-option mode switcher where every activation selects the other mode,
+     * including the currently selected segment and the control's padded surface.
+     */
+    toggleOnActivate?: boolean;
+    /**
      * Opt this control into the attract presenter's allowlist
      * (.claude/rules/, spec 2026-08-04-ghost-mind-design.md §Safety). Only
      * UNSELECTED segments are annotated: pressing the already-selected value
@@ -78,11 +83,27 @@
     ariaLabelledby,
     semantics = "button-group",
     optionContent,
+    toggleOnActivate = false,
     ghostKind,
   }: Props = $props();
 
+  function toggleTarget(): T | undefined {
+    const enabledOptions = options.filter((option) => !option.disabled);
+    if (enabledOptions.length !== 2) return undefined;
+    return enabledOptions.find((option) => option.value !== value)?.value;
+  }
+
   function handleSelect(val: T) {
-    onchange(val);
+    onchange(toggleOnActivate ? (toggleTarget() ?? val) : val);
+  }
+
+  function handleSurfacePointerUp(event: PointerEvent) {
+    if (!toggleOnActivate) return;
+    const target = event.target;
+    if (target instanceof Element && target.closest("button.segment")) return;
+
+    const nextValue = toggleTarget();
+    if (nextValue !== undefined) onchange(nextValue);
   }
 
   // Find selected index for indicator position
@@ -157,6 +178,7 @@
   aria-label={ariaLabel}
   aria-labelledby={ariaLabelledby}
   style="--count: {options.length}"
+  onpointerup={handleSurfacePointerUp}
 >
   <div
     class="indicator"
