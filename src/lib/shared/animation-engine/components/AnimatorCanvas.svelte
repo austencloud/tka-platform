@@ -81,6 +81,8 @@ Last audit: 2025-12-27
     trailSettings: externalTrailSettings = $bindable(),
     bluePropType = null,
     redPropType = null,
+    blueBuugengFlipped = undefined,
+    redBuugengFlipped = undefined,
     word = null,
     previewDarkMode = null,
     hideTkaGlyph = false,
@@ -145,6 +147,8 @@ Last audit: 2025-12-27
     trailSettings?: TrailSettings;
     bluePropType?: string | null;
     redPropType?: string | null;
+    blueBuugengFlipped?: boolean;
+    redBuugengFlipped?: boolean;
     word?: string | null;
     previewDarkMode?: boolean | null;
     hideTkaGlyph?: boolean;
@@ -664,6 +668,8 @@ Last audit: 2025-12-27
       bind:trailSettings={externalTrailSettings}
       {bluePropType}
       {redPropType}
+      {blueBuugengFlipped}
+      {redBuugengFlipped}
       {previewDarkMode}
       {isSeamlesslyLoopable}
       {showNonRadialPoints}
@@ -1370,7 +1376,6 @@ Last audit: 2025-12-27
     height: auto !important;
     min-height: 0;
   }
-
 
   @media (prefers-reduced-motion: reduce) {
     .content-wrapper,

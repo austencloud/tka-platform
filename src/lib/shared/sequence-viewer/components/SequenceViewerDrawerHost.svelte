@@ -390,6 +390,7 @@
           sequence={overlay.sequence}
           isMobile={isMobileWidth}
           initialBpm={overlay.initialBpm}
+          initialPlaybackMode={overlay.initialPlaybackMode}
           initialStep={overlay.initialStep}
           initialViewMode={overlay.initialViewMode}
           initialViewerMode={overlay.initialViewerMode}

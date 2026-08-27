@@ -7,6 +7,7 @@
     ArtSettingChangeHandler,
     ArtSettingValue,
   } from "./art-settings-types";
+  import type { AnimationSettingsState } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
   interface Props {
     controller: TunnelViewController;
@@ -16,6 +17,7 @@
     onBpmChange: (bpm: number) => void;
     onPlaybackToggle: () => void;
     onArtSettingChange?: ArtSettingChangeHandler;
+    animationSettingsState: AnimationSettingsState;
   }
 
   let {
@@ -26,6 +28,7 @@
     onBpmChange,
     onPlaybackToggle,
     onArtSettingChange,
+    animationSettingsState,
   }: Props = $props();
 
   function reportSetting(
@@ -105,6 +108,7 @@
     {onBpmChange}
     {isPlaying}
     {onPlaybackToggle}
+    {animationSettingsState}
     onSettingChange={(setting, previousValue, value, coalesce) =>
       reportSetting("art_effects", setting, previousValue, value, coalesce)}
   />

@@ -20,15 +20,42 @@ const steps = [
 ] as unknown as StepData[];
 
 const formation = { ...DEFAULT_CONFIG, fold: 4 };
+const snapshot = {
+  version: 1,
+  tunnel: {
+    config: formation,
+    gridVisible: true,
+    spectrum: false,
+    section: "props",
+  },
+  effects: { activeEffect: "fire", intensity: 0.7 },
+  effort: "punch",
+  paths: {
+    pathShape: "concave",
+    motionAwarePaths: true,
+    bluePathLines: true,
+    redPathLines: false,
+  },
+  playback: { bpm: 132, playbackMode: "step" },
+  props: {
+    bluePropType: "buugeng",
+    redPropType: "buugeng",
+    blueBuugengFlipped: true,
+    redBuugengFlipped: false,
+  },
+  trailRender: { mode: "trail", tailLength: 48 },
+};
 
-function savedTunnel(overrides: Partial<CollectedTunnel> = {}): CollectedTunnel {
+function savedTunnel(
+  overrides: Partial<CollectedTunnel> = {}
+): CollectedTunnel {
   return {
     id: "tunnel-42",
     name: "Four-person weave",
     steps,
     poster: "data:image/webp;base64,AA",
     createdAt: 123,
-    snapshot: { tunnel: { config: formation } },
+    snapshot,
     ...overrides,
   } as unknown as CollectedTunnel;
 }
@@ -53,6 +80,7 @@ describe("tunnel creator handoff", () => {
       tunnelName: "Four-person weave",
       poster: "data:image/webp;base64,AA",
       composition: { performers: composition.performers },
+      snapshot,
       formation,
     });
     expect(consumeTunnelCreatorHandoff()).toBeNull();
@@ -82,6 +110,34 @@ describe("tunnel creator handoff", () => {
 
     expect(consumeTunnelCreatorHandoff()).toBeNull();
     expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
+
+  it("accepts a legacy handoff without a snapshot", () => {
+    const composition = createTunnelComposition(
+      [
+        createIndependentTunnelPerformer(
+          createSequenceData({ id: "s1", name: "Lead", word: "AB", steps }),
+          0
+        ),
+      ],
+      { formation }
+    );
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        tunnelId: "legacy-tunnel",
+        tunnelName: "Legacy",
+        composition,
+        formation,
+        createdAt: 5,
+      })
+    );
+
+    expect(consumeTunnelCreatorHandoff()).toMatchObject({
+      tunnelId: "legacy-tunnel",
+      snapshot: null,
+      formation,
+    });
   });
 
   it("rejects a persisted handoff whose cast is empty", () => {

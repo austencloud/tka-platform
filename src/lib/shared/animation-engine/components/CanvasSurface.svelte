@@ -78,6 +78,8 @@ captureEffectDiagnostics to the context menu.
     trailSettings: externalTrailSettings = $bindable(),
     bluePropType = null,
     redPropType = null,
+    blueBuugengFlipped = undefined,
+    redBuugengFlipped = undefined,
     previewDarkMode = null,
     isSeamlesslyLoopable = undefined,
     showNonRadialPoints = true,
@@ -131,6 +133,8 @@ captureEffectDiagnostics to the context menu.
     trailSettings?: TrailSettings;
     bluePropType?: string | null;
     redPropType?: string | null;
+    blueBuugengFlipped?: boolean;
+    redBuugengFlipped?: boolean;
     previewDarkMode?: boolean | null;
     isSeamlesslyLoopable?: boolean;
     showNonRadialPoints?: boolean;
@@ -375,6 +379,8 @@ captureEffectDiagnostics to the context menu.
       externalTrailSettings,
       bluePropType,
       redPropType,
+      blueBuugengFlipped,
+      redBuugengFlipped,
       previewDarkMode,
       isSeamlesslyLoopable,
       virtualTime,

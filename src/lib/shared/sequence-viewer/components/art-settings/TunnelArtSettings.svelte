@@ -23,6 +23,11 @@
     ArtSettingChangeHandler,
     ArtSettingValue,
   } from "./art-settings-types";
+  import type { PropChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
+  import {
+    animationSettings,
+    type AnimationSettingsState,
+  } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
   type TunnelRailId =
     | "tunnel"
@@ -35,6 +40,7 @@
   interface Props {
     controller: TunnelViewController;
     layout: "sidebar" | "bottom";
+    bottomStartsOpen?: boolean;
     onExport: () => void;
     showExport: boolean;
     showTitle?: boolean;
@@ -48,6 +54,8 @@
     onPlaybackToggle: () => void;
     bluePropType: string | null;
     onPropChange?: (propType: PropType) => void;
+    propChirality?: PropChiralitySeam;
+    animationSettingsState?: AnimationSettingsState;
     onArtSettingChange?: ArtSettingChangeHandler;
     exporting: boolean;
     reduceMotion: boolean;
@@ -56,6 +64,7 @@
   let {
     controller,
     layout,
+    bottomStartsOpen = false,
     onExport,
     showExport,
     showTitle = true,
@@ -69,6 +78,8 @@
     onPlaybackToggle,
     bluePropType,
     onPropChange,
+    propChirality = createGlobalChiralitySeam(),
+    animationSettingsState = animationSettings,
     onArtSettingChange,
     exporting,
     reduceMotion,
@@ -128,7 +139,13 @@
     reportSetting("art_navigation", "desktop_tunnel_section", previous, id);
   }
 
-  let openTunnelTab = $state<TunnelRailId | null>(null);
+  // In the viewer this dock overlays the art, so it starts collapsed. The
+  // creator gives it a dedicated stacked surface on phones; leaving that
+  // surface empty would make the controls look missing, so that host opts in
+  // to opening the saved section immediately.
+  let openTunnelTab = $state<TunnelRailId | null>(
+    bottomStartsOpen ? controller.section : null
+  );
 
   function selectTunnelDock(id: string): void {
     if (exporting) return;
@@ -188,7 +205,7 @@
           onSelect={onPropChange}
           variant="inline"
           flat={dense}
-          chirality={createGlobalChiralitySeam()}
+          chirality={propChirality}
         />
       {/if}
     </div>
@@ -202,6 +219,7 @@
       {isPlaying}
       {onBpmChange}
       {onPlaybackToggle}
+      {animationSettingsState}
       {onArtSettingChange}
     />
   {:else if id === "effort"}
