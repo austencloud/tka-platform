@@ -6,9 +6,9 @@ Crossfades kept getting hand-rolled as two in-flow block siblings, each with
 `transition:fade`. Both stay in normal flow during the transition, so the
 outgoing element keeps its layout space while the incoming one adds its own —
 they stack and shove neighbors, producing layout shift across the transition.
-Austen corrected this many times since the project began (2026-06-30): *"this
+Austen corrected this many times since the project began (2026-06-30): _"this
 has already been solved time and time again in our code base ... it's getting
-annoying having you create crossfades that don't work."* The fix was known and
+annoying having you create crossfades that don't work."_ The fix was known and
 used in feature-specific code, but there was no generic primitive to reach for,
 so each new crossfade re-derived it (and often got it wrong).
 
@@ -28,13 +28,14 @@ content. This rule names it and the routing decision explicitly, the same way
 
 Props:
 
-| Prop | Default | Purpose |
-|---|---|---|
-| `key` | — | Change it to trigger a crossfade (the discriminator). |
-| `duration` | `DURATION.normal` | Fade length. Pass a `DURATION.*` token, never a raw number. |
-| `mode` | `"crossfade"` | `crossfade` overlaps in+out; `swap` runs out fully, then in. |
-| `fill` | `false` | Layers fill a sized parent (`absolute; inset:0`) instead of hugging content. Use inside panels / fixed-size stages. |
-| `delay` | `0` | Deliberate in-transition stagger (crossfade mode only). |
+| Prop            | Default           | Purpose                                                                                                                               |
+| --------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `key`           | —                 | Change it to trigger a crossfade (the discriminator).                                                                                 |
+| `duration`      | `DURATION.normal` | Fade length. Pass a `DURATION.*` token, never a raw number.                                                                           |
+| `mode`          | `"crossfade"`     | `crossfade` overlaps in+out; `swap` runs out fully, then in.                                                                          |
+| `fill`          | `false`           | Layers fill a sized parent (`absolute; inset:0`) instead of hugging content. Use inside panels / fixed-size stages.                   |
+| `animateHeight` | `false`           | Measures each keyed layer and eases the wrapper between materially different natural heights in both directions. Ignored with `fill`. |
+| `delay`         | `0`               | Deliberate in-transition stagger (crossfade mode only).                                                                               |
 
 It grid-stacks (or `fill`-stacks) the old and new content in one cell so neither
 reflows the other — zero layout shift, by construction. Reduced-motion is owned
@@ -45,7 +46,9 @@ by the primitive (collapses duration to 0); consumers must NOT re-implement it.
 A **true crossfade** = two mutually-exclusive states that swap in the same box.
 Route by two axes:
 
-- **Sizing** — content-sized (default grid mode) vs fills a sized parent (`fill`).
+- **Sizing** — similarly sized content (default grid mode), content whose natural
+  height changes materially (`animateHeight`), or layers that fill a sized parent
+  (`fill`).
 - **Remount cost** — `{#key}` REMOUNTS children. Cheap content (labels, icons,
   status words, light panels): fine. Heavy/stateful content (canvas, large
   pictograph render, a panel with scroll/focus/in-progress state): NOT fine —
@@ -54,8 +57,9 @@ Route by two axes:
 
 So:
 
-1. Cheap true crossfade → `<Crossfade>` (add `fill` if it fills a parent,
-   `mode="swap"` for sequential, `delay` for a stagger).
+1. Cheap true crossfade → `<Crossfade>` (add `animateHeight` when the wrapper
+   follows materially different layer heights, `fill` if a sized parent owns
+   the box, `mode="swap"` for sequential, or `delay` for a stagger).
 2. Heavy/stateful true crossfade → CellRenderer dual-source
    (`src/lib/shared/sequence-viewer/components/CellRenderer.svelte` +
    `crossfader-state.svelte.ts`). No remount.
@@ -85,9 +89,10 @@ very first time"). The failure shape: variable-height content in default
 (content-sized) mode inside a visual stage/panel — during and after the fade the
 box resizes to the current layer and shoves everything below it. The checklist:
 
-1. Crossfade inside a visually framed stage/panel/box? → **`fill`** on a
-   fixed-height (or flex-grown) stage. Default grid mode is ONLY for inline
-   content-sized things (labels, icons, words).
+1. Crossfade inside a visually framed stage/panel/box? Choose who owns its size:
+   a fixed-height (or flex-grown) parent uses **`fill`**; a content-sized wrapper
+   whose states differ materially uses **`animateHeight`**. Default grid mode is
+   only for similarly sized content such as labels, icons, and status words.
 2. Any content identical across keys (descriptions, captions, chrome)? → move
    it OUTSIDE the crossfade. Only what actually changes crossfades.
 3. After wiring, swap to every key: does anything below or beside the crossfade
@@ -97,8 +102,9 @@ box resizes to the current layer and shoves everything below it. The checklist:
 
 - A new crossfade built from two in-flow `transition:fade` siblings when
   `<Crossfade>` fits.
-- Variable-height slides in default (content-sized) mode inside a sized
-  stage/panel — that is `fill`'s job (see The First-Time Failure).
+- Materially different variable-height layers in default mode. Use
+  `animateHeight` when content owns the wrapper height, or `fill` when the parent
+  owns a fixed/flex-grown stage (see The First-Time Failure).
 - Content identical across keys living inside the crossfade.
 - Re-deriving the grid-stack / absolute-stack technique inline instead of using
   the primitive.

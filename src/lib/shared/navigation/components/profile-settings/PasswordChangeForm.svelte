@@ -8,9 +8,10 @@
 -->
 <script lang="ts">
   import type { HapticFeedback } from "../../../application/services/haptic-feedback";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { getProfileSettingsContext } from "../../state/profile-settings-context.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import { slide, fade } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
 
   const ctx = getProfileSettingsContext();
 
@@ -132,138 +133,139 @@
   {#if showLabel}
     <span class="label">Password</span>
   {/if}
-  {#if !ctx.ui.showPasswordSection}
-    <div in:fade={{ duration: 200, delay: 150 }} out:fade={{ duration: 120 }}>
-      <button class="button button--secondary" onclick={handleExpand}>
-        <i class="fas fa-lock" aria-hidden="true"></i>
-        Change password
-      </button>
-    </div>
-  {:else}
-    <div
-      class="password-form"
-      class:success={showSuccess}
-      in:slide={{ duration: 300, easing: cubicOut }}
-      out:fade={{ duration: 150 }}
-    >
-      {#if showSuccess}
-        <div class="success-message" in:fade={{ duration: 200 }}>
-          <i class="fas fa-check-circle" aria-hidden="true"></i>
-          Password updated
-        </div>
-      {:else}
-        {#if errorMessage}
-          <div class="error-banner" role="alert" in:slide={{ duration: 200 }}>
-            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-            {errorMessage}
+  <Crossfade
+    key={ctx.ui.showPasswordSection}
+    duration={DURATION.emphasis}
+    animateHeight
+  >
+    {#if !ctx.ui.showPasswordSection}
+      <div>
+        <button class="button button--secondary" onclick={handleExpand}>
+          <i class="fas fa-lock" aria-hidden="true"></i>
+          Change password
+        </button>
+      </div>
+    {:else}
+      <div class="password-form" class:success={showSuccess}>
+        {#if showSuccess}
+          <div class="success-message" in:fade={{ duration: 200 }}>
+            <i class="fas fa-check-circle" aria-hidden="true"></i>
+            Password updated
           </div>
-        {/if}
-
-        <div
-          class="field stagger-field"
-          class:revealed={formRevealed}
-          style="--stagger: 0"
-        >
-          <label class="field-label" for="current-password">
-            Current password
-          </label>
-          <div class="input-wrapper">
-            <input
-              id="current-password"
-              type={showCurrentPassword ? "text" : "password"}
-              class="input input-with-toggle"
-              class:input-error={errorMessage.includes("incorrect")}
-              bind:value={ctx.password.current}
-              placeholder="Enter current password"
-              aria-required="true"
-              autocomplete="current-password"
-              oninput={() => (errorMessage = "")}
-            />
-            <button
-              type="button"
-              class="toggle-visibility"
-              onclick={toggleCurrentPassword}
-              aria-label={showCurrentPassword
-                ? "Hide password"
-                : "Show password"}
-            >
-              <i
-                class="fas {showCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}"
-                aria-hidden="true"
-              ></i>
-            </button>
-          </div>
-        </div>
-
-        <div
-          class="field stagger-field"
-          class:revealed={formRevealed}
-          style="--stagger: 1"
-        >
-          <label class="field-label" for="new-password">New password</label>
-          <div class="input-wrapper">
-            <input
-              id="new-password"
-              type={showNewPassword ? "text" : "password"}
-              class="input input-with-toggle"
-              bind:value={ctx.password.new}
-              bind:this={newPasswordInput}
-              placeholder="Enter new password"
-              aria-required="true"
-              autocomplete="new-password"
-            />
-            <button
-              type="button"
-              class="toggle-visibility"
-              onclick={toggleNewPassword}
-              aria-label={showNewPassword ? "Hide password" : "Show password"}
-            >
-              <i
-                class="fas {showNewPassword ? 'fa-eye-slash' : 'fa-eye'}"
-                aria-hidden="true"
-              ></i>
-            </button>
-          </div>
-          {#if passwordStrength}
-            <div
-              class="strength-bar"
-              aria-label="Password strength: {strengthLabel}"
-            >
-              <div class="strength-track">
-                <div class="strength-fill strength--{passwordStrength}"></div>
-              </div>
-              <span class="strength-label strength--{passwordStrength}"
-                >{strengthLabel}</span
-              >
+        {:else}
+          {#if errorMessage}
+            <div class="error-banner" role="alert" in:slide={{ duration: 200 }}>
+              <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+              {errorMessage}
             </div>
           {/if}
-        </div>
 
-        <div
-          class="button-row stagger-field"
-          class:revealed={formRevealed}
-          style="--stagger: 2"
-        >
-          <button class="button button--secondary" onclick={handleCancel}>
-            Cancel
-          </button>
-          <button
-            class="button button--primary"
-            onclick={handleSubmit}
-            disabled={!isFormValid}
+          <div
+            class="field stagger-field"
+            class:revealed={formRevealed}
+            style="--stagger: 0"
           >
-            {#if ctx.ui.saving}
-              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-              Updating...
-            {:else}
-              <i class="fas fa-check" aria-hidden="true"></i>
-              Update password
+            <label class="field-label" for="current-password">
+              Current password
+            </label>
+            <div class="input-wrapper">
+              <input
+                id="current-password"
+                type={showCurrentPassword ? "text" : "password"}
+                class="input input-with-toggle"
+                class:input-error={errorMessage.includes("incorrect")}
+                bind:value={ctx.password.current}
+                placeholder="Enter current password"
+                aria-required="true"
+                autocomplete="current-password"
+                oninput={() => (errorMessage = "")}
+              />
+              <button
+                type="button"
+                class="toggle-visibility"
+                onclick={toggleCurrentPassword}
+                aria-label={showCurrentPassword
+                  ? "Hide password"
+                  : "Show password"}
+              >
+                <i
+                  class="fas {showCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}"
+                  aria-hidden="true"
+                ></i>
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="field stagger-field"
+            class:revealed={formRevealed}
+            style="--stagger: 1"
+          >
+            <label class="field-label" for="new-password">New password</label>
+            <div class="input-wrapper">
+              <input
+                id="new-password"
+                type={showNewPassword ? "text" : "password"}
+                class="input input-with-toggle"
+                bind:value={ctx.password.new}
+                bind:this={newPasswordInput}
+                placeholder="Enter new password"
+                aria-required="true"
+                autocomplete="new-password"
+              />
+              <button
+                type="button"
+                class="toggle-visibility"
+                onclick={toggleNewPassword}
+                aria-label={showNewPassword ? "Hide password" : "Show password"}
+              >
+                <i
+                  class="fas {showNewPassword ? 'fa-eye-slash' : 'fa-eye'}"
+                  aria-hidden="true"
+                ></i>
+              </button>
+            </div>
+            {#if passwordStrength}
+              <div
+                class="strength-bar"
+                aria-label="Password strength: {strengthLabel}"
+              >
+                <div class="strength-track">
+                  <div class="strength-fill strength--{passwordStrength}"></div>
+                </div>
+                <span class="strength-label strength--{passwordStrength}"
+                  >{strengthLabel}</span
+                >
+              </div>
             {/if}
-          </button>
-        </div>
-      {/if}
-    </div>
-  {/if}
+          </div>
+
+          <div
+            class="button-row stagger-field"
+            class:revealed={formRevealed}
+            style="--stagger: 2"
+          >
+            <button class="button button--secondary" onclick={handleCancel}>
+              Cancel
+            </button>
+            <button
+              class="button button--primary"
+              onclick={handleSubmit}
+              disabled={!isFormValid}
+            >
+              {#if ctx.ui.saving}
+                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                Updating...
+              {:else}
+                <i class="fas fa-check" aria-hidden="true"></i>
+                Update password
+              {/if}
+            </button>
+          </div>
+        {/if}
+      </div>
+    {/if}
+  </Crossfade>
 </div>
 
 <style>
