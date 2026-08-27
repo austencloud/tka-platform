@@ -172,6 +172,22 @@ boundary, not a literal final target. Its best river-side composition reaches a
 top-tier read; the complete orbit still exposes smooth distant slopes, a simple
 vent crown, and weaker rear composition.
 
+## Gate 4 Volcanic World R6 continuity correction
+
+Tracker `ATURN84Ov2hmjWUndebl` records Austen's correction that R5 still read as
+a contained vignette. R6 does not replace the Columnar Furnace or Blackglass
+Mineral Rift language. It expands the single terrain owner around the camera to
+380 by 335 metres, distributes eight asymmetrical geological provinces across
+foreground, middle distance, and horizon, and cuts three low saddles that read
+as routes onward instead of closing the scene into a bowl.
+
+The lava contract now runs from the distant vent through the negative-Z
+audience side of the frame. Fog and the scene clear colour share one horizon
+value, while the volcanic haze follows the active camera so free orbit cannot
+outrun the atmosphere. Registered evidence lives in
+`evidence/gate-4-volcanic-r6/`. Runtime capture remains pending because the
+checkout currently returns an unrelated SvelteKit virtual-CSS HTTP 500.
+
 ## Historical R2 material study
 
 The earlier pass tested four visual languages inside the same geometry so

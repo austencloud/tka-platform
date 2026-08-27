@@ -5,14 +5,19 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import sharp from "sharp";
 
-const volcanicR5 = process.argv.includes("--volcanic-r5");
+const volcanicRevision = process.argv.includes("--volcanic-r6")
+  ? "r6"
+  : process.argv.includes("--volcanic-r5")
+    ? "r5"
+    : null;
+const volcanic = volcanicRevision !== null;
 const evidenceDirectory = resolve(
-  volcanicR5
-    ? "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r5"
+  volcanic
+    ? `docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-${volcanicRevision}`
     : "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-columnar-r4"
 );
-const sourcePrefix = volcanicR5
-  ? "ember-volcanic-world-production-slice-r5"
+const sourcePrefix = volcanic
+  ? `ember-volcanic-world-production-slice-${volcanicRevision}`
   : "ember-columnar-production-slice-r4";
 
 const views = [
@@ -66,9 +71,9 @@ const composites = [
       headerHeight,
       `<rect width="${width}" height="${headerHeight}" fill="${palette.background}"/>
        <rect x="12" y="22" width="6" height="80" rx="3" fill="${palette.ember}"/>
-       <text x="34" y="50" fill="${palette.heading}" font-family="Segoe UI, sans-serif" font-size="30" font-weight="800">${volcanicR5 ? "EMBER GATE 4 · VOLCANIC WORLD" : "EMBER GATE 4 · COLUMNAR FURNACE"}</text>
-       <text x="34" y="80" fill="${palette.body}" font-family="Segoe UI, sans-serif" font-size="17">${volcanicR5 ? "Production slice r5 · continuous caldera basin · open lava channel · complete orbit" : "Production slice r4 · buried massif · fractured heat cavity · composed complete orbit"}</text>
-       <text x="34" y="104" fill="#708f91" font-family="Segoe UI, sans-serif" font-size="14">${volcanicR5 ? "230 m exterior field · distant active vent · rafted crust · no imported hero model" : "Non-repeating PBR basalt · collapsed secondary outcrops · clustered talus · no imported hero model"}</text>`
+       <text x="34" y="50" fill="${palette.heading}" font-family="Segoe UI, sans-serif" font-size="30" font-weight="800">${volcanic ? "EMBER GATE 4 · VOLCANIC WORLD" : "EMBER GATE 4 · COLUMNAR FURNACE"}</text>
+       <text x="34" y="80" fill="${palette.body}" font-family="Segoe UI, sans-serif" font-size="17">${volcanicRevision === "r6" ? "Production slice r6 · surrounding volcanic country · through-frame lava river · complete orbit" : volcanic ? "Production slice r5 · continuous caldera basin · open lava channel · complete orbit" : "Production slice r4 · buried massif · fractured heat cavity · composed complete orbit"}</text>
+       <text x="34" y="104" fill="#708f91" font-family="Segoe UI, sans-serif" font-size="14">${volcanicRevision === "r6" ? "380 × 335 m terrain field · three travel saddles · distant active vent · no imported hero model" : volcanic ? "230 m exterior field · distant active vent · rafted crust · no imported hero model" : "Non-repeating PBR basalt · collapsed secondary outcrops · clustered talus · no imported hero model"}</text>`
     ),
     left: 0,
     top: 0,
@@ -106,8 +111,8 @@ for (const [index, [camera, label]] of views.entries()) {
 
 const output = resolve(
   evidenceDirectory,
-  volcanicR5
-    ? "ember-volcanic-world-production-slice-r5-orbit-board.png"
+  volcanic
+    ? `ember-volcanic-world-production-slice-${volcanicRevision}-orbit-board.png`
     : "ember-columnar-production-slice-r4-orbit-board.png"
 );
 await sharp({
@@ -122,7 +127,7 @@ const sha256 = createHash("sha256")
   .digest("hex");
 process.stdout.write(`${output}\nsha256: ${sha256}\n`);
 
-if (volcanicR5) process.exit(0);
+if (volcanic) process.exit(0);
 
 const viewportProofs = [
   ["1920x1080", "4K @ 200% · 1920×1080"],

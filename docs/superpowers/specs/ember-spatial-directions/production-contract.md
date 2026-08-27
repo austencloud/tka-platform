@@ -259,6 +259,38 @@ contained to satisfy the volcanic-world direction.
   compositions remain visible limitations.
 - Gate result: `ready-for-review`, approval unset. Gate 5 remains pending.
 
+### Volcanic World Revision 6 continuity result
+
+Museum tracker `ATURN84Ov2hmjWUndebl` authorizes the correction from a rear-only
+basin to one continuous world around the camera. R6 preserves the R5 hero,
+materials, stage behavior, performer heading, and action clearance while
+expanding the terrain contract to 380 by 335 m and the river to seventeen shared
+control points ending beyond the audience camera.
+
+- Editable source: `blender/ember-volcanic-world-production-slice-r6.blend`
+- Build report:
+  `evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-report.json`
+- Eight-sector orbit board:
+  `evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-orbit-board.png`
+- Optimized runtime asset: `static/models/ember/ember-production-slice.glb`
+- Reversible optimized asset: `static/models/ember/ember-production-slice-r6.glb`
+- Geometry result: 192 authored mesh objects, 49,532 triangles, a
+  16,128-triangle terrain mesh, one surrounding terrain owner, three travel
+  saddles, one distant vent assembly, two channel levees, and no imported
+  source.
+- Delivery result: the 2.52 MiB asset uses nine KTX2 textures, Meshopt, and mesh
+  quantization.
+- Focused verification: eight R6 production-slice contract tests pass, the
+  absent historical integrated-room fixture remains an explicit todo, and
+  `svelte-check` reports zero errors and zero warnings.
+- Runtime boundary: live front-stage capture is pending because both the
+  primary and isolated dev routes currently fail before scene evaluation with
+  the checkout's SvelteKit virtual-CSS HTTP 500. The committed lockfile also
+  disagrees with `patchedDependencies`, so a frozen dependency repair cannot
+  proceed inside this scoped scene task.
+- Gate result: `in-progress`, approval unset. The implementation is complete;
+  runtime capture is the remaining verification item.
+
 ## Gate 5: Integrated room
 
 ### Implemented visual integration

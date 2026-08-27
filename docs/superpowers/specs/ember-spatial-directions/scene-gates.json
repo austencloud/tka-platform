@@ -21,7 +21,8 @@
       "gME4uHJawz9dtTlirRl8",
       "kqMUPC5UpCHjj7ts9atQ",
       "5otAzYdNg5Wp5E27mgfo",
-      "nu73zqvPJRxio4T2sWz7"
+      "nu73zqvPJRxio4T2sWz7",
+      "ATURN84Ov2hmjWUndebl"
     ]
   },
   "sequenceFingerprints": [],
@@ -38,7 +39,7 @@
       "statement": "The Columnar Furnace sits within one continuous exterior-scale volcanic basin while a distant vent and open lava channel establish far depth outside the 4.5 m action radius without forming a uniform enclosure.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/scene-development.md",
-        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r5/ember-volcanic-world-production-slice-r5-orbit-board.png"
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-orbit-board.png"
       ]
     },
     {
@@ -300,27 +301,15 @@
       "evidence": [
         {
           "kind": "locked-camera-set",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/lookdev-r3/ember-lookdev-r3-report.json"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-report.json"
         },
         {
           "kind": "visual-target-board",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/lookdev-r3/ember-lookdev-r3-comparison-board.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-orbit-board.png"
         },
         {
           "kind": "material-lighting-brief",
           "path": "docs/superpowers/specs/ember-spatial-directions/look-development.md"
-        },
-        {
-          "kind": "riven-lava-tube-orbit-board",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/lookdev-r3/ember-lookdev-r3-riven-lava-tube-orbit-board.png"
-        },
-        {
-          "kind": "columnar-furnace-orbit-board",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/lookdev-r3/ember-lookdev-r3-columnar-furnace-orbit-board.png"
-        },
-        {
-          "kind": "obsidian-shear-orbit-board",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/lookdev-r3/ember-lookdev-r3-obsidian-shear-orbit-board.png"
         },
         {
           "kind": "editable-blender-source",
@@ -354,35 +343,23 @@
     },
     {
       "id": "production-slice",
-      "status": "ready-for-review",
+      "status": "in-progress",
       "evidence": [
         {
           "kind": "vertical-slice-build",
-          "path": "blender/ember-volcanic-world-production-slice-r5.blend"
+          "path": "blender/ember-volcanic-world-production-slice-r6.blend"
         },
         {
           "kind": "build-report",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r5/ember-volcanic-world-production-slice-r5-report.json"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-report.json"
         },
         {
           "kind": "registered-orbit-board",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r5/ember-volcanic-world-production-slice-r5-orbit-board.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-orbit-board.png"
         },
         {
-          "kind": "performance-report",
+          "kind": "baseline-performance-report",
           "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r5/ember-volcanic-world-production-slice-r5-runtime-report.json"
-        },
-        {
-          "kind": "baseline-runtime-hero",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-columnar-r4/ember-columnar-runtime-front-stage-1920x1080.webp"
-        },
-        {
-          "kind": "baseline-interaction-capture",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-columnar-r4/ember-columnar-runtime-four-performers-front-stage-1920x1080.webp"
-        },
-        {
-          "kind": "baseline-viewport-sweep",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-columnar-r4/ember-columnar-runtime-front-stage-viewport-sweep.webp"
         },
         {
           "kind": "optimized-glb",
@@ -391,18 +368,22 @@
         {
           "kind": "reversible-r5-glb",
           "path": "static/models/ember/ember-production-slice-r5.glb"
+        },
+        {
+          "kind": "reversible-r6-glb",
+          "path": "static/models/ember/ember-production-slice-r6.glb"
         }
       ],
       "checks": [
         {
           "name": "direct-authorship",
           "status": "passed",
-          "evidence": "The R5 build report records an empty source list; all 192 mesh objects are scene-authored deterministic geometry with no Meshy, web, Ocean, generated, or pre-existing hero import."
+          "evidence": "The R6 build report records an empty source list; all 192 mesh objects are scene-authored deterministic geometry with no Meshy, web, Ocean, generated, or pre-existing hero import."
         },
         {
           "name": "anti-repetition",
           "status": "passed",
-          "evidence": "Revision 5 retains the irregular 31-joint Columnar Furnace and complete-orbit outcrops, then adds one continuous 230 m basin instead of a repeated ring, one distant vent assembly, and two authored river levees."
+          "evidence": "Revision 6 retains the irregular 31-joint Columnar Furnace and complete-orbit outcrops, then expands one terrain owner to 380 by 335 m around the camera with eight offset geological provinces, three low travel saddles, one distant vent assembly, and two authored river levees."
         },
         {
           "name": "action-clearance",
@@ -412,7 +393,7 @@
         {
           "name": "performance",
           "status": "passed",
-          "evidence": "The 2,581,844-byte asset requires Meshopt, mesh quantization, and nine KTX2 textures; the warm request returned 304 and environment readiness reached 100%. The static artifact is 40,316 triangles and its largest mesh is 6,912 triangles."
+          "evidence": "The optimized R6 asset requires Meshopt, mesh quantization, and nine KTX2 textures and remains below five megabytes. The static artifact is 49,532 triangles and its largest mesh is 16,128 triangles."
         },
         {
           "name": "interaction-state",
@@ -426,23 +407,23 @@
         },
         {
           "name": "runtime-console",
-          "status": "passed",
-          "evidence": "The complete Blender orbit, four live runtime angles, and 1920x1080, 2560x1440, 3840x2160, 1440x900, 820x1180, 960x412, and 375x667 runtime proofs passed after renderer settle with zero slice-owned console errors or warnings."
+          "status": "pending",
+          "evidence": "R6 live capture is blocked by the checkout's SvelteKit virtual-CSS HTTP 500 and patchedDependencies/lockfile mismatch; R5 runtime evidence remains the baseline."
         },
         {
           "name": "focused-verification",
           "status": "passed",
-          "evidence": "27 focused lava-geometry, asset, stage-bound, and camera tests passed across four files; svelte-check completed with zero errors and zero warnings."
+          "evidence": "The focused R6 Ember asset contract passed eight executable tests with one historical integrated-room fixture recorded as todo; svelte-check completed with zero errors and zero warnings."
         },
         {
           "name": "volcanic-world-composition",
           "status": "passed",
-          "evidence": "One continuous basin spans 230 m across and 147 m in depth with near, middle, and far material bands, while the river-side live view proves the scene reads as an exterior-scale lava landscape rather than a contained room."
+          "evidence": "One continuous terrain mesh spans 380 m across and 335 m in depth around the camera. The registered orbit board shows overlapping foreground, middle, and distant landforms in all eight sectors, with low saddles instead of a uniform enclosing rim."
         },
         {
           "name": "lava-river",
           "status": "passed",
-          "evidence": "A shared ten-point downhill channel drives the static levees, runtime indexed spline surface, warped moving leads, rafted dark crust, fog response, and three sampled point lights while remaining outside the action radius."
+          "evidence": "A shared seventeen-point downhill channel drives the static levees and runtime indexed spline surface from the distant vent through the audience side of frame while remaining outside the action radius."
         }
       ],
       "approval": null

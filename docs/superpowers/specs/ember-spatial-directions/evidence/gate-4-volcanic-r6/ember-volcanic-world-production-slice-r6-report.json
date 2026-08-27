@@ -1,0 +1,307 @@
+{
+  "revision": "ember-broken-rift-gate4-volcanic-r6",
+  "blenderVersion": "5.0.1",
+  "authority": {
+    "spatial": "docs/superpowers/specs/ember-spatial-directions/scene-development.md#r1-outcome",
+    "selectedLook": "docs/superpowers/specs/ember-spatial-directions/evidence/lookdev-r3/ember-lookdev-r3-comparison-board.png",
+    "gate3SelectionTrackerItem": "QRHbwRQLhM7Zn9LyYHOd",
+    "gate4AuthorizationTrackerItem": "gME4uHJawz9dtTlirRl8",
+    "gate4ArtRevisionTrackerItem": "5otAzYdNg5Wp5E27mgfo",
+    "gate4VolcanicWorldTrackerItem": "nu73zqvPJRxio4T2sWz7",
+    "gate4ContinuityTrackerItem": "ATURN84Ov2hmjWUndebl"
+  },
+  "sources": [],
+  "provenance": "The complete hero formation is scene-authored deterministic geometry. No pre-existing, generated, or downloaded model is imported.",
+  "artifacts": {
+    "blend": "blender/ember-volcanic-world-production-slice-r6.blend",
+    "rawGlb": "static/models/ember/ember-production-slice_raw.glb",
+    "rawGlbSha256": "e41b4d8a5a05d8a834fa122d04cfa29ce20af6cb2b75644e3d267a8426d1c700",
+    "rawGlbBytes": 6388508,
+    "worldContract": "src/lib/shared/3d/environments/domain/models/scene-configs/ember-volcanic-world-r6.json",
+    "worldContractSha256": "90265f3329288e919e30434f0925bdce2c99208f37e9494d394e93f19a1928b3"
+  },
+  "contract": {
+    "stageSurfaceLocalY": 0.5,
+    "clearActionRadiusMeters": 4.5,
+    "minimumStructuralRadialClearanceMeters": 6.156,
+    "heroCenterBlenderXYZ": [
+      0.85,
+      -14.35,
+      3.45
+    ],
+    "heroCenterRuntimeXYZ": [
+      0.85,
+      3.45,
+      14.35
+    ],
+    "heroInPositiveRuntimeZFarField": true,
+    "selectedDirection": "Columnar Furnace",
+    "revisionDirection": "Continuous volcanic country with surrounding terrain, travel corridors, and a through-frame lava river",
+    "performerFacing": "negative-runtime-z-toward-front-stage-audience",
+    "lavaRiverControlPointsRuntimeXZHeight": [
+      [
+        -20.0,
+        156.0,
+        15.2
+      ],
+      [
+        -25.0,
+        132.0,
+        12.7
+      ],
+      [
+        -20.0,
+        108.0,
+        10.6
+      ],
+      [
+        -17.0,
+        82.0,
+        8.7
+      ],
+      [
+        -12.0,
+        67.0,
+        6.5
+      ],
+      [
+        -4.0,
+        52.0,
+        4.4
+      ],
+      [
+        8.0,
+        40.0,
+        2.9
+      ],
+      [
+        11.0,
+        29.0,
+        1.9
+      ],
+      [
+        10.0,
+        19.0,
+        1.1
+      ],
+      [
+        12.0,
+        11.0,
+        0.55
+      ],
+      [
+        14.0,
+        2.0,
+        0.25
+      ],
+      [
+        12.0,
+        -8.0,
+        0.1
+      ],
+      [
+        8.0,
+        -24.0,
+        -0.02
+      ],
+      [
+        -1.0,
+        -43.0,
+        -0.12
+      ],
+      [
+        -14.0,
+        -64.0,
+        -0.18
+      ],
+      [
+        -10.0,
+        -91.0,
+        -0.24
+      ],
+      [
+        2.0,
+        -122.0,
+        -0.32
+      ]
+    ]
+  },
+  "geometry": {
+    "meshObjectCount": 192,
+    "triangleCount": 49532,
+    "maximumMeshTriangleCount": 16128,
+    "maximumMeshTriangleObject": "Ember_Volcanic_Basin",
+    "materialCount": 10,
+    "materials": [
+      "Ember_Ash_Deposit",
+      "Ember_Columnar_Basalt_PBR",
+      "Ember_Columnar_Cap_PBR",
+      "Ember_Far_Caldera_PBR",
+      "Ember_Fissure_Chasm",
+      "Ember_Ground_Blackglass_PBR",
+      "Ember_Live_Fissure",
+      "Ember_Middle_Caldera_PBR",
+      "Ember_Mineral_Ochre",
+      "Ember_Near_Caldera_PBR"
+    ],
+    "roleCounts": {
+      "buried-column-talus": 36,
+      "caldera-bank": 3,
+      "collapsed-entablature": 5,
+      "columnar-joint": 31,
+      "cooled-fissure": 3,
+      "distant-volcanic-vent": 2,
+      "fallen-column": 3,
+      "fractured-gate-fragment": 4,
+      "lava-channel-levee": 2,
+      "live-fissure": 3,
+      "perimeter-talus-cluster": 49,
+      "playable-shelf": 1,
+      "playable-surface": 1,
+      "secondary-columnar-outcrop": 33,
+      "shelf-stratum": 15,
+      "volcanic-basin": 1
+    },
+    "columnarJointCount": 31,
+    "columnSideDistribution": {
+      "5": 15,
+      "6": 10,
+      "7": 6
+    },
+    "columnHeightRangeMeters": [
+      3.7722,
+      10.1411
+    ],
+    "maximumCapLossMeters": 1.1277,
+    "authoredHeroMeshCount": 159,
+    "authoredWorldMeshCount": 192,
+    "volcanicBasinCount": 1,
+    "lavaChannelLeveeCount": 2,
+    "boundsBlenderXYZ": {
+      "min": [
+        -190.0,
+        -190.0,
+        -5.7825
+      ],
+      "max": [
+        190.0,
+        145.0,
+        45.2109
+      ]
+    }
+  },
+  "cameras": {
+    "hero": {
+      "position": [
+        0.0,
+        19.8,
+        6.55
+      ],
+      "type": "PERSP",
+      "lensMm": 40.0,
+      "orthoScale": null
+    },
+    "front-right": {
+      "position": [
+        14.8,
+        14.8,
+        8.0
+      ],
+      "type": "PERSP",
+      "lensMm": 43.0,
+      "orthoScale": null
+    },
+    "right": {
+      "position": [
+        20.0,
+        0.0,
+        7.5
+      ],
+      "type": "PERSP",
+      "lensMm": 45.0,
+      "orthoScale": null
+    },
+    "rear-right": {
+      "position": [
+        27.0,
+        -49.0,
+        14.0
+      ],
+      "type": "PERSP",
+      "lensMm": 50.0,
+      "orthoScale": null
+    },
+    "rear": {
+      "position": [
+        0.0,
+        -54.0,
+        15.0
+      ],
+      "type": "PERSP",
+      "lensMm": 50.0,
+      "orthoScale": null
+    },
+    "rear-left": {
+      "position": [
+        -27.0,
+        -49.0,
+        14.0
+      ],
+      "type": "PERSP",
+      "lensMm": 50.0,
+      "orthoScale": null
+    },
+    "left": {
+      "position": [
+        -20.0,
+        0.0,
+        7.5
+      ],
+      "type": "PERSP",
+      "lensMm": 45.0,
+      "orthoScale": null
+    },
+    "front-left": {
+      "position": [
+        -14.8,
+        14.8,
+        8.0
+      ],
+      "type": "PERSP",
+      "lensMm": 43.0,
+      "orthoScale": null
+    },
+    "detail": {
+      "position": [
+        10.8,
+        0.8,
+        6.9
+      ],
+      "type": "PERSP",
+      "lensMm": 52.0,
+      "orthoScale": null
+    },
+    "plan": {
+      "position": [
+        0.0,
+        -8.0,
+        135.0
+      ],
+      "type": "ORTHO",
+      "lensMm": null,
+      "orthoScale": 230.0
+    }
+  },
+  "renders": {
+    "hero": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-hero.png",
+    "front-right": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-front-right.png",
+    "right": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-right.png",
+    "rear-right": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-rear-right.png",
+    "rear": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-rear.png",
+    "rear-left": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-rear-left.png",
+    "left": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-left.png",
+    "front-left": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-front-left.png",
+    "detail": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-detail.png",
+    "plan": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-plan.png"
+  }
+}

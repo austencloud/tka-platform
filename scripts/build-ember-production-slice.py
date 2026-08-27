@@ -1,9 +1,10 @@
 """Build Ember's Gate 4 volcanic-world production slice.
 
 The selected Gate 3 target owns the composition: a safe blackglass shelf faces
-an asymmetric volcanic escarpment split by one narrow incandescent fault. The
-R5 revision carries that landmark into a layered caldera interior and a carved
-open lava channel. No pre-existing or generated hero model is imported.
+an asymmetric volcanic escarpment split by one narrow incandescent fault. R6
+carries that landmark into continuous volcanic country around the camera and
+sends one open lava channel through the audience frame. No pre-existing or
+generated hero model is imported.
 """
 
 from __future__ import annotations
@@ -23,12 +24,12 @@ from mathutils import Vector
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SPEC_DIR = PROJECT_ROOT / "docs" / "superpowers" / "specs" / "ember-spatial-directions"
-EVIDENCE_DIR = SPEC_DIR / "evidence" / "gate-4-volcanic-r5"
-TEXTURE_DIR = PROJECT_ROOT / "blender" / "ember-volcanic-world-r5-textures"
-BLEND_PATH = PROJECT_ROOT / "blender" / "ember-volcanic-world-production-slice-r5.blend"
+EVIDENCE_DIR = SPEC_DIR / "evidence" / "gate-4-volcanic-r6"
+TEXTURE_DIR = PROJECT_ROOT / "blender" / "ember-volcanic-world-r6-textures"
+BLEND_PATH = PROJECT_ROOT / "blender" / "ember-volcanic-world-production-slice-r6.blend"
 RAW_GLB_PATH = PROJECT_ROOT / "static" / "models" / "ember" / "ember-production-slice_raw.glb"
-REPORT_PATH = EVIDENCE_DIR / "ember-volcanic-world-production-slice-r5-report.json"
-REVISION = "ember-broken-rift-gate4-volcanic-r5"
+REPORT_PATH = EVIDENCE_DIR / "ember-volcanic-world-production-slice-r6-report.json"
+REVISION = "ember-broken-rift-gate4-volcanic-r6"
 WORLD_CONTRACT_PATH = (
     PROJECT_ROOT
     / "src"
@@ -39,7 +40,7 @@ WORLD_CONTRACT_PATH = (
     / "domain"
     / "models"
     / "scene-configs"
-    / "ember-volcanic-world-r5.json"
+    / "ember-volcanic-world-r6.json"
 )
 WORLD_CONTRACT = json.loads(WORLD_CONTRACT_PATH.read_text(encoding="utf-8"))
 RIVER_POINTS_RUNTIME = [
@@ -1140,8 +1141,9 @@ def create_volcanic_basin(
     )
     columns = int(specification["columns"])
     rows = int(specification["rows"])
-    near_material_end = float(specification["nearMaterialEndsAtRuntimeZ"])
-    middle_material_end = float(specification["middleMaterialEndsAtRuntimeZ"])
+    near_material_end = float(specification["nearMaterialEndsAtDistance"])
+    middle_material_end = float(specification["middleMaterialEndsAtDistance"])
+    action_floor_radius = float(specification["actionFloorRadius"])
     seed = int(specification["seed"])
     vertices: list[tuple[float, float, float]] = []
     faces: list[tuple[int, int, int, int]] = []
@@ -1156,37 +1158,45 @@ def create_volcanic_basin(
         for column in range(columns + 1):
             x_t = column / columns
             x = x_min + (x_max - x_min) * x_t
-            lateral = abs(x) / (54.0 + runtime_z * 0.31)
-            side_rise = max(0.0, lateral - 0.28) / 0.72
-            side_rise = min(1.0, side_rise)
-            side_rise = side_rise * side_rise * (3.0 - 2.0 * side_rise)
-            far_rise = max(0.0, (z_t - 0.54) / 0.46)
-            far_rise = min(1.0, far_rise)
-            far_rise = far_rise * far_rise * (3.0 - 2.0 * far_rise)
-
-            # A continuous basin floor becomes steep side country and finally
-            # an irregular distant rim. Offset shoulders avoid a stadium bowl.
-            base_height = 0.05 + z_t * 3.2
-            height = base_height + side_rise * (4.0 + 17.0 * z_t)
-            rim_variation = (
-                0.72
-                + math.sin(x * 0.052 + seed_phase) * 0.16
-                + math.sin(x * 0.119 - seed_phase * 0.4) * 0.08
+            radial_distance = math.hypot(x, runtime_z)
+            terrain_weight = max(
+                0.0,
+                min(1.0, (radial_distance - action_floor_radius) / 34.0),
             )
-            height += far_rise * 19.0 * rim_variation
+            terrain_weight = terrain_weight * terrain_weight * (3.0 - 2.0 * terrain_weight)
+
+            # The shelf sits inside one landmass, not in a circular arena.
+            # Offset provinces provide near, middle, and far overlap; the low
+            # saddles between them remain visible routes into the larger world.
+            height = -0.32 + terrain_weight * (0.45 + radial_distance * 0.014)
             for ridge_x, ridge_z, ridge_width_x, ridge_width_z, ridge_height in (
-                (-50.0, 54.0, 25.0, 25.0, 6.8),
-                (58.0, 62.0, 24.0, 27.0, 7.8),
-                (-76.0, 86.0, 31.0, 31.0, 10.5),
-                (72.0, 94.0, 34.0, 34.0, 12.0),
+                (-92.0, -82.0, 48.0, 40.0, 17.0),
+                (82.0, -98.0, 54.0, 43.0, 19.0),
+                (-148.0, -5.0, 48.0, 66.0, 22.0),
+                (148.0, 30.0, 50.0, 64.0, 20.0),
+                (-108.0, 102.0, 57.0, 51.0, 20.0),
+                (86.0, 120.0, 52.0, 49.0, 24.0),
+                (-50.0, 174.0, 62.0, 42.0, 27.0),
+                (78.0, 178.0, 64.0, 39.0, 21.0),
             ):
                 ridge_distance = ((x - ridge_x) / ridge_width_x) ** 2
                 ridge_distance += ((runtime_z - ridge_z) / ridge_width_z) ** 2
-                height += math.exp(-ridge_distance * 1.9) * ridge_height
-            height += (
-                math.sin(x * 0.17 + runtime_z * 0.063 + seed_phase) * 0.38
-                + math.sin(x * 0.071 - runtime_z * 0.109) * 0.22
-            ) * (0.25 + z_t * 0.85)
+                height += terrain_weight * math.exp(-ridge_distance * 1.85) * ridge_height
+
+            for pass_x, pass_z, pass_width_x, pass_width_z, pass_depth in (
+                (-3.0, -108.0, 38.0, 88.0, 9.0),
+                (108.0, -18.0, 34.0, 72.0, 7.0),
+                (-22.0, 164.0, 38.0, 54.0, 8.0),
+            ):
+                pass_distance = ((x - pass_x) / pass_width_x) ** 2
+                pass_distance += ((runtime_z - pass_z) / pass_width_z) ** 2
+                height -= terrain_weight * math.exp(-pass_distance * 2.0) * pass_depth
+
+            height += terrain_weight * (
+                math.sin(x * 0.061 + runtime_z * 0.039 + seed_phase) * 0.78
+                + math.sin(x * 0.127 - runtime_z * 0.083) * 0.34
+                + math.sin((x + runtime_z) * 0.021 - seed_phase * 0.35) * 0.62
+            )
 
             distance, river_height = river_distance_and_height(x, y, river)
             channel_influence = max(0.0, 1.0 - distance / (channel_half_width + 5.2))
@@ -1195,9 +1205,11 @@ def create_volcanic_basin(
             vertices.append((x, y, height))
     row_width = columns + 1
     for row in range(rows):
-        runtime_z = runtime_z_min + (runtime_z_max - runtime_z_min) * ((row + 0.5) / rows)
-        material_index = 0 if runtime_z < near_material_end else 1 if runtime_z < middle_material_end else 2
         for column in range(columns):
+            runtime_z = runtime_z_min + (runtime_z_max - runtime_z_min) * ((row + 0.5) / rows)
+            x = x_min + (x_max - x_min) * ((column + 0.5) / columns)
+            radial_distance = math.hypot(x, runtime_z)
+            material_index = 0 if radial_distance < near_material_end else 1 if radial_distance < middle_material_end else 2
             a = row * row_width + column
             b = a + 1
             c = (row + 1) * row_width + column + 1
@@ -1889,13 +1901,13 @@ def create_columnar_furnace_r3(
 def build_production_geometry(
     production: bpy.types.Collection,
 ) -> dict[str, object]:
-    print("[ember-r5] baking blackglass textures", flush=True)
+    print("[ember-r6] baking blackglass textures", flush=True)
     textures = create_blackglass_textures()
     blackglass = create_blackglass_material(textures)
-    print("[ember-r5] baking basalt textures", flush=True)
+    print("[ember-r6] baking basalt textures", flush=True)
     basalt_textures = create_basalt_textures("weathered-basalt", seed=250827)
     cap_textures = create_basalt_textures("fresh-basalt-fracture", seed=250917, fresh_fracture=True)
-    print("[ember-r5] creating materials", flush=True)
+    print("[ember-r6] creating materials", flush=True)
     columnar_basalt = create_texture_material(
         "Ember_Columnar_Basalt_PBR",
         "columnar-joint-face",
@@ -1947,7 +1959,7 @@ def build_production_geometry(
     ash = create_plain_material("Ember_Ash_Deposit", (0.035, 0.048, 0.047, 1.0), 0.985)
 
     create_caldera_banks(SHELF_OUTLINE, ash, columnar_basalt, production)
-    print("[ember-r5] authoring shelf", flush=True)
+    print("[ember-r6] authoring shelf", flush=True)
 
     create_extruded_polygon(
         "Ember_Blackglass_Shelf",
@@ -2020,7 +2032,7 @@ def build_production_geometry(
                 f"fissure-{index + 1:02d}-live-{live_index + 1:02d}",
             )
 
-    print("[ember-r5] authoring furnace and perimeter", flush=True)
+    print("[ember-r6] authoring furnace and perimeter", flush=True)
     furnace = create_columnar_furnace_r3(
         columnar_basalt,
         columnar_cap,
@@ -2029,7 +2041,7 @@ def build_production_geometry(
         chasm,
         production,
     )
-    print("[ember-r5] authoring caldera depth and lava channel", flush=True)
+    print("[ember-r6] authoring surrounding volcanic country and lava channel", flush=True)
     river = sample_river_centerline()
     volcanic_basin = create_volcanic_basin(
         [near_caldera, middle_caldera, far_caldera], production, river
@@ -2219,7 +2231,7 @@ def configure_render() -> None:
     scene.render.use_file_extension = True
     scene.view_settings.look = "AgX - Medium High Contrast"
     scene.view_settings.exposure = 1.05
-    world = bpy.data.worlds.new("Ember_Volcanic_World_R5")
+    world = bpy.data.worlds.new("Ember_Volcanic_World_R6")
     world.use_nodes = True
     background = world.node_tree.nodes.get("Background")
     background.inputs["Color"].default_value = (0.012, 0.02, 0.021, 1.0)
@@ -2230,7 +2242,7 @@ def configure_render() -> None:
 def render_evidence(cameras: dict[str, bpy.types.Object]) -> dict[str, str]:
     renders: dict[str, str] = {}
     for name, camera in cameras.items():
-        output = EVIDENCE_DIR / f"ember-volcanic-world-production-slice-r5-{name}.png"
+        output = EVIDENCE_DIR / f"ember-volcanic-world-production-slice-r6-{name}.png"
         bpy.context.scene.camera = camera
         bpy.context.scene.render.filepath = str(output)
         bpy.ops.render.render(write_still=True)
@@ -2328,6 +2340,7 @@ def scene_report(
             "gate4AuthorizationTrackerItem": "gME4uHJawz9dtTlirRl8",
             "gate4ArtRevisionTrackerItem": "5otAzYdNg5Wp5E27mgfo",
             "gate4VolcanicWorldTrackerItem": "nu73zqvPJRxio4T2sWz7",
+            "gate4ContinuityTrackerItem": "ATURN84Ov2hmjWUndebl",
         },
         "sources": [],
         "provenance": (
@@ -2350,7 +2363,10 @@ def scene_report(
             "heroCenterRuntimeXYZ": [HERO_CENTER[0], HERO_CENTER[2], -HERO_CENTER[1]],
             "heroInPositiveRuntimeZFarField": True,
             "selectedDirection": "Columnar Furnace",
-            "revisionDirection": "Volcanic world with layered caldera depth and an open lava channel",
+            "revisionDirection": (
+                "Continuous volcanic country with surrounding terrain, travel "
+                "corridors, and a through-frame lava river"
+            ),
             "performerFacing": "negative-runtime-z-toward-front-stage-audience",
             "lavaRiverControlPointsRuntimeXZHeight": RIVER_POINTS_RUNTIME,
         },
@@ -2401,14 +2417,14 @@ def main() -> None:
     clean_scene()
     production = make_collection("EMBER_PRODUCTION_SLICE")
     qa = make_collection("EMBER_QA")
-    print("[ember-r5] building production geometry", flush=True)
+    print("[ember-r6] building production geometry", flush=True)
     build_production_geometry(production)
-    print("[ember-r5] configuring QA scene", flush=True)
+    print("[ember-r6] configuring QA scene", flush=True)
     configure_render()
     cameras = create_qa_scene(qa)
-    print("[ember-r5] rendering evidence", flush=True)
+    print("[ember-r6] rendering evidence", flush=True)
     renders = render_evidence(cameras)
-    print("[ember-r5] exporting production asset", flush=True)
+    print("[ember-r6] exporting production asset", flush=True)
     export_production(production)
     report = scene_report(production, cameras, renders)
     REPORT_PATH.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

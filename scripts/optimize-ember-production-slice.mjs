@@ -85,7 +85,7 @@ function applyEmberMaterialProfile(document) {
 }
 
 const runtimeOutput = "static/models/ember/ember-production-slice.glb";
-const versionedOutput = "static/models/ember/ember-production-slice-r5.glb";
+const versionedOutput = "static/models/ember/ember-production-slice-r6.glb";
 
 await optimizeGltfKtx2({
   input: "static/models/ember/ember-production-slice_raw.glb",
@@ -100,4 +100,4 @@ await optimizeGltfKtx2({
 });
 
 await copyFile(runtimeOutput, versionedOutput);
-console.log(`  preserved reversible R5 asset: ${versionedOutput}`);
+console.log(`  preserved reversible R6 asset: ${versionedOutput}`);

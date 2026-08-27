@@ -190,3 +190,19 @@ The current evidence is `evidence/gate-4-volcanic-r5/`. The production slice is
 pending. The river-side composition reaches the strongest bar in the scene,
 but the complete orbit is not recorded as a final 10/10: distant terrain form,
 the vent crown, and the rear compositions remain the next art targets.
+
+## R6 continuity correction
+
+Museum tracker `ATURN84Ov2hmjWUndebl` corrects the remaining R5 set-edge read.
+The terrain contract now spans runtime X `[-190, 190]` and runtime Z
+`[-145, 190]`, so the audience camera, performance shelf, complete orbit, and
+distant vent all occupy one continuous heightfield. The central 23 m remains a
+low action floor. Eight offset terrain provinces create overlapping depth around
+that floor, and three subtracted saddles preserve visible travel corridors.
+
+The river expands from ten to seventeen shared control points and continues to
+runtime Z `-122`, beyond the front camera. R6 keeps the same 6.156 m computed
+minimum structural clearance around the protected 4.5 m action radius. Its
+registered source, report, and orbit evidence live in
+`evidence/gate-4-volcanic-r6/`; live runtime verification remains pending on the
+checkout's unrelated SvelteKit HTTP 500.
