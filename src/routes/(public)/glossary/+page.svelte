@@ -7,7 +7,10 @@
   import GlossaryTermDetail from "./_components/GlossaryTermDetail.svelte";
   import LetterCodex from "./_components/LetterCodex.svelte";
   import CodexBoardSwitcher from "./_components/codex-boards/CodexBoardSwitcher.svelte";
-  import { readBoard, type BoardKey } from "./_components/codex-boards/board-choice";
+  import {
+    readBoard,
+    type BoardKey,
+  } from "./_components/codex-boards/board-choice";
   import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
   import {
     matchesGlossaryTerm,
@@ -446,7 +449,11 @@
   {@html `<script type="application/ld+json">${jsonLd}</script>`}
 </svelte:head>
 
-<div class="glossary-shell" class:landing-hub={landingView} class:codex-view={codexView}>
+<div
+  class="glossary-shell"
+  class:landing-hub={landingView}
+  class:codex-view={codexView}
+>
   <!-- ── desktop sidebar: search + category nav (terms render once, in the
        master list — the rail never repeats them). Hidden on the landing view
        (no drill-down destination yet), where the hub's own centered search
@@ -620,7 +627,11 @@
     {#if codexView}
       <div class="codex-host">
         {#key codexInitialLetter}
-          <LetterCodex initialLetter={codexInitialLetter} board={codexBoard} />
+          <LetterCodex
+            initialLetter={codexInitialLetter}
+            board={codexBoard}
+            descriptions={data.codex.descriptions}
+          />
         {/key}
       </div>
     {/if}

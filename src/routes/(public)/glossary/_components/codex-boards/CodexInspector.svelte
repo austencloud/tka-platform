@@ -18,45 +18,55 @@
 
   let {
     info,
+    description = "",
     variations,
     isLoading,
     loadError,
     onRetry,
-    orientation = "column",
+    showHero = true,
   }: {
     info: CodexLetterInfo;
+    /** One domain-backed description of the selected letter. The overlay uses
+     *  it in place of repeating the index pictograph at hero scale. */
+    description?: string;
     variations: PictographData[];
     isLoading: boolean;
     loadError: boolean;
     onRetry: () => void;
-    /** "row" lays the hero beside the variations (wide stages and strips);
-     *  "column" stacks them (narrow panels and phones). */
-    orientation?: "row" | "column";
+    /** Stage keeps the large teaching view. The overlay already starts from a
+     *  full-size index cell, so it opens directly on the useful variations. */
+    showHero?: boolean;
   } = $props();
 
   const heroData = $derived(codexData(info.id));
 </script>
 
-<div class="inspector {orientation}">
-  <div class="lede">
-    <div class="hero">
-      <GuidePictograph
-        data={heroData}
-        size="lg"
-        showGrid={true}
-        showArrows={true}
-        showTKA={true}
-        showNonRadialPoints={false}
-        forceTheme="dark"
-        eager={true}
-      />
+<div class="inspector" class:without-hero={!showHero}>
+  {#if showHero}
+    <div class="lede">
+      <div class="hero">
+        <GuidePictograph
+          data={heroData}
+          size="lg"
+          showGrid={true}
+          showArrows={true}
+          showTKA={true}
+          showNonRadialPoints={false}
+          forceTheme="dark"
+          eager={true}
+        />
+      </div>
+      <div class="ident">
+        <span class="ident-name" style:color={info.typeColor}
+          >{info.typeName}</span
+        >
+        {#if info.name}<span class="ident-greek">{info.name}</span>{/if}
+        <span class="ident-transition">{info.transition}</span>
+      </div>
     </div>
-    <div class="ident">
-      <span class="ident-name" style:color={info.typeColor}>{info.typeName}</span>
-      {#if info.name}<span class="ident-greek">{info.name}</span>{/if}
-      <span class="ident-transition">{info.transition}</span>
-    </div>
-  </div>
+  {:else if description}
+    <p class="description">{description}</p>
+  {/if}
 
   <div class="vars">
     {#if isLoading}
@@ -98,16 +108,22 @@
 <style>
   .inspector {
     display: flex;
+    flex-direction: column;
     gap: 1.25rem;
     min-width: 0;
     --pictograph-border: none;
   }
-  .inspector.column {
-    flex-direction: column;
+  .inspector.without-hero {
+    gap: 1rem;
   }
-  .inspector.row {
-    flex-direction: row;
-    align-items: flex-start;
+
+  .description {
+    margin: 0;
+    max-width: 72ch;
+    color: var(--theme-text-muted, oklch(0.78 0.015 270));
+    font-size: var(--font-size-min, 0.875rem);
+    line-height: 1.65;
+    text-wrap: pretty;
   }
 
   .lede {
@@ -174,7 +190,10 @@
      never leaves a row holding one. The host picks it. */
   .var-grid {
     display: grid;
-    grid-template-columns: repeat(var(--codex-var-cols, 4), var(--codex-var-size, 7rem));
+    grid-template-columns: repeat(
+      var(--codex-var-cols, 4),
+      var(--codex-var-size, 7rem)
+    );
     justify-content: var(--codex-var-justify, start);
     gap: 0;
   }

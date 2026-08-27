@@ -33,7 +33,11 @@
   import CodexInspector from "./codex-boards/CodexInspector.svelte";
   import CodexTypeLegend from "./codex-boards/CodexTypeLegend.svelte";
   import type { BoardKey } from "./codex-boards/board-choice";
-  import { CODEX_BY_LABEL, CODEX_LETTERS, type CodexLetterInfo } from "./codex-boards/codex-letters";
+  import {
+    CODEX_BY_LABEL,
+    CODEX_LETTERS,
+    type CodexLetterInfo,
+  } from "./codex-boards/codex-letters";
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -41,7 +45,12 @@
   let {
     initialLetter = "A",
     board = "atlas",
-  }: { initialLetter?: string; board?: BoardKey } = $props();
+    descriptions,
+  }: {
+    initialLetter?: string;
+    board?: BoardKey;
+    descriptions: Record<string, string>;
+  } = $props();
 
   // Hover/selected ring - the shared primitive the guide's codex cells already
   // use, so the two surfaces highlight identically. CodexCell reads it from
@@ -56,6 +65,7 @@
   selection.select(fallback.id);
 
   const info = $derived(CODEX_LETTERS.get(selectedId) ?? fallback);
+  const description = $derived(descriptions[info.label] ?? "");
 
   let allPictographs = $state<PictographData[]>([]);
   let isLoading = $state(true);
@@ -69,7 +79,9 @@
     isLoading = true;
     loadError = false;
     try {
-      allPictographs = await letterQueryHandler.getAllPictographVariations(GridMode.DIAMOND);
+      allPictographs = await letterQueryHandler.getAllPictographVariations(
+        GridMode.DIAMOND
+      );
     } catch (e) {
       console.error("LetterCodex: variations failed to load", e);
       loadError = true;
@@ -148,11 +160,12 @@
     <div class="overlay-body">
       <CodexInspector
         {info}
+        {description}
         {variations}
         {isLoading}
         {loadError}
         onRetry={load}
-        orientation="row"
+        showHero={false}
       />
     </div>
   </BaseModal>
@@ -168,7 +181,6 @@
 
   .overlay-body {
     padding: 1rem 1.25rem 1.25rem;
-    --codex-hero-size: clamp(9rem, 34vw, 18rem);
     --codex-var-cols: 4;
     --codex-var-size: clamp(4rem, 14vw, 8rem);
   }

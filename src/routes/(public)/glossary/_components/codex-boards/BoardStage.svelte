@@ -59,14 +59,7 @@
     </div>
 
     <div class="stage" bind:this={stageEl}>
-      <CodexInspector
-        {info}
-        {variations}
-        {isLoading}
-        {loadError}
-        {onRetry}
-        orientation="column"
-      />
+      <CodexInspector {info} {variations} {isLoading} {loadError} {onRetry} />
     </div>
   </div>
 </div>
@@ -163,11 +156,7 @@
        Eight variation columns, not four: a letter carries 8 or 16 variations,
        so eight lands them in one clean row or two with nothing stranded, and in
        a stacked column that is the row width the panel actually has. */
-    --codex-hero-size: clamp(
-      11rem,
-      min(74cqi, calc(100dvh - 26rem)),
-      46rem
-    );
+    --codex-hero-size: clamp(11rem, min(74cqi, calc(100dvh - 26rem)), 46rem);
     --codex-var-cols: 8;
     --codex-var-size: calc((100cqi - 8px) / 8);
     --codex-var-justify: center;
