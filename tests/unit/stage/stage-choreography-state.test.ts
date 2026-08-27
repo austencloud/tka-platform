@@ -5,6 +5,11 @@ import { sampleStageFormations } from "$lib/features/stage/domain/stage-formatio
 import { generatePresetPositions } from "$lib/features/stage/state/formation-presets";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { SceneEnvironmentId } from "$lib/shared/3d/environments/domain/scene-environment";
+import {
+  STUDIO_PROJECT_SCHEMA,
+  STUDIO_PROJECT_VERSION,
+} from "$lib/features/stage/domain/studio-project";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 function sequence(id: string, word: string, stepCount: number): SequenceData {
   return {
@@ -16,6 +21,37 @@ function sequence(id: string, word: string, stepCount: number): SequenceData {
 }
 
 describe("stage choreography state", () => {
+  it("seeds the same versioned Stage project for a guided solo start", () => {
+    const state = createStageChoreographyState();
+
+    state.applyStudioStarter({
+      startingMaterial: "choose-sequence",
+      performerCount: 1,
+      formation: "solo",
+      environmentId: SceneEnvironmentId.FOREST,
+      prop: PropType.POI,
+    });
+
+    expect(state.studioProject).toMatchObject({
+      schema: STUDIO_PROJECT_SCHEMA,
+      version: STUDIO_PROJECT_VERSION,
+      stage: {
+        environmentId: SceneEnvironmentId.FOREST,
+        sharedSequenceId: "tnd-quarter-opp-mpmp",
+      },
+    });
+    expect(state.choreography.performers).toHaveLength(1);
+    expect(state.choreography.formations).toHaveLength(1);
+    expect(state.choreography.formations[0]).toMatchObject({
+      atBeat: 0,
+      presetId: "solo",
+    });
+
+    state.undo();
+    expect(state.choreography.performers).toHaveLength(3);
+    state.destroy();
+  });
+
   it("creates isolated Stage documents holding one lane across the show", () => {
     const first = createStageChoreographyState();
     const second = createStageChoreographyState();

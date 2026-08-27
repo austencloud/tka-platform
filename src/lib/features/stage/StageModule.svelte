@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, untrack } from "svelte";
+  import { onDestroy, tick, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
 
   import EditHistoryShortcutBridge from "$lib/shared/keyboard/components/EditHistoryShortcutBridge.svelte";
@@ -21,6 +21,8 @@
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { sceneEnvironmentIdForBackground } from "$lib/shared/3d/environments/domain/scene-environment";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { FILM_DIRECTOR_ROUTE } from "$lib/features/film-director/domain/film-director-link";
   import { consumeSceneStudioHandoff } from "$lib/features/scene-3d-collection/services/open-3d-scene";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -30,13 +32,14 @@
   import SetProperties from "./components/SetProperties.svelte";
   import StageFloorPaths from "./components/StageFloorPaths.svelte";
   import StageTimeline from "./components/StageTimeline.svelte";
-  import StageFirstRun from "./components/StageFirstRun.svelte";
+  import StageStarter from "./components/StageStarter.svelte";
   import SceneExportModal from "./scene/components/SceneExportModal.svelte";
   import { createSceneVideoExport } from "./scene/services/create-scene-video-export.svelte";
   import { setStageChoreographyContext } from "./context/stage-choreography-context";
   import { resolveActiveFormationIndex } from "./domain/active-formation";
   import { samplePerformerSequenceAtBeat } from "./domain/stage-sequence-timeline";
   import { createStageChoreographyState } from "./state/stage-choreography-state.svelte";
+  import type { StudioStarter } from "./domain/studio-project";
   import { createStageEditMode } from "./state/stage-edit-mode.svelte";
   import {
     DEFAULT_STAGE_SEQUENCE_ID,
@@ -337,6 +340,18 @@
     stageState.setSharedSequence(next);
   }
 
+  async function applyStudioStarter(starter: StudioStarter): Promise<void> {
+    stageState.applyStudioStarter(starter);
+    // Stage owns cast, formation and world; the shared performer manager owns
+    // the prop look. Waiting one render lets the canonical cast adapter create
+    // exactly the rigs the fresh Stage document called for.
+    viewer.setEnvironmentId(starter.environmentId);
+    await tick();
+    for (const performer of viewer.performerManager.performers) {
+      performer.setProp(starter.prop, { equipBuild: false });
+    }
+  }
+
   /** One count, and the eight counts a drill is written in. */
   const COUNT = 1;
   const EIGHT = 8;
@@ -480,9 +495,12 @@
         Try again
       </PanelButton>
     </div>
-  {:else}
-    <StageFirstRun
+  {:else if !handoff}
+    <StageStarter
       word={stageWord}
+      showDirector={authState.isAdmin && import.meta.env.DEV}
+      directorHref={FILM_DIRECTOR_ROUTE}
+      onApply={applyStudioStarter}
       onChooseSequence={() => (pickerOpen = true)}
       onOpenChart={() => (chartRaised = true)}
     />
