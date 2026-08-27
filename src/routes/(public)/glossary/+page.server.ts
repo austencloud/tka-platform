@@ -1,12 +1,14 @@
 import {
   BASE_ALPHABET_LETTERS,
   GLOSSARY,
+  LETTER_TYPES,
   TERM_ALIASES,
   resolveTermAlias,
 } from "@tka/domain";
 import type { GlossaryCategory } from "@tka/domain";
 import type { PageServerLoad } from "./$types";
 import { LETTER_DESCRIPTIONS } from "./_data/letter-descriptions.server";
+import { buildCanonicalLetterExplorerHref } from "./_components/codex-boards/letter-explorer-url";
 
 // Static reference: render the current glossary at build time. The @tka/domain
 // package stays server-side (this load runs at prerender); the page receives a
@@ -15,6 +17,9 @@ export const prerender = true;
 
 const INDIVIDUAL_LETTER_ENTRY_PATTERN =
   /^letter-(?:[a-z](?:-dash)?|(?:alpha|beta|gamma|delta|lambda|omega|phi|psi|sigma|theta)(?:-dash)?)$/;
+
+const LETTER_TYPE_NUMBERS = ["1", "2", "3", "4", "5", "6"] as const;
+const LETTER_TYPE_KEYS = LETTER_TYPE_NUMBERS.map((number) => `type-${number}`);
 
 // Display order + human labels for every public glossary category. The visual
 // Letter Codex is returned separately below because pictographs are not
@@ -40,12 +45,6 @@ const DISPLAY_OVERRIDES: Record<string, string> = {
   caps: "CAPs",
   pads: "PADS",
   "rubiks-cube": "Rubik's Cube",
-  "type-1": "Type 1: Dual-Shift",
-  "type-2": "Type 2: Shift",
-  "type-3": "Type 3: Cross-Shift",
-  "type-4": "Type 4: Dash",
-  "type-5": "Type 5: Dual-Dash",
-  "type-6": "Type 6: Static",
   "quarter-opposite": "Quarter-Opposite",
   "quarter-same": "Quarter-Same",
   // The "-" suffix is the letter-naming convention, not a word separator.
@@ -53,6 +52,14 @@ const DISPLAY_OVERRIDES: Record<string, string> = {
 };
 
 function displayName(key: string): string {
+  const letterTypeNumber = key.match(/^type-([1-6])$/)?.[1];
+  if (letterTypeNumber) {
+    const letterType = LETTER_TYPES[letterTypeNumber];
+    if (!letterType) {
+      throw new Error(`[glossary] Missing canonical Type ${letterTypeNumber}`);
+    }
+    return `Type ${letterTypeNumber}: ${letterType.name}`;
+  }
   const override = DISPLAY_OVERRIDES[key];
   if (override) return override;
   return key
@@ -78,6 +85,7 @@ export const load: PageServerLoad = () => {
   const entries = Object.entries(GLOSSARY).filter(
     ([key]) => !INDIVIDUAL_LETTER_ENTRY_PATTERN.test(key)
   );
+  const entriesByKey = new Map(entries);
 
   // Slugs derive from the raw KEY (not the display name) so existing #anchors
   // and JSON-LD @ids stay stable across display-name changes.
@@ -100,8 +108,20 @@ export const load: PageServerLoad = () => {
   }
 
   const groups = CATEGORY_ORDER.map(({ key, label }) => {
-    const terms = entries
-      .filter(([, e]) => e.category === key)
+    const categoryEntries =
+      key === "letterType"
+        ? LETTER_TYPE_KEYS.map((letterTypeKey) => {
+            const entry = entriesByKey.get(letterTypeKey);
+            if (!entry) {
+              throw new Error(
+                `[glossary] Missing canonical ${letterTypeKey} definition`
+              );
+            }
+            return [letterTypeKey, entry] as const;
+          })
+        : entries.filter(([, entry]) => entry.category === key);
+
+    const terms = categoryEntries
       .map(([k, e]) => ({
         term: displayName(k),
         slug: slugOf.get(k)!,
@@ -116,8 +136,18 @@ export const load: PageServerLoad = () => {
           .map((r) => ({ term: displayName(r), slug: slugOf.get(r)! })),
         benefit: e.benefit ?? null,
         importance: e.importance ?? null,
+        letters: k.startsWith("type-")
+          ? (LETTER_TYPES[k.slice("type-".length)]?.letters ?? []).map(
+              (letter) => ({
+                label: letter,
+                href: buildCanonicalLetterExplorerHref(letter),
+              })
+            )
+          : [],
       }))
-      .sort((a, b) => a.term.localeCompare(b.term));
+      .sort((a, b) =>
+        a.term.localeCompare(b.term, undefined, { numeric: true })
+      );
     return { key, label, sectionSlug: `cat-${key.toLowerCase()}`, terms };
   }).filter((g) => g.terms.length > 0);
 

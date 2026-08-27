@@ -18,6 +18,9 @@ export interface LetterExplorerRouteState {
   redRotation: RotationDirectionValue;
 }
 
+const CANONICAL_LETTER_EXPLORER_PATH = "/glossary";
+const CANONICAL_LETTER_EXPLORER_BOARD = "atlas";
+
 export const LETTER_EXPLORER_PARAMS = [
   "letter",
   "grid",
@@ -95,6 +98,29 @@ export function writeLetterExplorerRoute(
     url.searchParams.set("redRotation", state.redRotation);
   }
   url.hash = "cat-letter";
+}
+
+/**
+ * Stable entry point for an unedited dataframe letter. Glossary type lists use
+ * this same route contract as the explorer instead of assembling a second URL
+ * shape that can drift from the share-link behavior.
+ */
+export function buildCanonicalLetterExplorerHref(letter: string): string {
+  const url = new URL(
+    CANONICAL_LETTER_EXPLORER_PATH,
+    "https://tkaflowarts.com"
+  );
+  url.searchParams.set("board", CANONICAL_LETTER_EXPLORER_BOARD);
+  writeLetterExplorerRoute(url, {
+    letter,
+    gridMode: GridMode.DIAMOND,
+    variation: 0,
+    blueTurns: 0,
+    redTurns: 0,
+    blueRotation: RotationDirection.CLOCKWISE,
+    redRotation: RotationDirection.CLOCKWISE,
+  });
+  return `${url.pathname}${url.search}${url.hash}`;
 }
 
 export function hasLetterExplorerEdits(

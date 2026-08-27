@@ -9,6 +9,7 @@ interface GlossaryData {
       term: string;
       aliases: string[];
       related: Array<{ term: string; slug: string }>;
+      letters: Array<{ label: string; href: string }>;
     }>;
   }>;
   total: number;
@@ -39,6 +40,51 @@ describe("public glossary taxonomy", () => {
     ]);
   });
 
+  it("lists every selectable base letter under its canonical type", async () => {
+    const { groups } = await getGlossaryData();
+    const letterTypes = groups.find((group) => group.key === "letterType");
+    const lettersByType = letterTypes?.terms.map(({ letters }) =>
+      letters.map(({ label }) => label)
+    );
+
+    expect(lettersByType).toEqual([
+      [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+        "U",
+        "V",
+      ],
+      ["W", "X", "Y", "Z", "Σ", "Δ", "Θ", "Ω"],
+      ["W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "Θ-", "Ω-"],
+      ["Φ", "Ψ", "Λ"],
+      ["Φ-", "Ψ-", "Λ-"],
+      ["α", "β", "γ"],
+    ]);
+    expect(lettersByType?.flat()).toHaveLength(47);
+    expect(lettersByType?.flat()).not.toContain("τ-");
+    expect(letterTypes?.terms[0]?.letters[0]?.href).toBe(
+      "/glossary?board=atlas&letter=A&grid=diamond&variation=0#cat-letter"
+    );
+  });
+
   it("keeps the alphabet in the visual Codex instead of DefinedTerms", async () => {
     const { codex, groups } = await getGlossaryData();
     const publicTerms = groups.flatMap((group) => group.terms);
@@ -62,7 +108,9 @@ describe("public glossary taxonomy", () => {
     // stays a written entry rather than disappearing from the public glossary.
     expect(tauDash).toBeDefined();
     // Still an individual letter, never a seventh letter type.
-    expect(letterTypes?.terms.map(({ term }) => term)).not.toContain("Tau-Dash");
+    expect(letterTypes?.terms.map(({ term }) => term)).not.toContain(
+      "Tau-Dash"
+    );
   });
 
   it("places every public glossary term exactly once", async () => {

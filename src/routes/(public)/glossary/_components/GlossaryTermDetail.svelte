@@ -7,6 +7,7 @@
    * every definition crawlable).
    */
   type RelatedRef = { term: string; slug: string };
+  type LetterRef = { label: string; href: string };
   type TermEntry = {
     term: string;
     slug: string;
@@ -15,6 +16,7 @@
     related: RelatedRef[];
     benefit: string | null;
     importance: string | null;
+    letters: LetterRef[];
   };
 
   let {
@@ -51,6 +53,23 @@
 
   <p class="td-def">{entry.definition}</p>
 
+  {#if entry.letters.length}
+    <div class="td-letters">
+      <span class="td-section-label">Selectable base letters</span>
+      <div class="td-letter-links">
+        {#each entry.letters as letter (letter.label)}
+          <a
+            class="td-letter-link"
+            href={letter.href}
+            aria-label={`Open letter ${letter.label} in the Letter Codex`}
+          >
+            {letter.label}
+          </a>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
   {#if entry.benefit}
     <p class="td-meta"><strong>Benefit:</strong> {entry.benefit}</p>
   {/if}
@@ -68,10 +87,14 @@
 
   {#if entry.related.length}
     <div class="td-related">
-      <span class="td-related-label">Related</span>
+      <span class="td-section-label">Related</span>
       <div class="td-chips">
         {#each entry.related as r (r.slug)}
-          <a class="td-chip" href={`#${r.slug}`} onclick={(e) => onrelated(r.slug, e)}>
+          <a
+            class="td-chip"
+            href={`#${r.slug}`}
+            onclick={(e) => onrelated(r.slug, e)}
+          >
             {r.term}
           </a>
         {/each}
@@ -162,7 +185,7 @@
     padding-top: 0.9rem;
     border-top: 1px solid oklch(0.5 0.03 270 / 0.14);
   }
-  .td-related-label {
+  .td-section-label {
     display: block;
     font-size: 0.72rem;
     font-weight: 640;
@@ -170,6 +193,43 @@
     text-transform: uppercase;
     color: oklch(0.58 0.03 272);
     margin: 0 0 0.55rem;
+  }
+  .td-letters {
+    margin: 1rem 0;
+    padding: 0.85rem;
+    border: 1px solid var(--theme-stroke, oklch(0.5 0.03 270 / 0.14));
+    border-radius: var(--radius-md, 12px);
+    background: var(--theme-card-bg, oklch(0.24 0.02 270 / 0.34));
+  }
+  .td-letter-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+    gap: 0.45rem;
+  }
+  .td-letter-link {
+    display: grid;
+    place-items: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.35rem;
+    border: 1px solid var(--theme-stroke, oklch(0.55 0.08 274 / 0.35));
+    border-radius: var(--radius-sm, 8px);
+    color: var(--theme-text, oklch(0.97 0.02 275));
+    background: var(--theme-panel-bg, oklch(0.2 0.025 274 / 0.55));
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 750;
+    text-decoration: none;
+    transition:
+      border-color 140ms ease,
+      background 140ms ease;
+  }
+  .td-letter-link:hover {
+    border-color: var(--theme-accent, oklch(0.65 0.13 275));
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, oklch(0.65 0.13 275)) 16%,
+      var(--theme-panel-bg, #171524)
+    );
   }
   .td-chips {
     display: flex;
@@ -188,7 +248,10 @@
     background: oklch(0.26 0.04 274 / 0.4);
     border: 1px solid oklch(0.55 0.08 274 / 0.35);
     border-radius: 999px;
-    transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+    transition:
+      border-color 140ms ease,
+      background 140ms ease,
+      color 140ms ease;
   }
   .td-chip:hover {
     color: oklch(0.97 0.02 275);
@@ -197,6 +260,10 @@
   }
   .td-chip:focus-visible {
     outline: 2px solid oklch(0.65 0.13 275);
+    outline-offset: 2px;
+  }
+  .td-letter-link:focus-visible {
+    outline: 2px solid var(--theme-accent, oklch(0.65 0.13 275));
     outline-offset: 2px;
   }
 
@@ -219,10 +286,14 @@
       font-size: 0.95rem;
       min-height: 40px;
     }
+    .td-letter-link {
+      font-size: 1rem;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .td-chip {
+    .td-chip,
+    .td-letter-link {
       transition: none;
     }
   }
