@@ -1,5 +1,5 @@
 import { render } from "vitest-browser-svelte";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { describe, expect, it, vi } from "vitest";
 import SegmentedControl from "./SegmentedControl.svelte";
 import { expectNoA11yViolations } from "$test-helpers/component-a11y";
@@ -63,6 +63,42 @@ describe("SegmentedControl", () => {
     await expect
       .element(page.getByRole("button", { name: "Alpha" }))
       .toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("toggles a binary mode from either segment or the padded control surface", async () => {
+    const onchange = vi.fn();
+    const options = OPTIONS.slice(0, 2);
+    const screen = render(SegmentedControl, {
+      options,
+      value: "a",
+      onchange,
+      toggleOnActivate: true,
+      ariaLabel: "Option mode",
+    });
+
+    await page.getByRole("button", { name: "Alpha" }).click();
+    expect(onchange).toHaveBeenLastCalledWith("b");
+
+    await page.getByRole("button", { name: "Beta" }).click();
+    expect(onchange).toHaveBeenLastCalledWith("b");
+
+    await screen.rerender({
+      options,
+      value: "b",
+      onchange,
+      toggleOnActivate: true,
+      ariaLabel: "Option mode",
+    });
+    const selectedBeta = page.getByRole("button", { name: "Beta" });
+    selectedBeta.element().focus();
+    await userEvent.keyboard("{Enter}");
+    expect(onchange).toHaveBeenLastCalledWith("a");
+
+    await page
+      .getByRole("group", { name: "Option mode" })
+      .click({ position: { x: 1, y: 1 } });
+    expect(onchange).toHaveBeenLastCalledWith("a");
+    expect(onchange).toHaveBeenCalledTimes(4);
   });
 
   // The construct option picker swaps the whole turn palette when the level

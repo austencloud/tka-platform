@@ -143,6 +143,7 @@
             size="sm"
             color="accent"
             ghostKind="option-filter"
+            toggleOnActivate
             onchange={(v) => onToggleContinuous?.(v === "continuous")}
           />
         </div>

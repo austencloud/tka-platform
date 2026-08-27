@@ -60,15 +60,8 @@
   const MORPH_DEST_PATHS = new Set(
     LAUNCHPAD_TILES.filter((t) => t.morphName).map((t) => t.href)
   );
-  // The review route is the future /composer page at a temporary noindex URL.
-  // Give it the same Back affordance and active navigation state so Austen is
-  // reviewing the real public composition, not a page inside test chrome.
-  const presentationPath = $derived(
-    page.url?.pathname === "/composer/mockup"
-      ? "/composer"
-      : (page.url?.pathname ?? "")
-  );
-  const showBack = $derived(MORPH_DEST_PATHS.has(presentationPath));
+  const currentPath = $derived(page.url?.pathname ?? "");
+  const showBack = $derived(MORPH_DEST_PATHS.has(currentPath));
 
   // Cheap, SDK-free check: does Firebase's auth-persistence IndexedDB exist?
   // Its presence means this browser has signed in at least once.
@@ -269,9 +262,7 @@
   );
 
   function isActive(href: string): boolean {
-    return (
-      presentationPath === href || presentationPath.startsWith(href + "/")
-    );
+    return currentPath === href || currentPath.startsWith(href + "/");
   }
 
   // Some dropdown destinations live under another destination. On /notation/caps,

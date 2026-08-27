@@ -140,11 +140,17 @@ header; "Edit rule" reopens the builder to change it.
 						collectionId === "founding_book"
 							? loadCanonicalBookVariations
 							: loadCanonicalTnDSequences,
-					// Founding decks (TKA 1/2/3) are the T&D alphabet — group the grid
-					// by canonical TnD family (Split-Same · Water, …) in groups of 3–4
-					// rather than one section per letter. Other smart collections keep
-					// their sort-driven grouping.
-					defaultSectionGroupBy: isFoundingId(collectionId) ? "tnd-family" : undefined,
+					// Learning Letters is small enough to browse directly. A second rail
+					// asking people to decode Split/Tog/Quarter before they see the cards
+					// works against that lesson, so its 19 labeled cards stay in one grid.
+					// The larger founding decks retain the family index that breaks their
+					// longer result sets into useful sections.
+					defaultSectionGroupBy:
+						collectionId === "founding_tka-1"
+							? "none"
+							: isFoundingId(collectionId)
+								? "tnd-family"
+								: undefined,
 				});
 				applySpecToEngine(engine, s);
 				void engine.initialize();
@@ -170,6 +176,16 @@ header; "Edit rule" reopens the builder to change it.
 	const liveMatchCount = $derived(
 		engine && !engine.isLoading && !engine.error ? engine.resultCount : null,
 	);
+	const ruleDisclosureLabel = $derived.by(() => {
+		if (!isFounding) return undefined;
+		if (hasLoadError) return "Collection details";
+		if (liveMatchCount == null) return "Finding matches";
+
+		if (collectionId === "founding_tka-1") {
+			return `${liveMatchCount} ${liveMatchCount === 1 ? "letter" : "letters"}`;
+		}
+		return `${liveMatchCount} ${liveMatchCount === 1 ? "sequence" : "sequences"}`;
+	});
 
 	function retryLoad() {
 		engine?.destroy();
@@ -279,6 +295,7 @@ header; "Edit rule" reopens the builder to change it.
 	color={tileColor}
 	{spec}
 	matchCount={liveMatchCount}
+	{ruleDisclosureLabel}
 	loading={resultsLoading}
 	error={hasLoadError}
 	readOnly={isFounding || previewReadOnly}

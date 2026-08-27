@@ -178,10 +178,6 @@
     // here. Wants the cosmic chrome and the .mkt-shell root ramp for 4K.
     "/start",
     "/composer",
-    // The unlisted review URL renders inside the exact chrome it will inherit
-    // when this presentation replaces /composer. Only its URL and noindex
-    // metadata differ from the future public page.
-    "/composer/mockup",
     // The Guide hub participates in the homepage shared-element morph, so it
     // uses the persistent root chrome. Deeper /guide pages keep GuideShell's
     // standalone header/footer and book canvas.

@@ -1,7 +1,9 @@
 # Composer presentation guardrails
 
-**Status:** Governs the planned `/composer` redesign  
-**Updated:** 2026-08-21  
+**Status:** Governs the public `/composer` presentation
+
+**Updated:** 2026-08-27
+
 **Scope:** Public Composer presentation copy, page structure, demonstrations, and route-local styling
 **Feature truth:** [feature-truth-matrix.md](./feature-truth-matrix.md)
 
@@ -28,14 +30,14 @@ Composer already has a visual language worth keeping:
 The redesign should edit and arrange that language. It should not replace it
 with a generic startup style or overcorrect into a different visual identity.
 
-## What the current page reveals
+## What the replaced page revealed
 
-The current page contains fourteen main sections. Every one of them uses the
+The replaced page contained fourteen main sections. Every one of them used the
 same small kicker followed by a large section title. That repeated grammar is
-the main AI tell on the page. Rewriting the headings would leave the same
-machine-made cadence in place.
+the main reason it read as machine-made. Rewriting the headings would have left
+the same cadence in place.
 
-The page also runs for roughly:
+That page also ran for roughly:
 
 - 19 phone screens at 375px wide;
 - 25 short-landscape screens at 960 x 412;
@@ -79,9 +81,9 @@ copy.
 One existing repository ban applies directly: never use a colored bar on one
 edge of a box to indicate selection. The whole selected object should change.
 
-## How the Composer story should behave
+## How the Composer story behaves
 
-The planned page has an internal sequence, not a visible stack of equally
+The public page has an internal sequence, not a visible stack of equally
 announced chapters:
 
 1. Identify Composer and show a real sequence moving.
@@ -201,7 +203,7 @@ Repository evidence:
 - `docs/reference/ai-writing-guide.md` records real TKA copy failures and the fire-jam test.
 - `.claude/rules/no-left-edge-accent-bar.md` records the selected-state treatment already banned in this product.
 - `docs/superpowers/specs/2026-07-17-notation-roots-merge-design.md` documents the earlier TKA finding that structural variety is the fix for repeated heading-and-paragraph rhythm.
-- `src/routes/(public)/composer/+page.svelte` contains the current fourteen repeated kicker-and-title pairs.
+- The pre-promotion `/composer` source in Git history contains the fourteen repeated kicker-and-title pairs described above.
 
 Outside research:
 
