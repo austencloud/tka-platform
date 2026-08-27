@@ -2,7 +2,7 @@
 <#
 .SYNOPSIS
   Installs Agent Hub: a taskbar project command center for development-server
-  control and clipboard handoff into Claude or Codex desktop tasks.
+  control, project workflows, and read-only worktree visibility.
 
 .DESCRIPTION
   Compiles the resident host, stub, terminal launcher, and session host with the .NET Framework
@@ -344,7 +344,8 @@ $hostArgs += (Join-Path $Here 'src\HiddenProcessRunner.cs')
 $hostArgs += (Join-Path $Here 'src\Pm2DevServerController.cs')
 $hostArgs += (Join-Path $Here 'src\GitProjectController.cs')
 $hostArgs += (Join-Path $Here 'src\GitWorktreeInventory.cs')
-$hostArgs += (Join-Path $Here 'src\AgentPromptBuilder.cs')
+$hostArgs += (Join-Path $Here 'src\AgentWorkflowLauncher.cs')
+$hostArgs += (Join-Path $Here 'src\PopupPlacement.cs')
 $hostArgs += (Join-Path $Here 'src\ProjectCommandCenter.cs')
 
 & $csc @hostArgs
@@ -364,15 +365,20 @@ $gitSelfTest = Start-Process -FilePath (Join-Path $BinDir 'AgentChooserHost.exe'
 if ($gitSelfTest.ExitCode -ne 0) { throw "Git control self-test failed ($($gitSelfTest.ExitCode) assertion(s))" }
 Write-Ok "Git control self-test passed"
 
-$promptSelfTest = Start-Process -FilePath (Join-Path $BinDir 'AgentChooserHost.exe') `
-    -ArgumentList '-SelfTestPrompt' -Wait -PassThru -WindowStyle Hidden
-if ($promptSelfTest.ExitCode -ne 0) { throw "Agent handoff self-test failed ($($promptSelfTest.ExitCode) assertion(s))" }
-Write-Ok "agent handoff self-test passed"
+$workflowSelfTest = Start-Process -FilePath (Join-Path $BinDir 'AgentChooserHost.exe') `
+    -ArgumentList '-SelfTestWorkflow' -Wait -PassThru -WindowStyle Hidden
+if ($workflowSelfTest.ExitCode -ne 0) { throw "Project workflow self-test failed ($($workflowSelfTest.ExitCode) assertion(s))" }
+Write-Ok "project workflow self-test passed"
 
 $worktreeSelfTest = Start-Process -FilePath (Join-Path $BinDir 'AgentChooserHost.exe') `
     -ArgumentList '-SelfTestWorktrees' -Wait -PassThru -WindowStyle Hidden
 if ($worktreeSelfTest.ExitCode -ne 0) { throw "Worktree inventory self-test failed ($($worktreeSelfTest.ExitCode) assertion(s))" }
 Write-Ok "worktree inventory self-test passed"
+
+$placementSelfTest = Start-Process -FilePath (Join-Path $BinDir 'AgentChooserHost.exe') `
+    -ArgumentList '-SelfTestPlacement' -Wait -PassThru -WindowStyle Hidden
+if ($placementSelfTest.ExitCode -ne 0) { throw "Popup placement self-test failed ($($placementSelfTest.ExitCode) assertion(s))" }
+Write-Ok "popup placement self-test passed"
 
 $stubArgs = @('/nologo', '/target:winexe', "/out:$BinDir\AgentChooserStub.exe",
               '/reference:System.dll', '/reference:System.Core.dll',
@@ -616,7 +622,7 @@ if ($running -ge 1) { Write-Ok "host running" } else { Write-Warn2 "host did not
 Write-Host ""
 Write-Host "  Done." -ForegroundColor Green
 Write-Host "  Drag shortcuts from $ShortcutDir onto your taskbar to pin them."
-Write-Host "  Click a pin -> 1 = server, Ctrl+2 = copy feedback, Ctrl+3 = copy commit request, Esc = close."
+Write-Host "  Click a pin -> 1 = server, 2 = feedback, 3 = spec, 4 = sessions, Esc = close."
 Write-Host ""
 
 if (-not $NoOpen) { Start-Process explorer.exe $ShortcutDir }

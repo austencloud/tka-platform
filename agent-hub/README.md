@@ -4,13 +4,13 @@ Agent Hub is a taskbar project command center for Windows. The TKA Platform
 shortcut opens a small native card at the cursor with three jobs:
 
 1. Show and control the project's PM2 development server.
-2. Turn a short note into a guarded feedback request for an agent.
-3. Turn a short note into a guarded commit request for an agent.
-4. Keep the primary checkout and every linked task worktree visible.
+2. Open the project's Feedback, Spec, and Sessions workflows.
+3. Keep the primary checkout and every linked task worktree visible.
 
-The main card does not launch CLI agents, open the web app, or run Git pull and
-push. Claude and Codex desktop tasks own agent work. Git status remains visible
-as context, but remote actions stay out of this surface.
+The main card does not expose generic Claude/Codex launchers, open the web app,
+or run Git pull and push. Workflow buttons start focused, project-scoped Codex
+sessions. Git status remains visible as context, but remote actions stay out of
+this surface.
 
 ## Command center
 
@@ -32,15 +32,27 @@ always disconnects from the daemon before exiting. This avoids the long-lived
 state. Each click also invalidates any older status probe, so a late initial
 result cannot replace the visible pending state.
 
-The handoff area is deliberately honest. It copies a complete prompt to the
-clipboard and tells you to paste it into a Claude or Codex desktop task. Agent
-Hub does not claim that an agent is available, route by token usage, or pretend
-that a task was dispatched.
+The workflow panel uses the existing project skills instead of a handoff text
+box:
 
-The precise next integration is a supported desktop task-creation contract that
-accepts a project path plus prompt and returns a task ID or a useful error. When
-that contract exists, `CopyAgentRequest` in `AgentChooserHost.cs` is the single
-place to add dispatch while preserving clipboard copy as the fallback.
+- `Feedback` opens `$fb list`, which loads the real feedback queue and asks you
+  to select an item before it is claimed.
+- `Spec` opens `$queue list`, the project's ranked active/backlog spec workflow.
+- `Sessions` opens `$sessions`, which starts at the saved analysis watermark and
+  works through sessions that have not been reviewed.
+
+The launch path is deliberately narrow. `AgentWorkflowLauncher.cs` selects the
+owned skill, and `AgentTerminalLauncher.exe` opens one colored Codex session in
+the selected project with that skill as the initial prompt. The Hub waits for
+the terminal launcher's ready signal and reports a real failure if Codex,
+Windows Terminal, or the project is unavailable. It does not route by token
+usage or claim that a desktop task was created.
+
+Codex's installed desktop launcher currently accepts a workspace path but not
+an initial prompt or task-creation result. Moving these buttons into the desktop
+app requires a supported contract that accepts project path plus prompt and
+returns a task ID or actionable error. `AgentWorkflowLauncher.cs` is the owner
+to update when that contract exists.
 
 The worktree panel is read-only. It reads `git worktree list --porcelain`, then
 checks the branch and working-tree state at every registered path. Task
@@ -65,11 +77,18 @@ preserves it.
 Keyboard shortcuts:
 
 ```text
-1        start or restart the configured server
-Ctrl+2   copy a feedback request
-Ctrl+3   copy a commit request
-Esc      close
+1    start or restart the configured server
+2    open Feedback
+3    open Spec
+4    open Sessions
+Esc  close
 ```
+
+The card places itself inside the active monitor's usable work area. A taskbar
+activation near the bottom prefers the space above the cursor, and every edge
+is clamped with an inset. The 160 ms scale/fade entry animation follows the
+Windows client-area animation preference; reduced-motion mode shows the card at
+its final size immediately.
 
 Server errors are shown on the card and written to
 `%LOCALAPPDATA%\AgentHub\server-errors.log`. Create
@@ -134,21 +153,24 @@ taskbar pins in place.
 | `-NoOpen` | Do not open the shortcut folder after installation. |
 
 The installer still carries the standalone Agent Hub terminal utilities,
-colors, and naming skills for existing users. The project command center no
-longer launches those terminals.
+colors, and naming skills for existing users. Generic agent launch controls are
+not shown in the project command center; the three owned workflows reuse the
+terminal launcher internally.
 
 ## How it works
 
 - `AgentChooserStub.exe` is the shortcut target. It writes the project metadata
   to a named pipe and exits.
-- `AgentChooserHost.exe` owns the resident WPF card, clipboard handoff, and the
-  async server and Git status checks.
+- `AgentChooserHost.exe` owns the resident WPF card, workflow launch state, and
+  the async server and Git status checks.
 - `ProjectCommandCenter.cs` owns the visible layout and state rendering.
 - `Pm2DevServerController.cs` owns server decisions. `Pm2Bridge.cjs` provides
   bounded PM2 status, start, and restart calls.
-- `AgentPromptBuilder.cs` owns the feedback and commit request formats.
-- `GitProjectController.cs` supplies branch and change context to the copied
-  prompts. `GitWorktreeInventory.cs` owns the read-only linked-worktree view.
+- `AgentWorkflowLauncher.cs` owns the Feedback, Spec, and Sessions mappings and
+  their acknowledged terminal launch.
+- `PopupPlacement.cs` owns monitor-safe placement decisions.
+- `GitProjectController.cs` supplies repository state.
+  `GitWorktreeInventory.cs` owns the read-only linked-worktree view.
 
 The optional terminal helpers remain separate:
 

@@ -1,7 +1,7 @@
 {
   "name": "@austencloud/agent-hub",
   "version": "1.0.0",
-  "description": "Windows taskbar command center for development servers and project-aware agent handoff.",
+  "description": "Windows taskbar command center for development servers, project workflows, and worktree visibility.",
   "keywords": [
     "claude",
     "claude-code",

@@ -10,6 +10,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
@@ -24,6 +25,8 @@ using System.Windows.Threading;
 class Popup : Window
 {
     static bool _visualTestMode;
+    static bool _forceReducedMotion;
+    static int _visualAnimationDurationMs = 160;
     [DllImport("user32.dll")] static extern bool GetCursorPos(out NativePoint p);
     [DllImport("user32.dll")] static extern IntPtr MonitorFromPoint(NativePoint pt, uint flags);
     [DllImport("user32.dll", CharSet = CharSet.Auto)] static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO mi);
@@ -39,7 +42,11 @@ class Popup : Window
     long _stubStartTicks;
     long _deactHideTicks; string _deactHideProject = "";
     int _rawX, _rawY;
+    Rect _lastWorkArea;
+    Point _lastAnchor;
     bool _ready;
+    bool _hasVisualAnchor;
+    int _visualAnchorX, _visualAnchorY;
     Border _card;
     ProjectCommandCenter _commandCenter;
     Pm2DevServerController _serverControl;
@@ -52,6 +59,8 @@ class Popup : Window
     GitWorktreeInventoryController _worktreeControl;
     GitWorktreeInventory _worktreeInventory = GitWorktreeInventory.Checking();
     int _gitGeneration;
+    int _workflowGeneration;
+    bool _workflowBusy;
 
     [STAThread]
     static void Main(string[] argv)
@@ -66,14 +75,19 @@ class Popup : Window
             Environment.ExitCode = GitProjectController.SelfTest();
             return;
         }
-        if (HasArg(argv, "SelfTestPrompt"))
+        if (HasArg(argv, "SelfTestWorkflow"))
         {
-            Environment.ExitCode = AgentPromptBuilder.SelfTest();
+            Environment.ExitCode = AgentWorkflowLauncher.SelfTest();
             return;
         }
         if (HasArg(argv, "SelfTestWorktrees"))
         {
             Environment.ExitCode = GitWorktreeInventoryController.SelfTest();
+            return;
+        }
+        if (HasArg(argv, "SelfTestPlacement"))
+        {
+            Environment.ExitCode = PopupPlacement.SelfTest();
             return;
         }
 
@@ -110,6 +124,7 @@ class Popup : Window
             var a = ParseArgs(argv);
             if (a.ContainsKey("Project"))
             {
+                win.ConfigureVisualTest(a);
                 string ln = Line(a);
                 app.Dispatcher.BeginInvoke(new Action(delegate { win.ShowFromLine(ln); }));
             }
@@ -148,24 +163,51 @@ class Popup : Window
         string configuredDelay;
         int parsedDelay;
         if (fields.TryGetValue("CaptureDelayMs", out configuredDelay) &&
-            int.TryParse(configuredDelay, out parsedDelay) && parsedDelay >= 250 && parsedDelay <= 15000)
+            int.TryParse(configuredDelay, out parsedDelay) && parsedDelay >= 25 && parsedDelay <= 15000)
             captureDelayMs = parsedDelay;
         var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(captureDelayMs) };
         timer.Tick += delegate
         {
             timer.Stop();
-            try { win.CapturePng(capturePath); }
+            try
+            {
+                win.CapturePng(capturePath);
+                string boundsPath;
+                if (fields.TryGetValue("BoundsPath", out boundsPath) && !string.IsNullOrEmpty(boundsPath))
+                    win.WriteBoundsReport(boundsPath);
+            }
             catch (Exception ex) { Log("visual capture failed: " + ex.Message); Environment.ExitCode = 3; }
             win.Close();
             app.Shutdown();
         };
         app.Dispatcher.BeginInvoke(new Action(delegate
         {
+            win.ConfigureVisualTest(fields);
             win.ShowFromLine(Line(fields));
             win.ApplyVisualTestState(fields);
             timer.Start();
         }));
         app.Run();
+    }
+
+    public void ConfigureVisualTest(System.Collections.Generic.Dictionary<string, string> fields)
+    {
+        if (!_visualTestMode || fields == null) return;
+        string xValue, yValue, reducedValue, durationValue;
+        int x, y, duration;
+        if (fields.TryGetValue("VisualAnchorX", out xValue) &&
+            fields.TryGetValue("VisualAnchorY", out yValue) &&
+            int.TryParse(xValue, out x) && int.TryParse(yValue, out y))
+        {
+            _hasVisualAnchor = true;
+            _visualAnchorX = x;
+            _visualAnchorY = y;
+        }
+        _forceReducedMotion = fields.TryGetValue("ReducedMotion", out reducedValue) &&
+            string.Equals(reducedValue, "true", StringComparison.OrdinalIgnoreCase);
+        if (fields.TryGetValue("AnimationDurationMs", out durationValue) &&
+            int.TryParse(durationValue, out duration) && duration >= 80 && duration <= 5000)
+            _visualAnimationDurationMs = duration;
     }
 
     static void EnsureColorWatchdog()
@@ -290,6 +332,25 @@ class Popup : Window
         using (var stream = File.Create(path)) encoder.Save(stream);
     }
 
+    public void WriteBoundsReport(string path)
+    {
+        string directory = Path.GetDirectoryName(Path.GetFullPath(path));
+        if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+        Func<double, string> n = delegate(double value) { return value.ToString("0.###", CultureInfo.InvariantCulture); };
+        string json =
+            "{\"left\":" + n(Left) +
+            ",\"top\":" + n(Top) +
+            ",\"width\":" + n(ActualWidth) +
+            ",\"height\":" + n(ActualHeight) +
+            ",\"anchorX\":" + n(_lastAnchor.X) +
+            ",\"anchorY\":" + n(_lastAnchor.Y) +
+            ",\"workLeft\":" + n(_lastWorkArea.Left) +
+            ",\"workTop\":" + n(_lastWorkArea.Top) +
+            ",\"workRight\":" + n(_lastWorkArea.Right) +
+            ",\"workBottom\":" + n(_lastWorkArea.Bottom) + "}";
+        File.WriteAllText(path, json);
+    }
+
     public void Prewarm()
     {
         // Realize the HWND + JIT the layout + load fonts once, off-screen, so the
@@ -341,15 +402,21 @@ class Popup : Window
         _stubStartTicks = stubStartTicks;
         ConfigureServer(serverManager, serverApp, serverConfig, serverPort);
         ConfigureGit(project);
+        _workflowGeneration++;
+        _workflowBusy = false;
         _ready = false;
         Log("ShowFor " + _name);
         NativePoint cp; GetCursorPos(out cp); _rawX = cp.X; _rawY = cp.Y;
+        if (_visualTestMode && _hasVisualAnchor) { _rawX = _visualAnchorX; _rawY = _visualAnchorY; }
 
+        MaxWidth = double.PositiveInfinity;
+        MaxHeight = double.PositiveInfinity;
         Content = BuildCard();
         // Start the card invisible + shrunk BEFORE the window becomes visible, so the
         // first painted frame is NOT a full-size flash at the previous position (the
-        // double-pop). PositionAndAnimate then springs it in at the right spot.
-        var s0 = new ScaleTransform(0.6, 0.6);
+        // double-pop). PositionAndAnimate then expands it from the taskbar edge.
+        double initialScale = MotionEnabled() ? 0.94 : 1.0;
+        var s0 = new ScaleTransform(initialScale, initialScale);
         _card.RenderTransform = s0;
         _card.RenderTransformOrigin = new Point(0.5, 1.0);
         // Make the WHOLE window OS-transparent before it is presented. A layered
@@ -426,6 +493,7 @@ class Popup : Window
         Matrix from = Matrix.Identity;
         if (src != null && src.CompositionTarget != null) from = src.CompositionTarget.TransformFromDevice;
         Point cur = from.Transform(new Point(_rawX, _rawY));
+        _lastAnchor = cur;
 
         Rect wa;
         try
@@ -441,30 +509,50 @@ class Popup : Window
             else wa = SystemParameters.WorkArea;
         }
         catch { wa = SystemParameters.WorkArea; }
+        _lastWorkArea = wa;
 
+        MaxWidth = Math.Max(320, wa.Width - 16);
+        MaxHeight = Math.Max(320, wa.Height - 16);
+        UpdateLayout();
         double w = ActualWidth, h = ActualHeight;
-        double left = cur.X - w / 2;
-        double top = cur.Y - h - 12;
-        left = Math.Max(wa.Left + 8, Math.Min(left, wa.Right - w - 8));
-        top = Math.Max(wa.Top + 8, Math.Min(top, wa.Bottom - h - 8));
-        Left = left; Top = top;
+        Point placement = PopupPlacement.Calculate(wa, cur, new Size(w, h), 12, 8);
+        double left = placement.X;
+        double top = placement.Y;
+        Left = left;
+        Top = top;
 
         double ox = Clamp01((cur.X - left) / w);
         double oy = Clamp01((cur.Y - top) / h);
         _card.RenderTransformOrigin = new Point(ox, oy);
 
-        // Reuse the transform ShowFor set to 0.6. ONE smooth motion, no overshoot
-        // (BackEase caused the "bounce back and forth"); scale + fade share one
-        // duration + ease so it doesn't "finish the job" in a second stage.
+        // Windows' animation preference is the reduced-motion contract for this
+        // native surface. With motion disabled, the card appears fully formed.
         var scale = _card.RenderTransform as ScaleTransform;
-        if (scale == null) { scale = new ScaleTransform(0.6, 0.6); _card.RenderTransform = scale; }
+        if (!MotionEnabled())
+        {
+            if (scale == null) { scale = new ScaleTransform(1, 1); _card.RenderTransform = scale; }
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            scale.ScaleX = 1;
+            scale.ScaleY = 1;
+            BeginAnimation(Window.OpacityProperty, null);
+            Opacity = 1;
+            return;
+        }
+
+        if (scale == null) { scale = new ScaleTransform(0.94, 0.94); _card.RenderTransform = scale; }
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-        var dur = new Duration(TimeSpan.FromMilliseconds(170));
-        var grow = new DoubleAnimation(0.6, 1.0, dur) { EasingFunction = ease };
+        var dur = new Duration(TimeSpan.FromMilliseconds(_visualTestMode ? _visualAnimationDurationMs : 160));
+        var grow = new DoubleAnimation(0.94, 1.0, dur) { EasingFunction = ease };
         scale.BeginAnimation(ScaleTransform.ScaleXProperty, grow);
         scale.BeginAnimation(ScaleTransform.ScaleYProperty, grow);
         // Fade the WINDOW opacity (not the card) — reveal happens at the OS layer.
         BeginAnimation(Window.OpacityProperty, new DoubleAnimation(0, 1, dur) { EasingFunction = ease });
+    }
+
+    static bool MotionEnabled()
+    {
+        return !_forceReducedMotion && SystemParameters.ClientAreaAnimation;
     }
 
     void Stamp()
@@ -488,27 +576,30 @@ class Popup : Window
     void OnKey(object sender, System.Windows.Input.KeyEventArgs e)
     {
         if (!_ready) return;
-        bool control = (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) != 0;
-        bool editing = _commandCenter != null && _commandCenter.RequestHasKeyboardFocus;
         if (e.Key == System.Windows.Input.Key.Escape)
         {
             e.Handled = true;
             HideIt();
         }
-        else if (control && (e.Key == System.Windows.Input.Key.D2 || e.Key == System.Windows.Input.Key.NumPad2))
-        {
-            e.Handled = true;
-            CopyAgentRequest("feedback", "keyboard");
-        }
-        else if (control && (e.Key == System.Windows.Input.Key.D3 || e.Key == System.Windows.Input.Key.NumPad3))
-        {
-            e.Handled = true;
-            CopyAgentRequest("commit", "keyboard");
-        }
-        else if (!editing && (e.Key == System.Windows.Input.Key.D1 || e.Key == System.Windows.Input.Key.NumPad1))
+        else if (e.Key == System.Windows.Input.Key.D1 || e.Key == System.Windows.Input.Key.NumPad1)
         {
             e.Handled = true;
             ControlServer("keyboard");
+        }
+        else if (e.Key == System.Windows.Input.Key.D2 || e.Key == System.Windows.Input.Key.NumPad2)
+        {
+            e.Handled = true;
+            LaunchWorkflow(AgentWorkflowKind.Feedback, "keyboard");
+        }
+        else if (e.Key == System.Windows.Input.Key.D3 || e.Key == System.Windows.Input.Key.NumPad3)
+        {
+            e.Handled = true;
+            LaunchWorkflow(AgentWorkflowKind.Spec, "keyboard");
+        }
+        else if (e.Key == System.Windows.Input.Key.D4 || e.Key == System.Windows.Input.Key.NumPad4)
+        {
+            e.Handled = true;
+            LaunchWorkflow(AgentWorkflowKind.Sessions, "keyboard");
         }
     }
 
@@ -521,41 +612,46 @@ class Popup : Window
             hasServer,
             _serverPort,
             delegate { ControlServer("mouse"); },
-            delegate { CopyAgentRequest("feedback", "mouse"); },
-            delegate { CopyAgentRequest("commit", "mouse"); });
+            delegate { LaunchWorkflow(AgentWorkflowKind.Feedback, "mouse"); },
+            delegate { LaunchWorkflow(AgentWorkflowKind.Spec, "mouse"); },
+            delegate { LaunchWorkflow(AgentWorkflowKind.Sessions, "mouse"); });
         _card = _commandCenter;
         UpdateServerVisual();
         UpdateWorkspaceVisual();
         return _card;
     }
 
-    void CopyAgentRequest(string kind, string source)
+    void LaunchWorkflow(AgentWorkflowKind kind, string source)
     {
-        if (_commandCenter == null) return;
-        string note = (_commandCenter.RequestText ?? "").Trim();
-        if (string.IsNullOrEmpty(note))
-        {
-            _commandCenter.FocusRequest("Write a short note first.");
-            return;
-        }
+        if (_commandCenter == null || _workflowBusy) return;
+        AgentWorkflowDefinition workflow = AgentWorkflowLauncher.Get(kind);
+        int generation = ++_workflowGeneration;
+        string project = _project;
+        _workflowBusy = true;
+        _commandCenter.RenderWorkflow(true, "Opening " + workflow.Name + " workflow...", false);
+        Log(workflow.Name + " workflow requested by " + source);
 
-        string prompt = kind == "commit"
-            ? AgentPromptBuilder.BuildCommitRequest(_project, note, _gitStatus)
-            : AgentPromptBuilder.BuildFeedback(_project, note, _gitStatus);
-        try
+        ThreadPool.QueueUserWorkItem(delegate
         {
-            Clipboard.SetText(prompt, TextDataFormat.UnicodeText);
-            string message = kind == "commit"
-                ? "Commit request copied. Paste it into Claude or Codex."
-                : "Feedback request copied. Paste it into Claude or Codex.";
-            _commandCenter.RenderHandoffStatus(message, false);
-            Log(kind + " handoff copied by " + source);
-        }
-        catch (Exception ex)
-        {
-            _commandCenter.RenderHandoffStatus("Clipboard is busy. Try again.", true);
-            Log("handoff copy failed: " + ex.Message);
-        }
+            AgentWorkflowLaunchResult result = AgentWorkflowLauncher.Launch(project, kind);
+            Dispatcher.BeginInvoke(new Action(delegate
+            {
+                if (generation != _workflowGeneration || !string.Equals(project, _project, StringComparison.OrdinalIgnoreCase)) return;
+                _workflowBusy = false;
+                if (_commandCenter == null) return;
+                _commandCenter.RenderWorkflow(false, result.Detail, !result.Succeeded);
+                Log(workflow.Name + " workflow launch " + (result.Succeeded ? "succeeded" : "failed") + ": " + result.Detail);
+                if (!result.Succeeded) return;
+
+                var closeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+                closeTimer.Tick += delegate
+                {
+                    closeTimer.Stop();
+                    if (generation == _workflowGeneration && IsVisible) HideIt();
+                };
+                closeTimer.Start();
+            }));
+        });
     }
 
     void BeginServerStatusCheck()
@@ -686,21 +782,30 @@ class Popup : Window
     {
         string value;
         if (fields == null) return;
-        if (fields.TryGetValue("RequestText", out value) && _commandCenter != null)
-            _commandCenter.SetRequestForVisualTest(value);
-        if (!fields.TryGetValue("ServerVisualState", out value) || string.IsNullOrEmpty(value)) return;
-        try
+        string workflowState;
+        if (fields.TryGetValue("WorkflowVisualState", out workflowState) && _commandCenter != null)
         {
-            _serverGeneration++;
-            _serverState = (DevServerState)Enum.Parse(typeof(DevServerState), value, true);
-            _serverBusy = _serverState == DevServerState.Starting;
-            _serverActionLabel = fields.ContainsKey("ServerActionLabel") ? fields["ServerActionLabel"] : "Restarting";
-            string detail = fields.ContainsKey("ServerVisualDetail") ? fields["ServerVisualDetail"] : "";
-            UpdateServerVisual(detail);
+            string workflowName = fields.ContainsKey("WorkflowVisualKind") ? fields["WorkflowVisualKind"] : "Feedback";
+            if (string.Equals(workflowState, "Opening", StringComparison.OrdinalIgnoreCase))
+                _commandCenter.RenderWorkflow(true, "Opening " + workflowName + " workflow...", false);
+            else if (string.Equals(workflowState, "Error", StringComparison.OrdinalIgnoreCase))
+                _commandCenter.RenderWorkflow(false, "Codex could not start the " + workflowName + " workflow.", true);
         }
-        catch (Exception ex)
+        if (fields.TryGetValue("ServerVisualState", out value) && !string.IsNullOrEmpty(value))
         {
-            Log("visual server state rejected: " + ex.Message);
+            try
+            {
+                _serverGeneration++;
+                _serverState = (DevServerState)Enum.Parse(typeof(DevServerState), value, true);
+                _serverBusy = _serverState == DevServerState.Starting;
+                _serverActionLabel = fields.ContainsKey("ServerActionLabel") ? fields["ServerActionLabel"] : "Restarting";
+                string detail = fields.ContainsKey("ServerVisualDetail") ? fields["ServerVisualDetail"] : "";
+                UpdateServerVisual(detail);
+            }
+            catch (Exception ex)
+            {
+                Log("visual server state rejected: " + ex.Message);
+            }
         }
     }
 

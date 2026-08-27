@@ -21,11 +21,10 @@ sealed class ProjectCommandCenter : Border
     readonly TextBlock _serverState;
     readonly TextBlock _serverDetail;
     readonly Button _serverButton;
-    readonly TextBox _request;
-    readonly TextBlock _requestHint;
     readonly Button _feedbackButton;
-    readonly Button _commitButton;
-    readonly TextBlock _handoffStatus;
+    readonly Button _specButton;
+    readonly Button _sessionsButton;
+    readonly TextBlock _workflowStatus;
     readonly TextBlock _worktreeSummary;
     readonly StackPanel _worktreeRows;
 
@@ -35,8 +34,9 @@ sealed class ProjectCommandCenter : Border
         bool hasServer,
         int serverPort,
         Action serverAction,
-        Action copyFeedback,
-        Action copyCommit)
+        Action openFeedback,
+        Action openSpec,
+        Action openSessions)
     {
         _hasServer = hasServer;
         _serverPort = serverPort;
@@ -107,7 +107,7 @@ sealed class ProjectCommandCenter : Border
         server.Child = serverGrid;
         content.Children.Add(server);
 
-        var handoff = new Border
+        var workflows = new Border
         {
             CornerRadius = new CornerRadius(14),
             Background = Brush("#FF202126"),
@@ -116,78 +116,44 @@ sealed class ProjectCommandCenter : Border
             Padding = new Thickness(16, 14, 16, 14),
             Margin = new Thickness(0, 12, 0, 0)
         };
-        var handoffContent = new StackPanel();
-        handoffContent.Children.Add(new TextBlock
+        var workflowContent = new StackPanel();
+        workflowContent.Children.Add(new TextBlock
         {
-            Text = "Send to an agent",
+            Text = "Project workflows",
             Foreground = Brush("#FFF3F3F6"),
             FontSize = 14,
             FontWeight = FontWeights.SemiBold,
             FontFamily = Font()
         });
-        handoffContent.Children.Add(new TextBlock
+        workflowContent.Children.Add(new TextBlock
         {
-            Text = "Type the issue once. Copy the request you need.",
+            Text = "Each action opens a project-scoped Codex session.",
             Foreground = Brush("#FF9899A2"),
             FontSize = 12,
             FontFamily = Font(),
             Margin = new Thickness(0, 3, 0, 10)
         });
 
-        var editor = new Grid();
-        _request = new TextBox
-        {
-            Height = 72,
-            AcceptsReturn = true,
-            TextWrapping = TextWrapping.Wrap,
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            Background = Brush("#FF17181C"),
-            Foreground = Brush("#FFF3F3F6"),
-            BorderBrush = Brush("#45FFFFFF"),
-            BorderThickness = new Thickness(1),
-            Padding = new Thickness(11, 9, 11, 9),
-            FontSize = 13,
-            FontFamily = Font(),
-            CaretBrush = Brushes.White,
-            SelectionBrush = Brush("#FF365A8D")
-        };
-        AutomationProperties.SetName(_request, "Feedback or commit scope");
-        _requestHint = new TextBlock
-        {
-            Text = "What should the agent handle?",
-            Foreground = Brush("#FF747680"),
-            FontSize = 13,
-            FontFamily = Font(),
-            Margin = new Thickness(12, 10, 12, 0),
-            IsHitTestVisible = false,
-            VerticalAlignment = VerticalAlignment.Top
-        };
-        _request.TextChanged += delegate
-        {
-            _requestHint.Visibility = string.IsNullOrWhiteSpace(_request.Text) ? Visibility.Visible : Visibility.Hidden;
-            UpdateHandoffButtons();
-        };
-        editor.Children.Add(_request);
-        editor.Children.Add(_requestHint);
-        handoffContent.Children.Add(editor);
-
-        var handoffButtons = new Grid { Margin = new Thickness(0, 10, 0, 0) };
-        handoffButtons.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        handoffButtons.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
-        handoffButtons.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        _feedbackButton = ActionButton("Copy feedback", "Copy an implementation request for Claude or Codex", copyFeedback);
-        _commitButton = ActionButton("Copy commit request", "Copy a guarded commit request for Claude or Codex", copyCommit);
-        _feedbackButton.Height = 48;
-        _commitButton.Height = 48;
+        var workflowButtons = new Grid();
+        workflowButtons.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        workflowButtons.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(9) });
+        workflowButtons.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        workflowButtons.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(9) });
+        workflowButtons.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        _feedbackButton = WorkflowButton("Feedback", "Open the queue and choose an item", "#FF2F6FED", openFeedback);
+        _specButton = WorkflowButton("Spec", "Review active and backlog specs", "#FF6B4FB3", openSpec);
+        _sessionsButton = WorkflowButton("Sessions", "Analyze sessions not reviewed yet", "#FFB45B35", openSessions);
         Grid.SetColumn(_feedbackButton, 0);
-        Grid.SetColumn(_commitButton, 2);
-        handoffButtons.Children.Add(_feedbackButton);
-        handoffButtons.Children.Add(_commitButton);
-        handoffContent.Children.Add(handoffButtons);
+        Grid.SetColumn(_specButton, 2);
+        Grid.SetColumn(_sessionsButton, 4);
+        workflowButtons.Children.Add(_feedbackButton);
+        workflowButtons.Children.Add(_specButton);
+        workflowButtons.Children.Add(_sessionsButton);
+        workflowContent.Children.Add(workflowButtons);
 
-        _handoffStatus = new TextBlock
+        _workflowStatus = new TextBlock
         {
-            Text = "Copies text only. Paste it into Claude or Codex.",
+            Text = "Uses the existing project skills. No desktop task is claimed.",
             Foreground = Brush("#FF7E8089"),
             FontSize = 12,
             FontFamily = Font(),
@@ -195,9 +161,9 @@ sealed class ProjectCommandCenter : Border
             Margin = new Thickness(0, 9, 0, 0),
             TextTrimming = TextTrimming.CharacterEllipsis
         };
-        handoffContent.Children.Add(_handoffStatus);
-        handoff.Child = handoffContent;
-        content.Children.Add(handoff);
+        workflowContent.Children.Add(_workflowStatus);
+        workflows.Child = workflowContent;
+        content.Children.Add(workflows);
 
         var workspace = new Border
         {
@@ -248,7 +214,7 @@ sealed class ProjectCommandCenter : Border
 
         content.Children.Add(new TextBlock
         {
-            Text = "1 server   ·   Ctrl+2 feedback   ·   Ctrl+3 commit   ·   Esc close",
+            Text = "1 server   ·   2 feedback   ·   3 spec   ·   4 sessions   ·   Esc close",
             Foreground = Brush("#FF6F717A"),
             FontSize = 12,
             FontFamily = Font(),
@@ -256,31 +222,27 @@ sealed class ProjectCommandCenter : Border
             Margin = new Thickness(0, 15, 0, 0)
         });
 
-        Child = content;
-        UpdateHandoffButtons();
+        Child = new ScrollViewer
+        {
+            Content = content,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            PanningMode = PanningMode.VerticalOnly
+        };
+        RenderWorkflow(false, "", false);
         RenderServer(DevServerState.Checking, false, "Starting", "");
         RenderWorktrees(GitWorktreeInventory.Checking());
     }
 
-    public string RequestText { get { return _request.Text; } }
-    public bool RequestHasKeyboardFocus { get { return _request.IsKeyboardFocusWithin; } }
-
-    public void SetRequestForVisualTest(string value)
+    public void RenderWorkflow(bool busy, string message, bool isError)
     {
-        _request.Text = value ?? "";
-    }
-
-    public void FocusRequest(string message)
-    {
-        if (!string.IsNullOrEmpty(message)) RenderHandoffStatus(message, false);
-        _request.Focus();
-        _request.CaretIndex = _request.Text.Length;
-    }
-
-    public void RenderHandoffStatus(string message, bool isError)
-    {
-        _handoffStatus.Text = message;
-        _handoffStatus.Foreground = Brush(isError ? "#FFFF8A94" : "#FF9FD7B6");
+        SetWorkflowButtonEnabled(_feedbackButton, !busy, "#FF2F6FED");
+        SetWorkflowButtonEnabled(_specButton, !busy, "#FF6B4FB3");
+        SetWorkflowButtonEnabled(_sessionsButton, !busy, "#FFB45B35");
+        _workflowStatus.Text = string.IsNullOrEmpty(message)
+            ? "Uses the existing project skills. No desktop task is claimed."
+            : message;
+        _workflowStatus.Foreground = Brush(isError ? "#FFFF8A94" : busy ? "#FFB9A3FF" : "#FF9FD7B6");
     }
 
     public void RenderServer(DevServerState state, bool busy, string actionLabel, string detail)
@@ -537,20 +499,42 @@ sealed class ProjectCommandCenter : Border
         return "#FFFF7E88";
     }
 
-    void UpdateHandoffButtons()
-    {
-        bool enabled = !string.IsNullOrWhiteSpace(_request.Text);
-        SetActionButtonEnabled(_feedbackButton, enabled, "#FF2F6FED");
-        SetActionButtonEnabled(_commitButton, enabled, "#FF6B4FB3");
-    }
-
-    static void SetActionButtonEnabled(Button button, bool enabled, string color)
+    static void SetWorkflowButtonEnabled(Button button, bool enabled, string color)
     {
         button.IsEnabled = enabled;
         button.Background = Brush(enabled ? color : "#FF34363E");
         button.Foreground = Brush(enabled ? "#FFFFFFFF" : "#FF858791");
         button.Cursor = enabled ? Cursors.Hand : Cursors.Arrow;
         button.Opacity = 1.0;
+    }
+
+    static Button WorkflowButton(string title, string description, string color, Action action)
+    {
+        var content = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        content.Children.Add(new TextBlock
+        {
+            Text = title,
+            Foreground = Brushes.White,
+            FontSize = 14,
+            FontWeight = FontWeights.SemiBold,
+            FontFamily = Font(),
+            HorizontalAlignment = HorizontalAlignment.Center
+        });
+        content.Children.Add(new TextBlock
+        {
+            Text = description,
+            Foreground = Brush("#D9FFFFFF"),
+            FontSize = 12,
+            FontFamily = Font(),
+            TextWrapping = TextWrapping.Wrap,
+            TextAlignment = TextAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(7, 5, 7, 0)
+        });
+        var button = ActionButton(content, "Open the " + title + " workflow in a new Codex session", action);
+        button.Height = 88;
+        button.Background = Brush(color);
+        return button;
     }
 
     static StackPanel BuildHeader(string name, string icon)
@@ -596,9 +580,14 @@ sealed class ProjectCommandCenter : Border
 
     static Button ActionButton(string label, string accessibleName, Action action)
     {
+        return ActionButton((object)label, accessibleName, action);
+    }
+
+    static Button ActionButton(object content, string accessibleName, Action action)
+    {
         var button = new Button
         {
-            Content = label,
+            Content = content,
             Height = 44,
             Foreground = Brushes.White,
             Background = Brush("#FF34363E"),
