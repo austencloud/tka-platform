@@ -1,7 +1,9 @@
 # Fan Wick Emitters and Build-Gated Effects
 
 **Date:** 2026-08-27
-**Status:** Design approved, not yet planned
+**Status:** Shipped 2026-08-27. Phase 1 (build-aware emitters) and Phase 2
+(per-performer build) landed earlier; Phase 3 (auto-equip) landed in
+`2b04dcd094`.
 
 ## The one sentence
 
@@ -266,7 +268,15 @@ they carry the entire visible win.
    risk. Phase 1's build lookup changes from the global getter to the
    per-performer value here — a one-line change at one call site, a cheap price
    for getting the visible fix out ahead of the risky refactor.
-3. **Auto-equip.** Depends on both.
+3. **Auto-equip.** Depends on both. Shipped as
+   `src/lib/shared/3d/domain/build-for-effect.ts`, called from `setEffect`
+   AND from `setProp` — the hole runs both ways, and handing a burning
+   performer a day fan is the same defect reached from the other side.
+   `setProp` equips only across a catalog-family change, so an in-family
+   build choice (Staff from the Double Staff radio while lit) still wins.
+   Both take `{ equipBuild: false }`, which every restore path passes:
+   replaying a stored effect is not a performer choosing one, and equipping
+   there writes back overrides the saved scene deliberately does not carry.
 
 ## Related
 
