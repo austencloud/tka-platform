@@ -1,21 +1,25 @@
-<!--
-  MyPropsDrawer.svelte - One-screen editor for profile prop preferences.
-
-  Users select every prop they spin and choose one favorite without leaving the
-  grid. The same state owner persists both choices.
--->
+<!-- Two-step editor for exact prop versions and the optional Profile prop. -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
-  import PropFamilyGrid from "./PropFamilyGrid.svelte";
-  import { PROP_FAMILIES } from "./PropFamilyGrid.svelte";
-  import SelectionFooterBar from "./SelectionFooterBar.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import {
+    ensureProfilePropFamily,
+    getLegacyProfileProps,
+    getProfilePropFamily,
+    getProfilePropLabel,
+    isProfilePropChoice,
+    removeProfileProp,
+    toggleProfilePropVariant,
+    uniqueProfileProps,
+  } from "$lib/shared/community/domain/profile-prop-catalog";
   import type { PropPreferenceState } from "$lib/shared/community/state/prop-preference-state.svelte";
-  import { getBasePropType } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import { tryGetAccountSetupContext } from "$lib/shared/onboarding/context/account-setup-context";
-  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import ProfilePropPicker from "./ProfilePropPicker.svelte";
+  import PropFamilyGrid from "./PropFamilyGrid.svelte";
+  import SelectionFooterBar from "./SelectionFooterBar.svelte";
 
   interface Props {
     isOpen: boolean;
@@ -24,190 +28,494 @@
   }
 
   let { isOpen = $bindable(), propState, onclose }: Props = $props();
-  let choosingFavorite = $state(false);
+  let step = $state<"props" | "profile-prop">("props");
+  let draftProps = $state<PropType[]>([]);
+  let draftProfileProp = $state<PropType | null>(null);
+  let activeFamily = $state<PropType | null>(null);
+  let submitting = $state(false);
+  let saveFailed = $state(false);
+  let editorContentElement = $state<HTMLElement | null>(null);
+  let wasOpen = false;
   const accountSetupState = tryGetAccountSetupContext();
 
-  // Set of base types that exist in PROP_FAMILIES for filtering
-  const familyBases = new Set(PROP_FAMILIES.map((f) => f.base));
-
-  // Normalize stored propsISpinWith to base types, filtered to families in the grid
-  const gridSelections = $derived(
-    propState.propsISpinWith
-      .map(getBasePropType)
-      .filter((p) => familyBases.has(p))
-      // Deduplicate (multiple variants of same family → one entry)
-      .filter((p, i, arr) => arr.indexOf(p) === i)
+  const legacyProps = $derived(getLegacyProfileProps(draftProps));
+  const profilePropChoices = $derived(draftProps.filter(isProfilePropChoice));
+  const primaryLabel = $derived(
+    step === "profile-prop"
+      ? "Save"
+      : draftProps.length > 1
+        ? "Continue"
+        : "Done"
   );
 
-  const favoriteBase = $derived(
-    propState.favoriteProp ? getBasePropType(propState.favoriteProp) : null
-  );
-  const canFinish = $derived(
-    gridSelections.length === 1 ||
-      (favoriteBase !== null && gridSelections.includes(favoriteBase))
-  );
+  function resetDraft(): void {
+    draftProps = uniqueProfileProps(propState.propsISpinWith);
+    draftProfileProp =
+      propState.favoriteProp &&
+      isProfilePropChoice(propState.favoriteProp) &&
+      draftProps.includes(propState.favoriteProp)
+        ? propState.favoriteProp
+        : null;
+    activeFamily =
+      getProfilePropFamily(draftProfileProp ?? draftProps[0])?.representative ??
+      null;
+    step = "props";
+    saveFailed = false;
+    propState.clearError();
+    scrollEditorToTop();
+  }
+
+  function scrollEditorToTop(): void {
+    requestAnimationFrame(() => {
+      editorContentElement?.parentElement?.scrollTo({ top: 0 });
+    });
+  }
+
+  function showStep(nextStep: "props" | "profile-prop"): void {
+    step = nextStep;
+    scrollEditorToTop();
+  }
+
+  $effect(() => {
+    if (isOpen && !wasOpen) resetDraft();
+    wasOpen = isOpen;
+  });
 
   function triggerHaptic(type: "selection" | "success" = "selection") {
     try {
       const haptic = getHapticFeedback() as HapticFeedback;
       haptic?.trigger(type);
     } catch {
-      // Not available
+      // Haptics are an enhancement and may not exist on this device.
     }
   }
 
-  function handleToggle(propType: PropType) {
+  function noteDraftChange(): void {
+    saveFailed = false;
+    propState.clearError();
     triggerHaptic("selection");
-    propState.toggleProp(propType);
   }
 
-  async function handleDone() {
-    // 1 prop selected - auto-favorite it
-    const singleProp = gridSelections[0];
-    if (
-      gridSelections.length === 1 &&
-      singleProp &&
-      favoriteBase !== singleProp
-    ) {
-      try {
-        await propState.setFavorite(singleProp);
-        accountSetupState?.markFavoritePropPresent(true);
-      } catch (error) {
-        console.error("[MyPropsDrawer] Favorite prop save failed", error);
-        toast.error("Favorite prop didn't save. Try again.");
-        return;
-      }
+  function handleFamilySelect(representative: PropType): void {
+    draftProps = ensureProfilePropFamily(draftProps, representative);
+    activeFamily = representative;
+    noteDraftChange();
+  }
+
+  function handleVariantToggle(prop: PropType): void {
+    const removing = draftProps.includes(prop);
+    draftProps = toggleProfilePropVariant(draftProps, prop);
+    if (removing && draftProfileProp === prop) draftProfileProp = null;
+    activeFamily = getProfilePropFamily(prop)?.representative ?? activeFamily;
+    noteDraftChange();
+  }
+
+  function handleLegacyRemove(prop: PropType): void {
+    draftProps = removeProfileProp(draftProps, prop);
+    if (draftProfileProp === prop) draftProfileProp = null;
+    noteDraftChange();
+  }
+
+  function handlePropsPrimary(): void {
+    if (draftProps.length === 0 || submitting) return;
+    if (draftProps.length === 1) {
+      void persistDraft(null);
+      return;
     }
-    closeModal();
+
+    if (draftProfileProp && !draftProps.includes(draftProfileProp)) {
+      draftProfileProp = null;
+    }
+    showStep("profile-prop");
+    triggerHaptic("selection");
   }
 
-  async function handleFavoriteSelected(propType: PropType) {
+  function handleProfilePropChoice(propType: PropType | null) {
+    draftProfileProp = propType;
+    noteDraftChange();
+  }
+
+  async function persistDraft(profileProp: PropType | null): Promise<void> {
+    if (submitting || draftProps.length === 0) return;
+    submitting = true;
+    saveFailed = false;
+    let saved = false;
     try {
-      await propState.setFavorite(propType);
-      accountSetupState?.markFavoritePropPresent(true);
-      choosingFavorite = false;
+      await propState.saveProfileSelection(draftProps, profileProp);
+      accountSetupState?.markPropsPresent(true);
       triggerHaptic("success");
+      saved = true;
     } catch (error) {
-      console.error("[MyPropsDrawer] Favorite prop save failed", error);
-      toast.error("Favorite prop didn't save. Try again.");
+      saveFailed = true;
+      scrollEditorToTop();
+      console.error("[MyPropsDrawer] Prop preferences save failed", error);
+    } finally {
+      submitting = false;
     }
+    if (saved) closeModal();
   }
 
-  function handleFavoriteModeToggle() {
-    choosingFavorite = !choosingFavorite;
-    triggerHaptic("selection");
+  async function reloadPreferences(): Promise<void> {
+    await propState.reload();
+    if (!propState.error) resetDraft();
   }
 
   function closeModal() {
-    choosingFavorite = false;
+    if (submitting) return;
+    step = "props";
+    isOpen = false;
     onclose();
   }
 </script>
 
 <BaseModal
   bind:open={isOpen}
-  onclose={() => closeModal()}
+  onclose={closeModal}
   size="fit"
   animation="pop"
   class="my-props-modal"
 >
   {#snippet header()}
     <div class="modal-header">
-      <h2 class="modal-title">What do you spin?</h2>
+      <span class="step-label">
+        {step === "props" ? "Required · Step 1 of 2" : "Optional · Step 2 of 2"}
+      </span>
+      <h2 class="modal-title">
+        {step === "props"
+          ? "Which props do you spin?"
+          : "Which prop should represent you?"}
+      </h2>
       <p class="modal-description">
-        Select every prop you spin, then choose one favorite.
+        {step === "props"
+          ? "Choose each prop family and the versions you actually spin. These appear on your public creator profile and support prop-based discovery."
+          : "Choose the exact prop shown on creator cards and your public profile, or choose No preference."}
       </p>
+      <button
+        type="button"
+        class="close-button"
+        onclick={closeModal}
+        aria-label="Close prop editor"
+        disabled={submitting}
+      >
+        <i class="fas fa-xmark" aria-hidden="true"></i>
+      </button>
     </div>
   {/snippet}
 
-  <div class="prop-grid-container">
-    <PropFamilyGrid
-      selectedProps={gridSelections}
-      favoriteProp={favoriteBase}
-      {choosingFavorite}
-      disabled={propState.loading || propState.saving}
-      ontoggle={handleToggle}
-      onfavorite={handleFavoriteSelected}
-    />
+  <div class="prop-editor-content" bind:this={editorContentElement}>
+    {#if propState.error}
+      <div class="prop-error" role="alert">
+        <span>{propState.error}</span>
+        <button
+          type="button"
+          onclick={saveFailed
+            ? () =>
+                void persistDraft(
+                  draftProps.length === 1 ? null : draftProfileProp
+                )
+            : () => void reloadPreferences()}
+          disabled={submitting || propState.loading}
+        >
+          {submitting || propState.loading
+            ? "Working…"
+            : saveFailed
+              ? "Retry save"
+              : "Reload"}
+        </button>
+      </div>
+    {/if}
+
+    {#if step === "props"}
+      <PropFamilyGrid
+        selectedProps={draftProps}
+        {activeFamily}
+        disabled={submitting || propState.loading}
+        onselectfamily={handleFamilySelect}
+        ontogglevariant={handleVariantToggle}
+      />
+
+      {#if legacyProps.length > 0}
+        <section class="legacy-props" aria-labelledby="legacy-props-title">
+          <span class="legacy-heading">
+            <strong id="legacy-props-title">Previously saved</strong>
+            <small>Kept for compatibility, but not offered during setup.</small>
+          </span>
+          <div class="legacy-list">
+            {#each legacyProps as prop (prop)}
+              <button
+                type="button"
+                class="legacy-chip"
+                onclick={() => handleLegacyRemove(prop)}
+                disabled={submitting}
+                aria-label={`Remove previously saved ${getProfilePropLabel(prop)}`}
+              >
+                <span class="legacy-preview" aria-hidden="true">
+                  <PropCompositionPreview
+                    propType={prop}
+                    size={32}
+                    useSavedOverrides={false}
+                  />
+                </span>
+                <span>{getProfilePropLabel(prop)}</span>
+                <i class="fas fa-xmark" aria-hidden="true"></i>
+              </button>
+            {/each}
+          </div>
+        </section>
+      {/if}
+    {:else}
+      <ProfilePropPicker
+        selectedProps={profilePropChoices}
+        value={draftProfileProp}
+        disabled={submitting}
+        onselect={handleProfilePropChoice}
+      />
+    {/if}
   </div>
 
   {#snippet footer()}
     <SelectionFooterBar
-      selectedProps={gridSelections}
-      saving={propState.saving}
-      {canFinish}
-      {choosingFavorite}
-      onfavoritepick={handleFavoriteModeToggle}
-      ondone={handleDone}
+      selectedProps={draftProps}
+      saving={submitting}
+      {primaryLabel}
+      primaryDisabled={step === "props" && draftProps.length === 0}
+      onprimary={step === "props"
+        ? handlePropsPrimary
+        : () => void persistDraft(draftProfileProp)}
+      onback={step === "profile-prop" ? () => showStep("props") : undefined}
     />
   {/snippet}
 </BaseModal>
 
 <style>
-  /* Keep two roomy columns on phones, then widen to the complete eight-column
-     grid when the screen can show it without shrinking the favorite controls. */
   :global(.my-props-modal) {
-    width: min(92vw, 60rem) !important;
+    width: min(94vw, 68rem) !important;
   }
 
   .modal-header {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
-    padding: 16px 16px 8px;
+    gap: 0.3rem;
+    padding: 1rem 4.25rem 0.6rem 1rem;
+  }
+
+  .step-label {
+    color: color-mix(in srgb, var(--theme-accent, #6366f1) 58%, white);
+    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .modal-title,
+  .modal-description {
+    margin: 0;
   }
 
   .modal-title {
-    font-size: var(--font-size-base, 16px);
-    font-weight: 600;
     color: var(--theme-text, white);
-    margin: 0;
+    font-size: max(1.125rem, var(--font-size-lg, 1.125rem));
+    font-weight: 700;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
   }
 
   .modal-description {
-    margin: 0;
+    max-width: 54rem;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-    font-size: var(--font-size-compact, 12px);
-    line-height: 1.4;
-    white-space: normal;
+    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
+    line-height: 1.45;
   }
 
-  .prop-grid-container {
+  .prop-editor-content {
     container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
     overflow-y: auto;
+    padding-bottom: 0.75rem;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2))
       transparent;
-    padding-bottom: 8px;
+  }
+
+  .close-button {
+    position: absolute;
+    top: 0.85rem;
+    right: 0.85rem;
+    display: grid;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    place-items: center;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 0.65rem;
+    cursor: pointer;
+  }
+
+  .close-button:hover:not(:disabled) {
+    color: var(--theme-text, white);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+  }
+
+  .close-button:disabled {
+    cursor: wait;
+    opacity: 0.58;
+  }
+
+  .close-button:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .prop-error,
+  .legacy-props {
+    margin-inline: 0.5rem;
+  }
+
+  .prop-error {
+    display: flex;
+    min-height: var(--min-touch-target, 44px);
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, white);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 10%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    border-radius: 0.75rem;
+    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
+  }
+
+  .prop-error button {
+    min-height: var(--min-touch-target, 44px);
+    flex: 0 0 auto;
+    padding: 0.55rem 0.85rem;
+    color: var(--theme-text, white);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    border-radius: 0.55rem;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+  }
+
+  .legacy-props {
+    padding: 0.75rem;
+    background: color-mix(in srgb, var(--theme-text) 3%, transparent);
+    border: 1px dashed var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    border-radius: 0.85rem;
+  }
+
+  .legacy-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .legacy-heading strong {
+    color: var(--theme-text, white);
+    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
+  }
+
+  .legacy-heading small {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
+  }
+
+  .legacy-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+  }
+
+  .legacy-chip {
+    display: inline-flex;
+    min-height: var(--min-touch-target, 44px);
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.65rem;
+    color: var(--theme-text, white);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 999px;
+    cursor: pointer;
+    font: inherit;
+    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
+    font-weight: 650;
+  }
+
+  .legacy-preview {
+    display: grid;
+    width: 1.75rem;
+    height: 1.75rem;
+    place-items: center;
+  }
+
+  .legacy-preview :global(.prop-composition-preview) {
+    width: 100%;
+    height: 100%;
+  }
+
+  @media (max-width: 520px) {
+    .legacy-heading {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
   }
 
   @media (min-width: 1680px) {
     :global(.my-props-modal) {
-      width: min(84vw, 90rem) !important;
+      width: min(86vw, 96rem) !important;
     }
   }
 
-  @media (min-width: 2600px) {
+  @media (min-width: 2300px) and (min-height: 45rem) {
     :global(.my-props-modal) {
-      width: 76vw !important;
+      width: 78vw !important;
     }
 
     .modal-header {
       gap: 0.5rem;
-      padding: 2rem 2rem 1rem;
+      padding: 2rem 6rem 1rem 2rem;
+    }
+
+    .step-label {
+      font-size: 1.125rem;
     }
 
     .modal-title {
       font-size: 2.25rem;
     }
 
-    .modal-description {
+    .modal-description,
+    .prop-error,
+    .legacy-heading strong {
       font-size: 1.375rem;
     }
 
-    .prop-grid-container {
-      padding-bottom: 1rem;
+    .legacy-heading small,
+    .legacy-chip {
+      font-size: 1.125rem;
+    }
+
+    .close-button {
+      top: 1.75rem;
+      right: 2rem;
+      width: 4rem;
+      height: 4rem;
+      font-size: 1.5rem;
     }
   }
 </style>

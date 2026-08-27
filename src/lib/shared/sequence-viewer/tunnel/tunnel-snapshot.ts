@@ -15,12 +15,28 @@ type PathShape = "arc" | "linear" | "concave";
  *  visuals ride inside `effects.trails`, so they are not double-stored. */
 export interface TunnelSnapshot {
   version: number;
-  tunnel: { config: TunnelConfig; gridVisible: boolean; spectrum: boolean; section: TunnelSection };
+  tunnel: {
+    config: TunnelConfig;
+    gridVisible: boolean;
+    spectrum: boolean;
+    section: TunnelSection;
+  };
   effects: EffectsConfig;
   effort: EffortId;
-  paths: { pathShape: PathShape; motionAwarePaths: boolean; bluePathLines: boolean; redPathLines: boolean };
+  paths: {
+    pathShape: PathShape;
+    motionAwarePaths: boolean;
+    bluePathLines: boolean;
+    redPathLines: boolean;
+  };
   playback: { bpm: number; playbackMode: PlaybackMode };
-  props: { bluePropType: string; redPropType: string };
+  props: {
+    bluePropType: string;
+    redPropType: string;
+    /** Optional only for snapshots saved before creator draft v4. */
+    blueBuugengFlipped?: boolean;
+    redBuugengFlipped?: boolean;
+  };
   trailRender: TrailSettings;
 }
 
@@ -33,7 +49,14 @@ export const TunnelSnapshotSchema = z.object({
     config: z.any(),
     gridVisible: z.boolean(),
     spectrum: z.boolean(),
-    section: z.enum(["tunnel", "speed", "effects", "effort", "playback"]),
+    section: z.enum([
+      "tunnel",
+      "props",
+      "speed",
+      "effects",
+      "effort",
+      "playback",
+    ]),
   }),
   effects: z.any(),
   effort: z.string(),
@@ -47,7 +70,12 @@ export const TunnelSnapshotSchema = z.object({
     bpm: z.number(),
     playbackMode: z.enum(["continuous", "step"]),
   }),
-  props: z.object({ bluePropType: z.string(), redPropType: z.string() }),
+  props: z.object({
+    bluePropType: z.string(),
+    redPropType: z.string(),
+    blueBuugengFlipped: z.boolean().optional(),
+    redBuugengFlipped: z.boolean().optional(),
+  }),
   trailRender: z.any(),
 });
 
@@ -62,20 +90,45 @@ export interface SnapshotDeps {
   controller: TunnelViewController;
   effects: EffectsConfigState;
   visibility: AnimationVisibilityStateManager;
-  settings: { bluePropType: string; redPropType: string; updateSettings: (p: { bluePropType?: string; redPropType?: string }) => unknown };
+  settings: {
+    bluePropType: string;
+    redPropType: string;
+    blueBuugengFlipped?: boolean;
+    redBuugengFlipped?: boolean;
+    updateSettings: (p: {
+      bluePropType?: string;
+      redPropType?: string;
+      blueBuugengFlipped?: boolean;
+      redBuugengFlipped?: boolean;
+    }) => unknown;
+  };
   animationSettings: AnimationSettingsState;
-  playback: { handleBpmChange: (bpm: number) => void; handlePlaybackModeChange: (mode: PlaybackMode) => void };
+  playback: {
+    handleBpmChange: (bpm: number) => void;
+    handlePlaybackModeChange: (mode: PlaybackMode) => void;
+  };
   animationPanel: { playbackMode: PlaybackMode };
   getBpm: () => number;
 }
 
 const clone = <T>(v: T): T => {
-  try { return structuredClone(v); }
-  catch { return JSON.parse(JSON.stringify(v)); }
+  try {
+    return structuredClone(v);
+  } catch {
+    return JSON.parse(JSON.stringify(v));
+  }
 };
 
 export function captureTunnelSnapshot(deps: SnapshotDeps): TunnelSnapshot {
-  const { controller, effects, visibility, settings, animationSettings, animationPanel, getBpm } = deps;
+  const {
+    controller,
+    effects,
+    visibility,
+    settings,
+    animationSettings,
+    animationPanel,
+    getBpm,
+  } = deps;
   return {
     version: SNAPSHOT_VERSION,
     tunnel: {
@@ -93,13 +146,28 @@ export function captureTunnelSnapshot(deps: SnapshotDeps): TunnelSnapshot {
       redPathLines: visibility.getVisibility("redPathLines"),
     },
     playback: { bpm: getBpm(), playbackMode: animationPanel.playbackMode },
-    props: { bluePropType: settings.bluePropType, redPropType: settings.redPropType },
+    props: {
+      bluePropType: settings.bluePropType,
+      redPropType: settings.redPropType,
+      blueBuugengFlipped: settings.blueBuugengFlipped ?? false,
+      redBuugengFlipped: settings.redBuugengFlipped ?? false,
+    },
     trailRender: clone(animationSettings.trail),
   };
 }
 
-export function applyTunnelSnapshot(deps: SnapshotDeps, snap: TunnelSnapshot): void {
-  const { controller, effects, visibility, settings, animationSettings, playback } = deps;
+export function applyTunnelSnapshot(
+  deps: SnapshotDeps,
+  snap: TunnelSnapshot
+): void {
+  const {
+    controller,
+    effects,
+    visibility,
+    settings,
+    animationSettings,
+    playback,
+  } = deps;
 
   // Tunnel topology + chrome (applyConfig clamps to the live budget; grid/spectrum/
   // section are public $state fields on the controller).
@@ -126,5 +194,14 @@ export function applyTunnelSnapshot(deps: SnapshotDeps, snap: TunnelSnapshot): v
   playback.handleBpmChange(snap.playback.bpm);
 
   // Prop types.
-  settings.updateSettings({ bluePropType: snap.props.bluePropType, redPropType: snap.props.redPropType });
+  settings.updateSettings({
+    bluePropType: snap.props.bluePropType,
+    redPropType: snap.props.redPropType,
+    ...(snap.props.blueBuugengFlipped !== undefined
+      ? { blueBuugengFlipped: snap.props.blueBuugengFlipped }
+      : {}),
+    ...(snap.props.redBuugengFlipped !== undefined
+      ? { redBuugengFlipped: snap.props.redBuugengFlipped }
+      : {}),
+  });
 }

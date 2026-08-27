@@ -1,3 +1,5 @@
+@import "./editorial-measure.css";
+
 /* ══════════════════════════════════════════════════════════════════
    Public editorial system — shared by /about and /roots.
    Borrows the Level-1 guide's type language (OKLCH, Inter optical
@@ -89,7 +91,8 @@
   font-size: clamp(1.05rem, 1rem + 0.4vw, 1.35rem);
   line-height: 1.65;
   color: oklch(0.7 0.01 270);
-  margin: 0 0 0.9rem;
+  max-inline-size: var(--measure-lede);
+  margin: 0 auto 0.9rem;
 }
 .lede .emphasis {
   color: oklch(0.92 0.02 270);
@@ -216,8 +219,7 @@
   font-weight: 400;
 }
 .prose p {
-  /* No reading-measure cap: prose spans the same width as the content around
-     it (Austen 2026-07-19 — mismatched narrow text columns are banned). */
+  max-inline-size: var(--measure-prose);
   margin: 0 0 1.2rem;
 }
 .prose p:last-child {
@@ -427,11 +429,8 @@
    the base design. Stages below are vh-keyed, so they stay proportionate
    across this whole range. */
 @media (min-width: 1680px) {
-  /* Big-screen tier is COMPOSITION-ONLY. Every text role is one continuous
-     clamp ramp in the base rules above, capped at a readable size — nothing
-     here re-sizes type. The tier caps-and-centers the reading column, widens
-     visual bands, holds duos in conversation, and steps the display-scale page
-     title for centered marketing headers. */
+  /* Big-screen tier is composition-only. Type remains on its bounded authored
+     roles while the tier widens visual bands and holds duos in conversation. */
   /* A 112px gutter reads as one composition; a 192px one reads as two islands. */
   .section-duo {
     gap: clamp(3rem, 4vw, 6rem);

@@ -57,12 +57,14 @@ sealed class Pm2DevServerController
     sealed class Pm2Runtime
     {
         public readonly string NodePath;
-        public readonly string CliPath;
+        public readonly string RootPath;
+        public readonly string BridgePath;
 
-        public Pm2Runtime(string nodePath, string cliPath)
+        public Pm2Runtime(string nodePath, string rootPath, string bridgePath)
         {
             NodePath = nodePath;
-            CliPath = cliPath;
+            RootPath = rootPath;
+            BridgePath = bridgePath;
         }
     }
 
@@ -94,36 +96,41 @@ sealed class Pm2DevServerController
                 listening ? "Port " + _port + " is owned outside PM2." : "PM2 is not installed."
             );
 
-        HiddenProcessResult result = RunPm2(runtime, "pid " + _app, StatusTimeoutMs);
-        int pid = ParsePositivePid(result.Output);
-        DevServerState state = ClassifyStatus(true, result.Started && !result.TimedOut && result.ExitCode == 0, pid, listening);
+        HiddenProcessResult result = RunBridge(runtime, "status " + HiddenProcessRunner.QuoteArgument(runtime.RootPath) + " " + HiddenProcessRunner.QuoteArgument(_app), StatusTimeoutMs);
+        int pid;
+        string pm2State;
+        ParseBridgeStatus(result.Output, out pid, out pm2State);
+        bool commandSucceeded = result.Started && !result.TimedOut && result.ExitCode == 0;
+        DevServerState state = ClassifyStatus(true, commandSucceeded, pid, pm2State, listening);
         string detail = "";
         if (state == DevServerState.Error) detail = HiddenProcessRunner.FirstUsefulLine(result.Error, result.Output, "PM2 status failed.");
+        else if (listening && !commandSucceeded) detail = "Port " + _port + " is ready; PM2 status is unavailable.";
         else if (state == DevServerState.External) detail = "Port " + _port + " is owned outside PM2.";
         return new DevServerStatus(state, detail);
     }
 
-    public DevServerCommandResult StartOrRestart(DevServerState currentState)
+    public DevServerCommandResult StartOrRestart(DevServerState currentState, Action<string> progress)
     {
         Pm2Runtime runtime = FindPm2Runtime();
         if (runtime == null) return new DevServerCommandResult(false, "PM2 is not installed.");
 
-        bool restart = currentState == DevServerState.Running || currentState == DevServerState.Starting;
+        DevServerStatus observed = currentState == DevServerState.Checking ? GetStatus() : null;
+        DevServerState resolvedState = observed == null ? currentState : observed.State;
+        if (resolvedState == DevServerState.SetupRequired)
+            return new DevServerCommandResult(false, "PM2 is not installed.");
+        if (resolvedState == DevServerState.External)
+            return new DevServerCommandResult(false, "Port " + _port + " is running outside PM2. Stop that process before Agent Hub can manage it.");
+
+        bool restart = resolvedState == DevServerState.Running || resolvedState == DevServerState.Starting;
         string args = restart
-            ? "restart " + _app + " --update-env"
-            : "start " + HiddenProcessRunner.QuoteArgument(_config) + " --only " + _app + " --update-env";
-        HiddenProcessResult action = RunPm2(runtime, args, ActionTimeoutMs);
+            ? "restart " + HiddenProcessRunner.QuoteArgument(runtime.RootPath) + " " + HiddenProcessRunner.QuoteArgument(_app)
+            : "start " + HiddenProcessRunner.QuoteArgument(runtime.RootPath) + " " + HiddenProcessRunner.QuoteArgument(_config) + " " + HiddenProcessRunner.QuoteArgument(_app);
+        HiddenProcessResult action = RunBridge(runtime, args, ActionTimeoutMs);
         if (!action.Started || action.TimedOut || action.ExitCode != 0)
             return new DevServerCommandResult(false, HiddenProcessRunner.FirstUsefulLine(action.Error, action.Output, "PM2 could not start the server."));
 
-        if (!restart)
-        {
-            HiddenProcessResult save = RunPm2(runtime, "save", ActionTimeoutMs);
-            if (!save.Started || save.TimedOut || save.ExitCode != 0)
-                return new DevServerCommandResult(false, HiddenProcessRunner.FirstUsefulLine(save.Error, save.Output, "The server started, but PM2 could not save its process list."));
-        }
-
-        Thread.Sleep(750);
+        if (progress != null) progress("PM2 accepted the request. Waiting for port " + _port + ".");
+        Thread.Sleep(250);
         DateTime deadline = DateTime.UtcNow.AddSeconds(180);
         while (DateTime.UtcNow < deadline)
         {
@@ -133,24 +140,27 @@ sealed class Pm2DevServerController
         return new DevServerCommandResult(false, "PM2 started the process, but port " + _port + " did not become ready within 180 seconds.");
     }
 
-    static DevServerState ClassifyStatus(bool runtimeAvailable, bool pidCommandSucceeded, int pid, bool portListening)
+    static DevServerState ClassifyStatus(bool runtimeAvailable, bool statusCommandSucceeded, int pid, string pm2State, bool portListening)
     {
         if (!runtimeAvailable) return portListening ? DevServerState.External : DevServerState.SetupRequired;
-        if (pid > 0) return portListening ? DevServerState.Running : DevServerState.Starting;
+        if (!statusCommandSucceeded) return portListening ? DevServerState.Running : DevServerState.Error;
+        if (pid > 0 || string.Equals(pm2State, "online", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(pm2State, "launching", StringComparison.OrdinalIgnoreCase))
+            return portListening ? DevServerState.Running : DevServerState.Starting;
         if (portListening) return DevServerState.External;
-        return pidCommandSucceeded ? DevServerState.Offline : DevServerState.Error;
+        return DevServerState.Offline;
     }
 
-    static int ParsePositivePid(string output)
+    static void ParseBridgeStatus(string output, out int pid, out string state)
     {
-        if (string.IsNullOrEmpty(output)) return 0;
-        string[] tokens = output.Split(new char[] { '\r', '\n', ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-        for (int i = tokens.Length - 1; i >= 0; i--)
-        {
-            int value;
-            if (int.TryParse(tokens[i], NumberStyles.None, CultureInfo.InvariantCulture, out value) && value > 0) return value;
-        }
-        return 0;
+        pid = 0;
+        state = "";
+        if (string.IsNullOrWhiteSpace(output)) return;
+        string firstLine = output.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)[0];
+        string[] fields = firstLine.Split('\t');
+        if (fields.Length > 0) int.TryParse(fields[0], NumberStyles.None, CultureInfo.InvariantCulture, out pid);
+        if (fields.Length > 1) state = fields[1].Trim();
+        if (pid < 0) pid = 0;
     }
 
     static bool IsValidAppName(string value)
@@ -195,23 +205,25 @@ sealed class Pm2DevServerController
         if (string.IsNullOrEmpty(node)) return null;
 
         string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        string cli = Path.Combine(appData, "npm", "node_modules", "pm2", "bin", "pm2");
-        if (File.Exists(cli)) return new Pm2Runtime(node, cli);
+        string root = Path.Combine(appData, "npm", "node_modules", "pm2");
+        string bridge = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Pm2Bridge.cjs");
+        if (!File.Exists(bridge)) return null;
+        if (File.Exists(Path.Combine(root, "index.js"))) return new Pm2Runtime(node, root, bridge);
 
         string shim = HiddenProcessRunner.FindExecutableOnPath("pm2.cmd");
         if (!string.IsNullOrEmpty(shim))
         {
-            cli = Path.Combine(Path.GetDirectoryName(shim), "node_modules", "pm2", "bin", "pm2");
-            if (File.Exists(cli)) return new Pm2Runtime(node, cli);
+            root = Path.Combine(Path.GetDirectoryName(shim), "node_modules", "pm2");
+            if (File.Exists(Path.Combine(root, "index.js"))) return new Pm2Runtime(node, root, bridge);
         }
         return null;
     }
 
-    HiddenProcessResult RunPm2(Pm2Runtime runtime, string args, int timeoutMs)
+    HiddenProcessResult RunBridge(Pm2Runtime runtime, string args, int timeoutMs)
     {
         return HiddenProcessRunner.Run(
             runtime.NodePath,
-            HiddenProcessRunner.QuoteArgument(runtime.CliPath) + " " + args,
+            HiddenProcessRunner.QuoteArgument(runtime.BridgePath) + " " + args,
             _project,
             timeoutMs,
             null);
@@ -223,14 +235,18 @@ sealed class Pm2DevServerController
         if (!IsValidAppName("tka-dev")) failures++;
         if (IsValidAppName("-bad")) failures++;
         if (IsValidAppName("bad name")) failures++;
-        if (ParsePositivePid("[PM2] pid\r\n43812\r\n") != 43812) failures++;
-        if (ParsePositivePid("0\r\n") != 0) failures++;
-        if (ClassifyStatus(false, false, 0, false) != DevServerState.SetupRequired) failures++;
-        if (ClassifyStatus(false, false, 0, true) != DevServerState.External) failures++;
-        if (ClassifyStatus(true, true, 0, false) != DevServerState.Offline) failures++;
-        if (ClassifyStatus(true, true, 100, false) != DevServerState.Starting) failures++;
-        if (ClassifyStatus(true, true, 100, true) != DevServerState.Running) failures++;
-        if (ClassifyStatus(true, false, 0, false) != DevServerState.Error) failures++;
+        int pid; string state;
+        ParseBridgeStatus("43812\tonline\r\n", out pid, out state);
+        if (pid != 43812 || state != "online") failures++;
+        ParseBridgeStatus("0\tmissing\r\n", out pid, out state);
+        if (pid != 0 || state != "missing") failures++;
+        if (ClassifyStatus(false, false, 0, "", false) != DevServerState.SetupRequired) failures++;
+        if (ClassifyStatus(false, false, 0, "", true) != DevServerState.External) failures++;
+        if (ClassifyStatus(true, true, 0, "missing", false) != DevServerState.Offline) failures++;
+        if (ClassifyStatus(true, true, 100, "online", false) != DevServerState.Starting) failures++;
+        if (ClassifyStatus(true, true, 100, "online", true) != DevServerState.Running) failures++;
+        if (ClassifyStatus(true, false, 0, "", false) != DevServerState.Error) failures++;
+        if (ClassifyStatus(true, false, 0, "", true) != DevServerState.Running) failures++;
         if (HiddenProcessRunner.QuoteArgument("C:\\path with space\\") != "\"C:\\path with space\\\\\"") failures++;
         return failures;
     }

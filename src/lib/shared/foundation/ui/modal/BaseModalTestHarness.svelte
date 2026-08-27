@@ -2,7 +2,13 @@
   import { onMount } from "svelte";
   import BaseModal from "./BaseModal.svelte";
 
-  let { cancelBeforeOpen = false }: { cancelBeforeOpen?: boolean } = $props();
+  let {
+    cancelBeforeOpen = false,
+    allowExternalOverlays = false,
+  }: {
+    cancelBeforeOpen?: boolean;
+    allowExternalOverlays?: boolean;
+  } = $props();
 
   let isOpen = $state(true);
   let openedCount = $state(0);
@@ -26,6 +32,7 @@
   bind:open={isOpen}
   size="fit"
   animation="none"
+  {allowExternalOverlays}
   labelledBy="base-modal-test-title"
   onopened={handleOpened}
 >

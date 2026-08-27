@@ -22,6 +22,9 @@
   import {
     analyzeGait,
     DEFAULT_THRESHOLDS,
+    latestArrivalFrames,
+    latestTravelFrames,
+    travelSpans,
     type GaitReport,
     type GaitThresholds,
   } from "./gait-analysis";
@@ -43,6 +46,12 @@
     /** How often the scene is re-scanned for rigs, in seconds. */
     rescanInterval?: number;
     thresholds?: GaitThresholds;
+    /** Clear the recording when this identity changes. */
+    resetKey?: unknown;
+    /** Publish the latest moving segment instead of the whole rolling buffer. */
+    reportMode?: "buffer" | "latest-travel";
+    /** Keep this much of the stop transition after recording turns off. */
+    arrivalWindowSeconds?: number;
     /** Called with a fresh report per avatar every reportInterval. */
     onReport?: (reports: Map<string, GaitReport>) => void;
     /**
@@ -58,6 +67,9 @@
     reportInterval = 0.5,
     rescanInterval = 2,
     thresholds = DEFAULT_THRESHOLDS,
+    resetKey,
+    reportMode = "buffer",
+    arrivalWindowSeconds = 0,
     onReport,
     exposeOnWindow = true,
   }: Props = $props();
@@ -83,6 +95,24 @@
   let elapsed = 0;
   let sinceRescan = Infinity;
   let sinceReport = 0;
+  let postRollRemaining = 0;
+  let wasRecording = recording;
+
+  $effect(() => {
+    void resetKey;
+    recorder.clear();
+    gaitProbeState.reset();
+    elapsed = 0;
+    sinceReport = 0;
+    postRollRemaining = 0;
+  });
+
+  $effect(() => {
+    const active = recording;
+    if (wasRecording && !active) postRollRemaining = arrivalWindowSeconds;
+    if (active) postRollRemaining = 0;
+    wasRecording = active;
+  });
 
   function rescan(): void {
     const root = sceneRoot();
@@ -94,10 +124,30 @@
   function buildReports(): Map<string, GaitReport> {
     const reports = new Map<string, GaitReport>();
     for (const avatar of avatars) {
+      const frames = recorder.frames(avatar.id);
       reports.set(
         avatar.id,
-        analyzeGait(recorder.frames(avatar.id), thresholds)
+        analyzeGait(
+          reportMode === "latest-travel" ? latestTravelFrames(frames) : frames,
+          thresholds
+        )
       );
+    }
+    return reports;
+  }
+
+  function buildArrivalReports(): Map<string, GaitReport> {
+    const reports = new Map<string, GaitReport>();
+    if (arrivalWindowSeconds <= 0) return reports;
+    for (const avatar of avatars) {
+      const frames = latestArrivalFrames(
+        recorder.frames(avatar.id),
+        0.1,
+        arrivalWindowSeconds
+      );
+      if (frames.length >= 3) {
+        reports.set(avatar.id, analyzeGait(frames, thresholds));
+      }
     }
     return reports;
   }
@@ -131,29 +181,8 @@
         ),
       // Where the character was actually moving, so a window can be chosen
       // without guessing at the transport's timing.
-      travelSpans: (id: string, minSpeed = 0.15) => {
-        const frames = recorder.frames(id);
-        const spans: { from: number; to: number; peak: number }[] = [];
-        let open: { from: number; to: number; peak: number } | null = null;
-        for (let i = 1; i < frames.length; i++) {
-          const a = frames[i - 1]!;
-          const b = frames[i]!;
-          const speed =
-            Math.hypot(b.root.x - a.root.x, b.root.z - a.root.z) /
-            Math.max(b.dt, 1e-6);
-          if (speed >= minSpeed) {
-            if (open) {
-              open.to = b.t;
-              open.peak = Math.max(open.peak, speed);
-            } else open = { from: b.t, to: b.t, peak: speed };
-          } else if (open) {
-            spans.push(open);
-            open = null;
-          }
-        }
-        if (open) spans.push(open);
-        return spans.filter((span) => span.to - span.from > 0.5);
-      },
+      travelSpans: (id: string, minSpeed = 0.15) =>
+        travelSpans(recorder.frames(id), minSpeed),
       // Answers "why did it find nothing" without a rebuild: an empty scene, a
       // scene with no bones, and a rig whose bones are named something the
       // alias table has never heard of are three different problems.
@@ -208,7 +237,8 @@
 
   useTask(
     (delta) => {
-      if (!recording) return;
+      const postRolling = !recording && postRollRemaining > 0;
+      if (!recording && !postRolling) return;
 
       sinceRescan += delta;
       if (sinceRescan >= rescanInterval) {
@@ -221,6 +251,9 @@
       // dividing by it manufactures jerk that nobody saw.
       if (delta > 0.2) return;
       elapsed += delta;
+      const finishedPostRoll = postRolling && postRollRemaining <= delta;
+      if (postRolling)
+        postRollRemaining = Math.max(0, postRollRemaining - delta);
 
       for (const avatar of avatars) {
         const frame = sampleRig(avatar, { t: elapsed, dt: delta });
@@ -229,10 +262,11 @@
       }
 
       sinceReport += delta;
-      if (sinceReport >= reportInterval) {
+      if (sinceReport >= reportInterval || finishedPostRoll) {
         sinceReport = 0;
         const reports = buildReports();
         gaitProbeState.publish(reports);
+        gaitProbeState.publishArrival(buildArrivalReports());
         onReport?.(reports);
       }
     },

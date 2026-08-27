@@ -583,8 +583,8 @@
   }
 
 
-  /* Big-screen tiers (4k-native-layout: 1680 seam, second tier >= 2600).
-     The modal grows with the canvas instead of floating as a phone column. */
+  /* Wide-screen tiers change the modal's composition band. Type keeps the
+     same logical roles at every width. */
   @media (min-width: 1680px) {
     :global(dialog.base-modal.whats-new-modal.layout-wide[data-size="fit"]) {
       width: min(
@@ -630,7 +630,6 @@
     }
 
     .category-list li {
-      font-size: var(--font-size-base, 1rem);
       padding: 8px 0 8px 18px;
     }
 
@@ -649,7 +648,8 @@
   }
 
   @media (min-width: 2600px) {
-    /* 4K @ 100%: nothing scales for us here, so type and spacing step too. */
+    /* Native wide canvas: widen the authored band and allow a third text
+       column without magnifying the modal controls. */
     :global(dialog.base-modal.whats-new-modal.layout-wide[data-size="fit"]) {
       width: min(
         calc(
@@ -680,74 +680,11 @@
       );
     }
 
-    :global(dialog.base-modal.whats-new-modal[data-size="fit"]) {
-      border-radius: 28px;
-    }
-
     @container release-category (min-width: 90rem) {
       .category-list {
         columns: 3;
         column-gap: 40px;
       }
-    }
-
-    .category-list li {
-      font-size: 1.25rem;
-      line-height: 1.55;
-      padding: 10px 0 10px 22px;
-    }
-
-    .category-list li::before {
-      top: 19px;
-      width: 8px;
-      height: 8px;
-    }
-
-    .modal-header h1 {
-      font-size: 2rem;
-    }
-
-    .subtitle {
-      font-size: 1.125rem;
-    }
-
-    .version-badge {
-      padding: 10px 20px;
-      font-size: 1.05rem;
-    }
-
-    .category-header h3 {
-      font-size: 1.2rem;
-    }
-
-    .category-icon {
-      width: 44px;
-      height: 44px;
-      font-size: 1.1rem;
-    }
-
-    .category-count {
-      font-size: 1rem;
-    }
-
-    .category-card {
-      padding: 28px;
-      border-radius: 18px;
-    }
-
-    .release-body {
-      padding: 40px;
-      gap: 24px;
-    }
-
-    .footer-btn {
-      min-inline-size: 15rem;
-      font-size: 1.1rem;
-      padding: 16px 24px;
-    }
-
-    .footer-btn.primary {
-      min-inline-size: 18rem;
     }
   }
 

@@ -877,11 +877,8 @@
   /* The toy box: one framed panel holds the whole demo, so toolbar, workspace
      and picker read as a single self-contained unit instead of controls
      floating in the section void. */
-  /* Sizes here are rem, not px: this section renders on a marketing surface
-     whose root font ramps 16px -> 24px from 1680 -> 3840 (app.css). A px
-     constant would freeze the toy at its 1080p size while the heading and band
-     around it grew. At root 16 every value below computes to the same pixels it
-     always did. See .claude/rules/4k-native-layout.md. */
+  /* Sizes here are rem so browser zoom and user font preferences carry through
+     the whole demo. Viewport width changes its composition, not its root size. */
   .demo-shell {
     display: flex;
     flex-direction: column;
@@ -1234,12 +1231,8 @@
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
 
-    /* Clear, play, and history all size from --min-touch-target, which is a flat
-       44px. The page's root font ramps 16px→24px from 1680 to 3840, so at 4K
-       every label and pill beside these grew by half again while the discs did
-       not — three buttons visibly smaller than the text next to them. Ramping
-       the token for this row keeps the trio in family AND keeps the 44px floor,
-       since the rem value only overtakes it once the root has ramped. */
+    /* Clear, play, and history share the global touch-target floor. The rem
+       side lets browser zoom enlarge the controls with their labels. */
     --min-touch-target: max(44px, 2.75rem);
   }
 
@@ -1464,9 +1457,8 @@
     justify-content: center;
   }
 
-  /* Sized in rem with a px floor so these ride the root ramp alongside the
-     round buttons they share the action row with, instead of staying 44px
-     while the discs beside them grow to 66 at 4K. */
+  /* Sized in rem with a px floor so browser zoom enlarges these alongside the
+     round buttons while normal viewports retain the 44px target. */
   .cta-btn {
     display: inline-flex;
     align-items: center;

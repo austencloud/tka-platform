@@ -19,6 +19,7 @@ const TRAIL_LIMIT = 600;
 
 let enabled = $state(false);
 let reports = $state<Map<string, GaitReport>>(new Map());
+let arrivalReports = $state<Map<string, GaitReport>>(new Map());
 const trails = $state<Map<string, Vec3[]>>(new Map());
 
 /**
@@ -47,6 +48,9 @@ export const gaitProbeState = {
   get reports(): Map<string, GaitReport> {
     return reports;
   },
+  get arrivalReports(): Map<string, GaitReport> {
+    return arrivalReports;
+  },
 
   trail(id: string): readonly Vec3[] {
     return trails.get(id) ?? [];
@@ -55,18 +59,21 @@ export const gaitProbeState = {
   enable(): void {
     enabled = true;
     if (typeof window !== "undefined") {
-      (window as unknown as { __gaitProbeEnabled?: boolean }).__gaitProbeEnabled =
-        true;
+      (
+        window as unknown as { __gaitProbeEnabled?: boolean }
+      ).__gaitProbeEnabled = true;
     }
   },
 
   disable(): void {
     enabled = false;
     reports = new Map();
+    arrivalReports = new Map();
     trails.clear();
     if (typeof window !== "undefined") {
-      (window as unknown as { __gaitProbeEnabled?: boolean }).__gaitProbeEnabled =
-        false;
+      (
+        window as unknown as { __gaitProbeEnabled?: boolean }
+      ).__gaitProbeEnabled = false;
     }
   },
 
@@ -79,6 +86,17 @@ export const gaitProbeState = {
     // A new Map, not a mutation: the readout re-renders off identity, and
     // mutating in place would leave it showing the first report forever.
     reports = new Map(next);
+  },
+
+  publishArrival(next: Map<string, GaitReport>): void {
+    arrivalReports = new Map(next);
+  },
+
+  /** Start a new maneuver without disabling the instrument. */
+  reset(): void {
+    reports = new Map();
+    arrivalReports = new Map();
+    trails.clear();
   },
 
   /** Record where a rig has been, for the floor trace behind the footfalls. */

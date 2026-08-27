@@ -18,7 +18,10 @@
     generateViewerURL,
     encodePropForURL,
   } from "$lib/shared/navigation/services/sequence-encoder";
-  import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+  import {
+    createAnimationPanelState,
+    type PlaybackMode,
+  } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
@@ -85,6 +88,7 @@
     sequence: SequenceData | null;
     isMobile: boolean;
     initialBpm?: number;
+    initialPlaybackMode?: PlaybackMode;
     initialStep?: number;
     initialViewMode?: ViewMode;
     onClose: () => void;
@@ -126,6 +130,7 @@
     sequence,
     isMobile,
     initialBpm = 60,
+    initialPlaybackMode = "continuous",
     initialStep = 0,
     initialViewMode,
     onClose,
@@ -149,6 +154,7 @@
   }: Props = $props();
 
   const modalAnimationState = createAnimationPanelState();
+  modalAnimationState.setPlaybackMode(initialPlaybackMode);
 
   const playback = createPlaybackController({
     modalAnimationState,

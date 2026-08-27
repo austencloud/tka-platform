@@ -171,8 +171,85 @@ export interface GaitReport {
 
 const EPS = 1e-6;
 
+export interface TravelSpan {
+  from: number;
+  to: number;
+  peak: number;
+}
+
 function dist2(a: Vec3, b: Vec3): number {
   return Math.hypot(a.x - b.x, a.z - b.z);
+}
+
+/**
+ * Contiguous parts of a recording where the character actually travelled.
+ *
+ * A diagnostic buffer often starts while a rig loads and ends in an idle
+ * pose. Keeping that standing time in cadence and support timing turns a good
+ * walk into a two-steps-per-minute shuffle if the lab is left open. Segmenting
+ * by the root's measured speed keeps the instrument scoped to the maneuver it
+ * claims to describe.
+ */
+export function travelSpans(
+  frames: readonly GaitFrame[],
+  minSpeed = 0.15,
+  minDuration = 0.5
+): TravelSpan[] {
+  const spans: TravelSpan[] = [];
+  let open: TravelSpan | null = null;
+
+  for (let i = 1; i < frames.length; i++) {
+    const a = frames[i - 1]!;
+    const b = frames[i]!;
+    const speed = dist2(b.root, a.root) / Math.max(b.dt, EPS);
+    if (speed >= minSpeed) {
+      if (open) {
+        open.to = b.t;
+        open.peak = Math.max(open.peak, speed);
+      } else {
+        open = { from: b.t, to: b.t, peak: speed };
+      }
+    } else if (open) {
+      spans.push(open);
+      open = null;
+    }
+  }
+  if (open) spans.push(open);
+
+  return spans.filter((span) => span.to - span.from > minDuration);
+}
+
+/** Frames from the latest completed or in-progress travel segment. */
+export function latestTravelFrames(
+  frames: readonly GaitFrame[],
+  trimStartSeconds = 0.2,
+  trimEndSeconds = 0.1
+): readonly GaitFrame[] {
+  const span = travelSpans(frames).at(-1);
+  if (!span) return [];
+  const from = span.from + trimStartSeconds;
+  const to = span.to - trimEndSeconds;
+  return frames.filter((frame) => frame.t >= from && frame.t <= to);
+}
+
+/**
+ * The stop handoff around the end of the latest travel segment.
+ *
+ * This deliberately overlaps the last tenth of a second of travel: a joint
+ * discontinuity lives on the boundary, and slicing at the first zero-speed
+ * frame would remove one side of the second difference that detects it.
+ */
+export function latestArrivalFrames(
+  frames: readonly GaitFrame[],
+  beforeSeconds = 0.1,
+  afterSeconds = 0.75
+): readonly GaitFrame[] {
+  const span = travelSpans(frames).at(-1);
+  if (!span) return [];
+  return frames.filter(
+    (frame) =>
+      frame.t >= span.to - beforeSeconds && frame.t <= span.to + afterSeconds
+  );
 }
 
 function kneeAngleOf(frame: GaitFrame, foot: "left" | "right"): number {

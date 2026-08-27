@@ -83,6 +83,11 @@
       accountSetupState.available &&
       !accountSetupState.isComplete
   );
+  const showAccountSetupUnavailable = $derived(
+    accountSetupState !== null &&
+      !accountSetupState.loading &&
+      !accountSetupState.available
+  );
 
   let setupPropState = $state<PropPreferenceState | null>(null);
   let setupPropUserId = $state<string | null>(null);
@@ -97,6 +102,8 @@
   let isVisible = $state(false);
   let manageSignInMethods = $state(false);
   let loadedAccountUserId = $state<string | null>(null);
+  let setupWasIncomplete = $state(false);
+  let showSetupCompletion = $state(false);
 
   const PHOTO_PICKER_KEY = "tka_photo_picker_open";
   let showPhotoPicker = $state(
@@ -126,6 +133,27 @@
 
     setupPropUserId = userId;
     setupPropState = userId ? createPropPreferenceState(userId) : null;
+  });
+
+  $effect(() => {
+    if (
+      !accountSetupState ||
+      accountSetupState.loading ||
+      !accountSetupState.available
+    ) {
+      return;
+    }
+
+    if (!accountSetupState.isComplete) {
+      setupWasIncomplete = true;
+      showSetupCompletion = false;
+      return;
+    }
+
+    if (setupWasIncomplete) {
+      setupWasIncomplete = false;
+      showSetupCompletion = true;
+    }
   });
 
   $effect(() => {
@@ -262,12 +290,8 @@
       case "profile-photo":
         handleOpenPhotoPicker();
         break;
-      case "favorite-prop":
-        if (setupPropState) {
-          myPropsDrawerState.open(setupPropState);
-        } else {
-          toast.info("Props are still loading. Try again in a moment.");
-        }
+      case "props":
+        handleOpenPropEditor(false);
         break;
       case "theme":
         void handleModuleChange(
@@ -276,6 +300,16 @@
         );
         break;
     }
+  }
+
+  function handleOpenPropEditor(triggerFeedback = true) {
+    if (triggerFeedback) hapticService?.trigger("selection");
+    if (setupPropState) {
+      myPropsDrawerState.open(setupPropState);
+      return;
+    }
+
+    toast.info("Props are still loading. Try again in a moment.");
   }
 
   async function handleColorChange(color: string) {
@@ -462,6 +496,40 @@
           onTaskAction={handleAccountSetupTask}
           variant="prompt"
         />
+      {:else if showSetupCompletion}
+        <section class="setup-complete" role="status" aria-live="polite">
+          <span class="setup-complete-icon" aria-hidden="true">
+            <i class="fas fa-check"></i>
+          </span>
+          <span class="setup-complete-copy">
+            <strong>Profile setup complete</strong>
+            <span
+              >Your account details and flow identity are saved. You can change
+              them anytime.</span
+            >
+          </span>
+          <button
+            type="button"
+            class="dismiss-completion"
+            onclick={() => (showSetupCompletion = false)}
+            aria-label="Dismiss profile setup confirmation"
+          >
+            <i class="fas fa-xmark" aria-hidden="true"></i>
+          </button>
+        </section>
+      {:else if showAccountSetupUnavailable && accountSetupState}
+        <section class="setup-unavailable" role="status">
+          <span>
+            <strong>Profile setup status couldn’t be loaded.</strong>
+            Your account is still available.
+          </span>
+          <PanelButton
+            variant="secondary"
+            onclick={() => void accountSetupState.loadForCurrentUser()}
+          >
+            Retry
+          </PanelButton>
+        </section>
       {/if}
 
       <div class="account-workspace">
@@ -496,6 +564,8 @@
               onPronounsChanged={(pronouns) => (userPronouns = pronouns)}
               onUsernameChanged={(username) => (userUsername = username)}
               {displayNameEditRequest}
+              propState={setupPropState}
+              onOpenPropEditor={handleOpenPropEditor}
             />
           </div>
         </section>
@@ -601,28 +671,104 @@
     opacity: 1;
   }
 
-  @media (min-width: 1680px) and (min-height: 45rem) {
-    .profile-tab {
-      font-size: clamp(16px, calc(16px + (100vw - 1680px) * 8 / 2160), 24px);
-      --font-size-min: 0.875em;
-      --font-size-compact: 0.75em;
-      --font-size-xs: 0.75em;
-      --font-size-sm: 0.875em;
-      --font-size-base: 1em;
-      --font-size-md: 1em;
-      --font-size-lg: 1.125em;
-      --font-size-xl: 1.25em;
-      --font-size-2xl: 1.5em;
-      --font-size-3xl: 1.875em;
-    }
-  }
-
   .profile-content {
     display: flex;
     flex-direction: column;
     gap: clamp(0.75em, 1cqi, 1em);
     width: 100%;
     min-width: 0;
+  }
+
+  .setup-complete,
+  .setup-unavailable {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: var(--min-touch-target, 48px);
+    padding: 0.75rem 1rem;
+    border-radius: 0.85rem;
+    font-size: max(0.875rem, var(--font-size-min));
+  }
+
+  .setup-complete {
+    color: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 58%,
+      var(--theme-text)
+    );
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 10%,
+      var(--theme-panel-bg)
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-success, #22c55e) 28%, transparent);
+  }
+
+  .setup-complete-icon {
+    display: grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex: 0 0 auto;
+    place-items: center;
+    color: var(--semantic-success, #22c55e);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 14%,
+      transparent
+    );
+    border-radius: 50%;
+  }
+
+  .setup-complete-copy {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .setup-complete-copy strong {
+    color: var(--theme-text);
+  }
+
+  .setup-complete-copy span {
+    color: var(--theme-text-dim);
+    line-height: 1.35;
+  }
+
+  .dismiss-completion {
+    display: grid;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    flex: 0 0 auto;
+    place-items: center;
+    color: var(--theme-text-dim);
+    background: color-mix(in srgb, var(--theme-text) 5%, transparent);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.65rem;
+    cursor: pointer;
+  }
+
+  .dismiss-completion:hover {
+    color: var(--theme-text);
+    background: color-mix(in srgb, var(--theme-text) 9%, transparent);
+  }
+
+  .dismiss-completion:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .setup-unavailable {
+    justify-content: space-between;
+    color: var(--theme-text-dim);
+    background: var(--theme-panel-bg);
+    border: 1px solid var(--theme-stroke);
+  }
+
+  .setup-unavailable strong {
+    color: var(--theme-text);
   }
 
   .account-workspace {

@@ -105,26 +105,9 @@
 </div>
 
 <style>
-  /* Fills the column rather than floating a small notice in a large box — the
-     dead-space failure visual-verification-mandatory.md names. Every measure in
-     `em` so it rides the profile panel's type ramp instead of staying a
-     1080p-sized block inside a 2600px layout (4k-native-layout.md). */
+  /* Fills the column rather than floating a small notice in a large box. The
+     measures share the standard logical unit used by the populated stage. */
   .work-empty {
-    /* ProfileStage's ramp, character for character.
-       `.stage` carries its own type ramp — keyed to the profile panel, since
-       `100cqw` in a rule resolves against the nearest ANCESTOR container, not the
-       element's own. This column stands in for the stage, so it has to ride the
-       identical curve or its band head lands at 15px beside the bands' 15.79px.
-       Measured mismatch before this line; exact match after.
-
-       The `--font-size-*` overrides are the same trick and for the same reason:
-       shared primitives (PanelState, PanelButton) size from those tokens in
-       `rem`, which would strand them at 1080p. */
-    font-size: clamp(1rem, calc(1rem + (100cqw - 1616px) * 8 / 2160), 1.5rem);
-    --font-size-sm: 0.875em;
-    --font-size-xl: 1.25em;
-    --font-size-3xl: 1.875em;
-
     display: flex;
     flex-direction: column;
     gap: 0.85em;

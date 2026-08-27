@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { T, useTask } from "@threlte/core";
-  import { onDestroy } from "svelte";
+  import { T, useTask, useThrelte } from "@threlte/core";
   import {
     SphereGeometry,
     ShaderMaterial,
     BackSide,
     AdditiveBlending,
     Color,
+    type Mesh,
   } from "three";
   import type { VolcanicHazeConfig } from "../../domain/models/scene-configs";
 
@@ -15,14 +15,22 @@
   }
 
   let { config }: Props = $props();
+  const { camera } = useThrelte();
+  let hazeMesh = $state<Mesh>();
 
-  const geometry = new SphereGeometry(70, 32, 32);
+  let geometry = $state<SphereGeometry | undefined>(undefined);
+
+  $effect(() => {
+    const nextGeometry = new SphereGeometry(config.radius, 32, 24);
+    geometry = nextGeometry;
+    return () => nextGeometry.dispose();
+  });
 
   const vertexShader = /* glsl */ `
-    varying vec3 vWorldPosition;
+    varying vec3 vHazeDirection;
     void main() {
       vec4 worldPos = modelMatrix * vec4(position, 1.0);
-      vWorldPosition = worldPos.xyz;
+      vHazeDirection = position;
       gl_Position = projectionMatrix * viewMatrix * worldPos;
     }
   `;
@@ -36,7 +44,7 @@
     uniform float uLightningInterval;
     uniform float uLightningIntensity;
     uniform vec3 uInnerGlowColor;
-    varying vec3 vWorldPosition;
+    varying vec3 vHazeDirection;
 
     // 3D Simplex noise implementation
     vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -88,7 +96,7 @@
     }
 
     void main() {
-      vec3 dir = normalize(vWorldPosition);
+      vec3 dir = normalize(vHazeDirection);
 
       // === Multi-layer parallax ===
       // Layer 1: slow-moving deep clouds
@@ -173,12 +181,13 @@
     return () => mat.dispose();
   });
 
-  onDestroy(() => geometry.dispose());
-
   useTask((delta) => {
     if (!material) return;
     time += delta * config.animationSpeed;
     material.uniforms.uTime!.value = time;
+    if (hazeMesh && camera.current) {
+      hazeMesh.position.copy(camera.current.position);
+    }
   });
 
   $effect(() => {
@@ -193,6 +202,12 @@
   });
 </script>
 
-{#if config.enabled}
-  <T.Mesh {geometry} {material} renderOrder={-0.5} frustumCulled={false} />
+{#if config.enabled && geometry}
+  <T.Mesh
+    bind:ref={hazeMesh}
+    {geometry}
+    {material}
+    renderOrder={-0.5}
+    frustumCulled={false}
+  />
 {/if}

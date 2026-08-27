@@ -1,14 +1,14 @@
 <script lang="ts">
   import { T, useTask } from "@threlte/core";
   import {
-    PlaneGeometry,
     ShaderMaterial,
-    AdditiveBlending,
     DoubleSide,
     Color,
+    type BufferGeometry,
   } from "three";
   import type { LavaRiversConfig } from "../../domain/models/scene-configs";
   import { userProportionsState } from "@austencloud/scene-3d";
+  import { createLavaRiverStripGeometry } from "./lava-river-geometry";
 
   interface Props {
     config: LavaRiversConfig;
@@ -19,21 +19,32 @@
   const groundY = $derived(userProportionsState.groundY);
 
   const vertexShader = /* glsl */ `
+    uniform float uTime;
     varying vec2 vUv;
+    #include <fog_pars_vertex>
+
     void main() {
       vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      vec3 pos = position;
+      float bankWeight = sin(clamp(vUv.y, 0.0, 1.0) * 3.14159265);
+      float longWave = sin(vUv.x * 48.0 - uTime * 2.4) * 0.026;
+      float crossWave = sin(vUv.x * 19.0 + vUv.y * 9.0 - uTime * 1.35) * 0.018;
+      pos.y += (longWave + crossWave) * bankWeight;
+      vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+      gl_Position = projectionMatrix * mvPosition;
+      #include <fog_vertex>
     }
   `;
 
-  // Domain-warped directional flow shader with alpha-faded banks
   const fragmentShader = /* glsl */ `
     uniform float uTime;
     uniform vec3 uBaseColor;
     uniform vec3 uHotColor;
     uniform vec3 uCrustColor;
     uniform float uWarpIntensity;
+    uniform float uCrustCoverage;
     varying vec2 vUv;
+    #include <fog_pars_fragment>
 
     float hash(vec2 p) {
       return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -51,65 +62,57 @@
     }
 
     float fbm(vec2 p) {
-      float v = 0.0;
-      float a = 0.5;
-      mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
+      float value = 0.0;
+      float amplitude = 0.5;
+      mat2 rotation = mat2(0.8, 0.6, -0.6, 0.8);
       for (int i = 0; i < 5; i++) {
-        v += a * noise(p);
-        p = rot * p * 2.0 + vec2(100.0);
-        a *= 0.5;
+        value += amplitude * noise(p);
+        p = rotation * p * 2.03 + vec2(17.0, 31.0);
+        amplitude *= 0.5;
       }
-      return v;
+      return value;
     }
 
     void main() {
-      // Stretch UV along flow direction (U = length, V = width)
-      vec2 uv = vec2(vUv.x * 6.0, vUv.y * 2.0 - 1.0);
+      // U follows the authored downhill spline. Advecting the field toward +U
+      // makes every crust plate travel from the distant vent toward the shelf.
+      vec2 flowUv = vec2(vUv.x * 10.5 - uTime * 0.72, (vUv.y - 0.5) * 3.2);
+      vec2 warp = vec2(
+        fbm(flowUv * 0.78 + vec2(3.1, 7.7)),
+        fbm(flowUv * 0.9 + vec2(11.2, 1.4))
+      ) - 0.5;
+      vec2 warpedUv = flowUv + warp * uWarpIntensity;
 
-      // Flow moves along U axis
-      vec2 flowUv = uv + vec2(uTime * 0.3, 0.0);
+      float broadFlow = fbm(warpedUv * vec2(0.72, 1.4));
+      float plateField = fbm(warpedUv * vec2(1.65, 2.35) + vec2(uTime * 0.05, 0.0));
+      float crustThreshold = 0.62 - uCrustCoverage * 0.32;
+      float crust = smoothstep(crustThreshold - 0.07, crustThreshold + 0.08, plateField);
+      float fracture = 1.0 - smoothstep(0.035, 0.13, abs(plateField - crustThreshold));
 
-      // Domain warping
-      vec2 q = vec2(
-        fbm(flowUv + vec2(0.0, 0.0)),
-        fbm(flowUv + vec2(5.2, 1.3))
-      );
-      vec2 r = vec2(
-        fbm(flowUv + uWarpIntensity * q + vec2(1.7, 9.2)),
-        fbm(flowUv + uWarpIntensity * q + vec2(8.3, 2.8))
-      );
-      float f = fbm(flowUv + uWarpIntensity * r * 0.8);
+      float center = 1.0 - smoothstep(0.0, 1.0, abs(vUv.y - 0.5) * 2.0);
+      float lateralShear = sin(warpedUv.x * 2.2 + warpedUv.y * 5.6) * 0.5 + 0.5;
+      float heat = clamp(broadFlow * 0.72 + lateralShear * 0.28, 0.0, 1.0);
+      vec3 molten = mix(uBaseColor, uHotColor, pow(heat, 2.2) * (0.42 + center * 0.58));
 
-      // Color
-      float veinHeat = pow(length(r), 1.5);
-      veinHeat = clamp(veinHeat * 0.8, 0.0, 1.0);
+      // Open channels raft dark crust downstream. Brightness survives in the
+      // seams between plates and in a restless medial lane.
+      vec3 color = mix(molten, uCrustColor, crust * 0.94);
+      color += uHotColor * fracture * (0.38 + center * 0.46);
+      color += uHotColor * pow(center, 3.0) * (1.0 - crust) * 0.34;
 
-      vec3 color = mix(uCrustColor, uBaseColor, clamp(f * f * 4.0, 0.0, 1.0));
-      color = mix(color, uHotColor, veinHeat * 0.6);
-
-      float hotspot = pow(max(dot(normalize(q + 0.001), normalize(r + 0.001)), 0.0), 3.0);
-      color += uHotColor * hotspot * 1.8;
-
-      color *= 1.2;
-
-      // Alpha: fade at width edges (banks) and length tip
-      float bankFade = 1.0 - smoothstep(0.5, 1.0, abs(vUv.y - 0.5) * 2.0);
-      bankFade = pow(bankFade, 0.7);
-      float tipFade = smoothstep(0.0, 0.1, vUv.x) * (1.0 - smoothstep(0.85, 1.0, vUv.x));
-
-      float alpha = bankFade * tipFade;
-
-      gl_FragColor = vec4(color, alpha);
+      float bank = smoothstep(0.0, 0.16, vUv.y) * (1.0 - smoothstep(0.84, 1.0, vUv.y));
+      color = mix(uCrustColor * 0.72, color, bank);
+      gl_FragColor = vec4(color, 1.0);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+      #include <fog_fragment>
     }
   `;
 
   interface RiverInstance {
-    geometry: PlaneGeometry;
+    geometry: BufferGeometry;
     material: ShaderMaterial;
-    x: number;
-    z: number;
-    rotY: number;
-    length: number;
+    lightPositions: { x: number; y: number; z: number }[];
   }
 
   let rivers = $state<RiverInstance[]>([]);
@@ -120,33 +123,32 @@
       return;
     }
 
-    const created = config.channels.map((ch) => {
-      const w = config.width * ch.widthScale;
-      const geometry = new PlaneGeometry(ch.length, w, 32, 4);
+    const created = config.channels.map((channel) => {
+      const { geometry, lightPositions } = createLavaRiverStripGeometry({
+        channel,
+        poolPosition,
+        groundY,
+        width: config.width,
+      });
       const material = new ShaderMaterial({
-        transparent: true,
-        blending: AdditiveBlending,
         side: DoubleSide,
-        depthWrite: false,
+        depthWrite: true,
+        fog: true,
         uniforms: {
           uTime: { value: 0 },
           uBaseColor: { value: new Color(config.baseColor) },
           uHotColor: { value: new Color(config.hotColor) },
           uCrustColor: { value: new Color(config.crustColor) },
           uWarpIntensity: { value: config.warpIntensity },
+          uCrustCoverage: { value: config.crustCoverage },
         },
         vertexShader,
         fragmentShader,
       });
-
-      const halfLen = ch.length / 2;
-      const x = poolPosition.x + Math.cos(ch.angle) * halfLen;
-      const z = poolPosition.z + Math.sin(ch.angle) * halfLen;
-      const rotY = -ch.angle + Math.PI / 2;
-
-      return { geometry, material, x, z, rotY, length: ch.length } as RiverInstance;
+      return { geometry, material, lightPositions };
     });
     rivers = created;
+
     return () => {
       for (const river of created) {
         river.geometry.dispose();
@@ -157,21 +159,22 @@
 
   useTask((delta) => {
     for (const river of rivers) {
-      river.material.uniforms.uTime!.value += delta * config.flowSpeed * 8;
+      river.material.uniforms.uTime!.value += delta * config.flowSpeed * 10;
     }
   });
 </script>
 
 {#if config.enabled}
   {#each rivers as river}
-    <T.Mesh
-      geometry={river.geometry}
-      material={river.material}
-      position.x={river.x}
-      position.y={groundY + 0.025}
-      position.z={river.z}
-      rotation.x={-Math.PI / 2}
-      rotation.z={river.rotY}
-    />
+    <T.Mesh geometry={river.geometry} material={river.material} />
+    {#each river.lightPositions as light, index}
+      <T.PointLight
+        position={[light.x, light.y + 0.7, light.z]}
+        color={index % 2 === 0 ? config.hotColor : config.baseColor}
+        intensity={index === river.lightPositions.length - 1 ? 52 : 34}
+        distance={index === river.lightPositions.length - 1 ? 18 : 15}
+        decay={2}
+      />
+    {/each}
   {/each}
 {/if}

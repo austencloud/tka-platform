@@ -12,6 +12,7 @@ import type {
   ObsidianPlatformConfig,
   TreeRingConfig,
 } from "./shared-scene-config";
+import volcanicWorldR6 from "./ember-volcanic-world-r6.json";
 
 export interface LavaPoolConfig {
   enabled: boolean;
@@ -40,10 +41,12 @@ export interface LavaCracksConfig {
 }
 
 export interface LavaRiverChannelConfig {
-  angle: number;
-  length: number;
-  curvature: number;
+  angle?: number;
+  length?: number;
+  curvature?: number;
   widthScale: number;
+  /** Runtime X, Z, and height above the performer ground plane. */
+  points?: [number, number, number][];
 }
 
 export interface LavaRiversConfig {
@@ -55,6 +58,7 @@ export interface LavaRiversConfig {
   flowSpeed: number;
   width: number;
   warpIntensity: number;
+  crustCoverage: number;
 }
 
 /**
@@ -121,6 +125,7 @@ export interface VolcanicHazeConfig {
   lightningInterval: number;
   lightningIntensity: number;
   innerGlowColor: string;
+  radius: number;
 }
 
 export interface EmberSceneConfig {
@@ -179,25 +184,25 @@ const EMBER_PILLAR_RINGS: TreeRingConfig[] = [
 export function createDefaultEmberConfig(): EmberSceneConfig {
   return {
     sky: {
-      topColor: "#080204",
-      midColor: "#1a0808",
-      bottomColor: "#2a0c06",
+      topColor: "#080a0c",
+      midColor: "#172126",
+      bottomColor: "#594039",
     },
-    fog: { color: "#0f0604", density: 0.022 },
+    fog: { color: "#1d292b", density: 0.006 },
     ground: {
-      color: "#1a0a08",
-      size: 50,
+      color: "#151a19",
+      size: 380,
       textured: false,
       opacity: 1,
     },
     lavaCracks: {
-      enabled: true,
+      enabled: false,
       crackColor: "#ff4400",
-      intensity: 0.35,
+      intensity: 0.09,
       speed: 0.015,
-      scale: 3.0,
+      scale: 4.8,
       pulseSpeed: 0.4,
-      pulseIntensity: 0.6,
+      pulseIntensity: 0.24,
     },
     lavaPool: {
       enabled: false,
@@ -214,9 +219,26 @@ export function createDefaultEmberConfig(): EmberSceneConfig {
       craterDepth: 0.6,
       craterWallColor: "#1a0806",
     },
-    lavaRivers: null,
-    obsidianPillars: {
+    lavaRivers: {
       enabled: true,
+      channels: [
+        {
+          widthScale: 1,
+          points: volcanicWorldR6.lavaRiver.pointsRuntimeXZHeight.map(
+            ([x, z, height]) => [x, z, height]
+          ) as [number, number, number][],
+        },
+      ],
+      baseColor: "#cf2b08",
+      hotColor: "#ffb13b",
+      crustColor: "#170f0d",
+      flowSpeed: volcanicWorldR6.lavaRiver.flowSpeed,
+      width: volcanicWorldR6.lavaRiver.width,
+      warpIntensity: volcanicWorldR6.lavaRiver.warpIntensity,
+      crustCoverage: volcanicWorldR6.lavaRiver.crustCoverage,
+    },
+    obsidianPillars: {
+      enabled: false,
       rings: EMBER_PILLAR_RINGS,
       clearingRadius: 8,
       veinColor: "#ff4400",
@@ -228,14 +250,14 @@ export function createDefaultEmberConfig(): EmberSceneConfig {
     },
     fireVent: null,
     fireWisps: {
-      enabled: true,
-      count: 3,
+      enabled: false,
+      count: 2,
       spawnRadius: 7,
       heightRange: [1.5, 4.5],
       driftSpeed: 0.25,
       pulseSpeed: 0.8,
       colors: ["#ff6600", "#ff4400", "#ffaa00"],
-      lightIntensity: 12,
+      lightIntensity: 6,
       lightDistance: 6,
     },
     emberFountains: {
@@ -252,60 +274,61 @@ export function createDefaultEmberConfig(): EmberSceneConfig {
     },
     volcanicHaze: {
       enabled: true,
-      color1: "#331100",
-      color2: "#110000",
-      opacity: 0.12,
-      scale: 2.0,
-      animationSpeed: 0.01,
+      color1: "#33474a",
+      color2: "#100d0d",
+      opacity: 0.052,
+      scale: 2.6,
+      animationSpeed: 0.014,
       lightningInterval: 6.0,
-      lightningIntensity: 0.8,
-      innerGlowColor: "#ff4400",
+      lightningIntensity: 0.12,
+      innerGlowColor: "#ff5418",
+      radius: 260,
     },
     embers: {
       type: "embers",
-      count: 200,
+      count: 72,
       area: { width: 20, height: 6, depth: 20 },
       speed: 0.12,
       colors: ["#ff6b35", "#ff8c42", "#ffc145", "#ff4500", "#ff2200"],
-      sizeRange: [0.015, 0.06],
+      sizeRange: [0.012, 0.045],
       spin: false,
     },
     ash: {
       type: "dust",
-      count: 150,
+      count: 90,
       area: { width: 25, height: 8, depth: 25 },
       speed: 0.04,
-      colors: ["#3a2a2a", "#2a1a1a", "#4a3030", "#1a1010"],
-      sizeRange: [0.02, 0.07],
+      colors: ["#46515e", "#303b48", "#56616c", "#202b38"],
+      sizeRange: [0.012, 0.045],
       spin: false,
     },
     smoke: {
       type: "smoke",
-      count: 40,
-      area: { width: 8, height: 5, depth: 8 },
-      speed: 0.03,
-      colors: ["#1a0a0a", "#110808", "#0a0505", "#220e0e"],
-      sizeRange: [0.15, 0.5],
+      count: 14,
+      area: { width: 18, height: 6, depth: 18 },
+      speed: 0.022,
+      colors: ["#101820", "#0a1018", "#070b10", "#17222b"],
+      sizeRange: [0.06, 0.18],
       spin: false,
     },
     cinders: null,
-    rockCount: 8,
+    rockCount: 0,
     clearingRadius: 10,
     rockTintColor: "#1a0a08",
     rockTintBlend: 0.4,
     hemisphereLight: {
-      skyColor: "#ff4422",
-      groundColor: "#1a0808",
-      intensity: 0.5,
+      skyColor: "#b8c4c0",
+      groundColor: "#2b1c18",
+      intensity: 1.05,
     },
     skyLight: {
       enabled: true,
-      color: "#ff6644",
-      intensity: 0.4,
-      position: [-15, 20, 10],
+      color: "#e3ddd1",
+      intensity: 1.65,
+      position: [-10, 18, -6],
     },
     platform: {
-      enabled: true,
+      enabled: false,
       radius: 4.5,
       height: 0.5,
       primaryColor: "#1a1a1a",

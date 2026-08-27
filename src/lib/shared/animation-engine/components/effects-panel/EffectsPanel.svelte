@@ -18,7 +18,10 @@
   import EffectTuneStrip from "$lib/shared/effects/components/EffectTuneStrip.svelte";
   import { primaryControls } from "$lib/shared/effects/domain/effect-control-manifest";
   import { createEffectControlOverrides } from "$lib/shared/effects/effect-control-fields";
-  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import {
+    animationSettings,
+    type AnimationSettingsState,
+  } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import EffectsPlaybackBar from "./EffectsPlaybackBar.svelte";
 
   /** Synthetic chip id for the factory default look (not a named preset). */
@@ -40,6 +43,7 @@
     showTransport?: boolean;
     showExportControls?: boolean;
     layout?: "sidebar" | "strip" | "grid";
+    animationSettingsState?: AnimationSettingsState;
     children?: Snippet;
     onSettingChange?: (
       setting: string,
@@ -62,6 +66,7 @@
     showTransport = true,
     showExportControls = false,
     layout = "sidebar",
+    animationSettingsState = animationSettings,
     children,
     onSettingChange,
   }: Props = $props();
@@ -95,7 +100,7 @@
       ? createEffectControlOverrides(
           activeEffect,
           effectsConfigState,
-          animationSettings
+          animationSettingsState
         )
       : undefined
   );
@@ -524,7 +529,11 @@
             activeAction="tune"
           />
 
-          {@render effectDock(() => (sidebarDetailOpen = true), "Tune", "tiles")}
+          {@render effectDock(
+            () => (sidebarDetailOpen = true),
+            "Tune",
+            "tiles"
+          )}
         </div>
       {:else if activeEffect !== "none" && registration}
         <EffectsInspector
@@ -537,7 +546,7 @@
           {customDisabled}
           {customColors}
           summary={currentSummary}
-          propType={animationSettings.currentPropType}
+          propType={animationSettingsState.currentPropType}
           overrides={tuneOverrides}
           onBack={() => (sidebarDetailOpen = false)}
           onDisable={handleSidebarDisable}
@@ -633,7 +642,7 @@
               <EffectTuneStrip
                 effectId={activeEffect}
                 config={effectsConfigState}
-                propType={animationSettings.currentPropType}
+                propType={animationSettingsState.currentPropType}
                 overrides={tuneOverrides}
                 onSettingChange={(setting, previousValue, value, coalesce) =>
                   reportSetting(

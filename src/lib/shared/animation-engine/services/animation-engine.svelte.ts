@@ -76,6 +76,9 @@ export interface AnimationEngineProps {
   // Prop type overrides - bypass settings when provided (useful for demos/previews)
   bluePropType?: string | null;
   redPropType?: string | null;
+  /** Per-document chirality overrides for isolated editors/previews. */
+  blueBuugengFlipped?: boolean;
+  redBuugengFlipped?: boolean;
   // Preview-only dark mode override - when provided, bypasses global setting
   // Used in sequence viewer preview so dark mode toggle doesn't affect global app state
   previewDarkMode?: boolean | null;

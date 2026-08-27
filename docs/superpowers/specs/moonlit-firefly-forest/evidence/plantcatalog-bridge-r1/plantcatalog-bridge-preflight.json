@@ -5,14 +5,17 @@
   "installedPlantFactoryVersion": "4.8.0.0",
   "executable": "C:/Program Files/e-on software/PlantFactory/Application/PlantFactory.exe",
   "pythonApi": "C:/Program Files/e-on software/PlantFactory/Python/PythonLib/eon.py",
-  "activeExportSet": "productionWaveR1",
+  "activeExportSet": "flowFestBiomeR2",
   "activeJobs": [
     "quercus-robur-forest-ld-s89",
     "quercus-robur-urban-ld-s13",
     "aesculus-carnea-ld-s23",
     "quercus-robur-forest-ld-s67",
     "quercus-robur-colonised-ld-s29",
-    "salix-alba-ld-s11"
+    "salix-alba-ld-s11",
+    "aesculus-pavia-ld-s31",
+    "aesculus-pavia-ld-s79",
+    "quercus-robur-dead-ld-s37"
   ],
   "sourceResults": [
     {
@@ -50,6 +53,24 @@
       "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Salix alba LD.tpf",
       "bytes": 122542006,
       "sha256": "20c143069432d85c211f742067feb7bae62a8e1bc2f9c1d5eeb278641610406a"
+    },
+    {
+      "id": "aesculus-pavia-ld-s31",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Aesculus pavia LD.tpf",
+      "bytes": 17083397,
+      "sha256": "4e003bbd51d2cdec457158ae8c80a2cf848ed904cf868bd80dee7dfeefd117f1"
+    },
+    {
+      "id": "aesculus-pavia-ld-s79",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Aesculus pavia LD.tpf",
+      "bytes": 17083397,
+      "sha256": "4e003bbd51d2cdec457158ae8c80a2cf848ed904cf868bd80dee7dfeefd117f1"
+    },
+    {
+      "id": "quercus-robur-dead-ld-s37",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Quercus robur dead LD.tpf",
+      "bytes": 97194044,
+      "sha256": "7ea8fa505e391f9020610444461be5abec6467e17a52dd5b073b2105b1e15760"
     }
   ],
   "auxiliaryResults": [],

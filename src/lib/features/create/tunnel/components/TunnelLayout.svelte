@@ -9,17 +9,13 @@
   import GeneratePanel from "$lib/features/create/generate/components/GeneratePanel.svelte";
   import type { GenerationAnimationTarget } from "$lib/features/create/generate/state/generate-actions.svelte";
   import { createSequenceState } from "$lib/features/create/shared/state/sequence-state-orchestrator.svelte";
-  import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import TunnelArtSettings from "$lib/shared/sequence-viewer/components/art-settings/TunnelArtSettings.svelte";
   import TunnelArtView from "$lib/shared/sequence-viewer/tunnel/TunnelArtView.svelte";
   import { copyOpsLabel } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
-  import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
   import { TunnelViewController } from "$lib/shared/sequence-viewer/tunnel/tunnel-view-controller.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
-  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
-  import { createGlobalChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
   import TkaLabel from "$lib/shared/components/TkaLabel.svelte";
   import { getTunnelCreatorContext } from "../context/tunnel-creator-context";
   import type { TunnelCreatorMode } from "../state/tunnel-creator-state.svelte";
@@ -67,32 +63,32 @@
         ? copyOpsLabel(performerTwoLayer.formationOps)
         : null;
     },
+    visibilityManager: creator.presentation.visibility,
+    persistViewState: false,
   });
-  controller.applyConfig(creator.initialFormation ?? DEFAULT_CONFIG);
+  creator.presentation.attachController(controller);
 
   let rootWidth = $state(1200);
   let rootHeight = $state(800);
-  let bpm = $state(60);
-  let playing = $state(true);
-  let playbackMode = $state<PlaybackMode>("continuous");
   let reduceMotion = $state(false);
   let inspectorColumn = $state<TunnelInspector | null>(null);
 
   const compact = $derived(rootWidth < 720);
   const canInlineInspector = $derived(rootWidth >= 1000 && rootHeight >= 700);
   const settingsOpen = $derived(creator.activePanel === "settings");
+  const settingsUseWorkspace = $derived(rootWidth >= 720 && settingsOpen);
   const pairingOpen = $derived(creator.activePanel === "pairing");
   const generationOpen = $derived(creator.activePanel === "generation");
   const activeInlineInspector: TunnelInspector | null = $derived(
-    canInlineInspector
-      ? settingsOpen
-        ? "settings"
-        : pairingOpen
+    settingsUseWorkspace
+      ? "settings"
+      : canInlineInspector
+        ? pairingOpen
           ? "pairing"
           : generationOpen
             ? "generation"
             : null
-      : null
+        : null
   );
   const generationTargetLabel = $derived(
     creator.performerSlots.find(
@@ -106,12 +102,8 @@
       ? (performerTwoLayerSequence ?? creator.leadSequence)
       : null
   );
-  const bluePropType = $derived(
-    settingsService.settings.bluePropType ?? undefined
-  );
-  const redPropType = $derived(
-    settingsService.settings.redPropType ?? undefined
-  );
+  const bluePropType = $derived(creator.presentation.bluePropType as PropType);
+  const redPropType = $derived(creator.presentation.redPropType as PropType);
   const propType = $derived(bluePropType ? String(bluePropType) : "staff");
   const modeOptions = [
     {
@@ -236,10 +228,7 @@
   }
 
   function changeProp(prop: PropType): void {
-    void settingsService.updateSettings({
-      bluePropType: prop,
-      redPropType: prop,
-    });
+    creator.presentation.setPropType(prop);
   }
 </script>
 
@@ -255,18 +244,20 @@
       <TunnelArtSettings
         {controller}
         {layout}
+        bottomStartsOpen={isMobile}
         onExport={() => {}}
         showExport={false}
         showTitle={false}
-        {bpm}
-        {playbackMode}
-        isPlaying={playing}
-        onBpmChange={(value) => (bpm = value)}
-        onPlaybackModeChange={(mode) => (playbackMode = mode)}
-        onPlaybackToggle={() => (playing = !playing)}
+        bpm={creator.presentation.bpm}
+        playbackMode={creator.presentation.playbackMode}
+        isPlaying={creator.presentation.playing}
+        onBpmChange={creator.presentation.setBpm}
+        onPlaybackModeChange={creator.presentation.setPlaybackMode}
+        onPlaybackToggle={creator.presentation.togglePlaying}
         bluePropType={propType}
         onPropChange={changeProp}
-        propChirality={createGlobalChiralitySeam()}
+        propChirality={creator.presentation.chirality}
+        animationSettingsState={creator.presentation.animationSettings}
         exporting={false}
         {reduceMotion}
       />
@@ -313,6 +304,8 @@
   <div
     class="tunnel-workspace themed-scrollbar"
     class:inline-inspector={activeInlineInspector !== null}
+    class:settings-task={settingsUseWorkspace && !canInlineInspector}
+    class:compact-settings-task={compact && settingsOpen}
   >
     <header class="workspace-header">
       <!-- Editing arrives here by a tab switch, which wipes every trace of the
@@ -441,10 +434,15 @@
           <TunnelArtView
             sequence={creator.leadSequence}
             {controller}
-            {bpm}
+            bpm={creator.presentation.bpm}
             bluePropType={propType}
             redPropType={propType}
-            bind:playing
+            blueBuugengFlipped={creator.presentation.blueBuugengFlipped}
+            redBuugengFlipped={creator.presentation.redBuugengFlipped}
+            playing={creator.presentation.playing}
+            onPlayingChange={creator.presentation.setPlaying}
+            animationSettingsState={creator.presentation.animationSettings}
+            visibilityManager={creator.presentation.visibility}
             stageFit="contain"
           />
           {#if !creator.ready}
@@ -468,7 +466,7 @@
 
       <footer class="stage-controls">
         <div class="result-meta">
-          <strong>{bpm}</strong>
+          <strong>{creator.presentation.bpm}</strong>
           <span>BPM</span>
         </div>
         <div class="result-actions">
@@ -489,7 +487,13 @@
       </footer>
     </section>
 
-    {#if canInlineInspector}
+    {#if compact && settingsOpen}
+      <aside class="compact-settings-surface" aria-label="Tunnel settings">
+        {@render settingsPanel(true, "bottom")}
+      </aside>
+    {/if}
+
+    {#if rootWidth >= 720 && (canInlineInspector || settingsOpen)}
       <aside
         class="inspector-column"
         class:open={activeInlineInspector !== null}
@@ -526,17 +530,6 @@
 </div>
 
 {#if !canInlineInspector}
-  <CreatePanelDrawer
-    isOpen={settingsOpen}
-    panelName="tunnel-settings"
-    fullHeightOnMobile={true}
-    closeOnBackdrop={false}
-    ariaLabel="Tunnel settings"
-    onClose={creator.closeWorkspacePanel}
-  >
-    {@render settingsPanel(compact, compact ? "bottom" : "sidebar")}
-  </CreatePanelDrawer>
-
   <CreatePanelDrawer
     isOpen={pairingOpen}
     panelName="tunnel-pairing"
@@ -723,6 +716,16 @@
     grid-template-rows: auto minmax(0, 1fr) auto;
     min-width: 0;
     min-height: 31rem;
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--settings-radius-lg, 20px);
+    background: var(--theme-panel-bg);
+  }
+
+  .compact-settings-surface {
+    grid-area: inspector;
+    min-width: 0;
+    min-height: 0;
     overflow: hidden;
     border: 1px solid var(--theme-stroke);
     border-radius: var(--settings-radius-lg, 20px);
@@ -974,6 +977,27 @@
     }
   }
 
+  /* When three useful tracks do not fit, settings becomes the second job:
+     source cards yield and the result stays visible beside its inspector. */
+  @container tunnel (min-width: 720px) {
+    .tunnel-workspace.settings-task {
+      --inspector-open-width: 100%;
+      grid-template-columns: minmax(16rem, 1fr) minmax(20rem, 0.9fr);
+      grid-template-rows: max-content minmax(0, 1fr);
+      grid-template-areas:
+        "header header"
+        "preview inspector";
+    }
+
+    .tunnel-workspace.settings-task .source-column {
+      display: none;
+    }
+
+    .tunnel-workspace.settings-task .inspector-column .drawer-panel {
+      width: 100%;
+    }
+  }
+
   @container tunnel (max-width: 719px) {
     .workspace-header {
       flex-wrap: wrap;
@@ -990,6 +1014,29 @@
 
     .source-column {
       grid-template-rows: repeat(2, minmax(16rem, auto));
+    }
+
+    .tunnel-workspace.compact-settings-task {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: minmax(15rem, 0.95fr) minmax(15rem, 1.05fr);
+      grid-template-areas:
+        "preview"
+        "inspector";
+      align-content: stretch;
+      overflow: hidden;
+    }
+
+    .tunnel-workspace.compact-settings-task .workspace-header,
+    .tunnel-workspace.compact-settings-task .source-column {
+      display: none;
+    }
+
+    .tunnel-workspace.compact-settings-task .preview-stage {
+      min-height: 0;
+    }
+
+    .compact-settings-surface .drawer-scroll {
+      overflow: hidden;
     }
   }
 

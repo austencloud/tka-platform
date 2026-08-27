@@ -1,11 +1,12 @@
 # Commit Only Your Own Changes — ENFORCED
 
-Many agents share this checkout, and the git index is shared state — at any
-moment it may already hold files another session staged. A bare `git commit`
-commits the entire index: that is how commit `0ec96666` swept ~16 unrelated
-refactor files into an agent's commit even though its own `git add` used
-explicit paths. The pre-commit hook does not auto-stage; the shared index was
-the cause.
+Modifying tasks normally use dedicated worktrees, so their working trees and
+indexes are isolated. Git objects and refs are still shared, Local sessions may
+still share the primary checkout and index, and path ownership remains strict.
+A bare `git commit` in the primary checkout is how commit `0ec96666` swept ~16
+unrelated refactor files into an agent's commit even though its own `git add`
+used explicit paths. The pre-commit hook does not auto-stage; the shared primary
+index was the cause.
 
 **Always scope commits to an explicit pathspec** — this commits only the
 listed paths regardless of what else is staged:

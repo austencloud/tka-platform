@@ -1,75 +1,67 @@
 <!--
   SelectionFooterBar.svelte - Sticky footer in My Props drawer.
-  Shows miniature prop chips for each selection, count label, and CTA button.
-  Hidden when 0 props selected.
+  Shows selected prop context plus the current step's bounded actions.
 -->
 <script lang="ts">
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
 
   interface Props {
     selectedProps: PropType[];
     saving: boolean;
-    canFinish: boolean;
-    choosingFavorite: boolean;
-    onfavoritepick: () => void;
-    ondone: () => void;
+    primaryLabel: string;
+    primaryDisabled?: boolean;
+    onprimary: () => void;
+    onback?: () => void;
   }
 
   let {
     selectedProps,
     saving,
-    canFinish,
-    choosingFavorite,
-    onfavoritepick,
-    ondone,
+    primaryLabel,
+    primaryDisabled = false,
+    onprimary,
+    onback,
   }: Props = $props();
 
   const count = $derived(selectedProps.length);
 </script>
 
-{#if count > 0}
-  <div class="selection-footer">
-    <div class="selected-chips">
-      {#each selectedProps as prop (prop)}
-        <img
-          src={getPropTypeDisplayInfo(prop).image}
-          alt={getPropTypeDisplayInfo(prop).label}
-          class="chip-image"
+<div class="selection-footer">
+  <div class="selected-chips">
+    {#each selectedProps as prop (prop)}
+      <span class="chip-image" aria-hidden="true">
+        <PropCompositionPreview
+          propType={prop}
+          size={24}
+          useSavedOverrides={false}
         />
-      {/each}
-      <span class="chip-count">{count} {count === 1 ? "prop" : "props"}</span>
-    </div>
-
-    <div class="footer-actions">
-      <button
-        class="footer-button favorite-button"
-        class:active={choosingFavorite}
-        onclick={onfavoritepick}
-        aria-label={choosingFavorite
-          ? "Select favorite: stop choosing"
-          : "Select favorite"}
-        aria-pressed={choosingFavorite}
-        disabled={saving}
-      >
-        <i class="fas fa-star" aria-hidden="true"></i>
-        <span>Select favorite</span>
-      </button>
-
-      <button
-        class="footer-button cta-button"
-        onclick={ondone}
-        aria-label={canFinish
-          ? "Done: save and close"
-          : "Done: choose a favorite before closing"}
-        aria-busy={saving}
-        disabled={saving || !canFinish}
-      >
-        Done
-      </button>
-    </div>
+      </span>
+    {/each}
+    <span class="chip-count">
+      {count === 0
+        ? "Select at least one prop"
+        : `${count} ${count === 1 ? "prop" : "props"} selected`}
+    </span>
   </div>
-{/if}
+
+  <div class="footer-actions">
+    {#if onback}
+      <PanelButton variant="secondary" onclick={onback} disabled={saving}>
+        Back
+      </PanelButton>
+    {/if}
+    <PanelButton
+      variant="primary"
+      onclick={onprimary}
+      ariaBusy={saving}
+      disabled={saving || primaryDisabled}
+    >
+      {saving ? "Saving…" : primaryLabel}
+    </PanelButton>
+  </div>
+</div>
 
 <style>
   .selection-footer {
@@ -97,14 +89,20 @@
   }
 
   .chip-image {
+    display: grid;
     width: 24px;
     height: 24px;
-    object-fit: contain;
     flex-shrink: 0;
+    place-items: center;
+  }
+
+  .chip-image :global(.prop-composition-preview) {
+    width: 100%;
+    height: 100%;
   }
 
   .chip-count {
-    font-size: var(--font-size-compact, 12px);
+    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     white-space: nowrap;
     flex-shrink: 0;
@@ -118,61 +116,9 @@
     flex-shrink: 0;
   }
 
-  .footer-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 16px;
-    color: white;
-    border-radius: 999px;
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    cursor: pointer;
+  .footer-actions :global(.panel-btn) {
+    min-width: 7rem;
     white-space: nowrap;
-    flex-shrink: 0;
-    transition: opacity var(--duration-fast, 150ms) ease;
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  .favorite-button {
-    color: var(--theme-text, white);
-    background: var(--theme-card-bg, #11141c);
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.24));
-  }
-
-  .favorite-button i {
-    color: var(--semantic-warning, #f59e0b);
-  }
-
-  .favorite-button.active {
-    color: var(--semantic-warning, #f59e0b);
-    background: color-mix(
-      in srgb,
-      var(--semantic-warning, #f59e0b) 16%,
-      var(--theme-card-bg, #11141c)
-    );
-    border-color: var(--semantic-warning, #f59e0b);
-  }
-
-  .cta-button {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 78%, black);
-    border: none;
-  }
-
-  .footer-button:hover:not(:disabled) {
-    opacity: 0.9;
-  }
-
-  .footer-button:focus-visible {
-    outline: 2px solid white;
-    outline-offset: 2px;
-  }
-
-  .footer-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
   }
 
   @media (max-width: 480px) {
@@ -180,12 +126,13 @@
       display: none;
     }
 
-    .footer-button {
-      padding-inline: 12px;
+    .footer-actions :global(.panel-btn) {
+      min-width: 5.5rem;
+      padding-inline: 0.75rem;
     }
   }
 
-  @media (min-width: 2600px) {
+  @media (min-width: 2300px) and (min-height: 45rem) {
     .selection-footer {
       gap: 1.25rem;
       padding: 1.25rem 2rem;
@@ -201,19 +148,13 @@
     }
 
     .chip-count,
-    .footer-button {
+    .footer-actions :global(.panel-btn) {
       font-size: 1.5rem;
     }
 
-    .footer-button {
+    .footer-actions :global(.panel-btn) {
       min-height: 4.5rem;
       padding: 1rem 2rem;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .footer-button {
-      transition: none;
     }
   }
 </style>

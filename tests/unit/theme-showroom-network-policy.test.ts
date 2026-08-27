@@ -16,4 +16,10 @@ describe("theme showroom network policy", () => {
     expect(showroomSource).toContain("prefersReducedData()");
     expect(showroomSource).not.toContain("isConstrainedConnection");
   });
+
+  it("records an explicit choice when the active default theme is confirmed", () => {
+    expect(showroomSource).toContain(
+      "if (previewedType === selectedType) {\n      void recordThemeChoice();\n      return;"
+    );
+  });
 });

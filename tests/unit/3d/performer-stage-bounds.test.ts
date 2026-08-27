@@ -1,13 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getAddedPerformerStageGrowth,
+  getCanonicalPerformerStageBounds,
   getCanonicalStagePositions,
-  getPerformerStageBounds,
   getStageBoundsForExtent,
+  resolveCircularStageRadius,
 } from "$lib/shared/3d/environments/domain/performer-stage-bounds";
 
 const boundsFor = (count: number) =>
-  getPerformerStageBounds(getCanonicalStagePositions(count), {
+  getCanonicalPerformerStageBounds(count, {
     performerClearance: 1.5,
   });
 
@@ -32,13 +34,37 @@ describe("stage bounds", () => {
     }
   });
 
-  it("never shrinks as the cast grows", () => {
-    let previous = 0;
+  it("grows at every edge whenever a performer is added", () => {
+    let previous = boundsFor(1);
     for (const count of [1, 2, 3, 4, 5, 6, 7, 8]) {
-      const { width } = boundsFor(count);
-      expect(width).toBeGreaterThanOrEqual(previous);
-      previous = width;
+      const bounds = boundsFor(count);
+      if (count > 1) {
+        expect(bounds.width).toBeGreaterThan(previous.width);
+        expect(bounds.depth).toBeGreaterThan(previous.depth);
+        expect(bounds.radius).toBeGreaterThan(previous.radius);
+      }
+      previous = bounds;
     }
+  });
+
+  it("adds cast growth above a circular scene's authored solo radius", () => {
+    const duo = boundsFor(2);
+    const authoredSoloRadius = 5;
+
+    expect(
+      resolveCircularStageRadius(
+        duo.radius,
+        authoredSoloRadius,
+        undefined,
+        getAddedPerformerStageGrowth(2)
+      )
+    ).toBeGreaterThan(authoredSoloRadius);
+    expect(resolveCircularStageRadius(duo.radius, authoredSoloRadius)).toBe(
+      authoredSoloRadius
+    );
+    expect(getAddedPerformerStageGrowth(3)).toBe(
+      getAddedPerformerStageGrowth(2) * 2
+    );
   });
 
   it("keeps a floor under a solo performer", () => {

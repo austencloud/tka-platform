@@ -9,7 +9,7 @@
 
   Renders over the page's own cosmic background (transparent), in the same
   editorial voice as every other public page: Fraunces wonky-italic title,
-  OKLCH palette, rem sizing so it rides the lockstep root ramp to 4K.
+  OKLCH palette, and rem sizing so browser zoom remains coherent.
 -->
 <script lang="ts">
   interface Destination {

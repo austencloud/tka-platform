@@ -15,7 +15,7 @@ describe("account setup navigation contract", () => {
     expect(taskIds).toEqual([
       "display-name",
       "profile-photo",
-      "favorite-prop",
+      "props",
       "theme",
     ]);
     expect(

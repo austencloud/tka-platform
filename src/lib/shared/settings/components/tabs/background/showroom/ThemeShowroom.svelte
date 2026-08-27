@@ -39,6 +39,10 @@
 
   const activeTheme = $derived(getShowroomTheme(previewedType));
   const selectedTheme = $derived(getShowroomTheme(selectedType));
+  const themeChoiceRecorded = $derived(
+    accountSetupState?.tasks.find((task) => task.id === "theme")?.complete ??
+      true
+  );
   const livePreview = $derived(
     mounted &&
       !reducedDataPreferred &&
@@ -123,9 +127,12 @@
   }
 
   function selectPreviewedTheme(): void {
-    if (previewedType === selectedType) return;
-
     hapticService?.trigger("selection");
+    if (previewedType === selectedType) {
+      void recordThemeChoice();
+      return;
+    }
+
     const metadata = getCardMetadata(previewedType);
     if (metadata?.themeColors) {
       applyThemeFromColors(undefined, metadata.themeColors);
@@ -165,6 +172,7 @@
     <ThemePreviewStage
       theme={activeTheme}
       selected={previewedType === selectedType}
+      confirmed={previewedType === selectedType && themeChoiceRecorded}
       {livePreview}
       {allowAutomaticOrbit}
       {fallbackReason}

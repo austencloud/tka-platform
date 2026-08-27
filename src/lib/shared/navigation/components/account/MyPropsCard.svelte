@@ -1,12 +1,12 @@
-<!--
-  MyPropsCard.svelte
-
-  Compact section in Account popover showing the user's prop preferences.
-  Tapping opens a drawer/sheet for full prop selection using BentoPropGrid.
--->
+<!-- Persistent Account-page summary of public prop identity. -->
 <script lang="ts">
-  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
   import type { PropPreferenceState } from "$lib/shared/community/state/prop-preference-state.svelte";
+  import {
+    getProfilePropLabel,
+    uniqueProfileProps,
+  } from "$lib/shared/community/domain/profile-prop-catalog";
 
   interface Props {
     propState: PropPreferenceState | null;
@@ -15,113 +15,278 @@
 
   let { propState, onOpenPropEditor }: Props = $props();
 
-  const favoriteProp = $derived(propState?.favoriteProp ?? null);
-  const propsCount = $derived(propState?.propsISpinWith.length ?? 0);
+  const selectedProps = $derived(
+    uniqueProfileProps(propState?.propsISpinWith ?? [])
+  );
+  const explicitProfileProp = $derived(
+    propState?.favoriteProp && selectedProps.includes(propState.favoriteProp)
+      ? propState.favoriteProp
+      : null
+  );
+  const effectiveProfileProp = $derived(
+    explicitProfileProp ??
+      (selectedProps.length === 1 ? selectedProps[0] : null)
+  );
   const loading = $derived(propState?.loading ?? true);
 </script>
 
-{#if !loading}
-  <button
-    class="my-props-card"
-    onclick={onOpenPropEditor}
-    aria-label={favoriteProp ? `My props: ${getPropTypeDisplayInfo(favoriteProp).label}` : "Pick your props"}
-  >
-    <div class="props-icon">
-      {#if favoriteProp}
-        <img
-          src={getPropTypeDisplayInfo(favoriteProp).image}
-          alt={getPropTypeDisplayInfo(favoriteProp).label}
-          class="fav-prop-img"
-        />
+<section class="flow-identity" aria-labelledby="flow-identity-title">
+  <header class="identity-header">
+    <span class="identity-heading">
+      <span class="identity-icon" aria-hidden="true">
+        <i class="fas fa-fire"></i>
+      </span>
+      <span>
+        <span class="identity-title" id="flow-identity-title"
+          >Flow identity</span
+        >
+        <span class="identity-description">
+          Shown on your public creator profile and used for prop-based
+          discovery.
+        </span>
+      </span>
+    </span>
+
+    <PanelButton
+      variant="secondary"
+      onclick={onOpenPropEditor}
+      disabled={loading || propState === null}
+      ariaLabel="Change props you spin and Profile prop"
+    >
+      <i class="fas fa-pen" aria-hidden="true"></i>
+      <span>Change</span>
+    </PanelButton>
+  </header>
+
+  <div class="identity-values">
+    <div class="identity-value">
+      <span class="value-label">Props you spin</span>
+      {#if loading}
+        <span class="value-empty">Loading…</span>
+      {:else if selectedProps.length > 0}
+        <span
+          class="prop-list"
+          aria-label={selectedProps.map(getProfilePropLabel).join(", ")}
+        >
+          {#each selectedProps.slice(0, 5) as prop (prop)}
+            {@const label = getProfilePropLabel(prop)}
+            <span class="prop-chip">
+              <span class="summary-prop-preview" aria-hidden="true">
+                <PropCompositionPreview
+                  propType={prop}
+                  size={26}
+                  useSavedOverrides={false}
+                />
+              </span>
+              <span>{label}</span>
+            </span>
+          {/each}
+          {#if selectedProps.length > 5}
+            <span class="more-count">+{selectedProps.length - 5} more</span>
+          {/if}
+        </span>
       {:else}
-        <i class="fas fa-fire" aria-hidden="true"></i>
+        <span class="value-empty">Not set</span>
       {/if}
     </div>
-    <div class="props-info">
-      {#if favoriteProp}
-        <span class="props-label">{getPropTypeDisplayInfo(favoriteProp).label}</span>
-        {#if propsCount > 1}
-          <span class="props-count">+{propsCount - 1} more</span>
-        {/if}
+
+    <div class="identity-value profile-prop-value">
+      <span class="value-label">Profile prop <span>Optional</span></span>
+      {#if loading}
+        <span class="value-empty">Loading…</span>
+      {:else if effectiveProfileProp}
+        {@const label = getProfilePropLabel(effectiveProfileProp)}
+        <span class="profile-prop">
+          <span class="summary-prop-preview" aria-hidden="true">
+            <PropCompositionPreview
+              propType={effectiveProfileProp}
+              size={26}
+              useSavedOverrides={false}
+            />
+          </span>
+          <span>{label}</span>
+          {#if !explicitProfileProp && selectedProps.length === 1}
+            <span class="implicit-note">Your only selected prop</span>
+          {/if}
+        </span>
+      {:else if selectedProps.length > 1}
+        <span class="value-empty">No preference</span>
       {:else}
-        <span class="props-label">Pick your props</span>
-        <span class="props-count">What do you spin?</span>
+        <span class="value-empty">Not set</span>
       {/if}
     </div>
-    <i class="fas fa-chevron-right props-arrow" aria-hidden="true"></i>
-  </button>
-{/if}
+  </div>
+
+  {#if propState?.error}
+    <p class="identity-error" role="status">{propState.error}</p>
+  {/if}
+</section>
 
 <style>
-  .my-props-card {
+  .flow-identity {
     display: flex;
-    align-items: center;
-    gap: 10px;
     width: 100%;
-    padding: 10px 12px;
-    margin: 0;
-    background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
-    border: 1px solid color-mix(in srgb, var(--theme-accent) 20%, transparent);
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all var(--duration-fast, 150ms) ease;
-  }
-
-  .my-props-card:hover {
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent) 35%, transparent);
-  }
-
-  .my-props-card:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 2px;
-  }
-
-  .props-icon {
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: var(--theme-accent, #6366f1);
-    font-size: 16px;
-  }
-
-  .fav-prop-img {
-    width: 28px;
-    height: 28px;
-    object-fit: contain;
-  }
-
-  .props-info {
-    flex: 1;
     min-width: 0;
-    display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: 0.8em;
   }
 
-  .props-label {
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
+  .identity-header,
+  .identity-heading,
+  .identity-title,
+  .identity-description,
+  .identity-values,
+  .identity-value,
+  .prop-list,
+  .prop-chip,
+  .profile-prop {
+    display: flex;
+  }
+
+  .identity-header {
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+  }
+
+  .identity-heading {
+    min-width: 0;
+    align-items: center;
+    gap: 0.75em;
+  }
+
+  .identity-heading > span:last-child,
+  .identity-value {
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .identity-icon {
+    display: grid;
+    width: 2.4em;
+    height: 2.4em;
+    flex: 0 0 auto;
+    place-items: center;
+    color: var(--theme-accent-text, var(--theme-accent));
+    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 24%, transparent);
+    border-radius: 0.7em;
+  }
+
+  .identity-title {
     color: var(--theme-text, white);
+    font-size: max(1rem, var(--font-size-base));
+    font-weight: 750;
   }
 
-  .props-count {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  .identity-description {
+    margin-top: 0.15em;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+    font-size: max(0.875rem, var(--font-size-min));
+    line-height: 1.35;
   }
 
-  .props-arrow {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
-    flex-shrink: 0;
+  .identity-header :global(.panel-btn) {
+    flex: 0 0 auto;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .my-props-card {
-      transition: none;
+  .identity-values {
+    min-width: 0;
+    gap: 1em;
+  }
+
+  .identity-value {
+    flex: 1 1 0;
+    gap: 0.45em;
+    padding: 0.75em;
+    background: color-mix(in srgb, var(--theme-text) 4%, transparent);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 0.7em;
+  }
+
+  .value-label {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+    font-size: max(0.875rem, var(--font-size-min));
+    font-weight: 650;
+  }
+
+  .value-label span {
+    margin-left: 0.35em;
+    font-size: max(0.875rem, var(--font-size-min));
+    font-weight: 500;
+  }
+
+  .prop-list {
+    min-width: 0;
+    align-items: center;
+    gap: 0.35em;
+    overflow: hidden;
+  }
+
+  .prop-chip,
+  .profile-prop {
+    align-items: center;
+    gap: 0.35em;
+    color: var(--theme-text, white);
+    font-size: max(0.875rem, var(--font-size-min));
+    font-weight: 650;
+  }
+
+  .prop-chip {
+    min-width: 0;
+    padding: 0.25em 0.45em;
+    background: color-mix(in srgb, var(--theme-accent) 9%, transparent);
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .summary-prop-preview {
+    display: grid;
+    width: 1.65em;
+    height: 1.65em;
+    flex: 0 0 auto;
+    place-items: center;
+  }
+
+  .summary-prop-preview :global(.prop-composition-preview) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .more-count,
+  .value-empty,
+  .implicit-note {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+    font-size: max(0.875rem, var(--font-size-min));
+  }
+
+  .implicit-note {
+    font-size: max(0.875rem, var(--font-size-min));
+    font-weight: 500;
+  }
+
+  .identity-error {
+    margin: 0;
+    color: color-mix(in srgb, var(--semantic-error, #ef4444) 72%, white);
+    font-size: max(0.875rem, var(--font-size-min));
+  }
+
+  @container profile-tab (max-width: 34rem) {
+    .identity-values {
+      flex-direction: column;
+    }
+
+    .identity-header {
+      align-items: flex-start;
+    }
+
+    .identity-header :global(.panel-btn) {
+      min-width: var(--min-touch-target, 44px);
+      padding-inline: 0.75rem;
+    }
+
+    .identity-header :global(.panel-btn span) {
+      display: none;
     }
   }
 </style>

@@ -94,9 +94,8 @@
      SupportContent is shared with the in-app modal, so scale it here at the
      route level (zoom is standardized and participates in layout, unlike
      transform) instead of forking the shared card's internals. */
-  /* The `zoom: 1.3` 4K hack is gone. It fired at 2200px (never on a 4K
-     monitor at 200% scaling, ~1920 CSS px) and zoom scales a subtree bluntly,
-     including things that shouldn't grow. The lockstep root ramp (src/app.css)
-     now scales the card's rem measures continuously from 1680→3840. */
+  /* The old `zoom: 1.3` 4K hack scaled the entire subtree from viewport width.
+     The shared card now keeps its normal logical size while the route shell
+     supplies the surrounding composition. */
 
 </style>

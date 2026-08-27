@@ -213,12 +213,19 @@
 <div class="auth">
   <form
     class="form"
+    data-form-type={mode === "signup" ? "register" : "login"}
     onsubmit={(e) => (e.preventDefault(), void handleSubmit())}
   >
     {#if mode === "signup"}
       <label class="label">
         {t("auth_name")}
-        <input class="input" bind:value={name} autocomplete="name" />
+        <input
+          class="input"
+          name="name"
+          bind:value={name}
+          autocomplete="name"
+          data-form-type="name"
+        />
       </label>
     {/if}
 
@@ -227,8 +234,10 @@
       <input
         class="input"
         type="email"
+        name="email"
         bind:value={email}
         autocomplete="username"
+        data-form-type={mode === "signup" ? "email" : "email,username"}
         required
       />
     </label>
@@ -239,8 +248,10 @@
         <input
           class="input"
           type={showPassword ? "text" : "password"}
+          name="password"
           bind:value={password}
           autocomplete={mode === "signin" ? "current-password" : "new-password"}
+          data-form-type={mode === "signin" ? "password" : "password,new"}
           required
         />
         <button
@@ -267,7 +278,12 @@
       <p class="message success" role="status">{success}</p>
     {/if}
 
-    <button class="submit" type="submit" disabled={loading}>
+    <button
+      class="submit"
+      type="submit"
+      data-form-type={mode === "signin" ? "action,login" : "action,register"}
+      disabled={loading}
+    >
       {#if loading}
         {mode === "signin" ? t("auth_logging_in") : t("auth_creating_account")}
       {:else}

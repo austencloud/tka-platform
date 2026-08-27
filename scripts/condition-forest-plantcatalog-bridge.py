@@ -644,16 +644,25 @@ def condition_job(job: dict, export_state: dict) -> dict:
         if material is not None:
             material_metrics.append(configure_material(material, job["id"], index))
     families = {material["family"] for material in material_metrics}
-    if "wood" not in families or "foliage" not in families:
+    wood_only_habitat_snag = (
+        job.get("semanticProfile") == "wood-only-habitat-snag"
+    )
+    if "wood" not in families or (
+        "foliage" not in families and not wood_only_habitat_snag
+    ):
         raise RuntimeError(
-            "PlantCatalog semantic classification requires wood and foliage; got {}".format(
-                sorted(families)
+            "PlantCatalog semantic classification requires wood and foliage unless the "
+            "manifest declares a wood-only habitat snag; got {} for {}".format(
+                sorted(families), job.get("semanticProfile", "living-canopy")
             )
         )
-    # A botanical tree always has cutout cards somewhere. None at all means the
-    # alpha channel was lost in export, which reads as a solid green blob rather
-    # than a canopy, so fail here instead of at visual review.
-    if not any(material["surface"] == "cutout" for material in material_metrics):
+    # A living botanical tree always has cutout cards somewhere. None at all
+    # means the alpha channel was lost in export, which reads as a solid green
+    # blob rather than a canopy. A manifest-declared standing-dead snag is the
+    # one honest exception: its absence of foliage is the authored habitat role.
+    if not wood_only_habitat_snag and not any(
+        material["surface"] == "cutout" for material in material_metrics
+    ):
         raise RuntimeError(
             "PlantCatalog tree has no cutout material; foliage alpha did not survive export"
         )

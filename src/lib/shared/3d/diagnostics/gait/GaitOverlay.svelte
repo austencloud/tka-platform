@@ -17,14 +17,20 @@
   interface Props {
     /** Start collapsed on a surface where the picture matters more. */
     collapsed?: boolean;
+    /** Offer the boundary window separately from steady travel. */
+    showArrival?: boolean;
   }
 
-  let { collapsed = false }: Props = $props();
+  let { collapsed = false, showArrival = false }: Props = $props();
 
   let open = $state(!collapsed);
   let selected = $state<string | null>(null);
+  let scope = $state<"gait" | "arrival">("gait");
 
-  const ids = $derived([...gaitProbeState.reports.keys()].sort());
+  const activeReports = $derived(
+    scope === "arrival" ? gaitProbeState.arrivalReports : gaitProbeState.reports
+  );
+  const ids = $derived([...activeReports.keys()].sort());
   // Three full readouts do not fit over a stage, and stacking them buries the
   // thing being measured. One at a time, with the rest one click away.
   const active = $derived(
@@ -33,9 +39,9 @@
 
   /** How many numbers are outside the human range, for the selector chips. */
   function failCount(id: string): number {
-    const report = gaitProbeState.reports.get(id);
+    const report = activeReports.get(id);
     if (!report || report.stances.length === 0) return -1;
-    return countFailing(report);
+    return countFailing(report, scope);
   }
 </script>
 
@@ -54,6 +60,32 @@
 
     {#if open}
       <div class="panels">
+        {#if showArrival && gaitProbeState.arrivalReports.size > 0}
+          <div
+            class="scope-picker"
+            role="tablist"
+            aria-label="Measurement window"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={scope === "gait"}
+              class:on={scope === "gait"}
+              onclick={() => (scope = "gait")}
+            >
+              Walking
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={scope === "arrival"}
+              class:on={scope === "arrival"}
+              onclick={() => (scope = "arrival")}
+            >
+              Arrival
+            </button>
+          </div>
+        {/if}
         {#if ids.length > 1}
           <div class="picker" role="tablist" aria-label="Performer to measure">
             {#each ids as id (id)}
@@ -77,9 +109,10 @@
 
         {#if active}
           <GaitReadout
-            label={active}
-            report={gaitProbeState.reports.get(active) ?? null}
+            label={`${active} · ${scope === "gait" ? "walking" : "arrival"}`}
+            report={activeReports.get(active) ?? null}
             trail={gaitProbeState.trail(active)}
+            {scope}
           />
         {:else}
           <p class="empty">No rigged avatars found in this scene yet.</p>
@@ -149,6 +182,31 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.25rem;
+  }
+
+  .scope-picker {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.25rem;
+    padding: 0.2rem;
+    border-radius: 0.6rem;
+    background: color-mix(in srgb, #0b0f16 88%, transparent);
+  }
+
+  .scope-picker button {
+    min-height: 44px;
+    border: 0;
+    border-radius: 0.45rem;
+    background: transparent;
+    color: #8b97a8;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .scope-picker button.on {
+    background: #243247;
+    color: #e8edf5;
   }
 
   .pick {

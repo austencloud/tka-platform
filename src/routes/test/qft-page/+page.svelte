@@ -151,9 +151,8 @@
 
 <style>
   /*
-   * Test routes do not match the app.css ramp selectors, so every /test/*
-   * harness is frozen at 1080p proportions on a 4K screen. Same documented
-   * curve, scoped here.
+   * This archive is a deliberate rendered-artifact scale test. Ordinary app
+   * and public surfaces keep a 16px root; this isolated harness owns its curve.
    */
   :global(html:has(.qft-archive)) {
     font-size: clamp(16px, 9.78px + 0.3704vw, 24px);

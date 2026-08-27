@@ -470,23 +470,17 @@
     }
   }
 
-  /* The rail steps with the stream so the index doesn't read as fine print
-     next to it. */
+  /* The rail can use more of a wide canvas without changing the logical size
+     of its text. */
   @container (min-width: 2000px) {
     .version-list-panel {
       width: 25rem;
-      --font-size-compact: 1.05rem;
-      --font-size-sm: 1.25rem;
-      --font-size-base: 1.25rem;
     }
   }
 
   @container (min-width: 2800px) {
     .version-list-panel {
       width: 30rem;
-      --font-size-compact: 1.2rem;
-      --font-size-sm: 1.45rem;
-      --font-size-base: 1.45rem;
     }
   }
 

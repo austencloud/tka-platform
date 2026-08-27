@@ -1,10 +1,15 @@
 <!--
-  BaseModal.svelte - 2026 Native Dialog Modal System
+  BaseModal.svelte - 2026 Dialog Modal System
 
-  Uses native <dialog> element with cutting-edge CSS features:
+  Uses the native <dialog> element with cutting-edge CSS features:
   - @starting-style for entry animations
   - transition-behavior: allow-discrete for exit animations
   - ::backdrop pseudo-element for native backdrop
+
+  Credential forms can opt into an app-managed backdrop. That keeps browser
+  extension overlays out of the native modal top layer's inert subtree while
+  preserving dialog semantics, pointer blocking, Escape handling, and a
+  keyboard focus trap.
 
   Architecture follows Drawer.svelte patterns:
   - Separate animation state from open state
@@ -19,6 +24,7 @@
     isTopModal,
     generateModalId,
   } from "./modal-stack";
+  import { FocusTrap } from "../drawer/focus-trap";
   import { FocusRestore, focusFirstOrContainer } from "./helpers/focus-restore";
   import "./modal-tokens.css";
 
@@ -38,6 +44,11 @@
     closeOnBackdrop?: boolean;
     closeOnEscape?: boolean;
     restoreFocus?: boolean;
+    /**
+     * Keep third-party overlays such as password-manager suggestion cards
+     * interactive. Uses a non-top-layer dialog with app-managed modality.
+     */
+    allowExternalOverlays?: boolean;
 
     // Appearance
     size?: ModalSize;
@@ -62,6 +73,7 @@
     closeOnBackdrop = true,
     closeOnEscape = true,
     restoreFocus = true,
+    allowExternalOverlays = false,
     size = "md",
     position = "center",
     animation = "pop",
@@ -82,12 +94,22 @@
   let exitTimer: ReturnType<typeof setTimeout> | null = null;
 
   let focusRestore: FocusRestore | null = null;
+  let focusTrap: FocusTrap | null = null;
   let handlersInitialized = false;
 
   function initializeHandlers() {
     if (handlersInitialized) return;
     handlersInitialized = true;
     focusRestore = new FocusRestore({ enabled: restoreFocus });
+    focusTrap = new FocusTrap({
+      focusContainerOnInitial: true,
+      returnFocusOnDeactivate: false,
+      // `aria-modal`, the managed backdrop, and this focus trap provide the
+      // modal boundary. Leaving body siblings non-inert is intentional: a
+      // password manager mounts its interactive suggestion card outside the
+      // application tree and must remain reachable from the credential field.
+      setInertOnSiblings: false,
+    });
   }
 
   function closeModal(reason: CloseReason) {
@@ -141,6 +163,28 @@
     }
   }
 
+  function handleManagedBackdropClick() {
+    if (closeOnBackdrop) {
+      closeModal("backdrop");
+    }
+  }
+
+  function handleWindowKeydown(event: KeyboardEvent) {
+    if (
+      !allowExternalOverlays ||
+      event.key !== "Escape" ||
+      event.defaultPrevented ||
+      !open ||
+      !closeOnEscape ||
+      !isTopModal(modalId)
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    closeModal("escape");
+  }
+
   $effect(() => {
     const currentOpen = open;
     const previouslyOpen = untrack(() => wasOpen);
@@ -175,7 +219,12 @@
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           if (open && dialogElement && !dialogElement.open) {
-            dialogElement.showModal();
+            if (allowExternalOverlays) {
+              dialogElement.show();
+              focusTrap?.activate(dialogElement);
+            } else {
+              dialogElement.showModal();
+            }
             onopened?.();
 
             // Mark as entered for content animations
@@ -198,6 +247,7 @@
       const exitDuration = animation === "none" ? 0 : 200;
       exitTimer = setTimeout(() => {
         exitTimer = null;
+        focusTrap?.deactivate();
         if (dialogElement?.open) {
           dialogElement.close();
         }
@@ -220,12 +270,27 @@
         exitTimer = null;
       }
       unregisterModal(modalId);
+      focusTrap?.deactivate();
       focusRestore?.restore();
     };
   });
 </script>
 
+<svelte:window onkeydown={handleWindowKeydown} />
+
 {#if shouldRender}
+  {#if allowExternalOverlays}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="base-modal-managed-backdrop"
+      data-entered={hasEntered}
+      data-closing={isClosing}
+      data-animation={animation}
+      aria-hidden="true"
+      onclick={handleManagedBackdropClick}
+    ></div>
+  {/if}
+
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <dialog
     bind:this={dialogElement}
@@ -235,6 +300,8 @@
     data-animation={animation}
     data-entered={hasEntered}
     data-closing={isClosing}
+    data-external-overlays={allowExternalOverlays}
+    aria-modal="true"
     aria-labelledby={labelledBy}
     aria-describedby={describedBy}
     onpointerdown={handleBackdropPointerDown}
@@ -269,6 +336,47 @@
 {/if}
 
 <style>
+  .base-modal-managed-backdrop {
+    position: fixed;
+    inset-inline: 0;
+    inset-block-start: var(--viewport-offset-top, 0px);
+    inset-block-end: var(--viewport-offset-bottom, 0px);
+    z-index: var(--z-modal, 600);
+    background: var(--modal-backdrop-bg);
+    backdrop-filter: blur(var(--modal-backdrop-blur));
+    -webkit-backdrop-filter: blur(var(--modal-backdrop-blur));
+    opacity: 0;
+    transition:
+      opacity var(--modal-duration-out) var(--modal-ease-out),
+      backdrop-filter var(--modal-duration-out);
+  }
+
+  .base-modal-managed-backdrop[data-entered="true"] {
+    opacity: 1;
+  }
+
+  .base-modal-managed-backdrop[data-closing="true"] {
+    opacity: 0;
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+  }
+
+  .base-modal-managed-backdrop[data-animation="none"] {
+    transition: none;
+  }
+
+  :global(dialog.base-modal[data-external-overlays="true"]) {
+    z-index: calc(var(--z-modal, 600) + 1);
+  }
+
+  /* Managed mode focuses the dialog shell first so opening the modal does not
+     light up an arbitrary control. The shell is only a focus entry point;
+     interactive descendants retain their own visible focus indicators. */
+  :global(dialog.base-modal[data-external-overlays="true"]:focus),
+  :global(dialog.base-modal[data-external-overlays="true"]:focus-visible) {
+    outline: none;
+  }
+
   /* Content wrapper - adapts to size variant */
   .modal-content-wrapper {
     display: flex;
@@ -349,5 +457,11 @@
   /* Footer slot */
   .modal-footer-slot {
     flex-shrink: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .base-modal-managed-backdrop {
+      transition: none;
+    }
   }
 </style>

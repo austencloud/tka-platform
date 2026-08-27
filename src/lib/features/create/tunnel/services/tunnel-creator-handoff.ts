@@ -1,6 +1,10 @@
 import type { CollectedTunnel } from "$lib/features/tunnel-collection/domain/tunnel-collection-types";
 import { collectedTunnelComposition } from "$lib/features/tunnel-collection/domain/collected-tunnel-source";
 import type { TunnelComposition } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
+import {
+  TunnelSnapshotSchema,
+  type TunnelSnapshot,
+} from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
 
 const STORAGE_KEY = "tka:tunnel-creator-handoff";
 
@@ -20,6 +24,9 @@ export interface TunnelCreatorHandoff {
   /** ~200px WebP data URL, the same picture the gallery card shows. */
   poster?: string;
   composition: TunnelComposition;
+  /** Complete render state. Null only when consuming a pre-snapshot handoff. */
+  snapshot: TunnelSnapshot | null;
+  /** Compatibility alias for handoffs written before snapshot was carried. */
   formation: CollectedTunnel["snapshot"]["tunnel"]["config"];
   createdAt: number;
 }
@@ -32,6 +39,7 @@ export function saveTunnelCreatorHandoff(tunnel: CollectedTunnel): void {
     tunnelName: tunnel.name,
     ...(tunnel.poster ? { poster: tunnel.poster } : {}),
     composition: collectedTunnelComposition(tunnel),
+    snapshot: tunnel.snapshot,
     formation: tunnel.snapshot.tunnel.config,
     createdAt: Date.now(),
   };
@@ -52,16 +60,31 @@ export function consumeTunnelCreatorHandoff(): TunnelCreatorHandoff | null {
   sessionStorage.removeItem(STORAGE_KEY);
 
   try {
-    const handoff = JSON.parse(serialized) as TunnelCreatorHandoff;
+    const handoff = JSON.parse(serialized) as Partial<TunnelCreatorHandoff>;
+    const parsedSnapshot = TunnelSnapshotSchema.safeParse(handoff.snapshot);
+    const formation = parsedSnapshot.success
+      ? parsedSnapshot.data.tunnel.config
+      : handoff.formation;
     if (
       !handoff.tunnelId ||
       !handoff.tunnelName ||
-      !handoff.formation ||
+      !formation ||
       !handoff.composition?.performers?.length
     ) {
       return null;
     }
-    return handoff;
+    return {
+      tunnelId: handoff.tunnelId,
+      tunnelName: handoff.tunnelName,
+      ...(handoff.poster ? { poster: handoff.poster } : {}),
+      composition: handoff.composition,
+      snapshot: parsedSnapshot.success
+        ? (parsedSnapshot.data as TunnelSnapshot)
+        : null,
+      formation,
+      createdAt:
+        typeof handoff.createdAt === "number" ? handoff.createdAt : Date.now(),
+    };
   } catch {
     return null;
   }

@@ -4,7 +4,6 @@
     "path: absolute, or relative to this repo's parent directory (so E:\\tka-platform and C:\\code\\tka-platform both work).",
     "icon: filename in agent-hub/icons/. Missing icon or missing path is skipped, not an error.",
     "server: optional PM2 app, project-relative config file, and readiness port.",
-    "appUrl: optional http(s) URL the Open app tile launches in the default browser.",
     "autoDiscover in install.ps1 also picks up any sibling git repo not listed here."
   ],
   "projects": [
@@ -17,8 +16,7 @@
         "app": "tka-dev",
         "config": "ecosystem.config.cjs",
         "port": 5173
-      },
-      "appUrl": "https://localhost:5173"
+      }
     },
     { "name": "Cirque Aflame",         "path": "cirque-aflame",         "icon": "cirque-aflame.ico" },
     { "name": "Flow Arts Wiki",        "path": "flow-arts-wiki",        "icon": "flowartswiki.ico" },

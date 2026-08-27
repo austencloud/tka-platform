@@ -21,7 +21,7 @@
 
   import { onDestroy, onMount, untrack } from "svelte";
   import { browser } from "$app/environment";
-  import { replaceState } from "$app/navigation";
+  import { afterNavigate, replaceState } from "$app/navigation";
   import * as THREE from "three";
   import { Canvas, T } from "@threlte/core";
   import type CameraControls from "camera-controls";
@@ -31,6 +31,7 @@
     PerformerRig,
     userProportionsState,
     type AvatarId,
+    type LocomotionGaitClock,
   } from "@austencloud/scene-3d";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
@@ -45,15 +46,39 @@
     WALK_PATTERNS,
     walkPattern,
   } from "$lib/shared/3d/diagnostics/gait/walk-patterns";
+  import { createDestinationWalkPlan } from "$lib/shared/3d/locomotion/destination-walk-plan";
   import WalkDriver from "./WalkDriver.svelte";
   import type { ManualInput, WalkState } from "./walk-command";
 
   const MANUAL = "manual";
+  const EXACT_MARK = "exact-mark";
+  const MIN_EXACT_STEP_LENGTH = 0.55;
+  const MAX_EXACT_STEP_LENGTH = 0.85;
+  const MAX_EXACT_STEPS = 16;
+
+  function exactStepRange(distance: number): { min: number; max: number } {
+    const min = Math.max(3, Math.ceil(distance / MAX_EXACT_STEP_LENGTH));
+    const max = Math.max(
+      min,
+      Math.min(MAX_EXACT_STEPS, Math.floor(distance / MIN_EXACT_STEP_LENGTH))
+    );
+    return { min, max };
+  }
+
+  function clampExactSteps(distance: number, steps: number): number {
+    const range = exactStepRange(distance);
+    return Math.min(range.max, Math.max(range.min, Math.round(steps)));
+  }
 
   /** The rig draws no grid here, so no plane is visible on it. */
   const NO_PLANES = new Set<Plane>();
 
   const PATTERN_OPTIONS = [
+    {
+      value: EXACT_MARK,
+      label: "Exact mark",
+      ariaLabel: "Exact mark: reach a destination on the requested footfall",
+    },
     ...WALK_PATTERNS.map((pattern) => ({
       value: pattern.id,
       label: pattern.label,
@@ -98,7 +123,12 @@
   const VANTAGES: Vantage[] = [
     { id: "side", label: "Side", eye: [3.4, 1.5, 0], height: 0.95 },
     { id: "front", label: "Front", eye: [0, 1.5, 3.4], height: 0.95 },
-    { id: "quarter", label: "Three-quarter", eye: [2.6, 1.9, 2.6], height: 0.95 },
+    {
+      id: "quarter",
+      label: "Three-quarter",
+      eye: [2.6, 1.9, 2.6],
+      height: 0.95,
+    },
     { id: "ankles", label: "Ankles", eye: [1.15, 0.32, 1.15], height: 0.12 },
     { id: "top", label: "Overhead", eye: [0, 6, 0.01], height: 0 },
   ];
@@ -117,15 +147,23 @@
   const asked = (key: string, fallback: string) => params.get(key) ?? fallback;
 
   let patternId = $state(
-    WALK_PATTERNS.some((p) => p.id === params.get("pattern"))
-      ? params.get("pattern")!
-      : WALK_PATTERNS[0]!.id
+    params.get("pattern") === EXACT_MARK
+      ? EXACT_MARK
+      : WALK_PATTERNS.some((p) => p.id === params.get("pattern"))
+        ? params.get("pattern")!
+        : WALK_PATTERNS[0]!.id
   );
   // X-Bot by default: a pale untextured mannequin. The costumed rigs render
   // as dark silhouettes under any lighting that keeps the floor readable, and
   // an ankle you cannot see is the one thing this page cannot afford.
   let avatarId = $state<AvatarId>(asked("rig", "x-bot") as AvatarId);
   let speed = $state(Number(asked("speed", "1")) || 1);
+  let markDistance = $state(
+    Math.min(8, Math.max(2, Number(asked("distance", "4")) || 4))
+  );
+  let markSteps = $state(
+    clampExactSteps(markDistance, Math.round(Number(asked("steps", "6")) || 6))
+  );
   let running = $state(true);
   let follow = $state(true);
   /**
@@ -145,9 +183,23 @@
       : "side"
   );
   let resetNonce = $state(0);
+  let compactProbe = $state(false);
 
-  const pattern = $derived(walkPattern(patternId));
+  const isExactMark = $derived(patternId === EXACT_MARK);
+  const exactSteps = $derived(exactStepRange(markDistance));
+  const pattern = $derived(
+    walkPattern(isExactMark ? WALK_PATTERNS[0]!.id : patternId)
+  );
   const isManual = $derived(patternId === MANUAL);
+  const destinationPlan = $derived(
+    isExactMark
+      ? createDestinationWalkPlan({
+          from: { x: 0, z: 0 },
+          to: { x: 0, z: markDistance },
+          steps: markSteps,
+        })
+      : null
+  );
   const vantage = $derived(
     VANTAGES.find((v) => v.id === vantageId) ?? VANTAGES[0]!
   );
@@ -163,6 +215,10 @@
     phase: "standing",
     travelled: 0,
   });
+  let gaitClock = $state<LocomotionGaitClock | null>(null);
+  const exactMarkArrived = $derived(
+    isExactMark && walk.completedSteps === markSteps
+  );
 
   // The rig re-reads position and facing every frame, so these are plain
   // objects rebuilt per frame rather than a proxy the rig would re-subscribe
@@ -185,7 +241,12 @@
   );
   try {
     avatarState = createAvatarInstanceState(
-      { id: "walk-lab-performer", positionX: 0, positionZ: 0, persistent: false },
+      {
+        id: "walk-lab-performer",
+        positionX: 0,
+        positionZ: 0,
+        persistent: false,
+      },
       makeStandaloneDeps()
     );
   } catch (error) {
@@ -284,16 +345,22 @@
   });
 
   // Keep the address bar on the current case, so the link in the bar is
-  // always the link that reproduces what is on screen. Gated on mount:
-  // `replaceState` throws until the router has initialised, and the first
-  // run of this effect happens before that.
+  // always the link that reproduces what is on screen. `onMount` can still
+  // beat SvelteKit's router during a direct page load, so the navigation
+  // lifecycle is the point that earns permission to update its history.
   let routed = $state(false);
+
+  afterNavigate(() => {
+    routed = true;
+  });
 
   $effect(() => {
     const next = new URLSearchParams({
       pattern: patternId,
       rig: String(avatarId),
       speed: speed.toFixed(2),
+      distance: markDistance.toFixed(2),
+      steps: String(markSteps),
       camera: vantageId,
       plant: planting ? "on" : "off",
     });
@@ -326,12 +393,17 @@
       +v.y.toFixed(3),
       +v.z.toFixed(3),
     ];
+    const precise = (v: THREE.Vector3) => [
+      +v.x.toFixed(6),
+      +v.y.toFixed(6),
+      +v.z.toFixed(6),
+    ];
     // Box3.setFromObject reads the bind-pose geometry through the node's own
     // matrix, so on a skinned mesh it reports a T-pose that is nowhere near
     // what is on screen. Bone world positions are the only honest answer.
     const where = new THREE.Vector3();
     const of = (bone: THREE.Object3D | undefined) =>
-      bone ? round(bone.getWorldPosition(where)) : null;
+      bone ? precise(bone.getWorldPosition(where)) : null;
     const named = (bones: THREE.Bone[], suffix: string) =>
       bones.find((b) => b.name.endsWith(suffix));
 
@@ -349,6 +421,9 @@
         node: round(mesh.getWorldPosition(where)),
         hips: of(named(rigged, "Hips")),
         leftFoot: of(named(rigged, "LeftFoot")),
+        leftToe: of(named(rigged, "LeftToeBase")),
+        rightFoot: of(named(rigged, "RightFoot")),
+        rightToe: of(named(rigged, "RightToeBase")),
         head: of(named(rigged, "Head")),
       });
     });
@@ -356,6 +431,15 @@
     return {
       eye: round(eye),
       target: round(at),
+      walk: {
+        x: +walk.x.toFixed(6),
+        z: +walk.z.toFixed(6),
+        phase: walk.phase,
+        completedSteps: walk.completedSteps ?? null,
+        plannedSteps: walk.plannedSteps ?? null,
+        endpointError: +(walk.endpointError ?? 0).toFixed(6),
+      },
+      gaitClock,
       heightCm: userProportionsState.heightCm,
       groundY: +userProportionsState.groundY.toFixed(3),
       groundOffset: +groundOffset.toFixed(3),
@@ -365,11 +449,19 @@
   }
 
   onMount(() => {
-    routed = true;
     (window as unknown as { __walkLab?: () => unknown }).__walkLab = inspect;
     gaitProbeState.enable();
-    (window as unknown as { __tkaLoadProgress?: (p: number) => void })
-      .__tkaLoadProgress?.(100);
+    (
+      window as unknown as { __tkaLoadProgress?: (p: number) => void }
+    ).__tkaLoadProgress?.(100);
+  });
+
+  onMount(() => {
+    const query = window.matchMedia("(max-width: 1024px), (max-height: 600px)");
+    const update = () => (compactProbe = query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
   });
 
   onDestroy(() => {
@@ -417,7 +509,11 @@
            floor's own edge never shows as a horizon line. -->
       <T.Fog attach="fog" args={[BACKDROP, 14, 42]} />
 
-      <T.HemisphereLight intensity={0.9} groundColor="#20242e" skyColor="#c8d6f0" />
+      <T.HemisphereLight
+        intensity={0.9}
+        groundColor="#20242e"
+        skyColor="#c8d6f0"
+      />
       <T.DirectionalLight
         position={[4, 7, 3]}
         intensity={2.4}
@@ -447,23 +543,24 @@
              bound and the new mesh either collapsed or invisible. A remount
              costs a reload of one GLB and is the only way the picker works. -->
         {#key avatarId}
-        <PerformerRig
-          position={rigPosition}
-          {groundOffset}
-          facingAngle={walk.facing}
-          planeMode={PlaneMode.WALL}
-          {avatarState}
-          {avatarId}
-          showGrid={false}
-          showProps={false}
-          showEffects={false}
-          visiblePlanes={NO_PLANES}
-          enableLocomotion={true}
-          enableFootPlanting={planting}
-          isMoving={walk.isMoving}
-          moveSpeed={walk.speed}
-          moveDirection={walk.direction}
-        />
+          <PerformerRig
+            position={rigPosition}
+            {groundOffset}
+            facingAngle={walk.facing}
+            planeMode={PlaneMode.WALL}
+            {avatarState}
+            {avatarId}
+            showGrid={false}
+            showProps={false}
+            showEffects={false}
+            visiblePlanes={NO_PLANES}
+            enableLocomotion={true}
+            enableFootPlanting={planting}
+            isMoving={walk.isMoving}
+            moveSpeed={walk.speed}
+            moveDirection={walk.direction}
+            onGaitClock={(clock) => (gaitClock = clock)}
+          />
         {/key}
       {/if}
 
@@ -472,6 +569,8 @@
         {speed}
         {running}
         manual={manualInput}
+        {destinationPlan}
+        {gaitClock}
         {resetNonce}
         onState={(state) => {
           walk = state;
@@ -484,23 +583,66 @@
         }}
       />
 
-      <GaitProbe capacity={1800} />
+      <GaitProbe
+        capacity={1800}
+        recording={!isExactMark || !exactMarkArrived}
+        resetKey={resetNonce}
+        reportMode={isExactMark ? "latest-travel" : "buffer"}
+        arrivalWindowSeconds={isExactMark ? 0.85 : 0}
+      />
     </Canvas>
 
     <div class="hud" aria-live="off">
       <p class="hud-phase">{walk.phase}</p>
       <p class="hud-hunts">
-        {isManual ? "WASD to travel, arrows to turn" : pattern.hunts}
+        {isManual
+          ? "WASD to travel, arrows to turn"
+          : isExactMark
+            ? `${markDistance.toFixed(1)} metres in exactly ${markSteps} authored steps`
+            : pattern.hunts}
       </p>
       <dl class="hud-grid">
-        <div><dt>speed</dt><dd>{walk.speed.toFixed(2)} m/s</dd></div>
-        <div><dt>facing</dt><dd>{facingDegrees.toFixed(0)}&deg;</dd></div>
-        <div><dt>travel</dt><dd>{localHeading.toFixed(0)}&deg; local</dd></div>
-        <div><dt>covered</dt><dd>{walk.travelled.toFixed(1)} m</dd></div>
+        <div>
+          <dt>speed</dt>
+          <dd>{walk.speed.toFixed(2)} m/s</dd>
+        </div>
+        <div>
+          <dt>facing</dt>
+          <dd>{facingDegrees.toFixed(0)}&deg;</dd>
+        </div>
+        {#if isExactMark}
+          <div>
+            <dt>step length</dt>
+            <dd>{((destinationPlan?.stepLength ?? 0) * 100).toFixed(1)} cm</dd>
+          </div>
+        {:else}
+          <div>
+            <dt>travel</dt>
+            <dd>{localHeading.toFixed(0)}&deg; local</dd>
+          </div>
+        {/if}
+        <div>
+          <dt>covered</dt>
+          <dd>{walk.travelled.toFixed(1)} m</dd>
+        </div>
+        {#if isExactMark}
+          <div>
+            <dt>authored steps</dt>
+            <dd>{(walk.completedSteps ?? 0).toFixed(2)} / {markSteps}</dd>
+          </div>
+          <div>
+            <dt>mark error</dt>
+            <dd>
+              {((walk.endpointError ?? markDistance) * 100).toFixed(1)} cm
+            </dd>
+          </div>
+        {/if}
       </dl>
     </div>
 
-    <GaitOverlay />
+    {#key compactProbe}
+      <GaitOverlay collapsed={compactProbe} showArrival={isExactMark} />
+    {/key}
   </div>
 
   <div class="deck">
@@ -518,34 +660,99 @@
     </div>
 
     <div class="row settings">
-      <label class="slider">
-        <span class="slider-label">Speed</span>
-        <input
-          type="range"
-          min="0.15"
-          max="1.8"
-          step="0.05"
-          bind:value={speed}
-          aria-label="Commanded walking speed in metres per second"
-        />
-        <output>{speed.toFixed(2)} m/s</output>
-      </label>
+      {#if isExactMark}
+        <label class="slider">
+          <span class="slider-label">Destination</span>
+          <input
+            type="range"
+            min="2"
+            max="8"
+            step="0.25"
+            value={markDistance}
+            onchange={(event) => {
+              const distance = Number(event.currentTarget.value);
+              markDistance = distance;
+              markSteps = clampExactSteps(distance, markSteps);
+              resetNonce += 1;
+            }}
+            aria-label="Destination distance in metres"
+          />
+          <output>{markDistance.toFixed(2)} m</output>
+        </label>
+
+        <label class="slider">
+          <span class="slider-label">Exact steps</span>
+          <input
+            type="range"
+            min={exactSteps.min}
+            max={exactSteps.max}
+            step="1"
+            value={markSteps}
+            onchange={(event) => {
+              markSteps = Number(event.currentTarget.value);
+              resetNonce += 1;
+            }}
+            aria-label="Exact authored step count"
+          />
+          <output>{markSteps}</output>
+        </label>
+      {:else}
+        <label class="slider">
+          <span class="slider-label">Speed</span>
+          <input
+            type="range"
+            min="0.15"
+            max="1.8"
+            step="0.05"
+            bind:value={speed}
+            aria-label="Commanded walking speed in metres per second"
+          />
+          <output>{speed.toFixed(2)} m/s</output>
+        </label>
+      {/if}
 
       <div class="group">
         <span class="group-label" id="walk-lab-rig">Rig</span>
         <SegmentedControl
           options={AVATAR_OPTIONS}
           value={avatarId}
-          onchange={(value) => (avatarId = value)}
+          onchange={(value) => {
+            avatarId = value;
+            gaitClock = null;
+            resetNonce += 1;
+          }}
           size="sm"
           ariaLabelledby="walk-lab-rig"
         />
       </div>
 
       <div class="group">
+        <span class="group-label" id="walk-lab-planting">Planting</span>
+        <SegmentedControl
+          options={[
+            { value: "on", label: "On" },
+            { value: "off", label: "Off" },
+          ]}
+          value={planting ? "on" : "off"}
+          onchange={(value) => (planting = value === "on")}
+          size="sm"
+          ariaLabelledby="walk-lab-planting"
+        />
+      </div>
+
+      <div class="group">
         <span class="group-label" id="walk-lab-camera">Camera</span>
         <SegmentedControl
-          options={VANTAGES.map((v) => ({ value: v.id, label: v.label }))}
+          options={VANTAGES.map((v) => ({
+            value: v.id,
+            label: v.label,
+            shortLabel:
+              v.id === "quarter"
+                ? "3/4"
+                : v.id === "overhead"
+                  ? "Top"
+                  : v.label,
+          }))}
           value={vantageId}
           onchange={(value) => (vantageId = value)}
           size="sm"
@@ -569,14 +776,6 @@
           onclick={() => (follow = !follow)}
         >
           {follow ? "Following" : "Fixed camera"}
-        </button>
-        <button
-          type="button"
-          class="action"
-          aria-pressed={planting}
-          onclick={() => (planting = !planting)}
-        >
-          {planting ? "Planting on" : "Planting off"}
         </button>
         <button
           type="button"

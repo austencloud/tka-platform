@@ -24,6 +24,10 @@ import {
   sampleInterruptibleHermite,
   type TimedTransition,
 } from "../camera/transitions";
+import {
+  resolveViewerFormationFacingAngle,
+  VIEWER_FRONT_STAGE_FACING_ANGLE,
+} from "../domain/viewer-formation-facing";
 // FormationManager type inferred from createFormationManager return
 
 const COUNT_CHANGE_TRANSITION_MS = 320;
@@ -112,7 +116,7 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
     const positions = getDefaultPositions(performerStates.length + 1);
     const pos = positions[index] ?? { x: 0, z: 0 };
 
-    return createAvatarInstanceState(
+    const performer = createAvatarInstanceState(
       {
         id: `performer-${index}`,
         positionX: pos.x,
@@ -122,6 +126,8 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
       },
       getDefaults ? { getDefaults } : makeStandaloneDeps()
     );
+    performer.snapFacingAngle(VIEWER_FRONT_STAGE_FACING_ANGLE);
+    return performer;
   }
 
   /**
@@ -140,6 +146,7 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
       getDefaults ? { getDefaults } : makeStandaloneDeps()
     );
 
+    initialPerformer.snapFacingAngle(VIEWER_FRONT_STAGE_FACING_ANGLE);
     performerStates = [initialPerformer];
     return initialPerformer;
   }
@@ -272,6 +279,7 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
   function resolveLayoutTargets(): PerformerLayoutSnapshot[] {
     formationManager.setPerformerCount(performerStates.length);
 
+    const formation = formationManager.currentFormation;
     const positions = formationManager.getAllPerformerPositions();
     const defaults = getDefaultPositions(performerStates.length);
     const coversAll = positions.length >= performerStates.length;
@@ -280,9 +288,16 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
       if (coversAll) {
         const target = positions.find((position) => position.index === index);
         if (target) {
+          const slot = formation.slots.find(
+            (candidate) => candidate.index === index
+          );
           return {
             position: { ...target.position },
-            facingAngle: target.facingAngle,
+            facingAngle: resolveViewerFormationFacingAngle(
+              slot,
+              formation,
+              target.facingAngle
+            ),
           };
         }
       }
@@ -290,7 +305,11 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
       const fallback = defaults[index] ?? performer.position;
       return {
         position: { ...fallback },
-        facingAngle: performer.facingAngle,
+        facingAngle: resolveViewerFormationFacingAngle(
+          undefined,
+          formation,
+          performer.facingAngle
+        ),
       };
     });
   }

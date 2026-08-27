@@ -4,10 +4,9 @@
   // chrome can be looked at on its own before any real product page is re-seated
   // onto it in phase 3.
   //
-  // The wrapper carries `mkt-shell` for one reason: app.css ramps the root font
-  // from 1680px up under `html:has(.mkt-shell)`, and every real /shop route runs
-  // inside MarketingChrome, which is that element. Without it this harness would
-  // render at laptop scale on a 4K screen and misrepresent what ships.
+  // The wrapper carries `mkt-shell` because every real /shop route runs inside
+  // MarketingChrome. It gives this harness the same public-shell selectors and
+  // composition context as the shipped route.
   import ShopProductShell from "$lib/features/store/components/shell/ShopProductShell.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { createStoreState } from "$lib/features/store/state/store-state.svelte";

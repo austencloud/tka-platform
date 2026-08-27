@@ -3,17 +3,9 @@
  *
  * Why this file exists
  * --------------------
- * Public pages have two independent width mechanisms, and both grow with the
- * viewport at the same time:
- *
- *   1. `--shell-w` (app.css) is fluid — the content band tracks the screen.
- *   2. The root font ramps 16px -> 24px from 1680 upward for `.mkt-shell`.
- *
- * Each is defensible alone. Together they multiply: a paragraph gets a wider
- * box AND bigger type, so the line grows on both axes at once. That is the
- * "massively stretched out" feeling on a 4K monitor. Nothing in the band or
- * the ramp is wrong; what was missing is a ceiling on the one thing that must
- * NOT grow without limit — the line.
+ * Public pages use a fluid `--shell-w` composition band. Prose does not need to
+ * consume that whole band: line length is its own design concern, and these
+ * tokens provide the shared ceiling without creating another page shell.
  *
  * The unit is `ch`, deliberately
  * ------------------------------

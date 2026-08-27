@@ -7,9 +7,12 @@ import {
   localGroundSeries,
   findJolts,
   findTwitches,
+  latestArrivalFrames,
+  latestTravelFrames,
   lateralOffsetOverSupport,
   resolveGroundY,
   supportOf,
+  travelSpans,
 } from "$lib/shared/3d/diagnostics/gait/gait-analysis";
 import type {
   FootFrame,
@@ -341,6 +344,42 @@ describe("gait analysis", () => {
       syntheticWalk({ steps: 4, stepLength: 0.7, framesPerStance: 24 })
     );
     expect(walking.inPlaceCyclingSeconds).toBeLessThan(0.05);
+  });
+
+  it("keeps standing time out of a completed walk report", () => {
+    const before = Array.from({ length: 60 }, (_, i) =>
+      frame(
+        i * DT,
+        { x: 0, z: 0 },
+        { x: 0.1, y: 0, z: 0 },
+        { x: -0.1, y: 0, z: 0 }
+      )
+    );
+    const walk = syntheticWalk({
+      steps: 8,
+      stepLength: 0.7,
+      framesPerStance: 24,
+    }).map((sample) => ({ ...sample, t: sample.t + 1 }));
+    const end = walk.at(-1)!;
+    const after = Array.from({ length: 180 }, (_, i) => ({
+      ...end,
+      t: end.t + (i + 1) * DT,
+      dt: DT,
+    }));
+    const maneuver = [...before, ...walk, ...after];
+
+    const spans = travelSpans(maneuver);
+    expect(spans).toHaveLength(1);
+
+    const moving = latestTravelFrames(maneuver);
+    expect(moving.length).toBeGreaterThan(100);
+    expect(moving.at(-1)!.t).toBeLessThan(after[0]!.t);
+    expect(analyzeGait(moving).cadence).toBeGreaterThan(90);
+
+    const arrival = latestArrivalFrames(maneuver);
+    expect(arrival[0]!.t).toBeLessThanOrEqual(spans[0]!.to);
+    expect(arrival.at(-1)!.t).toBeLessThanOrEqual(spans[0]!.to + 0.75);
+    expect(arrival.at(-1)!.t).toBeGreaterThan(spans[0]!.to);
   });
 
   it("tells weight transfer apart from a pelvis riding the centreline", () => {

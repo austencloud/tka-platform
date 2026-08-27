@@ -42,9 +42,9 @@
   import { oceanDebugToggles } from "../quality/ocean-debug-toggles.svelte";
   import { patchCausticsMaterial } from "../runtime/atmosphere/seabed-caustics";
   import {
-    createAuthoredFloraCuller,
-    type AuthoredFloraCuller,
-  } from "./flora-instance-culling";
+    createInstanceFrustumCuller,
+    type InstanceFrustumCuller,
+  } from "$lib/shared/3d/rendering/instance-frustum-culling";
   import { R2_CDN } from "$lib/shared/3d/constants/r2-cdn";
   import { page } from "$app/state";
 
@@ -267,7 +267,7 @@
   }
 
   let floraScene = $state<Object3D | null>(null);
-  let floraCuller: AuthoredFloraCuller | null = null;
+  let floraCuller: InstanceFrustumCuller | null = null;
   let hasLoggedCullingSample = false;
   const { camera } = useThrelte();
 
@@ -281,7 +281,7 @@
       .then((scene) => {
         if (cancelled) return;
         enhanceMaterials(scene);
-        floraCuller = createAuthoredFloraCuller(scene);
+        floraCuller = createInstanceFrustumCuller(scene);
         if (import.meta.env.DEV) {
           const stats = floraCuller.stats;
           console.debug(

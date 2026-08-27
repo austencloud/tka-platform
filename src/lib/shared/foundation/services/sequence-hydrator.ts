@@ -107,7 +107,7 @@ function backfillPrefloatFromLegacySteps(
  * step's letter (the bug that showed U/B/V… in the start cell). Returns
  * undefined when the first step lacks the blue/red motions to derive from.
  */
-function deriveStartPositionFromSteps(
+export function deriveStartPositionFromSteps(
 	steps: readonly StepData[]
 ): SequenceData["startPosition"] | undefined {
 	const first = steps[0];

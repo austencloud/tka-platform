@@ -337,37 +337,6 @@
     container-type: inline-size;
     container-name: profile-panel;
 
-    /*
-      A local type ramp, because the site-wide one does not reach here.
-
-      The lockstep root ramp in app.css is scoped to `html:has(.mkt-shell)`,
-      `.legal-container` and `.qft-app` — none of which an in-app module is. So at
-      a real 3840 viewport (4K at 100%, or a TV across the room) nothing scaled
-      for this page: every rem measure stayed frozen at 1080p size while the band
-      grew to 2600px, which is the disjointed-4K failure 4k-native-layout.md
-      describes.
-
-      Redefining the size tokens as `em` off a container-scaled root does what the
-      root ramp does, at panel scope: every measure below grows by the SAME
-      multiplier, so nothing can outgrow its neighbours. `cqi` rather than `vw` so
-      it tracks the panel — the sidebar and any future rail come off the top
-      first.
-
-      Floor 1rem keeps laptops on the base design; the 1.5rem ceiling lands the
-      2600px band at ~24px root, matching the site ramp's own ceiling.
-    */
-    font-size: clamp(1rem, 0.62cqi, 1.5rem);
-    --font-size-min: 0.875em;
-    --font-size-compact: 0.75em;
-    --font-size-xs: 0.75em;
-    --font-size-sm: 0.875em;
-    --font-size-base: 1em;
-    --font-size-md: 1em;
-    --font-size-lg: 1.125em;
-    --font-size-xl: 1.25em;
-    --font-size-2xl: 1.5em;
-    --font-size-3xl: 1.875em;
-
     display: flex;
     flex-direction: column;
     width: 100%;

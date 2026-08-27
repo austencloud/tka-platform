@@ -6,7 +6,12 @@ import {
   TUNNEL_CREATOR_DRAFT_VERSION,
   type TunnelCreatorDraft,
 } from "../domain/tunnel-creator-draft";
-import { createTunnelCreatorState } from "./tunnel-creator-state.svelte";
+import {
+  createTunnelCreatorState,
+  type TunnelCreatorDependencies,
+} from "./tunnel-creator-state.svelte";
+import type { TunnelPresentationState } from "./tunnel-presentation-state.svelte";
+import type { TunnelSnapshot } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
 
 const sequence = {
   id: "sequence-lead",
@@ -14,6 +19,42 @@ const sequence = {
   word: "LEAD",
   steps: [{ id: "step-1" }],
 } as unknown as SequenceData;
+
+const presentationSnapshot = {
+  version: 1,
+  tunnel: {
+    config: DEFAULT_CONFIG,
+    gridVisible: true,
+    spectrum: false,
+    section: "effects",
+  },
+  effects: { activeEffect: "none" },
+  effort: "linear",
+  paths: {
+    pathShape: "arc",
+    motionAwarePaths: false,
+    bluePathLines: false,
+    redPathLines: false,
+  },
+  playback: { bpm: 108, playbackMode: "step" },
+  props: {
+    bluePropType: "staff",
+    redPropType: "staff",
+    blueBuugengFlipped: false,
+    redBuugengFlipped: true,
+  },
+  trailRender: { mode: "trail" },
+} as unknown as TunnelSnapshot;
+
+const presentation = {
+  capture: vi.fn(() => presentationSnapshot),
+} as unknown as TunnelPresentationState;
+
+function createState(
+  dependencies: Omit<TunnelCreatorDependencies, "presentation">
+) {
+  return createTunnelCreatorState({ ...dependencies, presentation });
+}
 
 function composition(): TunnelComposition {
   return {
@@ -58,7 +99,7 @@ describe("tunnel creator edit state", () => {
   it("reopens the exact cast, relationship, identity, and formation", async () => {
     const openComposition = vi.fn();
     const initial = composition();
-    const state = createTunnelCreatorState({
+    const state = createState({
       openComposition,
       initialComposition: initial,
       editingTunnel: { id: "tunnel-1", name: "My tunnel" },
@@ -90,6 +131,7 @@ describe("tunnel creator edit state", () => {
     expect(reopened.performers[1]?.timing).toEqual(
       initial.performers[1]?.timing
     );
+    expect(openComposition.mock.calls[0]?.[1]).toEqual(presentationSnapshot);
   });
 
   // A tunnel saved before the creator existed reopens as a solo cast: one
@@ -100,7 +142,7 @@ describe("tunnel creator edit state", () => {
     const initial = composition();
     initial.performers = [initial.performers[0]!];
 
-    const state = createTunnelCreatorState({
+    const state = createState({
       openComposition: vi.fn(),
       initialComposition: initial,
       editingTunnel: { id: "tunnel-1", name: "PΛ" },
@@ -159,8 +201,9 @@ describe("tunnel creator edit state", () => {
         generationTargetId: "lead",
       },
       editingTunnel: { id: "tunnel-1", name: "My tunnel" },
+      presentation: presentationSnapshot,
     };
-    const state = createTunnelCreatorState({
+    const state = createState({
       openComposition: vi.fn(),
       initialDraft: draft,
       now: () => 400,
@@ -183,13 +226,14 @@ describe("tunnel creator edit state", () => {
     expect(snapshot.composition?.performers[0]?.label).toBe("Performer 1");
     expect(snapshot.workspace).toEqual(draft.workspace);
     expect(snapshot.editingTunnel).toEqual(draft.editingTunnel);
+    expect(snapshot.presentation).toEqual(presentationSnapshot);
   });
 
   it("keeps independent sources and Previous history while modes change", () => {
     const first = { ...sequence, id: "first", name: "First" };
     const second = { ...sequence, id: "second", name: "Second" };
     const third = { ...sequence, id: "third", name: "Third" };
-    const state = createTunnelCreatorState({
+    const state = createState({
       openComposition: vi.fn(),
       createId: (() => {
         let id = 0;
@@ -219,7 +263,7 @@ describe("tunnel creator edit state", () => {
   });
 
   it("persists generated source history across an HMR draft round trip", () => {
-    const state = createTunnelCreatorState({
+    const state = createState({
       openComposition: vi.fn(),
       createId: (() => {
         let id = 0;
@@ -240,7 +284,7 @@ describe("tunnel creator edit state", () => {
       "generated"
     );
 
-    const restored = createTunnelCreatorState({
+    const restored = createState({
       openComposition: vi.fn(),
       initialDraft: state.draftSnapshot(),
     });
@@ -256,7 +300,7 @@ describe("tunnel creator edit state", () => {
   });
 
   it("persists the active generation workspace and its performer target", () => {
-    const state = createTunnelCreatorState({
+    const state = createState({
       openComposition: vi.fn(),
       createId: (() => {
         let id = 0;
@@ -268,7 +312,7 @@ describe("tunnel creator edit state", () => {
 
     expect(state.openGenerationPanel(performerId)).toBe(true);
 
-    const restored = createTunnelCreatorState({
+    const restored = createState({
       openComposition: vi.fn(),
       initialDraft: state.draftSnapshot(),
     });
@@ -278,7 +322,7 @@ describe("tunnel creator edit state", () => {
   });
 
   it("targets direct generation without opening the generation workspace", () => {
-    const state = createTunnelCreatorState({
+    const state = createState({
       openComposition: vi.fn(),
       createId: () => "direct-generate",
     });

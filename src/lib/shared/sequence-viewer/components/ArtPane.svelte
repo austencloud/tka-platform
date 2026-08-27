@@ -27,6 +27,7 @@
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import {
     captureTunnelSnapshot,
     type SnapshotDeps,
@@ -571,6 +572,9 @@
       settings: {
         bluePropType: bluePropType ?? "staff",
         redPropType: redPropType ?? "staff",
+        blueBuugengFlipped:
+          settingsService.settings.blueBuugengFlipped ?? false,
+        redBuugengFlipped: settingsService.settings.redBuugengFlipped ?? false,
         updateSettings: () => {},
       },
       animationSettings,

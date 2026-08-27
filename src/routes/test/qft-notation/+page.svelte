@@ -274,9 +274,9 @@
 
 <style>
   /**
-   * The lockstep root ramp from app.css is scoped to html:has(.mkt-shell) and
-   * html:has(.legal-container), so a test route gets no ramp at all and every
-   * rem stays frozen at 1080p proportions. Same curve, same endpoints: 16px at
+   * Ordinary product surfaces no longer use a viewport-driven root ramp. This
+   * isolated notation review route deliberately keeps its artifact test curve:
+   * 16px at
    * 1680 up to 24px at 3840, continuous, so every rem measure on the page grows
    * by one multiplier and nothing can outgrow its neighbours.
    */

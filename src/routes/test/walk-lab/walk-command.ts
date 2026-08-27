@@ -31,4 +31,10 @@ export interface WalkState {
   phase: string;
   /** Metres covered since the last reset. */
   travelled: number;
+  /** Requested authored steps for an exact mark-to-mark move. */
+  plannedSteps?: number;
+  /** Completed and fractional authored steps since departure. */
+  completedSteps?: number;
+  /** Straight-line distance still owed to the requested mark, in metres. */
+  endpointError?: number;
 }

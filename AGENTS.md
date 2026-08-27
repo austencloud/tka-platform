@@ -8,18 +8,31 @@ Don't say: "simplified implementation", "for now", "quick fix", "to save tokens"
 
 ## Git Branches and Worktrees
 
-**Never create a Git branch or Git worktree unless Austen explicitly requests
-that exact action in the current conversation.** Work in the existing primary
-checkout on `main`.
+**Use a dedicated Git worktree for every task that may modify repository files.**
+The primary checkout at `E:/tka-platform` stays on `main` and is reserved for
+Austen's dev server, final integration, and explicitly requested local work.
+Read-only investigation may run in the primary checkout.
 
-A large task, risky refactor, parallel session, handoff, pull request, or dirty
-working tree does not grant permission to create a branch or worktree. If
-in-flight changes overlap the requested work, identify the exact files and
-report the blocker. Do not create an isolated checkout as a workaround.
+Start new modifying chats in the Codex app's Worktree environment based on
+`main`. If a modifying chat starts in the primary checkout, move or hand it off
+to exactly one task-owned worktree before editing. When product-managed handoff
+is unavailable, create one repository-adjacent worktree and do all edits,
+commands, and verification there. Never nest worktrees or reuse a worktree for
+an unrelated task.
 
-When Austen explicitly requests a branch or worktree, create only the requested
-one and remove it after its work is merged. Never leave completed branches or
-worktrees behind.
+Create a unique task branch before committing (`codex/<task-slug>` for Codex;
+use the current client's configured agent prefix elsewhere). Keep commits scoped
+to paths owned by the task. After verification, integrate the branch into
+`main` only when the primary checkout has no conflicting in-flight changes,
+then remove the task branch and worktree. If integration is unsafe, leave both
+intact and report the exact conflict. Never delete a dirty worktree until every
+change is proven landed, intentionally discarded by Austen, or preserved
+elsewhere.
+
+Direct edits in the primary checkout require Austen to request that exact
+workflow in the current conversation. If a task depends on uncommitted primary
+changes, use the app's working-tree starting state or Handoff; do not copy those
+files manually between checkouts.
 
 ## MCP-Only for TKA Rendering
 
@@ -201,8 +214,8 @@ The rules above are a summary. The authoritative, enforced set is in `.claude/ru
 - `verification-protocol.md` + `no-fabrication.md` + `no-assumption-without-evidence.md` — every "done"/"fixed" needs proof in the same message. Never claim a file/function/behavior exists without grep or Read output in the same turn.
 - `visual-verification-mandatory.md` + `4k-native-layout.md` — if your diff changes how something LOOKS, you open a browser and screenshot it yourself, unprompted, at 1920/2560/3840/1440/tablet/960x412/375, and iterate until it is genuinely good. Standing permission — do not ask. A green typecheck is not visual proof.
 - `mcp-ground-truth.md` — never state a TKA domain fact (letter behavior, VTG, position, pictograph) from memory. It must come from an MCP call. See the MCP section below for the catch on this machine.
-- `commit-only-your-own-changes.md` — the git index is SHARED across parallel agents. Always `git commit -m "..." -- <explicit paths>`. Never a bare `git commit`, never `git add -A`/`.`/`-u`.
-- `worktree-workflow.md`: work on `main`; branch and worktree creation requires Austen's explicit request in the current conversation.
+- `commit-only-your-own-changes.md` — worktree indexes are isolated, but path ownership still matters and Local sessions may share the primary index. Always `git commit -m "..." -- <explicit paths>`. Never a bare `git commit`, never `git add -A`/`.`/`-u`.
+- `worktree-workflow.md`: modifying tasks use dedicated worktrees; the primary checkout is reserved for Austen's dev server, integration, and explicitly requested local work.
 - `fast-iteration-loop.md` + `resource-budget.md` — no full `npm run check`/`build` in the inner loop; capture check output once then grep it; reuse a running dev server before spawning one; one `svelte-check` machine-wide.
 - Design/UI rules: `no-checkboxes.md`, `chip-primitives.md`, `crossfade-primitive.md`, `no-layout-shift.md`, `clickables-look-like-buttons.md`, `clickable-links.md`, `simplified-word-display.md`, `sequence-viewer-shell.md`, `primitive-discovery.md`.
 - Domain rules: `tka-domain.md`, `verify-at-canonical-source.md`.
@@ -214,10 +227,10 @@ When in doubt, `ls .claude/rules/` and read the one whose name matches your task
 Austen runs several agents against this repo at once. Assume other work is in flight.
 
 - **Port 5173 is Austen's dev server. Never start, stop, restart, or kill it.** It serves HTTPS/2 (h2) only — every localhost URL, curl, and link is `https://`, never `http://` (http returns ERR_EMPTY_RESPONSE). To see your own change in a browser, run your own server on a free port: `vite --port 5174`. Diagnose his with `curl -k https://localhost:5173/...`.
-- **Shared git index.** Scope every commit with an explicit pathspec (see `commit-only-your-own-changes.md`). Do not stage or revert files you did not touch — they belong to another session.
-- **No new branches or worktrees by default.** Stay on `main`. Create either only when Austen explicitly requests it in the current conversation. See `worktree-workflow.md`.
+- **Worktree isolation.** Modifying tasks use dedicated worktrees, which isolate their working trees and indexes while sharing Git objects and refs. Scope every commit with an explicit pathspec and do not stage or revert files you did not touch. See `commit-only-your-own-changes.md`.
+- **Keep the primary checkout agent-edit free.** It stays on `main` for Austen's dev server and final integration. Work there only when Austen explicitly requests that exact workflow. See `worktree-workflow.md`.
 - **Windows shell.** Primary shell is PowerShell. A Git Bash tool exists but never query system processes or run bare `find` from it (it walks from `/`). Use PowerShell for process/registry work.
-- **This is a pnpm workspace** (`packageManager` in `package.json`; `packages/*` are members). When cleaning up an inherited or explicitly requested worktree, never recursively delete a `node_modules` junction to the primary checkout.
+- **This is a pnpm workspace** (`packageManager` in `package.json`; `packages/*` are members). When cleaning up a task-owned worktree, never recursively delete a `node_modules` junction to the primary checkout.
 
 ## MCP: full domain toolset is wired (server `flow-arts`, 43 tools)
 

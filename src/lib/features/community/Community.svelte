@@ -1,18 +1,13 @@
 <!--
   Community.svelte
 
-  The full-page community map: where TKA practitioners are, worldwide.
-
-  It used to own its own opt-in — a consent sheet that popped itself open two
-  seconds after mount and, on accept, called `navigator.geolocation`. That call
-  cannot succeed here: `hooks.server.ts` sends
-  `Permissions-Policy: geolocation=()`, so the browser rejects it with
-  PERMISSION_DENIED before any prompt is drawn. The sheet asked, the user
-  agreed, and the write always failed.
-
+  The full-page community map: where TKA practitioners are, worldwide. Its old
+  consent sheet requested precise device coordinates after a delayed prompt.
   The opt-in now goes through `CommunityInvitationSlot`, the same one the
   Creators band uses: a city named by the Cloudflare edge, correctable by
-  search, written with city-center coordinates and no permission prompt at all.
+  search, written with city-center coordinates and no device-location prompt.
+  Flow Fest field mode may use the first-party geolocation permission elsewhere;
+  this community surface intentionally never asks for it.
   This host owns the page composition; the slot owns the opt-in, and the state
   factory owns the write.
 -->
@@ -49,14 +44,14 @@
   const edgeCitySuggestion = $derived(
     browser
       ? createEdgeCitySuggestion(page.data.geo, getGeocodingService())
-      : null,
+      : null
   );
 
   const locations = $derived(mapState.locations);
   const status = $derived(mapState.locationsStatus);
   const configured = $derived(
     Boolean(PUBLIC_GOOGLE_MAPS_API_KEY) &&
-      PUBLIC_GOOGLE_MAPS_API_KEY !== "your-google-maps-api-key",
+      PUBLIC_GOOGLE_MAPS_API_KEY !== "your-google-maps-api-key"
   );
 
   $effect(() => {
@@ -68,7 +63,7 @@
     mapState.setIdentity(
       authState.isFullAccount && uid
         ? { status: "user", uid }
-        : { status: "guest" },
+        : { status: "guest" }
     );
   });
 
