@@ -68,28 +68,11 @@ const SWORD_REACH_RATIO = 0.61706;
 const SICKLES_REACH_M = 0.274416;
 
 /**
- * Hand to the far rim, as a fraction of staff length — the outer contour of
- * `fan-profile.ts`, whose coordinates are already normalized to the staff's
- * drawn span and whose reach axis is +Y.
- */
-const FAN_REACH_RATIO = 0.50831;
-
-/**
  * Hand to the far rim, as a fraction of staff length. `Hoop3D.svelte` grips the
  * BOTTOM of the ring and offsets the torus centre up by one ring radius
  * (0.35 x staffLength), so the far rim sits at two radii.
  */
 const HOOP_REACH_RATIO = 0.7;
-
-/** Hand to an arm end, as a fraction of staff length — `triad-frame.ts` `TRIAD_ARM_LENGTH`. */
-const TRIAD_REACH_RATIO = 0.44707;
-
-/**
- * The quiad's own arm — `triad-frame.ts` `QUIAD_ARM_LENGTH`. Shorter than the
- * triad's, because quiad.svg draws a shorter one; it shared the triad's number
- * only while it was rendering as a three-armed prop.
- */
-const QUIAD_REACH_RATIO = 0.43202;
 
 /**
  * Single-ended props whose 3D mesh reaches somewhere other than half a staff.
@@ -113,18 +96,9 @@ const SINGLE_ENDED_REACH_3D: Partial<
   [PropType.SWORD]: (staffLength) => staffLength * SWORD_REACH_RATIO,
   [PropType.SICKLES]: () => SICKLES_REACH_M,
 
-  [PropType.FAN]: (staffLength) => staffLength * FAN_REACH_RATIO,
-  [PropType.BIGFAN]: (staffLength) =>
-    staffLength * FAN_REACH_RATIO * BIG_SCALE,
-
   [PropType.MINIHOOP]: (staffLength) => staffLength * HOOP_REACH_RATIO,
   [PropType.BIGHOOP]: (staffLength) =>
     staffLength * HOOP_REACH_RATIO * BIG_SCALE,
-
-  [PropType.TRIAD]: (staffLength) => staffLength * TRIAD_REACH_RATIO,
-  [PropType.BIGTRIAD]: (staffLength) =>
-    staffLength * TRIAD_REACH_RATIO * BIG_SCALE,
-  [PropType.QUIAD]: (staffLength) => staffLength * QUIAD_REACH_RATIO,
 };
 
 /**

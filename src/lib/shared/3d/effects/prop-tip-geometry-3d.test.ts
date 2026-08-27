@@ -4,24 +4,70 @@ import {
   FAN_TIP_POINTS,
   QUIAD_TIP_POINTS,
   TRIAD_TIP_POINTS,
+  type PropTipConfig,
 } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
-import { FAN_FIRE_WICK_CENTERS_M } from "./prop-build-tip-geometry-3d";
+import {
+  FAN_DAY_RIM_POINTS_M,
+  FAN_FIRE_WICK_CENTERS_M,
+} from "./prop-build-tip-geometry-3d";
 import { resolvePropTipAnchors3D } from "./prop-tip-geometry-3d";
 
 const PICTOGRAPH = { fanBuild: "pictograph", finish: "day" } as const;
+const FIRE = { fanBuild: "fire", finish: "fire" } as const;
+const DAY = { fanBuild: "day", finish: "day" } as const;
+
+/** `Prop3D.svelte` scales the whole prop group for every "big" variant. */
+const BIG_SCALE = 1.4;
+
+function maxRadius(config: PropTipConfig): number {
+  return Math.max(...config.points.map(({ dx, dy }) => Math.hypot(dx, dy)));
+}
+
+function expectSilhouette(
+  anchors: readonly { offset: { x: number; y: number; z: number } }[],
+  config: PropTipConfig,
+  reach: number
+): void {
+  const scale = reach / maxRadius(config);
+  expect(anchors).toHaveLength(config.points.length);
+  anchors.forEach((anchor, index) => {
+    expect(anchor.offset.x).toBeCloseTo(config.points[index].dy * scale);
+    expect(anchor.offset.y).toBeCloseTo(config.points[index].dx * scale);
+    expect(anchor.offset.z).toBe(0);
+  });
+}
 
 describe("resolvePropTipAnchors3D", () => {
   it("places all five fire fan emitters at measured wick centres", () => {
-    const anchors = resolvePropTipAnchors3D(PropType.FAN, 0.5, {
-      fanBuild: "fire",
-      finish: "fire",
-    });
+    const anchors = resolvePropTipAnchors3D(PropType.FAN, 0.5, FIRE);
     expect(anchors).toEqual(
       FAN_FIRE_WICK_CENTERS_M.map((offset) => ({
         effectTipIndex: 1,
-        offset,
+        offset: { ...offset },
       }))
     );
+  });
+
+  it("places all five day fan emitters on the traced rim", () => {
+    const anchors = resolvePropTipAnchors3D(PropType.FAN, 0.5, DAY);
+    expect(anchors).toEqual(
+      FAN_DAY_RIM_POINTS_M.map((offset) => ({
+        effectTipIndex: 1,
+        offset: { ...offset },
+      }))
+    );
+  });
+
+  it("keeps the GLB fan builds independent of staff length", () => {
+    const short = resolvePropTipAnchors3D(PropType.FAN, 0.3, FIRE);
+    const long = resolvePropTipAnchors3D(PropType.FAN, 0.9, FIRE);
+    expect(short).toEqual(long);
+  });
+
+  it("reaches further on a day fan than on the smaller fire fan", () => {
+    const [, , dayCentre] = resolvePropTipAnchors3D(PropType.FAN, 0.5, DAY);
+    const [, , fireCentre] = resolvePropTipAnchors3D(PropType.FAN, 0.5, FIRE);
+    expect(dayCentre.offset.y).toBeGreaterThan(fireCentre.offset.y);
   });
 
   it("scales five pictograph fan rib ends with staff length", () => {
@@ -31,27 +77,35 @@ describe("resolvePropTipAnchors3D", () => {
       staffLength / 2,
       PICTOGRAPH
     );
-    expect(anchors).toHaveLength(5);
-    anchors.forEach((anchor, index) => {
-      expect(anchor.offset.x).toBeCloseTo(
-        FAN_TIP_POINTS.points[index].dy * (staffLength / 252.8)
-      );
-      expect(anchor.offset.y).toBeCloseTo(
-        FAN_TIP_POINTS.points[index].dx * (staffLength / 252.8)
-      );
-    });
+    expectSilhouette(anchors, FAN_TIP_POINTS, staffLength * 0.50831);
   });
 
   it.each([
-    [PropType.TRIAD, TRIAD_TIP_POINTS],
-    [PropType.QUIAD, QUIAD_TIP_POINTS],
-  ])("preserves every scaling emitter for %s", (propType, points) => {
+    [PropType.TRIAD, TRIAD_TIP_POINTS, 0.44707],
+    [PropType.QUIAD, QUIAD_TIP_POINTS, 0.43202],
+  ])("puts an emitter on every %s arm at its frame reach", (
+    propType,
+    points,
+    ratio
+  ) => {
     const anchors = resolvePropTipAnchors3D(propType, 0.5, PICTOGRAPH);
-    expect(anchors).toHaveLength(points.points.length);
-    anchors.forEach((anchor, index) => {
-      expect(anchor.offset.x).toBeCloseTo(points.points[index].dy / 252.8);
-      expect(anchor.offset.y).toBeCloseTo(points.points[index].dx / 252.8);
-      expect(anchor.offset.z).toBe(0);
+    expectSilhouette(anchors, points, ratio);
+  });
+
+  it.each([
+    [PropType.BIGFAN, PropType.FAN],
+    [PropType.BIGTRIAD, PropType.TRIAD],
+  ])("scales %s emitters by the big-variant group scale", (big, base) => {
+    const bigAnchors = resolvePropTipAnchors3D(big, 0.5, FIRE);
+    const baseAnchors = resolvePropTipAnchors3D(base, 0.5, FIRE);
+    expect(bigAnchors).toHaveLength(baseAnchors.length);
+    bigAnchors.forEach((anchor, index) => {
+      expect(anchor.offset.x).toBeCloseTo(
+        baseAnchors[index].offset.x * BIG_SCALE
+      );
+      expect(anchor.offset.y).toBeCloseTo(
+        baseAnchors[index].offset.y * BIG_SCALE
+      );
     });
   });
 

@@ -7,15 +7,55 @@ import {
 } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
 import type { PropTipAnchor3D } from "./prop-tip-geometry-3d";
 
+/**
+ * The prop-build inputs that move a prop's tracked effect emitters.
+ *
+ * `fanBuild` selects which of the three meshes `Fan3D.svelte` renders, and the
+ * three do not share a silhouette. Pictograph is a drawn plate sized from
+ * `getFanPlate(effectiveLength, ...)`, so it follows the user's staff length.
+ * Fire and day are fixed-size GLBs: `Fan3D` wraps them in
+ * `<T.Group scale={[scale, scale, scale]}>` and never feeds them `length`.
+ */
 export interface PropBuildTipGeometry3D {
   readonly fanBuild: "pictograph" | "fire" | "day";
   readonly finish: "fire" | "day";
 }
 
 /**
- * Measured wick centres from `scripts/assets/doodlegrip-fire-reference.json`,
- * authored into the model by `scripts/build-fan-model.py`. These are absolute
- * metres because the fire GLB is a fixed physical object.
+ * `Prop3D.svelte` renders every "big" variant by handing the base prop
+ * component `scale={BIG_SCALE}`, which scales the whole group — the GLB fans
+ * included. Emitters follow it multiplicatively.
+ *
+ * `BIG_VARIANT_MAP` in the scene package names 30/13 for BIGFAN, but it has no
+ * consumers; `Prop3D.svelte` is what actually renders, and it uses 1.4.
+ */
+const BIG_SCALE = 1.4;
+
+/**
+ * Hand to the far rim, as a fraction of staff length — the outer contour of
+ * `fan-profile.ts`, which is what `getFanPlate` extrudes for the pictograph
+ * build. Its coordinates are already normalized to the staff's drawn span.
+ */
+const FAN_REACH_RATIO = 0.50831;
+
+/** Hub to a wick centre, as a fraction of staff length — `triad-frame.ts` `TRIAD_ARM_LENGTH`. */
+const TRIAD_REACH_RATIO = 0.44707;
+
+/**
+ * The quiad's own arm — `triad-frame.ts` `QUIAD_ARM_LENGTH`. Shorter than the
+ * triad's, because quiad.svg draws a shorter one.
+ */
+const QUIAD_REACH_RATIO = 0.43202;
+
+/**
+ * Measured wick centres of the fire fan, in prop-local metres from the grip
+ * ring: `scripts/assets/doodlegrip-fire-reference.json` `geometry_m`, traced
+ * off the ForgedFans DoodleGrip product photo and calibrated to the published
+ * 19 x 13 inch envelope. `scripts/build-fan-model.py` authors the same numbers
+ * into `fan.glb`.
+ *
+ * Absolute, not a ratio: the fire GLB is a fixed physical object and does not
+ * follow the user's staff length.
  */
 export const FAN_FIRE_WICK_CENTERS_M = [
   { x: -0.2217705, y: 0.10651613, z: 0 },
@@ -25,51 +65,121 @@ export const FAN_FIRE_WICK_CENTERS_M = [
   { x: 0.2217705, y: 0.10651613, z: 0 },
 ] as const;
 
-const TIP_POINT_SPACE = 252.8;
-const DAY_FAN_WIDTH_M = 0.51;
-const DAY_FAN_HEIGHT_M = 0.35;
+/**
+ * Outer rim of the day fan, in prop-local metres from the grip ring.
+ *
+ * A day fan has no wicks, so there is nothing to measure off a photo the way
+ * the fire reference was measured. These are sampled from the traced silhouette
+ * in `scripts/assets/doodlegrip-day-contours.json` — whose `outline` is already
+ * pivot-relative metres over the published 51 x 35 cm envelope — along the same
+ * five bearings the fire fan's wicks occupy: 0 and +/-32.592 and +/-64.345
+ * degrees from +Y. The rim is the right emitter for a day fan because the rim
+ * is what a trail, an LED strip or a sparkle plume traces.
+ *
+ * Derived from the trace, not measured off a product photo. Extracting the rib
+ * apexes from the same trace would be the honest upgrade.
+ */
+export const FAN_DAY_RIM_POINTS_M = [
+  { x: -0.250905, y: 0.1205098, z: 0 },
+  { x: -0.1548603, y: 0.2422228, z: 0 },
+  { x: 0, y: 0.2852692, z: 0 },
+  { x: 0.1548603, y: 0.2422228, z: 0 },
+  { x: 0.250905, y: 0.1205098, z: 0 },
+] as const;
 
-function scalingAnchors(
-  config: PropTipConfig,
-  alongScale: number,
-  acrossScale = alongScale
+interface Offset3D {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+}
+
+/** Fixed-size geometry, scaled only by the prop's own group scale. */
+function fixedAnchors(
+  points: readonly Offset3D[],
+  scale: number
 ): PropTipAnchor3D[] {
-  return config.points.map(({ dx, dy }) => ({
+  return points.map((offset) => ({
     effectTipIndex: 1,
-    offset: { x: dy * acrossScale, y: dx * alongScale, z: 0 },
+    offset: { x: offset.x * scale, y: offset.y * scale, z: offset.z * scale },
   }));
 }
 
+/**
+ * A drawn silhouette's tip points, placed in 3D.
+ *
+ * `prop-tip-points.ts` records the 2D drawing: `dx` is along the reach axis,
+ * `dy` is across it, both in the pictograph's own units. The drawing owns the
+ * directions and the relative radii; the prop's 3D reach constant owns the
+ * absolute size. Scaling the whole set so its outermost point lands at `reach`
+ * honours both, and keeps a multi-emitter prop agreeing with the single-emitter
+ * reach the same prop used to report.
+ */
+function silhouetteAnchors(
+  config: PropTipConfig,
+  reach: number
+): PropTipAnchor3D[] {
+  const maxRadius = Math.max(
+    ...config.points.map(({ dx, dy }) => Math.hypot(dx, dy))
+  );
+  const scale = maxRadius > 0 ? reach / maxRadius : 0;
+  return config.points.map(({ dx, dy }) => ({
+    effectTipIndex: 1,
+    offset: { x: dy * scale, y: dx * scale, z: 0 },
+  }));
+}
+
+function fanAnchors(
+  build: PropBuildTipGeometry3D,
+  staffLength: number,
+  scale: number
+): PropTipAnchor3D[] {
+  if (build.fanBuild === "fire") {
+    return fixedAnchors(FAN_FIRE_WICK_CENTERS_M, scale);
+  }
+  if (build.fanBuild === "day") {
+    return fixedAnchors(FAN_DAY_RIM_POINTS_M, scale);
+  }
+  return silhouetteAnchors(
+    FAN_TIP_POINTS,
+    staffLength * FAN_REACH_RATIO * scale
+  );
+}
+
+/**
+ * The emitter set for props whose 3D mesh presents more than one tracked point.
+ *
+ * Returns `null` for every prop whose emitters are unaffected by build, which
+ * leaves `resolvePropTipAnchors3D` on its axial default.
+ */
 export function resolveBuildTipAnchors3D(
   propType: string | undefined,
   staffLength: number,
   build: PropBuildTipGeometry3D
 ): PropTipAnchor3D[] | null {
-  if (propType === PropType.FAN) {
-    if (build.fanBuild === "fire") {
-      return FAN_FIRE_WICK_CENTERS_M.map((offset) => ({
-        effectTipIndex: 1,
-        offset: { ...offset },
-      }));
-    }
-    if (build.fanBuild === "day") {
-      // No measured rib-apex set exists. This scales the pictograph silhouette
-      // to the Day fan's fixed 51 x 35 cm envelope; it is derived, not measured.
-      return scalingAnchors(
-        FAN_TIP_POINTS,
-        DAY_FAN_HEIGHT_M / TIP_POINT_SPACE,
-        DAY_FAN_WIDTH_M / TIP_POINT_SPACE
+  switch (propType) {
+    case PropType.FAN:
+      return fanAnchors(build, staffLength, 1);
+    case PropType.BIGFAN:
+      return fanAnchors(build, staffLength, BIG_SCALE);
+
+    case PropType.TRIAD:
+      return silhouetteAnchors(
+        TRIAD_TIP_POINTS,
+        staffLength * TRIAD_REACH_RATIO
       );
-    }
-    return scalingAnchors(FAN_TIP_POINTS, staffLength / TIP_POINT_SPACE);
-  }
+    case PropType.BIGTRIAD:
+      return silhouetteAnchors(
+        TRIAD_TIP_POINTS,
+        staffLength * TRIAD_REACH_RATIO * BIG_SCALE
+      );
 
-  if (propType === PropType.TRIAD) {
-    return scalingAnchors(TRIAD_TIP_POINTS, staffLength / TIP_POINT_SPACE);
-  }
-  if (propType === PropType.QUIAD) {
-    return scalingAnchors(QUIAD_TIP_POINTS, staffLength / TIP_POINT_SPACE);
-  }
+    case PropType.QUIAD:
+      return silhouetteAnchors(
+        QUIAD_TIP_POINTS,
+        staffLength * QUIAD_REACH_RATIO
+      );
 
-  return null;
+    default:
+      return null;
+  }
 }

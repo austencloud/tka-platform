@@ -129,21 +129,36 @@ New owner module `prop-build-tip-geometry-3d.ts`, keyed by (propType, build):
   `build-fan-model.py` bakes `tka_wick_centers_m` into the GLB root extras;
   `verify-fan-glb.cjs` gains an assertion that the TypeScript constants match the
   baked `Fan_Fire_Wick_1..5` positions.
-- **Fan / day** — no measured tip data exists. `doodlegrip-day-contours.json`
-  holds only a traced `outline` and `holes`; there is no rib-apex table and the
-  GLB names no day tip nodes. Derive by normalizing `FAN_TIP_POINTS` and scaling
-  it to the day fan's fixed 51 x 35 cm, which is principled rather than a fudge
-  because the pictograph silhouette is itself traced from a Doodle-style fan.
-  Mark it in code as derived-by-scaling, not measured. If it reads wrong on the
-  scene, the upgrade is extracting the five rib apexes from the traced outline —
-  real work, deliberately not in this scope.
+- **Fan / day** — no measured tip data exists; `doodlegrip-day-contours.json`
+  holds only a traced `outline` and `holes`, and the GLB names no day tip nodes.
+  **Superseded during implementation** (2026-08-27): the original plan here was
+  to scale `FAN_TIP_POINTS` into the day fan's 51 x 35 cm envelope. That mixes
+  two reference lengths — the tip table is normalized to the staff's 252.8-unit
+  drawn span, not to its own extent — and the first implementation landed day
+  emitters ~29% closer to the hand than the physically SMALLER fire fan's.
+
+  What shipped instead: that `outline` is already pivot-relative metres, so the
+  five emitters are sampled off the real traced rim along the same five bearings
+  the fire fan's wicks occupy (0 and +/-32.592 and +/-64.345 degrees from +Y).
+  Still derived rather than measured, but derived from the day fan's own trace.
+  The rim is the right emitter for a day fan anyway — the rim is what a trail,
+  an LED strip or a sparkle plume traces. Rib-apex extraction remains the
+  upgrade if it reads wrong on the scene.
 
   Day emitters are not dead weight even though a lit fan is always the fire
   build: trails, LED, sparkles and ghost all run on a day fan.
 - **Fan / pictograph** — derived from `FAN_TIP_POINTS`, scaling with staff
   length.
-- **Triad (3), quiad (4)** — from their existing 2D tables, which already carry
-  the correct counts.
+- **Triad (3), quiad (4)** — directions and relative radii from their existing
+  2D tables, which already carry the correct counts; absolute reach from the
+  3D frame constants (`TRIAD_ARM_LENGTH`, `QUIAD_ARM_LENGTH`) the single-emitter
+  path already used. Normalizing the tables by 252.8 instead would have put
+  triad emitters 5% inside the actual wick.
+- **Big variants** — `Prop3D.svelte` renders BIGFAN and BIGTRIAD by handing the
+  base component `scale={1.4}`, which scales the whole group, GLB included. Both
+  therefore take the base prop's full emitter set multiplied by 1.4. Missing this
+  left them on one axial anchor while FAN got five. (`BIG_VARIANT_MAP` names
+  30/13 for BIGFAN; it has no consumers and is not the authority.)
 - **Everything else** — today's single or dual axial anchor, unchanged.
 
 Where `prop-tip-points.ts` already has the answer, read and convert rather than
