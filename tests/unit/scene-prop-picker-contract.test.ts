@@ -130,8 +130,10 @@ describe("scene prop picker contract", () => {
     expect(picker).not.toContain("/images/props/build-previews");
   });
 
-  it("routes finish and fan appearance through the scene's global state", () => {
+  it("supports performer build overrides while preserving the scene-default fallback", () => {
     const picker = read(PICKER_PATH);
+    expect(picker).toContain("onBuildChange?: (build: PropBuild) => void");
+    expect(picker).toContain("buildOverride ?? propFinishState.build");
     for (const setter of [
       "propFinishState.set(",
       "propFinishState.setFanBuild(",
