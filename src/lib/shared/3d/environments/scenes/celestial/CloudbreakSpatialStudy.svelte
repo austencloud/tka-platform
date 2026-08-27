@@ -15,9 +15,14 @@
   interface Props {
     planMode?: boolean;
     stageRadius?: number;
+    stageRadiusGrowth?: number;
   }
 
-  let { planMode = false, stageRadius = 3 }: Props = $props();
+  let {
+    planMode = false,
+    stageRadius = 3,
+    stageRadiusGrowth = 0,
+  }: Props = $props();
 
   const threshold = CLOUDBREAK_LAYOUT.rearThreshold;
   const approach = CLOUDBREAK_LAYOUT.approach;
@@ -28,10 +33,15 @@
   const thresholdZ = threshold.centerXZ[1];
   const terraceCenter = CLOUDBREAK_LAYOUT.performanceTerrace.centerXZ;
   const terraceSurfaceRadius = $derived(
-    resolveCircularStageRadius(stageRadius, 6.08, {
-      x: terraceCenter[0],
-      z: terraceCenter[1],
-    })
+    resolveCircularStageRadius(
+      stageRadius,
+      6.08,
+      {
+        x: terraceCenter[0],
+        z: terraceCenter[1],
+      },
+      stageRadiusGrowth
+    )
   );
 
   const limestone = new MeshStandardMaterial({

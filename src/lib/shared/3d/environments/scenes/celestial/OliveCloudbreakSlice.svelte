@@ -34,6 +34,7 @@
     view?: CloudbreakAssemblyView;
     groundY?: number;
     stageRadius?: number;
+    stageRadiusGrowth?: number;
     /** Parent environment lift, needed by the reflector mounted at scene root. */
     worldYOffset?: number;
     /** Retained Celestial worlds stay mounted but must not leak root-owned water. */
@@ -54,6 +55,7 @@
     view = "runtime",
     groundY = userProportionsState.groundY,
     stageRadius = 3,
+    stageRadiusGrowth = 0,
     worldYOffset = 0,
     active = true,
     onReady,
@@ -276,7 +278,11 @@
   {/if}
 
   {#if fullAssembly}
-    <CloudbreakSpatialStudy planMode={view === "plan"} {stageRadius} />
+    <CloudbreakSpatialStudy
+      planMode={view === "plan"}
+      {stageRadius}
+      {stageRadiusGrowth}
+    />
     <CloudbreakLagoonEdge
       outline={CLOUDBREAK_LAGOON.outline}
       surfaceY={CLOUDBREAK_LAYOUT.lagoon.surfaceY + 0.035}

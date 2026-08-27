@@ -38,8 +38,9 @@
   } from "../environments/domain/stage-coordinate-frame";
   import { getSceneEnvironmentRendererKey } from "../environments/domain/scene-environment";
   import {
+    getAddedPerformerStageGrowth,
+    getCanonicalPerformerStageBounds,
     getPerformerStageBounds,
-    getCanonicalStagePositions,
     getStageBoundsForExtent,
     getPerformerStageClearance,
   } from "../environments/domain/performer-stage-bounds";
@@ -547,17 +548,25 @@
   const stageDimensions = $derived(
     stageExtent
       ? getStageBoundsForExtent(stageExtent)
-      : getPerformerStageBounds(
-          stageBoundsPositions ?? getCanonicalStagePositions(performerCount),
-          {
+      : stageBoundsPositions
+        ? getPerformerStageBounds(stageBoundsPositions, {
             performerClearance: getPerformerStageClearance(
               userProportionsState.avatarScale
             ),
-          }
-        )
+          })
+        : getCanonicalPerformerStageBounds(performerCount, {
+            performerClearance: getPerformerStageClearance(
+              userProportionsState.avatarScale
+            ),
+          })
   );
 
   const stageZOffset = $derived(stageDimensions.zOffset);
+  const stageRadiusGrowth = $derived(
+    stageExtent || stageBoundsPositions
+      ? 0
+      : getAddedPerformerStageGrowth(performerCount)
+  );
 
   $effect(() => {
     viewer3DState.setStageGroundOffset(stageGroundOffset);
@@ -597,6 +606,7 @@
     stageWidth={stageDimensions.width}
     stageDepth={stageDimensions.depth}
     stageRadius={stageDimensions.radius}
+    {stageRadiusGrowth}
     {stageZOffset}
     {retainedEnvironmentTypes}
     transitionVisualMode={environmentTransitionVisualMode}

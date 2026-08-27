@@ -35,6 +35,8 @@
     stageDepth?: number;
     /** Exact circular clearance from the scene origin. */
     stageRadius?: number;
+    /** Radius added above a scene's authored solo platform for larger casts. */
+    stageRadiusGrowth?: number;
     /** Legacy stage offset. Morphing stages stay centered at zero. */
     stageZOffset?: number;
     /** Forest-only authored atmosphere override. Other scenes ignore it. */
@@ -60,6 +62,7 @@
     stageWidth = 6,
     stageDepth = 6,
     stageRadius = 3,
+    stageRadiusGrowth = 0,
     stageZOffset = 0,
     forestConfig,
     winterPlatformVisible = true,
@@ -400,12 +403,18 @@
       {/await}
     {:else if config.scene === "cosmic"}
       {#await import("../scenes/CosmicScene.svelte") then { default: CosmicScene }}
-        <CosmicScene variant={config.variant} {performerCount} {stageRadius} />
+        <CosmicScene
+          variant={config.variant}
+          {performerCount}
+          {stageRadius}
+          {stageRadiusGrowth}
+        />
       {/await}
     {:else if config.scene === "winter"}
       {#await import("../scenes/WinterScene.svelte") then { default: WinterScene }}
         <WinterScene
           {stageRadius}
+          {stageRadiusGrowth}
           {stageZOffset}
           platformVisible={winterPlatformVisible}
         />
@@ -422,7 +431,7 @@
       {/await}
     {:else if config.scene === "ember"}
       {#await import("../scenes/EmberScene.svelte") then { default: EmberScene }}
-        <EmberScene {stageRadius} />
+        <EmberScene {stageRadius} {stageRadiusGrowth} />
       {/await}
     {:else if config.scene === "blossom"}
       {#await import("../scenes/BlossomScene.svelte") then { default: BlossomScene }}
@@ -435,7 +444,7 @@
       {/await}
     {:else if config.scene === "rainbow"}
       {#await import("../scenes/RainbowScene.svelte") then { default: RainbowScene }}
-        <RainbowScene {stageRadius} />
+        <RainbowScene {stageRadius} {stageRadiusGrowth} />
       {/await}
     {:else if config.scene === "celestial"}
       {#await import("../scenes/CelestialScene.svelte") then { default: CelestialScene }}
@@ -443,13 +452,14 @@
           {stageWidth}
           {stageDepth}
           {stageRadius}
+          {stageRadiusGrowth}
           {stageZOffset}
           worldYOffset={environmentYOffset}
         />
       {/await}
     {:else if config.scene === "void"}
       {#await import("../scenes/VoidScene.svelte") then { default: VoidScene }}
-        <VoidScene {stageRadius} />
+        <VoidScene {stageRadius} {stageRadiusGrowth} />
       {/await}
     {/if}
   </T.Group>

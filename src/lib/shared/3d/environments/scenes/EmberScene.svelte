@@ -29,23 +29,47 @@
   interface Props {
     config?: EmberSceneConfig;
     stageRadius?: number;
+    stageRadiusGrowth?: number;
   }
 
-  let { config, stageRadius = 3 }: Props = $props();
+  let { config, stageRadius = 3, stageRadiusGrowth = 0 }: Props = $props();
 
   const baseConfig = $derived(config ?? createDefaultEmberConfig());
 
   const activeConfig = $derived.by(() => {
     const r = resolveCircularStageRadius(
       stageRadius,
-      baseConfig.platform.radius
+      baseConfig.platform.radius,
+      undefined,
+      stageRadiusGrowth
     );
-    if (r <= baseConfig.platform.radius) return baseConfig;
+    const enabled = baseConfig.platform.enabled || stageRadiusGrowth > 0;
+    if (
+      r <= baseConfig.platform.radius &&
+      enabled === baseConfig.platform.enabled
+    )
+      return baseConfig;
     return {
       ...baseConfig,
-      platform: { ...baseConfig.platform, radius: r },
+      platform: {
+        ...baseConfig.platform,
+        enabled,
+        radius: r,
+        ...(baseConfig.platform.enabled
+          ? {}
+          : {
+              primaryColor: "#202c3b",
+              glowIntensity: 0.11,
+              crackIntensity: 0.16,
+              lavaSpeed: 0.18,
+            }),
+      },
     };
   });
+
+  const embeddedExpansion = $derived(
+    !baseConfig.platform.enabled && stageRadiusGrowth > 0
+  );
 
   const rockA = useGltf("/models/winter/rock_largeA.glb");
   const rockB = useGltf("/models/winter/rock_largeB.glb");
@@ -448,4 +472,4 @@
   />
 {/if}
 
-<ObsidianPlatform config={activeConfig.platform} />
+<ObsidianPlatform config={activeConfig.platform} embedded={embeddedExpansion} />
