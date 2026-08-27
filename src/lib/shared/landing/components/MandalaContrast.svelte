@@ -121,7 +121,5 @@
     color: oklch(0.62 0.02 270);
   }
 
-  /* No 4K type tier here: the site-wide lockstep root ramp (src/app.css)
-     grows these rem sizes continuously from 1680→3840. The old 2200px step
-     never fired on a 4K monitor at 200% scaling anyway. */
+  /* No wide-screen type tier: the visual uses its authored logical sizes. */
 </style>

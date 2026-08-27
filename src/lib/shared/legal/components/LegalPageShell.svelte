@@ -50,13 +50,9 @@
   .legal-container {
     position: relative;
     z-index: 1;
-    /* rem, not px: this element opts the page into the lockstep root ramp
-       (src/app.css keys on .legal-container), so the document and its measure
-       grow together from 1680→3840 instead of the text staying 16px inside a
-       fixed 800px column on a 4K panel. 50rem == the old 800px at a 16px root,
-       and 1200px at the 24px root. A legal document is the one place a
-       reading measure is the right call — it just has to scale with the type
-       rather than pin it. */
+    /* rem, not px, so browser zoom carries the document measure with its type.
+       A legal document is a reading surface, so a bounded measure is the right
+       call even when the surrounding canvas is much wider. */
     max-width: 50rem;
     width: 100%;
     margin: 0 auto;
@@ -64,7 +60,7 @@
   }
 
   .legal-page.compact .legal-container {
-    max-width: 62.5rem; /* was 1000px — same value at a 16px root, now ramps */
+    max-width: 62.5rem; /* 1000px at the standard root; zoom-aware in rem */
     padding: 0;
   }
 

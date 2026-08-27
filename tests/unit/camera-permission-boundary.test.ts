@@ -73,7 +73,7 @@ describe("camera permission boundary", () => {
     } as Parameters<typeof handle>[0]);
 
     expect(response.headers.get("Permissions-Policy")).toBe(
-      "camera=(self), microphone=(self), geolocation=(), payment=()"
+      "camera=(self), microphone=(self), geolocation=(self), payment=()"
     );
   });
 

@@ -259,7 +259,7 @@ export class FrameParameterBuilder {
 
     // Blue prop: Buugeng family uses user preference, hand is never flipped (it's the left hand)
     fp.bluePropFlipped = buugengFamily.includes(bluePropType)
-      ? (settings?.blueBuugengFlipped ?? false)
+      ? (props.blueBuugengFlipped ?? settings?.blueBuugengFlipped ?? false)
       : false;
 
     // Red prop: Hand is always flipped (right hand mirror), Buugeng uses user preference
@@ -267,7 +267,7 @@ export class FrameParameterBuilder {
       redPropType === "hand"
         ? true
         : buugengFamily.includes(redPropType)
-          ? (settings?.redBuugengFlipped ?? false)
+          ? (props.redBuugengFlipped ?? settings?.redBuugengFlipped ?? false)
           : false;
 
     // Pass prop types for prop-specific rendering rules (e.g., hands never rotate)

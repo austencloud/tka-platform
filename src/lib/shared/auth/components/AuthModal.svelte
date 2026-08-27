@@ -1,9 +1,11 @@
 <!--
   Account creation and sign-in modal.
 
-  BaseModal owns the native dialog behavior. ContextualAuthPrompt owns the
-  approved visual surface and changes its copy to match the action that opened
-  it. The existing provider components still own every authentication flow.
+  BaseModal owns the dialog behavior. Its external-overlay mode keeps password
+  manager suggestions interactive without changing this approved visual
+  surface. ContextualAuthPrompt changes its copy to match the action that
+  opened it. The existing provider components still own every authentication
+  flow.
 -->
 <script lang="ts">
   import { page } from "$app/state";
@@ -140,6 +142,7 @@
   describedBy="auth-modal-description"
   closeOnBackdrop
   closeOnEscape
+  allowExternalOverlays
   onclose={handleModalDismiss}
 >
   <GoogleOneTap

@@ -208,6 +208,10 @@ export function createAvatarInstanceState(
   // Whether avatar is currently moving
   let isMoving = $state(false);
 
+  // Ground speed in m/s. The locomotion animator scales the walk clip's
+  // playback rate by this, which is what keeps the feet from skating.
+  let moveSpeed = $state(0);
+
   // Current facing angle in radians (0 = facing +Z).
   // Initialize from persisted plane mode so dual-wheel starts at π/2.
   const _initialPlaneMode = loadPersistedPlaneMode();
@@ -749,14 +753,33 @@ export function createAvatarInstanceState(
   // ============================================
 
   /**
+   * Set travel state directly. Scripted blocking states direction, ground
+   * speed, and whether the performer is moving separately: a performer
+   * standing at the end of a walk still has a direction they last travelled,
+   * and the walk clip still needs a speed to be scaled by.
+   */
+  function setTravel(travel: {
+    direction: { x: number; z: number };
+    speed: number;
+    moving: boolean;
+  }) {
+    moveInput = travel.direction;
+    moveSpeed = travel.speed;
+    isMoving = travel.moving;
+  }
+
+  /**
    * Set movement input from WASD keys.
    * Used by UnifiedCameraController to update animation state.
    * @param input.x - Strafe: -1 (A/left) to 1 (D/right)
    * @param input.z - Forward/back: -1 (S/back) to 1 (W/forward)
    */
   function setMoveInput(input: { x: number; z: number }) {
-    moveInput = input;
-    isMoving = input.x !== 0 || input.z !== 0;
+    setTravel({
+      direction: input,
+      speed: moveSpeed,
+      moving: input.x !== 0 || input.z !== 0,
+    });
   }
 
   /**
@@ -774,8 +797,7 @@ export function createAvatarInstanceState(
    * Stop all movement immediately.
    */
   function stopMovement() {
-    moveInput = { x: 0, z: 0 };
-    isMoving = false;
+    setTravel({ direction: { x: 0, z: 0 }, speed: 0, moving: false });
   }
 
   /**
@@ -1075,7 +1097,13 @@ export function createAvatarInstanceState(
       return moveInput;
     },
 
+    /** Ground speed in m/s, used to scale the walk clip's playback rate. */
+    get moveSpeed() {
+      return moveSpeed;
+    },
+
     // Locomotion methods
+    setTravel,
     setMoveInput,
     updateMovement,
     updateLocomotion,

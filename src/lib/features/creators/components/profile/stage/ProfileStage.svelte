@@ -628,20 +628,10 @@
 </div>
 
 <style>
-  /* The stage carries its own container-query font ramp, so every band, tile
-     and label scales in lockstep from one declaration (4k-native-layout.md).
-     Everything below sizes in `em`; a `rem` here would freeze at 1080p
-     proportions while its neighbours grew. */
+  /* The profile stage uses the standard logical type roles. Its bands and
+     tiles gain room through the surrounding composition, not magnification. */
   .stage {
     container-type: inline-size;
-    font-size: clamp(1rem, calc(1rem + (100cqw - 1616px) * 8 / 2160), 1.5rem);
-
-    /* Shared primitives on this surface size themselves from these tokens in
-       rem, which would strand them at 1080p. Redefining them in `em` hands them
-       the ramp; the values match the global rem defaults at the 16px floor, so
-       nothing moves below the seam. */
-    --font-size-sm: 0.875em;
-    --font-size-compact: 0.75em;
 
     display: flex;
     flex-direction: column;

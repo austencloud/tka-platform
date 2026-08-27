@@ -39,6 +39,7 @@ first and only removes the folder — the sequences inside stay in the library.
     accessRole,
     selected = false,
     countLabel: countLabelOverride,
+    minimalMetadata = false,
   }: {
     collection: LibraryCollection;
     onOpen: () => void;
@@ -57,6 +58,9 @@ first and only removes the folder — the sequences inside stay in the library.
     /** Overrides the default "N sequences" text — e.g. the Art shelf's
      *  "N tunnels" / "N 3D scenes" / "N mandalas". */
     countLabel?: string;
+    /** Curated shelves provide their useful context as a group, so card copy
+     *  stays focused on the deck name and what a person can open there. */
+    minimalMetadata?: boolean;
   } = $props();
 
   const isSystem = $derived(isSystemCollection(collection));
@@ -226,6 +230,7 @@ first and only removes the folder — the sequences inside stay in the library.
   readonly={isReadonly}
   {selected}
   countLabel={countLabelOverride}
+  {minimalMetadata}
   editing={renaming}
   onOpen={() => {
     getHapticFeedback()?.trigger("selection");

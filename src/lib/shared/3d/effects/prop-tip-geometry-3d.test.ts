@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { PropType } from "@austencloud/scene-3d";
 import {
+  BUUGENG_ARTWORK_GEOMETRY,
+  BUUGENG_TIP_POINTS,
   FAN_TIP_POINTS,
   QUIAD_TIP_POINTS,
   TRIAD_TIP_POINTS,
+  TRIGENG_ARTWORK_GEOMETRY,
+  TRIGENG_TIP_POINTS,
   type PropTipConfig,
 } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
 import {
@@ -83,18 +87,18 @@ describe("resolvePropTipAnchors3D", () => {
   it.each([
     [PropType.TRIAD, TRIAD_TIP_POINTS, 0.44707],
     [PropType.QUIAD, QUIAD_TIP_POINTS, 0.43202],
-  ])("puts an emitter on every %s arm at its frame reach", (
-    propType,
-    points,
-    ratio
-  ) => {
-    const anchors = resolvePropTipAnchors3D(propType, 0.5, PICTOGRAPH);
-    expectSilhouette(anchors, points, ratio);
-  });
+  ])(
+    "puts an emitter on every %s arm at its frame reach",
+    (propType, points, ratio) => {
+      const anchors = resolvePropTipAnchors3D(propType, 0.5, PICTOGRAPH);
+      expectSilhouette(anchors, points, ratio);
+    }
+  );
 
   it.each([
     [PropType.BIGFAN, PropType.FAN],
     [PropType.BIGTRIAD, PropType.TRIAD],
+    [PropType.BIGBUUGENG, PropType.BUUGENG],
   ])("scales %s emitters by the big-variant group scale", (big, base) => {
     const bigAnchors = resolvePropTipAnchors3D(big, 0.5, FIRE);
     const baseAnchors = resolvePropTipAnchors3D(base, 0.5, FIRE);
@@ -120,5 +124,39 @@ describe("resolvePropTipAnchors3D", () => {
     expect(anchors.map((anchor) => anchor.offset)).toEqual(
       expectedY.map((y) => ({ x: 0, y, z: 0 }))
     );
+  });
+
+  it("places all three Trigeng emitters inside its fixed GLB silhouette", () => {
+    const short = resolvePropTipAnchors3D(PropType.TRIGENG, 0.3, PICTOGRAPH);
+    const long = resolvePropTipAnchors3D(PropType.TRIGENG, 0.9, PICTOGRAPH);
+
+    expect(short).toEqual(long);
+    expectSilhouette(
+      short,
+      TRIGENG_TIP_POINTS,
+      0.56 * (TRIGENG_ARTWORK_GEOMETRY.trackedRadius / 250)
+    );
+    short.forEach(({ offset }) => {
+      expect(Math.hypot(offset.x, offset.y)).toBeCloseTo(
+        0.56 * (TRIGENG_ARTWORK_GEOMETRY.trackedRadius / 250),
+        10
+      );
+    });
+  });
+
+  it("keeps the user-chosen Buugeng pair horizontal in its fixed GLB", () => {
+    const short = resolvePropTipAnchors3D(PropType.BUUGENG, 0.3, PICTOGRAPH);
+    const long = resolvePropTipAnchors3D(PropType.BUUGENG, 0.9, PICTOGRAPH);
+    const reach =
+      (0.83 * BUUGENG_ARTWORK_GEOMETRY.trackedRadius) /
+      BUUGENG_ARTWORK_GEOMETRY.viewBox.width;
+
+    expect(short).toEqual(long);
+    expect(short.map(({ effectTipIndex }) => effectTipIndex)).toEqual([0, 1]);
+    expectSilhouette(short, BUUGENG_TIP_POINTS, reach);
+    short.forEach(({ offset }) => {
+      expect(offset.x).toBeCloseTo(0, 12);
+      expect(Math.hypot(offset.x, offset.y)).toBeCloseTo(reach, 10);
+    });
   });
 });

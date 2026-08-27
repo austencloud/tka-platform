@@ -13,7 +13,11 @@
    */
 
   import type { GaitReport } from "./gait-analysis";
-  import { countFailing, verdictRows } from "./gait-verdicts";
+  import {
+    countFailing,
+    verdictRows,
+    type GaitReportScope,
+  } from "./gait-verdicts";
   import type { Vec3 } from "./gait-frame";
 
   interface Props {
@@ -21,12 +25,18 @@
     label?: string;
     /** Recent root positions, for scaling the floor trace. */
     trail?: readonly Vec3[];
+    scope?: GaitReportScope;
   }
 
-  let { report, label = "performer", trail = [] }: Props = $props();
+  let {
+    report,
+    label = "performer",
+    trail = [],
+    scope = "gait",
+  }: Props = $props();
 
-  const rows = $derived(verdictRows(report));
-  const failing = $derived(countFailing(report));
+  const rows = $derived(verdictRows(report, scope));
+  const failing = $derived(countFailing(report, scope));
 
   const STRIP_W = 1000;
   const window = $derived.by(() => {

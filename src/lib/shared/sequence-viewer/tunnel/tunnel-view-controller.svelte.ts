@@ -2,7 +2,10 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
 import { applyEffort } from "$lib/shared/effort/domain/effort-easing-unified";
-import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import {
+  getAnimationVisibilityManager,
+  type AnimationVisibilityStateManager,
+} from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import {
   buildTunnelCompositionLayers,
   type BuiltTunnelLayer,
@@ -50,6 +53,10 @@ export interface TunnelControllerSources {
   getComposition?: () => TunnelComposition | null | undefined;
   /** Receives the exact baked layer objects used by the animation canvas. */
   onLayersChange?: (layers: readonly BuiltTunnelLayer[]) => void;
+  /** Scoped effort owner for embedded editors. Defaults to the global viewer. */
+  visibilityManager?: AnimationVisibilityStateManager;
+  /** Embedded editors must not rewrite the viewer's last-used view state. */
+  persistViewState?: boolean;
 }
 
 /** Reduced motion caps a dense ring so a heavy kaleidoscope doesn't spin for
@@ -133,15 +140,17 @@ export class TunnelViewController {
     this.section = view.section;
 
     // Persist the live view state on change.
-    $effect(() => {
-      const snapshot: TunnelViewState = {
-        config: this.config,
-        gridVisible: this.gridVisible,
-        spectrum: this.spectrum,
-        section: this.section,
-      };
-      saveTunnelViewState(snapshot);
-    });
+    if (sources.persistViewState ?? true) {
+      $effect(() => {
+        const snapshot: TunnelViewState = {
+          config: this.config,
+          gridVisible: this.gridVisible,
+          spectrum: this.spectrum,
+          section: this.section,
+        };
+        saveTunnelViewState(snapshot);
+      });
+    }
 
     // Drop a stale spotlight when the cast shrinks (e.g. fold 8 → 2) so a
     // dangling selectedArm can't dim every performer at once.
@@ -402,7 +411,12 @@ export class TunnelViewController {
   /** Honor the global Effort preset so the sidebar's Effort section shapes the
    *  tunnel's motion — same easing the 2D engine applies to step progress. */
   #ease = (progress: number): number =>
-    applyEffort(getAnimationVisibilityManager().getEffortPreset(), progress);
+    applyEffort(
+      (
+        this.#sources.visibilityManager ?? getAnimationVisibilityManager()
+      ).getEffortPreset(),
+      progress
+    );
 
   /** Base (un-transformed) sequence prop states at the playhead — the center
    *  pair of the kaleidoscope. currentStep is 1-indexed fractional (start < 1). */

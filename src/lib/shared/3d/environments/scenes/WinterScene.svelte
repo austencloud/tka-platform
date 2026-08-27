@@ -42,6 +42,7 @@
   interface Props {
     config?: WinterSceneConfig;
     stageRadius?: number;
+    stageRadiusGrowth?: number;
     stageZOffset?: number;
     platformVisible?: boolean;
   }
@@ -49,6 +50,7 @@
   let {
     config,
     stageRadius = 3,
+    stageRadiusGrowth = 0,
     stageZOffset = 0,
     platformVisible = true,
   }: Props = $props();
@@ -57,7 +59,9 @@
   const activeConfig = $derived.by(() => {
     const radius = resolveCircularStageRadius(
       stageRadius,
-      baseConfig.platform.radius
+      baseConfig.platform.radius,
+      undefined,
+      stageRadiusGrowth
     );
     if (radius === baseConfig.platform.radius) return baseConfig;
     return {

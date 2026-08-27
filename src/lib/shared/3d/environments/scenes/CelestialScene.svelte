@@ -23,6 +23,7 @@
     stageWidth?: number;
     stageDepth?: number;
     stageRadius?: number;
+    stageRadiusGrowth?: number;
     stageZOffset?: number;
     /** World-space lift applied by Environment3D to the declarative scene tree. */
     worldYOffset?: number;
@@ -35,6 +36,7 @@
     stageWidth = 6,
     stageDepth = 6,
     stageRadius = 3,
+    stageRadiusGrowth = 0,
     stageZOffset = 0,
     worldYOffset = 0,
     active = true,
@@ -119,6 +121,7 @@
 <OliveCloudbreakSlice
   {interactionPulse}
   {stageRadius}
+  {stageRadiusGrowth}
   {worldYOffset}
   {active}
   onReady={handleCloudbreakReady}

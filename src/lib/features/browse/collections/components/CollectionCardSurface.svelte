@@ -11,6 +11,7 @@
     readonly?: boolean;
     selected?: boolean;
     countLabel?: string;
+    minimalMetadata?: boolean;
     editing?: boolean;
     editor?: Snippet;
     onOptions?: (event: MouseEvent) => void;
@@ -25,6 +26,7 @@
     readonly: isReadonly = false,
     selected = false,
     countLabel: countLabelOverride,
+    minimalMetadata = false,
     editing = false,
     editor,
     onOptions,
@@ -78,7 +80,7 @@
       <span class="tile-text">
         <span class="tile-name-row">
           <span class="tile-name">{collection.name}</span>
-          {#if isSmart}
+          {#if isSmart && !minimalMetadata}
             <span class="smart-label">
               <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
               Smart
@@ -94,7 +96,7 @@
               ? smartCountLabel(collection.sequenceCount)
               : defaultCountLabel(
                   collection.sequenceCount
-                ))}{#if isSmart}{" · "}{smartSourceLabel}{#if isBuiltInSmart}{" · "}Built
+                ))}{#if isSmart && !minimalMetadata}{" · "}{smartSourceLabel}{#if isBuiltInSmart}{" · "}Built
               in{/if}{/if}{#if !isReadonly && collection.isPublic}{" · "}<i
               class="fas fa-globe public-globe"
               aria-hidden="true"

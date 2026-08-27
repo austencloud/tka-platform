@@ -5,45 +5,59 @@
 // The host never exits on selection — it hides and waits for the next ping.
 //
 // Pipe message (UTF8 line): project|name|icon|stampFile|stubStartTicks plus
-// optional development-server manager, app, config, port, and app URL fields.
+// optional development-server manager, app, config, and port fields. A legacy
+// trailing app URL field is accepted and ignored for shortcut compatibility.
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 class Popup : Window
 {
     static bool _visualTestMode;
+    static bool _forceReducedMotion;
+    static int _visualAnimationDurationMs = 160;
     [DllImport("user32.dll")] static extern bool GetCursorPos(out NativePoint p);
     [DllImport("user32.dll")] static extern IntPtr MonitorFromPoint(NativePoint pt, uint flags);
     [DllImport("user32.dll", CharSet = CharSet.Auto)] static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO mi);
+    [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr hWnd, out NativeRect rect);
+    [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr hWnd, IntPtr insertAfter, int x, int y, int width, int height, uint flags);
     [StructLayout(LayoutKind.Sequential)] struct NativePoint { public int X; public int Y; }
     [StructLayout(LayoutKind.Sequential)] struct NativeRect { public int left; public int top; public int right; public int bottom; }
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)] struct MONITORINFO { public int cbSize; public NativeRect rcMonitor; public NativeRect rcWork; public int dwFlags; }
 
     const string PIPE = "AgentChooserPipe";
+    const uint SWP_NOSIZE = 0x0001;
+    const uint SWP_NOZORDER = 0x0004;
+    const uint SWP_NOACTIVATE = 0x0010;
 
-    string _project, _name, _icon, _lastAgent, _stampFile;
+    string _project, _name, _icon, _stampFile;
     string _serverManager, _serverApp, _serverConfig, _serverConfigurationError;
     int _serverPort;
-    string _appUrl = "";
     long _stubStartTicks;
     long _deactHideTicks; string _deactHideProject = "";
     int _rawX, _rawY;
+    Rect _lastWorkArea;
+    Point _lastAnchor;
     bool _ready;
-    Border _card, _claudeBtn, _codexBtn, _serverBtn;
-    TextBlock _serverTitle, _serverSubtitle;
+    bool _layoutReflowPending;
+    bool _hasVisualAnchor;
+    bool _visualStartWorktreesCollapsed;
+    bool _visualScrollWorktreesToEnd;
+    int _visualAnchorX, _visualAnchorY;
+    Border _card;
+    ProjectCommandCenter _commandCenter;
     Pm2DevServerController _serverControl;
     DevServerState _serverState = DevServerState.Checking;
     int _serverGeneration;
@@ -51,12 +65,13 @@ class Popup : Window
     string _serverActionLabel = "Starting";
     GitProjectController _gitControl;
     GitProjectStatus _gitStatus = GitProjectStatus.Checking();
-    GitActionPanel _gitPanel;
+    GitWorktreeInventoryController _worktreeControl;
+    GitWorktreeInventory _worktreeInventory = GitWorktreeInventory.Checking();
     int _gitGeneration;
-    bool _gitBusy;
-    string _gitBusyAction = "";
-    string _gitFeedback = "";
-    bool _gitFeedbackIsError;
+    int _workflowGeneration;
+    bool _workflowBusy;
+    int _worktreeLaunchGeneration;
+    bool _worktreeLaunchBusy;
 
     [STAThread]
     static void Main(string[] argv)
@@ -69,6 +84,21 @@ class Popup : Window
         if (HasArg(argv, "SelfTestGit"))
         {
             Environment.ExitCode = GitProjectController.SelfTest();
+            return;
+        }
+        if (HasArg(argv, "SelfTestWorkflow"))
+        {
+            Environment.ExitCode = AgentWorkflowLauncher.SelfTest() + CodexDesktopWorkspaceLauncher.SelfTest();
+            return;
+        }
+        if (HasArg(argv, "SelfTestWorktrees"))
+        {
+            Environment.ExitCode = GitWorktreeInventoryController.SelfTest();
+            return;
+        }
+        if (HasArg(argv, "SelfTestPlacement"))
+        {
+            Environment.ExitCode = PopupPlacement.SelfTest();
             return;
         }
 
@@ -105,6 +135,7 @@ class Popup : Window
             var a = ParseArgs(argv);
             if (a.ContainsKey("Project"))
             {
+                win.ConfigureVisualTest(a);
                 string ln = Line(a);
                 app.Dispatcher.BeginInvoke(new Action(delegate { win.ShowFromLine(ln); }));
             }
@@ -139,21 +170,59 @@ class Popup : Window
         var app = new Application();
         app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
         var win = new Popup();
-        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1800) };
+        int captureDelayMs = 1800;
+        string configuredDelay;
+        int parsedDelay;
+        if (fields.TryGetValue("CaptureDelayMs", out configuredDelay) &&
+            int.TryParse(configuredDelay, out parsedDelay) && parsedDelay >= 25 && parsedDelay <= 15000)
+            captureDelayMs = parsedDelay;
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(captureDelayMs) };
         timer.Tick += delegate
         {
             timer.Stop();
-            try { win.CapturePng(capturePath); }
+            try
+            {
+                win.CapturePng(capturePath);
+                string boundsPath;
+                if (fields.TryGetValue("BoundsPath", out boundsPath) && !string.IsNullOrEmpty(boundsPath))
+                    win.WriteBoundsReport(boundsPath);
+            }
             catch (Exception ex) { Log("visual capture failed: " + ex.Message); Environment.ExitCode = 3; }
             win.Close();
             app.Shutdown();
         };
         app.Dispatcher.BeginInvoke(new Action(delegate
         {
+            win.ConfigureVisualTest(fields);
             win.ShowFromLine(Line(fields));
+            win.ApplyVisualTestState(fields);
             timer.Start();
         }));
         app.Run();
+    }
+
+    public void ConfigureVisualTest(System.Collections.Generic.Dictionary<string, string> fields)
+    {
+        if (!_visualTestMode || fields == null) return;
+        string xValue, yValue, reducedValue, durationValue, collapsedValue, scrollValue;
+        int x, y, duration;
+        if (fields.TryGetValue("VisualAnchorX", out xValue) &&
+            fields.TryGetValue("VisualAnchorY", out yValue) &&
+            int.TryParse(xValue, out x) && int.TryParse(yValue, out y))
+        {
+            _hasVisualAnchor = true;
+            _visualAnchorX = x;
+            _visualAnchorY = y;
+        }
+        _forceReducedMotion = fields.TryGetValue("ReducedMotion", out reducedValue) &&
+            string.Equals(reducedValue, "true", StringComparison.OrdinalIgnoreCase);
+        if (fields.TryGetValue("AnimationDurationMs", out durationValue) &&
+            int.TryParse(durationValue, out duration) && duration >= 80 && duration <= 5000)
+            _visualAnimationDurationMs = duration;
+        _visualStartWorktreesCollapsed = fields.TryGetValue("StartWorktreesCollapsed", out collapsedValue) &&
+            string.Equals(collapsedValue, "true", StringComparison.OrdinalIgnoreCase);
+        _visualScrollWorktreesToEnd = fields.TryGetValue("ScrollWorktreesToEnd", out scrollValue) &&
+            string.Equals(scrollValue, "true", StringComparison.OrdinalIgnoreCase);
     }
 
     static void EnsureColorWatchdog()
@@ -247,6 +316,7 @@ class Popup : Window
         Visibility = Visibility.Hidden;
 
         PreviewKeyDown += OnKey;
+        SizeChanged += delegate { RequestLayoutReflow(); };
         Deactivated += delegate
         {
             Log("Deactivated ready=" + _ready + " vis=" + IsVisible);
@@ -278,15 +348,49 @@ class Popup : Window
         using (var stream = File.Create(path)) encoder.Save(stream);
     }
 
+    public void WriteBoundsReport(string path)
+    {
+        string directory = Path.GetDirectoryName(Path.GetFullPath(path));
+        if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+        Func<double, string> n = delegate(double value) { return value.ToString("0.###", CultureInfo.InvariantCulture); };
+        NativeRect windowRect = new NativeRect();
+        NativeRect workRect = new NativeRect();
+        bool nativeGeometry = GetWindowRect(new WindowInteropHelper(this).Handle, out windowRect) && TryGetActiveWorkArea(out workRect);
+        double left = nativeGeometry ? windowRect.left : Left;
+        double top = nativeGeometry ? windowRect.top : Top;
+        double width = nativeGeometry ? windowRect.right - windowRect.left : ActualWidth;
+        double height = nativeGeometry ? windowRect.bottom - windowRect.top : ActualHeight;
+        double workLeft = nativeGeometry ? workRect.left : _lastWorkArea.Left;
+        double workTop = nativeGeometry ? workRect.top : _lastWorkArea.Top;
+        double workRight = nativeGeometry ? workRect.right : _lastWorkArea.Right;
+        double workBottom = nativeGeometry ? workRect.bottom : _lastWorkArea.Bottom;
+        string json =
+            "{\"left\":" + n(left) +
+            ",\"top\":" + n(top) +
+            ",\"width\":" + n(width) +
+            ",\"height\":" + n(height) +
+            ",\"anchorX\":" + n(_rawX) +
+            ",\"anchorY\":" + n(_rawY) +
+            ",\"workLeft\":" + n(workLeft) +
+            ",\"workTop\":" + n(workTop) +
+            ",\"workRight\":" + n(workRight) +
+            ",\"workBottom\":" + n(workBottom) +
+            ",\"worktreesExpanded\":" + (_commandCenter != null && _commandCenter.WorktreesExpanded ? "true" : "false") +
+            ",\"worktreeViewport\":" + n(_commandCenter == null ? 0 : _commandCenter.WorktreeViewportHeight) +
+            ",\"worktreeExtent\":" + n(_commandCenter == null ? 0 : _commandCenter.WorktreeExtentHeight) +
+            ",\"worktreeScrollable\":" + n(_commandCenter == null ? 0 : _commandCenter.WorktreeScrollableHeight) + "}";
+        File.WriteAllText(path, json);
+    }
+
     public void Prewarm()
     {
         // Realize the HWND + JIT the layout + load fonts once, off-screen, so the
         // first real ping paints instantly like every later one.
         Log("prewarm begin");
-        _project = ""; _name = "warmup"; _icon = ""; _lastAgent = "claude";
+        _project = ""; _name = "warmup"; _icon = "";
         _serverManager = ""; _serverApp = ""; _serverConfig = ""; _serverPort = 0; _serverControl = null;
-        _appUrl = "";
-        _gitControl = null; _gitPanel = null; _gitStatus = GitProjectStatus.Checking();
+        _gitControl = null; _gitStatus = GitProjectStatus.Checking();
+        _worktreeControl = null; _worktreeInventory = GitWorktreeInventory.Checking(); _commandCenter = null;
         Content = BuildCard();
         Left = -30000; Top = -30000;
         Show(); UpdateLayout();
@@ -306,12 +410,11 @@ class Popup : Window
         string serverApp = p.Length > 6 ? p[6] : "";
         string serverConfig = p.Length > 7 ? p[7] : "";
         int serverPort = 0; if (p.Length > 8) int.TryParse(p[8], out serverPort);
-        string appUrl = p.Length > 9 ? p[9] : "";
-        ShowFor(project, name, icon, stamp, ticks, serverManager, serverApp, serverConfig, serverPort, appUrl);
+        ShowFor(project, name, icon, stamp, ticks, serverManager, serverApp, serverConfig, serverPort);
     }
 
     void ShowFor(string project, string name, string icon, string stampFile, long stubStartTicks,
-        string serverManager, string serverApp, string serverConfig, int serverPort, string appUrl)
+        string serverManager, string serverApp, string serverConfig, int serverPort)
     {
         // A pin click while the popover is open deactivates it (mousedown) and that
         // SAME click's stub ping lands ~150ms later, re-popping it — the user sees
@@ -329,18 +432,24 @@ class Popup : Window
         _stampFile = stampFile;
         _stubStartTicks = stubStartTicks;
         ConfigureServer(serverManager, serverApp, serverConfig, serverPort);
-        ConfigureApp(appUrl);
         ConfigureGit(project);
-        _lastAgent = ReadLast();
+        _workflowGeneration++;
+        _workflowBusy = false;
+        _layoutReflowPending = false;
         _ready = false;
         Log("ShowFor " + _name);
         NativePoint cp; GetCursorPos(out cp); _rawX = cp.X; _rawY = cp.Y;
+        if (_visualTestMode && _hasVisualAnchor) { _rawX = _visualAnchorX; _rawY = _visualAnchorY; }
 
+        MaxWidth = double.PositiveInfinity;
+        MaxHeight = double.PositiveInfinity;
         Content = BuildCard();
+        if (_visualTestMode && _visualStartWorktreesCollapsed) _commandCenter.SetWorktreesExpanded(false);
         // Start the card invisible + shrunk BEFORE the window becomes visible, so the
         // first painted frame is NOT a full-size flash at the previous position (the
-        // double-pop). PositionAndAnimate then springs it in at the right spot.
-        var s0 = new ScaleTransform(0.6, 0.6);
+        // double-pop). PositionAndAnimate then expands it from the taskbar edge.
+        double initialScale = MotionEnabled() ? 0.94 : 1.0;
+        var s0 = new ScaleTransform(initialScale, initialScale);
         _card.RenderTransform = s0;
         _card.RenderTransformOrigin = new Point(0.5, 1.0);
         // Make the WHOLE window OS-transparent before it is presented. A layered
@@ -390,31 +499,20 @@ class Popup : Window
         }
     }
 
-    void ConfigureApp(string url)
-    {
-        _appUrl = "";
-        if (string.IsNullOrEmpty(url)) return;
-        Uri parsed;
-        if (Uri.TryCreate(url, UriKind.Absolute, out parsed) &&
-            (parsed.Scheme == Uri.UriSchemeHttp || parsed.Scheme == Uri.UriSchemeHttps))
-            _appUrl = parsed.AbsoluteUri;
-        else
-            Log("app url rejected: " + url);
-    }
-
     void ConfigureGit(string project)
     {
         _gitGeneration++;
         _gitControl = null;
-        _gitPanel = null;
         _gitStatus = GitProjectStatus.Checking();
-        _gitBusy = false;
-        _gitBusyAction = "";
-        _gitFeedback = "";
-        _gitFeedbackIsError = false;
+        _worktreeControl = null;
+        _worktreeInventory = GitWorktreeInventory.Checking();
         if (string.IsNullOrEmpty(project)) return;
 
-        try { _gitControl = new GitProjectController(project); }
+        try
+        {
+            _gitControl = new GitProjectController(project);
+            _worktreeControl = new GitWorktreeInventoryController(project);
+        }
         catch (Exception ex)
         {
             Log("git configuration failed: " + ex.Message);
@@ -424,49 +522,96 @@ class Popup : Window
 
     void PositionAndAnimate()
     {
-        var src = PresentationSource.FromVisual(this);
-        Matrix from = Matrix.Identity;
-        if (src != null && src.CompositionTarget != null) from = src.CompositionTarget.TransformFromDevice;
-        Point cur = from.Transform(new Point(_rawX, _rawY));
+        FitAndPlaceNative();
 
-        Rect wa;
-        try
-        {
-            IntPtr hMon = MonitorFromPoint(new NativePoint { X = _rawX, Y = _rawY }, 2);
-            MONITORINFO mi = new MONITORINFO(); mi.cbSize = Marshal.SizeOf(typeof(MONITORINFO));
-            if (GetMonitorInfo(hMon, ref mi))
-            {
-                Point tl = from.Transform(new Point(mi.rcWork.left, mi.rcWork.top));
-                Point br = from.Transform(new Point(mi.rcWork.right, mi.rcWork.bottom));
-                wa = new Rect(tl, br);
-            }
-            else wa = SystemParameters.WorkArea;
-        }
-        catch { wa = SystemParameters.WorkArea; }
-
-        double w = ActualWidth, h = ActualHeight;
-        double left = cur.X - w / 2;
-        double top = cur.Y - h - 12;
-        left = Math.Max(wa.Left + 8, Math.Min(left, wa.Right - w - 8));
-        top = Math.Max(wa.Top + 8, Math.Min(top, wa.Bottom - h - 8));
-        Left = left; Top = top;
-
-        double ox = Clamp01((cur.X - left) / w);
-        double oy = Clamp01((cur.Y - top) / h);
-        _card.RenderTransformOrigin = new Point(ox, oy);
-
-        // Reuse the transform ShowFor set to 0.6. ONE smooth motion, no overshoot
-        // (BackEase caused the "bounce back and forth"); scale + fade share one
-        // duration + ease so it doesn't "finish the job" in a second stage.
+        // Windows' animation preference is the reduced-motion contract for this
+        // native surface. With motion disabled, the card appears fully formed.
         var scale = _card.RenderTransform as ScaleTransform;
-        if (scale == null) { scale = new ScaleTransform(0.6, 0.6); _card.RenderTransform = scale; }
+        if (!MotionEnabled())
+        {
+            if (scale == null) { scale = new ScaleTransform(1, 1); _card.RenderTransform = scale; }
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            scale.ScaleX = 1;
+            scale.ScaleY = 1;
+            BeginAnimation(Window.OpacityProperty, null);
+            Opacity = 1;
+            return;
+        }
+
+        if (scale == null) { scale = new ScaleTransform(0.94, 0.94); _card.RenderTransform = scale; }
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-        var dur = new Duration(TimeSpan.FromMilliseconds(170));
-        var grow = new DoubleAnimation(0.6, 1.0, dur) { EasingFunction = ease };
+        var dur = new Duration(TimeSpan.FromMilliseconds(_visualTestMode ? _visualAnimationDurationMs : 160));
+        var grow = new DoubleAnimation(0.94, 1.0, dur) { EasingFunction = ease };
         scale.BeginAnimation(ScaleTransform.ScaleXProperty, grow);
         scale.BeginAnimation(ScaleTransform.ScaleYProperty, grow);
         // Fade the WINDOW opacity (not the card) — reveal happens at the OS layer.
         BeginAnimation(Window.OpacityProperty, new DoubleAnimation(0, 1, dur) { EasingFunction = ease });
+    }
+
+    bool TryGetActiveWorkArea(out NativeRect workArea)
+    {
+        workArea = new NativeRect();
+        IntPtr monitor = MonitorFromPoint(new NativePoint { X = _rawX, Y = _rawY }, 2);
+        if (monitor == IntPtr.Zero) return false;
+        MONITORINFO info = new MONITORINFO();
+        info.cbSize = Marshal.SizeOf(typeof(MONITORINFO));
+        if (!GetMonitorInfo(monitor, ref info)) return false;
+        workArea = info.rcWork;
+        return true;
+    }
+
+    void FitAndPlaceNative()
+    {
+        IntPtr hwnd = new WindowInteropHelper(this).Handle;
+        NativeRect workArea;
+        NativeRect windowRect;
+        if (hwnd == IntPtr.Zero || !TryGetActiveWorkArea(out workArea) || !GetWindowRect(hwnd, out windowRect)) return;
+
+        double pixelWidth = Math.Max(1, windowRect.right - windowRect.left);
+        double pixelHeight = Math.Max(1, windowRect.bottom - windowRect.top);
+        double dipPerPixelX = ActualWidth > 0 ? ActualWidth / pixelWidth : 1;
+        double dipPerPixelY = ActualHeight > 0 ? ActualHeight / pixelHeight : 1;
+        double maximumWidth = Math.Max(1, (workArea.right - workArea.left - 16) * dipPerPixelX);
+        double maximumHeight = Math.Max(1, (workArea.bottom - workArea.top - 16) * dipPerPixelY);
+
+        MaxWidth = maximumWidth;
+        MaxHeight = maximumHeight;
+        if (_commandCenter != null) _commandCenter.ConstrainToHeight(maximumHeight);
+        UpdateLayout();
+        if (!GetWindowRect(hwnd, out windowRect)) return;
+
+        double width = Math.Max(1, windowRect.right - windowRect.left);
+        double height = Math.Max(1, windowRect.bottom - windowRect.top);
+        double pixelsPerDip = dipPerPixelY > 0 ? 1 / dipPerPixelY : 1;
+        Rect work = new Rect(workArea.left, workArea.top, workArea.right - workArea.left, workArea.bottom - workArea.top);
+        Point anchor = new Point(_rawX, _rawY);
+        Point placement = PopupPlacement.Calculate(work, anchor, new Size(width, height), 12 * pixelsPerDip, 8 * pixelsPerDip);
+        SetWindowPos(hwnd, IntPtr.Zero, (int)Math.Round(placement.X), (int)Math.Round(placement.Y), 0, 0,
+            SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+
+        _lastWorkArea = work;
+        _lastAnchor = anchor;
+        _card.RenderTransformOrigin = new Point(
+            Clamp01((anchor.X - placement.X) / width),
+            Clamp01((anchor.Y - placement.Y) / height));
+    }
+
+    void RequestLayoutReflow()
+    {
+        if (!_ready || !IsVisible || _layoutReflowPending) return;
+        _layoutReflowPending = true;
+        Dispatcher.BeginInvoke(new Action(delegate
+        {
+            _layoutReflowPending = false;
+            if (!_ready || !IsVisible) return;
+            FitAndPlaceNative();
+        }), DispatcherPriority.Loaded);
+    }
+
+    static bool MotionEnabled()
+    {
+        return !_forceReducedMotion && SystemParameters.ClientAreaAnimation;
     }
 
     void Stamp()
@@ -490,187 +635,116 @@ class Popup : Window
     void OnKey(object sender, System.Windows.Input.KeyEventArgs e)
     {
         if (!_ready) return;
-        if (e.Key == System.Windows.Input.Key.D1 || e.Key == System.Windows.Input.Key.NumPad1) Launch("claude");
-        else if (e.Key == System.Windows.Input.Key.D2 || e.Key == System.Windows.Input.Key.NumPad2) Launch("codex");
-        else if (e.Key == System.Windows.Input.Key.D3 || e.Key == System.Windows.Input.Key.NumPad3) ControlServer("keyboard");
-        else if (e.Key == System.Windows.Input.Key.D4 || e.Key == System.Windows.Input.Key.NumPad4) OpenApp("keyboard");
-        else if (e.Key == System.Windows.Input.Key.D5 || e.Key == System.Windows.Input.Key.NumPad5) ControlGit("pull", "keyboard");
-        else if (e.Key == System.Windows.Input.Key.D6 || e.Key == System.Windows.Input.Key.NumPad6) ControlGit("push", "keyboard");
-        else if (e.Key == System.Windows.Input.Key.Enter) Launch(string.IsNullOrEmpty(_lastAgent) ? "claude" : _lastAgent);
-        else if (e.Key == System.Windows.Input.Key.Escape) HideIt();
-    }
-
-    void Launch(string agent)
-    {
-        try
+        if (e.Key == System.Windows.Input.Key.Escape)
         {
-            string bat = string.IsNullOrEmpty(_project) ? null : Path.Combine(_project, "launchers\\start-" + agent + ".bat");
-            var psi = new ProcessStartInfo();
-            psi.WorkingDirectory = string.IsNullOrEmpty(_project) ? Environment.CurrentDirectory : _project;
-            string terminalLauncher = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AgentTerminalLauncher.exe");
-            if (File.Exists(terminalLauncher))
-            {
-                psi.FileName = terminalLauncher;
-                psi.Arguments = "-Agent " + QuoteProcessArg(agent) + " -Project " + QuoteProcessArg(psi.WorkingDirectory);
-                if (bat != null && File.Exists(bat)) psi.Arguments += " -Bat " + QuoteProcessArg(bat);
-                psi.UseShellExecute = false;
-                psi.CreateNoWindow = true;
-            }
-            else if (bat != null && File.Exists(bat)) { psi.FileName = "cmd.exe"; psi.Arguments = "/c \"" + bat + "\""; psi.UseShellExecute = true; }
-            else
-            {
-                string cli = agent == "codex" ? "codex --dangerously-bypass-approvals-and-sandbox" : "claude --dangerously-skip-permissions";
-                psi.FileName = "cmd.exe"; psi.Arguments = "/k cd /d \"" + psi.WorkingDirectory + "\" ^&^& " + cli;
-                psi.UseShellExecute = true;
-            }
-            Process.Start(psi);
-            Log("launched " + agent + " for " + psi.WorkingDirectory + (File.Exists(terminalLauncher) ? " through colored terminal" : " through fallback"));
+            e.Handled = true;
+            HideIt();
         }
-        catch (Exception ex) { Log("launch failed: " + ex.Message); }
-        WriteLast(agent);
-        HideIt();
+        else if (e.Key == System.Windows.Input.Key.D1 || e.Key == System.Windows.Input.Key.NumPad1)
+        {
+            e.Handled = true;
+            ControlServer("keyboard");
+        }
+        else if (e.Key == System.Windows.Input.Key.D2 || e.Key == System.Windows.Input.Key.NumPad2)
+        {
+            e.Handled = true;
+            LaunchWorkflow(AgentWorkflowKind.Feedback, "keyboard");
+        }
+        else if (e.Key == System.Windows.Input.Key.D3 || e.Key == System.Windows.Input.Key.NumPad3)
+        {
+            e.Handled = true;
+            LaunchWorkflow(AgentWorkflowKind.Spec, "keyboard");
+        }
+        else if (e.Key == System.Windows.Input.Key.D4 || e.Key == System.Windows.Input.Key.NumPad4)
+        {
+            e.Handled = true;
+            LaunchWorkflow(AgentWorkflowKind.Sessions, "keyboard");
+        }
     }
 
     Border BuildCard()
     {
-        _card = new Border();
-        _card.CornerRadius = new CornerRadius(18);
-        _card.Background = Brush("#FF16171B");
-        _card.BorderBrush = Brush("#40FFFFFF");
-        _card.BorderThickness = new Thickness(1);
-        _card.Padding = new Thickness(24);
-        _card.Effect = new DropShadowEffect { BlurRadius = 16, ShadowDepth = 5, Opacity = 0.5, Color = Colors.Black };
-        // Rasterize the card+shadow ONCE so the scale animation transforms a cached
-        // bitmap instead of re-blurring the shadow every frame (kills the stutter).
-        _card.CacheMode = new BitmapCache();
-
         bool hasServer = !string.IsNullOrEmpty(_serverManager);
-        bool hasApp = !string.IsNullOrEmpty(_appUrl);
-        bool hasGit = _gitControl != null;
-
-        var col = new StackPanel { Width = hasServer && hasApp ? 560 : 430 };
-        var head = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 4) };
-        if (!string.IsNullOrEmpty(_icon) && File.Exists(_icon))
-        {
-            try
-            {
-                var bmp = new BitmapImage(); bmp.BeginInit(); bmp.UriSource = new Uri(Path.GetFullPath(_icon)); bmp.CacheOption = BitmapCacheOption.OnLoad; bmp.EndInit();
-                var img = new Image { Source = bmp, Width = 34, Height = 34, Margin = new Thickness(0, 0, 12, 0) };
-                RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
-                head.Children.Add(img);
-            }
-            catch { }
-        }
-        head.Children.Add(new TextBlock { Text = _name, Foreground = Brush("#FFF3F3F6"), FontSize = 20, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, FontFamily = new FontFamily("Segoe UI") });
-        col.Children.Add(head);
-        col.Children.Add(new TextBlock { Text = hasServer || hasApp || hasGit ? "Choose an agent or project action" : "Choose an agent", Foreground = Brush("#FF8B8B95"), FontSize = 12, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 18), FontFamily = new FontFamily("Segoe UI") });
-
-        _claudeBtn = Choice("#FFD97757", "Claude", "Claude Code", "1", "claude");
-        _codexBtn = Choice("#FF10A37F", "Codex", "Codex · Sol", "2", "codex");
-        var tiles = new System.Collections.Generic.List<Border>();
-        tiles.Add(_claudeBtn);
-        tiles.Add(_codexBtn);
-        if (hasServer) { _serverBtn = ServerChoice(); tiles.Add(_serverBtn); }
-        if (hasApp) tiles.Add(AppChoice());
-
-        var grid = new Grid();
-        double gap = tiles.Count == 2 ? 16 : 12;
-        for (int i = 0; i < tiles.Count; i++)
-        {
-            if (i > 0) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(gap) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            Grid.SetColumn(tiles[i], i * 2);
-            grid.Children.Add(tiles[i]);
-        }
-        col.Children.Add(grid);
-
-        if (hasGit)
-        {
-            _gitPanel = new GitActionPanel(
-                delegate { ControlGit("pull", "mouse"); },
-                delegate { ControlGit("push", "mouse"); });
-            col.Children.Add(_gitPanel);
-        }
-
-        Border hi = _lastAgent == "codex" ? _codexBtn : _claudeBtn;
-        hi.BorderBrush = Brush("#FFFFFFFF"); hi.BorderThickness = new Thickness(2);
-
-        var keyHelp = new StringBuilder("1 Claude   ·   2 Codex");
-        if (hasServer) keyHelp.Append("   ·   3 Server");
-        if (hasApp) keyHelp.Append("   ·   4 Open");
-        keyHelp.Append("   ·   Enter last   ·   Esc");
-        string shortcutText = hasServer || hasApp
-            ? keyHelp.ToString()
-            : "1 · Claude     2 · Codex     Enter · " + (_lastAgent ?? "claude") + "     Esc";
-        col.Children.Add(new TextBlock { Text = shortcutText, Foreground = Brush("#FF6C6C74"), FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 18, 0, 0), FontFamily = new FontFamily("Segoe UI") });
-
-        _card.Child = col;
+        _commandCenter = new ProjectCommandCenter(
+            _name,
+            _icon,
+            hasServer,
+            _serverPort,
+            delegate { ControlServer("mouse"); },
+            delegate { LaunchWorkflow(AgentWorkflowKind.Feedback, "mouse"); },
+            delegate { LaunchWorkflow(AgentWorkflowKind.Spec, "mouse"); },
+            delegate { LaunchWorkflow(AgentWorkflowKind.Sessions, "mouse"); },
+            delegate(GitWorktreeItem item) { OpenWorktreeInCodex(item, "mouse"); },
+            RequestLayoutReflow);
+        _card = _commandCenter;
+        UpdateServerVisual();
+        UpdateWorkspaceVisual();
         return _card;
     }
 
-    Border ServerChoice()
+    void LaunchWorkflow(AgentWorkflowKind kind, string source)
     {
-        var b = new Border { CornerRadius = new CornerRadius(14), Height = 104, Cursor = System.Windows.Input.Cursors.Hand };
-        var sp = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        _serverTitle = new TextBlock { Foreground = Brushes.White, FontSize = 19, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, FontFamily = new FontFamily("Segoe UI") };
-        _serverSubtitle = new TextBlock { Foreground = Brushes.White, Opacity = 0.85, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 3, 0, 0), FontFamily = new FontFamily("Segoe UI") };
-        sp.Children.Add(_serverTitle);
-        sp.Children.Add(_serverSubtitle);
-        sp.Children.Add(new TextBlock { Text = "3", Foreground = Brushes.White, Opacity = 0.6, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 7, 0, 0), FontFamily = new FontFamily("Segoe UI") });
-        b.Child = sp;
-        b.MouseEnter += delegate { if (!_serverBusy) b.Opacity = 0.86; };
-        b.MouseLeave += delegate { b.Opacity = 1.0; };
-        b.MouseLeftButtonUp += delegate { ControlServer("mouse"); };
-        UpdateServerVisual();
-        return b;
-    }
+        if (_commandCenter == null || _workflowBusy) return;
+        AgentWorkflowDefinition workflow = AgentWorkflowLauncher.Get(kind);
+        int generation = ++_workflowGeneration;
+        string project = _project;
+        _workflowBusy = true;
+        _commandCenter.RenderWorkflow(true, "Opening " + workflow.Name + " workflow...", false);
+        Log(workflow.Name + " workflow requested by " + source);
 
-    Border AppChoice()
-    {
-        Uri parsed;
-        string host = Uri.TryCreate(_appUrl, UriKind.Absolute, out parsed) ? parsed.Authority : "";
-        var b = new Border { CornerRadius = new CornerRadius(14), Height = 104, Cursor = System.Windows.Input.Cursors.Hand, Background = Brush("#FF5B5BD6") };
-        var sp = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        sp.Children.Add(new TextBlock { Text = "Open app", Foreground = Brushes.White, FontSize = 19, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, FontFamily = new FontFamily("Segoe UI") });
-        sp.Children.Add(new TextBlock { Text = host, Foreground = Brushes.White, Opacity = 0.85, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 3, 0, 0), FontFamily = new FontFamily("Segoe UI") });
-        sp.Children.Add(new TextBlock { Text = "4", Foreground = Brushes.White, Opacity = 0.6, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 7, 0, 0), FontFamily = new FontFamily("Segoe UI") });
-        b.Child = sp;
-        b.ToolTip = "Open " + _appUrl + " in your default browser";
-        b.MouseEnter += delegate { b.Opacity = 0.86; };
-        b.MouseLeave += delegate { b.Opacity = 1.0; };
-        b.MouseLeftButtonUp += delegate { OpenApp("mouse"); };
-        return b;
-    }
-
-    // Opens the page, nothing else. Starting or restarting the server is the
-    // server tile's job — one action per tile, no overlap.
-    void OpenApp(string source)
-    {
-        if (string.IsNullOrEmpty(_appUrl)) return;
-        Log("open app requested by " + source);
-        OpenBrowser(_appUrl);
-        HideIt();
-    }
-
-    void OpenBrowser(string url)
-    {
-        try
+        ThreadPool.QueueUserWorkItem(delegate
         {
-            Uri parsed;
-            // ShellExecute on an arbitrary pipe-supplied string could run anything;
-            // only ever hand it an absolute http(s) URL.
-            if (!Uri.TryCreate(url, UriKind.Absolute, out parsed) ||
-                (parsed.Scheme != Uri.UriSchemeHttp && parsed.Scheme != Uri.UriSchemeHttps))
+            AgentWorkflowLaunchResult result = AgentWorkflowLauncher.Launch(project, kind);
+            Dispatcher.BeginInvoke(new Action(delegate
             {
-                Log("browser open refused for non-http url: " + url);
-                return;
-            }
-            var psi = new ProcessStartInfo(parsed.AbsoluteUri);
-            psi.UseShellExecute = true;
-            Process.Start(psi);
-            Log("opened " + parsed.AbsoluteUri + " in the default browser");
-        }
-        catch (Exception ex) { Log("browser open failed: " + ex.Message); }
+                if (generation != _workflowGeneration || !string.Equals(project, _project, StringComparison.OrdinalIgnoreCase)) return;
+                _workflowBusy = false;
+                if (_commandCenter == null) return;
+                _commandCenter.RenderWorkflow(false, result.Detail, !result.Succeeded);
+                Log(workflow.Name + " workflow launch " + (result.Succeeded ? "succeeded" : "failed") + ": " + result.Detail);
+                if (!result.Succeeded) return;
+
+                var closeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+                closeTimer.Tick += delegate
+                {
+                    closeTimer.Stop();
+                    if (generation == _workflowGeneration && IsVisible) HideIt();
+                };
+                closeTimer.Start();
+            }));
+        });
+    }
+
+    void OpenWorktreeInCodex(GitWorktreeItem item, string source)
+    {
+        if (item == null || _commandCenter == null || _worktreeLaunchBusy) return;
+        int generation = ++_worktreeLaunchGeneration;
+        string path = item.Path;
+        _worktreeLaunchBusy = true;
+        _commandCenter.RenderWorktreeLaunch(true, "Asking Codex Desktop to open " + item.Branch + "...", false);
+        Log("Codex workspace handoff requested by " + source + " for " + path);
+
+        ThreadPool.QueueUserWorkItem(delegate
+        {
+            CodexDesktopWorkspaceLaunchResult result = CodexDesktopWorkspaceLauncher.Launch(path);
+            Dispatcher.BeginInvoke(new Action(delegate
+            {
+                if (generation != _worktreeLaunchGeneration) return;
+                _worktreeLaunchBusy = false;
+                if (_commandCenter == null) return;
+                _commandCenter.RenderWorktreeLaunch(false, result.Detail, !result.Succeeded);
+                Log("Codex workspace handoff " + (result.Succeeded ? "requested" : "failed") + ": " + result.Detail);
+                if (!result.Succeeded) return;
+
+                var closeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+                closeTimer.Tick += delegate
+                {
+                    closeTimer.Stop();
+                    if (generation == _worktreeLaunchGeneration && IsVisible) HideIt();
+                };
+                closeTimer.Start();
+            }));
+        });
     }
 
     void BeginServerStatusCheck()
@@ -689,6 +763,7 @@ class Popup : Window
             Dispatcher.BeginInvoke(new Action(delegate
             {
                 if (generation != _serverGeneration || control != _serverControl) return;
+                if (_serverBusy) return;
                 _serverState = status.State;
                 if (status.State == DevServerState.Error && !string.IsNullOrEmpty(status.Detail))
                     LogServerError(status.Detail);
@@ -716,7 +791,7 @@ class Popup : Window
         }
 
         DevServerState requestedFrom = _serverState;
-        int generation = _serverGeneration;
+        int generation = ++_serverGeneration;
         Pm2DevServerController control = _serverControl;
         _serverBusy = true;
         _serverActionLabel = requestedFrom == DevServerState.Running || requestedFrom == DevServerState.Starting ? "Restarting" : "Starting";
@@ -725,7 +800,14 @@ class Popup : Window
 
         ThreadPool.QueueUserWorkItem(delegate
         {
-            DevServerCommandResult result = control.StartOrRestart(requestedFrom);
+            DevServerCommandResult result = control.StartOrRestart(requestedFrom, delegate(string progress)
+            {
+                Dispatcher.BeginInvoke(new Action(delegate
+                {
+                    if (generation != _serverGeneration || control != _serverControl || !_serverBusy) return;
+                    UpdateServerVisual(progress);
+                }));
+            });
             DevServerStatus status = result.Succeeded ? control.GetStatus() : new DevServerStatus(DevServerState.Error, result.Detail);
             Dispatcher.BeginInvoke(new Action(delegate
             {
@@ -742,45 +824,8 @@ class Popup : Window
     void UpdateServerVisual() { UpdateServerVisual(""); }
     void UpdateServerVisual(string detail)
     {
-        if (_serverBtn == null || _serverTitle == null || _serverSubtitle == null) return;
-        string title, subtitle, color, help;
-        if (_serverState == DevServerState.Running)
-        {
-            title = "Restart"; subtitle = "Running · :" + _serverPort; color = "#FF247A52"; help = "Restart the development server";
-        }
-        else if (_serverState == DevServerState.Offline)
-        {
-            title = "Start"; subtitle = "Offline · :" + _serverPort; color = "#FF2F6FED"; help = "Start the development server";
-        }
-        else if (_serverState == DevServerState.Starting)
-        {
-            title = _serverActionLabel; subtitle = "Server · :" + _serverPort; color = "#FF6657A7"; help = _serverActionLabel + " the development server";
-        }
-        else if (_serverState == DevServerState.External)
-        {
-            title = "Take over"; subtitle = "Running outside PM2"; color = "#FF9A6700"; help = "Move the running development server under PM2";
-        }
-        else if (_serverState == DevServerState.SetupRequired)
-        {
-            title = "PM2 needed"; subtitle = "Install PM2 globally"; color = "#FF555A66"; help = string.IsNullOrEmpty(detail) ? "Run npm install --global pm2, then reopen Agent Hub" : detail;
-        }
-        else if (_serverState == DevServerState.Error)
-        {
-            title = "Retry"; subtitle = "Server failed"; color = "#FFAD343E"; help = string.IsNullOrEmpty(detail) ? "Retry the development server" : detail;
-        }
-        else
-        {
-            title = "Server"; subtitle = "Checking · :" + _serverPort; color = "#FF414652"; help = "Checking the development server";
-        }
-
-        _serverTitle.Text = title;
-        _serverSubtitle.Text = subtitle;
-        _serverBtn.Background = Brush(color);
-        _serverBtn.Opacity = _serverBusy ? 0.78 : 1.0;
-        _serverBtn.Cursor = _serverState == DevServerState.SetupRequired || _serverBusy
-            ? System.Windows.Input.Cursors.Arrow
-            : System.Windows.Input.Cursors.Hand;
-        _serverBtn.ToolTip = help;
+        if (_commandCenter != null)
+            _commandCenter.RenderServer(_serverState, _serverBusy, _serverActionLabel, detail);
     }
 
     void LogServerError(string detail)
@@ -798,67 +843,68 @@ class Popup : Window
 
     void BeginGitStatusCheck()
     {
-        if (_gitControl == null || _gitPanel == null) return;
+        if (_gitControl == null || _worktreeControl == null || _commandCenter == null) return;
         int generation = _gitGeneration;
         GitProjectController control = _gitControl;
-        UpdateGitVisual();
+        GitWorktreeInventoryController worktreeControl = _worktreeControl;
+        UpdateWorkspaceVisual();
         ThreadPool.QueueUserWorkItem(delegate
         {
             GitProjectStatus status = control.GetStatus();
+            GitWorktreeInventory inventory = worktreeControl.GetInventory();
             Dispatcher.BeginInvoke(new Action(delegate
             {
-                if (generation != _gitGeneration || control != _gitControl) return;
+                if (generation != _gitGeneration || control != _gitControl || worktreeControl != _worktreeControl) return;
                 _gitStatus = status;
+                _worktreeInventory = inventory;
                 if (status.State == GitProjectState.Error && !string.IsNullOrEmpty(status.Detail))
                     LogGitError(status.Detail);
-                UpdateGitVisual();
+                if (inventory.Items.Count == 0 && !string.IsNullOrEmpty(inventory.Detail))
+                    LogGitError(inventory.Detail);
+                UpdateWorkspaceVisual();
             }));
         });
     }
 
-    void ControlGit(string action, string source)
+    void UpdateWorkspaceVisual()
     {
-        Log("git " + action + " requested by " + source + " from state " + _gitStatus.State);
-        if (_gitControl == null || _gitPanel == null || _gitBusy) return;
+        if (_commandCenter == null) return;
+        _commandCenter.RenderWorktrees(_worktreeInventory);
+        if (_visualTestMode && _visualScrollWorktreesToEnd)
+            Dispatcher.BeginInvoke(new Action(delegate { _commandCenter.ScrollWorktreesToEndForVisualTest(); }), DispatcherPriority.Loaded);
+    }
 
-        bool allowed = action == "pull" ? _gitStatus.CanPull : _gitStatus.CanPush;
-        if (!allowed)
+    public void ApplyVisualTestState(System.Collections.Generic.Dictionary<string, string> fields)
+    {
+        string value;
+        if (fields == null) return;
+        if (fields.TryGetValue("WorktreesExpanded", out value) && _commandCenter != null)
+            _commandCenter.SetWorktreesExpanded(string.Equals(value, "true", StringComparison.OrdinalIgnoreCase));
+        string workflowState;
+        if (fields.TryGetValue("WorkflowVisualState", out workflowState) && _commandCenter != null)
         {
-            _gitFeedback = action == "pull" ? _gitStatus.PullBlockedReason : _gitStatus.PushBlockedReason;
-            _gitFeedbackIsError = false;
-            UpdateGitVisual();
-            return;
+            string workflowName = fields.ContainsKey("WorkflowVisualKind") ? fields["WorkflowVisualKind"] : "Feedback";
+            if (string.Equals(workflowState, "Opening", StringComparison.OrdinalIgnoreCase))
+                _commandCenter.RenderWorkflow(true, "Opening " + workflowName + " workflow...", false);
+            else if (string.Equals(workflowState, "Error", StringComparison.OrdinalIgnoreCase))
+                _commandCenter.RenderWorkflow(false, "Codex could not start the " + workflowName + " workflow.", true);
         }
-
-        int generation = _gitGeneration;
-        GitProjectController control = _gitControl;
-        _gitBusy = true;
-        _gitBusyAction = action;
-        _gitFeedback = "";
-        _gitFeedbackIsError = false;
-        UpdateGitVisual();
-
-        ThreadPool.QueueUserWorkItem(delegate
+        if (fields.TryGetValue("ServerVisualState", out value) && !string.IsNullOrEmpty(value))
         {
-            GitProjectCommandResult result = action == "pull" ? control.Pull() : control.Push();
-            Dispatcher.BeginInvoke(new Action(delegate
+            try
             {
-                if (generation != _gitGeneration || control != _gitControl) return;
-                _gitBusy = false;
-                _gitBusyAction = "";
-                _gitStatus = result.Status ?? control.GetStatus();
-                _gitFeedback = result.Detail;
-                _gitFeedbackIsError = !result.Succeeded;
-                Log("git " + action + " completed success=" + result.Succeeded + " state=" + _gitStatus.State);
-                if (!result.Succeeded) LogGitError(action + ": " + result.Detail);
-                UpdateGitVisual();
-            }));
-        });
-    }
-
-    void UpdateGitVisual()
-    {
-        if (_gitPanel != null) _gitPanel.Render(_gitStatus, _gitBusy ? _gitBusyAction : "", _gitFeedback, _gitFeedbackIsError);
+                _serverGeneration++;
+                _serverState = (DevServerState)Enum.Parse(typeof(DevServerState), value, true);
+                _serverBusy = _serverState == DevServerState.Starting;
+                _serverActionLabel = fields.ContainsKey("ServerActionLabel") ? fields["ServerActionLabel"] : "Restarting";
+                string detail = fields.ContainsKey("ServerVisualDetail") ? fields["ServerVisualDetail"] : "";
+                UpdateServerVisual(detail);
+            }
+            catch (Exception ex)
+            {
+                Log("visual server state rejected: " + ex.Message);
+            }
+        }
     }
 
     void LogGitError(string detail)
@@ -872,65 +918,6 @@ class Popup : Window
         }
         catch { }
         Log("git control failed: " + detail);
-    }
-
-    Border Choice(string bg, string title, string sub, string num, string agent)
-    {
-        var b = new Border { CornerRadius = new CornerRadius(14), Background = Brush(bg), Height = 104, Cursor = System.Windows.Input.Cursors.Hand };
-        var sp = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        sp.Children.Add(new TextBlock { Text = title, Foreground = Brushes.White, FontSize = 19, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, FontFamily = new FontFamily("Segoe UI") });
-        sp.Children.Add(new TextBlock { Text = sub, Foreground = Brushes.White, Opacity = 0.85, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 3, 0, 0), FontFamily = new FontFamily("Segoe UI") });
-        sp.Children.Add(new TextBlock { Text = num, Foreground = Brushes.White, Opacity = 0.6, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 7, 0, 0), FontFamily = new FontFamily("Segoe UI") });
-        b.Child = sp;
-        b.MouseEnter += delegate { b.Opacity = 0.86; };
-        b.MouseLeave += delegate { b.Opacity = 1.0; };
-        b.MouseLeftButtonUp += delegate { Launch(agent); };
-        return b;
-    }
-
-    static string LastFilePath()
-    {
-        string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AgentHub");
-        return Path.Combine(dir, "last.ini");
-    }
-
-    string ReadLast()
-    {
-        try
-        {
-            string f = LastFilePath();
-            if (!string.IsNullOrEmpty(_project) && File.Exists(f))
-            {
-                string key = _project.ToLowerInvariant();
-                foreach (var line in File.ReadAllLines(f))
-                {
-                    int eq = line.IndexOf('=');
-                    if (eq > 0 && line.Substring(0, eq).Trim().ToLowerInvariant() == key) return line.Substring(eq + 1).Trim();
-                }
-            }
-        }
-        catch { }
-        return "claude";
-    }
-
-    void WriteLast(string agent)
-    {
-        try
-        {
-            string f = LastFilePath();
-            Directory.CreateDirectory(Path.GetDirectoryName(f));
-            string key = (_project ?? "").ToLowerInvariant();
-            var lines = File.Exists(f) ? new System.Collections.Generic.List<string>(File.ReadAllLines(f)) : new System.Collections.Generic.List<string>();
-            bool found = false;
-            for (int i = 0; i < lines.Count; i++)
-            {
-                int eq = lines[i].IndexOf('=');
-                if (eq > 0 && lines[i].Substring(0, eq).Trim().ToLowerInvariant() == key) { lines[i] = key + "=" + agent; found = true; break; }
-            }
-            if (!found) lines.Add(key + "=" + agent);
-            File.WriteAllLines(f, lines.ToArray());
-        }
-        catch { }
     }
 
     // Logging is opt-in: create %LOCALAPPDATA%\AgentHub\debug.flag to enable it.
@@ -961,31 +948,4 @@ class Popup : Window
     }
 
     static double Clamp01(double v) { return v < 0 ? 0 : (v > 1 ? 1 : v); }
-    static string QuoteProcessArg(string value)
-    {
-        if (string.IsNullOrEmpty(value)) return "\"\"";
-        var result = new StringBuilder();
-        result.Append('"');
-        int slashes = 0;
-        foreach (char ch in value)
-        {
-            if (ch == '\\') slashes++;
-            else if (ch == '"')
-            {
-                result.Append('\\', slashes * 2 + 1);
-                result.Append('"');
-                slashes = 0;
-            }
-            else
-            {
-                result.Append('\\', slashes);
-                result.Append(ch);
-                slashes = 0;
-            }
-        }
-        result.Append('\\', slashes * 2);
-        result.Append('"');
-        return result.ToString();
-    }
-    static SolidColorBrush Brush(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex)); }
 }

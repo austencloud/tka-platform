@@ -1,19 +1,19 @@
 <script lang="ts">
   /**
-   * VolumetricFireComponent
+   * Shared static-fire bridge.
    *
-   * Real volumetric raymarched fire using ThreeVolumetricFire library.
-   * Much more realistic than particle-based fire.
+   * VolumetricFireMesh owns the object-space raymarcher. This component only
+   * translates scene-authored dimensions and advances its clock.
    */
 
-  import { T, useTask, useThrelte } from "@threlte/core";
-  import { useTexture } from "@threlte/extras";
-  import { VolumetricFire } from "./ThreeVolumetricFire.js";
+  import { onDestroy } from "svelte";
+  import { T, useTask } from "@threlte/core";
   import { Vector3 } from "three";
-  import { onMount, onDestroy } from "svelte";
+  import { VolumetricFireMesh } from "$lib/shared/3d/effects/fire/volumetric-fire-mesh";
+  import { QualityTier } from "$lib/shared/3d/effects/types";
 
   interface Props {
-    /** Position in world space */
+    /** Center of the fire volume in world space. */
     position?: Vector3 | [number, number, number];
     /** Fire width */
     width?: number;
@@ -21,7 +21,7 @@
     height?: number;
     /** Fire depth */
     depth?: number;
-    /** Slice spacing (lower = higher quality, more expensive) */
+    /** Legacy quality hint retained for scene-config compatibility. */
     sliceSpacing?: number;
     /** Scale multiplier for the whole fire */
     scale?: number;
@@ -36,66 +36,41 @@
     scale = 1.0,
   }: Props = $props();
 
-  const { camera } = useThrelte();
-
-  const noiseTexture = useTexture("/textures/fire/nzw.png");
-  const profileTexture = useTexture("/textures/fire/firetex.png");
-
-  let fire: VolumetricFire | null = $state(null);
+  const qualityTier =
+    sliceSpacing <= 0.08
+      ? QualityTier.HIGH
+      : sliceSpacing <= 0.18
+        ? QualityTier.MEDIUM
+        : QualityTier.LOW;
+  const fire = new VolumetricFireMesh({
+    preset: "classic",
+    qualityTier,
+    boxScale: new Vector3(width * scale, height * scale, depth * scale),
+  });
+  fire.name = "SharedVolumetricFire";
+  fire.setIntensity(1.34);
+  fire.setTurbulence(1.16);
+  fire.setScrollSpeed(1.34);
+  fire.setWarp(0.94);
+  fire.setErosion(0.39);
+  fire.setEmission(3.1);
+  fire.setFlameRadius(0.74);
   let elapsedTime = 0;
 
-  // Convert position to Vector3 if array
-  const posVec = $derived(
-    Array.isArray(position) ? new Vector3(...position) : position
-  );
-
-  // Create fire when textures are ready
   $effect(() => {
-    const noise = $noiseTexture;
-    const profile = $profileTexture;
-    const cam = camera.current;
-
-    if (noise && profile && cam && !fire) {
-      try {
-        // SliceSpacing must be scaled with size to prevent vertex buffer overflow
-        // Larger fires need larger spacing between slices
-        const scaledSliceSpacing = sliceSpacing * scale;
-
-        fire = new VolumetricFire({
-          camera: cam,
-          textureNoise: noise,
-          textureProfile: profile,
-          width: width * scale,
-          height: height * scale,
-          depth: depth * scale,
-          sliceSpacing: scaledSliceSpacing,
-          segments: 16, // Reduced from 24 for better performance
-        });
-      } catch {
-        // Fire effect creation failed - likely missing textures
-      }
-    }
+    const nextPosition = Array.isArray(position)
+      ? new Vector3(...position)
+      : position;
+    fire.position.copy(nextPosition);
+    fire.scale.set(width * scale, height * scale, depth * scale);
   });
 
-  // Update fire each frame
   useTask((delta) => {
-    if (fire) {
-      elapsedTime += delta;
-      fire.position.copy(posVec);
-      fire.update(elapsedTime);
-    }
+    elapsedTime += Math.min(Math.max(delta, 0), 1 / 15);
+    fire.setTime(elapsedTime);
   });
 
-  onDestroy(() => {
-    if (fire) {
-      fire.geometry.dispose();
-      if (fire.material && "dispose" in fire.material) {
-        (fire.material as { dispose: () => void }).dispose();
-      }
-    }
-  });
+  onDestroy(() => fire.dispose());
 </script>
 
-{#if fire}
-  <T is={fire} />
-{/if}
+<T is={fire} />

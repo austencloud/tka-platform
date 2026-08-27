@@ -5,6 +5,9 @@
     FormationPreset,
   } from "@austencloud/scene-3d";
   import { onDestroy, onMount } from "svelte";
+  import InlineAnimationPlayer from "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte";
+  import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
+  import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import Viewer3DCanvas from "$lib/shared/3d/components/Viewer3DCanvas.svelte";
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import {
@@ -30,6 +33,13 @@
     { id: BackgroundType.OCEAN, label: "Bright ocean" },
   ] as const;
   const PERFORMER_COUNTS = [1, 4, 8] as const;
+  const SMOKE_TIP_EFFECT_MAP: TipEffectMap = {
+    "*": { effect: "smoke" },
+  };
+  const referenceVisibility = new AnimationVisibilityStateManager({
+    ephemeral: true,
+  });
+  referenceVisibility.setDarkMode(true);
 
   const requestedEnvironment =
     typeof window === "undefined"
@@ -132,7 +142,7 @@
       typeof window === "undefined" ? 900 : window.innerHeight;
     const aspect = viewportWidth / Math.max(1, viewportHeight);
     const baseDistance =
-      performerCount === 8 ? 16 : performerCount === 4 ? 10.5 : 5.4;
+      performerCount === 8 ? 16 : performerCount === 4 ? 10.5 : 4.1;
     const narrowMultiplier = aspect < 0.7 ? 1.35 : aspect < 1 ? 1.16 : 1;
     const lowViewportMultiplier = viewportHeight < 520 ? 1.18 : 1;
     const height = performerCount === 8 ? 2.1 : 1.35;
@@ -241,6 +251,41 @@
         hideSceneMarkers
         onSceneReadyChange={handleSceneReady}
       />
+
+      <aside
+        class="reference-2d"
+        aria-label="Synchronized production 2D smoke reference"
+      >
+        <div class="reference-heading">
+          <span>2D truth</span>
+          <strong>Same LOOP · same preset</strong>
+        </div>
+        <div class="reference-canvas">
+          <InlineAnimationPlayer
+            {sequence}
+            autoPlay
+            playbackAllowed={playing}
+            resumeWhenPlaybackAllowed
+            showControls={false}
+            chrome="minimal"
+            fill
+            showWordHeader={false}
+            externalBpm={bpm}
+            bluePropType="staff"
+            redPropType="staff"
+            tipEffectMap={SMOKE_TIP_EFFECT_MAP}
+            effectsConfigState={effectsConfig}
+            gridVisible={false}
+            backgroundAlpha={0}
+            hideTkaGlyph
+            hideStepNumbers
+            disableContextMenu
+            beatIndicators={false}
+            interactive={false}
+            visibilityManagerOverride={referenceVisibility}
+          />
+        </div>
+      </aside>
     {/if}
 
     <div class="vignette" aria-hidden="true"></div>
@@ -265,6 +310,22 @@
       <div>
         <span>Density</span>
         <strong>{diagnostic ? diagnostic.densitySum.toFixed(1) : "—"}</strong>
+      </div>
+      <div>
+        <span>Flow</span>
+        <strong
+          >{diagnostic
+            ? `${Math.sqrt(diagnostic.velocityEnergy).toFixed(2)} m/s`
+            : "—"}</strong
+        >
+      </div>
+      <div>
+        <span>Wake</span>
+        <strong
+          >{diagnostic
+            ? `${diagnostic.wakeDistance.toFixed(2)} m`
+            : "—"}</strong
+        >
       </div>
       <div>
         <span>CPU sim</span>
@@ -475,13 +536,64 @@
     right: clamp(1rem, 2.8vw, 4rem);
     z-index: 4;
     display: grid;
-    grid-template-columns: repeat(5, auto);
+    grid-template-columns: repeat(7, auto);
     gap: 1rem;
     padding: 0.8rem 1rem;
     border: 1px solid var(--stroke);
     border-radius: 0.9rem;
     background: var(--panel);
     backdrop-filter: blur(1.25rem);
+  }
+
+  .reference-2d {
+    position: absolute;
+    top: clamp(8rem, 19vh, 12rem);
+    right: clamp(1rem, 2.8vw, 4rem);
+    z-index: 4;
+    display: grid;
+    width: clamp(15rem, 24vw, 24rem);
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border: 1px solid var(--stroke);
+    border-radius: 1rem;
+    background: color-mix(in srgb, #070a12 72%, transparent);
+    box-shadow: 0 1.2rem 4rem rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(1rem);
+  }
+
+  .reference-heading {
+    position: absolute;
+    inset: 0.7rem 0.8rem auto;
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    pointer-events: none;
+    text-shadow: 0 0.15rem 0.8rem #000;
+  }
+
+  .reference-heading span,
+  .reference-heading strong {
+    font-size: 0.7rem;
+    font-weight: 760;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .reference-heading span {
+    color: #c4b5fd;
+  }
+
+  .reference-heading strong {
+    color: #cbd5e1;
+  }
+
+  .reference-canvas,
+  .reference-canvas :global(.animator-canvas),
+  .reference-canvas :global(.canvas-wrapper) {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
   }
 
   .telemetry div {
@@ -647,6 +759,11 @@
       grid-template-columns: repeat(2, auto);
     }
 
+    .reference-2d {
+      top: 8rem;
+      width: clamp(13rem, 28vw, 18rem);
+    }
+
     .six-up {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
@@ -672,6 +789,16 @@
       padding: 0.55rem 0.7rem;
     }
 
+    .reference-2d {
+      top: 7.2rem;
+      right: 0.7rem;
+      width: min(42vw, 15rem);
+    }
+
+    .reference-heading strong {
+      display: none;
+    }
+
     .control-grid {
       grid-template-columns: 1fr;
     }
@@ -694,6 +821,16 @@
   @container (max-width: 31rem) {
     .telemetry {
       display: none;
+    }
+
+    .reference-2d {
+      top: 6.6rem;
+      width: 9rem;
+      border-radius: 0.7rem;
+    }
+
+    .reference-heading {
+      inset: 0.4rem 0.5rem auto;
     }
 
     .hero-copy {
@@ -733,7 +870,11 @@
       min-width: 0;
       overflow-x: auto;
       overscroll-behavior-inline: contain;
-      scrollbar-width: thin;
+      scrollbar-width: none;
+    }
+
+    .chip-row::-webkit-scrollbar {
+      display: none;
     }
 
     .chip-row > :global(*) {
@@ -769,7 +910,7 @@
     }
 
     h1 {
-      font-size: 2.5rem;
+      font-size: 2rem;
     }
 
     .hero-copy > p:last-child {
@@ -782,25 +923,50 @@
       padding: 0.5rem 0.65rem;
     }
 
+    .reference-2d {
+      top: 4.25rem;
+      right: 9.8rem;
+      width: 10rem;
+      border-radius: 0.7rem;
+    }
+
+    .reference-heading {
+      inset: 0.4rem 0.5rem auto;
+    }
+
+    .reference-heading strong {
+      display: none;
+    }
+
     .control-deck {
       right: 0.5rem;
-      bottom: 0.45rem;
+      bottom: 0.35rem;
       left: 0.5rem;
-      grid-template-columns: 1.2fr 1fr;
+      grid-template-columns: minmax(20rem, 0.9fr) minmax(0, 1.4fr);
       gap: 0.6rem;
-      padding: 0.55rem;
+      padding: 0.45rem;
     }
 
     .control-grid {
-      grid-template-columns: auto auto minmax(18rem, 1fr);
+      grid-template-columns: auto auto minmax(15rem, 1fr);
       gap: 0.55rem;
       padding-top: 0;
       border-top: 0;
     }
 
+    .six-up {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 0.25rem;
+    }
+
+    .group-label {
+      font-size: 0.62rem;
+    }
+
     button {
-      min-height: 2.25rem;
-      padding-block: 0.35rem;
+      min-height: 2rem;
+      padding: 0.28rem 0.42rem;
+      font-size: 0.7rem;
     }
   }
 

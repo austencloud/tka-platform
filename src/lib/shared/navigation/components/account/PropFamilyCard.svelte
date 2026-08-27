@@ -1,271 +1,241 @@
-<!-- PropFamilyCard.svelte - Individual toggleable prop family card -->
+<!-- One profile prop family. Selecting it reveals the registered variations. -->
 <script lang="ts">
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { ProfilePropFamily } from "$lib/shared/community/domain/profile-prop-catalog";
+  import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   interface Props {
-    propType: PropType;
-    label: string;
-    selected: boolean;
-    isFavorite: boolean;
-    choosingFavorite: boolean;
+    family: ProfilePropFamily;
+    selectedVariants: PropType[];
+    active: boolean;
     disabled?: boolean;
-    ontoggle: (propType: PropType) => void;
-    onfavorite: (propType: PropType) => void;
+    onselect: (representative: PropType) => void;
   }
 
   let {
-    propType,
-    label,
-    selected,
-    isFavorite,
-    choosingFavorite,
+    family,
+    selectedVariants,
+    active,
     disabled = false,
-    ontoggle,
-    onfavorite,
+    onselect,
   }: Props = $props();
 
-  const displayInfo = $derived(getPropTypeDisplayInfo(propType));
-
-  function handleClick() {
-    if (disabled) return;
-
-    if (choosingFavorite) {
-      if (!selected) return;
-      onfavorite(propType);
-      return;
-    }
-
-    ontoggle(propType);
-  }
+  const selected = $derived(selectedVariants.length > 0);
+  const previewProp = $derived(
+    selectedVariants[selectedVariants.length - 1] ?? family.representative
+  );
+  const selectionSummary = $derived(
+    selectedVariants
+      .map((prop) => getPropTypeDisplayInfo(prop).label)
+      .join(", ")
+  );
+  const selectionDetail = $derived(
+    selectedVariants.length === 1 && selectionSummary === family.label
+      ? "1 version selected"
+      : selectionSummary
+  );
 </script>
 
-<div
-  class="prop-family-card"
+<button
+  type="button"
+  class="family-card"
   class:selected
-  class:disabled
-  class:favorite-picking={choosingFavorite}
-  class:favorite-candidate={choosingFavorite && selected}
-  style:border-color={selected ? "var(--theme-accent, #6366f1)" : undefined}
-  style:background={selected
-    ? "color-mix(in srgb, var(--theme-accent) 15%, transparent)"
-    : undefined}
-  style:box-shadow={selected
-    ? "0 0 0 1px var(--theme-accent, #6366f1), 0 0 16px color-mix(in srgb, var(--theme-accent) 30%, transparent)"
-    : undefined}
+  class:active
+  onclick={() => onselect(family.representative)}
+  aria-pressed={selected}
+  {disabled}
 >
-  <button
-    class="prop-family-toggle"
-    aria-pressed={choosingFavorite ? isFavorite : selected}
-    aria-label={choosingFavorite
-      ? selected
-        ? `Choose ${label} as favorite${isFavorite ? " (current favorite)" : ""}`
-        : `${label} is not selected`
-      : `${label}${selected ? " (selected)" : ""}${isFavorite ? " (favorite)" : ""}`}
-    onclick={handleClick}
-    disabled={disabled || (choosingFavorite && !selected)}
-  >
-    <img
-      src={displayInfo.image}
-      alt={label}
-      class="prop-image"
-      loading="lazy"
+  <span class="art-stage" aria-hidden="true">
+    <PropCompositionPreview
+      propType={previewProp}
+      size={64}
+      useSavedOverrides={false}
     />
-    <span class="prop-label">
-      {#if selected}
-        <i class="fas fa-check selected-check" aria-hidden="true"></i>
-      {/if}
-      {label}
-    </span>
-  </button>
-
-  {#if selected && isFavorite}
-    <div
-      class="favorite-status"
-      role="status"
-      aria-label={`${label} is your favorite`}
+    {#if selected}
+      <span class="selection-count">{selectedVariants.length}</span>
+    {:else}
+      <span class="add-mark"><i class="fas fa-plus"></i></span>
+    {/if}
+  </span>
+  <span class="card-copy">
+    <strong>{family.label}</strong>
+    <small
+      >{selected
+        ? selectionDetail
+        : `${family.variants.length} ${family.variants.length === 1 ? "version" : "versions"}`}</small
     >
-      <i class="fas fa-star" aria-hidden="true"></i>
-      <span>Favorite</span>
-    </div>
-  {/if}
-</div>
+  </span>
+  <span class="detail-cue" aria-hidden="true">
+    <i class="fas fa-chevron-right"></i>
+  </span>
+</button>
 
 <style>
-  .prop-family-card {
+  .family-card {
     position: relative;
+    display: grid;
+    grid-template-columns: 3.25rem minmax(0, 1fr) auto;
+    min-width: 0;
+    min-height: 5.25rem;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.7rem;
+    color: var(--theme-text, white);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 0.85rem;
+    cursor: pointer;
+    text-align: left;
     transition:
+      transform var(--duration-fast, 150ms) ease,
       border-color var(--duration-fast, 150ms) ease,
       background var(--duration-fast, 150ms) ease,
-      transform var(--duration-fast, 150ms) ease,
-      opacity var(--duration-fast, 150ms) ease;
-    min-height: var(--min-touch-target, 50px);
-    min-width: var(--min-touch-target, 50px);
-    overflow: hidden;
+      box-shadow var(--duration-fast, 150ms) ease;
   }
 
-  .prop-family-card:hover:not(.disabled),
-  .prop-family-card:focus-within:not(.disabled) {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+  .family-card:hover:not(:disabled) {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.07));
+    transform: translateY(-1px);
   }
 
-  .prop-family-toggle {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    min-height: 100%;
-    padding: 12px 8px;
-    color: inherit;
-    background: transparent;
-    border: 0;
-    cursor: pointer;
-  }
-
-  .prop-family-toggle:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, white);
-    outline-offset: -3px;
-  }
-
-  .prop-family-card.selected {
-    border-color: var(--theme-accent, #6366f1);
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    box-shadow:
-      0 0 0 1px var(--theme-accent, #6366f1),
-      0 0 16px color-mix(in srgb, var(--theme-accent) 30%, transparent);
-  }
-
-  .prop-family-card.disabled {
-    opacity: 0.5;
-  }
-
-  .favorite-picking:not(.favorite-candidate) {
-    opacity: 0.42;
-  }
-
-  .prop-family-toggle:disabled {
-    cursor: not-allowed;
-  }
-
-  .favorite-status {
-    position: absolute;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    min-height: 28px;
-    padding: 0 8px;
-    border-radius: 999px;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 650;
-    line-height: 1;
-    white-space: nowrap;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
-    top: 8px;
-    left: 8px;
-    gap: 5px;
-    color: var(--semantic-warning, #f59e0b);
+  .family-card.selected {
+    border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
     background: color-mix(
       in srgb,
-      var(--semantic-warning, #f59e0b) 16%,
-      var(--theme-card-bg, #11141c)
+      var(--theme-accent) 9%,
+      var(--theme-card-bg)
     );
-    border: 1px solid
-      color-mix(in srgb, var(--semantic-warning, #f59e0b) 68%, transparent);
   }
 
-  .prop-image {
-    width: clamp(40px, 50%, 72px);
-    height: auto;
-    aspect-ratio: 1;
-    object-fit: contain;
+  .family-card.active {
+    border-color: var(--theme-accent, #6366f1);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--theme-accent) 50%, transparent),
+      0 0 18px color-mix(in srgb, var(--theme-accent) 18%, transparent);
   }
 
-  .prop-label {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    font-size: var(--font-size-sm, 14px);
+  .family-card:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent) 72%, white);
+    outline-offset: 2px;
+  }
+
+  .family-card:disabled {
+    cursor: wait;
+    opacity: 0.58;
+  }
+
+  .art-stage {
+    position: relative;
+    display: grid;
+    width: 3.25rem;
+    height: 3.25rem;
+    place-items: center;
+    border-radius: 0.7rem;
+    background: color-mix(in srgb, var(--theme-text) 4%, transparent);
+  }
+
+  .art-stage :global(.prop-composition-preview) {
+    width: 80%;
+    height: 80%;
+  }
+
+  .selection-count,
+  .add-mark {
+    position: absolute;
+    top: -0.25rem;
+    right: -0.25rem;
+    display: grid;
+    width: 1.35rem;
+    height: 1.35rem;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 75%, white);
+    border-radius: 50%;
+    color: white;
+    background: color-mix(in srgb, var(--theme-accent) 82%, #090b13);
+    font-size: 0.875rem;
+    font-weight: 850;
+  }
+
+  .add-mark {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    text-align: center;
-    line-height: 1.2;
+    background: var(--theme-panel-bg, #11141c);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
-  .selected-check {
-    color: var(--theme-accent, #6366f1);
-    font-size: 0.8em;
+  .card-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.2rem;
   }
 
-  .selected .prop-label {
-    color: var(--theme-text, white);
+  .card-copy strong,
+  .card-copy small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    .favorite-candidate .prop-family-toggle {
-      cursor:
-        url("/cursors/favorite-star.svg") 16 16,
-        crosshair;
-    }
-
-    .favorite-candidate:hover {
-      border-color: var(--semantic-warning, #f59e0b) !important;
-    }
+  .card-copy strong {
+    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
   }
 
-  @container (min-width: 90rem) {
-    .prop-family-toggle {
-      gap: 0.75rem;
-      padding: 1.5rem 1rem;
+  .card-copy small {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
+  }
+
+  .detail-cue {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: 0.75rem;
+  }
+
+  @container (min-width: 120rem) {
+    .family-card {
+      grid-template-columns: 5rem minmax(0, 1fr) auto;
+      min-height: 7rem;
+      gap: 1rem;
+      padding: 1rem;
     }
 
-    .favorite-status {
-      min-height: 2rem;
-      padding: 0 0.75rem;
-      font-size: 1rem;
+    .art-stage {
+      width: 5rem;
+      height: 5rem;
     }
 
-    .prop-image {
-      width: clamp(5rem, 50%, 8rem);
+    .card-copy strong {
+      font-size: 1.5rem;
     }
 
-    .prop-label {
+    .card-copy small {
       font-size: 1.125rem;
     }
   }
 
-  @container (min-width: 140rem) {
-    .prop-family-toggle {
-      gap: 1rem;
-      padding: 2rem 1.5rem;
+  @media (max-width: 520px) {
+    .family-card {
+      grid-template-columns: 2.75rem minmax(0, 1fr);
+      min-height: 4.5rem;
+      gap: 0.45rem;
+      padding: 0.55rem;
     }
 
-    .favorite-status {
-      min-height: 2.5rem;
-      padding: 0 1rem;
-      font-size: 1.25rem;
+    .art-stage {
+      width: 2.75rem;
+      height: 2.75rem;
     }
 
-    .prop-image {
-      width: clamp(8rem, 48%, 12rem);
-    }
-
-    .prop-label {
-      font-size: 1.5rem;
+    .card-copy small,
+    .detail-cue {
+      display: none;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .prop-family-card {
+    .family-card {
       transition: none;
-      transform: none !important;
     }
   }
 </style>

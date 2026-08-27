@@ -696,7 +696,7 @@
 		}
 	}
 
-	/* The site-wide big-screen seam (.claude/rules/4k-native-layout.md). */
+	/* Wide-canvas composition: give the two work areas more breathing room. */
 	@media (min-width: 1680px) {
 		.combinator {
 			padding: 2rem;
@@ -704,45 +704,4 @@
 		}
 	}
 
-	/*
-		Second tier: above here nothing is scaling for you — no OS scaling, and the
-		lockstep root ramp in app.css is scoped to the marketing and legal shells,
-		so a lab page stays at a 16px root at 3840. Type and element size have to
-		step by hand or the whole surface reads as a thumbnail of itself.
-	*/
-	@media (min-width: 2600px) {
-		.bucket {
-			--step-size: 5.5rem;
-		}
-		.head h1 {
-			font-size: 2.4rem;
-		}
-		.lede,
-		.statement p {
-			font-size: 1.2rem;
-		}
-		.fine {
-			font-size: 1.05rem;
-		}
-		.count {
-			font-size: 2.1rem;
-		}
-		.bucket-head,
-		.bucket-n {
-			font-size: 1.2rem;
-		}
-		.word {
-			font-size: 1.35rem;
-		}
-		.badge {
-			font-size: 0.95rem;
-		}
-		.meta {
-			font-size: 1rem;
-		}
-		.combine {
-			font-size: 1.2rem;
-			min-height: 56px;
-		}
-	}
 </style>

@@ -4,9 +4,13 @@ import {
   type TunnelComposition,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import {
+  TunnelSnapshotSchema,
+  type TunnelSnapshot,
+} from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
 import type { TunnelRelationshipRule } from "./tunnel-relationship-rule";
 
-export const TUNNEL_CREATOR_DRAFT_VERSION = 3;
+export const TUNNEL_CREATOR_DRAFT_VERSION = 4;
 
 export type TunnelSourceOrigin = "picked" | "generated";
 export type TunnelWorkspacePanel = "settings" | "pairing" | "generation" | null;
@@ -45,6 +49,8 @@ export interface TunnelCreatorDraft {
   sourceStates: TunnelPerformerSourceDraft[];
   workspace: TunnelWorkspaceDraft;
   editingTunnel: TunnelEditTarget | null;
+  /** Tunnel-local render state. Null only for drafts created before v4. */
+  presentation: TunnelSnapshot | null;
 }
 
 const SequenceSnapshotSchema = z
@@ -99,6 +105,17 @@ const TunnelCreatorDraftSchema = z.object({
   sourceStates: SourceStatesSchema,
   workspace: WorkspaceSchema,
   editingTunnel: EditingTunnelSchema,
+  presentation: TunnelSnapshotSchema.nullable(),
+});
+
+const VersionThreeTunnelCreatorDraftSchema = z.object({
+  version: z.literal(3),
+  mode: z.enum(["separate", "linked"]),
+  composition: TunnelCompositionSchema.nullable(),
+  relationship: RelationshipSchema,
+  sourceStates: SourceStatesSchema,
+  workspace: WorkspaceSchema,
+  editingTunnel: EditingTunnelSchema,
 });
 
 const VersionTwoTunnelCreatorDraftSchema = z.object({
@@ -128,12 +145,22 @@ export function parseTunnelCreatorDraft(
   const parsed = TunnelCreatorDraftSchema.safeParse(value);
   if (parsed.success) return parsed.data as unknown as TunnelCreatorDraft;
 
+  const versionThree = VersionThreeTunnelCreatorDraftSchema.safeParse(value);
+  if (versionThree.success) {
+    return {
+      ...versionThree.data,
+      version: TUNNEL_CREATOR_DRAFT_VERSION,
+      presentation: null,
+    } as unknown as TunnelCreatorDraft;
+  }
+
   const versionTwo = VersionTwoTunnelCreatorDraftSchema.safeParse(value);
   if (versionTwo.success) {
     return {
       ...versionTwo.data,
       version: TUNNEL_CREATOR_DRAFT_VERSION,
       workspace: { activePanel: null, generationTargetId: null },
+      presentation: null,
     } as unknown as TunnelCreatorDraft;
   }
 
@@ -145,5 +172,6 @@ export function parseTunnelCreatorDraft(
     version: TUNNEL_CREATOR_DRAFT_VERSION,
     sourceStates: [],
     workspace: { activePanel: null, generationTargetId: null },
+    presentation: null,
   } as unknown as TunnelCreatorDraft;
 }

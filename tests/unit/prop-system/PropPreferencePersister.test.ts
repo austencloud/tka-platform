@@ -24,13 +24,16 @@ vi.mock("$lib/shared/auth/firebase", () => ({
   getFirestoreInstance: vi.fn().mockResolvedValue({}),
 }));
 
-import { savePropPreferences, removePropPreference } from "../../../src/lib/shared/community/services/prop-preference-persister";
+import {
+  savePropPreferences,
+  removePropPreference,
+  setFavoriteProp,
+} from "../../../src/lib/shared/community/services/prop-preference-persister";
 import { PropType } from "../../../src/lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { PropPreferences } from "../../../src/lib/shared/community/services/contracts/types";
 import { updateDoc, getDoc } from "firebase/firestore";
 
 describe("PropPreferencePersister", () => {
-
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(updateDoc).mockResolvedValue(undefined);
@@ -176,6 +179,25 @@ describe("PropPreferencePersister", () => {
       const savedPrefs = vi.mocked(updateDoc).mock.calls[0][1] as any;
       expect(savedPrefs.favoriteProp).toBe(PropType.STAFF);
       expect(savedPrefs.propsISpinWith).toEqual([PropType.STAFF]);
+    });
+  });
+
+  describe("Profile prop", () => {
+    it("allows an explicit Profile prop to be cleared", async () => {
+      vi.mocked(getDoc).mockResolvedValue({
+        exists: () => true,
+        data: () => ({
+          propsISpinWith: [PropType.STAFF, PropType.FAN],
+          favoriteProp: PropType.STAFF,
+          favoriteCatdog: null,
+        }),
+      } as any);
+
+      await setFavoriteProp("user1", null);
+
+      const savedPrefs = vi.mocked(updateDoc).mock.calls[0][1] as any;
+      expect(savedPrefs.propsISpinWith).toEqual([PropType.STAFF, PropType.FAN]);
+      expect(savedPrefs.favoriteProp).toBeNull();
     });
   });
 });

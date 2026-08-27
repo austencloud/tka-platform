@@ -7,7 +7,11 @@
   import type { TunnelViewController } from "./tunnel-view-controller.svelte";
   import type { ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import {
+    animationSettings,
+    type AnimationSettingsState,
+  } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import type { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
   import {
     toggleTunnelPlayback,
@@ -26,6 +30,10 @@
     onPlayingChange,
     playing = $bindable(true),
     stageFit = "cover",
+    animationSettingsState = animationSettings,
+    visibilityManager,
+    blueBuugengFlipped,
+    redBuugengFlipped,
   }: {
     sequence: SequenceData;
     playback?: ViewerPlaybackState;
@@ -49,6 +57,10 @@
     playing?: boolean;
     /** The viewer fills its pane; framed previews preserve the complete tunnel. */
     stageFit?: "cover" | "contain";
+    animationSettingsState?: AnimationSettingsState;
+    visibilityManager?: AnimationVisibilityStateManager;
+    blueBuugengFlipped?: boolean;
+    redBuugengFlipped?: boolean;
   } = $props();
 
   function handlePlaybackToggle(): void {
@@ -155,7 +167,10 @@
   // effects-config visuals back in — otherwise dragging a dial mutates a store
   // the renderer never reads. Shared with the landing showcase via the helper.
   const trailSettings = $derived(
-    foldTrailIntentIntoSettings(animationSettings.trail, effectsConfig?.trails)
+    foldTrailIntentIntoSettings(
+      animationSettingsState.trail,
+      effectsConfig?.trails
+    )
   );
 </script>
 
@@ -176,6 +191,8 @@
         tunnelSelectedLayer={controller.selectedArm}
         {bluePropType}
         {redPropType}
+        {blueBuugengFlipped}
+        {redBuugengFlipped}
         sequenceData={seq}
         currentStep={displayStep}
         isPlaying={playing}
@@ -187,6 +204,7 @@
         {trailSettings}
         {tipEffectMap}
         effectsConfigState={effectsConfig ?? undefined}
+        visibilityManagerOverride={visibilityManager}
         gridVisible={controller.gridVisible}
         hideHeader={true}
         hideProgressBar={true}

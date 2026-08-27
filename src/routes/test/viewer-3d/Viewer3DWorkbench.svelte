@@ -1,6 +1,6 @@
 <script lang="ts">
   import { BackgroundType } from "@austencloud/backgrounds";
-  import type { CameraStateSnapshot } from "@austencloud/scene-3d";
+  import { Plane, type CameraStateSnapshot } from "@austencloud/scene-3d";
   import { replaceState } from "$app/navigation";
   import { onDestroy } from "svelte";
 
@@ -15,6 +15,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import demoSequenceJson from "$lib/shared/landing/data/demo-sequence.json";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { VIEWER_FRONT_STAGE_FACING_ANGLE } from "$lib/shared/3d/domain/viewer-formation-facing";
 
   const WORKBENCH_SCENES = new Set<string>([
     BackgroundType.FOREST,
@@ -44,7 +45,16 @@
       new URLSearchParams(window.location.search),
       48
     );
-    if (!pose) return undefined;
+    if (!pose) {
+      if (requestedScene() !== BackgroundType.EMBER) return undefined;
+      return {
+        position: { x: 0, y: 3.4, z: -9.8 },
+        target: { x: 0, y: 1.4, z: 5.2 },
+        rotation: { x: 0, y: 0, z: 0 },
+        fov: 50,
+        timestamp: 0,
+      };
+    }
     return {
       ...pose,
       rotation: { x: 0, y: 0, z: 0 },
@@ -52,12 +62,26 @@
     };
   }
 
+  function requestedPerformers() {
+    if (requestedScene() !== BackgroundType.EMBER) return [];
+    // Seed the same audience-facing heading used by the live formation owner.
+    // Add/remove and formation changes must preserve this visible front.
+    return [
+      {
+        position: { x: 0, z: 0 },
+        facingAngle: VIEWER_FRONT_STAGE_FACING_ANGLE,
+        customBluePlane: Plane.WALL,
+        customRedPlane: Plane.WALL,
+      },
+    ];
+  }
+
   const sequence = demoSequenceJson as unknown as SequenceData;
   const viewer = createViewer3DState({
     renderMode: "3d",
     backgroundType: requestedScene(),
     camera: requestedCamera(),
-    performers: [],
+    performers: requestedPerformers(),
     selectedPerformerIndex: 0,
     activeFormation: "line",
     defaultProp: PropType.STAFF,

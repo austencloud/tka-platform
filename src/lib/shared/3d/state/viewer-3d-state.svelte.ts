@@ -36,11 +36,11 @@ import {
 import { DEFAULT_AVATAR_ID } from "@austencloud/scene-3d";
 import { STAGE } from "@austencloud/scene-3d";
 import type { FormationPreset } from "@austencloud/scene-3d";
-import { calculateFacingAngle } from "@austencloud/scene-3d";
 import {
   PRESET_VALID_COUNTS,
   createFormationFromPreset,
 } from "@austencloud/scene-3d";
+import { resolveViewerFormationFacingAngle } from "../domain/viewer-formation-facing";
 import { isWebGL2Available } from "../capabilities/webgl-capabilities";
 import { fits3DViewportNow } from "../capabilities/viewport-3d-gate.svelte";
 import { userProportionsState } from "@austencloud/scene-3d";
@@ -1073,9 +1073,11 @@ function buildViewer3DState(
     const afterPerformers: PerformerPositionSnapshot[] =
       performerManager.performers.map((p, i) => {
         const slot = targetFormation.slots.find((s) => s.index === i);
-        const facing = slot
-          ? calculateFacingAngle(slot, targetFormation)
-          : p.facingAngle;
+        const facing = resolveViewerFormationFacingAngle(
+          slot,
+          targetFormation,
+          p.facingAngle
+        );
         return {
           id: p.id,
           position: slot
@@ -1537,7 +1539,9 @@ function buildViewer3DState(
             if (snap.settings.effortId !== null)
               p.setEffort(snap.settings.effortId as EffortId);
             if (snap.settings.effect !== null)
-              p.setEffect(snap.settings.effect as EffectType, { equipBuild: false });
+              p.setEffect(snap.settings.effect as EffectType, {
+                equipBuild: false,
+              });
             if (snap.settings.staffLengthCm !== null)
               p.setStaffLengthCm(snap.settings.staffLengthCm);
           }

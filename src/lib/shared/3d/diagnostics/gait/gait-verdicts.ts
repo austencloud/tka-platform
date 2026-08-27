@@ -10,6 +10,7 @@
 import type { GaitReport } from "./gait-analysis";
 
 export type Verdict = "good" | "warn" | "bad" | "none";
+export type GaitReportScope = "gait" | "arrival";
 
 export interface VerdictRow {
   name: string;
@@ -35,10 +36,13 @@ function band(
   return "bad";
 }
 
-export function verdictRows(report: GaitReport | null): VerdictRow[] {
+export function verdictRows(
+  report: GaitReport | null,
+  scope: GaitReportScope = "gait"
+): VerdictRow[] {
   const r = report;
   if (!r || r.stances.length === 0) return [];
-  return [
+  const rows = [
     {
       name: "Foot slip per step",
       value: cm(r.meanSlip),
@@ -178,9 +182,24 @@ export function verdictRows(report: GaitReport | null): VerdictRow[] {
       tell: "the sway must change sides with the foot, or it is not transfer",
     },
   ];
+  if (scope === "gait") return rows;
+  const arrivalMetrics = new Set([
+    "Foot slip per step",
+    "Heel lift in stance",
+    "Joint teleports",
+    "Worst teleport",
+    "Knee twitches",
+    "Knee jerk",
+    "Cycling on the spot",
+  ]);
+  return rows.filter((row) => arrivalMetrics.has(row.name));
 }
 
 /** How many measurements sit outside the human range. */
-export function countFailing(report: GaitReport | null): number {
-  return verdictRows(report).filter((row) => row.verdict === "bad").length;
+export function countFailing(
+  report: GaitReport | null,
+  scope: GaitReportScope = "gait"
+): number {
+  return verdictRows(report, scope).filter((row) => row.verdict === "bad")
+    .length;
 }

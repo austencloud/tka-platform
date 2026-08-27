@@ -9,9 +9,14 @@
     PropType.STAFF,
     PropType.FAN,
     PropType.CLUB,
+    PropType.CHICKEN,
   ]);
   let favoriteProp = $state<PropType | null>(PropType.STAFF);
   let favoriteCatdog = $state<CatdogCombo | null>(null);
+  let saving = $state(false);
+  let error = $state<string | null>(null);
+  let failNextSave = $state(false);
+  let writeCount = $state(0);
 
   // Review-only adapter for the production drawer. It keeps the real component
   // and state transitions while replacing Firebase writes with local state.
@@ -29,7 +34,29 @@
       return false;
     },
     get saving() {
-      return false;
+      return saving;
+    },
+    get error() {
+      return error;
+    },
+    async saveProfileSelection(
+      props: readonly PropType[],
+      profileProp: PropType | null
+    ) {
+      saving = true;
+      error = null;
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      if (failNextSave) {
+        failNextSave = false;
+        saving = false;
+        error =
+          "Your changes weren't saved. The editor kept your choices so you can retry.";
+        throw new Error("Simulated profile preference write failure");
+      }
+      selectedProps = [...props];
+      favoriteProp = profileProp;
+      writeCount += 1;
+      saving = false;
     },
     async toggleProp(prop: PropType) {
       if (selectedProps.includes(prop)) {
@@ -39,7 +66,11 @@
         selectedProps = [...selectedProps, prop];
       }
     },
-    async setFavorite(prop: PropType) {
+    async setFavorite(prop: PropType | null) {
+      if (prop === null) {
+        favoriteProp = null;
+        return;
+      }
       if (!selectedProps.includes(prop)) {
         selectedProps = [...selectedProps, prop];
       }
@@ -49,12 +80,10 @@
       favoriteCatdog = combo;
     },
     async reload() {},
+    clearError() {
+      error = null;
+    },
   } satisfies PropPreferenceState;
-
-  // Keep the review target visible while DevTools changes viewport dimensions.
-  $effect(() => {
-    if (!isOpen) isOpen = true;
-  });
 </script>
 
 <main class="review-page">
@@ -74,7 +103,27 @@
         <dt>Favorite</dt>
         <dd>{favoriteProp ?? "None"}</dd>
       </div>
+      <div>
+        <dt>Writes</dt>
+        <dd>{writeCount}</dd>
+      </div>
+      <div>
+        <dt>Next save</dt>
+        <dd>{failNextSave ? "Fail" : "Succeed"}</dd>
+      </div>
     </dl>
+    <div class="simulation-controls" aria-label="Review save behavior">
+      <button
+        type="button"
+        class:active={!failNextSave}
+        onclick={() => (failNextSave = false)}>Next save succeeds</button
+      >
+      <button
+        type="button"
+        class:active={failNextSave}
+        onclick={() => (failNextSave = true)}>Fail next save</button
+      >
+    </div>
     <button class="open-button" onclick={() => (isOpen = true)}>
       Open prop picker
     </button>
@@ -122,7 +171,7 @@
 
   .kicker {
     color: color-mix(in srgb, var(--prop-blue, #3b82f6) 72%, white);
-    font-size: var(--font-size-compact, 0.75rem);
+    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
     font-weight: 750;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -157,7 +206,7 @@
 
   dt {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-    font-size: var(--font-size-compact, 0.75rem);
+    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
   }
 
   dd {
@@ -177,6 +226,30 @@
     font: inherit;
     font-weight: 700;
     cursor: pointer;
+  }
+
+  .simulation-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .simulation-controls button {
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.6rem 0.8rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 0.65rem;
+    cursor: pointer;
+    font: inherit;
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .simulation-controls button.active {
+    color: var(--theme-text, white);
+    border-color: var(--theme-accent, #6366f1);
   }
 
   .open-button:focus-visible {

@@ -1,7 +1,7 @@
 import {
   Data3DTexture,
   LinearFilter,
-  RedFormat,
+  RGBAFormat,
   UnsignedByteType,
 } from "three";
 import type { Smoke3DParams } from "$lib/shared/effects/translators/webgl3d-types";
@@ -10,16 +10,27 @@ import type {
   SmokeTipSource3D,
 } from "../scene-effects/scene-effect-source-3d";
 
-export const SMOKE_VOLUME_BRICK_SIZE = 20;
+export const SMOKE_VOLUME_BRICK_SIZE = 24;
 export const SMOKE_VOLUME_MAX_BRICKS = 8;
 export const SMOKE_VOLUME_FIXED_STEP = 1 / 30;
 const ATLAS_EDGE_BRICKS = 2;
-const PRESSURE_ITERATIONS = 2;
 const MAX_FRAME_STEPS = 2;
-const VOLUME_SOURCE_GAIN = 4;
+const VOLUME_SOURCE_GAIN = 0.34;
+const SOURCE_MOMENTUM_TRANSFER = 0.62;
+const VELOCITY_ATLAS_RANGE = 3;
 const EPSILON = 1e-6;
 
-const BRICK_HALF_EXTENT: SceneEffectVector3 = { x: 2.35, y: 3.05, z: 2.35 };
+const BASE_BRICK_HALF_EXTENT: SceneEffectVector3 = {
+  x: 1.35,
+  y: 1.8,
+  z: 1.35,
+};
+const SOLO_PLUME_HALF_EXTENT: SceneEffectVector3 = {
+  x: 3.15,
+  y: 2.85,
+  z: 2.25,
+};
+const DUET_PLUME_HALF_EXTENT: SceneEffectVector3 = { x: 2.45, y: 2.5, z: 1.85 };
 
 export interface SmokeVolumeBrickRenderState3D {
   slot: number;
@@ -41,6 +52,10 @@ export interface SmokeVolumeDebugSnapshot3D {
   atlasEdge: number;
   densitySum: number;
   occupiedVoxels: number;
+  maxDensity: number;
+  densityCentroid: SceneEffectVector3 | null;
+  meanVelocity: SceneEffectVector3;
+  velocityEnergy: number;
   maxDivergence: number;
   simulationSteps: number;
 }
@@ -49,6 +64,8 @@ interface SmokeVolumeBrick3D {
   rigId: number;
   slot: number;
   center: SceneEffectVector3;
+  halfExtent: SceneEffectVector3;
+  plumeAge: number;
   density: Float32Array;
   temperature: Float32Array;
   velocityX: Float32Array;
@@ -85,6 +102,14 @@ function rigIdForSource(sourceId: number): number {
   return Math.floor(Math.max(0, sourceId - 1) / 4);
 }
 
+export function resolveSmokePressureIterations3D(
+  activeBrickCount: number
+): 6 | 8 | 12 {
+  if (activeBrickCount <= 1) return 12;
+  if (activeBrickCount <= 4) return 8;
+  return 6;
+}
+
 function deterministicUnit(sourceId: number, step: number): number {
   let value = (sourceId * 0x9e3779b1 + step * 0x85ebca6b) >>> 0;
   value ^= value >>> 16;
@@ -107,6 +132,8 @@ function makeBrick(
     rigId,
     slot,
     center: { ...center },
+    halfExtent: { ...BASE_BRICK_HALF_EXTENT },
+    plumeAge: 0,
     density: makeField(),
     temperature: makeField(),
     velocityX: makeField(),
@@ -178,6 +205,43 @@ function clearBrick(brick: SmokeVolumeBrick3D): void {
   brick.divergence.fill(0);
   brick.maxDivergence = 0;
   brick.pendingSimulationTime = 0;
+  brick.halfExtent = { ...BASE_BRICK_HALF_EXTENT };
+  brick.plumeAge = 0;
+}
+
+/**
+ * The near-source volume starts compact, then grows into room space. A solo
+ * performer gets the widest envelope; crowd bricks stay tighter so eight
+ * overlapping plumes do not turn the whole stage into one opaque slab.
+ */
+export function resolveSmokePlumeHalfExtent3D(
+  plumeAge: number,
+  activeBrickCount: number,
+  expansion: number
+): SceneEffectVector3 {
+  const target =
+    activeBrickCount <= 1
+      ? SOLO_PLUME_HALF_EXTENT
+      : activeBrickCount <= 2
+        ? DUET_PLUME_HALF_EXTENT
+        : BASE_BRICK_HALF_EXTENT;
+  if (target === BASE_BRICK_HALF_EXTENT) return { ...BASE_BRICK_HALF_EXTENT };
+
+  const entrainment = clamp(0.88 + expansion * 1.35, 0.88, 1.2);
+  const timeConstant = 2.6 / (1 + expansion * 2.5);
+  const growth = clamp(
+    (1 - Math.exp(-Math.max(0, plumeAge) / timeConstant)) * entrainment,
+    0,
+    1
+  );
+  return {
+    x:
+      BASE_BRICK_HALF_EXTENT.x + (target.x - BASE_BRICK_HALF_EXTENT.x) * growth,
+    y:
+      BASE_BRICK_HALF_EXTENT.y + (target.y - BASE_BRICK_HALF_EXTENT.y) * growth,
+    z:
+      BASE_BRICK_HALF_EXTENT.z + (target.z - BASE_BRICK_HALF_EXTENT.z) * growth,
+  };
 }
 
 export function shiftSmokeVolumeField3D(
@@ -220,6 +284,7 @@ export class SmokeVolumeSolver3D {
   private readonly atlasData: Uint8Array;
   private readonly bricks = new Map<number, SmokeVolumeBrick3D>();
   private readonly previousPositions = new Map<number, SceneEffectVector3>();
+  private readonly filteredVelocities = new Map<number, SceneEffectVector3>();
   private readonly freeSlots = Array.from(
     { length: SMOKE_VOLUME_MAX_BRICKS },
     (_, index) => index
@@ -229,14 +294,16 @@ export class SmokeVolumeSolver3D {
   private simulationSteps = 0;
 
   constructor() {
-    this.atlasData = new Uint8Array(this.atlasEdge ** 3);
+    this.atlasData = new Uint8Array(this.atlasEdge ** 3 * 4);
     this.texture = new Data3DTexture(
       this.atlasData,
       this.atlasEdge,
       this.atlasEdge,
       this.atlasEdge
     );
-    this.texture.format = RedFormat;
+    // RGB stores signed local flow beside density so the shader can stretch
+    // its fine breakup along the simulated wake instead of animating a mask.
+    this.texture.format = RGBAFormat;
     this.texture.type = UnsignedByteType;
     this.texture.minFilter = LinearFilter;
     this.texture.magFilter = LinearFilter;
@@ -247,10 +314,16 @@ export class SmokeVolumeSolver3D {
 
   update(sources: readonly SmokeTipSource3D[], delta: number): void {
     if (sources.length === 0) {
-      if (this.bricks.size > 0) this.clear();
+      if (
+        this.bricks.size > 0 ||
+        this.previousPositions.size > 0 ||
+        this.filteredVelocities.size > 0
+      )
+        this.clear();
       return;
     }
 
+    this.updateFilteredVelocities(sources, delta);
     const byRig = new Map<number, SmokeTipSource3D[]>();
     for (const source of sources) {
       const rigId = rigIdForSource(source.sourceId);
@@ -293,15 +366,21 @@ export class SmokeVolumeSolver3D {
         const brick = this.bricks.get(rigId);
         if (!brick) continue;
         brick.pendingSimulationTime += SMOKE_VOLUME_FIXED_STEP;
-        const interleaveLargeCrowd = this.bricks.size > 4;
-        if (interleaveLargeCrowd && brick.slot % 2 !== this.stepIndex % 2)
+        const updateCadence =
+          this.bricks.size > 4 ? 4 : this.bricks.size > 2 ? 2 : 1;
+        if (brick.slot % updateCadence !== this.stepIndex % updateCadence)
           continue;
         const simulationTime = Math.min(
           brick.pendingSimulationTime,
-          SMOKE_VOLUME_FIXED_STEP * 2
+          SMOKE_VOLUME_FIXED_STEP * updateCadence
         );
         this.injectSources(brick, rigSources, simulationTime);
-        this.simulateBrick(brick, simulationTime);
+        this.simulateBrick(
+          brick,
+          simulationTime,
+          resolveSmokePressureIterations3D(this.bricks.size),
+          this.bricks.size === 1
+        );
         brick.pendingSimulationTime = 0;
         for (const source of rigSources) {
           this.previousPositions.set(source.sourceId, { ...source.position });
@@ -326,7 +405,7 @@ export class SmokeVolumeSolver3D {
       return {
         slot: brick.slot,
         center: { ...brick.center },
-        halfExtent: { ...BRICK_HALF_EXTENT },
+        halfExtent: { ...brick.halfExtent },
         atlasOffset: {
           x: x / ATLAS_EDGE_BRICKS,
           y: y / ATLAS_EDGE_BRICKS,
@@ -334,7 +413,7 @@ export class SmokeVolumeSolver3D {
         },
         coreColor: brick.coreColor,
         edgeColor: brick.edgeColor,
-        densityScale: 0.72 + brick.params.intensity * 0.9,
+        densityScale: 0.52 + brick.params.intensity * 0.58,
         extinction: profile.extinction,
         scattering: profile.scattering,
         detailWarp: profile.detailWarp,
@@ -347,19 +426,67 @@ export class SmokeVolumeSolver3D {
   getDebugSnapshot(): SmokeVolumeDebugSnapshot3D {
     let densitySum = 0;
     let occupiedVoxels = 0;
+    let maxDensity = 0;
+    let weightedX = 0;
+    let weightedY = 0;
+    let weightedZ = 0;
+    let weightedVelocityX = 0;
+    let weightedVelocityY = 0;
+    let weightedVelocityZ = 0;
+    let velocityEnergy = 0;
     let maxDivergence = 0;
     for (const brick of this.bricks.values()) {
-      for (const density of brick.density) {
+      const size = SMOKE_VOLUME_BRICK_SIZE;
+      const cellX = (brick.halfExtent.x * 2) / (size - 1);
+      const cellY = (brick.halfExtent.y * 2) / (size - 1);
+      const cellZ = (brick.halfExtent.z * 2) / (size - 1);
+      for (let index = 0; index < brick.density.length; index++) {
+        const density = brick.density[index]!;
         densitySum += density;
+        maxDensity = Math.max(maxDensity, density);
         if (density > 0.001) occupiedVoxels += 1;
+        if (density <= EPSILON) continue;
+        const x = index % size;
+        const y = Math.floor(index / size) % size;
+        const z = Math.floor(index / size ** 2);
+        weightedX +=
+          (brick.center.x - brick.halfExtent.x + x * cellX) * density;
+        weightedY +=
+          (brick.center.y - brick.halfExtent.y + y * cellY) * density;
+        weightedZ +=
+          (brick.center.z - brick.halfExtent.z + z * cellZ) * density;
+        const vx = brick.velocityX[index]!;
+        const vy = brick.velocityY[index]!;
+        const vz = brick.velocityZ[index]!;
+        weightedVelocityX += vx * density;
+        weightedVelocityY += vy * density;
+        weightedVelocityZ += vz * density;
+        velocityEnergy += (vx * vx + vy * vy + vz * vz) * density;
       }
       maxDivergence = Math.max(maxDivergence, brick.maxDivergence);
     }
+    const hasDensity = densitySum > EPSILON;
     return {
       activeBricks: this.bricks.size,
       atlasEdge: this.atlasEdge,
       densitySum,
       occupiedVoxels,
+      maxDensity,
+      densityCentroid: hasDensity
+        ? {
+            x: weightedX / densitySum,
+            y: weightedY / densitySum,
+            z: weightedZ / densitySum,
+          }
+        : null,
+      meanVelocity: hasDensity
+        ? {
+            x: weightedVelocityX / densitySum,
+            y: weightedVelocityY / densitySum,
+            z: weightedVelocityZ / densitySum,
+          }
+        : { x: 0, y: 0, z: 0 },
+      velocityEnergy: hasDensity ? velocityEnergy / densitySum : 0,
       maxDivergence,
       simulationSteps: this.simulationSteps,
     };
@@ -368,6 +495,7 @@ export class SmokeVolumeSolver3D {
   clear(): void {
     this.bricks.clear();
     this.previousPositions.clear();
+    this.filteredVelocities.clear();
     this.freeSlots.splice(
       0,
       this.freeSlots.length,
@@ -392,9 +520,34 @@ export class SmokeVolumeSolver3D {
       this.freeSlots.push(brick.slot);
       this.freeSlots.sort((a, b) => a - b);
       for (const sourceId of this.previousPositions.keys()) {
-        if (rigIdForSource(sourceId) === rigId)
+        if (rigIdForSource(sourceId) === rigId) {
           this.previousPositions.delete(sourceId);
+          this.filteredVelocities.delete(sourceId);
+        }
       }
+    }
+  }
+
+  private updateFilteredVelocities(
+    sources: readonly SmokeTipSource3D[],
+    delta: number
+  ): void {
+    const frameDelta = Math.min(Math.max(delta, 0), 1 / 15);
+    const alpha = 1 - 0.6 ** (frameDelta * 60);
+    const seen = new Set<number>();
+    for (const source of sources) {
+      seen.add(source.sourceId);
+      const previous = this.filteredVelocities.get(source.sourceId);
+      if (!previous) {
+        this.filteredVelocities.set(source.sourceId, { ...source.velocity });
+        continue;
+      }
+      previous.x += (source.velocity.x - previous.x) * alpha;
+      previous.y += (source.velocity.y - previous.y) * alpha;
+      previous.z += (source.velocity.z - previous.z) * alpha;
+    }
+    for (const sourceId of this.filteredVelocities.keys()) {
+      if (!seen.has(sourceId)) this.filteredVelocities.delete(sourceId);
     }
   }
 
@@ -412,7 +565,7 @@ export class SmokeVolumeSolver3D {
     const count = Math.max(1, sources.length);
     return {
       x: sum.x / count,
-      y: sum.y / count + BRICK_HALF_EXTENT.y * 0.28,
+      y: sum.y / count + BASE_BRICK_HALF_EXTENT.y * 0.28,
       z: sum.z / count,
     };
   }
@@ -422,9 +575,9 @@ export class SmokeVolumeSolver3D {
     sources: readonly SmokeTipSource3D[]
   ): void {
     const desired = this.desiredCenter(sources);
-    const cellX = (BRICK_HALF_EXTENT.x * 2) / (SMOKE_VOLUME_BRICK_SIZE - 1);
-    const cellY = (BRICK_HALF_EXTENT.y * 2) / (SMOKE_VOLUME_BRICK_SIZE - 1);
-    const cellZ = (BRICK_HALF_EXTENT.z * 2) / (SMOKE_VOLUME_BRICK_SIZE - 1);
+    const cellX = (brick.halfExtent.x * 2) / (SMOKE_VOLUME_BRICK_SIZE - 1);
+    const cellY = (brick.halfExtent.y * 2) / (SMOKE_VOLUME_BRICK_SIZE - 1);
+    const cellZ = (brick.halfExtent.z * 2) / (SMOKE_VOLUME_BRICK_SIZE - 1);
     const dx = Math.trunc((desired.x - brick.center.x) / cellX);
     const dy = Math.trunc((desired.y - brick.center.y) / cellY);
     const dz = Math.trunc((desired.z - brick.center.z) / cellZ);
@@ -480,7 +633,7 @@ export class SmokeVolumeSolver3D {
         source.position.z - previous.z
       );
       const cellWorld =
-        (BRICK_HALF_EXTENT.x * 2) / (SMOKE_VOLUME_BRICK_SIZE - 1);
+        (brick.halfExtent.x * 2) / (SMOKE_VOLUME_BRICK_SIZE - 1);
       const samples = clamp(Math.ceil(distance / (cellWorld * 0.55)), 1, 10);
       for (let sample = 0; sample <= samples; sample++) {
         const t = sample / samples;
@@ -492,7 +645,8 @@ export class SmokeVolumeSolver3D {
             y: previous.y + (source.position.y - previous.y) * t,
             z: previous.z + (source.position.z - previous.z) * t,
           },
-          dt / (samples + 1)
+          dt / (samples + 1),
+          1 / (samples + 1)
         );
       }
     }
@@ -502,7 +656,8 @@ export class SmokeVolumeSolver3D {
     brick: SmokeVolumeBrick3D,
     source: SmokeTipSource3D,
     position: SceneEffectVector3,
-    dt: number
+    densityDt: number,
+    momentumShare: number
   ): void {
     const params = source.params;
     const profile = params.volumeProfile;
@@ -510,31 +665,32 @@ export class SmokeVolumeSolver3D {
       params.motionReferenceSpeed > 0
         ? Math.min(1, source.speed / params.motionReferenceSpeed)
         : 0;
-    // Particle spawn rates are counts-per-second, not a fluid-density unit.
-    // Normalize the intent here so four tracked staff points build a readable
-    // wake instead of saturating the entire performer brick in a few seconds.
-    const sourceEnergy =
-      params.ambientEmission + params.motionEmission * speedScalar;
+    // Keep the production 2D and 3D backends on one authored emission contract.
+    // The old volume path ignored the spawn-rate terms and added a permanent
+    // density floor, so even a motionless prop flooded its whole brick.
+    const sourceRate =
+      params.ambientEmission * params.ambientSpawnRate +
+      params.motionEmission * speedScalar * params.motionSpawnRate;
+    if (sourceRate <= EPSILON) return;
     const amount =
       VOLUME_SOURCE_GAIN *
       profile.density *
-      (0.32 + params.intensity * 0.68) *
-      (0.65 + sourceEnergy * 3.2) *
-      dt;
-    const temperatureAmount =
-      profile.temperature * (0.45 + params.resolvedRiseSpeed * 0.35) * dt;
+      params.intensity *
+      sourceRate *
+      densityDt;
+    const temperatureAmount = amount * profile.temperature * 0.72;
     const size = SMOKE_VOLUME_BRICK_SIZE;
     const gx =
-      ((position.x - (brick.center.x - BRICK_HALF_EXTENT.x)) /
-        (BRICK_HALF_EXTENT.x * 2)) *
+      ((position.x - (brick.center.x - brick.halfExtent.x)) /
+        (brick.halfExtent.x * 2)) *
       (size - 1);
     const gy =
-      ((position.y - (brick.center.y - BRICK_HALF_EXTENT.y)) /
-        (BRICK_HALF_EXTENT.y * 2)) *
+      ((position.y - (brick.center.y - brick.halfExtent.y)) /
+        (brick.halfExtent.y * 2)) *
       (size - 1);
     const gz =
-      ((position.z - (brick.center.z - BRICK_HALF_EXTENT.z)) /
-        (BRICK_HALF_EXTENT.z * 2)) *
+      ((position.z - (brick.center.z - brick.halfExtent.z)) /
+        (brick.halfExtent.z * 2)) *
       (size - 1);
     if (gx < 0 || gy < 0 || gz < 0 || gx >= size || gy >= size || gz >= size)
       return;
@@ -542,14 +698,22 @@ export class SmokeVolumeSolver3D {
     const radiusWorld =
       profile.injectionRadiusWorld * (0.72 + params.intensity * 1.2);
     const radius = Math.max(
-      1,
-      radiusWorld / ((BRICK_HALF_EXTENT.x * 2) / (size - 1))
+      1.35,
+      radiusWorld / ((brick.halfExtent.x * 2) / (size - 1))
     );
+    const kernelMassScale = radius ** 3;
     const reach = Math.max(1, Math.ceil(radius * 1.7));
     const lateralAngle =
-      deterministicUnit(source.sourceId, this.stepIndex) * Math.PI * 2;
+      deterministicUnit(source.sourceId, Math.floor(this.stepIndex / 3)) *
+      Math.PI *
+      2;
     const lateralX = Math.cos(lateralAngle) * profile.lateralSpread;
     const lateralZ = Math.sin(lateralAngle) * profile.lateralSpread;
+    const filteredVelocity =
+      this.filteredVelocities.get(source.sourceId) ?? source.velocity;
+    const motionTransfer =
+      SOURCE_MOMENTUM_TRANSFER *
+      (0.45 + params.motionEmission * speedScalar * 0.55);
 
     for (
       let z = Math.max(1, Math.floor(gz) - reach);
@@ -571,7 +735,10 @@ export class SmokeVolumeSolver3D {
           const oz = (z - gz) / radius;
           const distanceSquared = ox * ox + oy * oy + oz * oz;
           if (distanceSquared > 3) continue;
-          const weight = Math.exp(-distanceSquared * 1.35);
+          // Radius changes the shape, not the amount of authored smoke. This
+          // keeps a broad fog source from manufacturing more mass than a thin
+          // incense source while giving both enough cells to form a ribbon.
+          const weight = Math.exp(-distanceSquared * 1.35) / kernelMassScale;
           const index = voxelIndex(x, y, z);
           brick.density[index] = Math.min(
             5,
@@ -582,43 +749,78 @@ export class SmokeVolumeSolver3D {
             brick.temperature[index]! + temperatureAmount * weight
           );
           const radialLength = Math.hypot(ox, oy, oz) || 1;
-          const expansion = profile.expansion * weight * dt;
+          const expansion = profile.expansion * weight;
           brick.velocityX[index]! +=
-            (source.velocity.x * 0.13 +
-              lateralX +
+            (filteredVelocity.x * motionTransfer +
+              lateralX * 0.22 +
               (ox / radialLength) * profile.expansion) *
             weight *
-            dt;
+            momentumShare;
           brick.velocityY[index]! +=
-            (source.velocity.y * 0.08 +
-              params.resolvedRiseSpeed * 0.34 +
+            (filteredVelocity.y * motionTransfer +
+              params.resolvedRiseSpeed * 0.28 +
               (oy / radialLength) * profile.expansion) *
             weight *
-            dt;
+            momentumShare;
           brick.velocityZ[index]! +=
-            (source.velocity.z * 0.13 +
-              lateralZ +
+            (filteredVelocity.z * motionTransfer +
+              lateralZ * 0.22 +
               (oz / radialLength) * profile.expansion) *
             weight *
-            dt;
-          brick.velocityX[index]! += (ox / radialLength) * expansion;
-          brick.velocityZ[index]! += (oz / radialLength) * expansion;
+            momentumShare;
+          brick.velocityX[index]! +=
+            (ox / radialLength) * expansion * momentumShare;
+          brick.velocityZ[index]! +=
+            (oz / radialLength) * expansion * momentumShare;
         }
       }
     }
   }
 
-  private simulateBrick(brick: SmokeVolumeBrick3D, dt: number): void {
-    this.advect(brick, dt);
+  private simulateBrick(
+    brick: SmokeVolumeBrick3D,
+    dt: number,
+    pressureIterations: number,
+    correctAdvection: boolean
+  ): void {
+    this.expandPlumeEnvelope(brick, dt);
+    this.advect(brick, dt, correctAdvection);
     this.applyForces(brick, dt);
-    this.project(brick);
+    this.project(brick, pressureIterations);
   }
 
-  private advect(brick: SmokeVolumeBrick3D, dt: number): void {
+  private expandPlumeEnvelope(brick: SmokeVolumeBrick3D, dt: number): void {
+    brick.plumeAge += dt;
+    const previous = brick.halfExtent;
+    const next = resolveSmokePlumeHalfExtent3D(
+      brick.plumeAge,
+      this.bricks.size,
+      brick.params.volumeProfile.expansion
+    );
+    const previousVolume = previous.x * previous.y * previous.z;
+    const nextVolume = next.x * next.y * next.z;
+    brick.halfExtent = next;
+    if (nextVolume <= previousVolume + EPSILON) return;
+
+    // Entrainment spreads a fixed smoke mass through more air. Applying the
+    // volume ratio as a partial density dilution keeps the growing envelope
+    // wispy without erasing the coherent source ribbon at its centre.
+    const dilution = Math.pow(previousVolume / nextVolume, 0.68);
+    for (let index = 0; index < brick.density.length; index++) {
+      brick.density[index]! *= dilution;
+      brick.temperature[index]! *= dilution;
+    }
+  }
+
+  private advect(
+    brick: SmokeVolumeBrick3D,
+    dt: number,
+    correctAdvection: boolean
+  ): void {
     const size = SMOKE_VOLUME_BRICK_SIZE;
-    const cellX = (BRICK_HALF_EXTENT.x * 2) / (size - 1);
-    const cellY = (BRICK_HALF_EXTENT.y * 2) / (size - 1);
-    const cellZ = (BRICK_HALF_EXTENT.z * 2) / (size - 1);
+    const cellX = (brick.halfExtent.x * 2) / (size - 1);
+    const cellY = (brick.halfExtent.y * 2) / (size - 1);
+    const cellZ = (brick.halfExtent.z * 2) / (size - 1);
     const densityDecay = Math.exp(-brick.params.volumeProfile.dissipation * dt);
     const temperatureDecay = Math.exp(
       -(brick.params.volumeProfile.dissipation + 0.22) * dt
@@ -668,41 +870,185 @@ export class SmokeVolumeSolver3D {
       brick.nextVelocityZ,
       brick.velocityZ,
     ];
+
+    if (!correctAdvection) return;
+
+    // Semi-Lagrangian transport is stable but aggressively diffuses a 24³
+    // volume. MacCormack's reverse pass restores the detail that the first
+    // pass erased, with a neighborhood clamp to prevent ringing or negative
+    // density. Velocity stays first-order so the correction cannot inject
+    // kinetic energy into the fluid.
+    this.correctAdvectedScalar(
+      brick.nextDensity,
+      brick.density,
+      brick.pressure,
+      brick.nextVelocityX,
+      brick.nextVelocityY,
+      brick.nextVelocityZ,
+      dt,
+      cellX,
+      cellY,
+      cellZ,
+      densityDecay
+    );
+    brick.density.set(brick.pressure);
+    this.correctAdvectedScalar(
+      brick.nextTemperature,
+      brick.temperature,
+      brick.divergence,
+      brick.nextVelocityX,
+      brick.nextVelocityY,
+      brick.nextVelocityZ,
+      dt,
+      cellX,
+      cellY,
+      cellZ,
+      temperatureDecay
+    );
+    brick.temperature.set(brick.divergence);
+  }
+
+  private correctAdvectedScalar(
+    original: Float32Array,
+    advected: Float32Array,
+    output: Float32Array,
+    velocityX: Float32Array,
+    velocityY: Float32Array,
+    velocityZ: Float32Array,
+    dt: number,
+    cellX: number,
+    cellY: number,
+    cellZ: number,
+    retention: number
+  ): void {
+    const size = SMOKE_VOLUME_BRICK_SIZE;
+    output.fill(0);
+    for (let z = 1; z < size - 1; z++) {
+      for (let y = 1; y < size - 1; y++) {
+        for (let x = 1; x < size - 1; x++) {
+          const index = voxelIndex(x, y, z);
+          const vx = velocityX[index]!;
+          const vy = velocityY[index]!;
+          const vz = velocityZ[index]!;
+          const backX = x - (vx * dt) / cellX;
+          const backY = y - (vy * dt) / cellY;
+          const backZ = z - (vz * dt) / cellZ;
+          const reverse = sampleField(
+            advected,
+            x + (vx * dt) / cellX,
+            y + (vy * dt) / cellY,
+            z + (vz * dt) / cellZ
+          );
+          const x0 = Math.floor(clamp(backX, 0, size - 1));
+          const y0 = Math.floor(clamp(backY, 0, size - 1));
+          const z0 = Math.floor(clamp(backZ, 0, size - 1));
+          const x1 = Math.min(size - 1, x0 + 1);
+          const y1 = Math.min(size - 1, y0 + 1);
+          const z1 = Math.min(size - 1, z0 + 1);
+          const sample000 = original[voxelIndex(x0, y0, z0)]!;
+          const sample100 = original[voxelIndex(x1, y0, z0)]!;
+          const sample010 = original[voxelIndex(x0, y1, z0)]!;
+          const sample110 = original[voxelIndex(x1, y1, z0)]!;
+          const sample001 = original[voxelIndex(x0, y0, z1)]!;
+          const sample101 = original[voxelIndex(x1, y0, z1)]!;
+          const sample011 = original[voxelIndex(x0, y1, z1)]!;
+          const sample111 = original[voxelIndex(x1, y1, z1)]!;
+          const minimum = Math.min(
+            sample000,
+            sample100,
+            sample010,
+            sample110,
+            sample001,
+            sample101,
+            sample011,
+            sample111
+          );
+          const maximum = Math.max(
+            sample000,
+            sample100,
+            sample010,
+            sample110,
+            sample001,
+            sample101,
+            sample011,
+            sample111
+          );
+          output[index] = clamp(
+            advected[index]! + 0.5 * (original[index]! * retention - reverse),
+            minimum,
+            maximum
+          );
+        }
+      }
+    }
   }
 
   private applyForces(brick: SmokeVolumeBrick3D, dt: number): void {
     const size = SMOKE_VOLUME_BRICK_SIZE;
     const profile = brick.params.volumeProfile;
-    const h = (BRICK_HALF_EXTENT.x * 2) / (size - 1);
+    const hX = (brick.halfExtent.x * 2) / (size - 1);
+    const hY = (brick.halfExtent.y * 2) / (size - 1);
+    const hZ = (brick.halfExtent.z * 2) / (size - 1);
+    const noiseFrequency = 3.2 / Math.max(0.2, brick.params.noiseScale);
+    const noiseTime = this.stepIndex * SMOKE_VOLUME_FIXED_STEP;
+    const noisePhase = brick.rigId * 1.61803398875;
+    const curlForcing =
+      profile.vorticity * (0.78 + brick.params.resolvedCurlStrength * 4.8);
     brick.curlMagnitude.fill(0);
     for (let z = 1; z < size - 1; z++) {
       for (let y = 1; y < size - 1; y++) {
         for (let x = 1; x < size - 1; x++) {
           const index = voxelIndex(x, y, z);
+          const densityMask = clamp(brick.density[index]! * 2.4, 0, 1);
+          if (densityMask > EPSILON) {
+            const worldX = brick.center.x - brick.halfExtent.x + x * hX;
+            const worldY = brick.center.y - brick.halfExtent.y + y * hY;
+            const worldZ = brick.center.z - brick.halfExtent.z + z * hZ;
+            // Each component is independent of its matching axis, so this
+            // analytic field is divergence-free before projection. It restores
+            // the rolling motion coarse-grid advection loses without inventing
+            // density or camera-facing animation.
+            const curlNoiseX =
+              Math.sin(
+                worldY * noiseFrequency + noiseTime * 0.74 + noisePhase
+              ) * Math.cos(worldZ * noiseFrequency * 0.83 - noiseTime * 0.51);
+            const curlNoiseY =
+              Math.sin(
+                worldZ * noiseFrequency + noiseTime * 0.61 - noisePhase
+              ) * Math.cos(worldX * noiseFrequency * 0.91 + noiseTime * 0.43);
+            const curlNoiseZ =
+              Math.sin(
+                worldX * noiseFrequency - noiseTime * 0.69 + noisePhase
+              ) * Math.cos(worldY * noiseFrequency * 0.87 + noiseTime * 0.47);
+            const forcing = curlForcing * densityMask * dt;
+            brick.velocityX[index]! += curlNoiseX * forcing;
+            brick.velocityY[index]! += curlNoiseY * forcing * 0.58;
+            brick.velocityZ[index]! += curlNoiseZ * forcing;
+          }
           const dVzDy =
             (brick.velocityZ[voxelIndex(x, y + 1, z)]! -
               brick.velocityZ[voxelIndex(x, y - 1, z)]!) /
-            (2 * h);
+            (2 * hY);
           const dVyDz =
             (brick.velocityY[voxelIndex(x, y, z + 1)]! -
               brick.velocityY[voxelIndex(x, y, z - 1)]!) /
-            (2 * h);
+            (2 * hZ);
           const dVxDz =
             (brick.velocityX[voxelIndex(x, y, z + 1)]! -
               brick.velocityX[voxelIndex(x, y, z - 1)]!) /
-            (2 * h);
+            (2 * hZ);
           const dVzDx =
             (brick.velocityZ[voxelIndex(x + 1, y, z)]! -
               brick.velocityZ[voxelIndex(x - 1, y, z)]!) /
-            (2 * h);
+            (2 * hX);
           const dVyDx =
             (brick.velocityY[voxelIndex(x + 1, y, z)]! -
               brick.velocityY[voxelIndex(x - 1, y, z)]!) /
-            (2 * h);
+            (2 * hX);
           const dVxDy =
             (brick.velocityX[voxelIndex(x, y + 1, z)]! -
               brick.velocityX[voxelIndex(x, y - 1, z)]!) /
-            (2 * h);
+            (2 * hY);
           const curlX = dVzDy - dVyDz;
           const curlY = dVxDz - dVzDx;
           const curlZ = dVyDx - dVxDy;
@@ -715,20 +1061,23 @@ export class SmokeVolumeSolver3D {
     }
 
     const confinement =
-      profile.vorticity * (0.25 + brick.params.resolvedCurlStrength * 1.25);
+      profile.vorticity * (0.52 + brick.params.resolvedCurlStrength * 2.7);
     for (let z = 2; z < size - 2; z++) {
       for (let y = 2; y < size - 2; y++) {
         for (let x = 2; x < size - 2; x++) {
           const index = voxelIndex(x, y, z);
           let nx =
-            brick.curlMagnitude[voxelIndex(x + 1, y, z)]! -
-            brick.curlMagnitude[voxelIndex(x - 1, y, z)]!;
+            (brick.curlMagnitude[voxelIndex(x + 1, y, z)]! -
+              brick.curlMagnitude[voxelIndex(x - 1, y, z)]!) /
+            (2 * hX);
           let ny =
-            brick.curlMagnitude[voxelIndex(x, y + 1, z)]! -
-            brick.curlMagnitude[voxelIndex(x, y - 1, z)]!;
+            (brick.curlMagnitude[voxelIndex(x, y + 1, z)]! -
+              brick.curlMagnitude[voxelIndex(x, y - 1, z)]!) /
+            (2 * hY);
           let nz =
-            brick.curlMagnitude[voxelIndex(x, y, z + 1)]! -
-            brick.curlMagnitude[voxelIndex(x, y, z - 1)]!;
+            (brick.curlMagnitude[voxelIndex(x, y, z + 1)]! -
+              brick.curlMagnitude[voxelIndex(x, y, z - 1)]!) /
+            (2 * hZ);
           const length = Math.hypot(nx, ny, nz) + EPSILON;
           nx /= length;
           ny /= length;
@@ -751,9 +1100,15 @@ export class SmokeVolumeSolver3D {
     }
   }
 
-  private project(brick: SmokeVolumeBrick3D): void {
+  private project(brick: SmokeVolumeBrick3D, pressureIterations: number): void {
     const size = SMOKE_VOLUME_BRICK_SIZE;
-    const h = (BRICK_HALF_EXTENT.x * 2) / (size - 1);
+    const hX = (brick.halfExtent.x * 2) / (size - 1);
+    const hY = (brick.halfExtent.y * 2) / (size - 1);
+    const hZ = (brick.halfExtent.z * 2) / (size - 1);
+    const inverseHX2 = 1 / (hX * hX);
+    const inverseHY2 = 1 / (hY * hY);
+    const inverseHZ2 = 1 / (hZ * hZ);
+    const jacobiDenominator = 2 * (inverseHX2 + inverseHY2 + inverseHZ2);
     brick.divergence.fill(0);
     brick.pressure.fill(0);
     brick.maxDivergence = 0;
@@ -763,12 +1118,14 @@ export class SmokeVolumeSolver3D {
           const index = voxelIndex(x, y, z);
           const divergence =
             (brick.velocityX[voxelIndex(x + 1, y, z)]! -
-              brick.velocityX[voxelIndex(x - 1, y, z)]! +
-              brick.velocityY[voxelIndex(x, y + 1, z)]! -
-              brick.velocityY[voxelIndex(x, y - 1, z)]! +
-              brick.velocityZ[voxelIndex(x, y, z + 1)]! -
+              brick.velocityX[voxelIndex(x - 1, y, z)]!) /
+              (2 * hX) +
+            (brick.velocityY[voxelIndex(x, y + 1, z)]! -
+              brick.velocityY[voxelIndex(x, y - 1, z)]!) /
+              (2 * hY) +
+            (brick.velocityZ[voxelIndex(x, y, z + 1)]! -
               brick.velocityZ[voxelIndex(x, y, z - 1)]!) /
-            (2 * h);
+              (2 * hZ);
           brick.divergence[index] = divergence;
           brick.maxDivergence = Math.max(
             brick.maxDivergence,
@@ -778,21 +1135,24 @@ export class SmokeVolumeSolver3D {
       }
     }
 
-    for (let iteration = 0; iteration < PRESSURE_ITERATIONS; iteration++) {
+    for (let iteration = 0; iteration < pressureIterations; iteration++) {
       brick.nextPressure.fill(0);
       for (let z = 1; z < size - 1; z++) {
         for (let y = 1; y < size - 1; y++) {
           for (let x = 1; x < size - 1; x++) {
             const index = voxelIndex(x, y, z);
             brick.nextPressure[index] =
-              (brick.pressure[voxelIndex(x + 1, y, z)]! +
-                brick.pressure[voxelIndex(x - 1, y, z)]! +
-                brick.pressure[voxelIndex(x, y + 1, z)]! +
-                brick.pressure[voxelIndex(x, y - 1, z)]! +
-                brick.pressure[voxelIndex(x, y, z + 1)]! +
-                brick.pressure[voxelIndex(x, y, z - 1)]! -
-                brick.divergence[index]! * h * h) /
-              6;
+              ((brick.pressure[voxelIndex(x + 1, y, z)]! +
+                brick.pressure[voxelIndex(x - 1, y, z)]!) *
+                inverseHX2 +
+                (brick.pressure[voxelIndex(x, y + 1, z)]! +
+                  brick.pressure[voxelIndex(x, y - 1, z)]!) *
+                  inverseHY2 +
+                (brick.pressure[voxelIndex(x, y, z + 1)]! +
+                  brick.pressure[voxelIndex(x, y, z - 1)]!) *
+                  inverseHZ2 -
+                brick.divergence[index]!) /
+              jacobiDenominator;
           }
         }
       }
@@ -809,15 +1169,15 @@ export class SmokeVolumeSolver3D {
           brick.velocityX[index]! -=
             (brick.pressure[voxelIndex(x + 1, y, z)]! -
               brick.pressure[voxelIndex(x - 1, y, z)]!) /
-            (2 * h);
+            (2 * hX);
           brick.velocityY[index]! -=
             (brick.pressure[voxelIndex(x, y + 1, z)]! -
               brick.pressure[voxelIndex(x, y - 1, z)]!) /
-            (2 * h);
+            (2 * hY);
           brick.velocityZ[index]! -=
             (brick.pressure[voxelIndex(x, y, z + 1)]! -
               brick.pressure[voxelIndex(x, y, z - 1)]!) /
-            (2 * h);
+            (2 * hZ);
         }
       }
     }
@@ -827,12 +1187,14 @@ export class SmokeVolumeSolver3D {
         for (let x = 1; x < size - 1; x++) {
           const divergence =
             (brick.velocityX[voxelIndex(x + 1, y, z)]! -
-              brick.velocityX[voxelIndex(x - 1, y, z)]! +
-              brick.velocityY[voxelIndex(x, y + 1, z)]! -
-              brick.velocityY[voxelIndex(x, y - 1, z)]! +
-              brick.velocityZ[voxelIndex(x, y, z + 1)]! -
+              brick.velocityX[voxelIndex(x - 1, y, z)]!) /
+              (2 * hX) +
+            (brick.velocityY[voxelIndex(x, y + 1, z)]! -
+              brick.velocityY[voxelIndex(x, y - 1, z)]!) /
+              (2 * hY) +
+            (brick.velocityZ[voxelIndex(x, y, z + 1)]! -
               brick.velocityZ[voxelIndex(x, y, z - 1)]!) /
-            (2 * h);
+              (2 * hZ);
           brick.maxDivergence = Math.max(
             brick.maxDivergence,
             Math.abs(divergence)
@@ -856,19 +1218,34 @@ export class SmokeVolumeSolver3D {
         for (let y = 0; y < brickSize; y++) {
           for (let x = 0; x < brickSize; x++) {
             const density = brick.density[voxelIndex(x, y, z)]!;
+            const sourceIndex = voxelIndex(x, y, z);
             const encoded = Math.round(
               (1 - Math.exp(-Math.max(0, density) * 0.8)) * 255
             );
             const atlasX = brickX * brickSize + x;
             const atlasY = brickY * brickSize + y;
             const atlasZ = brickZ * brickSize + z;
-            this.atlasData[
-              atlasX + atlasY * atlasStrideY + atlasZ * atlasStrideZ
-            ] = encoded;
+            const atlasIndex =
+              (atlasX + atlasY * atlasStrideY + atlasZ * atlasStrideZ) * 4;
+            this.atlasData[atlasIndex] = encoded;
+            this.atlasData[atlasIndex + 1] = this.encodeAtlasVelocity(
+              brick.velocityX[sourceIndex]!
+            );
+            this.atlasData[atlasIndex + 2] = this.encodeAtlasVelocity(
+              brick.velocityY[sourceIndex]!
+            );
+            this.atlasData[atlasIndex + 3] = this.encodeAtlasVelocity(
+              brick.velocityZ[sourceIndex]!
+            );
           }
         }
       }
     }
     this.texture.needsUpdate = true;
+  }
+
+  private encodeAtlasVelocity(value: number): number {
+    const normalized = clamp(value / VELOCITY_ATLAS_RANGE, -1, 1);
+    return Math.round((normalized * 0.5 + 0.5) * 255);
   }
 }

@@ -19,8 +19,8 @@ const SCRIPTS = {
 };
 
 const HELP = `
-  Agent Hub - taskbar popover that asks "Claude or Codex?" and opens the
-  chosen agent in the project you clicked.
+  Agent Hub - taskbar project command center for server control, owned project
+  workflows, and read-only worktree visibility.
 
   Usage
     npx @austencloud/agent-hub [install|uninstall] [flags]

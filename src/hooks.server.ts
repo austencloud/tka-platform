@@ -139,11 +139,12 @@ export const handle: Handle = async ({ event, resolve }) => {
     ].join("; ")
   );
 
-  // Permissions Policy - block unused browser APIs. Camera stays first-party:
-  // train pose detection, practice AR mirror, and video-record all use it.
+  // Permissions Policy - keep sensor access first-party. Camera supports pose
+  // training and recording; geolocation is only requested after someone enters
+  // Flow Fest field mode. Neither capability is available to embedded pages.
   response.headers.set(
     "Permissions-Policy",
-    "camera=(self), microphone=(self), geolocation=(), payment=()"
+    "camera=(self), microphone=(self), geolocation=(self), payment=()"
   );
 
   return response;

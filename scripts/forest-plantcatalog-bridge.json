@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "bridgeId": "forest-plantcatalog-r1",
   "museumTrackerItem": "YmJWyFZKDT6sCFn6Htrt",
-  "activeExportSet": "productionWaveR1",
-  "activeConditioningSet": "productionWaveR1",
+  "activeExportSet": "flowFestBiomeR2",
+  "activeConditioningSet": "flowFestBiomeR2",
   "source": {
     "plantFactoryExecutable": "C:/Program Files/e-on software/PlantFactory/Application/PlantFactory.exe",
     "plantFactoryProductVersion": "4.8.0.0",
@@ -77,7 +77,18 @@
       "quercus-robur-colonised-ld-s29",
       "salix-alba-ld-s11"
     ],
-    "productionWaveR1Backfill": ["quercus-robur-forest-ld-s89"]
+    "productionWaveR1Backfill": ["quercus-robur-forest-ld-s89"],
+    "flowFestBiomeR2": [
+      "quercus-robur-forest-ld-s89",
+      "quercus-robur-urban-ld-s13",
+      "aesculus-carnea-ld-s23",
+      "quercus-robur-forest-ld-s67",
+      "quercus-robur-colonised-ld-s29",
+      "salix-alba-ld-s11",
+      "aesculus-pavia-ld-s31",
+      "aesculus-pavia-ld-s79",
+      "quercus-robur-dead-ld-s37"
+    ]
   },
   "jobs": [
     {
@@ -342,6 +353,98 @@
       "habitatRole": "broad shade canopy over the clearing rim",
       "rawSubdirectory": "quercus-robur-forest-ld-s89",
       "candidateFilename": "quercus-robur-forest-ld-s89.glb"
+    },
+    {
+      "sourceLod": "LD",
+      "sourceCollection": "PlantCatalog 2022.1",
+      "health": 1,
+      "seasonDay": 172,
+      "lodTier": "instanced population",
+      "maximumRuntimeBytes": 6291456,
+      "maximumRuntimeTriangles": 150000,
+      "reduction": {
+        "dropEpiphyteCards": true,
+        "opaqueSimplifyRatio": 0.12,
+        "opaqueSimplifyError": 0.01,
+        "foliageSimplifyRatio": 0.25,
+        "foliageSimplifyError": 0.01
+      },
+      "id": "aesculus-pavia-ld-s31",
+      "label": "Red buckeye, seed 31",
+      "species": "Aesculus pavia",
+      "morphology": "airy understory buckeye",
+      "catalogSpeciesName": "Aesculus pavia LD",
+      "sourceRelativePath": "Broadleaf Trees/Aesculus pavia LD.tpf",
+      "sourceBytes": 17083397,
+      "sourceSha256": "4e003bbd51d2cdec457158ae8c80a2cf848ed904cf868bd80dee7dfeefd117f1",
+      "seed": 31,
+      "ageYears": 24,
+      "maximumAgeYears": 60,
+      "targetHeightMetres": 9.5,
+      "habitatRole": "lower-canopy edge and broken-light understory",
+      "rawSubdirectory": "aesculus-pavia-ld-s31",
+      "candidateFilename": "aesculus-pavia-ld-s31.glb"
+    },
+    {
+      "sourceLod": "LD",
+      "sourceCollection": "PlantCatalog 2022.1",
+      "health": 0.92,
+      "seasonDay": 172,
+      "lodTier": "instanced population",
+      "maximumRuntimeBytes": 6291456,
+      "maximumRuntimeTriangles": 150000,
+      "reduction": {
+        "dropEpiphyteCards": true,
+        "opaqueSimplifyRatio": 0.12,
+        "opaqueSimplifyError": 0.01,
+        "foliageSimplifyRatio": 0.25,
+        "foliageSimplifyError": 0.01
+      },
+      "id": "aesculus-pavia-ld-s79",
+      "label": "Red buckeye, seed 79",
+      "species": "Aesculus pavia",
+      "morphology": "asymmetric mature buckeye",
+      "catalogSpeciesName": "Aesculus pavia LD",
+      "sourceRelativePath": "Broadleaf Trees/Aesculus pavia LD.tpf",
+      "sourceBytes": 17083397,
+      "sourceSha256": "4e003bbd51d2cdec457158ae8c80a2cf848ed904cf868bd80dee7dfeefd117f1",
+      "seed": 79,
+      "ageYears": 38,
+      "maximumAgeYears": 60,
+      "targetHeightMetres": 11,
+      "habitatRole": "middle-story crown variation at clearing margins",
+      "rawSubdirectory": "aesculus-pavia-ld-s79",
+      "candidateFilename": "aesculus-pavia-ld-s79.glb"
+    },
+    {
+      "sourceLod": "LD",
+      "sourceCollection": "PlantCatalog 2022.1",
+      "health": 1,
+      "seasonDay": 172,
+      "lodTier": "sparse habitat accent",
+      "semanticProfile": "wood-only-habitat-snag",
+      "maximumRuntimeBytes": 8388608,
+      "maximumRuntimeTriangles": 180000,
+      "reduction": {
+        "dropEpiphyteCards": true,
+        "opaqueSimplifyRatio": 0.12,
+        "opaqueSimplifyError": 0.01
+      },
+      "id": "quercus-robur-dead-ld-s37",
+      "label": "Standing dead oak, seed 37",
+      "species": "Quercus robur",
+      "morphology": "standing dead habitat snag",
+      "catalogSpeciesName": "Quercus robur dead LD",
+      "sourceRelativePath": "Broadleaf Trees/Quercus robur dead LD.tpf",
+      "sourceBytes": 97194044,
+      "sourceSha256": "7ea8fa505e391f9020610444461be5abec6467e17a52dd5b073b2105b1e15760",
+      "seed": 37,
+      "ageYears": 74,
+      "maximumAgeYears": 100,
+      "targetHeightMetres": 13.5,
+      "habitatRole": "rare standing snag outside occupied clearings",
+      "rawSubdirectory": "quercus-robur-dead-ld-s37",
+      "candidateFilename": "quercus-robur-dead-ld-s37.glb"
     }
   ]
 }

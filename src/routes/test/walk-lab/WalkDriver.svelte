@@ -15,7 +15,12 @@
    */
 
   import { useTask } from "@threlte/core";
+  import type { LocomotionGaitClock } from "@austencloud/scene-3d";
   import { stepOf } from "$lib/shared/3d/diagnostics/gait/walk-patterns";
+  import {
+    sampleDestinationWalkPlan,
+    type DestinationWalkPlan,
+  } from "$lib/shared/3d/locomotion/destination-walk-plan";
   import type {
     WalkPattern,
     WalkTick,
@@ -29,13 +34,24 @@
     running: boolean;
     /** When set, the pattern is ignored and these drive the character. */
     manual: ManualInput | null;
+    /** Mark-to-mark intent driven by the animator's own authored-step clock. */
+    destinationPlan?: DestinationWalkPlan | null;
+    gaitClock?: LocomotionGaitClock | null;
     /** Change it to put the character back at the origin. */
     resetNonce: number;
     onState: (state: WalkState) => void;
   }
 
-  let { pattern, speed, running, manual, resetNonce, onState }: Props =
-    $props();
+  let {
+    pattern,
+    speed,
+    running,
+    manual,
+    destinationPlan = null,
+    gaitClock = null,
+    resetNonce,
+    onState,
+  }: Props = $props();
 
   /** Radians a second the hand-driven mode turns at. */
   const MANUAL_TURN_RATE = 1.8;
@@ -45,6 +61,7 @@
   let z = 0;
   let facing = 0;
   let travelled = 0;
+  let departureStep: number | null = null;
 
   $effect(() => {
     // Read so the reset re-runs, then clear everything the path accumulated.
@@ -54,7 +71,48 @@
     z = 0;
     facing = 0;
     travelled = 0;
+    departureStep = null;
   });
+
+  function driveDestination(plan: DestinationWalkPlan, dt: number): void {
+    if (running) t += dt;
+
+    // Capture the animator where it is rather than inventing a second phase
+    // origin. The first command starts movement; the callback then advances
+    // this same clock on the next frame.
+    if (departureStep === null && gaitClock) departureStep = gaitClock.step;
+    const authoredStep =
+      departureStep === null || !gaitClock
+        ? 0
+        : Math.max(0, gaitClock.step - departureStep);
+    const sample = sampleDestinationWalkPlan(plan, authoredStep);
+
+    x = sample.position.x;
+    z = sample.position.z;
+    travelled = plan.distance * sample.progress;
+    facing = Math.atan2(plan.direction.x, plan.direction.z);
+    const moving = running && !sample.arrived;
+
+    onState({
+      t,
+      x,
+      z,
+      facing,
+      isMoving: moving,
+      // The gait clock controls progress. This speed remains the animation's
+      // matching intent until explicit step-length/cadence inputs reach the
+      // rig contract.
+      speed: moving ? plan.stepLength * plan.cadence : 0,
+      direction: { x: 0, z: 1 },
+      phase: sample.arrived
+        ? `arrived on step ${plan.steps}`
+        : `walking to mark · step ${sample.step.toFixed(1)} of ${plan.steps}`,
+      travelled,
+      plannedSteps: plan.steps,
+      completedSteps: sample.step,
+      endpointError: plan.distance - travelled,
+    });
+  }
 
   function manualTick(input: ManualInput, dt: number): WalkTick {
     facing += input.turn * MANUAL_TURN_RATE * dt;
@@ -73,6 +131,12 @@
     // would teleport the character across the arena and write a jolt into the
     // buffer that nothing in the rig did.
     const dt = Math.min(rawDelta, 1 / 20);
+
+    if (destinationPlan) {
+      driveDestination(destinationPlan, running ? dt : 0);
+      return;
+    }
+
     if (running) t += dt;
 
     const tick = manual

@@ -7,13 +7,16 @@ import { QualityTier } from "$lib/shared/3d/effects/types";
 import {
   SMOKE_VOLUME_BRICK_SIZE,
   SmokeVolumeSolver3D,
+  resolveSmokePlumeHalfExtent3D,
+  resolveSmokePressureIterations3D,
   shiftSmokeVolumeField3D,
 } from "$lib/shared/3d/effects/smoke/smoke-volume-solver-3d";
 import { resolveSmokeVolumeRaySteps3D } from "$lib/shared/3d/effects/smoke/smoke-volume-renderer-3d";
 
 function smokeSource(
   sourceId = 1,
-  palette: SmokeIntent["palette"] = "incense"
+  palette: SmokeIntent["palette"] = "incense",
+  intentOverride: Partial<SmokeIntent> = {}
 ): SmokeTipSource3D {
   const intent: SmokeIntent = {
     ...DEFAULT_EFFECTS_CONFIG.smoke,
@@ -21,6 +24,7 @@ function smokeSource(
     intensity: 0.8,
     ambientEmission: 0.7,
     motionEmission: 0.8,
+    ...intentOverride,
   };
   return {
     effect: "smoke",
@@ -82,6 +86,91 @@ describe("SmokeVolumeSolver3D", () => {
     thirtyFps.dispose();
   });
 
+  it("emits no density when both authored emission channels are disabled", () => {
+    const solver = new SmokeVolumeSolver3D();
+    const source = smokeSource(1, "incense", {
+      ambientEmission: 0,
+      motionEmission: 0,
+    });
+    for (let frame = 0; frame < 60; frame++) solver.update([source], 1 / 60);
+
+    expect(solver.getDebugSnapshot()).toMatchObject({
+      densitySum: 0,
+      occupiedVoxels: 0,
+      maxDensity: 0,
+    });
+    solver.dispose();
+  });
+
+  it("transfers prop motion into a lagging directional wake", () => {
+    const solver = new SmokeVolumeSolver3D();
+    const source = smokeSource(1, "incense", {
+      ambientEmission: 0,
+      motionEmission: 1,
+    });
+    source.position.x = -0.75;
+    source.velocity = { x: 1.5, y: 0, z: 0 };
+    source.speed = 1.5;
+
+    for (let step = 0; step < 30; step++) {
+      source.position.x += source.velocity.x / 30;
+      solver.update([source], 1 / 30);
+    }
+
+    const snapshot = solver.getDebugSnapshot();
+    expect(snapshot.velocityEnergy).toBeGreaterThan(0.01);
+    expect(snapshot.meanVelocity.x).toBeGreaterThan(0.03);
+    expect(snapshot.densityCentroid).not.toBeNull();
+    expect(snapshot.densityCentroid!.x).toBeLessThan(source.position.x - 0.08);
+    solver.dispose();
+  });
+
+  it("scales pressure work with the number of active performer bricks", () => {
+    expect(resolveSmokePressureIterations3D(1)).toBe(12);
+    expect(resolveSmokePressureIterations3D(4)).toBe(8);
+    expect(resolveSmokePressureIterations3D(8)).toBe(6);
+  });
+
+  it("grows solo smoke into room space while keeping crowd envelopes bounded", () => {
+    expect(resolveSmokePlumeHalfExtent3D(0, 1, 0.1)).toEqual({
+      x: 1.35,
+      y: 1.8,
+      z: 1.35,
+    });
+    const solo = resolveSmokePlumeHalfExtent3D(6, 1, 0.1);
+    const duet = resolveSmokePlumeHalfExtent3D(6, 2, 0.1);
+    const crowd = resolveSmokePlumeHalfExtent3D(6, 3, 0.1);
+    expect(solo.x).toBeGreaterThan(2.8);
+    expect(duet.x).toBeGreaterThan(2.1);
+    expect(duet.x).toBeLessThan(solo.x);
+    expect(crowd).toEqual({ x: 1.35, y: 1.8, z: 1.35 });
+  });
+
+  it("expands and thins a live solo plume instead of trapping it near the performer", () => {
+    const solver = new SmokeVolumeSolver3D();
+    const source = smokeSource(1, "incense");
+    for (let step = 0; step < 90; step++) solver.update([source], 1 / 30);
+
+    const spread = solver.getRenderBricks()[0]!;
+    const emittedDensity = solver.getDebugSnapshot().densitySum;
+    expect(spread.halfExtent.x).toBeGreaterThan(2.4);
+    expect(spread.halfExtent.z).toBeGreaterThan(1.8);
+
+    source.params = resolveSmoke3D({
+      ...DEFAULT_EFFECTS_CONFIG.smoke,
+      palette: "incense",
+      intensity: 0.8,
+      ambientEmission: 0,
+      motionEmission: 0,
+    });
+    source.velocity = { x: 0, y: 0, z: 0 };
+    source.speed = 0;
+    for (let step = 0; step < 90; step++) solver.update([source], 1 / 30);
+
+    expect(solver.getDebugSnapshot().densitySum).toBeLessThan(emittedDensity);
+    solver.dispose();
+  });
+
   it("assigns performers to distinct atlas bricks and clears immediately when disabled", () => {
     const solver = new SmokeVolumeSolver3D();
     solver.update([smokeSource(1), smokeSource(5, "fog")], 1 / 30);
@@ -108,12 +197,12 @@ describe("SmokeVolumeSolver3D", () => {
     const stationary = new SmokeVolumeSolver3D();
     const movingSource = smokeSource();
     const stationarySource = smokeSource();
-    movingSource.position.x = -1;
-    stationarySource.position.x = 1;
+    movingSource.position.x = -0.55;
+    stationarySource.position.x = 0.55;
     moving.update([movingSource], 1 / 30);
     stationary.update([stationarySource], 1 / 30);
 
-    movingSource.position.x = 1;
+    movingSource.position.x = 0.55;
     moving.update([movingSource], 1 / 30);
     stationary.update([stationarySource], 1 / 30);
 

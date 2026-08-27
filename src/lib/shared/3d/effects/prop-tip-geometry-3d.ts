@@ -29,7 +29,11 @@ export interface PropTipAnchor3D {
   /** Effect-assignment slot: 0 = pinky/left end, 1 = thumb/right end. */
   readonly effectTipIndex: 0 | 1;
   /** Prop-local metres from the hand pivot: +Y reach, +X across. */
-  readonly offset: { readonly x: number; readonly y: number; readonly z: number };
+  readonly offset: {
+    readonly x: number;
+    readonly y: number;
+    readonly z: number;
+  };
 }
 /** `Prop3D.svelte` renders every "big" procedural variant at this scale. */
 const BIG_SCALE = 1.4;
@@ -177,9 +181,7 @@ function twoEndedReach3D(
   propType: string | undefined,
   staffHalfLength: number
 ): number {
-  const reach = propType
-    ? TWO_ENDED_REACH_3D[propType as PropType]
-    : undefined;
+  const reach = propType ? TWO_ENDED_REACH_3D[propType as PropType] : undefined;
   return reach ? reach(staffHalfLength * 2) : staffHalfLength;
 }
 

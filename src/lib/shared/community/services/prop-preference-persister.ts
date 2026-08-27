@@ -10,20 +10,31 @@ const DEFAULT_PREFS: PropPreferences = {
 };
 
 function validatePrefs(prefs: PropPreferences): void {
-  if (prefs.favoriteProp && !prefs.propsISpinWith.includes(prefs.favoriteProp)) {
-    throw new Error(`favoriteProp "${prefs.favoriteProp}" must be in propsISpinWith`);
+  if (
+    prefs.favoriteProp &&
+    !prefs.propsISpinWith.includes(prefs.favoriteProp)
+  ) {
+    throw new Error(
+      `favoriteProp "${prefs.favoriteProp}" must be in propsISpinWith`
+    );
   }
   if (prefs.favoriteCatdog) {
     if (!prefs.propsISpinWith.includes(prefs.favoriteCatdog.bluePropType)) {
-      throw new Error(`catdog blue "${prefs.favoriteCatdog.bluePropType}" must be in propsISpinWith`);
+      throw new Error(
+        `catdog blue "${prefs.favoriteCatdog.bluePropType}" must be in propsISpinWith`
+      );
     }
     if (!prefs.propsISpinWith.includes(prefs.favoriteCatdog.redPropType)) {
-      throw new Error(`catdog red "${prefs.favoriteCatdog.redPropType}" must be in propsISpinWith`);
+      throw new Error(
+        `catdog red "${prefs.favoriteCatdog.redPropType}" must be in propsISpinWith`
+      );
     }
   }
 }
 
-export async function loadPropPreferences(userId: string): Promise<PropPreferences> {
+export async function loadPropPreferences(
+  userId: string
+): Promise<PropPreferences> {
   const db = await getFirestoreInstance();
   const userDoc = await getDoc(doc(db, "users", userId));
   if (!userDoc.exists()) return { ...DEFAULT_PREFS };
@@ -35,7 +46,10 @@ export async function loadPropPreferences(userId: string): Promise<PropPreferenc
   };
 }
 
-export async function savePropPreferences(userId: string, prefs: PropPreferences): Promise<void> {
+export async function savePropPreferences(
+  userId: string,
+  prefs: PropPreferences
+): Promise<void> {
   validatePrefs(prefs);
   const db = await getFirestoreInstance();
   await updateDoc(doc(db, "users", userId), {
@@ -45,35 +59,54 @@ export async function savePropPreferences(userId: string, prefs: PropPreferences
   });
 }
 
-export async function addPropPreference(userId: string, prop: PropType): Promise<void> {
+export async function addPropPreference(
+  userId: string,
+  prop: PropType
+): Promise<void> {
   const prefs = await loadPropPreferences(userId);
   if (prefs.propsISpinWith.includes(prop)) return;
   prefs.propsISpinWith.push(prop);
   await savePropPreferences(userId, prefs);
 }
 
-export async function removePropPreference(userId: string, prop: PropType): Promise<void> {
+export async function removePropPreference(
+  userId: string,
+  prop: PropType
+): Promise<void> {
   const prefs = await loadPropPreferences(userId);
   prefs.propsISpinWith = prefs.propsISpinWith.filter((p) => p !== prop);
   if (prefs.favoriteProp === prop) prefs.favoriteProp = null;
-  if (prefs.favoriteCatdog && (prefs.favoriteCatdog.bluePropType === prop || prefs.favoriteCatdog.redPropType === prop)) {
+  if (
+    prefs.favoriteCatdog &&
+    (prefs.favoriteCatdog.bluePropType === prop ||
+      prefs.favoriteCatdog.redPropType === prop)
+  ) {
     prefs.favoriteCatdog = null;
   }
   await savePropPreferences(userId, prefs);
 }
 
-export async function setFavoriteProp(userId: string, prop: PropType): Promise<void> {
+export async function setFavoriteProp(
+  userId: string,
+  prop: PropType | null
+): Promise<void> {
   const prefs = await loadPropPreferences(userId);
-  if (!prefs.propsISpinWith.includes(prop)) prefs.propsISpinWith.push(prop);
+  if (prop && !prefs.propsISpinWith.includes(prop))
+    prefs.propsISpinWith.push(prop);
   prefs.favoriteProp = prop;
   await savePropPreferences(userId, prefs);
 }
 
-export async function setCatdogFavorite(userId: string, combo: CatdogCombo | null): Promise<void> {
+export async function setCatdogFavorite(
+  userId: string,
+  combo: CatdogCombo | null
+): Promise<void> {
   const prefs = await loadPropPreferences(userId);
   if (combo) {
-    if (!prefs.propsISpinWith.includes(combo.bluePropType)) prefs.propsISpinWith.push(combo.bluePropType);
-    if (!prefs.propsISpinWith.includes(combo.redPropType)) prefs.propsISpinWith.push(combo.redPropType);
+    if (!prefs.propsISpinWith.includes(combo.bluePropType))
+      prefs.propsISpinWith.push(combo.bluePropType);
+    if (!prefs.propsISpinWith.includes(combo.redPropType))
+      prefs.propsISpinWith.push(combo.redPropType);
   }
   prefs.favoriteCatdog = combo;
   await savePropPreferences(userId, prefs);

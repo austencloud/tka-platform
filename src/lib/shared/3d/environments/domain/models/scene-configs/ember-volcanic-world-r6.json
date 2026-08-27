@@ -1,0 +1,48 @@
+{
+  "revision": "ember-broken-rift-gate4-volcanic-r6",
+  "authorityTrackerItem": "ATURN84Ov2hmjWUndebl",
+  "derivedFromTrackerItem": "nu73zqvPJRxio4T2sWz7",
+  "lavaRiver": {
+    "width": 5.2,
+    "flowSpeed": 0.075,
+    "warpIntensity": 1.7,
+    "crustCoverage": 0.58,
+    "pointsRuntimeXZHeight": [
+      [-20.0, 156.0, 15.2],
+      [-25.0, 132.0, 12.7],
+      [-20.0, 108.0, 10.6],
+      [-17.0, 82.0, 8.7],
+      [-12.0, 67.0, 6.5],
+      [-4.0, 52.0, 4.4],
+      [8.0, 40.0, 2.9],
+      [11.0, 29.0, 1.9],
+      [10.0, 19.0, 1.1],
+      [12.0, 11.0, 0.55],
+      [14.0, 2.0, 0.25],
+      [12.0, -8.0, 0.1],
+      [8.0, -24.0, -0.02],
+      [-1.0, -43.0, -0.12],
+      [-14.0, -64.0, -0.18],
+      [-10.0, -91.0, -0.24],
+      [2.0, -122.0, -0.32]
+    ]
+  },
+  "terrain": {
+    "runtimeXRange": [-190.0, 190.0],
+    "runtimeZRange": [-145.0, 190.0],
+    "columns": 96,
+    "rows": 84,
+    "nearMaterialEndsAtDistance": 66.0,
+    "middleMaterialEndsAtDistance": 126.0,
+    "actionFloorRadius": 23.0,
+    "seed": 6301
+  },
+  "distantVent": {
+    "centerRuntimeXZ": [-25.0, 145.0],
+    "baseRadiusX": 26.0,
+    "baseRadiusZ": 21.0,
+    "height": 44.0,
+    "craterRadius": 6.0,
+    "seed": 6401
+  }
+}

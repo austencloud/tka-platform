@@ -5,6 +5,7 @@
   interface Props {
     theme: ShowroomTheme;
     selected: boolean;
+    confirmed: boolean;
     livePreview: boolean;
     allowAutomaticOrbit: boolean;
     fallbackReason?: "connection" | "renderer" | null;
@@ -15,6 +16,7 @@
   let {
     theme,
     selected,
+    confirmed,
     livePreview,
     allowAutomaticOrbit,
     fallbackReason = null,
@@ -82,13 +84,15 @@
       <button
         type="button"
         class="select-button"
-        class:selected
+        class:selected={confirmed}
         onclick={onSelect}
-        disabled={selected}
+        disabled={confirmed}
       >
-        {#if selected}
+        {#if confirmed}
           <i class="fas fa-check" aria-hidden="true"></i>
           Selected
+        {:else if selected}
+          Confirm {theme.label}
         {:else}
           Use {theme.label}
         {/if}

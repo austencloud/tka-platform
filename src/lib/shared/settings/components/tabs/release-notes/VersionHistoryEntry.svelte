@@ -202,8 +202,7 @@
     gap: 0.5rem;
   }
 
-  /* The entry text carries no size of its own, so it would sit at the
-     inherited 16px while everything around it stepped up. */
+  /* Entry text uses the primary UI role at every desktop width. */
   .entry-groups :global(.change-item) {
     font-size: var(--font-size-base);
     line-height: 1.55;
@@ -254,32 +253,4 @@
     margin-top: 1rem;
   }
 
-  /* Same scale step the selected release uses, so the stream reads as one
-     document instead of one big block followed by fine print. */
-  @container (min-width: 2000px) {
-    .history-entry {
-      --font-size-compact: 1.05rem;
-      --font-size-sm: 1.25rem;
-      --font-size-base: 1.25rem;
-      --font-size-lg: 1.6rem;
-    }
-
-    .entry-groups :global(.change-item) {
-      padding: 1.1rem 1.4rem;
-      border-radius: 0.9rem;
-    }
-
-    .entry-groups :global(.change-list) {
-      gap: 0.75rem;
-    }
-  }
-
-  @container (min-width: 2800px) {
-    .history-entry {
-      --font-size-compact: 1.25rem;
-      --font-size-sm: 1.5rem;
-      --font-size-base: 1.5rem;
-      --font-size-lg: 1.9rem;
-    }
-  }
 </style>

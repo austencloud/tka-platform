@@ -100,8 +100,8 @@ export const VERTICAL_MIRROR_POSITION_MAP: Record<GridPosition, GridPosition> = 
   [GridPosition.ETA15]: GridPosition.ETA3, // NW-W → NE-E
   [GridPosition.ETA16]: GridPosition.ETA2, // N-NW → N-NE
 
-  // Tau and Terra positions - Level 5 (centric mode)
-  // TODO: Implement proper mirror logic when Level 5 is fully specified
+  // Tau and Terra positions - Level 6 (centric mode)
+  // TODO: Implement proper mirror logic when Level 6 is fully specified
   [GridPosition.TAU1]: GridPosition.TAU1,
   [GridPosition.TAU2]: GridPosition.TAU2,
   [GridPosition.TAU3]: GridPosition.TAU3,
@@ -231,8 +231,8 @@ export const HORIZONTAL_MIRROR_POSITION_MAP: Record<GridPosition, GridPosition> 
     [GridPosition.ETA15]: GridPosition.ETA7, // NW-W → SW-W
     [GridPosition.ETA16]: GridPosition.ETA6, // N-NW → S-SW
 
-    // Tau and Terra positions - Level 5 (centric mode)
-    // TODO: Implement proper horizontal mirror logic when Level 5 is fully specified
+    // Tau and Terra positions - Level 6 (centric mode)
+    // TODO: Implement proper horizontal mirror logic when Level 6 is fully specified
     [GridPosition.TAU1]: GridPosition.TAU1,
     [GridPosition.TAU2]: GridPosition.TAU2,
     [GridPosition.TAU3]: GridPosition.TAU3,

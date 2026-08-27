@@ -194,14 +194,9 @@
     );
   });
 
-  // Target cell widths replace fixed column tiers and follow the panel's `em`
-  // ramp, keeping faces proportional instead of accumulating empty gutter.
-  /**
-   * Mirrors `.roster-view` because `RobustAvatar` still consumes pixels.
-   */
-  const unitPx = $derived(
-    Math.min(24, Math.max(16, 16 + ((boxWidth || 1616) - 1616) * (8 / 2160)))
-  );
+  // Geometry is authored against 16px logical units. Wider panels gain
+  // columns; viewing-distance magnification is a separate mode.
+  const unitPx = 16;
 
   // A bounded share of measured panel height keeps the map legible but secondary.
   const MAP_STAGE_SHARE = 0.34;
@@ -601,7 +596,9 @@
 
 <style>
   .creators-panel {
-    /* The child owns the `cqw` ramp because a container cannot query itself. */
+    /* `inline-size` rather than `size` because nothing queries height in CSS.
+       The short-landscape branch is decided from the measured box, avoiding
+       size containment's requirement for a definite height. */
     container-type: inline-size;
     container-name: creators;
 
@@ -613,14 +610,8 @@
   }
 
   .roster-view {
-    /* Panel-local 4K ramp; keep its slope paired with `unitPx` above. */
-    font-size: clamp(1rem, calc(1rem + (100cqw - 1616px) * 8 / 2160), 1.5rem);
-
-    /* Shared controls inherit the panel ramp through local `em` tokens. */
-    --font-size-sm: 0.875em;
-    --font-size-compact: 0.75em;
-
-    /* The live band and its placeholder share this in-flow slot height. */
+    /* The live band and its placeholder share this in-flow height; the fixed
+       prediction overlay contributes nothing. */
     --map-band-slot-h: calc(
       var(--min-touch-target) * 2 + 0.5em + 0.4em + 2.2em + 0.35em + 2.2em
     );

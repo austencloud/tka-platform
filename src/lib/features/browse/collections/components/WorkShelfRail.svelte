@@ -97,8 +97,7 @@
 
 <header class="rail-header">
   <div class="title-row">
-    <h2>Your work</h2>
-    <span>Choose a shelf</span>
+    <h2>Library</h2>
   </div>
   <SegmentedControl
     {options}
@@ -107,7 +106,7 @@
     color="accent"
     density="tight"
     semantics="tabs"
-    ariaLabel="Choose a shelf in your work"
+    ariaLabel="Choose a library shelf"
     optionContent={tabContent}
   />
 </header>
@@ -131,16 +130,15 @@
     flex: 0 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: clamp(14px, 1.8cqi, 24px);
+    gap: 10px;
+    padding: clamp(12px, 1.8cqi, 20px);
     border-bottom: 1px solid var(--theme-stroke);
-    background: var(--theme-panel-bg);
+    background: transparent;
   }
 
   .title-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
   }
 
@@ -149,12 +147,6 @@
     color: var(--theme-text);
     font-size: clamp(17px, 2.6cqi, 22px);
     font-weight: 700;
-  }
-
-  .title-row > span {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
   }
 
   .shelf-tab-content {

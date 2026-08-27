@@ -192,8 +192,8 @@ h6 {
        fluid  88vw   — bigger screens actually get FILLED instead of sitting
                        in a dead rail (a hard 1720 wastes 27% of a 2350px
                        viewport and 55% of a 3840px one)
-       ceil   2600px — line length stops growing before it gets silly; past
-                       this the fix is element/type SCALE, not more width
+       ceil   2600px — page composition stops growing before it fragments;
+                       editorial reading measures cap prose inside this band
        92vw          — small-screen gutter, unchanged behavior below ~1870px
 
      Real viewports: 4K@200% scaling ≈ 1920 CSS px → 1720. 4K@150% ≈ 2350
@@ -762,49 +762,10 @@ h6 {
   --dm-transition: 150ms ease-out;
 }
 
-/* ── 4K lockstep scaling (marketing + legal pages) ────────────────────────
-   Past ~1680 CSS px the OS has usually stopped scaling for you: a 4K panel at
-   100%, or a widescreen TV across the room, reports 3840 px and renders 16px
-   text at half the physical size you'd read on a laptop. Widening the band
-   alone does not fix that — the ELEMENTS have to grow.
-
-   Ramping the root font grows every rem/em/ch measure by the SAME multiplier,
-   so nothing can outgrow its neighbours; the disjointed-4K failure is
-   impossible by construction. Identical formula and rationale as the guide's
-   ramp (guide.css, spec 2026-07-19-guide-4k-lockstep-design) — this extends
-   that proven treatment to the rest of the public site.
-
-   Scope: `.mkt-shell` is MarketingChrome, rendered only for the marketing
-   route list in +layout.svelte (/, /about, /composer, /glossary, /faq,
-   /notation/*, /shop/*, /support, ...). App routes never mount it, and the
-   /guide subtree is excluded from that list (it ramps itself), so neither the
-   app UI nor the fixed-inch print artboards under /guide can be caught here.
-   `.legal-container` opts privacy/terms/delete-account in. `.qft-app` opts in
-   /notation/qft, which is on the marketing route list by URL but deliberately
-   opts OUT of MarketingChrome to run full-screen — and so lost the ramp with
-   it, leaving the whole instrument as a small band in a 3840px field.
-
-   Deliberately NOT a media-query step: steps produce a visible jolt at one
-   width. This is continuous from 1680 → 3840.
+/* Ordinary app, marketing, legal, and settings surfaces keep the standard
+   16px root at every viewport width. Wide canvases recompose through their
+   shell and component queries; browser zoom remains the user's scale control.
    See .claude/rules/4k-native-layout.md. */
-@media (min-width: 1680px) {
-  html:has(.mkt-shell),
-  html:has(.legal-container) {
-    font-size: clamp(16px, calc(16px + (100vw - 1680px) * 8 / 2160), 24px);
-  }
-}
-
-/* The QfT app takes the same ramp with a height floor on it.
-   Scrolling pages can spend a ramped rem on height and simply grow taller. The
-   instrument cannot: it fits itself to the window, so a 3840×412 window — a
-   wide screen with the window squashed — was asking it to lay out 24px type in
-   412px of height, and the notation ran under the footer. Above 45rem tall
-   there is room for the ramp; below it, the base scale is the whole point. */
-@media (min-width: 1680px) and (min-height: 45rem) {
-  html:has(.qft-app) {
-    font-size: clamp(16px, calc(16px + (100vw - 1680px) * 8 / 2160), 24px);
-  }
-}
 
 /* Dark Mode Overrides - Applied when .dark class is on <html> */
 :root.dark {

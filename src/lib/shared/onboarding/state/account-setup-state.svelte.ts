@@ -9,13 +9,13 @@ import type { OnboardingStatus } from "../services/types";
 export type AccountSetupTaskId =
   | "display-name"
   | "profile-photo"
-  | "favorite-prop"
+  | "props"
   | "theme";
 
 export const ACCOUNT_SETUP_SETTINGS_DESTINATIONS = {
   "display-name": "profile",
   "profile-photo": "profile",
-  "favorite-prop": "profile",
+  props: "profile",
   theme: "theme",
 } as const satisfies Record<AccountSetupTaskId, string>;
 
@@ -57,8 +57,8 @@ export interface AccountSetupState {
   loadForCurrentUser: () => Promise<void>;
   markThemeChosen: () => Promise<void>;
   retrySave: () => Promise<void>;
-  markFavoritePropPresent: (value?: boolean) => void;
-  refreshFavoriteProp: () => Promise<void>;
+  markPropsPresent: (value?: boolean) => void;
+  refreshProps: () => Promise<void>;
   requestReminder: () => boolean;
   canShowReminder: () => boolean;
   consumeReminderRequest: () => boolean;
@@ -83,7 +83,7 @@ export function createAccountSetupState(
   let progress = $state<AccountSetupProgress>(
     createDefaultAccountSetupProgress()
   );
-  let hasFavoriteProp = $state(false);
+  let hasProps = $state(false);
   let loading = $state(true);
   let available = $state(false);
   let saveError = $state<string | null>(null);
@@ -115,11 +115,11 @@ export function createAccountSetupState(
       icon: "fa-camera",
     },
     {
-      id: "favorite-prop",
-      label: "Favorite prop",
-      description: "Show what you reach for most.",
-      complete: hasFavoriteProp,
-      actionLabel: hasFavoriteProp ? "Change" : "Choose prop",
+      id: "props",
+      label: "Props you spin",
+      description: "Add the props that are part of your flow practice.",
+      complete: hasProps,
+      actionLabel: hasProps ? "Change" : "Choose props",
       icon: "fa-fire",
     },
     {
@@ -158,9 +158,7 @@ export function createAccountSetupState(
       if (request !== loadSequence) return;
 
       progress = normalizeAccountSetupProgress(status.accountSetup);
-      hasFavoriteProp = Boolean(
-        propPreferences?.favoriteProp || propPreferences?.favoriteCatdog
-      );
+      hasProps = Boolean(propPreferences?.propsISpinWith.length);
       loadedIdentityKey = requestedKey;
       available = true;
     } catch (error) {
@@ -170,7 +168,7 @@ export function createAccountSetupState(
         error
       );
       progress = createDefaultAccountSetupProgress();
-      hasFavoriteProp = false;
+      hasProps = false;
       loadedIdentityKey = null;
       available = false;
     } finally {
@@ -230,14 +228,14 @@ export function createAccountSetupState(
     return failedProgress ? persistProgress(failedProgress) : saveQueue;
   }
 
-  function markFavoritePropPresent(value = true): void {
-    hasFavoriteProp = value;
+  function markPropsPresent(value = true): void {
+    hasProps = value;
   }
 
-  async function refreshFavoriteProp(): Promise<void> {
+  async function refreshProps(): Promise<void> {
     const currentIdentity = deps.getIdentity();
     if (!currentIdentity.isFullAccount || !currentIdentity.userId) {
-      hasFavoriteProp = false;
+      hasProps = false;
       return;
     }
 
@@ -245,14 +243,9 @@ export function createAccountSetupState(
       const propPreferences = await deps.loadPropPreferences(
         currentIdentity.userId
       );
-      hasFavoriteProp = Boolean(
-        propPreferences.favoriteProp || propPreferences.favoriteCatdog
-      );
+      hasProps = propPreferences.propsISpinWith.length > 0;
     } catch (error) {
-      console.warn(
-        "[accountSetupState] Favorite prop could not be refreshed",
-        error
-      );
+      console.warn("[accountSetupState] Props could not be refreshed", error);
     }
   }
 
@@ -343,8 +336,8 @@ export function createAccountSetupState(
     loadForCurrentUser,
     markThemeChosen,
     retrySave,
-    markFavoritePropPresent,
-    refreshFavoriteProp,
+    markPropsPresent,
+    refreshProps,
     requestReminder,
     canShowReminder,
     consumeReminderRequest,

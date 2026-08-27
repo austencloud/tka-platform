@@ -4,6 +4,7 @@ import { pickCreatorSamplesByOwnerId } from "$lib/features/browse/gallery-home/p
 import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { getEffectiveProp } from "$lib/shared/community/domain/get-effective-prop";
 
 function creator(
   patch: Partial<EnhancedUserProfile> = {}
@@ -50,6 +51,54 @@ function sequence(
 }
 
 describe("creator discovery", () => {
+  it("uses a deliberate Profile prop before all other prop identity", () => {
+    expect(
+      getEffectiveProp(
+        creator({
+          favoriteProp: PropType.FAN,
+          propsISpinWith: [PropType.STAFF],
+          activeProp: PropType.CLUB,
+        })
+      )
+    ).toBe(PropType.FAN);
+  });
+
+  it("uses the only selected prop without forcing a separate favorite", () => {
+    expect(
+      getEffectiveProp(
+        creator({
+          favoriteProp: null,
+          propsISpinWith: [PropType.STAFF],
+          activeProp: PropType.CLUB,
+        })
+      )
+    ).toBe(PropType.STAFF);
+  });
+
+  it("does not invent a single identity for a multi-prop creator", () => {
+    expect(
+      getEffectiveProp(
+        creator({
+          favoriteProp: null,
+          propsISpinWith: [PropType.STAFF, PropType.FAN],
+          activeProp: PropType.CLUB,
+        })
+      )
+    ).toBeNull();
+  });
+
+  it("keeps activeProp as a fallback for legacy profiles", () => {
+    expect(
+      getEffectiveProp(
+        creator({
+          favoriteProp: null,
+          propsISpinWith: undefined,
+          activeProp: PropType.CLUB,
+        })
+      )
+    ).toBe(PropType.CLUB);
+  });
+
   it("searches the same profile details shown on creator cards", () => {
     const profile = creator();
 

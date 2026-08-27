@@ -27,6 +27,8 @@ import {
   updateTunnelRelationship,
   type TunnelRelationshipRule,
 } from "../domain/tunnel-relationship-rule";
+import type { TunnelSnapshot } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
+import type { TunnelPresentationState } from "./tunnel-presentation-state.svelte";
 
 const INITIAL_VISIBLE_PERFORMERS = 2;
 const MAX_SOURCE_HISTORY = 12;
@@ -45,7 +47,11 @@ interface TunnelPerformerSlot {
 }
 
 export interface TunnelCreatorDependencies {
-  openComposition: (composition: TunnelComposition) => void;
+  openComposition: (
+    composition: TunnelComposition,
+    presentation: TunnelSnapshot
+  ) => void;
+  presentation: TunnelPresentationState;
   initialComposition?: TunnelComposition;
   initialDraft?: TunnelCreatorDraft | null;
   initialFormation?: TunnelConfig;
@@ -476,6 +482,7 @@ export function createTunnelCreatorState(
       workspace: { activePanel, generationTargetId },
       editingTunnel:
         dependencies.editingTunnel ?? restoredDraft?.editingTunnel ?? null,
+      presentation: dependencies.presentation.capture(),
     };
   }
 
@@ -484,7 +491,10 @@ export function createTunnelCreatorState(
     if (!composition || opening) return;
     opening = true;
     try {
-      dependencies.openComposition(composition);
+      dependencies.openComposition(
+        composition,
+        dependencies.presentation.capture()
+      );
     } finally {
       opening = false;
     }
@@ -536,6 +546,9 @@ export function createTunnelCreatorState(
     },
     get editingTunnel() {
       return dependencies.editingTunnel ?? restoredDraft?.editingTunnel ?? null;
+    },
+    get presentation() {
+      return dependencies.presentation;
     },
     get performerSlots() {
       return slots.map((slot) => ({

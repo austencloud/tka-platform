@@ -27,6 +27,7 @@
     config?: CosmicSceneConfig;
     performerCount?: number;
     stageRadius?: number;
+    stageRadiusGrowth?: number;
   }
 
   let {
@@ -34,6 +35,7 @@
     config,
     performerCount = 1,
     stageRadius = 3,
+    stageRadiusGrowth = 0,
   }: Props = $props();
 
   const defaultConfigs = {
@@ -46,7 +48,9 @@
   const activeConfig = $derived.by(() => {
     const r = resolveCircularStageRadius(
       stageRadius,
-      baseConfig.platform.radius
+      baseConfig.platform.radius,
+      undefined,
+      stageRadiusGrowth
     );
     if (r <= baseConfig.platform.radius) return baseConfig;
     return {

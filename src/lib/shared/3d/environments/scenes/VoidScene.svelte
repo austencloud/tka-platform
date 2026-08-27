@@ -11,16 +11,19 @@
   interface Props {
     config?: VoidSceneConfig;
     stageRadius?: number;
+    stageRadiusGrowth?: number;
   }
 
-  let { config, stageRadius = 3 }: Props = $props();
+  let { config, stageRadius = 3, stageRadiusGrowth = 0 }: Props = $props();
 
   const baseConfig = $derived(config ?? createDefaultVoidConfig());
 
   const activeConfig = $derived.by(() => {
     const r = resolveCircularStageRadius(
       stageRadius,
-      baseConfig.platform.radius
+      baseConfig.platform.radius,
+      undefined,
+      stageRadiusGrowth
     );
     if (r <= baseConfig.platform.radius) return baseConfig;
     return {

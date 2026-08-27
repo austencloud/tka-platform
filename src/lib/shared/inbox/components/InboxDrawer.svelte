@@ -893,54 +893,6 @@
     --sheet-width: min(clamp(30rem, 28vw, 64rem), 95vw);
   }
 
-  @media (min-width: 1680px) {
-    :global(.drawer-content.inbox-drawer) {
-      --font-size-min: clamp(
-        0.875rem,
-        calc(0.875rem + (100vw - 1680px) * 7 / 2160),
-        1.3125rem
-      );
-      --font-size-compact: clamp(
-        0.75rem,
-        calc(0.75rem + (100vw - 1680px) * 6 / 2160),
-        1.125rem
-      );
-      --font-size-xs: var(--font-size-compact);
-      --font-size-sm: var(--font-size-min);
-      --font-size-base: clamp(
-        1rem,
-        calc(1rem + (100vw - 1680px) * 8 / 2160),
-        1.5rem
-      );
-      --font-size-md: var(--font-size-base);
-      --font-size-lg: clamp(
-        1.125rem,
-        calc(1.125rem + (100vw - 1680px) * 9 / 2160),
-        1.6875rem
-      );
-      --font-size-xl: clamp(
-        1.25rem,
-        calc(1.25rem + (100vw - 1680px) * 10 / 2160),
-        1.875rem
-      );
-      --font-size-2xl: clamp(
-        1.5rem,
-        calc(1.5rem + (100vw - 1680px) * 12 / 2160),
-        2.25rem
-      );
-      --font-size-3xl: clamp(
-        1.875rem,
-        calc(1.875rem + (100vw - 1680px) * 15 / 2160),
-        2.8125rem
-      );
-      --min-touch-target: clamp(
-        44px,
-        calc(44px + (100vw - 1680px) * 22 / 2160),
-        66px
-      );
-    }
-  }
-
   /* Byte-identical to FULL_BLEED_DRAWER_QUERY in domain/full-bleed-drawer.ts.
      Pinned by full-bleed-drawer-contract.test.ts — see that module for why the
      test is "held", not "narrow". */

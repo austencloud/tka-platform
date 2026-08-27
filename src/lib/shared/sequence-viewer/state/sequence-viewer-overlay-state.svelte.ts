@@ -1,6 +1,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ViewMode } from "$lib/shared/sequence-viewer/domain/viewer-orchestrator-context";
 import type { ViewerMode } from "$lib/shared/sequence-viewer/state/viewer-state.svelte";
+import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type {
   TunnelComposition,
   TunnelSaveTarget,
@@ -21,6 +22,7 @@ let _variations = $state<SequenceData[]>([]);
 let _variationIndex = $state(0);
 let _returnLabel = $state("Back");
 let _initialBpm = $state(60);
+let _initialPlaybackMode = $state<PlaybackMode>("continuous");
 let _initialStep = $state(0);
 let _initialViewMode = $state<ViewMode | undefined>();
 let _initialViewerMode = $state<ViewerMode | undefined>();
@@ -39,6 +41,7 @@ export function openSequenceOverlay(
   options?: {
     returnLabel?: string;
     initialBpm?: number;
+    initialPlaybackMode?: PlaybackMode;
     initialStep?: number;
     initialViewMode?: ViewMode;
     initialViewerMode?: ViewerMode;
@@ -61,6 +64,7 @@ export function openSequenceOverlay(
   if (_variationIndex < 0) _variationIndex = 0;
   _returnLabel = options?.returnLabel || "Back";
   _initialBpm = options?.initialBpm || 60;
+  _initialPlaybackMode = options?.initialPlaybackMode ?? "continuous";
   _initialStep = options?.initialStep || 0;
   _initialViewMode = options?.initialViewMode;
   _initialViewerMode = options?.initialViewerMode;
@@ -174,6 +178,7 @@ export function closeSequenceOverlay(): void {
   _variationIndex = 0;
   _returnLabel = "Back";
   _initialBpm = 60;
+  _initialPlaybackMode = "continuous";
   _initialStep = 0;
   _initialViewMode = undefined;
   _initialViewerMode = undefined;
@@ -218,6 +223,9 @@ export function getSequenceOverlayState() {
     },
     get initialBpm() {
       return _initialBpm;
+    },
+    get initialPlaybackMode() {
+      return _initialPlaybackMode;
     },
     get initialStep() {
       return _initialStep;

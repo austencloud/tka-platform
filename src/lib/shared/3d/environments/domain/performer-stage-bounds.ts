@@ -33,6 +33,9 @@ export interface StageCenterOffset {
 
 const BASE_STAGE_WIDTH = 6;
 const BASE_STAGE_DEPTH = 6;
+export const BASE_PERFORMER_STAGE_RADIUS =
+  Math.min(BASE_STAGE_WIDTH, BASE_STAGE_DEPTH) / 2;
+export const ADDED_PERFORMER_STAGE_GROWTH = 0.5;
 export const DEFAULT_PERFORMER_STAGE_CLEARANCE = 1.5;
 
 /**
@@ -41,6 +44,12 @@ export const DEFAULT_PERFORMER_STAGE_CLEARANCE = 1.5;
  */
 export function getPerformerStageClearance(avatarScale: number): number {
   return DEFAULT_PERFORMER_STAGE_CLEARANCE * avatarScale;
+}
+
+/** The visible expansion earned by the cast above a scene's solo deck. */
+export function getAddedPerformerStageGrowth(performerCount: number): number {
+  const count = Math.max(0, Math.floor(performerCount));
+  return Math.max(0, count - 1) * ADDED_PERFORMER_STAGE_GROWTH;
 }
 
 /**
@@ -58,7 +67,7 @@ export function getPerformerStageBounds(
     options.performerClearance ?? DEFAULT_PERFORMER_STAGE_CLEARANCE;
   let halfWidth = BASE_STAGE_WIDTH / 2;
   let halfDepth = BASE_STAGE_DEPTH / 2;
-  let radius = Math.min(BASE_STAGE_WIDTH, BASE_STAGE_DEPTH) / 2;
+  let radius = BASE_PERFORMER_STAGE_RADIUS;
 
   for (const performer of performers) {
     halfWidth = Math.max(halfWidth, Math.abs(performer.x) + performerClearance);
@@ -85,10 +94,11 @@ export function getPerformerStageBounds(
 export function resolveCircularStageRadius(
   performerRadius: number,
   minimumRadius: number,
-  centerOffset: StageCenterOffset = { x: 0, z: 0 }
+  centerOffset: StageCenterOffset = { x: 0, z: 0 },
+  stageRadiusGrowth = 0
 ): number {
   return Math.max(
-    minimumRadius,
+    minimumRadius + stageRadiusGrowth,
     performerRadius + Math.hypot(centerOffset.x, centerOffset.z)
   );
 }
@@ -158,4 +168,47 @@ export function getCanonicalStagePositions(
 
   canonicalPositionsByCount.set(count, positions);
   return positions;
+}
+
+/**
+ * One stable deck size for a cast count, large enough for every formation.
+ *
+ * Formation envelopes alone can plateau: a trio can fit inside the same raw
+ * bounds as a duo, which makes Add performer look broken. Each added performer
+ * therefore earns another half metre on every stage edge. The raw formation
+ * envelope can still make a larger jump whenever a preset actually needs it.
+ */
+export function getCanonicalPerformerStageBounds(
+  performerCount: number,
+  options: PerformerStageBoundsOptions = {}
+): PerformerStageBounds {
+  const count = Math.max(0, Math.floor(performerCount));
+  if (count <= 1) {
+    return getPerformerStageBounds(getCanonicalStagePositions(count), options);
+  }
+
+  let bounds = getPerformerStageBounds(getCanonicalStagePositions(1), options);
+  for (let cast = 2; cast <= count; cast += 1) {
+    const formationBounds = getPerformerStageBounds(
+      getCanonicalStagePositions(cast),
+      options
+    );
+    bounds = {
+      width: Math.max(
+        formationBounds.width,
+        bounds.width + ADDED_PERFORMER_STAGE_GROWTH * 2
+      ),
+      depth: Math.max(
+        formationBounds.depth,
+        bounds.depth + ADDED_PERFORMER_STAGE_GROWTH * 2
+      ),
+      radius: Math.max(
+        formationBounds.radius,
+        bounds.radius + ADDED_PERFORMER_STAGE_GROWTH
+      ),
+      zOffset: 0,
+    };
+  }
+
+  return bounds;
 }
