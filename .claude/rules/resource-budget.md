@@ -11,10 +11,9 @@ abandoned after their verification loops ended), **a 5 GB `svelte-check`**
 second `npm run check`, 8 Claude sessions, and ~30 Chrome processes.
 
 Worktrees were suspected first. Wrong target: only 2 of the 7 servers were in
-worktrees, and the 5 GB check costs the same wherever it runs. Worktree creation
-now requires Austen's explicit request in the current conversation; see
-`worktree-workflow.md`. The real cost centers are **dev servers and
-type-checks**, which agents spawn freely and never reap.
+worktrees, and the 5 GB check costs the same wherever it runs. Modifying tasks
+now use worktrees by default; see `worktree-workflow.md`. The real cost centers
+are **dev servers and type-checks**, which agents spawn freely and never reap.
 
 ## The Rule
 
@@ -74,9 +73,8 @@ one caps the machine.
 
 ## What this rule does NOT do
 
-- It does not authorize worktrees. Branch and worktree creation still requires
-  Austen's explicit request in the current conversation; see
-  `worktree-workflow.md`.
+- It does not authorize editing the primary checkout. Worktree selection,
+  integration, and cleanup are governed by `worktree-workflow.md`.
 - It does not license killing OTHER sessions' processes. A live session's
   server or in-flight check belongs to that session; contention gets surfaced
   to Austen, not resolved by fratricide.
@@ -88,11 +86,11 @@ one caps the machine.
 - Starting a `svelte-check` while another is running anywhere on the machine.
 - Any heavy spawn when available memory is under 4 GB.
 - Killing `:5173` or another live session's processes to free budget.
-- Treating the resource budget as permission to create a worktree.
+- Treating worktree isolation as permission to spawn extra servers or checks.
 
 ## Related
 
 - `fast-iteration-loop.md` — capture-once-grep-many; one check per turn
-- `worktree-workflow.md`: branches and worktrees require explicit permission
+- `worktree-workflow.md`: modifying tasks use dedicated worktrees
 - `CLAUDE.md` → Dev Server (:5173 is Austen's), Bash Gotchas (no Git Bash
   process queries)
