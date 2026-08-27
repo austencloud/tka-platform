@@ -26,6 +26,51 @@ import { dirname, resolve } from "node:path";
 const BASE = "https://api.meshy.ai/openapi/v2/text-to-3d";
 const BALANCE_URL = "https://api.meshy.ai/openapi/v1/balance";
 
+export function createMeshyPreviewBody(manifest, asset) {
+  const aiModel = asset.aiModel ?? manifest.aiModel ?? "meshy-6";
+  const supportsUltra = aiModel === "meshy-7" || aiModel === "latest";
+  const ultraMode = asset.ultraMode ?? manifest.ultraMode ?? false;
+
+  if (ultraMode && !supportsUltra) {
+    throw new Error(`Ultra mode requires Meshy 7 or latest, not ${aiModel}.`);
+  }
+
+  return {
+    mode: "preview",
+    prompt: `${asset.stylePrefix ?? manifest.stylePrefix} ${asset.prompt}`,
+    ai_model: aiModel,
+    model_type: asset.modelType ?? manifest.modelType ?? "standard",
+    ultra_mode: ultraMode,
+    topology: "triangle",
+    target_polycount: asset.polycount ?? manifest.polycount ?? 30_000,
+    should_remesh:
+      asset.shouldRemesh ?? manifest.shouldRemesh ?? aiModel === "meshy-6",
+    target_formats: ["glb"],
+    alpha_thumbnail: true,
+    auto_size: true,
+    origin_at: "bottom",
+    moderation: true,
+  };
+}
+
+export function createMeshyRefineBody(manifest, asset, previewTaskId) {
+  const aiModel = asset.aiModel ?? manifest.aiModel ?? "meshy-6";
+  return {
+    mode: "refine",
+    preview_task_id: previewTaskId,
+    ai_model: aiModel,
+    enable_pbr: true,
+    texture_resolution: asset.textureSize >= 4096 ? "4k" : "2k",
+    texture_prompt: asset.texturePrompt,
+    remove_lighting: true,
+    target_formats: ["glb"],
+    alpha_thumbnail: true,
+    auto_size: true,
+    origin_at: "bottom",
+    moderation: true,
+  };
+}
+
 async function readEnvValue(name) {
   if (process.env[name]) return process.env[name];
   const envText = await readFile(resolve(".env"), "utf8");
@@ -56,7 +101,9 @@ async function fetchWithRetry(url, options, attempts = 6) {
 
     if (attempt < attempts) {
       const delay = Math.min(10_000, 1000 * 2 ** (attempt - 1));
-      console.warn(`Meshy retry ${attempt}/${attempts - 1} in ${delay / 1000}s`);
+      console.warn(
+        `Meshy retry ${attempt}/${attempts - 1} in ${delay / 1000}s`
+      );
       await new Promise((resolveDelay) => setTimeout(resolveDelay, delay));
     }
   }
@@ -88,7 +135,9 @@ export async function runMeshyTextGeneration({
   const auth = { Authorization: `Bearer ${key}` };
   const jsonHeaders = { ...auth, "Content-Type": "application/json" };
   const manifest = JSON.parse(await readFile(manifestFile, "utf8"));
-  const selected = manifest.assets.filter((asset) => !only || asset.id === only);
+  const selected = manifest.assets.filter(
+    (asset) => !only || asset.id === only
+  );
 
   if (selected.length === 0) {
     console.error(`Unknown asset: ${only}`);
@@ -124,7 +173,11 @@ export async function runMeshyTextGeneration({
     return json.result;
   }
 
-  async function waitTask(id, label, { interval = 5000, timeout = 900_000 } = {}) {
+  async function waitTask(
+    id,
+    label,
+    { interval = 5000, timeout = 900_000 } = {}
+  ) {
     const start = Date.now();
     for (;;) {
       const response = await fetchWithRetry(`${BASE}/${id}`, { headers: auth });
@@ -132,7 +185,9 @@ export async function runMeshyTextGeneration({
       if (!response.ok) {
         throw new Error(`GET ${response.status}: ${JSON.stringify(task)}`);
       }
-      process.stdout.write(`  ${label}: ${task.status} ${task.progress ?? 0}%\r`);
+      process.stdout.write(
+        `  ${label}: ${task.status} ${task.progress ?? 0}%\r`
+      );
       if (task.status === "SUCCEEDED") {
         console.log(`\n  ${label}: SUCCEEDED`);
         return task;
@@ -152,7 +207,9 @@ export async function runMeshyTextGeneration({
   const pending = selected.filter(
     (asset) => force || !existsSync(resolve(outputDir, `${asset.id}_raw.glb`))
   );
-  const unsubmitted = pending.filter((asset) => !state.assets[asset.id]?.previewId);
+  const unsubmitted = pending.filter(
+    (asset) => !state.assets[asset.id]?.previewId
+  );
   const estimatedCredits =
     unsubmitted.length * (manifest.estimatedCreditsPerAsset ?? 30);
 
@@ -200,16 +257,9 @@ export async function runMeshyTextGeneration({
       state.assets[asset.id] = assetState;
 
       if (!assetState.previewId) {
-        assetState.previewId = await post({
-          mode: "preview",
-          prompt: `${asset.stylePrefix ?? manifest.stylePrefix} ${asset.prompt}`,
-          ai_model: "meshy-6",
-          model_type: "standard",
-          topology: "triangle",
-          target_polycount: asset.polycount ?? manifest.polycount ?? 30_000,
-          should_remesh: true,
-          target_formats: ["glb"],
-        });
+        assetState.previewId = await post(
+          createMeshyPreviewBody(manifest, asset)
+        );
         await saveState();
         console.log(`Preview submitted: ${assetState.previewId}`);
       } else {
@@ -218,15 +268,9 @@ export async function runMeshyTextGeneration({
       await waitTask(assetState.previewId, "preview");
 
       if (!assetState.refineId) {
-        assetState.refineId = await post({
-          mode: "refine",
-          preview_task_id: assetState.previewId,
-          ai_model: "meshy-6",
-          enable_pbr: true,
-          texture_resolution: asset.textureSize >= 4096 ? "4k" : "2k",
-          texture_prompt: asset.texturePrompt,
-          target_formats: ["glb"],
-        });
+        assetState.refineId = await post(
+          createMeshyRefineBody(manifest, asset, assetState.previewId)
+        );
         await saveState();
         console.log(`Refine submitted: ${assetState.refineId}`);
       } else {
@@ -243,7 +287,10 @@ export async function runMeshyTextGeneration({
         throw new Error(`GLB download failed: ${modelResponse.status}`);
       }
       const bytes = Buffer.from(await modelResponse.arrayBuffer());
-      if (bytes.length < 12 || bytes.subarray(0, 4).toString("ascii") !== "glTF") {
+      if (
+        bytes.length < 12 ||
+        bytes.subarray(0, 4).toString("ascii") !== "glTF"
+      ) {
         throw new Error(
           `Downloaded payload is not a valid binary glTF (${bytes.length} bytes).`
         );

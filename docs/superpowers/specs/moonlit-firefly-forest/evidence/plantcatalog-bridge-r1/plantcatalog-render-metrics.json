@@ -1,11 +1,45 @@
 [
   {
-    "id": "quercus-robur-forest-ld-s67",
-    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-forest-ld-s67-proof.glb",
+    "id": "aesculus-pavia-ld-s31",
+    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/aesculus-pavia-ld-s31-proof.glb",
     "dimensionsMetres": [
-      7.590563774108887,
-      7.869869232177734,
-      16.0
+      14.159605979919434,
+      14.213394165039062,
+      9.457088470458984
+    ],
+    "views": [
+      "front",
+      "three-quarter",
+      "silhouette",
+      "human-height",
+      "bark-close",
+      "canopy"
+    ]
+  },
+  {
+    "id": "aesculus-pavia-ld-s79",
+    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/aesculus-pavia-ld-s79-proof.glb",
+    "dimensionsMetres": [
+      13.984679222106934,
+      15.19198989868164,
+      11.000248908996582
+    ],
+    "views": [
+      "front",
+      "three-quarter",
+      "silhouette",
+      "human-height",
+      "bark-close",
+      "canopy"
+    ]
+  },
+  {
+    "id": "quercus-robur-dead-ld-s37",
+    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-dead-ld-s37-proof.glb",
+    "dimensionsMetres": [
+      9.656089782714844,
+      12.19102954864502,
+      13.499492645263672
     ],
     "views": [
       "front",

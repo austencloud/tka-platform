@@ -1086,5 +1086,384 @@
       "epiphyteTrianglesDropped": 108256,
       "foliageTrianglesConditioned": 46385
     }
+  },
+  {
+    "id": "aesculus-pavia-ld-s31",
+    "species": "Aesculus pavia",
+    "sourceFbx": "E:\\tka-platform\\blender\\plantcatalog-bridge-r1\\raw\\aesculus-pavia-ld-s31\\aesculus-pavia-ld-s31.fbx",
+    "sourceFbxSha256": "a31a7d508bb189701bbaa5bd1c2bdcb30e93c15ebecaf31ef6b1a41769234209",
+    "reviewGlb": "blender/plantcatalog-bridge-r1/conditioned/aesculus-pavia-ld-s31-review.glb",
+    "reviewGlbSha256": "357cc6d8a2f3829ccc5a803fa263d33a899f5bacbb815b7f2e8eb3c27f41b9ff",
+    "reviewGlbBytes": 11651888,
+    "meshObjects": 1,
+    "vertices": 84308,
+    "triangles": 113744,
+    "materials": [
+      {
+        "originalName": "Aesculus bough",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s31_Wood_Opaque_01",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Wood_Opaque_01_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Aesculus twig",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s31_Wood_Opaque_02",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Wood_Opaque_02_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Aesculus branch",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s31_Wood_Opaque_03",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Wood_Opaque_03_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Aesculus pav leaf 06",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_04",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_04_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_04_BaseColor"
+      },
+      {
+        "originalName": "Aesculus pav leaf 06 back_back",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_05",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_05_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_05_BaseColor"
+      },
+      {
+        "originalName": "Aesculus pav leaf 07",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_06",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_06_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_06_BaseColor"
+      },
+      {
+        "originalName": "Aesculus pav leaf 07 back_back",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_07",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_07_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_07_BaseColor"
+      },
+      {
+        "originalName": "Aesculus pav leaf 08",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_08",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_08_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_08_BaseColor"
+      },
+      {
+        "originalName": "Aesculus pav leaf 08 back_back",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_09",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_09_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_09_BaseColor"
+      },
+      {
+        "originalName": "Aesculus pav leaf 09",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_10",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_10_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_10_BaseColor"
+      },
+      {
+        "originalName": "Aesculus pav leaf 09 back_back",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_11",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_11_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_aesculus_pavia_ld_s31_Foliage_Cutout_11_BaseColor"
+      }
+    ],
+    "minimumMetres": [
+      -7.0802154541015625,
+      -7.106697082519531,
+      -7.144222990973503e-09
+    ],
+    "maximumMetres": [
+      7.0802154541015625,
+      7.106697082519531,
+      9.500000953674316
+    ],
+    "dimensionsMetres": [
+      14.160430908203125,
+      14.213394165039062,
+      9.500000953674316
+    ],
+    "windMask": {
+      "attribute": "COLOR_0",
+      "rootedChannel": "R",
+      "phaseChannel": "G",
+      "leafFlutterChannel": "B",
+      "foliageVertices": 70606,
+      "totalVertices": 84308
+    },
+    "reduction": {
+      "trianglesBefore": 113744,
+      "trianglesAfter": 113744,
+      "epiphyteTrianglesDropped": 0,
+      "foliageTrianglesConditioned": 89904
+    }
+  },
+  {
+    "id": "aesculus-pavia-ld-s79",
+    "species": "Aesculus pavia",
+    "sourceFbx": "E:\\tka-platform\\blender\\plantcatalog-bridge-r1\\raw\\aesculus-pavia-ld-s79\\aesculus-pavia-ld-s79.fbx",
+    "sourceFbxSha256": "fdbf280cf428759ddaf08e3cbb291a7f70a55b8da17d7e2e719b0a1be245c8ef",
+    "reviewGlb": "blender/plantcatalog-bridge-r1/conditioned/aesculus-pavia-ld-s79-review.glb",
+    "reviewGlbSha256": "b8e4d039c4342785217def2f7e2d0f3fc3f52b78268e10e2f2056c1c516b8350",
+    "reviewGlbBytes": 15461132,
+    "meshObjects": 1,
+    "vertices": 145183,
+    "triangles": 196345,
+    "materials": [
+      {
+        "originalName": "Aesculus bough",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s79_Wood_Opaque_01",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Wood_Opaque_01_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Aesculus twig",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s79_Wood_Opaque_02",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Wood_Opaque_02_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Aesculus branch",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s79_Wood_Opaque_03",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Wood_Opaque_03_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Aesculus pav leaf 06",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_04",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_04_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_04_BaseColor"
+      },
+      {
+        "originalName": "Aesculus pav leaf 06 back_back",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_05",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_05_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_05_BaseColor"
+      },
+      {
+        "originalName": "Aesculus pav leaf 07",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_06",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_06_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_06_BaseColor"
+      },
+      {
+        "originalName": "Aesculus pav leaf 07 back_back",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_07",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_07_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_07_BaseColor"
+      },
+      {
+        "originalName": "Aesculus pav leaf 08",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_08",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_08_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_08_BaseColor"
+      },
+      {
+        "originalName": "Aesculus pav leaf 08 back_back",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_09",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_09_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_09_BaseColor"
+      },
+      {
+        "originalName": "Aesculus pav leaf 09",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_10",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_10_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_10_BaseColor"
+      },
+      {
+        "originalName": "Aesculus pav leaf 09 back_back",
+        "name": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_11",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_11_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_aesculus_pavia_ld_s79_Foliage_Cutout_11_BaseColor"
+      }
+    ],
+    "minimumMetres": [
+      -6.992128372192383,
+      -7.5959954261779785,
+      -1.2353524425634532e-08
+    ],
+    "maximumMetres": [
+      6.992128372192383,
+      7.5959954261779785,
+      10.999999046325684
+    ],
+    "dimensionsMetres": [
+      13.984256744384766,
+      15.191990852355957,
+      10.999999046325684
+    ],
+    "windMask": {
+      "attribute": "COLOR_0",
+      "rootedChannel": "R",
+      "phaseChannel": "G",
+      "leafFlutterChannel": "B",
+      "foliageVertices": 122300,
+      "totalVertices": 145183
+    },
+    "reduction": {
+      "trianglesBefore": 196345,
+      "trianglesAfter": 196345,
+      "epiphyteTrianglesDropped": 0,
+      "foliageTrianglesConditioned": 156016
+    }
+  },
+  {
+    "id": "quercus-robur-dead-ld-s37",
+    "species": "Quercus robur",
+    "sourceFbx": "E:\\tka-platform\\blender\\plantcatalog-bridge-r1\\raw\\quercus-robur-dead-ld-s37\\quercus-robur-dead-ld-s37.fbx",
+    "sourceFbxSha256": "91e8ed03dc40fe9acb62b015eb8768c436db926952fb7e45e5badbf919b8b9b7",
+    "reviewGlb": "blender/plantcatalog-bridge-r1/conditioned/quercus-robur-dead-ld-s37-review.glb",
+    "reviewGlbSha256": "943fa03f1260a01622625c7c5f5cd71bcd0f486189edf7e9cff05db15053af2f",
+    "reviewGlbBytes": 72355712,
+    "meshObjects": 1,
+    "vertices": 14751,
+    "triangles": 27893,
+    "materials": [
+      {
+        "originalName": "Quercus rob bark damaged",
+        "name": "ForestPlantCatalog_quercus_robur_dead_ld_s37_Wood_Opaque_01",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_dead_ld_s37_Wood_Opaque_01_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Quercus rob br cut",
+        "name": "ForestPlantCatalog_quercus_robur_dead_ld_s37_Wood_Opaque_02",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_dead_ld_s37_Wood_Opaque_02_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Quercus rob dead brch",
+        "name": "ForestPlantCatalog_quercus_robur_dead_ld_s37_Wood_Opaque_03",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_dead_ld_s37_Wood_Opaque_03_BaseColor",
+        "alphaTexture": null
+      }
+    ],
+    "minimumMetres": [
+      -5.072061061859131,
+      -6.201033115386963,
+      6.6162613165943185e-09
+    ],
+    "maximumMetres": [
+      5.072061061859131,
+      6.201032638549805,
+      13.500000953674316
+    ],
+    "dimensionsMetres": [
+      10.144122123718262,
+      12.40206527709961,
+      13.500000953674316
+    ],
+    "windMask": {
+      "attribute": "COLOR_0",
+      "rootedChannel": "R",
+      "phaseChannel": "G",
+      "leafFlutterChannel": "B",
+      "foliageVertices": 0,
+      "totalVertices": 14751
+    },
+    "reduction": {
+      "trianglesBefore": 27893,
+      "trianglesAfter": 27893,
+      "epiphyteTrianglesDropped": 0,
+      "foliageTrianglesConditioned": 0
+    }
   }
 ]

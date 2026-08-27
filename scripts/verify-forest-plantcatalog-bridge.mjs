@@ -456,9 +456,17 @@ for (const jobId of activeIds) {
   const opaque = materials.filter((material) =>
     material.name.includes("_Opaque_")
   );
-  invariant(foliage.length > 0, `${jobId} has no foliage material`);
+  const woodOnlyHabitatSnag =
+    job.semanticProfile === "wood-only-habitat-snag";
+  invariant(
+    woodOnlyHabitatSnag || foliage.length > 0,
+    `${jobId} has no foliage material`
+  );
   invariant(wood.length > 0, `${jobId} has no wood material`);
-  invariant(cutout.length > 0, `${jobId} has no cutout material`);
+  invariant(
+    woodOnlyHabitatSnag || cutout.length > 0,
+    `${jobId} has no cutout material`
+  );
   invariant(
     cutout.length + opaque.length === materials.length,
     `${jobId} has a material with no surface classification`
