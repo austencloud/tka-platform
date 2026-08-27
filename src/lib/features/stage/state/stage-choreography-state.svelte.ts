@@ -31,6 +31,11 @@ import {
   normalizeSceneEnvironmentId,
   type SceneEnvironmentId,
 } from "$lib/shared/3d/environments/domain/scene-environment";
+import {
+  studioProjectFromStage,
+  type StudioProjectV1,
+  type StudioStarter,
+} from "../domain/studio-project";
 
 interface InterpolatedPosition {
   performerId: string;
@@ -46,6 +51,8 @@ interface InterpolatedPosition {
  */
 export interface StageChoreographyState extends UnifiedPlaybackContext {
   readonly choreography: StageChoreography;
+  /** Versioned handoff seam. It deliberately wraps the live Stage document. */
+  readonly studioProject: StudioProjectV1;
   readonly bpm: number;
   readonly currentBeat: number;
   readonly maxTotalBeats: number;
@@ -60,6 +67,8 @@ export interface StageChoreographyState extends UnifiedPlaybackContext {
   onBpmChange(bpm: number): void;
   getPerformer(id: string): Performer | undefined;
   setPerformerCount(count: number): void;
+  /** Seed the existing Stage document from the guided Studio entry point. */
+  applyStudioStarter(starter: StudioStarter): void;
   addFormation(atBeat: number, presetId?: FormationPresetId): Formation | null;
   removeFormation(formationId: string): void;
   moveFormation(formationId: string, atBeat: number): void;
@@ -261,6 +270,8 @@ export function createStageChoreographyState(
   function snapshotHistory(): string {
     return JSON.stringify({
       environmentId: choreography.environmentId,
+      bpm: choreography.bpm,
+      sharedSequenceId: choreography.sharedSequenceId,
       performers: choreography.performers.map((p) => ({
         id: p.id,
         index: p.index,
@@ -289,6 +300,8 @@ export function createStageChoreographyState(
   function restoreHistory(json: string) {
     const restored = JSON.parse(json) as {
       environmentId?: string;
+      bpm?: number;
+      sharedSequenceId?: string | null;
       performers: Performer[];
       formations: Formation[];
     };
@@ -296,6 +309,12 @@ export function createStageChoreographyState(
       restored.environmentId,
       choreography.environmentId
     );
+    choreography.bpm = Math.max(
+      15,
+      Math.min(180, restored.bpm ?? choreography.bpm)
+    );
+    choreography.sharedSequenceId =
+      restored.sharedSequenceId ?? choreography.sharedSequenceId;
     choreography.performers = restored.performers;
     choreography.formations = normalizeFormations(
       restored.formations,
@@ -419,7 +438,7 @@ export function createStageChoreographyState(
   }
 
   function setPerformerCount(count: number) {
-    const clamped = Math.max(2, Math.min(8, count));
+    const clamped = Math.max(1, Math.min(8, count));
     const current = choreography.performers.length;
     if (clamped === current) return;
     pushUndo();
@@ -452,6 +471,47 @@ export function createStageChoreographyState(
     } else if (clamped < current) {
       choreography.performers = choreography.performers.slice(0, clamped);
     }
+    normalizeFormationTrack();
+  }
+
+  function applyStudioStarter(starter: StudioStarter) {
+    pushUndo();
+
+    choreography.environmentId = starter.environmentId;
+    choreography.sharedSequenceId = DEFAULT_STAGE_SEQUENCE_ID;
+    choreography.performers = Array.from(
+      { length: starter.performerCount },
+      (_, index) => createPerformer(index)
+    );
+
+    const positions = generatePresetPositions(
+      starter.formation,
+      choreography.performers.length,
+      choreography.stageWidth,
+      choreography.stageDepth
+    );
+    const spots: Formation["spots"] = Object.fromEntries(
+      choreography.performers.map((performer, index) => [
+        performer.id,
+        {
+          ...(positions[index] ?? {
+            x: choreography.stageWidth / 2,
+            z: choreography.stageDepth / 2,
+          }),
+          walkStyle: "direct" as const,
+          easing: "easeInOut" as const,
+        },
+      ])
+    );
+    choreography.formations = [
+      {
+        id: crypto.randomUUID(),
+        atBeat: 0,
+        transitionBeats: 0,
+        spots,
+        presetId: starter.formation,
+      },
+    ];
     normalizeFormationTrack();
   }
 
@@ -831,6 +891,9 @@ export function createStageChoreographyState(
     get choreography() {
       return choreography;
     },
+    get studioProject() {
+      return studioProjectFromStage(choreography);
+    },
     get overallProgress() {
       return overallProgress;
     },
@@ -885,6 +948,7 @@ export function createStageChoreographyState(
     onBpmChange: setBpm,
     getPerformer,
     setPerformerCount,
+    applyStudioStarter,
     addFormation,
     removeFormation,
     moveFormation,

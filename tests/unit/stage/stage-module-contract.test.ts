@@ -17,16 +17,18 @@ describe("One Stage ownership", () => {
     expect(stage).toContain("setViewer3DContext");
     expect(stage).toContain("createViewer3DState");
     expect(stage).toContain("<Viewer3DFullscreen");
-    expect(stage).not.toMatch(/import\s+.*SequenceViewer(?:Shell|Orchestrator)/);
+    expect(stage).not.toMatch(
+      /import\s+.*SequenceViewer(?:Shell|Orchestrator)/
+    );
   });
 
   it("has no second viewer, no second sidebar, and no scene/editor split", () => {
     expect(exists("src/lib/features/stage/components/StageViewer.svelte")).toBe(
       false
     );
-    expect(exists("src/lib/features/stage/components/StageSidebar.svelte")).toBe(
-      false
-    );
+    expect(
+      exists("src/lib/features/stage/components/StageSidebar.svelte")
+    ).toBe(false);
     expect(exists("src/lib/features/stage/scene/SceneStudio.svelte")).toBe(
       false
     );
@@ -78,6 +80,15 @@ describe("One Stage ownership", () => {
     expect(stage).toContain("allowSaveScene={false}");
     expect(stage).toContain("hideCanvasOverlays");
     expect(stage).toContain("<StageTimeline");
+  });
+
+  it("keeps saved-scene handoffs out of the first-run starter", () => {
+    const stage = read(STAGE);
+
+    expect(stage).toContain("consumeSceneStudioHandoff");
+    expect(stage).toContain("{:else if !handoff}");
+    expect(stage).toContain("<StageStarter");
+    expect(stage).not.toContain("StageFirstRun");
   });
 
   it("says nothing about phrases", () => {
