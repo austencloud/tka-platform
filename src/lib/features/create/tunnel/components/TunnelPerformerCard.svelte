@@ -12,6 +12,7 @@
   let {
     performer,
     displaySequence = null,
+    stageTransformLabel = null,
     label,
     linked = false,
     disabled = false,
@@ -27,6 +28,7 @@
   }: {
     performer: TunnelPerformer | null;
     displaySequence?: SequenceData | null;
+    stageTransformLabel?: string | null;
     label: string;
     linked?: boolean;
     disabled?: boolean;
@@ -88,6 +90,8 @@
               · Generated
             {/if}{#if linked && sourceLabel}
               · {sourceLabel}
+            {/if}{#if linked && stageTransformLabel}
+              · On stage: {stageTransformLabel}
             {/if}
           {:else if linked}
             Follows the Performer 1 sequence

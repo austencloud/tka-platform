@@ -84,6 +84,57 @@ describe("tunnel creator edit state", () => {
       "partner",
       "third",
     ]);
+    expect(reopened.performers[1]?.source).toEqual(
+      initial.performers[1]?.source
+    );
+    expect(reopened.performers[1]?.timing).toEqual(
+      initial.performers[1]?.timing
+    );
+  });
+
+  // A tunnel saved before the creator existed reopens as a solo cast: one
+  // sequence, and a formation that spread it across the arms. The creator shows
+  // two slots, so without synthesizing the partner the second slot stayed empty
+  // and "Preview changes" was permanently disabled.
+  it("keeps a synthetic legacy partner out of persistence until it is edited", () => {
+    const initial = composition();
+    initial.performers = [initial.performers[0]!];
+
+    const state = createTunnelCreatorState({
+      openComposition: vi.fn(),
+      initialComposition: initial,
+      editingTunnel: { id: "tunnel-1", name: "PΛ" },
+      now: () => 300,
+    });
+
+    expect(state.mode).toBe("linked");
+    expect(state.ready).toBe(true);
+    expect(state.partner?.source).toMatchObject({
+      kind: "derived",
+      performerId: state.lead!.id,
+    });
+    // The partner is the creator's own linked copy under the default rule, not
+    // a relationship recovered from a record that never held one.
+    expect(state.relationship).toEqual({
+      rotationSteps: 0,
+      reflect: "none",
+      invert: false,
+      rewind: false,
+    });
+
+    expect(
+      state.compositionWithFormation(initial.formation)?.performers
+    ).toEqual([state.lead]);
+
+    state.setRelationship({ reflect: "mirror" });
+
+    const edited = state.compositionWithFormation(initial.formation);
+    expect(edited?.performers).toHaveLength(2);
+    expect(edited?.performers[1]?.source).toEqual({
+      kind: "derived",
+      performerId: state.lead!.id,
+      transforms: [{ kind: "mirror" }],
+    });
   });
 
   it("restores and snapshots an in-progress tunnel across HMR", () => {

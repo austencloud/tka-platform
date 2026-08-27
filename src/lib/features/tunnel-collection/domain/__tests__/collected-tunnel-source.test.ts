@@ -5,12 +5,20 @@ import {
   type TunnelConfig,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { buildTunnelCompositionLayers } from "$lib/shared/sequence-viewer/tunnel/tunnel-layer-builder";
 import {
   createIndependentTunnelPerformer,
   createTunnelComposition,
   resolveTunnelLayerPlans,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  MotionColor,
+  MotionType,
+  RotationDirection,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   collectedTunnelComposition,
   collectedTunnelSequence,
@@ -22,6 +30,34 @@ const steps = [
   { stepNumber: 2, letter: "B" },
   { stepNumber: 3, letter: "C" },
   { stepNumber: 4, letter: "D" },
+] as unknown as StepData[];
+
+// Collected steps come off a live viewer sequence, so the first one carries the
+// two start locations needed to rebuild the start-position cell.
+const hydratedSteps = [
+  {
+    stepNumber: 1,
+    letter: "P",
+    startPosition: "gamma13",
+    endPosition: "gamma7",
+    motions: {
+      [MotionColor.BLUE]: createMotionData({
+        motionType: MotionType.PRO,
+        rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+        startLocation: GridLocation.WEST,
+        endLocation: GridLocation.SOUTH,
+        color: MotionColor.BLUE,
+      }),
+      [MotionColor.RED]: createMotionData({
+        motionType: MotionType.PRO,
+        rotationDirection: RotationDirection.CLOCKWISE,
+        startLocation: GridLocation.SOUTH,
+        endLocation: GridLocation.WEST,
+        color: MotionColor.RED,
+      }),
+    },
+  },
+  { stepNumber: 2, letter: "Λ" },
 ] as unknown as StepData[];
 
 function savedTunnel(
@@ -67,6 +103,36 @@ describe("collectedTunnelSequence", () => {
     expect(sequence.steps).toHaveLength(4);
     expect(sequence.gridMode).toBe("diamond");
   });
+
+  // A CollectedTunnel has no field for the start position, so reopening one
+  // used to drop the start cell: the strip began at step 1 with a hole where
+  // the start-position pictograph belongs.
+  it("rebuilds the start-position pictograph the record never stored", () => {
+    const sequence = collectedTunnelSequence(
+      savedTunnel(undefined, { steps: hydratedSteps })
+    );
+
+    const start = sequence.startPosition;
+    expect(start).toBeDefined();
+    // Static props at the first step's start locations, not the first step's
+    // own motion — and labelled by position, never by the step's letter.
+    expect(start?.motions?.[MotionColor.BLUE]).toMatchObject({
+      motionType: MotionType.STATIC,
+      startLocation: GridLocation.WEST,
+      endLocation: GridLocation.WEST,
+    });
+    expect(start?.motions?.[MotionColor.RED]).toMatchObject({
+      motionType: MotionType.STATIC,
+      startLocation: GridLocation.SOUTH,
+      endLocation: GridLocation.SOUTH,
+    });
+  });
+
+  it("leaves the start position off when the first step cannot derive one", () => {
+    expect(
+      collectedTunnelSequence(savedTunnel()).startPosition
+    ).toBeUndefined();
+  });
 });
 
 describe("collectedTunnelComposition", () => {
@@ -78,31 +144,69 @@ describe("collectedTunnelComposition", () => {
       ),
     ]);
 
-    expect(collectedTunnelComposition(savedTunnel(undefined, { composition: authored }))).toBe(
-      authored
-    );
+    expect(
+      collectedTunnelComposition(
+        savedTunnel(undefined, { composition: authored })
+      )
+    ).toBe(authored);
   });
 
-  it("gives a legacy tunnel a two-slot cast the creator can edit", () => {
+  // A legacy tunnel stored one sequence. Every arm past the first came from the
+  // formation, so handing back a second performer would write a relationship
+  // into the record that nobody authored — and an identity copy shown beside
+  // its own lead reads as a transform that failed to save.
+  it("gives a legacy tunnel the solo cast its record describes", () => {
     const composition = collectedTunnelComposition(savedTunnel());
 
     expect(composition.id).toBe("tunnel-42");
     expect(composition.name).toBe("QPUΛ-");
-    expect(composition.formation.fold).toBe(4);
-    expect(composition.performers).toHaveLength(2);
+    expect(composition.performers).toHaveLength(1);
 
-    const [lead, partner] = composition.performers;
+    const [lead] = composition.performers;
     expect(lead!.source.kind).toBe("independent");
     if (lead!.source.kind === "independent") {
       expect(lead!.source.sequence.steps).toHaveLength(4);
     }
-    // No transforms: the partner reads back as the default relationship, so the
-    // creator's Linked controls open on "copy", not on an invented rotation.
-    expect(partner!.source).toEqual({
-      kind: "derived",
-      performerId: lead!.id,
-      transforms: [],
-    });
+  });
+
+  // The formation is the transform a legacy tunnel actually saved: fold spreads
+  // the one sequence across arms, stagger offsets them. It has to survive the
+  // round trip verbatim or the reopened tunnel is a different tunnel.
+  it("carries the saved formation through untouched", () => {
+    const formation = {
+      ...DEFAULT_CONFIG,
+      fold: 4,
+      staggerSteps: 1,
+      mirror: true,
+    };
+    const composition = collectedTunnelComposition(savedTunnel(formation));
+
+    expect(composition.formation).toEqual(formation);
+  });
+
+  it("rebuilds the choreography each legacy arm actually performs", async () => {
+    const tunnel = savedTunnel(
+      { ...DEFAULT_CONFIG, fold: 4 },
+      { steps: [hydratedSteps[0]!] }
+    );
+    const composition = collectedTunnelComposition(tunnel);
+    const layers = await buildTunnelCompositionLayers(
+      composition,
+      composition.formation
+    );
+    const performerTwo = layers[1]!;
+
+    expect(performerTwo.performerSequence.steps).toEqual(
+      layers[0]!.performerSequence.steps
+    );
+    expect(performerTwo.formationOps).toEqual([{ kind: "rotate", amount: 2 }]);
+    expect(performerTwo.sequence.steps).not.toEqual(
+      performerTwo.performerSequence.steps
+    );
+    expect(performerTwo.sequence.startPosition).toBeDefined();
+    expect(performerTwo.sequence.startPosition).not.toEqual(
+      performerTwo.performerSequence.startPosition
+    );
   });
 
   it("paints exactly what the one-performer tunnel painted", () => {
@@ -123,14 +227,5 @@ describe("collectedTunnelComposition", () => {
       expect(plan.stepOffset).toBe(before[arm]!.stepOffset);
       expect(plan.speed).toBe(before[arm]!.speed);
     }
-  });
-
-  it("stays a solo cast when the formation has only one image", () => {
-    const composition = collectedTunnelComposition(
-      savedTunnel({ ...DEFAULT_CONFIG, fold: 1 })
-    );
-
-    expect(composition.performers).toHaveLength(1);
-    expect(composition.performers[0]!.source.kind).toBe("independent");
   });
 });

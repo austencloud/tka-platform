@@ -131,6 +131,12 @@ export function createTunnelCreatorState(
             : "linked"))
   );
   let slots = $state<TunnelPerformerSlot[]>(initialSlots);
+  // A one-performer composition came from the legacy save shape. The second UI
+  // slot is useful for editing, but it is not authored choreography until the
+  // pairing or its timing changes.
+  let linkedPartnerIsSynthetic = $state(
+    (initial?.performers.length ?? 0) === 1 && mode === "linked"
+  );
   let relationship = $state<TunnelRelationshipRule>({
     ...(initialSlots[1]?.performer?.source.kind === "derived"
       ? tunnelRelationshipFromOps(initialSlots[1].performer.source.transforms)
@@ -222,6 +228,16 @@ export function createTunnelCreatorState(
     );
   }
 
+  // A restored cast can be shorter than the slots the creator shows: a tunnel
+  // saved before the creator existed holds exactly the one sequence it was
+  // built from, and the rest of its arms came from the formation. Synthesizing
+  // the partner here — through the same linked rule the pairing controls edit
+  // — is what makes that tunnel editable at all, since a slot with no performer
+  // leaves the creator permanently not-ready.
+  if (mode === "linked" && slots[0]?.performer && !slots[1]?.performer) {
+    rebuildLinkedPartner();
+  }
+
   function replaceIndependentSequence(
     targetId: string,
     sequence: SequenceData,
@@ -305,6 +321,7 @@ export function createTunnelCreatorState(
 
   function setMode(next: TunnelCreatorMode): void {
     if (mode === next) return;
+    linkedPartnerIsSynthetic = false;
     mode = next;
     if (next === "separate" && activePanel === "pairing") {
       activePanel = null;
@@ -326,6 +343,7 @@ export function createTunnelCreatorState(
   }
 
   function setRelationship(patch: Partial<TunnelRelationshipRule>): void {
+    linkedPartnerIsSynthetic = false;
     relationship = updateTunnelRelationship(relationship, patch);
     if (mode === "linked") rebuildLinkedPartner();
   }
@@ -333,6 +351,7 @@ export function createTunnelCreatorState(
   function setPartnerTiming(patch: Partial<TunnelPerformer["timing"]>): void {
     const slot = slots[1];
     if (!slot) return;
+    linkedPartnerIsSynthetic = false;
     const timing = {
       ...slot.timing,
       ...patch,
@@ -384,7 +403,9 @@ export function createTunnelCreatorState(
 
   function activePerformers(): TunnelPerformer[] {
     return slots
-      .map((slot) => slot.performer)
+      .map((slot, index) =>
+        linkedPartnerIsSynthetic && index === 1 ? null : slot.performer
+      )
       .filter((performer): performer is TunnelPerformer => performer !== null);
   }
 

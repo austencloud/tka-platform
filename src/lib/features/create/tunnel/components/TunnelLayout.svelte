@@ -14,6 +14,7 @@
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import TunnelArtSettings from "$lib/shared/sequence-viewer/components/art-settings/TunnelArtSettings.svelte";
   import TunnelArtView from "$lib/shared/sequence-viewer/tunnel/TunnelArtView.svelte";
+  import { copyOpsLabel } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
   import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
   import { TunnelViewController } from "$lib/shared/sequence-viewer/tunnel/tunnel-view-controller.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
@@ -49,14 +50,22 @@
     },
   });
   let performerTwoLayerSequence = $state<SequenceData | null>(null);
+  let performerTwoStageTransform = $state<string | null>(null);
   const controller = new TunnelViewController({
     getSequence: () => creator.leadSequence,
     getComposition: () =>
       creator.compositionWithFormation(creator.initialFormation),
     onLayersChange: (layers) => {
-      performerTwoLayerSequence =
-        layers.find((layer) => layer.authoredPerformerIndex === 1)
-          ?.performerSequence ?? null;
+      const performerTwoLayer =
+        layers.find((layer) => layer.authoredPerformerIndex === 1) ??
+        (creator.mode === "linked" ? layers[1] : undefined);
+      // The card is the performer's choreography, not merely their source.
+      // Showing the pre-formation sequence made a rotated/reflected arm look
+      // identical to Performer 1 even while the stage rendered it correctly.
+      performerTwoLayerSequence = performerTwoLayer?.sequence ?? null;
+      performerTwoStageTransform = performerTwoLayer?.formationOps.length
+        ? copyOpsLabel(performerTwoLayer.formationOps)
+        : null;
     },
   });
   controller.applyConfig(creator.initialFormation ?? DEFAULT_CONFIG);
@@ -391,6 +400,9 @@
         bind:this={performerTwoCard}
         performer={creator.partner}
         displaySequence={performerTwoDisplaySequence}
+        stageTransformLabel={creator.mode === "linked"
+          ? performerTwoStageTransform
+          : null}
         label="Performer 2"
         linked={creator.mode === "linked"}
         disabled={!creator.leadSequence}

@@ -9,6 +9,7 @@ import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
+  createDerivedTunnelPerformer,
   createIndependentTunnelPerformer,
   createTunnelComposition,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
@@ -88,14 +89,45 @@ describe("CollectedTunnelSchema", () => {
       word: "LEAD",
       steps: [],
     });
-    const composition = createTunnelComposition([
-      createIndependentTunnelPerformer(sequence, 0, "Lead"),
-      createIndependentTunnelPerformer(sequence, 1, "Partner"),
+    const lead = createIndependentTunnelPerformer(sequence, 0, "Lead");
+    const partner = createDerivedTunnelPerformer(lead.id, 1, [
+      { kind: "rotate", amount: 3 },
+      { kind: "mirror" },
+      { kind: "rewind" },
     ]);
+    partner.timing = { stepOffset: 2, speed: 0.5 };
+    const composition = createTunnelComposition([lead, partner]);
 
-    expect(
-      CollectedTunnelSchema.safeParse({ ...valid, composition }).success
-    ).toBe(true);
+    const parsed = CollectedTunnelSchema.safeParse({ ...valid, composition });
+
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    expect(parsed.data.composition?.performers[1]).toEqual(partner);
+  });
+
+  it("stores choreography transforms in the immutable tunnel revision", async () => {
+    const sequence = createSequenceData({
+      id: "sequence-1",
+      name: "Lead",
+      word: "LEAD",
+      steps: [],
+    });
+    const lead = createIndependentTunnelPerformer(sequence, 0, "Lead");
+    const partner = createDerivedTunnelPerformer(lead.id, 1, [
+      { kind: "flip" },
+      { kind: "invert" },
+    ]);
+    partner.timing = { stepOffset: 3, speed: 2 };
+    const composition = createTunnelComposition([lead, partner]);
+    const tunnel = { ...valid, composition } as CollectedTunnel;
+
+    const prepared = await prepareTunnelRevision(tunnel);
+    const revision = await createTunnelRevision(
+      prepared,
+      prepared.currentRevisionCreatedAt!
+    );
+
+    expect(revision.payload.composition?.performers[1]).toEqual(partner);
   });
 
   it("creates deterministic immutable revisions and advances only on content edits", async () => {

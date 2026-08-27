@@ -9,6 +9,7 @@ import {
   TUNNEL_SAVE_DEDUPE_WINDOW_MS,
 } from "$lib/shared/sequence-viewer/domain/tunnel-save-deduplication";
 import {
+  createDerivedTunnelPerformer,
   createIndependentTunnelPerformer,
   createTunnelComposition,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
@@ -196,6 +197,39 @@ describe("Tunnel save deduplication", () => {
       createTunnelSaveFingerprint(sequence, snapshot, later)
     );
     expect(createTunnelSaveFingerprint(sequence, snapshot, changed)).not.toBe(
+      createTunnelSaveFingerprint(sequence, snapshot, first)
+    );
+  });
+
+  it("treats relationship transforms and timing as saved choreography", () => {
+    const lead = createIndependentTunnelPerformer(sequence, 0, "Lead");
+    const partner = createDerivedTunnelPerformer(lead.id, 1, [
+      { kind: "rotate", amount: 2 },
+    ]);
+    const first = createTunnelComposition([lead, partner]);
+    const transformed = {
+      ...first,
+      performers: [
+        lead,
+        {
+          ...partner,
+          source: {
+            kind: "derived" as const,
+            performerId: lead.id,
+            transforms: [{ kind: "mirror" as const }],
+          },
+        },
+      ],
+    };
+    const retimed = {
+      ...first,
+      performers: [lead, { ...partner, timing: { stepOffset: 2, speed: 0.5 } }],
+    };
+
+    expect(
+      createTunnelSaveFingerprint(sequence, snapshot, transformed)
+    ).not.toBe(createTunnelSaveFingerprint(sequence, snapshot, first));
+    expect(createTunnelSaveFingerprint(sequence, snapshot, retimed)).not.toBe(
       createTunnelSaveFingerprint(sequence, snapshot, first)
     );
   });

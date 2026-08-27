@@ -2,13 +2,12 @@ import {
   createSequenceData,
   type SequenceData,
 } from "$lib/shared/foundation/domain/models/sequence-data";
+import { deriveStartPositionFromSteps } from "$lib/shared/foundation/services/sequence-hydrator";
 import {
-  createDerivedTunnelPerformer,
   createIndependentTunnelPerformer,
   createTunnelComposition,
   type TunnelComposition,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
-import { imageCount } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
 import type { CollectedTunnel } from "./tunnel-collection-types";
 
 /**
@@ -31,46 +30,48 @@ import type { CollectedTunnel } from "./tunnel-collection-types";
  *  each carries motions.blue/red — the orchestrator's hydrateSequence
  *  short-circuits on hasMotionData() and uses them verbatim rather than
  *  re-deriving from compositional fields the collection does not store.
- *  gridMode is recovered off the steps so the right grid renders. */
+ *  gridMode is recovered off the steps so the right grid renders.
+ *
+ *  A CollectedTunnel has never had a field for the start position, so the
+ *  start-position pictograph has to be rebuilt from the first step the same way
+ *  the hydrator rebuilds it for any stored sequence. Without this a reopened
+ *  tunnel's step strip begins at step 1 with the start cell simply missing. */
 export function collectedTunnelSequence(tunnel: CollectedTunnel): SequenceData {
+  const steps = [...tunnel.steps];
+  const startPosition = deriveStartPositionFromSteps(steps);
+
   return createSequenceData({
     id: tunnel.id,
     name: tunnel.name,
     word: tunnel.name,
-    steps: [...tunnel.steps],
-    gridMode: tunnel.steps.find((step) => step.gridMode)?.gridMode,
+    steps,
+    gridMode: steps.find((step) => step.gridMode)?.gridMode,
+    ...(startPosition ? { startPosition } : {}),
   });
 }
 
 /**
  * The authored cast, or the cast a legacy tunnel implies.
  *
- * The reconstruction is a lead holding the saved sequence and a partner derived
- * from it with no transforms. That second performer is not invention: layer
- * plans assign arms `arm % performers.length`, and a partner that resolves to
- * the same sequence with the same ops paints exactly what one performer across
- * every arm painted — the pixels do not move. What it buys is a tunnel the
- * creator can actually edit, since its two slots and its linked/separate mode
- * are expressed in performers, and an identity copy reads back as the default
- * relationship. A formation with only one image has no room for the partner, so
- * that degenerate case stays a solo cast.
+ * A legacy tunnel implies exactly one performer, because one sequence is all it
+ * stored: every arm beyond the first came from the formation — its fold, its
+ * reflections, its stagger — and those are saved on the snapshot. Handing the
+ * creator a second performer here would put an authored relationship in the
+ * record that nobody authored, and an identity copy shown beside its own lead
+ * reads as a transform that failed to save. The creator's linked mode is what
+ * synthesizes a partner from a solo lead, under controls the user can see.
  */
 export function collectedTunnelComposition(
   tunnel: CollectedTunnel
 ): TunnelComposition {
   if (tunnel.composition) return tunnel.composition;
 
-  const sequence = collectedTunnelSequence(tunnel);
-  const formation = tunnel.snapshot.tunnel.config;
-  const lead = createIndependentTunnelPerformer(sequence, 0);
-  const performers =
-    imageCount(formation) > 1
-      ? [lead, createDerivedTunnelPerformer(lead.id, 1, [])]
-      : [lead];
-
-  return createTunnelComposition(performers, {
-    id: tunnel.id,
-    name: tunnel.name,
-    formation,
-  });
+  return createTunnelComposition(
+    [createIndependentTunnelPerformer(collectedTunnelSequence(tunnel), 0)],
+    {
+      id: tunnel.id,
+      name: tunnel.name,
+      formation: tunnel.snapshot.tunnel.config,
+    }
+  );
 }
