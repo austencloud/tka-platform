@@ -14,6 +14,8 @@
     spec?: SmartFilterSpec | null;
     matchCount?: number | null;
     ruleDisclosureLabel?: string;
+    contentFirst?: boolean;
+    backLabel?: string;
     loading?: boolean;
     error?: boolean;
     readOnly?: boolean;
@@ -35,6 +37,8 @@
     spec = null,
     matchCount = null,
     ruleDisclosureLabel,
+    contentFirst = false,
+    backLabel = "Collections",
     loading = false,
     error = false,
     readOnly = false,
@@ -55,8 +59,28 @@
   let ruleOpen = $state(false);
 </script>
 
-<section class="smart-detail" style:--smart-color={color} aria-label={name}>
-  <header class="detail-head">
+<section
+  class="smart-detail"
+  class:content-first={contentFirst}
+  style:--smart-color={color}
+  aria-label={name}
+>
+  {#if contentFirst}
+    {#if showBack && onBack}
+      <div class="content-first-back">
+        <button
+          type="button"
+          class="icon-button back-button"
+          aria-label={`Back to ${backLabel}`}
+          onclick={onBack}
+        >
+          <i class="fas fa-arrow-left" aria-hidden="true"></i>
+          <span>{backLabel}</span>
+        </button>
+      </div>
+    {/if}
+  {:else}
+    <header class="detail-head">
     {#if showBack && onBack}
       <button
         type="button"
@@ -120,9 +144,10 @@
         {/if}
       </div>
     {/if}
-  </header>
+    </header>
+  {/if}
 
-  {#if spec}
+  {#if spec && !contentFirst}
     <div class="rule-wrap">
       {#if ruleDisclosureLabel}
         <Collapsible.Root bind:open={ruleOpen}>
@@ -438,10 +463,33 @@
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
+  .content-first .detail-body {
+    border-top: 0;
+  }
+
+  .content-first-back {
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+
+  .content-first-back .back-button {
+    width: auto;
+    gap: 8px;
+    padding: 0 12px;
+    font-family: inherit;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 650;
+  }
+
   @container smart-detail (max-width: 560px) {
     .detail-head {
       gap: 8px;
       padding: 10px;
+    }
+
+    .content-first-back {
+      padding: 6px 10px;
     }
 
     .collection-icon {

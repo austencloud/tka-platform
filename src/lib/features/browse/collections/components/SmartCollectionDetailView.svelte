@@ -176,8 +176,9 @@ header; "Edit rule" reopens the builder to change it.
 	const liveMatchCount = $derived(
 		engine && !engine.isLoading && !engine.error ? engine.resultCount : null,
 	);
+	const contentFirst = $derived(collectionId === "founding_tka-1");
 	const ruleDisclosureLabel = $derived.by(() => {
-		if (!isFounding) return undefined;
+		if (!isFounding || contentFirst) return undefined;
 		if (hasLoadError) return "Collection details";
 		if (liveMatchCount == null) return "Finding matches";
 
@@ -296,6 +297,8 @@ header; "Edit rule" reopens the builder to change it.
 	{spec}
 	matchCount={liveMatchCount}
 	{ruleDisclosureLabel}
+	{contentFirst}
+	backLabel={contentFirst ? "TKA Core" : undefined}
 	loading={resultsLoading}
 	error={hasLoadError}
 	readOnly={isFounding || previewReadOnly}
@@ -323,8 +326,8 @@ header; "Edit rule" reopens the builder to change it.
 	{#snippet children()}
 		{#if engine}
 			<!-- The saved rule is only changed through Edit rule. BrowsePanel's
-			     mutation controls stay hidden, while its section rail remains
-			     available as read-only navigation. Empty and error states are
+			     mutation controls stay hidden, while multi-section collections keep
+			     their read-only navigation. Empty and error states are
 			     intercepted by SmartCollectionDetailSurface. -->
 			<BrowsePanel
 				{engine}
