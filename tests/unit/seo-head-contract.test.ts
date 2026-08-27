@@ -75,7 +75,7 @@ describe("SEO head contract", () => {
     expect(composer).toContain(
       '"https://tkaflowarts.com/branding/composer-og-image.png"'
     );
-    expect(composer).toContain("Write a flow sequence. See it move.");
+    expect(composer).toContain("Choose the moves or generate a 16-count loop.");
     expect(composer).toContain(
       "Use cloud saves, publishing, following, and exports with a full account"
     );

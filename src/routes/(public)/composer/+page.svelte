@@ -233,13 +233,12 @@
     style:view-transition-name="launchpad-composer"
   >
     <div class="opening-copy">
-      <p class="opening-line">Write a flow sequence. See it move.</p>
       <h1 id="composer-title">Flow Arts <span>Composer</span></h1>
       <!-- The cut sentence described where the pictographs sit relative to the
            animation — which the demo two inches to the right is doing. -->
       <p class="opening-lede">
-        Choose the moves yourself or generate a 16-count loop. Composer writes
-        the notation and plays the motion together.
+        Choose the moves or generate a 16-count loop. Composer keeps the
+        notation and movement together.
       </p>
 
       <div class="opening-actions">
@@ -252,7 +251,6 @@
           Start composing
           <i class="fas fa-arrow-right" aria-hidden="true"></i>
         </a>
-        <a href="/browse" class="secondary-action">Browse sequences</a>
       </div>
 
       <p class="opening-note">
@@ -281,8 +279,7 @@
   <section class="making" aria-labelledby="making-title">
     <h2 id="making-title" class="making-title">Build the sequence.</h2>
     <p class="section-intro">
-      Start with a position. Composer keeps the next moves workable, then turns
-      each choice into notation and motion.
+      Start with a position. Composer keeps the next move workable.
     </p>
 
     <div class="making-demos" use:activateConstruct>
@@ -383,9 +380,7 @@
       <h2 id="keeping-title">Keep the sequence you made.</h2>
       <div class="keeping-lede">
         <p>
-          The first card is the sequence you made above. The others are public
-          sequences to watch and learn from. Guest saves stay on this device; an
-          account adds publishing and downloads.
+          Your sequence stays first. The rest are public sequences to study.
         </p>
         <div class="keeping-actions">
           <a href="/browse" class="primary-action">Browse the Gallery</a>
@@ -448,14 +443,6 @@
     z-index: 1;
   }
 
-  .opening-line {
-    margin: 0 0 1rem;
-    color: oklch(0.77 0.12 275);
-    font-size: clamp(0.9rem, 0.85rem + 0.18vw, 1.08rem);
-    font-weight: 650;
-    letter-spacing: 0.02em;
-  }
-
   h1,
   h2 {
     font-family: var(--page-title-font, "Fraunces", Georgia, serif);
@@ -508,7 +495,6 @@
   }
 
   .primary-action,
-  .secondary-action,
   .demo-load-error button {
     min-height: max(var(--min-touch-target, 48px), 48px);
     display: inline-flex;
@@ -537,14 +523,12 @@
     box-shadow: 0 1rem 2.5rem oklch(0.35 0.16 278 / 0.28);
   }
 
-  .secondary-action,
   .demo-load-error button {
     border: 1px solid var(--theme-stroke-strong, oklch(0.58 0.04 270 / 0.34));
     background: var(--theme-card-bg, oklch(0.18 0.025 270 / 0.75));
   }
 
   .primary-action:hover,
-  .secondary-action:hover,
   .demo-load-error button:hover {
     transform: translateY(-2px);
   }
@@ -553,14 +537,12 @@
     box-shadow: 0 1.25rem 3rem oklch(0.38 0.18 278 / 0.4);
   }
 
-  .secondary-action:hover,
   .demo-load-error button:hover {
     border-color: oklch(0.72 0.12 277 / 0.65);
     background: var(--theme-card-bg-hover, oklch(0.23 0.04 270 / 0.86));
   }
 
   .primary-action:focus-visible,
-  .secondary-action:focus-visible,
   .demo-load-error button:focus-visible {
     outline: 2px solid var(--theme-accent, #8b8cff);
     outline-offset: 3px;
@@ -979,11 +961,6 @@
       font-size: clamp(2.4rem, 6.2vw, 4rem);
     }
 
-    .opening-line {
-      margin-bottom: 0.55rem;
-      font-size: var(--font-size-min, 0.875rem);
-    }
-
     .opening-lede {
       max-inline-size: var(--measure-lede);
       margin: 0.8rem 0 0;
@@ -1031,7 +1008,6 @@
     }
 
     .primary-action,
-    .secondary-action,
     .demo-load-error button {
       transition: none;
     }
