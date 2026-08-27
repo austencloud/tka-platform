@@ -27,6 +27,12 @@ sealed class ProjectCommandCenter : Border
     readonly TextBlock _workflowStatus;
     readonly TextBlock _worktreeSummary;
     readonly StackPanel _worktreeRows;
+    readonly ScrollViewer _worktreeScroll;
+    readonly ScrollViewer _outerScroll;
+    readonly StackPanel _content;
+    readonly Button _worktreeToggle;
+    readonly Action _layoutChanged;
+    bool _worktreesExpanded = true;
 
     public ProjectCommandCenter(
         string name,
@@ -36,10 +42,12 @@ sealed class ProjectCommandCenter : Border
         Action serverAction,
         Action openFeedback,
         Action openSpec,
-        Action openSessions)
+        Action openSessions,
+        Action layoutChanged)
     {
         _hasServer = hasServer;
         _serverPort = serverPort;
+        _layoutChanged = layoutChanged;
         CornerRadius = new CornerRadius(18);
         Background = Brush("#FF16171B");
         BorderBrush = Brush("#40FFFFFF");
@@ -48,8 +56,8 @@ sealed class ProjectCommandCenter : Border
         Effect = new DropShadowEffect { BlurRadius = 16, ShadowDepth = 5, Opacity = 0.5, Color = Colors.Black };
         CacheMode = new BitmapCache();
 
-        var content = new StackPanel { Width = 520 };
-        content.Children.Add(BuildHeader(name, icon));
+        _content = new StackPanel { Width = 520 };
+        _content.Children.Add(BuildHeader(name, icon));
 
         var server = new Border
         {
@@ -105,7 +113,7 @@ sealed class ProjectCommandCenter : Border
         Grid.SetColumn(_serverButton, 2);
         serverGrid.Children.Add(_serverButton);
         server.Child = serverGrid;
-        content.Children.Add(server);
+        _content.Children.Add(server);
 
         var workflows = new Border
         {
@@ -163,7 +171,7 @@ sealed class ProjectCommandCenter : Border
         };
         workflowContent.Children.Add(_workflowStatus);
         workflows.Child = workflowContent;
-        content.Children.Add(workflows);
+        _content.Children.Add(workflows);
 
         var workspace = new Border
         {
@@ -177,6 +185,8 @@ sealed class ProjectCommandCenter : Border
         var workspaceContent = new StackPanel();
         var workspaceHeader = new Grid();
         workspaceHeader.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        workspaceHeader.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        workspaceHeader.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
         workspaceHeader.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var workspaceTitle = new TextBlock
         {
@@ -194,25 +204,28 @@ sealed class ProjectCommandCenter : Border
             FontFamily = Font(),
             TextAlignment = TextAlignment.Right
         };
+        _worktreeToggle = CompactButton("Hide", "Collapse Git worktrees", delegate { SetWorktreesExpanded(!_worktreesExpanded); });
         Grid.SetColumn(workspaceTitle, 0);
         Grid.SetColumn(_worktreeSummary, 1);
+        Grid.SetColumn(_worktreeToggle, 3);
         workspaceHeader.Children.Add(workspaceTitle);
         workspaceHeader.Children.Add(_worktreeSummary);
+        workspaceHeader.Children.Add(_worktreeToggle);
         workspaceContent.Children.Add(workspaceHeader);
 
         _worktreeRows = new StackPanel { Margin = new Thickness(0, 9, 0, 0) };
-        var worktreeScroll = new ScrollViewer
+        _worktreeScroll = new ScrollViewer
         {
             Content = _worktreeRows,
             MaxHeight = 188,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
         };
-        workspaceContent.Children.Add(worktreeScroll);
+        workspaceContent.Children.Add(_worktreeScroll);
         workspace.Child = workspaceContent;
-        content.Children.Add(workspace);
+        _content.Children.Add(workspace);
 
-        content.Children.Add(new TextBlock
+        _content.Children.Add(new TextBlock
         {
             Text = "1 server   ·   2 feedback   ·   3 spec   ·   4 sessions   ·   Esc close",
             Foreground = Brush("#FF6F717A"),
@@ -222,13 +235,14 @@ sealed class ProjectCommandCenter : Border
             Margin = new Thickness(0, 15, 0, 0)
         });
 
-        Child = new ScrollViewer
+        _outerScroll = new ScrollViewer
         {
-            Content = content,
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Content = _content,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Disabled,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
             PanningMode = PanningMode.VerticalOnly
         };
+        Child = _outerScroll;
         RenderWorkflow(false, "", false);
         RenderServer(DevServerState.Checking, false, "Starting", "");
         RenderWorktrees(GitWorktreeInventory.Checking());
@@ -365,6 +379,7 @@ sealed class ProjectCommandCenter : Border
         {
             _worktreeSummary.Text = "Checking";
             _worktreeRows.Children.Add(WorktreeMessage("Reading primary and task worktrees", false));
+            NotifyLayoutChanged();
             return;
         }
         if (inventory.Items.Count == 0)
@@ -372,6 +387,7 @@ sealed class ProjectCommandCenter : Border
             _worktreeSummary.Text = "Unavailable";
             _worktreeRows.Children.Add(WorktreeMessage(
                 string.IsNullOrEmpty(inventory.Detail) ? "Worktree inventory unavailable" : inventory.Detail, true));
+            NotifyLayoutChanged();
             return;
         }
 
@@ -380,6 +396,58 @@ sealed class ProjectCommandCenter : Border
         for (int i = 0; i < inventory.Items.Count; i++)
             _worktreeRows.Children.Add(BuildWorktreeRow(inventory.Items[i], i == inventory.Items.Count - 1));
         ToolTip = inventory.Detail;
+        NotifyLayoutChanged();
+    }
+
+    public bool WorktreesExpanded { get { return _worktreesExpanded; } }
+    public double WorktreeViewportHeight { get { return _worktreeScroll.ViewportHeight; } }
+    public double WorktreeExtentHeight { get { return _worktreeScroll.ExtentHeight; } }
+    public double WorktreeScrollableHeight { get { return _worktreeScroll.ScrollableHeight; } }
+
+    public void ScrollWorktreesToEndForVisualTest()
+    {
+        _worktreeScroll.ScrollToEnd();
+        _worktreeScroll.UpdateLayout();
+    }
+
+    public void SetWorktreesExpanded(bool expanded)
+    {
+        if (_worktreesExpanded == expanded) return;
+        _worktreesExpanded = expanded;
+        _worktreeScroll.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
+        _worktreeToggle.Content = expanded ? "Hide" : "Show";
+        AutomationProperties.SetName(_worktreeToggle, expanded ? "Collapse Git worktrees" : "Expand Git worktrees");
+        NotifyLayoutChanged();
+    }
+
+    public void ConstrainToHeight(double maximumHeight)
+    {
+        if (double.IsNaN(maximumHeight) || double.IsInfinity(maximumHeight) || maximumHeight <= 0) return;
+        MaxHeight = maximumHeight;
+        _worktreeScroll.MaxHeight = 188;
+        _outerScroll.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
+
+        _content.Measure(new Size(_content.Width, double.PositiveInfinity));
+        double contentHeight = _content.DesiredSize.Height + Padding.Top + Padding.Bottom + BorderThickness.Top + BorderThickness.Bottom;
+        double currentWorktreeHeight = _worktreeScroll.Visibility == Visibility.Visible ? _worktreeScroll.DesiredSize.Height : 0;
+        if (_worktreesExpanded && contentHeight > maximumHeight)
+        {
+            double available = maximumHeight - (contentHeight - currentWorktreeHeight);
+            _worktreeScroll.MaxHeight = Math.Max(72, Math.Min(188, available));
+            _content.Measure(new Size(_content.Width, double.PositiveInfinity));
+            contentHeight = _content.DesiredSize.Height + Padding.Top + Padding.Bottom + BorderThickness.Top + BorderThickness.Bottom;
+        }
+
+        // Only very short work areas need this fallback. Normal desktop monitors
+        // keep the fixed controls still while the worktree rows own the scrolling.
+        _outerScroll.VerticalScrollBarVisibility = contentHeight > maximumHeight + 0.5
+            ? ScrollBarVisibility.Auto
+            : ScrollBarVisibility.Disabled;
+    }
+
+    void NotifyLayoutChanged()
+    {
+        if (_layoutChanged != null) _layoutChanged();
     }
 
     static FrameworkElement BuildWorktreeRow(GitWorktreeItem item, bool last)
@@ -534,6 +602,16 @@ sealed class ProjectCommandCenter : Border
         var button = ActionButton(content, "Open the " + title + " workflow in a new Codex session", action);
         button.Height = 88;
         button.Background = Brush(color);
+        return button;
+    }
+
+    static Button CompactButton(string label, string accessibleName, Action action)
+    {
+        var button = ActionButton(label, accessibleName, action);
+        button.Width = 62;
+        button.Height = 34;
+        button.Padding = new Thickness(8, 0, 8, 0);
+        button.FontSize = 12;
         return button;
     }
 

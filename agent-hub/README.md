@@ -84,11 +84,15 @@ Keyboard shortcuts:
 Esc  close
 ```
 
-The card places itself inside the active monitor's usable work area. A taskbar
-activation near the bottom prefers the space above the cursor, and every edge
-is clamped with an inset. The 160 ms scale/fade entry animation follows the
-Windows client-area animation preference; reduced-motion mode shows the card at
-its final size immediately.
+The card places itself inside the active monitor's usable work area. It measures
+the real native window and monitor rectangles in one coordinate space, then
+remeasures and repositions after the asynchronous worktree inventory or a
+Show/Hide toggle changes the card's height. A taskbar activation near the bottom
+therefore keeps the fully expanded card above the cursor. Worktree rows own the
+scrolling when they cannot all fit; server and workflow controls stay fixed and
+the worktree header always provides a clear collapse route. The 160 ms
+scale/fade entry animation follows the Windows client-area animation preference;
+reduced-motion mode shows the card at its final size immediately.
 
 Server errors are shown on the card and written to
 `%LOCALAPPDATA%\AgentHub\server-errors.log`. Create

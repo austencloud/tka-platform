@@ -17,6 +17,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
@@ -30,11 +31,16 @@ class Popup : Window
     [DllImport("user32.dll")] static extern bool GetCursorPos(out NativePoint p);
     [DllImport("user32.dll")] static extern IntPtr MonitorFromPoint(NativePoint pt, uint flags);
     [DllImport("user32.dll", CharSet = CharSet.Auto)] static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO mi);
+    [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr hWnd, out NativeRect rect);
+    [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr hWnd, IntPtr insertAfter, int x, int y, int width, int height, uint flags);
     [StructLayout(LayoutKind.Sequential)] struct NativePoint { public int X; public int Y; }
     [StructLayout(LayoutKind.Sequential)] struct NativeRect { public int left; public int top; public int right; public int bottom; }
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)] struct MONITORINFO { public int cbSize; public NativeRect rcMonitor; public NativeRect rcWork; public int dwFlags; }
 
     const string PIPE = "AgentChooserPipe";
+    const uint SWP_NOSIZE = 0x0001;
+    const uint SWP_NOZORDER = 0x0004;
+    const uint SWP_NOACTIVATE = 0x0010;
 
     string _project, _name, _icon, _stampFile;
     string _serverManager, _serverApp, _serverConfig, _serverConfigurationError;
@@ -45,7 +51,10 @@ class Popup : Window
     Rect _lastWorkArea;
     Point _lastAnchor;
     bool _ready;
+    bool _layoutReflowPending;
     bool _hasVisualAnchor;
+    bool _visualStartWorktreesCollapsed;
+    bool _visualScrollWorktreesToEnd;
     int _visualAnchorX, _visualAnchorY;
     Border _card;
     ProjectCommandCenter _commandCenter;
@@ -193,7 +202,7 @@ class Popup : Window
     public void ConfigureVisualTest(System.Collections.Generic.Dictionary<string, string> fields)
     {
         if (!_visualTestMode || fields == null) return;
-        string xValue, yValue, reducedValue, durationValue;
+        string xValue, yValue, reducedValue, durationValue, collapsedValue, scrollValue;
         int x, y, duration;
         if (fields.TryGetValue("VisualAnchorX", out xValue) &&
             fields.TryGetValue("VisualAnchorY", out yValue) &&
@@ -208,6 +217,10 @@ class Popup : Window
         if (fields.TryGetValue("AnimationDurationMs", out durationValue) &&
             int.TryParse(durationValue, out duration) && duration >= 80 && duration <= 5000)
             _visualAnimationDurationMs = duration;
+        _visualStartWorktreesCollapsed = fields.TryGetValue("StartWorktreesCollapsed", out collapsedValue) &&
+            string.Equals(collapsedValue, "true", StringComparison.OrdinalIgnoreCase);
+        _visualScrollWorktreesToEnd = fields.TryGetValue("ScrollWorktreesToEnd", out scrollValue) &&
+            string.Equals(scrollValue, "true", StringComparison.OrdinalIgnoreCase);
     }
 
     static void EnsureColorWatchdog()
@@ -301,6 +314,7 @@ class Popup : Window
         Visibility = Visibility.Hidden;
 
         PreviewKeyDown += OnKey;
+        SizeChanged += delegate { RequestLayoutReflow(); };
         Deactivated += delegate
         {
             Log("Deactivated ready=" + _ready + " vis=" + IsVisible);
@@ -337,17 +351,32 @@ class Popup : Window
         string directory = Path.GetDirectoryName(Path.GetFullPath(path));
         if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
         Func<double, string> n = delegate(double value) { return value.ToString("0.###", CultureInfo.InvariantCulture); };
+        NativeRect windowRect = new NativeRect();
+        NativeRect workRect = new NativeRect();
+        bool nativeGeometry = GetWindowRect(new WindowInteropHelper(this).Handle, out windowRect) && TryGetActiveWorkArea(out workRect);
+        double left = nativeGeometry ? windowRect.left : Left;
+        double top = nativeGeometry ? windowRect.top : Top;
+        double width = nativeGeometry ? windowRect.right - windowRect.left : ActualWidth;
+        double height = nativeGeometry ? windowRect.bottom - windowRect.top : ActualHeight;
+        double workLeft = nativeGeometry ? workRect.left : _lastWorkArea.Left;
+        double workTop = nativeGeometry ? workRect.top : _lastWorkArea.Top;
+        double workRight = nativeGeometry ? workRect.right : _lastWorkArea.Right;
+        double workBottom = nativeGeometry ? workRect.bottom : _lastWorkArea.Bottom;
         string json =
-            "{\"left\":" + n(Left) +
-            ",\"top\":" + n(Top) +
-            ",\"width\":" + n(ActualWidth) +
-            ",\"height\":" + n(ActualHeight) +
-            ",\"anchorX\":" + n(_lastAnchor.X) +
-            ",\"anchorY\":" + n(_lastAnchor.Y) +
-            ",\"workLeft\":" + n(_lastWorkArea.Left) +
-            ",\"workTop\":" + n(_lastWorkArea.Top) +
-            ",\"workRight\":" + n(_lastWorkArea.Right) +
-            ",\"workBottom\":" + n(_lastWorkArea.Bottom) + "}";
+            "{\"left\":" + n(left) +
+            ",\"top\":" + n(top) +
+            ",\"width\":" + n(width) +
+            ",\"height\":" + n(height) +
+            ",\"anchorX\":" + n(_rawX) +
+            ",\"anchorY\":" + n(_rawY) +
+            ",\"workLeft\":" + n(workLeft) +
+            ",\"workTop\":" + n(workTop) +
+            ",\"workRight\":" + n(workRight) +
+            ",\"workBottom\":" + n(workBottom) +
+            ",\"worktreesExpanded\":" + (_commandCenter != null && _commandCenter.WorktreesExpanded ? "true" : "false") +
+            ",\"worktreeViewport\":" + n(_commandCenter == null ? 0 : _commandCenter.WorktreeViewportHeight) +
+            ",\"worktreeExtent\":" + n(_commandCenter == null ? 0 : _commandCenter.WorktreeExtentHeight) +
+            ",\"worktreeScrollable\":" + n(_commandCenter == null ? 0 : _commandCenter.WorktreeScrollableHeight) + "}";
         File.WriteAllText(path, json);
     }
 
@@ -404,6 +433,7 @@ class Popup : Window
         ConfigureGit(project);
         _workflowGeneration++;
         _workflowBusy = false;
+        _layoutReflowPending = false;
         _ready = false;
         Log("ShowFor " + _name);
         NativePoint cp; GetCursorPos(out cp); _rawX = cp.X; _rawY = cp.Y;
@@ -412,6 +442,7 @@ class Popup : Window
         MaxWidth = double.PositiveInfinity;
         MaxHeight = double.PositiveInfinity;
         Content = BuildCard();
+        if (_visualTestMode && _visualStartWorktreesCollapsed) _commandCenter.SetWorktreesExpanded(false);
         // Start the card invisible + shrunk BEFORE the window becomes visible, so the
         // first painted frame is NOT a full-size flash at the previous position (the
         // double-pop). PositionAndAnimate then expands it from the taskbar edge.
@@ -489,41 +520,7 @@ class Popup : Window
 
     void PositionAndAnimate()
     {
-        var src = PresentationSource.FromVisual(this);
-        Matrix from = Matrix.Identity;
-        if (src != null && src.CompositionTarget != null) from = src.CompositionTarget.TransformFromDevice;
-        Point cur = from.Transform(new Point(_rawX, _rawY));
-        _lastAnchor = cur;
-
-        Rect wa;
-        try
-        {
-            IntPtr hMon = MonitorFromPoint(new NativePoint { X = _rawX, Y = _rawY }, 2);
-            MONITORINFO mi = new MONITORINFO(); mi.cbSize = Marshal.SizeOf(typeof(MONITORINFO));
-            if (GetMonitorInfo(hMon, ref mi))
-            {
-                Point tl = from.Transform(new Point(mi.rcWork.left, mi.rcWork.top));
-                Point br = from.Transform(new Point(mi.rcWork.right, mi.rcWork.bottom));
-                wa = new Rect(tl, br);
-            }
-            else wa = SystemParameters.WorkArea;
-        }
-        catch { wa = SystemParameters.WorkArea; }
-        _lastWorkArea = wa;
-
-        MaxWidth = Math.Max(320, wa.Width - 16);
-        MaxHeight = Math.Max(320, wa.Height - 16);
-        UpdateLayout();
-        double w = ActualWidth, h = ActualHeight;
-        Point placement = PopupPlacement.Calculate(wa, cur, new Size(w, h), 12, 8);
-        double left = placement.X;
-        double top = placement.Y;
-        Left = left;
-        Top = top;
-
-        double ox = Clamp01((cur.X - left) / w);
-        double oy = Clamp01((cur.Y - top) / h);
-        _card.RenderTransformOrigin = new Point(ox, oy);
+        FitAndPlaceNative();
 
         // Windows' animation preference is the reduced-motion contract for this
         // native surface. With motion disabled, the card appears fully formed.
@@ -548,6 +545,66 @@ class Popup : Window
         scale.BeginAnimation(ScaleTransform.ScaleYProperty, grow);
         // Fade the WINDOW opacity (not the card) — reveal happens at the OS layer.
         BeginAnimation(Window.OpacityProperty, new DoubleAnimation(0, 1, dur) { EasingFunction = ease });
+    }
+
+    bool TryGetActiveWorkArea(out NativeRect workArea)
+    {
+        workArea = new NativeRect();
+        IntPtr monitor = MonitorFromPoint(new NativePoint { X = _rawX, Y = _rawY }, 2);
+        if (monitor == IntPtr.Zero) return false;
+        MONITORINFO info = new MONITORINFO();
+        info.cbSize = Marshal.SizeOf(typeof(MONITORINFO));
+        if (!GetMonitorInfo(monitor, ref info)) return false;
+        workArea = info.rcWork;
+        return true;
+    }
+
+    void FitAndPlaceNative()
+    {
+        IntPtr hwnd = new WindowInteropHelper(this).Handle;
+        NativeRect workArea;
+        NativeRect windowRect;
+        if (hwnd == IntPtr.Zero || !TryGetActiveWorkArea(out workArea) || !GetWindowRect(hwnd, out windowRect)) return;
+
+        double pixelWidth = Math.Max(1, windowRect.right - windowRect.left);
+        double pixelHeight = Math.Max(1, windowRect.bottom - windowRect.top);
+        double dipPerPixelX = ActualWidth > 0 ? ActualWidth / pixelWidth : 1;
+        double dipPerPixelY = ActualHeight > 0 ? ActualHeight / pixelHeight : 1;
+        double maximumWidth = Math.Max(1, (workArea.right - workArea.left - 16) * dipPerPixelX);
+        double maximumHeight = Math.Max(1, (workArea.bottom - workArea.top - 16) * dipPerPixelY);
+
+        MaxWidth = maximumWidth;
+        MaxHeight = maximumHeight;
+        if (_commandCenter != null) _commandCenter.ConstrainToHeight(maximumHeight);
+        UpdateLayout();
+        if (!GetWindowRect(hwnd, out windowRect)) return;
+
+        double width = Math.Max(1, windowRect.right - windowRect.left);
+        double height = Math.Max(1, windowRect.bottom - windowRect.top);
+        double pixelsPerDip = dipPerPixelY > 0 ? 1 / dipPerPixelY : 1;
+        Rect work = new Rect(workArea.left, workArea.top, workArea.right - workArea.left, workArea.bottom - workArea.top);
+        Point anchor = new Point(_rawX, _rawY);
+        Point placement = PopupPlacement.Calculate(work, anchor, new Size(width, height), 12 * pixelsPerDip, 8 * pixelsPerDip);
+        SetWindowPos(hwnd, IntPtr.Zero, (int)Math.Round(placement.X), (int)Math.Round(placement.Y), 0, 0,
+            SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+
+        _lastWorkArea = work;
+        _lastAnchor = anchor;
+        _card.RenderTransformOrigin = new Point(
+            Clamp01((anchor.X - placement.X) / width),
+            Clamp01((anchor.Y - placement.Y) / height));
+    }
+
+    void RequestLayoutReflow()
+    {
+        if (!_ready || !IsVisible || _layoutReflowPending) return;
+        _layoutReflowPending = true;
+        Dispatcher.BeginInvoke(new Action(delegate
+        {
+            _layoutReflowPending = false;
+            if (!_ready || !IsVisible) return;
+            FitAndPlaceNative();
+        }), DispatcherPriority.Loaded);
     }
 
     static bool MotionEnabled()
@@ -614,7 +671,8 @@ class Popup : Window
             delegate { ControlServer("mouse"); },
             delegate { LaunchWorkflow(AgentWorkflowKind.Feedback, "mouse"); },
             delegate { LaunchWorkflow(AgentWorkflowKind.Spec, "mouse"); },
-            delegate { LaunchWorkflow(AgentWorkflowKind.Sessions, "mouse"); });
+            delegate { LaunchWorkflow(AgentWorkflowKind.Sessions, "mouse"); },
+            RequestLayoutReflow);
         _card = _commandCenter;
         UpdateServerVisual();
         UpdateWorkspaceVisual();
@@ -775,13 +833,18 @@ class Popup : Window
 
     void UpdateWorkspaceVisual()
     {
-        if (_commandCenter != null) _commandCenter.RenderWorktrees(_worktreeInventory);
+        if (_commandCenter == null) return;
+        _commandCenter.RenderWorktrees(_worktreeInventory);
+        if (_visualTestMode && _visualScrollWorktreesToEnd)
+            Dispatcher.BeginInvoke(new Action(delegate { _commandCenter.ScrollWorktreesToEndForVisualTest(); }), DispatcherPriority.Loaded);
     }
 
     public void ApplyVisualTestState(System.Collections.Generic.Dictionary<string, string> fields)
     {
         string value;
         if (fields == null) return;
+        if (fields.TryGetValue("WorktreesExpanded", out value) && _commandCenter != null)
+            _commandCenter.SetWorktreesExpanded(string.Equals(value, "true", StringComparison.OrdinalIgnoreCase));
         string workflowState;
         if (fields.TryGetValue("WorkflowVisualState", out workflowState) && _commandCenter != null)
         {
