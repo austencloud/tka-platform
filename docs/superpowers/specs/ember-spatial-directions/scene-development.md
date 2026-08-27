@@ -1,7 +1,15 @@
 # Ember Spatial Directions
 
-Status: spatial exploration, no production direction selected  
+Status: Volcanic World Gate 4 Revision 5 ready for review; approval unset
+
 Date: 2026-08-25
+
+Historical final acceptance: museum tracker `wqUAKQMa79rTYDYa0N5m`
+
+Current regression authority: museum trackers `rn25Qau62kXyyOJpgm7Z`,
+`QRHbwRQLhM7Zn9LyYHOd`, `gME4uHJawz9dtTlirRl8`,
+`kqMUPC5UpCHjj7ts9atQ`, `5otAzYdNg5Wp5E27mgfo`, and
+`nu73zqvPJRxio4T2sWz7`
 
 ## Why this exists
 
@@ -95,14 +103,14 @@ spatial destination, or the causeway still reads as a runway.
 
 Each direction will be judged from both hero and plan renders.
 
-| Criterion | Weight | Question |
-| --- | ---: | --- |
-| Performer readability | 25% | Does the body and prop envelope remain legible against the environment? |
-| Spatial identity | 20% | Is the scene recognizable from silhouette alone? |
-| Depth and framing | 20% | Are foreground, midground, and background doing distinct jobs? |
-| Non-radial composition | 15% | Does the world feel authored rather than distributed around the origin? |
-| Camera resilience | 10% | Can an orbiting viewer find several good angles without clipping or emptiness? |
-| Runtime plausibility | 10% | Can this topology become a performant authored GLB plus existing Ember effects? |
+| Criterion              | Weight | Question                                                                        |
+| ---------------------- | -----: | ------------------------------------------------------------------------------- |
+| Performer readability  |    25% | Does the body and prop envelope remain legible against the environment?         |
+| Spatial identity       |    20% | Is the scene recognizable from silhouette alone?                                |
+| Depth and framing      |    20% | Are foreground, midground, and background doing distinct jobs?                  |
+| Non-radial composition |    15% | Does the world feel authored rather than distributed around the origin?         |
+| Camera resilience      |    10% | Can an orbiting viewer find several good angles without clipping or emptiness?  |
+| Runtime plausibility   |    10% | Can this topology become a performant authored GLB plus existing Ember effects? |
 
 No direction advances because it most closely resembles the generated image.
 The selected direction must win the spatial comparison.
@@ -130,13 +138,13 @@ Direction E, **Broken Rift Gate**, is the strongest spatial chassis from this
 comparison. This does not freeze its present graybox silhouette, materials, or
 individual rock placements.
 
-| Rank | Direction | Spatial result |
-| ---: | --- | --- |
-| 1 | E. Broken Rift Gate | Keeps the directional fault shelf readable from the tested views and adds a far-field landmark without wrapping the performer. |
-| 2 | C. Faultline Causeway | Best pure topology and camera freedom, but the horizon has no identity. |
-| 3 | A. Basalt Arch Caldera | Strongest single icon, but the icon recenters the scene around a broad stage. |
-| 4 | D. Basalt Organ Canyon | Excellent front depth; side and rear-quarter cameras are consumed by its column walls. |
-| 5 | B. Oculus Lava Tube | Atmospheric enclosure, but repeated tube ribs dominate or fully block orbit views. |
+| Rank | Direction              | Spatial result                                                                                                                 |
+| ---: | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+|    1 | E. Broken Rift Gate    | Keeps the directional fault shelf readable from the tested views and adds a far-field landmark without wrapping the performer. |
+|    2 | C. Faultline Causeway  | Best pure topology and camera freedom, but the horizon has no identity.                                                        |
+|    3 | A. Basalt Arch Caldera | Strongest single icon, but the icon recenters the scene around a broad stage.                                                  |
+|    4 | D. Basalt Organ Canyon | Excellent front depth; side and rear-quarter cameras are consumed by its column walls.                                         |
+|    5 | B. Oculus Lava Tube    | Atmospheric enclosure, but repeated tube ribs dominate or fully block orbit views.                                             |
 
 The result should be read as: **develop E's topology next while continuing to
 search its visual language**. It should not be read as: reproduce the generated
@@ -151,3 +159,34 @@ The next gate is a small look-development matrix inside Direction E's space:
 
 Those alternatives can change the appearance substantially without discarding
 the spatial lesson earned here.
+
+## Current Gate 4 boundary
+
+The former Gate 6 acceptance is historical. Austen reopened the art direction
+in museum tracker `rn25Qau62kXyyOJpgm7Z`, selected Columnar Furnace at Gate 3 in
+`QRHbwRQLhM7Zn9LyYHOd`, and authorized its production slice in
+`gME4uHJawz9dtTlirRl8`. The shared front-stage heading correction is recorded
+in `kqMUPC5UpCHjj7ts9atQ`.
+
+After an adversarial runtime and Blender review, tracker
+`5otAzYdNg5Wp5E27mgfo` authorized Revision 4 of that same Gate 4 owner. R4
+removed the organ-pipe wall, neon-zipper fissure, procedural texture bands, and
+emissive lozenges, but Austen's next review correctly found that the scene
+still read as a contained hell room rather than a volcanic world.
+
+Tracker `nu73zqvPJRxio4T2sWz7` authorizes Revision 5. R5 preserves the Direction
+E action radius, performer relationship, asymmetrical Columnar Furnace, and
+camera family, then opens them into one continuous 230 m volcanic basin. The
+basin owns layered near, middle, and far caldera mass; a distant active vent;
+an open channel with authored levees; and a ten-point lava river that continues
+past the front frame rather than terminating beside the performer. Static
+Blender geometry owns the geological silhouette. The existing Ember runtime
+lava owner supplies animated downhill flow, rafted dark crust, bright molten
+leads, fog integration, and sampled light interaction from the same shared
+world contract.
+
+The current evidence is `evidence/gate-4-volcanic-r5/`. The production slice is
+`ready-for-review` with approval unset. Gate 5 and final acceptance remain
+pending. The river-side composition reaches the strongest bar in the scene,
+but the complete orbit is not recorded as a final 10/10: distant terrain form,
+the vent crown, and the rear compositions remain the next art targets.

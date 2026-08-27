@@ -3,7 +3,13 @@
   import { useGltf } from "@threlte/extras";
   import { onDestroy, onMount } from "svelte";
   import { disposeSceneGraph } from "../utils/dispose-scene";
-  import { Vector3, FogExp2, Color, type MeshStandardMaterial } from "three";
+  import {
+    Vector3,
+    FogExp2,
+    Color,
+    type MeshStandardMaterial,
+    type Object3D,
+  } from "three";
   import GroundPlane from "../primitives/GroundPlane.svelte";
   import CraterGround from "./ember/CraterGround.svelte";
   import SkyGradient from "../primitives/SkyGradient.svelte";
@@ -25,6 +31,8 @@
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
   import ObsidianPlatform from "./ember/ObsidianPlatform.svelte";
   import { resolveCircularStageRadius } from "../domain/performer-stage-bounds";
+  import GltfAsset from "../primitives/GltfAsset.svelte";
+  import volcanicWorldR6 from "../domain/models/scene-configs/ember-volcanic-world-r6.json";
 
   interface Props {
     config?: EmberSceneConfig;
@@ -71,11 +79,18 @@
     !baseConfig.platform.enabled && stageRadiusGrowth > 0
   );
 
-  const rockA = useGltf("/models/winter/rock_largeA.glb");
-  const rockB = useGltf("/models/winter/rock_largeB.glb");
+  const lavaRiverMouth = $derived.by(() => {
+    const points = activeConfig.lavaRivers?.channels[0]?.points;
+    const mouth = points?.[points.length - 1];
+    return mouth
+      ? { x: mouth[0], z: mouth[1] }
+      : activeConfig.lavaPool.position;
+  });
+
   const logModel = useGltf("/models/camping/tree-log.glb");
   const logSmall = useGltf("/models/camping/tree-log-small.glb");
   const campfire = useGltf("/models/camping/campfire-pit.glb");
+  let productionSliceProgress = $state(0);
 
   const { scene, renderer, camera } = useThrelte();
 
@@ -89,7 +104,6 @@
   }
 
   const groundY = $derived(userProportionsState.groundY);
-
 
   function volcanicClone(
     sourceScene: {
@@ -117,22 +131,6 @@
     return cloned;
   }
 
-
-  const rockPlacements = $derived.by(() => {
-    const count = activeConfig.rockCount;
-    const cr = activeConfig.clearingRadius;
-    return Array.from({ length: count }, (_, i) => {
-      const angle = (i / count) * Math.PI * 2 + 0.2;
-      const radius = cr - 2.0 + Math.sin(i * 4.1) * 1.5;
-      return {
-        x: Math.cos(angle) * radius,
-        z: Math.sin(angle) * radius,
-        scale: 0.4 + Math.abs(Math.sin(i * 3.2) * 0.35),
-        rotY: Math.sin(i * 2.8) * Math.PI,
-      };
-    });
-  });
-
   const logPlacements: {
     x: number;
     z: number;
@@ -148,7 +146,6 @@
     { x: -9.5, z: 7.0, scale: 1.5, rotY: Math.PI * 0.2, large: false },
   ];
 
-
   const firePosition = $derived.by(() => {
     const fv = activeConfig.fireVent;
     if (!fv) return new Vector3(0, groundY, 0);
@@ -157,17 +154,6 @@
   });
 
   // ── Clone caching — clone + tint once per GLB/config change, not per render
-
-  const rockClones = $derived.by(() => {
-    if (!$rockA || !$rockB) return [];
-    return rockPlacements.map((_, i) =>
-      volcanicClone(
-        (i % 2 === 0 ? $rockA : $rockB)!.scene,
-        activeConfig.rockTintColor,
-        activeConfig.rockTintBlend
-      )
-    );
-  });
 
   const logClones = $derived.by(() => {
     if (!$logModel || !$logSmall || !activeConfig.fireVent?.enabled) return [];
@@ -179,38 +165,52 @@
   const campfireClone = $derived($campfire ? $campfire.scene.clone() : null);
 
   onDestroy(() => {
-    for (const c of rockClones)
-      disposeSceneGraph(c as import("three").Object3D);
     for (const c of logClones) disposeSceneGraph(c as import("three").Object3D);
     if (campfireClone)
       disposeSceneGraph(campfireClone as import("three").Object3D);
   });
 
-
   let fogInstance: FogExp2 | null = null;
+  let fogBackground: Color | null = null;
   $effect(() => {
     if (!scene.current) return;
     const fog = activeConfig.fog;
     if (!fogInstance) {
       fogInstance = new FogExp2(fog.color, fog.density);
+      fogBackground = new Color(fog.color);
       scene.current.fog = fogInstance;
+      scene.current.background = fogBackground;
     } else {
       fogInstance.color.set(fog.color);
+      fogBackground?.set(fog.color);
       fogInstance.density = fog.density;
     }
     return () => {
-      if (scene.current) scene.current.fog = null;
+      if (scene.current) {
+        if (scene.current.fog === fogInstance) scene.current.fog = null;
+        if (scene.current.background === fogBackground)
+          scene.current.background = null;
+      }
       fogInstance = null;
+      fogBackground = null;
     };
   });
 
+  function handleProductionSliceProgress(fraction: number): void {
+    productionSliceProgress = fraction;
+  }
+
+  function handleProductionSliceReady(_asset: Object3D): void {
+    productionSliceProgress = 1;
+  }
 
   $effect(() => {
     if (!sceneFeatures) return;
-    const glbs = [$rockA, $rockB, $logModel, $logSmall, $campfire];
-    const loaded = glbs.filter(Boolean).length;
-    sceneFeatures.reportProgress("environment", loaded / glbs.length);
-    if (loaded === glbs.length) {
+    const glbs = [$logModel, $logSmall, $campfire];
+    const loaded = glbs.filter(Boolean).length + productionSliceProgress;
+    const total = glbs.length + 1;
+    sceneFeatures.reportProgress("environment", loaded / total);
+    if (loaded === total) {
       if (renderer.current && camera.current && scene.current) {
         renderer.current.compile(scene.current, camera.current);
       }
@@ -264,6 +264,14 @@
 <!-- Lava pool with domain-warped shader -->
 <LavaPool config={activeConfig.lavaPool} />
 
+<!-- Gate 4 R6: continuous terrain carries the furnace through every orbit sector. -->
+<GltfAsset
+  url="/models/ember/ember-production-slice.glb"
+  position={[0, groundY, 0]}
+  onProgress={handleProductionSliceProgress}
+  onReady={handleProductionSliceReady}
+/>
+
 <!-- Heat distortion shimmer above lava -->
 {#if activeConfig.lavaPool.enabled}
   <HeatDistortion
@@ -277,6 +285,12 @@
   <LavaRivers
     config={activeConfig.lavaRivers}
     poolPosition={activeConfig.lavaPool.position}
+  />
+  <HeatDistortion
+    position={lavaRiverMouth}
+    radius={2.4}
+    height={4.5}
+    intensity={0.035}
   />
 {/if}
 
@@ -353,24 +367,6 @@
     <EmberFountains config={activeConfig.emberFountains} />
   </T.Group>
 {/if}
-
-<!-- Volcanic rock formations -->
-{#each rockClones as clone, i}
-  {@const rock = rockPlacements[i]}
-  {#if rock}
-    <T.Group
-      name={`EmberRock_${i}`}
-      userData={{ tka_composer_id: `ember-rock-${i}`, tka_role: "rock" }}
-      position.x={rock.x}
-      position.y={groundY}
-      position.z={rock.z}
-      scale={rock.scale * 2.2}
-      rotation.y={rock.rotY}
-    >
-      <T is={clone} />
-    </T.Group>
-  {/if}
-{/each}
 
 <!-- Charred fallen logs (only with fire vent) -->
 {#each logClones as clone, i}
@@ -453,6 +449,36 @@
   <VolcanicHaze config={activeConfig.volcanicHaze} />
 {/if}
 
+<!-- One distant plume makes the 100 m vent read as a working volcano, not a prop. -->
+<T.Group
+  position.x={volcanicWorldR6.distantVent.centerRuntimeXZ[0]}
+  position.y={groundY + volcanicWorldR6.distantVent.height + 10}
+  position.z={volcanicWorldR6.distantVent.centerRuntimeXZ[1]}
+>
+  <FallingParticles
+    type="smoke"
+    count={48}
+    area={{ width: 15, height: 28, depth: 13 }}
+    speed={0.032}
+    colors={["#403b3a", "#383637", "#49413e", "#303436"]}
+    sizeRange={[1.0, 2.4]}
+    spin={false}
+    opacity={0.09}
+    emissionShape="ellipse"
+    motionScale={0.72}
+  />
+</T.Group>
+
+<T.PointLight
+  position.x={volcanicWorldR6.distantVent.centerRuntimeXZ[0]}
+  position.y={groundY + volcanicWorldR6.distantVent.height * 0.72}
+  position.z={volcanicWorldR6.distantVent.centerRuntimeXZ[1]}
+  color="#ff3d0d"
+  intensity={92}
+  distance={34}
+  decay={2}
+/>
+
 <!-- Hemisphere ambient -->
 <T.HemisphereLight
   color={activeConfig.hemisphereLight.skyColor}
@@ -471,5 +497,41 @@
     position.z={sl.position[2]}
   />
 {/if}
+
+<!-- Opposing moon fills keep the caldera sculptural through the complete orbit. -->
+<T.DirectionalLight position={[14, 11, 18]} color="#c8cbc3" intensity={0.72} />
+<T.DirectionalLight position={[-16, 8, 10]} color="#687e80" intensity={0.46} />
+<T.DirectionalLight position={[0, 22, 3]} color="#eee4d5" intensity={0.36} />
+<T.DirectionalLight position={[-30, 18, 82]} color="#8b4330" intensity={0.34} />
+
+<!-- Local heat reveals the faults without washing the whole scene orange. -->
+<T.PointLight
+  position={[-5.0, groundY + 8.0, 9.0]}
+  color="#d3d7cc"
+  intensity={260}
+  distance={36}
+  decay={2}
+/>
+<T.PointLight
+  position={[2.4, groundY + 3.2, 13.2]}
+  color="#ff5418"
+  intensity={30}
+  distance={16}
+  decay={2}
+/>
+<T.PointLight
+  position={[-5.0, groundY + 0.75, -0.5]}
+  color="#ff5418"
+  intensity={16}
+  distance={7}
+  decay={2}
+/>
+<T.PointLight
+  position={[1.4, groundY + 3.8, 13.35]}
+  color="#ff3d0d"
+  intensity={38}
+  distance={12}
+  decay={2}
+/>
 
 <ObsidianPlatform config={activeConfig.platform} embedded={embeddedExpansion} />

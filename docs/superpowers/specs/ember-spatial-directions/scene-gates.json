@@ -1,0 +1,465 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "ember-broken-rift",
+  "title": "Ember Broken Rift",
+  "domainProofRequired": false,
+  "currentGate": 4,
+  "authority": {
+    "experienceSpec": "docs/superpowers/specs/ember-spatial-directions/look-development.md",
+    "roomShellSource": "src/lib/shared/3d/environments/scenes/EmberScene.svelte",
+    "planContract": "docs/superpowers/specs/ember-spatial-directions/scene-development.md",
+    "museumTrackerItems": [
+      "C2tvT3lr69ss7EqvYknm",
+      "OJGpjNddvANRvXMYt7sQ",
+      "inUhpQPs18g1o6HoKnDd",
+      "j8jSJVcW6KGSbIur83Q8",
+      "MqaUVXWmMvvViGEOTCKX",
+      "ZkW4K6AvovG7s4uXHFj3",
+      "wqUAKQMa79rTYDYa0N5m",
+      "rn25Qau62kXyyOJpgm7Z",
+      "QRHbwRQLhM7Zn9LyYHOd",
+      "gME4uHJawz9dtTlirRl8",
+      "kqMUPC5UpCHjj7ts9atQ",
+      "5otAzYdNg5Wp5E27mgfo",
+      "nu73zqvPJRxio4T2sWz7"
+    ]
+  },
+  "sequenceFingerprints": [],
+  "claims": [
+    {
+      "id": "C-001",
+      "class": "literal",
+      "statement": "Viewer3D caps Ember's orbit distance at 25 metres.",
+      "evidence": ["src/lib/shared/3d/camera/Viewer3DCamera.svelte"]
+    },
+    {
+      "id": "C-002",
+      "class": "invention",
+      "statement": "The Columnar Furnace sits within one continuous exterior-scale volcanic basin while a distant vent and open lava channel establish far depth outside the 4.5 m action radius without forming a uniform enclosure.",
+      "evidence": [
+        "docs/superpowers/specs/ember-spatial-directions/scene-development.md",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r5/ember-volcanic-world-production-slice-r5-orbit-board.png"
+      ]
+    },
+    {
+      "id": "C-003",
+      "class": "invention",
+      "statement": "Blue-black basalt and rough obsidian dominate the frame; orange is confined to fissures and the banked, crusted river, with restrained mineral ochre as a secondary accent.",
+      "evidence": [
+        "docs/superpowers/specs/ember-spatial-directions/look-development.md"
+      ]
+    }
+  ],
+  "exemptions": [
+    {
+      "gateId": "measured-plan",
+      "type": "evidence",
+      "name": "vertical-section",
+      "rationale": "Ember is an orbit backdrop with no traversable vertical route; the four-camera composition board proves vertical scale for this gate.",
+      "approvedBy": "Austen",
+      "approvedAt": "2026-08-25T22:44:27.322Z",
+      "museumTrackerItem": "C2tvT3lr69ss7EqvYknm"
+    },
+    {
+      "gateId": "measured-plan",
+      "type": "evidence",
+      "name": "route-storyboard",
+      "rationale": "Viewer3D supplies a free orbit rather than a player navigation route; the locked camera board covers the intended visual sequence.",
+      "approvedBy": "Austen",
+      "approvedAt": "2026-08-25T22:44:27.322Z",
+      "museumTrackerItem": "C2tvT3lr69ss7EqvYknm"
+    },
+    {
+      "gateId": "measured-plan",
+      "type": "check",
+      "name": "walkability",
+      "rationale": "Ember is not a walkable museum room; performer action clearance and orbit sightlines are the relevant spatial checks.",
+      "approvedBy": "Austen",
+      "approvedAt": "2026-08-25T22:44:27.322Z",
+      "museumTrackerItem": "C2tvT3lr69ss7EqvYknm"
+    },
+    {
+      "gateId": "playable-graybox",
+      "type": "evidence",
+      "name": "graybox-glb",
+      "rationale": "The Blender topology comparison was the review artifact; runtime GLB proof is deliberately reserved for the approved production-slice gate.",
+      "approvedBy": "Austen",
+      "approvedAt": "2026-08-25T22:44:27.322Z",
+      "museumTrackerItem": "C2tvT3lr69ss7EqvYknm"
+    },
+    {
+      "gateId": "playable-graybox",
+      "type": "evidence",
+      "name": "first-person-walk",
+      "rationale": "Viewer3D is evaluated by orbit cameras rather than first-person navigation; the four-camera contact sheet is the equivalent review proof.",
+      "approvedBy": "Austen",
+      "approvedAt": "2026-08-25T22:44:27.322Z",
+      "museumTrackerItem": "C2tvT3lr69ss7EqvYknm"
+    },
+    {
+      "gateId": "playable-graybox",
+      "type": "check",
+      "name": "route-duration",
+      "rationale": "There is no authored player route in an orbit backdrop.",
+      "approvedBy": "Austen",
+      "approvedAt": "2026-08-25T22:44:27.322Z",
+      "museumTrackerItem": "C2tvT3lr69ss7EqvYknm"
+    },
+    {
+      "gateId": "playable-graybox",
+      "type": "check",
+      "name": "sequence-parity",
+      "rationale": "This environment slice does not select or modify any TKA sequence.",
+      "approvedBy": "Austen",
+      "approvedAt": "2026-08-25T22:44:27.322Z",
+      "museumTrackerItem": "C2tvT3lr69ss7EqvYknm"
+    },
+    {
+      "gateId": "integrated-room",
+      "type": "check",
+      "name": "state-persistence",
+      "rationale": "Ember is a stateless Viewer3D environment. It introduces no room-owned interaction state to save or restore; performer and playback state remain owned by the shared viewer.",
+      "approvedBy": "Austen",
+      "approvedAt": "2026-08-27T00:15:52.471Z",
+      "museumTrackerItem": "ZkW4K6AvovG7s4uXHFj3"
+    },
+    {
+      "gateId": "final-acceptance",
+      "type": "check",
+      "name": "typecheck",
+      "rationale": "The repository-wide check is baseline-red outside Ember. Gate 6 records all 455 errors and 29 warnings, confirms zero EmberScene or ObsidianPlatform diagnostics, and identifies the two Viewer3D diagnostics as the pre-existing Threlte layers typing mismatch rather than stage-sizing behavior.",
+      "approvedBy": "Austen",
+      "approvedAt": "2026-08-27T00:15:52.471Z",
+      "museumTrackerItem": "ZkW4K6AvovG7s4uXHFj3"
+    }
+  ],
+  "regressions": [
+    {
+      "invalidatedAt": "2026-08-27T06:00:46.718Z",
+      "reopenedGate": 3,
+      "museumTrackerItem": "rn25Qau62kXyyOJpgm7Z",
+      "reason": "The adversarial review found that technical acceptance did not meet the approved gorgeous-scene art bar. Hero geometry, material separation, atmosphere, and all-angle composition require new registered 3D visual targets.",
+      "preserved": [
+        "Gate 1 measured topology",
+        "Gate 2 spatial and camera contract",
+        "4.5 m performer action clearance",
+        "performer orientation",
+        "responsive stage behavior"
+      ],
+      "invalidated": [
+        "Gate 3 registered visual target",
+        "Gate 4 production slice",
+        "Gate 5 integrated room",
+        "Gate 6 final acceptance"
+      ],
+      "supersededTrackerItem": "wqUAKQMa79rTYDYa0N5m"
+    },
+    {
+      "invalidatedAt": "2026-08-27T08:38:10.451Z",
+      "reopenedGate": 4,
+      "museumTrackerItem": "kqMUPC5UpCHjj7ts9atQ",
+      "reason": "Gate 4 runtime review showed every performer facing backstage. The shared Viewer3D same-direction formation heading disagreed with its negative-Z audience camera, and cast changes restored the wrong heading.",
+      "preserved": [
+        "Gate 3 Columnar Furnace visual target",
+        "Gate 4 production geometry and materials",
+        "4.5 m performer action clearance",
+        "responsive stage sizing"
+      ],
+      "invalidated": [
+        "Gate 4 runtime hero capture",
+        "Gate 4 four-performer interaction capture",
+        "Gate 4 runtime viewport sweep"
+      ]
+    },
+    {
+      "invalidatedAt": "2026-08-27T19:09:29.280Z",
+      "reopenedGate": 4,
+      "museumTrackerItem": "5otAzYdNg5Wp5E27mgfo",
+      "reason": "The adversarial Gate 4 review found an organ-pipe silhouette, neon-zipper fissure, procedural horizontal texture bands, interface-like emissive lozenges, and weak rear-orbit coordination. Revision 4 keeps the same capability owner and rebuilds its art language around geological mass, negative space, occluded heat, and a complete coordinated orbit.",
+      "preserved": [
+        "Gate 3 Columnar Furnace selection",
+        "4.5 m performer action clearance",
+        "responsive stage sizing",
+        "front-stage performer facing",
+        "existing runtime asset and readiness owners"
+      ],
+      "invalidated": [
+        "Gate 4 Columnar Revision 1 visual evidence",
+        "Gate 4 Columnar Revision 2 visual evidence",
+        "Gate 4 Columnar Revision 3 visual evidence"
+      ],
+      "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-columnar-r4/"
+    }
+  ],
+  "gates": [
+    {
+      "id": "evidence-preflight",
+      "status": "verified",
+      "evidence": [
+        {
+          "kind": "canon-audit",
+          "path": "docs/superpowers/specs/ember-spatial-directions/production-contract.md"
+        },
+        {
+          "kind": "room-shell",
+          "path": "src/lib/shared/3d/environments/scenes/EmberScene.svelte"
+        }
+      ],
+      "checks": [
+        {
+          "name": "canon-conflicts",
+          "status": "passed",
+          "evidence": "Authority ledger records no story, performer, sequence, or adjacent-room mutation."
+        },
+        {
+          "name": "source-digests",
+          "status": "passed",
+          "evidence": "Tracked plan, look-development, runtime shell, and museum tracker sources are named in the authority ledger."
+        }
+      ],
+      "approval": null
+    },
+    {
+      "id": "measured-plan",
+      "status": "approved",
+      "evidence": [
+        {
+          "kind": "floor-plan",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/ember-spatial-directions-r1-plan-board.png"
+        },
+        {
+          "kind": "sightline-study",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/ember-spatial-directions-r1-e-camera-board.png"
+        }
+      ],
+      "checks": [
+        {
+          "name": "clearance",
+          "status": "passed",
+          "evidence": "R1 report records the shared unobstructed 4.5 m action radius."
+        },
+        {
+          "name": "sightlines",
+          "status": "passed",
+          "evidence": "Direction E camera board covers hero, oblique, reverse, and plan views."
+        },
+        {
+          "name": "final-view",
+          "status": "passed",
+          "evidence": "Direction E hero view terminates on the fractured far-field gate."
+        }
+      ],
+      "approval": {
+        "approvedBy": "Austen",
+        "approvedAt": "2026-08-25T22:44:27.322Z",
+        "quote": "Well this is just sick I like how you're doing this please keep it up Get to the next gate on your own",
+        "museumTrackerItem": "C2tvT3lr69ss7EqvYknm",
+        "visualComprehensionConfirmed": true
+      }
+    },
+    {
+      "id": "playable-graybox",
+      "status": "approved",
+      "evidence": [
+        {
+          "kind": "blender-source",
+          "path": "blender/ember-spatial-directions-r1.blend"
+        },
+        {
+          "kind": "coordinate-manifest",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/ember-spatial-directions-r1-report.json"
+        },
+        {
+          "kind": "review-contact-sheet",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/r1/ember-spatial-directions-r1-e-camera-board.png"
+        }
+      ],
+      "checks": [
+        {
+          "name": "artifact-digest",
+          "status": "passed",
+          "evidence": "R1 report identifies the Blender source, Blender version, cameras, bounds, collections, and render paths."
+        },
+        {
+          "name": "collision",
+          "status": "passed",
+          "evidence": "All compared directions preserve the shared unobstructed 4.5 m performer action radius."
+        }
+      ],
+      "approval": {
+        "approvedBy": "Austen",
+        "approvedAt": "2026-08-25T22:44:27.322Z",
+        "quote": "Well this is just sick I like how you're doing this please keep it up Get to the next gate on your own",
+        "museumTrackerItem": "C2tvT3lr69ss7EqvYknm",
+        "visualComprehensionConfirmed": true
+      }
+    },
+    {
+      "id": "registered-visual-target",
+      "status": "approved",
+      "evidence": [
+        {
+          "kind": "locked-camera-set",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/lookdev-r3/ember-lookdev-r3-report.json"
+        },
+        {
+          "kind": "visual-target-board",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/lookdev-r3/ember-lookdev-r3-comparison-board.png"
+        },
+        {
+          "kind": "material-lighting-brief",
+          "path": "docs/superpowers/specs/ember-spatial-directions/look-development.md"
+        },
+        {
+          "kind": "riven-lava-tube-orbit-board",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/lookdev-r3/ember-lookdev-r3-riven-lava-tube-orbit-board.png"
+        },
+        {
+          "kind": "columnar-furnace-orbit-board",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/lookdev-r3/ember-lookdev-r3-columnar-furnace-orbit-board.png"
+        },
+        {
+          "kind": "obsidian-shear-orbit-board",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/lookdev-r3/ember-lookdev-r3-obsidian-shear-orbit-board.png"
+        },
+        {
+          "kind": "editable-blender-source",
+          "path": "blender/ember-broken-rift-lookdev-r3.blend"
+        }
+      ],
+      "checks": [
+        {
+          "name": "camera-registration",
+          "status": "passed",
+          "evidence": "The report records one shared ten-camera set used unchanged by all three Blender target scenes: eight orbit sectors, one geological detail, and one orthographic plan view."
+        },
+        {
+          "name": "silhouette-read",
+          "status": "passed",
+          "evidence": "The comparison and three orbit boards show three distinct hero silhouettes under matched camera and lighting conditions without depending on a pre-existing hero model."
+        },
+        {
+          "name": "action-clearance",
+          "status": "passed",
+          "evidence": "All target geometry and secondary geology remain outside the preserved 4.5 m unobstructed performer action radius, confirmed by the registered plan views."
+        }
+      ],
+      "approval": {
+        "approvedBy": "Austen",
+        "approvedAt": "2026-08-27T07:27:15.129Z",
+        "quote": "I will take your recommendation",
+        "museumTrackerItem": "QRHbwRQLhM7Zn9LyYHOd",
+        "visualComprehensionConfirmed": true
+      }
+    },
+    {
+      "id": "production-slice",
+      "status": "ready-for-review",
+      "evidence": [
+        {
+          "kind": "vertical-slice-build",
+          "path": "blender/ember-volcanic-world-production-slice-r5.blend"
+        },
+        {
+          "kind": "build-report",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r5/ember-volcanic-world-production-slice-r5-report.json"
+        },
+        {
+          "kind": "registered-orbit-board",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r5/ember-volcanic-world-production-slice-r5-orbit-board.png"
+        },
+        {
+          "kind": "performance-report",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r5/ember-volcanic-world-production-slice-r5-runtime-report.json"
+        },
+        {
+          "kind": "baseline-runtime-hero",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-columnar-r4/ember-columnar-runtime-front-stage-1920x1080.webp"
+        },
+        {
+          "kind": "baseline-interaction-capture",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-columnar-r4/ember-columnar-runtime-four-performers-front-stage-1920x1080.webp"
+        },
+        {
+          "kind": "baseline-viewport-sweep",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-columnar-r4/ember-columnar-runtime-front-stage-viewport-sweep.webp"
+        },
+        {
+          "kind": "optimized-glb",
+          "path": "static/models/ember/ember-production-slice.glb"
+        },
+        {
+          "kind": "reversible-r5-glb",
+          "path": "static/models/ember/ember-production-slice-r5.glb"
+        }
+      ],
+      "checks": [
+        {
+          "name": "direct-authorship",
+          "status": "passed",
+          "evidence": "The R5 build report records an empty source list; all 192 mesh objects are scene-authored deterministic geometry with no Meshy, web, Ocean, generated, or pre-existing hero import."
+        },
+        {
+          "name": "anti-repetition",
+          "status": "passed",
+          "evidence": "Revision 5 retains the irregular 31-joint Columnar Furnace and complete-orbit outcrops, then adds one continuous 230 m basin instead of a repeated ring, one distant vent assembly, and two authored river levees."
+        },
+        {
+          "name": "action-clearance",
+          "status": "passed",
+          "evidence": "Computed minimum structural radial clearance is 6.156 m against the preserved 4.5 m performer action radius."
+        },
+        {
+          "name": "performance",
+          "status": "passed",
+          "evidence": "The 2,581,844-byte asset requires Meshopt, mesh quantization, and nine KTX2 textures; the warm request returned 304 and environment readiness reached 100%. The static artifact is 40,316 triangles and its largest mesh is 6,912 triangles."
+        },
+        {
+          "name": "interaction-state",
+          "status": "passed",
+          "evidence": "The shared stage owner grew through one, two, three, and four performers; the corrected four-performer runtime proof keeps every body inside the platform and every visible front toward the audience camera."
+        },
+        {
+          "name": "front-stage-facing",
+          "status": "passed",
+          "evidence": "The Viewer3D formation adapter resolves same-direction layouts to Math.PI for the negative-Z audience camera while preserving explicit back-to-back and inward-facing slots. The corrected hero, four-performer, and seven-viewport proofs show visible chests and props toward camera."
+        },
+        {
+          "name": "runtime-console",
+          "status": "passed",
+          "evidence": "The complete Blender orbit, four live runtime angles, and 1920x1080, 2560x1440, 3840x2160, 1440x900, 820x1180, 960x412, and 375x667 runtime proofs passed after renderer settle with zero slice-owned console errors or warnings."
+        },
+        {
+          "name": "focused-verification",
+          "status": "passed",
+          "evidence": "27 focused lava-geometry, asset, stage-bound, and camera tests passed across four files; svelte-check completed with zero errors and zero warnings."
+        },
+        {
+          "name": "volcanic-world-composition",
+          "status": "passed",
+          "evidence": "One continuous basin spans 230 m across and 147 m in depth with near, middle, and far material bands, while the river-side live view proves the scene reads as an exterior-scale lava landscape rather than a contained room."
+        },
+        {
+          "name": "lava-river",
+          "status": "passed",
+          "evidence": "A shared ten-point downhill channel drives the static levees, runtime indexed spline surface, warped moving leads, rafted dark crust, fog response, and three sampled point lights while remaining outside the action radius."
+        }
+      ],
+      "approval": null
+    },
+    {
+      "id": "integrated-room",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "final-acceptance",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    }
+  ]
+}

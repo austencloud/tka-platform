@@ -8,15 +8,39 @@
 
   interface Props {
     config: ObsidianPlatformConfig;
+    /** Lay only the live surface over Ember's authored geological shelf. */
+    embedded?: boolean;
   }
 
-  let { config }: Props = $props();
+  let { config, embedded = false }: Props = $props();
   const groundY = $derived(userProportionsState.groundY);
+  const surfaceLift = $derived(embedded ? 0.018 : 0);
 
   let geometry = $state<CircleGeometry | undefined>(undefined);
 
   $effect(() => {
-    const geo = new CircleGeometry(config.radius, 6);
+    const segments = embedded ? 64 : 6;
+    const geo = new CircleGeometry(config.radius, segments);
+    if (embedded) {
+      const positions = geo.attributes.position;
+      for (let vertex = 1; vertex < positions.count; vertex += 1) {
+        const segment = (vertex - 1) % segments;
+        const angle = (segment / segments) * Math.PI * 2;
+        const edgeVariation =
+          1 +
+          Math.sin(angle * 3 + 0.7) * 0.045 +
+          Math.sin(angle * 7 - 0.4) * 0.025 +
+          Math.sin(angle * 11 + 1.2) * 0.012;
+        const radius = config.radius * edgeVariation;
+        positions.setXY(
+          vertex,
+          Math.cos(angle) * radius,
+          Math.sin(angle) * radius
+        );
+      }
+      positions.needsUpdate = true;
+      geo.computeVertexNormals();
+    }
     geometry = geo;
     return () => geo.dispose();
   });
@@ -38,6 +62,7 @@
     uniform float uGlowIntensity;
     uniform float uCrackIntensity;
     uniform float uLavaSpeed;
+    uniform float uEmbedded;
     varying vec2 vUv;
     varying vec2 vWorldXZ;
 
@@ -168,7 +193,7 @@
 
       // Glassy highlight bands — obsidian has a vitreous luster
       float glassHighlight = fbm(voronoiUv * 3.0 + vec2(uTime * 0.02, 0.0));
-      glassHighlight = smoothstep(0.55, 0.7, glassHighlight) * 0.08;
+      glassHighlight = smoothstep(0.55, 0.7, glassHighlight) * mix(0.08, 0.004, uEmbedded);
       obsidianBase += vec3(glassHighlight);
 
       // --- Composite: obsidian base + lava in cracks ---
@@ -196,9 +221,10 @@
       // --- Hard edge clip for hex shape ---
       // CircleGeometry handles shape, but soften the very edge slightly
       float edgeSoften = 1.0 - smoothstep(0.88, 1.0, dist);
-      finalColor *= edgeSoften;
+      finalColor *= mix(edgeSoften, 1.0, uEmbedded);
+      float alpha = mix(1.0, 1.0 - smoothstep(0.82, 1.0, dist), uEmbedded);
 
-      gl_FragColor = vec4(finalColor, 1.0);
+      gl_FragColor = vec4(finalColor, alpha);
     }
   `;
 
@@ -212,10 +238,12 @@
         uGlowIntensity: { value: config.glowIntensity },
         uCrackIntensity: { value: config.crackIntensity },
         uLavaSpeed: { value: config.lavaSpeed },
+        uEmbedded: { value: embedded ? 1 : 0 },
       },
       vertexShader,
       fragmentShader,
-      transparent: false,
+      transparent: embedded,
+      depthWrite: !embedded,
       side: DoubleSide,
     });
     material = mat;
@@ -237,43 +265,45 @@
 </script>
 
 {#if config.enabled}
-  <!-- Dark obsidian hexagonal body -->
-  <T.Mesh position.y={groundY + config.height / 2}>
-    <!-- The animated disc owns the top face. A cylinder cap here would occupy the same depth and flash as the camera moves. -->
-    <T.CylinderGeometry
-      args={[config.radius, config.radius, config.height, 6, 1, true]}
-    />
-    <T.MeshStandardMaterial
-      color="#0a0a0a"
-      roughness={0.3}
-      metalness={0.7}
-      emissive="#ff3300"
-      emissiveIntensity={0.05}
-    />
-  </T.Mesh>
+  {#if !embedded}
+    <!-- Dark obsidian hexagonal body -->
+    <T.Mesh position.y={groundY + config.height / 2}>
+      <!-- The animated disc owns the top face. A cylinder cap here would occupy the same depth and flash as the camera moves. -->
+      <T.CylinderGeometry
+        args={[config.radius, config.radius, config.height, 6, 1, true]}
+      />
+      <T.MeshStandardMaterial
+        color="#0a0a0a"
+        roughness={0.3}
+        metalness={0.7}
+        emissive="#ff3300"
+        emissiveIntensity={0.05}
+      />
+    </T.Mesh>
 
-  <!-- Emissive lava-orange rim ring at top edge -->
-  <T.Mesh
-    rotation.x={-Math.PI / 2}
-    position.y={groundY + config.height + 0.001}
-  >
-    <T.RingGeometry
-      args={[config.radius - RIM_THICKNESS, config.radius + RIM_THICKNESS, 6]}
-    />
-    <T.MeshStandardMaterial
-      color="#ff4400"
-      emissive="#ff3300"
-      emissiveIntensity={1.2}
-      roughness={0.2}
-      metalness={0.5}
-    />
-  </T.Mesh>
+    <!-- Emissive lava-orange rim ring at top edge -->
+    <T.Mesh
+      rotation.x={-Math.PI / 2}
+      position.y={groundY + config.height + 0.001}
+    >
+      <T.RingGeometry
+        args={[config.radius - RIM_THICKNESS, config.radius + RIM_THICKNESS, 6]}
+      />
+      <T.MeshStandardMaterial
+        color="#ff4400"
+        emissive="#ff3300"
+        emissiveIntensity={1.2}
+        roughness={0.2}
+        metalness={0.5}
+      />
+    </T.Mesh>
+  {/if}
 
   <!-- Lava-crack shader top surface -->
   <T.Mesh
     {geometry}
     {material}
     rotation.x={-Math.PI / 2}
-    position.y={groundY + config.height}
+    position.y={groundY + config.height + surfaceLift}
   />
 {/if}

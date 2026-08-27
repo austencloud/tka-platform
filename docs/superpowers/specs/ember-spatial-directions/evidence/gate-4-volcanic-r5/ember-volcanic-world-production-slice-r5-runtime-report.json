@@ -1,0 +1,82 @@
+{
+  "revision": "ember-broken-rift-gate4-volcanic-r5",
+  "route": "https://localhost:5173/test/viewer-3d?scene=ember",
+  "authority": {
+    "gate4VolcanicWorldTrackerItem": "nu73zqvPJRxio4T2sWz7",
+    "derivedFromGate4ArtRevisionTrackerItem": "5otAzYdNg5Wp5E27mgfo"
+  },
+  "asset": {
+    "path": "static/models/ember/ember-production-slice.glb",
+    "reversibleCopy": "static/models/ember/ember-production-slice-r5.glb",
+    "bytes": 2581844,
+    "sha256": "e4c54579b3053618c0ac225c6a958c907b136a893dcf02faa945321a60ba8d9d",
+    "warmResponseStatus": 304,
+    "compression": ["EXT_meshopt_compression", "KHR_mesh_quantization"],
+    "textureEncoding": "KHR_texture_basisu",
+    "ktx2ImageCount": 9,
+    "materialCount": 10
+  },
+  "staticWorld": {
+    "meshObjectCount": 192,
+    "triangleCount": 40316,
+    "maximumMeshTriangleCount": 6912,
+    "minimumStructuralRadialClearanceMeters": 6.156,
+    "volcanicBasinCount": 1,
+    "distantVolcanicVentCount": 2,
+    "lavaChannelLeveeCount": 2,
+    "importedSources": []
+  },
+  "runtimeLavaRiver": {
+    "owner": "src/lib/shared/3d/environments/scenes/ember/LavaRivers.svelte",
+    "geometryOwner": "src/lib/shared/3d/environments/scenes/ember/lava-river-geometry.ts",
+    "worldContract": "src/lib/shared/3d/environments/domain/models/scene-configs/ember-volcanic-world-r5.json",
+    "controlPointCount": 10,
+    "vertexCount": 1017,
+    "triangleCount": 1792,
+    "sampledPointLightCount": 3,
+    "surface": "fog-aware opaque shader with animated downhill advection, warped bright leads, and rafted dark crust"
+  },
+  "visualVerification": {
+    "liveAngles": [
+      "front-stage",
+      "lava-river-side",
+      "opposite-quarter",
+      "rear-orbit"
+    ],
+    "viewports": [
+      "1920x1080",
+      "2560x1440",
+      "3840x2160",
+      "1440x900",
+      "820x1180",
+      "960x412",
+      "375x667"
+    ],
+    "rendererSettleRequiredAfterDirectFourKToMobileResize": true,
+    "passedAfterFreshLoadAndSettle": true,
+    "consoleErrorCount": 0,
+    "consoleWarningCount": 0,
+    "performerFacesFrontStage": true,
+    "orbitBoard": {
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r5/ember-volcanic-world-production-slice-r5-orbit-board.png",
+      "sha256": "9202c0a42b5073a600417a861afad7332b09e2d73a24eceaf379257ed44bac4d"
+    },
+    "baselineHero": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-columnar-r4/ember-columnar-runtime-front-stage-1920x1080.webp"
+  },
+  "verification": {
+    "focusedTestFiles": 4,
+    "focusedTestsPassed": 27,
+    "svelteCheckErrors": 0,
+    "svelteCheckWarnings": 0
+  },
+  "verdict": {
+    "result": "The scene now reads as a continuous volcanic world rather than a contained generic hell room. The lava-river-side composition reaches the strongest bar in the scene, while the complete orbit remains below final top-tier acceptance.",
+    "defensibleScore": 9.1,
+    "remainingGaps": [
+      "Some distant basin slopes still read broad and smooth instead of erosion-rich volcanic terrain.",
+      "The far vent has a generic cone silhouette and needs a more broken caldera crown.",
+      "Rear-orbit compositions are coherent but less authored than the front and river-side views.",
+      "The web lava reads as animated molten material, but it does not yet simulate viscous slab breakup, variable velocity, or physically based thermal bloom."
+    ]
+  }
+}
