@@ -21,6 +21,7 @@ function nextLayout(): Promise<void> {
 
 describe("BaseModal fit sizing", () => {
   afterEach(async () => {
+    document.querySelector('[data-testid="external-overlay"]')?.remove();
     document.documentElement.style.removeProperty("--viewport-height");
     document.documentElement.style.removeProperty("--viewport-offset-top");
     document.documentElement.style.removeProperty("--viewport-offset-bottom");
@@ -132,5 +133,39 @@ describe("BaseModal fit sizing", () => {
 
     expect(openedState?.textContent?.trim()).toBe("0:false");
     expect(dialog?.open ?? false).toBe(false);
+  });
+
+  it("keeps a third-party overlay interactive when external overlays are allowed", async () => {
+    let overlayClicks = 0;
+    const externalOverlay = document.createElement("button");
+    externalOverlay.type = "button";
+    externalOverlay.dataset.testid = "external-overlay";
+    externalOverlay.textContent = "Password manager suggestion";
+    externalOverlay.style.cssText = [
+      "position: fixed",
+      "inset-block-start: 8px",
+      "inset-inline-end: 8px",
+      "z-index: 2147483647",
+    ].join(";");
+    externalOverlay.addEventListener("click", () => {
+      overlayClicks += 1;
+    });
+    document.body.append(externalOverlay);
+
+    render(BaseModalTestHarness, { allowExternalOverlays: true });
+
+    const dialog = page.getByRole("dialog", { name: "Scrollable modal" });
+    await expect.element(dialog).toBeVisible();
+
+    const dialogElement =
+      document.querySelector<HTMLDialogElement>("dialog.base-modal");
+    expect(dialogElement?.matches(":modal") ?? true).toBe(false);
+    await expect.element(page.getByTestId("external-overlay")).toBeVisible();
+
+    await page.getByTestId("external-overlay").click();
+
+    expect(overlayClicks).toBe(1);
+    expect(document.activeElement).toBe(externalOverlay);
+    expect(dialogElement?.open ?? false).toBe(true);
   });
 });
