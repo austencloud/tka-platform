@@ -10,6 +10,9 @@
 export enum BrowseFilterType {
   STARTING_LETTER = "starting_letter",
   CONTAINS_LETTERS = "contains_letters",
+  /** Exact notation occurrence. Unlike CONTAINS_LETTERS search, this never
+   * matches a sequence name, display title, notes, or other prose. */
+  LETTER_OCCURRENCE = "letter_occurrence",
   LENGTH = "length",
   DIFFICULTY = "difficulty",
   AUTHOR = "author",

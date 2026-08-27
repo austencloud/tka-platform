@@ -19,9 +19,7 @@ describe("route-scoped URL parameters", () => {
     const scanUrl = new URL(
       "https://tkaflowarts.com/browse/library/item?scan=1"
     );
-    const museumUrl = new URL(
-      "https://tkaflowarts.com/museum?room=lascaux"
-    );
+    const museumUrl = new URL("https://tkaflowarts.com/museum?room=lascaux");
 
     pruneParamsForNavigation(scanUrl, scanUrl.pathname);
     pruneParamsForNavigation(museumUrl, museumUrl.pathname);
@@ -58,5 +56,27 @@ describe("route-scoped URL parameters", () => {
 
     expect(themeUrl.search).toBe("?theme=autumn");
     expect(profileUrl.search).toBe("");
+  });
+
+  it("keeps letter state only on its glossary and Gallery destinations", () => {
+    const glossaryUrl = new URL(
+      "https://tkaflowarts.com/glossary?letter=B&grid=box&variation=6&blueTurns=0.5"
+    );
+    const galleryUrl = new URL(
+      "https://tkaflowarts.com/browse/explore/sequences?letter=B"
+    );
+    const unrelatedUrl = new URL(
+      "https://tkaflowarts.com/create/construct?letter=B&grid=box&variation=6"
+    );
+
+    pruneRouteScopedParams(glossaryUrl, glossaryUrl.pathname);
+    pruneRouteScopedParams(galleryUrl, galleryUrl.pathname);
+    pruneRouteScopedParams(unrelatedUrl, unrelatedUrl.pathname);
+
+    expect(glossaryUrl.search).toBe(
+      "?letter=B&grid=box&variation=6&blueTurns=0.5"
+    );
+    expect(galleryUrl.search).toBe("?letter=B");
+    expect(unrelatedUrl.search).toBe("");
   });
 });
