@@ -367,16 +367,9 @@
   }
 
   /* Display-type ceilings are in PX, deliberately, and every one of them on this
-     page follows this rule.
-
-     This page renders inside `.mkt-shell`, so `app.css` ramps the root font from
-     16px to 24px between 1680 and 3840 (see `4k-native-layout.md`). That ramp is
-     right for body copy — reading distance grows with the screen — but it means
-     a clamp ceiling written in `rem` is not a ceiling at all: it rides the ramp
-     and grows 1.5x. This h1 read 110px at 1920 and 156px at 3840 for exactly
-     that reason, and the section headings were 120px beside it. Nothing on a 4K
-     screen needs 156px display type; the screen is bigger, the letterforms are
-     not further away.
+     page follows this rule. They are art-directed optical caps rather than body
+     roles, and remain independent of the surrounding composition band. Nothing
+     on a 4K screen needs 156px display type merely because the canvas is wider.
 
      A px ceiling stops the growth where it should stop. The floor stays in rem
      so a reader who has raised their browser font size still gets it. */
@@ -393,9 +386,8 @@
     color: oklch(0.79 0.15 278);
   }
 
-  /* Measure comes from the shared token, not a local rem cap: a rem ceiling
-     rides the root ramp and grows 1.5x by 3840, so it stops being a ceiling
-     exactly where one is needed. See editorial-measure.css. */
+  /* Measure comes from the shared semantic token rather than another local
+     width decision. See editorial-measure.css. */
   .opening-lede {
     max-inline-size: var(--measure-lede);
     margin: 1.55rem 0 0;
