@@ -27,6 +27,13 @@ import {
   type SpeedFill,
   type TunnelConfig,
 } from "./tunnel-config";
+import {
+  builtInTunnelPresetRecipe,
+  cloneTunnelPresetRecipe,
+  isTunnelPresetRecipeModified,
+  savedTunnelPresetRecipe,
+  type TunnelPresetRecipe,
+} from "./tunnel-preset-recipe";
 import { performerRing } from "./performer-ring-model";
 import { tunnelPropColor } from "./tunnel-prop-colors";
 import {
@@ -113,6 +120,12 @@ export class TunnelViewController {
   /** Active rail section in the Art settings panel, persisted with the view
    *  state so the panel reopens on the section the user last used. */
   section = $state<TunnelViewState["section"]>("tunnel");
+  /** Recipe provenance stays attached while the values are edited. It describes
+   * the configuration only; it never authors extra choreography performers. */
+  presetRecipe = $state<TunnelPresetRecipe | null>(null);
+  /** Transient Look-panel disclosure. It is not saved choreography or a global
+   * preference; the controller only keeps it stable across panel remounts. */
+  lookEditorOpen = $state(false);
 
   #sources: TunnelControllerSources;
   #layers = $state<BuiltTunnelLayer[]>([]);
@@ -138,6 +151,7 @@ export class TunnelViewController {
     this.gridVisible = view.gridVisible;
     this.spectrum = view.spectrum;
     this.section = view.section;
+    this.presetRecipe = cloneTunnelPresetRecipe(view.presetRecipe);
 
     // Persist the live view state on change.
     if (sources.persistViewState ?? true) {
@@ -147,6 +161,7 @@ export class TunnelViewController {
           gridVisible: this.gridVisible,
           spectrum: this.spectrum,
           section: this.section,
+          presetRecipe: this.presetRecipe,
         };
         saveTunnelViewState(snapshot);
       });
@@ -269,10 +284,14 @@ export class TunnelViewController {
    *  (drives the Presets surface highlight + the "Custom" card). */
   activePresetId = $derived(matchPreset(this.config));
 
+  presetRecipeModified = $derived(
+    isTunnelPresetRecipeModified(this.presetRecipe, this.config)
+  );
+
   /** Set the whole config (clamped to the live budget). */
-  #setConfig(cfg: TunnelConfig): void {
+  #setConfig(cfg: TunnelConfig): boolean {
     const c = clampConfig(cfg, this.#maxImages());
-    if (imageCount(c) < this.authoredPerformerCount) return;
+    if (imageCount(c) < this.authoredPerformerCount) return false;
     this.fold = c.fold;
     this.mirror = c.mirror;
     this.flip = c.flip;
@@ -280,17 +299,36 @@ export class TunnelViewController {
     this.echo = c.echo;
     this.staggerSteps = c.staggerSteps;
     this.speedOverrides = { ...c.speedOverrides };
+    return true;
   }
 
   /** Select a curated built-in mandala preset (the primary surface). */
   applyPreset(id: string): void {
     const p = getPreset(id);
-    if (p) this.#setConfig(p.config);
+    const recipe = builtInTunnelPresetRecipe(id);
+    if (p && recipe && this.#setConfig(p.config)) this.presetRecipe = recipe;
   }
 
-  /** Apply a raw config (a saved user preset). */
-  applyConfig(cfg: TunnelConfig): void {
-    this.#setConfig(cfg);
+  /** Apply a raw config. Snapshot restore supplies its retained recipe; a raw
+   * edit deliberately keeps the existing recipe origin and becomes modified. */
+  applyConfig(
+    cfg: TunnelConfig,
+    recipe: TunnelPresetRecipe | null | undefined = undefined
+  ): void {
+    if (this.#setConfig(cfg) && recipe !== undefined) {
+      this.presetRecipe = cloneTunnelPresetRecipe(recipe);
+    }
+  }
+
+  applyUserPreset(id: string, name: string, config: TunnelConfig): void {
+    if (this.#setConfig(config)) {
+      this.presetRecipe = savedTunnelPresetRecipe(id, name, config);
+    }
+  }
+
+  resetPresetRecipe(): void {
+    if (!this.presetRecipe) return;
+    this.#setConfig(this.presetRecipe.config);
   }
 
   /** Apply a generator change (fold/mirror/flip) clamped to the live budget so a

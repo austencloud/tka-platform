@@ -5,6 +5,7 @@ import {
   TunnelSnapshotSchema,
   type TunnelSnapshot,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
+import type { TunnelPresetRecipe } from "$lib/shared/sequence-viewer/tunnel/tunnel-preset-recipe";
 
 const STORAGE_KEY = "tka:tunnel-creator-handoff";
 
@@ -28,6 +29,9 @@ export interface TunnelCreatorHandoff {
   snapshot: TunnelSnapshot | null;
   /** Compatibility alias for handoffs written before snapshot was carried. */
   formation: CollectedTunnel["snapshot"]["tunnel"]["config"];
+  /** Recipe provenance is distinct from the rendered config. Legacy artifacts
+   * leave this null rather than inheriting whichever look was last open. */
+  presetRecipe: TunnelPresetRecipe | null;
   createdAt: number;
 }
 
@@ -41,6 +45,7 @@ export function saveTunnelCreatorHandoff(tunnel: CollectedTunnel): void {
     composition: collectedTunnelComposition(tunnel),
     snapshot: tunnel.snapshot,
     formation: tunnel.snapshot.tunnel.config,
+    presetRecipe: tunnel.snapshot.tunnel.presetRecipe ?? null,
     createdAt: Date.now(),
   };
 
@@ -82,6 +87,11 @@ export function consumeTunnelCreatorHandoff(): TunnelCreatorHandoff | null {
         ? (parsedSnapshot.data as TunnelSnapshot)
         : null,
       formation,
+      presetRecipe:
+        handoff.presetRecipe ??
+        (parsedSnapshot.success
+          ? parsedSnapshot.data.tunnel.presetRecipe ?? null
+          : null),
       createdAt:
         typeof handoff.createdAt === "number" ? handoff.createdAt : Date.now(),
     };

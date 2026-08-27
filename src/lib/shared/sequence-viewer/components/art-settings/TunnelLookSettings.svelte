@@ -3,6 +3,8 @@
   import type { TunnelViewController } from "../../tunnel/tunnel-view-controller.svelte";
   import TunnelPresetBrowser from "./TunnelPresetBrowser.svelte";
   import TunnelPrimitiveTuner from "./TunnelPrimitiveTuner.svelte";
+  import TunnelConfigurationSummary from "./TunnelConfigurationSummary.svelte";
+  import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import type { ArtSettingChangeHandler } from "./art-settings-types";
 
   interface Props {
@@ -11,6 +13,8 @@
     onSaveTunnel?: () => void;
     saveTunnelLabel?: string;
     onArtSettingChange?: ArtSettingChangeHandler;
+    bpm: number;
+    playbackMode: PlaybackMode;
   }
 
   let {
@@ -19,39 +23,47 @@
     onSaveTunnel,
     saveTunnelLabel = "Save tunnel",
     onArtSettingChange,
+    bpm,
+    playbackMode,
   }: Props = $props();
 
-  let tuneOpen = $state(false);
-
   function openTuner(source: "custom_card" | "customize_button"): void {
-    if (tuneOpen) return;
-    tuneOpen = true;
-    onArtSettingChange?.(
-      "art_navigation",
-      "tunnel_drill",
-      "presets",
-      "customize",
-      false,
-      source
-    );
+    if (controller.lookEditorOpen) return;
+    controller.lookEditorOpen = true;
+    reportDrill("presets", "customize", source);
   }
 
   function closeTuner(): void {
-    if (!tuneOpen) return;
-    tuneOpen = false;
-    onArtSettingChange?.(
-      "art_navigation",
-      "tunnel_drill",
-      "customize",
-      "presets",
-      false,
-      "back_button"
-    );
+    if (!controller.lookEditorOpen) return;
+    controller.lookEditorOpen = false;
+    reportDrill("customize", "presets", "back_button");
+  }
+
+  // An analytics sink must never strand somebody in the preset surface. The
+  // controller owns the edit state; telemetry is only an observer.
+  function reportDrill(
+    previous: string,
+    value: string,
+    source: string
+  ): void {
+    try {
+      onArtSettingChange?.(
+        "art_navigation",
+        "tunnel_drill",
+        previous,
+        value,
+        false,
+        source
+      );
+    } catch (error) {
+      console.warn("[TunnelLookSettings] Could not record tunnel drill:", error);
+    }
   }
 </script>
 
 <div class="section-pad">
-  {#if tuneOpen}
+  <TunnelConfigurationSummary {controller} {bpm} {playbackMode} {dense} />
+  {#if controller.lookEditorOpen}
     <TunnelPrimitiveTuner
       {controller}
       onBack={closeTuner}
@@ -63,7 +75,7 @@
       {dense}
       {onSaveTunnel}
       {saveTunnelLabel}
-      onCustomize={openTuner}
+      onCustomize={(source) => openTuner(source)}
       {onArtSettingChange}
     />
   {/if}

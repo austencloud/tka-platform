@@ -1,7 +1,7 @@
 <script lang="ts">
   import PerformerRing from "../../tunnel/PerformerRing.svelte";
   import type { TunnelViewController } from "../../tunnel/tunnel-view-controller.svelte";
-  import { TUNNEL_PRESETS, configsEqual } from "../../tunnel/tunnel-config";
+  import { TUNNEL_PRESETS } from "../../tunnel/tunnel-config";
   import { tunnelUserPresets } from "../../tunnel/tunnel-user-presets.svelte";
   import { changeArtSetting, reportArtSetting } from "./art-setting-change";
   import type {
@@ -63,14 +63,15 @@
     );
   }
 
-  const activeUserId = $derived(
-    tunnelUserPresets.presets.find((p) =>
-      configsEqual(p.config, controller.config)
-    )?.id ?? null
+  const selectedBuiltInId = $derived(
+    controller.presetRecipe?.kind === "built-in"
+      ? controller.presetRecipe.id
+      : null
   );
-  const isCustom = $derived(
-    controller.activePresetId === null && activeUserId === null
+  const selectedUserId = $derived(
+    controller.presetRecipe?.kind === "saved" ? controller.presetRecipe.id : null
   );
+  const isCustom = $derived(controller.presetRecipe === null);
 </script>
 
 {#if !dense}<span class="rt-section-label">Choose a tunnel preset</span>{/if}
@@ -78,15 +79,15 @@
   {#each TUNNEL_PRESETS as p (p.id)}
     <button
       class="preset-card"
-      class:active={controller.activePresetId === p.id}
+      class:active={selectedBuiltInId === p.id}
       type="button"
       role="radio"
-      aria-checked={controller.activePresetId === p.id}
+      aria-checked={selectedBuiltInId === p.id}
       onclick={() =>
         changeSetting(
           "art_tunnel",
           "preset",
-          controller.activePresetId ?? (activeUserId ? "saved" : "custom"),
+          controller.presetRecipe?.id ?? "custom",
           p.id,
           () => controller.applyPreset(p.id)
         )}
@@ -100,21 +101,17 @@
     <div class="preset-card-wrap">
       <button
         class="preset-card user"
-        class:active={activeUserId === up.id}
+        class:active={selectedUserId === up.id}
         type="button"
         role="radio"
-        aria-checked={activeUserId === up.id}
+          aria-checked={selectedUserId === up.id}
         onclick={() =>
           changeSetting(
             "art_tunnel",
             "preset_source",
-            controller.activePresetId
-              ? "built_in"
-              : activeUserId
-                ? "saved"
-                : "custom",
+            controller.presetRecipe?.kind ?? "custom",
             "saved",
-            () => controller.applyConfig(up.config)
+            () => controller.applyUserPreset(up.id, up.name, up.config)
           )}
       >
         <PerformerRing config={up.config} size={30} animate={false} />
@@ -185,7 +182,8 @@
   type="button"
   onclick={() => onCustomize("customize_button")}
 >
-  <i class="fas fa-sliders" aria-hidden="true"></i> Customize
+  <i class="fas fa-sliders" aria-hidden="true"></i>
+  {controller.presetRecipe ? `Edit ${controller.presetRecipe.name}` : "Edit configuration"}
 </button>
 {#if onSaveTunnel}
   <button

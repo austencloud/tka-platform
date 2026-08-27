@@ -3,7 +3,7 @@
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import PerformerRing from "../../tunnel/PerformerRing.svelte";
   import type { TunnelViewController } from "../../tunnel/tunnel-view-controller.svelte";
-  import { FOLD_OPTIONS, configsEqual } from "../../tunnel/tunnel-config";
+  import { FOLD_OPTIONS } from "../../tunnel/tunnel-config";
   import { tunnelUserPresets } from "../../tunnel/tunnel-user-presets.svelte";
   import { changeArtSetting, reportArtSetting } from "./art-setting-change";
   import type {
@@ -59,20 +59,10 @@
   let savingPreset = $state(false);
   let presetName = $state("");
 
-  // The saved user preset matching the live config (lights its card), and whether
-  // the live config is a genuinely custom look (no built-in AND no saved match).
-  const activeUserId = $derived(
-    tunnelUserPresets.presets.find((p) =>
-      configsEqual(p.config, controller.config)
-    )?.id ?? null
-  );
-  const isCustom = $derived(
-    controller.activePresetId === null && activeUserId === null
-  );
-
   function saveCurrentPreset(): void {
     const previousCount = tunnelUserPresets.presets.length;
-    tunnelUserPresets.add(presetName, controller.config);
+    const preset = tunnelUserPresets.add(presetName, controller.config);
+    controller.applyUserPreset(preset.id, preset.name, preset.config);
     reportSetting(
       "art_tunnel",
       "saved_preset_count",
@@ -149,6 +139,12 @@
       controller.flip ? { x: 2, label: "flip" } : null,
     ].filter((f): f is { x: number; label: string } => f !== null)
   );
+  // A modified recipe is still its recipe for provenance, but it can also be
+  // saved as a new personal recipe. Structural config matching would erase that
+  // distinction and make an edited built-in look custom without its origin.
+  const canSaveAsPreset = $derived(
+    controller.presetRecipe === null || controller.presetRecipeModified
+  );
 </script>
 
 <!-- SECONDARY: the primitive tuner. Every tunnel is a combination of
@@ -156,6 +152,12 @@
 <button class="back-btn" type="button" onclick={onBack}>
   <i class="fas fa-chevron-left" aria-hidden="true"></i> Presets
 </button>
+
+{#if controller.presetRecipe}
+  <p class="recipe-editing">
+    Editing {controller.presetRecipe.name} recipe{controller.presetRecipeModified ? " · modified" : ""}
+  </p>
+{/if}
 
 <!-- Hero: the countable Performer Ring + the big result. One base
          performer ("you", haloed); every count-builder multiplies it. The
@@ -305,9 +307,9 @@
   </div>
 </div>
 
-<!-- Save the current mix as a personal preset (only when it's a genuinely
-         custom look — matching a built-in or saved one needs no save). -->
-{#if isCustom}
+<!-- A modified recipe can become a new personal recipe without losing the
+         original recipe identity on the working artifact. -->
+{#if canSaveAsPreset}
   {#if savingPreset}
     <div class="save-row">
       <input
@@ -341,6 +343,11 @@
 {/if}
 
 <style>
+  .recipe-editing {
+    margin: 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
+  }
   .prim-row {
     display: flex;
     align-items: center;

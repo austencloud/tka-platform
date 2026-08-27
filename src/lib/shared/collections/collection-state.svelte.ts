@@ -261,6 +261,40 @@ export class CollectionState<T extends CollectionEntry> {
     return next;
   }
 
+  /**
+   * Replaces derived presentation material (such as a regenerated poster)
+   * without running the authored-content lifecycle. A repository opts in only
+   * when it can write that material without minting a revision.
+   */
+  async updatePresentation(
+    id: string,
+    patch: Partial<Omit<T, "id" | "createdAt">>
+  ): Promise<T | null> {
+    this.assertWritable();
+    this.ensureLocalLoaded();
+    const idx = this.ownedCollection.findIndex((entry) => entry.id === id);
+    if (idx === -1) return null;
+    const previous = this.ownedCollection[idx]!;
+    const next = { ...previous, ...patch, id, createdAt: previous.createdAt } as T;
+    this.ownedCollection[idx] = next;
+
+    if (this.userId) {
+      if (!this.repo.savePresentation) {
+        this.ownedCollection[idx] = previous;
+        throw new Error("This collection cannot update presentation separately.");
+      }
+      try {
+        await this.repo.savePresentation(this.userId, next);
+      } catch (error) {
+        this.ownedCollection[idx] = previous;
+        throw error;
+      }
+    } else {
+      this.localRepo.save(this.ownedCollection);
+    }
+    return next;
+  }
+
   get count(): number {
     return this.collection.length;
   }

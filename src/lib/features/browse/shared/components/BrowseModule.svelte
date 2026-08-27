@@ -62,6 +62,11 @@
   import ExploreVisualsPanel from "$lib/features/browse/visuals/components/ExploreVisualsPanel.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
+  import { page } from "$app/state";
+  import {
+    GALLERY_LETTER_QUERY_PARAM,
+    parseGalleryLetterQuery,
+  } from "$lib/shared/browse/navigation/gallery-letter-link";
 
   type ExploreSection = "sequences" | "collections" | "visuals";
   const EXPLORE_OPTIONS: Array<{
@@ -86,6 +91,8 @@
   // when display:none — so this is accepted for prop hygiene / future use.
   const { visible = true }: { visible?: boolean } = $props();
 
+  const initialGalleryLetter = parseGalleryLetterQuery(page.url.searchParams);
+
   const engine = createBrowseEngine({
     persistKey: "tka-browse-gallery",
     initialSource: "community",
@@ -108,7 +115,18 @@
   // editable there — restoring them no longer strands invisible state (the
   // old failure that forced a clear). Search stays transient.
   const restoredGalleryView = getGalleryViewState();
-  if (restoredGalleryView?.view === "browse-all") {
+  if (initialGalleryLetter) {
+    // A shared letter link is a content query, not the toolbar's fuzzy search.
+    // Start from a clean rule set and apply the exact notation-only filter.
+    engine.clearUserFilters();
+    engine.setSearch("");
+    engine.addFilter(
+      BrowseFilterType.LETTER_OCCURRENCE,
+      initialGalleryLetter,
+      initialGalleryLetter,
+      "var(--theme-accent)"
+    );
+  } else if (restoredGalleryView?.view === "browse-all") {
     engine.setSearch(restoredGalleryView.search);
   } else {
     engine.setSearch("");
@@ -176,8 +194,46 @@
   // "Browse all" reveals the full GalleryTab. Stays on the chosen view
   // while mounted, and this session's view survives reload/HMR.
   let galleryView = $state<"start-here" | "browse-all">(
-    restoredGalleryView?.view ?? "start-here"
+    initialGalleryLetter
+      ? "browse-all"
+      : (restoredGalleryView?.view ?? "start-here")
   );
+
+  let appliedGalleryLetter = $state(initialGalleryLetter);
+
+  // Keep the stable ?letter= route and the live exact-content filter in sync.
+  // Browse is keep-alive, so this also handles a later letter link without
+  // requiring a remount.
+  $effect(() => {
+    const requested = parseGalleryLetterQuery(page.url.searchParams);
+    if (requested === appliedGalleryLetter) return;
+
+    engine.removeFilter(String(BrowseFilterType.LETTER_OCCURRENCE));
+    appliedGalleryLetter = requested;
+    if (!requested) return;
+
+    engine.clearUserFilters();
+    engine.setSearch("");
+    engine.addFilter(
+      BrowseFilterType.LETTER_OCCURRENCE,
+      requested,
+      requested,
+      "var(--theme-accent)"
+    );
+    galleryView = "browse-all";
+  });
+
+  // If someone dismisses the query chip, the address bar must stop claiming
+  // the view is still filtered. The next reload therefore tells the same truth.
+  $effect(() => {
+    const requested = parseGalleryLetterQuery(page.url.searchParams);
+    if (!requested) return;
+    const active = engine.activeFilters.get(
+      String(BrowseFilterType.LETTER_OCCURRENCE)
+    );
+    if (active?.value === requested) return;
+    removeCurrentUrlParams([GALLERY_LETTER_QUERY_PARAM]);
+  });
 
   // Record view + search whenever they change so a reload/HMR remount
   // restores this exact spot (filters restore via the engine's own persist).
@@ -330,7 +386,10 @@
     const newPrimary: BrowsePrimary =
       navTab === "you" || navTab === "library" ? "you" : "explore";
 
-    if (newPrimary !== location.primary && !browseNavigationState.isNavigating) {
+    if (
+      newPrimary !== location.primary &&
+      !browseNavigationState.isNavigating
+    ) {
       // The outer tab click already pushed /browse/{primary}; replace that
       // entry with the explicit inner route instead of adding a second click.
       browseNavigationState.selectPrimary(newPrimary, true);

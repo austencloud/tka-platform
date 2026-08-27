@@ -86,6 +86,28 @@ describe("tunnel creator handoff", () => {
     expect(consumeTunnelCreatorHandoff()).toBeNull();
   });
 
+  it("carries explicit recipe provenance but leaves legacy provenance unknown", () => {
+    saveTunnelCreatorHandoff(
+      savedTunnel({
+        snapshot: {
+          tunnel: {
+            config: formation,
+            presetRecipe: {
+              kind: "built-in",
+              id: "radial",
+              name: "Radial",
+              config: formation,
+            },
+          },
+        } as CollectedTunnel["snapshot"],
+      })
+    );
+    expect(consumeTunnelCreatorHandoff()?.presetRecipe?.id).toBe("radial");
+
+    saveTunnelCreatorHandoff(savedTunnel());
+    expect(consumeTunnelCreatorHandoff()?.presetRecipe).toBeNull();
+  });
+
   // The bug this contract exists for: a tunnel saved before the creator existed
   // has no composition, and used to reach the creator as an empty picker under
   // an "Edit tunnel" title.

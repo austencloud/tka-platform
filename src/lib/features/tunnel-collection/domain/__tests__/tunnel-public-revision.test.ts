@@ -132,6 +132,28 @@ describe("tunnelPublicPayload", () => {
       "steps",
     ]);
   });
+
+  it("keeps a saved recipe private while preserving its rendered config", () => {
+    const payload = tunnelPublicPayload(
+      tunnelFixture({
+        snapshot: {
+          ...snapshot,
+          tunnel: {
+            ...snapshot.tunnel,
+            presetRecipe: {
+              kind: "saved",
+              id: "personal-recipe-42",
+              name: "Private rehearsal look",
+              config: { ...DEFAULT_CONFIG },
+            },
+          },
+        },
+      })
+    );
+    expect(payload.snapshot.tunnel.config).toEqual(DEFAULT_CONFIG);
+    expect(payload.snapshot.tunnel.presetRecipe).toBeNull();
+    expect(JSON.stringify(payload)).not.toContain("personal-recipe-42");
+  });
 });
 
 describe("createTunnelPublicRevision", () => {

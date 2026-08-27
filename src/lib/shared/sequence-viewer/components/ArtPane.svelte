@@ -37,6 +37,7 @@
   import { TUNNEL_AUTO_EXPORT_INTENT_KEY } from "$lib/features/tunnel-collection/services/open-tunnel-in-viewer";
   import { refreshTunnelPoster } from "$lib/features/tunnel-collection/services/tunnel-poster-refresh";
   import { deriveTunnelName } from "$lib/shared/sequence-viewer/tunnel/tunnel-name";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import {
     exportDeliveryStage,
@@ -586,6 +587,10 @@
       getBpm: () => bpm,
     };
     const snapshot = captureTunnelSnapshot(deps);
+    // Words are display/provenance text, not sequence identity. Keep the
+    // readable stamp canonical while retaining an ID even when its source
+    // sequence has no word.
+    const sourceWord = simplifyRepeatedWord(seq.word ?? "").trim();
     const fingerprint = createTunnelSaveFingerprint(
       seq,
       snapshot,
@@ -634,9 +639,8 @@
         source: "viewer",
         // Lineage stamp: link back to the raw source sequence (spec:
         // 2026-07-12-art-in-library-design.md Unit 3).
-        ...(simplifiedWord
-          ? { sourceWord: simplifiedWord, sourceSequenceId: seq.id }
-          : {}),
+        ...(sourceWord ? { sourceWord } : {}),
+        ...(seq.id ? { sourceSequenceId: seq.id } : {}),
       };
       const savedTunnel = tunnelSaveTarget
         ? await tunnelCollectionState.update(tunnelSaveTarget.id, tunnelData)
@@ -654,22 +658,24 @@
       // takes seconds to draw and is not worth making anyone wait for. Correct
       // it in the background now that the record is safely stored.
       void refreshTunnelPoster(savedTunnel);
-      try {
-        await reportPostHogLifecycleEvent({
-          event: "tunnel_save",
-          properties: {
-            tunnelId: savedTunnel.id,
-            source,
-            stepCount: seq.steps.length,
-            durability: authState.isFullAccount ? "cloud" : "local",
-            ...(seq.id ? { sourceSequenceId: seq.id } : {}),
-          },
-        });
-      } catch (error) {
-        console.warn(
-          "[ArtPane] Could not deliver tunnel lifecycle event:",
-          error
-        );
+      if (authState.isFullAccount) {
+        try {
+          await reportPostHogLifecycleEvent({
+            event: "tunnel_save",
+            properties: {
+              tunnelId: savedTunnel.id,
+              source,
+              stepCount: seq.steps.length,
+              durability: "cloud",
+              ...(seq.id ? { sourceSequenceId: seq.id } : {}),
+            },
+          });
+        } catch (error) {
+          console.warn(
+            "[ArtPane] Could not deliver tunnel lifecycle event:",
+            error
+          );
+        }
       }
       toast.success(
         tunnelSaveTarget

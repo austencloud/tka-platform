@@ -18,6 +18,7 @@ import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-d
 import { resolveBrowseDate } from "$lib/shared/browse/services/browse-date";
 import { deriveTnDFromPictograph } from "$lib/shared/pictograph/shared/domain/utils/tnd-deriver";
 import { TnDMode } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { filterSequencesByExactLetter } from "$lib/shared/browse/services/sequence-letter-occurrence";
 
 // Collection membership
 // COLLECTION filters need a collection's member ids — feature data this pure
@@ -80,6 +81,10 @@ export function applyFilter(
       return filterByStartingLetter(sequences, filterValue);
     case BrowseFilterType.CONTAINS_LETTERS:
       return filterByContainsLetters(sequences, filterValue);
+    case BrowseFilterType.LETTER_OCCURRENCE:
+      return typeof filterValue === "string"
+        ? filterSequencesByExactLetter(sequences, filterValue)
+        : sequences;
     case BrowseFilterType.LENGTH:
       return filterByLength(sequences, filterValue);
     case BrowseFilterType.DIFFICULTY:
@@ -138,7 +143,6 @@ export function getFilterOptions(
       return [];
   }
 }
-
 
 function filterByStartingLetter(
   sequences: SequenceData[],

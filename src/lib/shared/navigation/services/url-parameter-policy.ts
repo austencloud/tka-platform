@@ -8,6 +8,18 @@ const startsWith = (prefix: string) => (pathname: string) =>
 
 const ROUTE_SCOPED_PARAMETERS: readonly RouteScopedParameter[] = [
   {
+    name: "letter",
+    isValidForPath: (pathname) =>
+      startsWith("/glossary")(pathname) ||
+      pathname === "/browse/explore/sequences",
+  },
+  { name: "grid", isValidForPath: startsWith("/glossary") },
+  { name: "variation", isValidForPath: startsWith("/glossary") },
+  { name: "blueTurns", isValidForPath: startsWith("/glossary") },
+  { name: "redTurns", isValidForPath: startsWith("/glossary") },
+  { name: "blueRotation", isValidForPath: startsWith("/glossary") },
+  { name: "redRotation", isValidForPath: startsWith("/glossary") },
+  {
     name: "scan",
     isValidForPath: (pathname) =>
       startsWith("/browse/you/collections")(pathname) ||

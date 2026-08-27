@@ -1,21 +1,6 @@
 <!--
-  LetterCodex - the glossary's visual letter reference.
-
-  This file is a HOST, not a layout. It owns four things and nothing else:
-  which board is showing, which letter is selected, the variations query, and
-  where the inspector goes for the board that is showing. Every pictograph, every
-  cell frame, every shared wall, every transition glyph, every OPEN/CLOSE tag
-  and every Greek name comes from the guide's own codex primitives - CodexSheet,
-  CodexBox, CodexCell - which were extended with a dark theme rather than
-  reimplemented. The letter is the TKA glyph inside its pictograph, which is
-  CodexCell's default and where it belongs.
-
-  Three boards are mounted at once so the layout direction can be compared in
-  place rather than in a harness. Once one is chosen the other two come out.
-
-  Which board is showing is the page's, not this component's: the switcher rides
-  in the glossary's own category header row rather than claiming a row of its
-  own. See board-choice.ts.
+  LetterCodex is the host for the visual letter reference. The boards own the
+  overview; LetterExplorer owns the focused, shareable letter destination.
 -->
 <script lang="ts">
   import { onMount, tick } from "svelte";
@@ -30,17 +15,43 @@
   import BoardSheets from "./codex-boards/BoardSheets.svelte";
   import BoardAtlas from "./codex-boards/BoardAtlas.svelte";
   import BoardStage from "./codex-boards/BoardStage.svelte";
-  import CodexInspector from "./codex-boards/CodexInspector.svelte";
   import CodexTypeLegend from "./codex-boards/CodexTypeLegend.svelte";
+  import LetterExplorer from "./codex-boards/LetterExplorer.svelte";
   import type { BoardKey } from "./codex-boards/board-choice";
   import {
     CODEX_BY_LABEL,
     CODEX_LETTERS,
     type CodexLetterInfo,
   } from "./codex-boards/codex-letters";
+  import {
+    hasLetterExplorerEdits,
+    parseLetterExplorerRoute,
+    writeLetterExplorerRoute,
+    type LetterExplorerRouteState,
+  } from "./codex-boards/letter-explorer-url";
+  import {
+    buildComposerDraftHref,
+    buildLetterDraftSequence,
+  } from "./codex-boards/letter-explorer-draft";
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
-  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    type GridMode as GridModeValue,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    MotionColor,
+    MotionType,
+    RotationDirection,
+    type RotationDirection as RotationDirectionValue,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { TurnValue } from "$lib/shared/create/domain/turn-pattern-data";
+  import { applyPendingTurnsToOption } from "$lib/shared/create/services/apply-turns-to-motion";
+  import { loadFoundingCollectionSequences } from "$lib/features/browse/collections/config/founding-collections";
+  import { filterSequencesByExactLetter } from "$lib/shared/browse/services/sequence-letter-occurrence";
+  import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   let {
     initialLetter = "A",
@@ -52,12 +63,10 @@
     descriptions: Record<string, string>;
   } = $props();
 
-  // Hover/selected ring - the shared primitive the guide's codex cells already
-  // use, so the two surfaces highlight identically. CodexCell reads it from
-  // context, so it has to be set before any board mounts.
   const selection = new SequenceSelection();
   setSequenceSelection(selection);
 
+  const allowedLetters = new Set(CODEX_BY_LABEL.keys());
   const fallback: CodexLetterInfo =
     CODEX_BY_LABEL.get(initialLetter) ?? CODEX_BY_LABEL.get("A")!;
 
@@ -66,60 +75,268 @@
 
   const info = $derived(CODEX_LETTERS.get(selectedId) ?? fallback);
   const description = $derived(descriptions[info.label] ?? "");
+  const overlayBoard = $derived(board !== "stage");
 
-  let allPictographs = $state<PictographData[]>([]);
-  let isLoading = $state(true);
-  let loadError = $state(false);
+  let gridMode = $state<GridModeValue>(GridMode.DIAMOND);
+  let selectedVariationIndex = $state(0);
+  let blueTurns = $state<TurnValue>(0);
+  let redTurns = $state<TurnValue>(0);
+  let blueRotation = $state<RotationDirectionValue>(
+    RotationDirection.CLOCKWISE
+  );
+  let redRotation = $state<RotationDirectionValue>(RotationDirection.CLOCKWISE);
+  let overlayOpen = $state(false);
+  let stageBoard = $state<ReturnType<typeof BoardStage> | undefined>();
+
+  let pictographsByGrid = $state<Record<string, PictographData[]>>({
+    [GridMode.DIAMOND]: [],
+    [GridMode.BOX]: [],
+  });
+  let loadingByGrid = $state<Record<string, boolean>>({
+    [GridMode.DIAMOND]: true,
+    [GridMode.BOX]: true,
+  });
+  let errorByGrid = $state<Record<string, boolean>>({
+    [GridMode.DIAMOND]: false,
+    [GridMode.BOX]: false,
+  });
+
+  let learningDeck = $state<readonly SequenceData[]>([]);
+  let learningLoading = $state(true);
+  let learningError = $state(false);
 
   const variations = $derived(
-    allPictographs.filter((p) => p.letter === info.label)
+    (pictographsByGrid[gridMode] ?? []).filter(
+      (pictograph) => pictograph.letter === info.label
+    )
   );
-
-  async function load(): Promise<void> {
-    isLoading = true;
-    loadError = false;
+  const stageVariations = $derived(
+    (pictographsByGrid[GridMode.DIAMOND] ?? []).filter(
+      (pictograph) => pictograph.letter === info.label
+    )
+  );
+  const selectedBase = $derived(
+    variations[selectedVariationIndex] ?? variations[0] ?? null
+  );
+  const draft = $derived.by(() =>
+    selectedBase
+      ? applyPendingTurnsToOption(
+          selectedBase,
+          blueTurns,
+          redTurns,
+          blueRotation,
+          redRotation
+        )
+      : null
+  );
+  const composerHref = $derived.by(() => {
+    if (!draft) return null;
     try {
-      allPictographs = await letterQueryHandler.getAllPictographVariations(
-        GridMode.DIAMOND
-      );
-    } catch (e) {
-      console.error("LetterCodex: variations failed to load", e);
-      loadError = true;
+      return buildComposerDraftHref(buildLetterDraftSequence(draft));
+    } catch (error) {
+      console.error("LetterCodex: Composer draft could not be built", error);
+      return null;
+    }
+  });
+  const learningMatches = $derived(
+    filterSequencesByExactLetter(learningDeck, info.label)
+  );
+  const isLoading = $derived(loadingByGrid[gridMode] ?? false);
+  const loadError = $derived(errorByGrid[gridMode] ?? false);
+
+  function routeState(): LetterExplorerRouteState {
+    return {
+      letter: info.label,
+      gridMode,
+      variation: selectedVariationIndex,
+      blueTurns,
+      redTurns,
+      blueRotation,
+      redRotation,
+    };
+  }
+
+  function commitRoute(mode: "push" | "replace" = "replace"): void {
+    mutateCurrentUrl((url) => writeLetterExplorerRoute(url, routeState()), {
+      mode,
+    });
+  }
+
+  function resetEdits(): void {
+    blueTurns = 0;
+    redTurns = 0;
+    blueRotation = RotationDirection.CLOCKWISE;
+    redRotation = RotationDirection.CLOCKWISE;
+  }
+
+  function syncFromUrl(): void {
+    const state = parseLetterExplorerRoute(
+      new URLSearchParams(window.location.search),
+      allowedLetters
+    );
+    if (!state) {
+      overlayOpen = false;
+      return;
+    }
+
+    const selectedInfo = CODEX_BY_LABEL.get(state.letter);
+    if (!selectedInfo) return;
+    selectedId = selectedInfo.id;
+    selection.select(selectedInfo.id);
+    gridMode = state.gridMode;
+    selectedVariationIndex = state.variation;
+    blueTurns = state.blueTurns;
+    redTurns = state.redTurns;
+    blueRotation = state.blueRotation;
+    redRotation = state.redRotation;
+    overlayOpen = overlayBoard;
+  }
+
+  function normalizeVariation(mode: GridModeValue): void {
+    if (mode !== gridMode) return;
+    const count = (pictographsByGrid[mode] ?? []).filter(
+      (pictograph) => pictograph.letter === info.label
+    ).length;
+    if (count === 0 || selectedVariationIndex < count) return;
+    selectedVariationIndex = 0;
+    commitRoute();
+  }
+
+  async function loadGrid(mode: GridModeValue): Promise<void> {
+    loadingByGrid = { ...loadingByGrid, [mode]: true };
+    errorByGrid = { ...errorByGrid, [mode]: false };
+    try {
+      const pictographs =
+        await letterQueryHandler.getAllPictographVariations(mode);
+      pictographsByGrid = { ...pictographsByGrid, [mode]: pictographs };
+      normalizeVariation(mode);
+    } catch (error) {
+      console.error(`LetterCodex: ${mode} variations failed to load`, error);
+      errorByGrid = { ...errorByGrid, [mode]: true };
     } finally {
-      isLoading = false;
+      loadingByGrid = { ...loadingByGrid, [mode]: false };
+    }
+  }
+
+  async function loadLearningDeck(): Promise<void> {
+    learningLoading = true;
+    learningError = false;
+    try {
+      learningDeck = await loadFoundingCollectionSequences("founding_tka-1");
+    } catch (error) {
+      console.error("LetterCodex: Learning Letters deck failed to load", error);
+      learningError = true;
+    } finally {
+      learningLoading = false;
     }
   }
 
   onMount(() => {
-    void load();
+    syncFromUrl();
+    void Promise.all([loadGrid(GridMode.DIAMOND), loadGrid(GridMode.BOX)]);
+    void loadLearningDeck();
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
   });
 
-  // Sheets and Atlas spend the whole band on the 47 letters, so their inspector
-  // is an overlay. Stage has it on the page already and must not open a second
-  // copy of the same thing.
-  const overlayBoard = $derived(board !== "stage");
-  let overlayOpen = $state(false);
-  let stageBoard = $state<ReturnType<typeof BoardStage> | undefined>();
-
   function select(id: string): void {
-    if (!CODEX_LETTERS.has(id)) return;
+    const selectedInfo = CODEX_LETTERS.get(id);
+    if (!selectedInfo) return;
     selectedId = id;
     selection.select(id);
+
     if (overlayBoard) {
+      selectedVariationIndex = 0;
+      resetEdits();
       overlayOpen = true;
+      commitRoute("push");
       return;
     }
-    // Stage board, stacked layout: the inspector sits under a full-height
-    // index, so without this the chosen letter's detail is off-screen.
+
     tick().then(() => stageBoard?.revealStage());
+  }
+
+  function closeExplorer(): void {
+    overlayOpen = false;
+    mutateCurrentUrl((url) => writeLetterExplorerRoute(url, null), {
+      mode: "push",
+    });
+  }
+
+  function selectGrid(next: GridModeValue): void {
+    if (next === gridMode) return;
+    gridMode = next;
+    selectedVariationIndex = 0;
+    resetEdits();
+    commitRoute("push");
+  }
+
+  function selectVariation(index: number): void {
+    if (index < 0 || index >= variations.length) return;
+    selectedVariationIndex = index;
+    resetEdits();
+    commitRoute("push");
+  }
+
+  function turnNumber(value: TurnValue): number {
+    return value === "fl" ? -0.5 : value;
+  }
+
+  function nextTurns(
+    current: TurnValue,
+    delta: number,
+    allowFloat: boolean
+  ): TurnValue {
+    const minimum = allowFloat ? -0.5 : 0;
+    const value = Math.min(3, Math.max(minimum, turnNumber(current) + delta));
+    return value === -0.5 ? "fl" : value;
+  }
+
+  function motionAllowsFloat(color: MotionColor): boolean {
+    const motion = selectedBase?.motions?.[color];
+    return (
+      motion?.motionType !== MotionType.DASH &&
+      motion?.motionType !== MotionType.STATIC
+    );
+  }
+
+  function changeTurns(color: MotionColor, delta: number): void {
+    if (color === MotionColor.BLUE) {
+      blueTurns = nextTurns(blueTurns, delta, motionAllowsFloat(color));
+    } else {
+      redTurns = nextTurns(redTurns, delta, motionAllowsFloat(color));
+    }
+    commitRoute();
+  }
+
+  function changeRotation(
+    color: MotionColor,
+    direction: RotationDirectionValue
+  ): void {
+    if (color === MotionColor.BLUE) blueRotation = direction;
+    else redRotation = direction;
+    commitRoute();
+  }
+
+  function resetExplorerEdits(): void {
+    resetEdits();
+    commitRoute();
+  }
+
+  async function copyExactLink(): Promise<void> {
+    const exactUrl = new URL(window.location.href);
+    writeLetterExplorerRoute(exactUrl, routeState());
+    mutateCurrentUrl((url) => writeLetterExplorerRoute(url, routeState()));
+    try {
+      await navigator.clipboard.writeText(exactUrl.href);
+      toast.success("Exact letter link copied");
+    } catch {
+      toast.error("Could not copy the letter link");
+    }
   }
 </script>
 
 <div class="codex codex-dark">
-  <!-- Only Stage still flows all 47 as one ungrouped run, so it is the only
-       board where the colours under the boxes need naming somewhere else.
-       Sheets has its type headings and Atlas has its band headings, and neither
-       spends a row on saying so twice. -->
   {#if board === "stage"}
     <CodexTypeLegend />
   {/if}
@@ -133,10 +350,10 @@
       bind:this={stageBoard}
       onSelect={select}
       {info}
-      {variations}
-      {isLoading}
-      {loadError}
-      onRetry={load}
+      variations={stageVariations}
+      isLoading={loadingByGrid[GridMode.DIAMOND]}
+      loadError={errorByGrid[GridMode.DIAMOND]}
+      onRetry={() => loadGrid(GridMode.DIAMOND)}
     />
   {/if}
 </div>
@@ -144,50 +361,70 @@
 {#if overlayBoard}
   <BaseModal
     bind:open={overlayOpen}
-    size="fit"
+    size="xl"
     labelledBy="codex-overlay-title"
-    class="codex-overlay codex-dark"
+    class="codex-explorer-modal codex-dark"
+    onclose={closeExplorer}
   >
     {#snippet header()}
       <ModalHeader
         id="codex-overlay-title"
         title={info.name ? `${info.label} · ${info.name}` : info.label}
-        subtitle="{info.typeName} · {info.transition}"
+        subtitle={`${gridMode === GridMode.BOX ? "Box" : "Diamond"} grid · ${info.typeName} · ${info.transition}`}
         iconColor={info.typeColor}
-        onClose={() => (overlayOpen = false)}
+        onClose={closeExplorer}
       />
     {/snippet}
-    <div class="overlay-body">
-      <CodexInspector
-        {info}
-        {description}
-        {variations}
-        {isLoading}
-        {loadError}
-        onRetry={load}
-        showHero={false}
-      />
-    </div>
+    <LetterExplorer
+      {info}
+      {description}
+      {gridMode}
+      {variations}
+      selectedIndex={selectedVariationIndex}
+      {draft}
+      {blueTurns}
+      {redTurns}
+      {blueRotation}
+      {redRotation}
+      edited={hasLetterExplorerEdits(routeState())}
+      {isLoading}
+      {loadError}
+      {learningMatches}
+      {learningLoading}
+      {learningError}
+      {composerHref}
+      onGridChange={selectGrid}
+      onVariationChange={selectVariation}
+      onTurnsChange={changeTurns}
+      onRotationChange={changeRotation}
+      onReset={resetExplorerEdits}
+      onRetry={() => loadGrid(gridMode)}
+      onLearningRetry={loadLearningDeck}
+      onCopyLink={copyExactLink}
+    />
   </BaseModal>
 {/if}
 
 <style>
   .codex {
-    padding: 0.35rem 0 0;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    padding: 0.35rem 0 0;
   }
 
-  .overlay-body {
-    padding: 1rem 1.25rem 1.25rem;
-    --codex-var-cols: 4;
-    --codex-var-size: clamp(4rem, 14vw, 8rem);
+  :global(dialog.codex-explorer-modal[data-size="xl"]) {
+    width: min(94vw, 2200px);
+    height: min(92dvh, 1200px);
+    max-width: none;
   }
-  @media (min-width: 60rem) {
-    .overlay-body {
-      --codex-var-cols: 8;
-      --codex-var-size: clamp(5rem, 7vw, 8.5rem);
+
+  @media (max-width: 520px) {
+    :global(dialog.codex-explorer-modal[data-size="xl"]) {
+      width: 100vw;
+      height: 100dvh;
+      max-height: none;
+      border-radius: 0;
     }
   }
 </style>

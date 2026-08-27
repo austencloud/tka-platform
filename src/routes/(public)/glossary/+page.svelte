@@ -17,6 +17,12 @@
     normalizeGlossarySearchText,
   } from "./glossary-search";
   import { resolveCodexLetterQuery } from "./codex-letter-search";
+  import {
+    writeLetterExplorerRoute,
+    type LetterExplorerRouteState,
+  } from "./_components/codex-boards/letter-explorer-url";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   let { data } = $props();
 
@@ -263,18 +269,50 @@
     return data.groups.find((g) => g.key === key)?.terms[0]?.slug ?? "";
   }
 
-  function enterCodex(letter: string = data.codex.letters[0] ?? "A"): void {
-    codexInitialLetter = letter;
+  function enterCodex(letter?: string, writeUrl = true): void {
+    codexInitialLetter = letter ?? data.codex.letters[0] ?? "A";
     query = "";
     view = data.codex.key;
     selected = "";
+
+    if (!writeUrl) return;
+    mutateCurrentUrl(
+      (url) => {
+        const state: LetterExplorerRouteState | null = letter
+          ? {
+              letter,
+              gridMode: GridMode.DIAMOND,
+              variation: 0,
+              blueTurns: 0,
+              redTurns: 0,
+              blueRotation: RotationDirection.CLOCKWISE,
+              redRotation: RotationDirection.CLOCKWISE,
+            }
+          : null;
+        writeLetterExplorerRoute(url, state);
+        url.hash = data.codex.sectionSlug;
+      },
+      { mode: "push" }
+    );
+  }
+
+  function returnToCategories(): void {
+    view = "landing";
+    selected = "";
+    mutateCurrentUrl(
+      (url) => {
+        writeLetterExplorerRoute(url, null);
+        url.hash = "";
+      },
+      { mode: "push" }
+    );
   }
 
   /** Drill into a category (or "all"). Desktop auto-selects the first term so
    *  the detail panel is never empty; mobile waits for a tap. */
-  function enterView(v: string) {
+  function enterView(v: string, writeUrl = true) {
     if (v === data.codex.key) {
-      enterCodex();
+      enterCodex(undefined, writeUrl);
       return;
     }
     view = v;
@@ -357,19 +395,38 @@
   // the category. It matters most for the codex, whose whole surface lives
   // inside one category and was otherwise unreachable by URL.
   onMount(() => {
-    // URLSearchParams, not new URL(): this module shadows the global URL with
-    // the page's canonical href constant.
-    codexBoard = readBoard(
-      new URLSearchParams(window.location.search).get("board")
-    );
-    const slug = window.location.hash.slice(1);
-    if (!slug) return;
-    const catKey = sectionSlugToKey.get(slug);
-    if (catKey) {
-      enterView(catKey);
-      return;
-    }
-    if (slugToCat.has(slug)) void reveal(slug);
+    const syncNavigationFromUrl = (): void => {
+      // URLSearchParams, not new URL(): this module shadows the global URL with
+      // the page's canonical href constant.
+      const searchParams = new URLSearchParams(window.location.search);
+      codexBoard = readBoard(searchParams.get("board"));
+      const slug = window.location.hash.slice(1);
+      if (!slug) {
+        view = "landing";
+        selected = "";
+        return;
+      }
+      const catKey = sectionSlugToKey.get(slug);
+      if (catKey === data.codex.key) {
+        const requestedLetter = searchParams.get("letter");
+        const letter =
+          requestedLetter !== null &&
+          data.codex.letters.includes(requestedLetter)
+            ? requestedLetter
+            : undefined;
+        enterCodex(letter, false);
+        return;
+      }
+      if (catKey) {
+        enterView(catKey, false);
+        return;
+      }
+      if (slugToCat.has(slug)) void reveal(slug);
+    };
+
+    syncNavigationFromUrl();
+    window.addEventListener("popstate", syncNavigationFromUrl);
+    return () => window.removeEventListener("popstate", syncNavigationFromUrl);
   });
 
   // Drawer: lock body scroll and move focus in while open.
@@ -560,14 +617,7 @@
       </p>
     {:else if view !== "landing"}
       <div class="view-head">
-        <button
-          type="button"
-          class="back-btn"
-          onclick={() => {
-            view = "landing";
-            selected = "";
-          }}
-        >
+        <button type="button" class="back-btn" onclick={returnToCategories}>
           <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
           Categories
         </button>

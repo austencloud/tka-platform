@@ -9,9 +9,12 @@ import type { CollectedTunnel } from "./tunnel-collection-types";
 
 /** The exact tunnel state that a realization can truthfully depict. */
 export interface TunnelRevisionPayload {
+  readonly schemaVersion: 1 | 2;
   readonly steps: CollectedTunnel["steps"];
   readonly snapshot: CollectedTunnel["snapshot"];
-  readonly poster: string;
+  /** V1 retained a thumbnail in the immutable payload. V2 deliberately leaves
+   * disposable renderer output on the mutable work document. */
+  readonly poster?: string;
   readonly source?: CollectedTunnel["source"];
   readonly sourceWord?: string;
   readonly sourceSequenceId?: string;
@@ -34,12 +37,15 @@ export function tunnelRevisionPayload(
     | "sourceWord"
     | "sourceSequenceId"
     | "composition"
-  >
+    | "currentRevisionSchemaVersion"
+  >,
+  schemaVersion: 1 | 2 = tunnel.currentRevisionSchemaVersion ?? 2
 ): TunnelRevisionPayload {
   return {
+    schemaVersion,
     steps: tunnel.steps,
     snapshot: tunnel.snapshot,
-    poster: tunnel.poster,
+    ...(schemaVersion === 1 ? { poster: tunnel.poster } : {}),
     ...(tunnel.source !== undefined && { source: tunnel.source }),
     ...(tunnel.sourceWord !== undefined && { sourceWord: tunnel.sourceWord }),
     ...(tunnel.sourceSequenceId !== undefined && {
@@ -55,7 +61,10 @@ export async function createTunnelRevision(
   tunnel: CollectedTunnel,
   createdAt: number
 ): Promise<TunnelRevisionRecord> {
-  const payload = tunnelRevisionPayload(tunnel);
+  const payload = tunnelRevisionPayload(
+    tunnel,
+    tunnel.currentRevisionSchemaVersion ?? 2
+  );
   const contentDigest = await canonicalDigest(payload);
   return {
     ...createArtifactRevisionRef(tunnel.id, contentDigest),
@@ -69,22 +78,32 @@ export async function prepareTunnelRevision(
   tunnel: CollectedTunnel,
   previous?: CollectedTunnel
 ): Promise<CollectedTunnel> {
-  const payload = tunnelRevisionPayload(tunnel);
-  const contentDigest = await canonicalDigest(payload);
-  if (
-    previous?.currentContentDigest === contentDigest &&
-    previous.currentRevisionId
-  ) {
-    return {
-      ...tunnel,
-      currentRevisionId: previous.currentRevisionId,
-      currentContentDigest: previous.currentContentDigest,
-      currentRevisionCreatedAt:
-        previous.currentRevisionCreatedAt ?? previous.createdAt,
-      revisionDigestAlgorithm: ARTIFACT_REVISION_DIGEST_ALGORITHM,
-      revisionDigestVersion: ARTIFACT_REVISION_DIGEST_VERSION,
-    };
+  // An existing v1 revision remains exactly what it was. Compare its old
+  // payload before moving to v2 so refreshing a poster or baselining envelope
+  // metadata cannot silently rewrite history.
+  const previousSchemaVersion = previous?.currentRevisionSchemaVersion ?? 1;
+  if (previous?.currentRevisionId && previous.currentContentDigest) {
+    const previousDigest = await canonicalDigest(
+      tunnelRevisionPayload(tunnel, previousSchemaVersion)
+    );
+    if (previous.currentContentDigest === previousDigest) {
+      return {
+        ...tunnel,
+        currentRevisionId: previous.currentRevisionId,
+        currentContentDigest: previous.currentContentDigest,
+        currentRevisionCreatedAt:
+          previous.currentRevisionCreatedAt ?? previous.createdAt,
+        revisionDigestAlgorithm: ARTIFACT_REVISION_DIGEST_ALGORITHM,
+        revisionDigestVersion: ARTIFACT_REVISION_DIGEST_VERSION,
+        currentRevisionSchemaVersion: previousSchemaVersion,
+      };
+    }
   }
+
+  const schemaVersion = 2;
+  const contentDigest = await canonicalDigest(
+    tunnelRevisionPayload(tunnel, schemaVersion)
+  );
 
   const ref = createArtifactRevisionRef(tunnel.id, contentDigest);
   return {
@@ -94,6 +113,7 @@ export async function prepareTunnelRevision(
     currentRevisionCreatedAt: previous ? Date.now() : tunnel.createdAt,
     revisionDigestAlgorithm: ref.digestAlgorithm,
     revisionDigestVersion: ref.digestVersion,
+    currentRevisionSchemaVersion: schemaVersion,
   };
 }
 

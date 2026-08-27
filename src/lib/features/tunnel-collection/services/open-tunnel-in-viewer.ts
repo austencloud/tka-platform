@@ -9,6 +9,7 @@ import {
 } from "$lib/shared/collections/settings-checkpoint.svelte";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { closeSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
+import { migrateTunnelSnapshot } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
 
 /**
  * Reproduce a saved tunnel in the real sequence viewer: apply the snapshot's
@@ -48,7 +49,7 @@ export function openTunnelInViewer(
   tunnel: CollectedTunnel,
   options: { autoExport?: boolean } = {}
 ): void {
-  const snap = tunnel.snapshot;
+  const snap = migrateTunnelSnapshot(tunnel.snapshot);
 
   // First act, before any global gets touched — see the settings-checkpoint
   // paragraph above.

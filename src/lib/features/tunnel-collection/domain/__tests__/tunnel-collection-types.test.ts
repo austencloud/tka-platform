@@ -17,6 +17,10 @@ import {
   createTunnelRevision,
   prepareTunnelRevision,
 } from "../tunnel-revision";
+import {
+  migrateTunnelArtifact,
+  needsTunnelPosterRefresh,
+} from "../tunnel-artifact-migration";
 
 const snapshot = {
   version: SNAPSHOT_VERSION,
@@ -163,5 +167,58 @@ describe("CollectedTunnelSchema", () => {
     expect(retainedChange.payload.snapshot.playback.bpm).toBe(90);
     expect(retained.revisionId).toBe(first.currentRevisionId);
     expect(retainedChange.revisionId).toBe(changed.currentRevisionId);
+  });
+
+  it("does not mint a v2 choreography revision when only a canonical poster refreshes", async () => {
+    const first = await prepareTunnelRevision(valid as CollectedTunnel);
+    const refreshed = await prepareTunnelRevision(
+      { ...first, poster: "data:image/webp;base64,CANONICAL", posterRenderVersion: 1 },
+      first
+    );
+
+    expect(first.currentRevisionSchemaVersion).toBe(2);
+    expect(refreshed.currentRevisionId).toBe(first.currentRevisionId);
+    expect(refreshed.currentContentDigest).toBe(first.currentContentDigest);
+  });
+
+  it("retains a v1 revision when legacy presentation changes, then advances to v2 only for choreography", async () => {
+    const legacyPayload = { ...valid, poster: "data:image/webp;base64,old" } as CollectedTunnel;
+    const legacyDigest = await createTunnelRevision({
+      ...legacyPayload,
+      currentRevisionSchemaVersion: 1,
+    }, 123);
+    const previous = {
+      ...legacyPayload,
+      currentRevisionId: legacyDigest.revisionId,
+      currentContentDigest: legacyDigest.contentDigest,
+      currentRevisionCreatedAt: 123,
+      currentRevisionSchemaVersion: 1 as const,
+    };
+    const posterOnly = await prepareTunnelRevision(
+      { ...previous, poster: "data:image/webp;base64,new", posterRenderVersion: 1 },
+      previous
+    );
+    const changed = await prepareTunnelRevision(
+      { ...posterOnly, snapshot: { ...posterOnly.snapshot, playback: { ...posterOnly.snapshot.playback, bpm: 90 } } },
+      posterOnly
+    );
+
+    expect(posterOnly.currentRevisionId).not.toBe(previous.currentRevisionId);
+    // V1 deliberately included the old poster, so the safe presentation path
+    // bypasses prepareTunnelRevision for records like this. A choreography edit
+    // moves the record into v2, where disposable posters no longer affect it.
+    expect(changed.currentRevisionSchemaVersion).toBe(2);
+    expect(changed.currentRevisionId).not.toBe(posterOnly.currentRevisionId);
+  });
+
+  it("migrates the envelope without inventing a cast or calling an unknown poster current", () => {
+    const legacy = { ...valid, snapshot: { ...snapshot, version: 1 } } as CollectedTunnel;
+    const migrated = migrateTunnelArtifact(legacy);
+
+    expect(migrated.changed).toBe(true);
+    expect(migrated.tunnel.artifactSchemaVersion).toBe(2);
+    expect(migrated.tunnel.composition).toBeUndefined();
+    expect(migrated.tunnel.snapshot.tunnel.presetRecipe).toBeNull();
+    expect(needsTunnelPosterRefresh(migrated.tunnel)).toBe(true);
   });
 });

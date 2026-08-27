@@ -46,6 +46,7 @@ const CATEGORY_LABELS: Partial<Record<string, string>> = {
   [BrowseFilterType.LENGTH]: "Length",
   [BrowseFilterType.STARTING_LETTER]: "Letters",
   [BrowseFilterType.CONTAINS_LETTERS]: "Contains",
+  [BrowseFilterType.LETTER_OCCURRENCE]: "Letter",
   [BrowseFilterType.GRID_MODE]: "Grid",
   [BrowseFilterType.OWNER]: "Creator",
   [BrowseFilterType.AUTHOR]: "Author",

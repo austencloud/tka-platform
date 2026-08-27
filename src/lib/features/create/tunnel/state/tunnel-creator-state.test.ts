@@ -151,6 +151,7 @@ describe("tunnel creator edit state", () => {
 
     expect(state.mode).toBe("linked");
     expect(state.ready).toBe(true);
+    expect(state.partnerIsFormationCopy).toBe(true);
     expect(state.partner?.source).toMatchObject({
       kind: "derived",
       performerId: state.lead!.id,
@@ -169,6 +170,8 @@ describe("tunnel creator edit state", () => {
     ).toEqual([state.lead]);
 
     state.setRelationship({ reflect: "mirror" });
+
+    expect(state.partnerIsFormationCopy).toBe(false);
 
     const edited = state.compositionWithFormation(initial.formation);
     expect(edited?.performers).toHaveLength(2);
