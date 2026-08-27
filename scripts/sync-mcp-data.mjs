@@ -6,7 +6,8 @@
  * files that the published server reads at runtime. These must be regenerated
  * from packages/domain/ whenever the canonical glossary or topics change.
  *
- * Run after editing packages/domain/src/data/glossary.ts or
+ * Run after editing packages/domain/src/data/glossary.ts,
+ * packages/domain/src/constants/alias-map.ts, or
  * packages/domain/src/reference/domain-topics.ts:
  *
  *   npm run build -w @tka/domain
@@ -41,6 +42,39 @@ writeFileSync(glossaryOut, JSON.stringify(GLOSSARY, null, 2) + "\n", "utf-8");
 
 const glossaryEntryCount = Object.keys(GLOSSARY).length;
 console.log(`Wrote ${glossaryEntryCount} glossary entries → ${glossaryOut}`);
+
+// Aliases travel with the glossary. mcp-server-pkg used to carry its own
+// hand-written copy, which drifted: it mapped "type 1" to a key the glossary no
+// longer had, so the alias resolved to a not-found. One source, both servers.
+const aliasModule = await import(
+  pathToFileURL(resolve(domainDist, "constants/alias-map.js")).href
+);
+const { TERM_ALIASES } = aliasModule;
+if (!TERM_ALIASES || typeof TERM_ALIASES !== "object") {
+  console.error(
+    "ERR: TERM_ALIASES export not found in packages/domain/dist/constants/alias-map.js"
+  );
+  process.exit(1);
+}
+
+const danglingAliases = Object.entries(TERM_ALIASES).filter(
+  ([, target]) => !(target in GLOSSARY)
+);
+if (danglingAliases.length > 0) {
+  console.error(
+    `ERR: ${danglingAliases.length} alias(es) point at a term the glossary does not define:`
+  );
+  for (const [alias, target] of danglingAliases) {
+    console.error(`  "${alias}" → "${target}"`);
+  }
+  process.exit(1);
+}
+
+const aliasOut = resolve(repoRoot, "mcp-server-pkg/data/tka-term-aliases.json");
+writeFileSync(aliasOut, JSON.stringify(TERM_ALIASES, null, 2) + "\n", "utf-8");
+console.log(
+  `Wrote ${Object.keys(TERM_ALIASES).length} term aliases → ${aliasOut}`
+);
 
 // If future topics need to be shipped as a separate JSON, add that here.
 // Currently the mcp-server (flow-arts-knowledge-mcp) consumes topics via

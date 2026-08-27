@@ -1,9 +1,4 @@
-/**
- * Term aliases for fuzzy search.
- * Maps alternate spellings, abbreviations, and common variations
- * to their canonical glossary term.
- */
-export const TERM_ALIASES: Record<string, string> = {
+{
   "counter-clockwise": "counterclockwise",
   "counter clockwise": "counterclockwise",
   "cw": "clockwise",
@@ -120,9 +115,4 @@ export const TERM_ALIASES: Record<string, string> = {
   "bigbuugeng": "buugeng",
   "big buugeng": "buugeng",
   "trigeng": "buugeng"
-} as const;
-
-export function resolveTermAlias(term: string): string {
-  const normalized = term.toLowerCase().trim();
-  return TERM_ALIASES[normalized] ?? normalized;
 }

@@ -12,6 +12,7 @@ import {
   LETTER_TO_TYPE,
   getGlossary,
   getLetterTypes,
+  resolveTermAlias,
 } from "../shared/server-context.js";
 
 export function registerEducationalTools(server: McpServer): void {
@@ -281,52 +282,7 @@ Other Type ${typeNum} letters: ${fullTypeInfo?.letters?.filter(l => l !== letter
       const glossary = getGlossary();
       const normalizedTerm = term.toLowerCase().trim();
 
-      // Alias map for common alternate spellings and abbreviations
-      const aliases: Record<string, string> = {
-        "counter-clockwise": "counterclockwise",
-        "counter clockwise": "counterclockwise",
-        "prospin": "prospin",
-        "antispin": "antispin",
-        "pro-spin": "prospin",
-        "anti-spin": "antispin",
-        "type 1": "dual-shift",
-        "type1": "dual-shift",
-        "type 2": "shift",
-        "type2": "shift",
-        "type 3": "cross-shift",
-        "type3": "cross-shift",
-        "type 4": "dash",
-        "type4": "dash",
-        "type 5": "dual-dash",
-        "type5": "dual-dash",
-        "type 6": "static",
-        "type6": "static",
-        "tog-same": "together-same",
-        "tog same": "together-same",
-        "ts": "together-same",
-        "split-opp": "split-opposite",
-        "split opp": "split-opposite",
-        "so": "split-opposite",
-        "tog-opp": "together-opposite",
-        "tog opp": "together-opposite",
-        "to": "together-opposite",
-        "ss": "split-same",
-        "hand reversal": "hand-reversal",
-        "prop reversal": "prop-reversal",
-        "full reversal": "full-reversal",
-        "motion type": "shift",
-        "grid mode": "diamond",
-        "half-dash": "hash",
-        "half dash": "hash",
-        "base rotation": "base-rotation",
-        "interradials": "interradial",
-        "conjoined": "conjoined-grid",
-        "conjoined grid": "conjoined-grid",
-        "rubik's cube": "rubiks-cube",
-        "rubiks cube": "rubiks-cube",
-      };
-
-      const resolvedTerm = aliases[normalizedTerm] || normalizedTerm;
+      const resolvedTerm = resolveTermAlias(normalizedTerm);
       const entry = glossary[resolvedTerm];
 
       if (!entry) {

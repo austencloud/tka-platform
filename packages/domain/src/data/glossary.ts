@@ -49,7 +49,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   tau: {
     definition:
-      "A position where one hand is at the center grid point and the other is at a non-center point. Introduced in Level 4 with centric grid mode.",
+      "A position where one hand is at the center grid point and the other is at a non-center point. Introduced in Level 6 with centric grid mode.",
     examples: [
       "One hand at center, one hand at N",
       "One hand at center, one hand at NE",
@@ -59,7 +59,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   terra: {
     definition:
-      "A position where both hands are at the center grid point. Introduced in Level 4 with centric grid mode.",
+      "A position where both hands are at the center grid point. Introduced in Level 6 with centric grid mode.",
     examples: ["Both hands stacked at the center of the grid"],
     relatedTerms: ["tau", "centric", "position"],
     category: "position",
@@ -101,8 +101,8 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
       "The set of grid locations available to a pictograph. Diamond uses cardinal points, box uses intercardinal points, centric includes the center point, and skewed combines one cardinal point with one intercardinal point.",
     examples: [
       "Diamond is the default 4-point mode",
-      "Centric introduces the center point at Level 4",
       "Skewed combines diamond and box locations at Level 5",
+      "Centric introduces the center point at Level 6",
     ],
     relatedTerms: ["grid", "diamond", "box", "centric", "skewed"],
     category: "grid",
@@ -145,7 +145,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   letter: {
     definition:
-      "The fundamental unit of TKA notation. Each letter classifies the two hands' motion families for one step. The Level 1 pictograph dataframe contains 47 base letters across six numbered types; higher levels may register extensions, such as the Level 4 Tau-Dash letter, before their variations enter that dataframe.",
+      "The fundamental unit of TKA notation. Each letter classifies the two hands' motion families for one step. The Level 1 pictograph dataframe contains 47 base letters across six numbered types; higher levels may register extensions, such as the Level 6 Tau-Dash letter, before their variations enter that dataframe.",
     examples: [
       "A is a Type 1 letter",
       "Σ is a Type 2 letter",
@@ -222,12 +222,12 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   level: {
     definition:
-      "A progressive difficulty tier that introduces new positions, grid modes, turn counts, and orientations. Level 1: 0 turns only. Level 2: whole turns (0-3). Level 3: half turns and float. Level 4: centric grid with center point (tau, terra positions, not yet implemented). Level 5: skewed grid (zeta, eta positions). Level 6: interradial orientations (clockIn, clockOut, counterIn, counterOut: completes single-grid orientation freedom). Level 7: conjoined grids (dual grids sharing a junction point, new position combinations, bridges to 3D). Level 8: atomics (two props on different spinning planes simultaneously). Level 9: Rubik's cube tech (in-between points across intersecting planes, same expansion skewed brought to single-plane).",
+      "A progressive difficulty tier that introduces new positions, grid modes, turn counts, and orientations. Level 1: 0 turns only. Level 2: whole turns (0-3). Level 3: half turns and float. Level 4: interradial orientations and quarter turns (clockIn, clockOut, counterIn, counterOut: completes orientation freedom at 8 values). Level 5: skewed grid (zeta, eta positions, 8-point grid, skew+/- shifts). Level 6: centric grid with center point (tau, terra positions, hash hand path, completes the single grid, not yet implemented). Level 7: conjoined grids (dual grids sharing a junction point, new position combinations, bridges to 3D). Level 8: atomics (two props on different spinning planes simultaneously). Level 9: Rubik's cube tech (in-between points across intersecting planes, same expansion skewed brought to single-plane).",
     examples: [
       "Level 1: alpha, beta, gamma positions with 0 turns only",
-      "Level 4: introduces center point with centric grid",
+      "Level 4: interradial orientations and quarter turns double angular precision",
       "Level 5: introduces zeta, eta positions with skewed grid",
-      "Level 6: interradial orientations double angular precision (completes single-grid 2D)",
+      "Level 6: introduces center point with centric grid (completes single-grid 2D)",
       "Level 7: conjoined grids expand the spatial canvas with dual grids, bridging to 3D",
       "Level 8: one prop on wall plane, one on wheel plane (atomics)",
       "Level 9: skewed-equivalent access to in-between points across multiple planes",
@@ -440,7 +440,32 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
       "thumb-end",
       "pinky-end",
       "rotation",
+      "chirality",
+      "buugeng",
     ],
+    category: "general",
+  },
+
+  chirality: {
+    definition:
+      "Which of two mirror-image forms an asymmetric prop takes. A chiral prop is not superimposable on its own mirror image, so the shape has a handedness that rotation cannot change: orientation turns the prop, chirality decides which of the two shapes is being turned. Chirality is set per hand, so the blue prop and the red prop can differ. In TKA it applies to the buugeng family, where the pair's relative chirality is what matters: two props of the same chirality stay visibly apart at a shared hand point, while two of opposite chirality nest into a single combined shape and take no separation offset. Neither form is the canonical one, so TKA names them A and B rather than treating one as a mirrored version of the other.",
+    examples: [
+      "Blue A beside red B is the pairing that nests at a beta position",
+      "Blue A beside red A stays separated, the same as any other matched pair",
+      "Flipping one hand's chirality changes the shape drawn, not its rotation angle",
+    ],
+    relatedTerms: ["buugeng", "prop", "orientation", "beta", "bilateral"],
+    category: "general",
+  },
+
+  buugeng: {
+    definition:
+      "An S-shaped bilateral prop, gripped at its center like a staff. Its shape is asymmetric, so each buugeng has a chirality: one of two mirror-image forms. The TKA buugeng family is buugeng, big buugeng, and trigeng, and all three carry chirality the same way. A pair of buugeng is the case TKA models most directly, because two of opposite chirality combine into one shape while two of the same chirality do not.",
+    examples: [
+      "A buugeng pictograph tracks orientation and chirality separately",
+      "Trigeng is the three-lobed member of the same family",
+    ],
+    relatedTerms: ["chirality", "prop", "bilateral", "staff-reference"],
     category: "general",
   },
   bilateral: {
@@ -612,7 +637,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   turns: {
     definition:
-      "Additional prop rotation beyond the motion's base rotation. One turn equals 180 degrees. Level 1 uses zero turns, Level 2 adds whole turns, Level 3 adds half turns, and Level 6 adds quarter turns. Turn values are nonnegative; float is a separate shift state with no turn count.",
+      "Additional prop rotation beyond the motion's base rotation. One turn equals 180 degrees. Level 1 uses zero turns, Level 2 adds whole turns, Level 3 adds half turns, and Level 4 adds quarter turns. Turn values are nonnegative; float is a separate shift state with no turn count.",
     examples: [
       "0 turns on a pro shift uses only its base rotation",
       "1 turn adds 180 degrees",
@@ -631,11 +656,11 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   orientation: {
     definition:
-      "The facing direction of a prop relative to the performer's center point. Eight possible values across the level system. Cardinal orientations (all levels): in (toward center), out (away from center), clock (clockwise-facing), counter (counter-clockwise-facing). Interradial orientations (Level 6+): clockIn, clockOut, counterIn, counterOut, the four orientations at 45 degrees between cardinal orientations.",
+      "The facing direction of a prop relative to the performer's center point. Eight possible values across the level system. Cardinal orientations (all levels): in (toward center), out (away from center), clock (clockwise-facing), counter (counter-clockwise-facing). Interradial orientations (Level 4+): clockIn, clockOut, counterIn, counterOut, the four orientations at 45 degrees between cardinal orientations.",
     examples: [
       "Pro at 0 turns preserves orientation (in stays in)",
       "Anti at 0 turns switches orientation (in becomes out)",
-      "Level 6 adds clockIn, clockOut, counterIn, counterOut between base orientations",
+      "Level 4 adds clockIn, clockOut, counterIn, counterOut between base orientations",
     ],
     relatedTerms: ["pro", "anti", "turns", "rotation", "level"],
     category: "rotation",
@@ -746,7 +771,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   "type-4": {
     definition:
-      "The Dash letter type. One hand follows the dash hand-path family while the other remains static. The Level 1 dataframe contains Φ, Ψ, and Λ. Tau-Dash (τ-) is a registered Level 4 extension with the static hand at center.",
+      "The Dash letter type. One hand follows the dash hand-path family while the other remains static. The Level 1 dataframe contains Φ, Ψ, and Λ. Tau-Dash (τ-) is a registered Level 6 extension with the static hand at center.",
     examples: [
       "Φ increases the angle between perimeter hand positions",
       "Ψ decreases that angle",
@@ -812,7 +837,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   centric: {
     definition:
-      "A grid mode introduced in Level 4 where at least one hand is at the center grid point. Creates tau and terra positions. Not yet implemented in Flow Arts Composer.",
+      "A grid mode introduced in Level 6 where at least one hand is at the center grid point. Creates tau and terra positions. Not yet implemented in Flow Arts Composer.",
     examples: [
       "One hand at center, one at N (tau position)",
       "Both hands at center (terra position)",
@@ -822,7 +847,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   center: {
     definition:
-      "The 9th grid point, located at the center of the grid. Introduced in Level 4 with centric grid mode. Not yet implemented in Flow Arts Composer.",
+      "The 9th grid point, located at the center of the grid. Introduced in Level 6 with centric grid mode. Not yet implemented in Flow Arts Composer.",
     examples: [
       "Tau position: one hand at center",
       "Terra position: both hands at center",
@@ -1289,7 +1314,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   "conjoined-grid": {
     definition:
-      "A Level 7 concept where two grids share a junction point, expanding the spatial canvas and bridging to 3D. Each grid shows one hand's motion. The junction point creates new position combinations that can't exist on a single grid, including patterns with two center points. Uses existing terminology (alpha, beta, gamma, etc.) to express new spatial relationships across the paired grids. Placed after interradials (L6) so all orientation freedom is complete before expanding beyond one grid.",
+      "A Level 7 concept where two grids share a junction point, expanding the spatial canvas and bridging to 3D. Each grid shows one hand's motion. The junction point creates new position combinations that can't exist on a single grid, including patterns with two center points. Uses existing terminology (alpha, beta, gamma, etc.) to express new spatial relationships across the paired grids. Placed after the centric grid (L6) so the single grid is complete — every orientation (L4), every perimeter pairing (L5), and the center point itself (L6) — before expanding beyond one grid. The junction consumes the center point directly.",
     examples: [
       "Two grids sharing a north/south junction, blue hand on grid A, red hand on grid B",
       "Layouts: left-right, top-bottom, diagonal arrangements",
@@ -1300,7 +1325,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   atomic: {
     definition:
-      "A Level 8 concept where two props operate on different spinning planes simultaneously. One prop might be on the wall plane while the other is on the wheel plane. Analogous to how Level 5 expanded from single-grid (diamond or box) to mixed-grid (skewed), Level 8 expands from single-plane to mixed-plane. By this level, the full 2D system (including interradial orientations from Level 6 and conjoined grids from Level 7) is complete, so all 2D knowledge carries into 3D. Not yet implemented.",
+      "A Level 8 concept where two props operate on different spinning planes simultaneously. One prop might be on the wall plane while the other is on the wheel plane. Analogous to how Level 5 expanded from single-grid (diamond or box) to mixed-grid (skewed), Level 8 expands from single-plane to mixed-plane. By this level, the full 2D system (including interradial orientations from Level 4, the center point from Level 6, and conjoined grids from Level 7) is complete, so all 2D knowledge carries into 3D. Not yet implemented.",
     examples: [
       "Left hand doing a wall-plane pattern while right hand does a wheel-plane pattern",
       "Intersecting two planes creates 3D motion even though each individual prop traces a 2D circle",
@@ -1310,7 +1335,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   "rubiks-cube": {
     definition:
-      "Level 9 concept. Within the multi-plane context of Level 8 (atomics), the points between the relative cardinal points on each plane become individually accessible. The same expansion that Level 5 (skewed) brought to single-plane grid work, Level 9 brings to multi-plane work. Named for the Rubik's cube geometry that emerges when three intersecting planes each have their in-between points addressed. Completes 3D mastery the same way Level 6 (interradials) completes 2D orientation freedom. Not yet implemented.",
+      "Level 9 concept. Within the multi-plane context of Level 8 (atomics), the points between the relative cardinal points on each plane become individually accessible. The same expansion that Level 5 (skewed) brought to single-plane grid work, Level 9 brings to multi-plane work. Named for the Rubik's cube geometry that emerges when three intersecting planes each have their in-between points addressed. Completes 3D mastery the same way Level 4 (interradials) completes 2D orientation freedom. Not yet implemented.",
     examples: [
       "Level 5 mixed cardinal and intercardinal on one plane (skewed). Level 9 mixes equivalent points across two intersecting planes.",
       "The 3D grid formed by wall + wheel + overhead planes with in-between access resembles a Rubik's cube",
@@ -1320,7 +1345,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   hash: {
     definition:
-      "A hand motion type where the hand moves in a straight line to or from the center grid point. Hash is **dash-** (dash with a minus modifier): the same straight-line traverse as a dash, but covering half the distance (center to perimeter or perimeter to center). 'Hash' is the official name for dash-, just as 'skew' is the official name for shift+/-. Introduced in Level 4 with centric grid mode. Same rotation physics as dash: at 0 turns, no rotation (1 state); at 1+ turns, CW or CCW (2 states per turn count). Pro/anti/float distinctions do not apply (straight line, not curved arc).",
+      "A hand motion type where the hand moves in a straight line to or from the center grid point. Hash is **dash-** (dash with a minus modifier): the same straight-line traverse as a dash, but covering half the distance (center to perimeter or perimeter to center). 'Hash' is the official name for dash-, just as 'skew' is the official name for shift+/-. Introduced in Level 6 with centric grid mode. Same rotation physics as dash: at 0 turns, no rotation (1 state); at 1+ turns, CW or CCW (2 states per turn count). Pro/anti/float distinctions do not apply (straight line, not curved arc).",
     examples: [
       "N to center is a hash (dash-)",
       "Center to E is a hash",
@@ -1390,10 +1415,10 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   interradial: {
     definition:
-      "The four orientations at 45 degrees between the base cardinal orientations, introduced at Level 6. These double the angular precision of the orientation system from 4 values to 8. The four interradial orientations are: clockIn (between clock and in), clockOut (between clock and out), counterIn (between counter and in), counterOut (between counter and out). Quarter turns (0.25, 0.75, etc.) produce interradial orientations using the 8-point radial cycle: in → clockIn → clock → clockOut → out → counterOut → counter → counterIn.",
+      "The four orientations at 45 degrees between the base cardinal orientations, introduced at Level 4. These double the angular precision of the orientation system from 4 values to 8. The four interradial orientations are: clockIn (between clock and in), clockOut (between clock and out), counterIn (between counter and in), counterOut (between counter and out). Quarter turns (0.25, 0.75, etc.) produce interradial orientations using the 8-point radial cycle: in → clockIn → clock → clockOut → out → counterOut → counter → counterIn.",
     examples: [
       "clockIn: prop faces 45° between clock and in",
-      "Level 6 doubles orientation vocabulary from 4 to 8",
+      "Level 4 doubles orientation vocabulary from 4 to 8",
       "Quarter turns step through the 8-point radial cycle",
     ],
     relatedTerms: ["orientation", "level", "clock", "counter"],
@@ -1489,7 +1514,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   "tau-dash": {
     definition:
-      "The registered Level 4 letter τ-. Tau-Dash extends Type 4: one hand follows the dash family while the other remains static at center. It is an individual letter, not a seventh letter type, and its variations are not part of the current Level 1 pictograph dataframe.",
+      "The registered Level 6 letter τ-. Tau-Dash extends Type 4: one hand follows the dash family while the other remains static at center. It is an individual letter, not a seventh letter type, and its variations are not part of the current Level 1 pictograph dataframe.",
     examples: [
       "τ- is classified as Type 4",
       "Its static hand occupies center rather than a perimeter point",

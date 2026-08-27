@@ -306,9 +306,14 @@ export interface LetterTypeInfo {
 
 const GLOSSARY_PATH = path.resolve(PACKAGE_ROOT, "./data/tka-glossary.json");
 const LETTER_TYPES_PATH = path.resolve(PACKAGE_ROOT, "./data/letter-types.json");
+const TERM_ALIASES_PATH = path.resolve(
+  PACKAGE_ROOT,
+  "./data/tka-term-aliases.json"
+);
 
 let glossary: Record<string, GlossaryEntry> = {};
 let letterTypes: Record<string, LetterTypeInfo> = {};
+let termAliases: Record<string, string> = {};
 
 export function loadKnowledgeBase(): void {
   try {
@@ -318,6 +323,9 @@ export function loadKnowledgeBase(): void {
     if (fs.existsSync(LETTER_TYPES_PATH)) {
       letterTypes = JSON.parse(fs.readFileSync(LETTER_TYPES_PATH, "utf-8"));
     }
+    if (fs.existsSync(TERM_ALIASES_PATH)) {
+      termAliases = JSON.parse(fs.readFileSync(TERM_ALIASES_PATH, "utf-8"));
+    }
   } catch (error) {
     console.error("[MCP] Failed to load knowledge base:", error);
   }
@@ -325,6 +333,21 @@ export function loadKnowledgeBase(): void {
 
 export function getGlossary(): Record<string, GlossaryEntry> {
   return glossary;
+}
+
+/**
+ * Alternate spellings for a glossary key, synced from @tka/domain's
+ * TERM_ALIASES by scripts/sync-mcp-data.mjs.
+ *
+ * This server used to carry its own hand-written copy of the map, which drifted
+ * out of agreement with the canonical one -- it resolved "type 1" to a key the
+ * glossary no longer had, so the alias silently produced a not-found. Same
+ * source as the glossary itself now, so an alias added upstream reaches both
+ * servers.
+ */
+export function resolveTermAlias(term: string): string {
+  const normalized = term.toLowerCase().trim();
+  return termAliases[normalized] ?? normalized;
 }
 
 export function getLetterTypes(): Record<string, LetterTypeInfo> {
