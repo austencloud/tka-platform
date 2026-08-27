@@ -19,6 +19,7 @@
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { createGlobalChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
+  import TkaLabel from "$lib/shared/components/TkaLabel.svelte";
   import { getTunnelCreatorContext } from "../context/tunnel-creator-context";
   import type { TunnelCreatorMode } from "../state/tunnel-creator-state.svelte";
   import TunnelPerformerCard from "./TunnelPerformerCard.svelte";
@@ -305,10 +306,36 @@
     class:inline-inspector={activeInlineInspector !== null}
   >
     <header class="workspace-header">
-      <div class="title-block">
-        <h2>{creator.editingTunnel ? "Edit tunnel" : "Build a tunnel"}</h2>
-        <p>Pair two complete sequences in one formation.</p>
-      </div>
+      <!-- Editing arrives here by a tab switch, which wipes every trace of the
+           tunnel that was on screen a second ago. So the header stops being a
+           title and becomes the tunnel's identity: its own poster, its own name
+           in the alphabet it was written in. -->
+      {#if creator.editingTunnel}
+        <div class="title-block editing">
+          {#if creator.editingTunnel.poster}
+            <img
+              class="editing-poster"
+              src={creator.editingTunnel.poster}
+              alt=""
+            />
+          {/if}
+          <div class="editing-identity">
+            <span class="editing-eyebrow">Editing saved tunnel</span>
+            <h2 class="editing-name">
+              <TkaLabel
+                text={creator.editingTunnel.name}
+                darkMode
+                fitToParent={false}
+              />
+            </h2>
+          </div>
+        </div>
+      {:else}
+        <div class="title-block">
+          <h2>Build a tunnel</h2>
+          <p>Pair two complete sequences in one formation.</p>
+        </div>
+      {/if}
 
       <div class="mode-switch">
         <SegmentedControl
@@ -578,6 +605,48 @@
     display: grid;
     gap: 2px;
     min-width: 0;
+  }
+
+  /* The identity keeps its natural width and the mode switch yields instead —
+     it can shrink to its 12rem floor, and a squeezed title block wrapped the
+     eyebrow onto two lines around 820px. */
+  .title-block.editing {
+    flex: 0 0 auto;
+    grid-auto-flow: column;
+    align-items: center;
+    gap: var(--settings-spacing-sm, 8px);
+  }
+
+  .editing-poster {
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--settings-radius-sm, 10px);
+    background: var(--theme-surface-2, rgb(0 0 0 / 0.25));
+    object-fit: cover;
+  }
+
+  .editing-identity {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .editing-eyebrow {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* The glyph renderer is inline content inside the h2, so the line box has to
+     stop reserving descender room or the name sits low against its poster. */
+  .editing-name {
+    display: flex;
+    align-items: center;
+    line-height: 1;
   }
 
   h2,
@@ -928,6 +997,11 @@
       display: none;
     }
 
+    .editing-poster {
+      width: 32px;
+      height: 32px;
+    }
+
     .settings-trigger :global(.panel-btn) {
       width: var(--min-touch-target, 48px);
       min-width: var(--min-touch-target, 48px);
@@ -998,6 +1072,11 @@
     .title-block p,
     .source-column :global(.workbench-stage) {
       display: none;
+    }
+
+    .editing-poster {
+      width: 32px;
+      height: 32px;
     }
 
     .source-column :global(.source-empty) {

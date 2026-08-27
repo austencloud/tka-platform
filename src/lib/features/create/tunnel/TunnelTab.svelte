@@ -23,8 +23,14 @@
   const restoredDraft = handoff
     ? null
     : parseTunnelCreatorDraft(draftPersistence.load());
+  // Carries the poster as well as the name: after the tab switch these are the
+  // creator's only way to say which saved tunnel it is holding.
   const editingTunnel = handoff
-    ? { id: handoff.tunnelId, name: handoff.tunnelName }
+    ? {
+        id: handoff.tunnelId,
+        name: handoff.tunnelName,
+        ...(handoff.poster ? { poster: handoff.poster } : {}),
+      }
     : (restoredDraft?.editingTunnel ?? undefined);
   const state = createTunnelCreatorState({
     initialComposition: handoff?.composition,

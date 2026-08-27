@@ -15,6 +15,7 @@ import { deriveTunnelName } from "$lib/shared/sequence-viewer/tunnel/tunnel-name
 import {
   TUNNEL_CREATOR_DRAFT_VERSION,
   type TunnelCreatorDraft,
+  type TunnelEditTarget,
   type TunnelSourceHistoryEntry,
   type TunnelSourceOrigin,
   type TunnelWorkspacePanel,
@@ -48,7 +49,7 @@ export interface TunnelCreatorDependencies {
   initialComposition?: TunnelComposition;
   initialDraft?: TunnelCreatorDraft | null;
   initialFormation?: TunnelConfig;
-  editingTunnel?: { id: string; name: string };
+  editingTunnel?: TunnelEditTarget;
   now?: () => number;
   createId?: () => string;
 }

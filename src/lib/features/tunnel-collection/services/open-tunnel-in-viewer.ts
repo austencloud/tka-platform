@@ -1,8 +1,5 @@
 import type { CollectedTunnel } from "../domain/tunnel-collection-types";
-import {
-  createSequenceData,
-  type SequenceData,
-} from "$lib/shared/foundation/domain/models/sequence-data";
+import { collectedTunnelSequence } from "../domain/collected-tunnel-source";
 import { openSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
@@ -121,21 +118,11 @@ export function openTunnelInViewer(
   //    loadViewerMode() ('tunnel' is a valid persisted ViewerMode).
   persistViewerMode("tunnel");
 
-  // 5. Build a SequenceData from the saved steps and open. The steps were
-  //    captured from a live, already-hydrated viewer sequence, so each carries
-  //    motions.blue/red — the orchestrator's hydrateSequence short-circuits on
-  //    hasMotionData() and uses these steps verbatim (no re-derivation from the
-  //    compositional fields the collection doesn't store). gridMode is recovered
-  //    from the steps so the correct grid renders.
-  const sequence: SequenceData = createSequenceData({
-    id: tunnel.id,
-    name: tunnel.name,
-    word: tunnel.name,
-    steps: [...tunnel.steps],
-    gridMode: tunnel.steps.find((s) => s.gridMode)?.gridMode,
-  });
-
-  openSequenceOverlay(sequence, {
+  // 5. Rebuild the saved sequence and open. A tunnel with no authored
+  //    composition passes `undefined` here and the tunnel controller falls back
+  //    to a one-performer cast around this same sequence — see
+  //    collected-tunnel-source.ts for why that fallback now has one owner.
+  openSequenceOverlay(collectedTunnelSequence(tunnel), {
     initialBpm: snap.playback.bpm,
     tunnelComposition: tunnel.composition,
   });

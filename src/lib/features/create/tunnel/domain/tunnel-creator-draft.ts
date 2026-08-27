@@ -11,6 +11,14 @@ export const TUNNEL_CREATOR_DRAFT_VERSION = 3;
 export type TunnelSourceOrigin = "picked" | "generated";
 export type TunnelWorkspacePanel = "settings" | "pairing" | "generation" | null;
 
+/** The saved tunnel an editing session is holding. `poster` is carried so the
+ *  creator can show the picture the user clicked, not just its name. */
+export interface TunnelEditTarget {
+  id: string;
+  name: string;
+  poster?: string;
+}
+
 export interface TunnelWorkspaceDraft {
   activePanel: TunnelWorkspacePanel;
   generationTargetId: string | null;
@@ -36,7 +44,7 @@ export interface TunnelCreatorDraft {
   relationship: TunnelRelationshipRule;
   sourceStates: TunnelPerformerSourceDraft[];
   workspace: TunnelWorkspaceDraft;
-  editingTunnel: { id: string; name: string } | null;
+  editingTunnel: TunnelEditTarget | null;
 }
 
 const SequenceSnapshotSchema = z
@@ -56,7 +64,11 @@ const RelationshipSchema = z.object({
 });
 
 const EditingTunnelSchema = z
-  .object({ id: z.string().min(1), name: z.string().min(1) })
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    poster: z.string().optional(),
+  })
   .nullable();
 
 const WorkspaceSchema = z.object({
