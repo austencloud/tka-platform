@@ -75,7 +75,12 @@ describe("SEO head contract", () => {
     expect(composer).toContain(
       '"https://tkaflowarts.com/branding/composer-og-image.png"'
     );
-    expect(composer).toContain("What is flow arts software?");
+    expect(composer).toContain("Write flow arts choreography. See it move.");
+    expect(composer).toContain(
+      "Use cloud saves, publishing, following, and exports with a full account"
+    );
+    expect(composer).not.toContain("Practice modes and an interactive guide");
+    expect(composer).not.toContain("noindex");
     expect(composer).not.toContain('"@type": "HowTo"');
     expect(composer).not.toContain(
       'alternateName: "The Kinetic Alphabet Composer"'
