@@ -127,9 +127,6 @@
 </script>
 
 <div class="generate-demo" use:activatePreview>
-  <p class="recipe-note">
-    Each click draws a fresh 16-step sequence from the same prepared recipe.
-  </p>
   <div class="stages">
     <!-- The notation: the real workspace grid, cascading in on each draw.
          fitAllSteps scales the cells to the box instead of sizing them from the
@@ -211,15 +208,6 @@
 </div>
 
 <style>
-  /* Spacing to the prose above is owned by the host's duo grid gap. */
-  .recipe-note {
-    margin: 0 0 0.85rem;
-    color: oklch(0.74 0.018 270);
-    font-size: var(--font-size-compact, 0.75rem);
-    line-height: 1.5;
-    text-align: center;
-  }
-
   .stages {
     display: grid;
     grid-template-columns: 1fr 1fr;
