@@ -233,12 +233,13 @@
     style:view-transition-name="launchpad-composer"
   >
     <div class="opening-copy">
-      <p class="opening-line">Write flow arts choreography. See it move.</p>
+      <p class="opening-line">Write a flow sequence. See it move.</p>
       <h1 id="composer-title">Flow Arts <span>Composer</span></h1>
       <!-- The cut sentence described where the pictographs sit relative to the
            animation — which the demo two inches to the right is doing. -->
       <p class="opening-lede">
-        Build a sequence one step at a time, or generate a starting point.
+        Choose the moves yourself or generate a 16-count loop. Composer writes
+        the notation and plays the motion together.
       </p>
 
       <div class="opening-actions">
@@ -278,7 +279,11 @@
        narrates. The demos carry their own labels; the page does not need to
        introduce them twice. -->
   <section class="making" aria-labelledby="making-title">
-    <h2 id="making-title" class="making-title">Write it step by step</h2>
+    <h2 id="making-title" class="making-title">Build the sequence.</h2>
+    <p class="section-intro">
+      Start with a position. Composer keeps the next moves workable, then turns
+      each choice into notation and motion.
+    </p>
 
     <div class="making-demos" use:activateConstruct>
       <div class="construct-surface">
@@ -313,10 +318,10 @@
          a row it is too wide for. The viewer then gets the full band below. -->
     <div class="changing-head">
       <div class="changing-intro">
-        <h2 id="changing-title">One sequence, new views.</h2>
+        <h2 id="changing-title">One sequence. Three views.</h2>
         <p>
-          The same steps multiply into a tunnel of copies, or perform in the 3D
-          viewer on supported larger screens.
+          Build it above, then watch the same steps as notation, a tunnel, and a
+          3D performance.
         </p>
       </div>
 
@@ -338,12 +343,12 @@
         </div>
         <figcaption>
           <strong>Tunnel</strong>
-          <span>Two, four, or eight copies around the ring.</span>
+          <span>The same movement, repeated around the ring.</span>
         </figcaption>
       </figure>
     </div>
 
-    <figure class="viewer-output">
+    <div class="viewer-output">
       <div class="product-frame wide-frame">
         {#if webglChecked && !webglAvailable}
           <div class="viewer-unavailable" role="status">
@@ -366,13 +371,7 @@
           {/key}
         {/if}
       </div>
-      <figcaption>
-        <strong>3D viewer</strong>
-        <span
-          >Use the rail to change performers, formation, camera, and scene.</span
-        >
-      </figcaption>
-    </figure>
+    </div>
 
     <p class="small-screen-3d-note">
       The 3D viewer needs WebGL2 and a screen at least 600px in both directions.
@@ -381,18 +380,15 @@
 
   <section class="keeping" aria-labelledby="keeping-title" use:activateShelf>
     <div class="keeping-intro">
-      <h2 id="keeping-title">Your sequence, next to theirs.</h2>
+      <h2 id="keeping-title">Keep the sequence you made.</h2>
       <div class="keeping-lede">
         <p>
-          The sequence carried through this page renders as a gallery card
-          below, shelved with real public work from the community. Guests save
-          up to three sequences on this device. A full account adds downloads,
-          publishing, and creators to follow.
+          The first card is the sequence you made above. The others are public
+          sequences to watch and learn from. Guest saves stay on this device; an
+          account adds publishing and downloads.
         </p>
         <div class="keeping-actions">
-          <a href="/browse" class="secondary-action">Open the Gallery</a>
-          <a href="/browse/library" class="secondary-action">Open the Library</a
-          >
+          <a href="/browse" class="primary-action">Browse the Gallery</a>
         </div>
       </div>
     </div>
@@ -603,15 +599,15 @@
      192px between columns at 3840. Section rhythm should be constant once it is
      generous; it is the CONTENT that gets the extra 4K width. */
   .keeping {
-    padding-block: clamp(3rem, 7vw, 112px);
+    padding-block: clamp(2.5rem, 4.5vw, 4.5rem);
   }
 
   .keeping-intro {
     display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(18rem, 0.9fr);
-    gap: clamp(2rem, 6vw, 96px);
-    align-items: end;
-    margin-bottom: clamp(2.5rem, 4.5vw, 80px);
+    grid-template-columns: minmax(0, 0.95fr) minmax(18rem, 1.05fr);
+    gap: clamp(1.75rem, 4vw, 4rem);
+    align-items: start;
+    margin-bottom: clamp(1.5rem, 2.5vw, 2.5rem);
   }
 
   .keeping-lede > p {
@@ -634,6 +630,14 @@
 
   .making-title {
     max-width: 18ch;
+  }
+
+  .section-intro {
+    max-inline-size: var(--measure-prose);
+    margin: 1.2rem 0 0;
+    color: oklch(0.76 0.014 270);
+    font-size: var(--font-size-base, 1rem);
+    line-height: 1.65;
   }
 
   /* px ceiling — see the note on h1. Was 5rem, which the root ramp turned into
@@ -712,24 +716,26 @@
      17rem of nothing between the two sections — most of a screen at 4K, where
      the root ramp scales every rem. The seam is one generous gap, not two. */
   .changing {
-    padding: clamp(2.5rem, 3.5vw, 56px) 0 clamp(3rem, 8vw, 128px);
+    padding: clamp(2.75rem, 4vw, 4rem) 0 clamp(3rem, 5vw, 5rem);
   }
 
-  /* The tunnel is a square stage that fills its column, so a wide column makes
-     this row as tall as that column is wide — 676px at 1920 against 133px of
-     heading and one line of copy, which is the dead space this section was
-     called out for. The column ratio, not a cap on the figure, is what sizes
-     the row: the demo measures itself against the box it is given. */
+  /* The Tunnel stays a square, so its column sets the row height. Keep that
+     column deliberately narrower than the explanation, then cap both tracks
+     together on ultrawide screens so the pair reads as one composition. */
   .changing-head {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.3fr);
-    gap: clamp(2rem, 4vw, 4.5rem);
+    grid-template-columns: minmax(0, 1fr) minmax(22rem, 0.72fr);
+    gap: clamp(1.75rem, 5vw, 5rem);
     align-items: center;
     margin-bottom: clamp(2.5rem, 4vw, 4rem);
   }
 
   .changing-intro {
     min-width: 0;
+  }
+
+  .tunnel-output {
+    width: 100%;
   }
 
   figure {
@@ -1011,6 +1017,11 @@
 
     .opening-player {
       width: min(100%, 52rem);
+    }
+
+    .changing-head {
+      grid-template-columns: minmax(0, 44rem) minmax(22rem, 32rem);
+      justify-content: center;
     }
   }
 

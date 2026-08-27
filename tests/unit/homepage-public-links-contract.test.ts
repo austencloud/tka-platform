@@ -23,7 +23,6 @@ const marketingChrome = readSource(
   "src/lib/shared/landing/components/MarketingChrome.svelte"
 );
 
-
 interface HrefEntry {
   href: string;
   source: string;
@@ -211,10 +210,11 @@ describe("homepage public-links contract", () => {
     expect(siteHeader).not.toContain("/notation/loops");
   });
 
-  it("keeps the homepage compact and hands About directly to the sitemap", () => {
-    expect(marketingChrome).toContain(
-      'path === "/" ? "compact" : path === "/about" ? "sitemap" : "full"'
-    );
+  it("keeps the homepage and Composer compact and hands About directly to the sitemap", () => {
+    expect(marketingChrome).toContain('path === "/" || path === "/composer"');
+    expect(marketingChrome).toContain('path === "/about"');
+    expect(marketingChrome).toContain('"sitemap"');
+    expect(marketingChrome).toContain('"full"');
     expect(marketingChrome).toContain("<SiteFooter variant={footerVariant} />");
     expect(siteFooter).toContain('variant?: "full" | "compact" | "sitemap"');
     expect(siteFooter).toContain('variant = "full"');

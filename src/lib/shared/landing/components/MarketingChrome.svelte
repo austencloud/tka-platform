@@ -66,7 +66,11 @@
 
   const path = $derived(page.url.pathname);
   const footerVariant = $derived(
-    path === "/" ? "compact" : path === "/about" ? "sitemap" : "full"
+    path === "/" || path === "/composer"
+      ? "compact"
+      : path === "/about"
+        ? "sitemap"
+        : "full"
   );
 
   // Named route morphs suppress the keyed content fade only while that exact

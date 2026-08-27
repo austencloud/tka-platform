@@ -18,9 +18,10 @@
   (staff default) and passes bluePropTypeOverride/redPropTypeOverride down the
   whole chain — the user's global prop setting (which may be poi) never reaches
   this demo. Poi is deliberately impossible here. Turns policy is the same
-  move: the demo pins whole turns (0-3) via per-hand pickers (blue/red) and
+  move: the demo pins its available turn values via per-hand pickers (blue/red) and
   passes blueTurnsOverride/redTurnsOverride, so the user's sticky Create-tab
-  turns (localStorage) never leak in.
+  turns (localStorage) never leak in. Every visible demo value stays at or
+  below 1.5 turns, so the public examples do not imply a higher ceiling.
 
   Fully self-contained — owns its own local $state and deliberately does NOT
   touch the shared create-tutorial singleton, so this preview can never collide
@@ -89,13 +90,13 @@
   const ATTRACT_STEPS = 4;
   type CompactPane = "build" | "sequence";
 
-  // Whole turns only (0-3) — the demo deliberately skips half turns; the full
-  // turns system lives in the real Create tab.
+  // Keep the public demo inside the same 1.5-turn ceiling as the generated
+  // examples. The real Create tab remains the place for the wider turn system.
   const TURN_OPTIONS = [
     { value: "0", label: "0" },
+    { value: "0.5", label: "0.5" },
     { value: "1", label: "1" },
-    { value: "2", label: "2" },
-    { value: "3", label: "3" },
+    { value: "1.5", label: "1.5" },
   ];
 
   // Isolated demo state — start position + picked steps. The full sequence and
@@ -692,7 +693,9 @@
                 onclick={undo}
                 disabled={!canUndo}
                 title={canUndo ? "Undo the last change" : "Nothing to undo"}
-                aria-label={canUndo ? "Undo the last change" : "Nothing to undo"}
+                aria-label={canUndo
+                  ? "Undo the last change"
+                  : "Nothing to undo"}
               >
                 <UndoGlyph size={20} direction="undo" />
               </button>
@@ -702,7 +705,9 @@
                 onclick={redo}
                 disabled={!canRedo}
                 title={canRedo ? "Redo the last change" : "Nothing to redo"}
-                aria-label={canRedo ? "Redo the last change" : "Nothing to redo"}
+                aria-label={canRedo
+                  ? "Redo the last change"
+                  : "Nothing to redo"}
               >
                 <UndoGlyph size={20} direction="redo" />
               </button>

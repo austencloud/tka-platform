@@ -381,6 +381,20 @@ describe("landing shared-element contract", () => {
     expect(sequenceHero).toContain("onStatusChange={(status) =>");
   });
 
+  it("keeps public Composer turn examples within the 1.5-turn ceiling", () => {
+    const generate = readSource(
+      "src/routes/(public)/composer/_components/ComposerGenerateDemo.svelte"
+    );
+    const construct = readSource(
+      "src/routes/(public)/composer/_sections/ConstructSection.svelte"
+    );
+
+    expect(generate).toContain("turnIntensity: 1.5");
+    expect(construct).toContain('{ value: "1.5", label: "1.5" }');
+    expect(construct).not.toContain('{ value: "2", label: "2" }');
+    expect(construct).not.toContain('{ value: "3", label: "3" }');
+  });
+
   it("keeps compact Composer demos in state-sharing tab panels", () => {
     const construct = readSource(
       "src/routes/(public)/composer/_sections/ConstructSection.svelte"
