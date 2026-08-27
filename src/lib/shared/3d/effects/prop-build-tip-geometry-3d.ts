@@ -1,8 +1,12 @@
 import { PropType } from "@austencloud/scene-3d";
 import {
+  BUUGENG_ARTWORK_GEOMETRY,
+  BUUGENG_TIP_POINTS,
   FAN_TIP_POINTS,
   QUIAD_TIP_POINTS,
   TRIAD_TIP_POINTS,
+  TRIGENG_ARTWORK_GEOMETRY,
+  TRIGENG_TIP_POINTS,
   type PropTipConfig,
 } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
 import type { PropTipAnchor3D } from "./prop-tip-geometry-3d";
@@ -46,6 +50,22 @@ const TRIAD_REACH_RATIO = 0.44707;
  * triad's, because quiad.svg draws a shorter one.
  */
 const QUIAD_REACH_RATIO = 0.43202;
+
+/**
+ * The Trigeng GLB is a fixed 0.56m-wide traced plate. The 2D registry and this
+ * bridge share the SVG-fitted compass radius, so a hand-drag or a single long
+ * arm can never silently change only the 3D emitter reach.
+ */
+const TRIGENG_REACH_M = 0.56 * (TRIGENG_ARTWORK_GEOMETRY.trackedRadius / 250);
+
+/**
+ * The Buugeng GLB is an 0.83m fixed silhouette. Its emitters inherit the
+ * canonical 262.6-unit pictograph inset. The SVG fit found a slight tilt, but
+ * the product convention deliberately keeps both sources on local Y.
+ */
+const BUUGENG_REACH_M =
+  (0.83 * BUUGENG_ARTWORK_GEOMETRY.trackedRadius) /
+  BUUGENG_ARTWORK_GEOMETRY.viewBox.width;
 
 /**
  * Measured wick centres of the fire fan, in prop-local metres from the grip
@@ -116,14 +136,15 @@ function fixedAnchors(
  */
 function silhouetteAnchors(
   config: PropTipConfig,
-  reach: number
+  reach: number,
+  effectTipIndices?: readonly (0 | 1)[]
 ): PropTipAnchor3D[] {
   const maxRadius = Math.max(
     ...config.points.map(({ dx, dy }) => Math.hypot(dx, dy))
   );
   const scale = maxRadius > 0 ? reach / maxRadius : 0;
-  return config.points.map(({ dx, dy }) => ({
-    effectTipIndex: 1,
+  return config.points.map(({ dx, dy }, index) => ({
+    effectTipIndex: effectTipIndices?.[index] ?? 1,
     offset: { x: dy * scale, y: dx * scale, z: 0 },
   }));
 }
@@ -177,6 +198,18 @@ export function resolveBuildTipAnchors3D(
       return silhouetteAnchors(
         QUIAD_TIP_POINTS,
         staffLength * QUIAD_REACH_RATIO
+      );
+
+    case PropType.TRIGENG:
+      return silhouetteAnchors(TRIGENG_TIP_POINTS, TRIGENG_REACH_M);
+
+    case PropType.BUUGENG:
+      return silhouetteAnchors(BUUGENG_TIP_POINTS, BUUGENG_REACH_M, [0, 1]);
+    case PropType.BIGBUUGENG:
+      return silhouetteAnchors(
+        BUUGENG_TIP_POINTS,
+        BUUGENG_REACH_M * BIG_SCALE,
+        [0, 1]
       );
 
     default:

@@ -33,6 +33,36 @@ export interface PropTipConfig {
   points: TipPoint[];
 }
 
+export interface RadialPropGeometry {
+  /** Canonical SVG coordinate space containing the artwork. */
+  readonly viewBox: { readonly width: number; readonly height: number };
+  /** Compass center in the canonical SVG viewBox. */
+  readonly center: { readonly x: number; readonly y: number };
+  /** Distance from the compass center to every tracked source. */
+  readonly trackedRadius: number;
+  /** Direction of the first source in SVG screen coordinates. */
+  readonly phaseDegrees: number;
+  /** Radius of the rounded terminal cap fitted from the SVG curves. */
+  readonly capRadius: number;
+}
+
+function radialTipConfig(
+  trackedRadius: number,
+  phaseDegrees: number,
+  count: number
+): PropTipConfig {
+  return {
+    points: Array.from({ length: count }, (_, index) => {
+      const radians = ((phaseDegrees + (360 / count) * index) * Math.PI) / 180;
+      const dx = trackedRadius * Math.cos(radians);
+      const dy = trackedRadius * Math.sin(radians);
+      return {
+        dx: Math.abs(dx) < 1e-12 ? 0 : dx,
+        dy: Math.abs(dy) < 1e-12 ? 0 : dy,
+      };
+    }),
+  };
+}
 
 // Bilateral — two mirror-symmetric ends, each ~126 from the pivot (the 252.8
 // pictograph half-width), so the staff spans ~253 tip to tip.
@@ -87,7 +117,6 @@ const BIGSTAFF_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-
 // The regular club is center-pivoted inside a 258.67-unit viewBox. Using its
 // exact half-width keeps the mandala and live trails on the resized visible tip.
 // This is the reach every other regular prop is tuned against.
@@ -104,7 +133,6 @@ const BIGCLUB_TIP_POINTS: PropTipConfig = {
     { dx: 125.79, dy: 0 },
   ],
 };
-
 
 export const FAN_TIP_POINTS: PropTipConfig = {
   points: [
@@ -128,7 +156,6 @@ const BIGFAN_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-
 export const TRIAD_TIP_POINTS: PropTipConfig = {
   points: [
     { dx: 107.8, dy: 0 },
@@ -144,7 +171,6 @@ const BIGTRIAD_TIP_POINTS: PropTipConfig = {
     { dx: -130, dy: 226 },
   ],
 };
-
 
 const MINIHOOP_TIP_POINTS: PropTipConfig = {
   points: [
@@ -166,40 +192,62 @@ const BIGHOOP_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-
-const BUUGENG_TIP_POINTS: PropTipConfig = {
-  points: [
-    // The pictograph SVG is 262.6 x 135.9. Its two narrow terminals reach the
-    // horizontal viewBox edges within four units of the centerline. Centered
-    // edge anchors stay on those terminals under either chirality flip; the
-    // old diagonal offsets landed on the inner curves instead. Bilateral, so
-    // ~131 each way — the club's reach mirrored, a 262 span.
-    { dx: 131.3, dy: 0 },
-    { dx: -131.3, dy: 0 },
-  ],
+/**
+ * The filled path in `buugeng.svg` is authored around the viewBox center. Its
+ * two terminal curves are only approximately circular and differ slightly by
+ * hand, so we rotate the left cap 180 degrees and fit one geometric
+ * least-squares circle through both visible cap outlines. That source fit puts
+ * the right cap center at (121.58068, 5.77501), a 2.71947-degree tilt. Austen
+ * explicitly chose the fitted X coordinate with Y locked to zero as the
+ * product convention, so every renderer gets a perfectly horizontal pair.
+ */
+export const BUUGENG_ARTWORK_GEOMETRY: RadialPropGeometry = {
+  viewBox: { width: 262.6, height: 135.9 },
+  center: { x: 131.3, y: 67.95 },
+  trackedRadius: 121.58068,
+  phaseDegrees: 0,
+  capRadius: 10.45411,
 };
+
+export const BUUGENG_TIP_POINTS = radialTipConfig(
+  BUUGENG_ARTWORK_GEOMETRY.trackedRadius,
+  BUUGENG_ARTWORK_GEOMETRY.phaseDegrees,
+  2
+);
 
 const BIGBUUGENG_TIP_POINTS: PropTipConfig = {
   points: [
-    // Same centered terminal geometry at the 600 x 293.1 big-prop scale.
-    { dx: 300, dy: 0 },
-    { dx: -300, dy: 0 },
+    // Same proportional terminal inset at the 600 x 293.1 big-prop scale.
+    { dx: 263.44, dy: 0 },
+    { dx: -263.44, dy: 0 },
   ],
 };
 
-const TRIGENG_TIP_POINTS: PropTipConfig = {
-  points: [
-    { dx: 108.33, dy: -50.01 },
-    { dx: 0, dy: 0 },
-    { dx: -108.33, dy: 50.01 },
-  ],
+/**
+ * Measured from the filled path in `trigeng.svg`, not its bounding box. The
+ * SVG's construction nodes establish (125, 118.35) as the compass center. We
+ * rotate the three authored rounded-cap curve spans into one frame, fit one
+ * least-squares circle to their visible outlines, then rotate that fitted cap
+ * center back at 120-degree intervals. This makes the three effect sources
+ * genuinely equidistant while keeping them centered in the artwork's caps.
+ */
+export const TRIGENG_ARTWORK_GEOMETRY: RadialPropGeometry = {
+  viewBox: { width: 250, height: 236.7 },
+  center: { x: 125, y: 118.35 },
+  trackedRadius: 117.93708,
+  phaseDegrees: 3.66932,
+  capRadius: 8.80551,
 };
 
+export const TRIGENG_TIP_POINTS = radialTipConfig(
+  TRIGENG_ARTWORK_GEOMETRY.trackedRadius,
+  TRIGENG_ARTWORK_GEOMETRY.phaseDegrees,
+  3
+);
 
 const SWORD_TIP_POINTS: PropTipConfig = {
   points: [{ dx: 280, dy: 0 }],
 };
-
 
 // The SVG pivot is the lower wrapped grip at (190, 150). The physical kama is
 // rotated around that hand point so its blade apex lands on the +X kinetic axis;
@@ -207,8 +255,6 @@ const SWORD_TIP_POINTS: PropTipConfig = {
 const SICKLES_TIP_POINTS: PropTipConfig = {
   points: [{ dx: 192, dy: 0 }],
 };
-
-// ─── Energy Family (premium cosmetics) ────────────────────────────────────────
 
 // Energy Saber is a sword restyle, so it gets sword's reach exactly: the blade
 // tip sits 280 units from the pivot in a 620-unit box. Single-ended — the hilt
@@ -228,7 +274,6 @@ const ENERGY_STAFF_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-
 const TRIQUETRA_TIP_POINTS: PropTipConfig = {
   points: [
     { dx: 125.8, dy: 0 },
@@ -247,7 +292,6 @@ const TRIQUETRA2_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-
 // Regular (small) chicken is single-ended — one weighted tip at the outer
 // (+dx) end, matching the club/sword single-tip convention.
 const CHICKEN_TIP_POINTS: PropTipConfig = {
@@ -264,7 +308,6 @@ const BIGCHICKEN_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-
 const GUITAR_TIP_POINTS: PropTipConfig = {
   points: [{ dx: 290.78, dy: 0 }],
 };
@@ -272,7 +315,6 @@ const GUITAR_TIP_POINTS: PropTipConfig = {
 const UKULELE_TIP_POINTS: PropTipConfig = {
   points: [{ dx: 170, dy: 0 }],
 };
-
 
 const DOUBLESTAR_TIP_POINTS: PropTipConfig = {
   points: [
@@ -292,7 +334,6 @@ const BIGDOUBLESTAR_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-
 // Both entries used to sit on the top of a ring at roughly half the real
 // reach, so the mandala came out ~34% short. These are the artwork's own outer
 // extents, measured off the pictograph SVGs with isPointInFill.
@@ -310,7 +351,6 @@ const BIGEIGHTRINGS_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-
 export const QUIAD_TIP_POINTS: PropTipConfig = {
   points: [
     { dx: 104.17, dy: 0 },
@@ -320,7 +360,6 @@ export const QUIAD_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-
 const TORCH_TIP_POINTS: PropTipConfig = {
   points: [{ dx: -140, dy: 0 }],
 };
@@ -329,23 +368,17 @@ const BIGTORCH_TIP_POINTS: PropTipConfig = {
   points: [{ dx: -120, dy: 0 }],
 };
 
-
 const POI_TIP_POINTS: PropTipConfig = {
   // Same overall reach as the club (grip to far tip = ~129.3); trail follows
   // the ball center at 99 (see static/images/props/*/poi.svg).
   points: [{ dx: 99, dy: 0 }],
 };
 
-// ─── No tips (contact ball, hand) ─────────────────────────────────────────────
-
 const EMPTY_TIP_POINTS: PropTipConfig = {
   points: [],
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Override Provider (callback pattern avoids circular dependency with feature layer)
-// ═══════════════════════════════════════════════════════════════════════════════
-
+// Callback injection avoids a circular dependency on the feature layer.
 type TipPointOverrideFn = (propType: string) => PropTipConfig | null;
 let overrideProvider: TipPointOverrideFn | null = null;
 
@@ -358,10 +391,6 @@ export function setTipPointOverrideProvider(
 ): void {
   overrideProvider = provider;
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Registry
-// ═══════════════════════════════════════════════════════════════════════════════
 
 export const PROP_TIP_POINTS: Record<string, PropTipConfig> = {
   // Staff family — one config each now: the three regular staves scaled onto

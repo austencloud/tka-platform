@@ -4,7 +4,10 @@ import {
   resolveTrailPointConfig,
   setTrailPointOverrideProvider,
 } from "../../domain/types/trail-point-types";
-import { getTipPoints } from "../../domain/types/prop-tip-points";
+import {
+  BUUGENG_TIP_POINTS,
+  getTipPoints,
+} from "../../domain/types/prop-tip-points";
 import {
   calculateTrailSourceEndpoint,
   type PropEndpointConfig,
@@ -41,13 +44,10 @@ describe("canonical trail point resolution", () => {
   });
 
   it("anchors both buugeng trails to the pictograph SVG terminals", () => {
-    expect(getTipPoints("buugeng").points).toEqual([
-      { dx: 131.3, dy: 0 },
-      { dx: -131.3, dy: 0 },
-    ]);
+    expect(getTipPoints("buugeng").points).toEqual(BUUGENG_TIP_POINTS.points);
     expect(getTipPoints("bigbuugeng").points).toEqual([
-      { dx: 300, dy: 0 },
-      { dx: -300, dy: 0 },
+      { dx: 263.44, dy: 0 },
+      { dx: -263.44, dy: 0 },
     ]);
   });
 
@@ -110,9 +110,15 @@ describe("canonical trail point resolution", () => {
       left: { type: "none" },
       right: { type: "custom", dx: 0, dy: 0 },
     };
-    expect(resolveTrailPointConfig("staff", TrackingMode.HAND)).toEqual(handConfig);
-    expect(resolveTrailPointConfig("fan", TrackingMode.HAND)).toEqual(handConfig);
-    expect(resolveTrailPointConfig("club", TrackingMode.HAND)).toEqual(handConfig);
+    expect(resolveTrailPointConfig("staff", TrackingMode.HAND)).toEqual(
+      handConfig
+    );
+    expect(resolveTrailPointConfig("fan", TrackingMode.HAND)).toEqual(
+      handConfig
+    );
+    expect(resolveTrailPointConfig("club", TrackingMode.HAND)).toEqual(
+      handConfig
+    );
   });
 
   it("lets HAND override even an explicit lab tip assignment", () => {
@@ -167,8 +173,12 @@ describe("trail source world-space calculation", () => {
       "buugeng"
     );
 
-    expect(first).toEqual({ x: 475, y: 606.3, tipIndex: 0 });
-    expect(second).toEqual({ x: 475, y: 343.7, tipIndex: 1 });
+    expect(first?.x).toBeCloseTo(475 - BUUGENG_TIP_POINTS.points[0].dy, 10);
+    expect(first?.y).toBeCloseTo(475 + BUUGENG_TIP_POINTS.points[0].dx, 10);
+    expect(first?.tipIndex).toBe(0);
+    expect(second?.x).toBeCloseTo(475 - BUUGENG_TIP_POINTS.points[1].dy, 10);
+    expect(second?.y).toBeCloseTo(475 + BUUGENG_TIP_POINTS.points[1].dx, 10);
+    expect(second?.tipIndex).toBe(1);
   });
 
   it("rotates custom offsets instead of treating them as canvas-space offsets", () => {
@@ -198,7 +208,10 @@ describe("trail source world-space calculation", () => {
   it("places the HAND source at the prop center regardless of rotation", () => {
     // custom {0,0} = prop center = hand path. A centered prop sits at the
     // canvas center (475,475 at canvasSize 950), independent of rotation.
-    const handSource = resolveTrailPointConfig("staff", TrackingMode.HAND).right;
+    const handSource = resolveTrailPointConfig(
+      "staff",
+      TrackingMode.HAND
+    ).right;
     const endpoint = calculateTrailSourceEndpoint(
       centeredQuarterTurn,
       endpointConfig,
