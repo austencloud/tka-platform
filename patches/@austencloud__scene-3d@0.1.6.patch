@@ -7977,10 +7977,10 @@ index e3c371ad780a0d18692baa51ffca9decef96e245..ea3b33fc4e423e2cddbebbb9e580eecb
 -//# sourceMappingURL=ILegAnimator.d.ts.map
 \ No newline at end of file
 diff --git a/dist/lib/services/contracts/ILegIKSolver.d.ts b/dist/lib/services/contracts/ILegIKSolver.d.ts
-index 015837d22872a22909e6fbe33fd18f9fed809d58..3decbdf086a201141c6cb1f4503eb8029e9f3c19 100644
+index 015837d22872a22909e6fbe33fd18f9fed809d58..c73201d9f4bf2fb49ca14d044cd275b4532f5051 100644
 --- a/dist/lib/services/contracts/ILegIKSolver.d.ts
 +++ b/dist/lib/services/contracts/ILegIKSolver.d.ts
-@@ -8,25 +8,40 @@
+@@ -8,36 +8,80 @@
   * This is what prevents the knee splay artifacts that caused
   * FootPlanter to be disabled.
   *
@@ -8031,6 +8031,56 @@ index 015837d22872a22909e6fbe33fd18f9fed809d58..3decbdf086a201141c6cb1f4503eb802
      /** Sagittal hinge axis in UpLeg local space.
       *  Derived at skeleton-build time from the cross product of the
       *  rest-pose UpLeg direction and the rest-pose Leg direction -
+-     *  that gives the axis perpendicular to the natural bend plane. */
++     *  that gives the axis perpendicular to the natural bend plane.
++     *
++     *  Its plane is reliable; its sign is not. A bind pose stands with the
++     *  legs all but straight, so that cross product is a short vector whose
++     *  direction is decided by whatever fraction of a degree of bend the
++     *  rig happens to carry. Which end of the axis it comes out on is not
++     *  a property of the leg. `bendSign` is what settles that. */
+     kneeHingeAxis: Vector3;
++    /** Which way around `kneeHingeAxis` this knee folds.
++     *
++     *  Left out on the first solves, and the solver works it out from where
++     *  the bend puts the knee relative to `poleDirection`. Pass the sign it
++     *  reports back on every solve after that: a knee does not change which
++     *  way it bends, and re-deciding each frame lets it snap front to back
++     *  whenever the leg passes through a pose the test cannot read. */
++    bendSign?: -1 | 1;
+     /** Forward vector biasing the knee bend direction. Prevents the
+      *  knee from flipping backward when the target is directly below. */
+     poleDirection: Vector3;
+     /** Blend weight 0-1 (0 = leave bones untouched, 1 = fully IK pose) */
+     weight: number;
+ }
++/** Which way the knee folded, and whether that was worth remembering. */
++export interface LegIKResult {
++    /** The sign applied to the bend, ready to pass back as `bendSign`. */
++    bendSign: -1 | 1;
++    /**
++     * True when the pose the sign was read off was one the test can read.
++     *
++     * The reading is taken from where the knee sits off the hip-foot line
++     * after the swing onto the target. A leg near full extension has almost
++     * no such offset, and a swing that lands near a half turn carries what
++     * offset there is around an axis that is mostly rounding error. Latch
++     * only what came back true.
++     */
++    reliable: boolean;
++}
+ export interface ILegIKSolver {
+     /**
+      * Solve leg IK in place - modifies the bones in `input.chain`
+@@ -45,6 +89,6 @@ export interface ILegIKSolver {
+      *
+      * Stateless: same input produces same output, no internal memory.
+      */
+-    solve(input: LegIKInput): void;
++    solve(input: LegIKInput): LegIKResult;
+ }
+ //# sourceMappingURL=ILegIKSolver.d.ts.map
+\ No newline at end of file
 diff --git a/dist/lib/services/contracts/ILegIKSolver.d.ts.map b/dist/lib/services/contracts/ILegIKSolver.d.ts.map
 index b09b7c3d5cb9dc8d2b545762fcec09c075822fb9..0125c2b4e5c350ea6d67812a07e991b835df97d5 100644
 --- a/dist/lib/services/contracts/ILegIKSolver.d.ts.map
@@ -9997,7 +10047,7 @@ index d49f92aedabc5145aac812b52d74784fc1b5429c..31e0250c3d8a1ccccf05b0837ee9d193
 -//# sourceMappingURL=FingerAnimator.d.ts.map
 \ No newline at end of file
 diff --git a/dist/lib/services/implementations/FootPlanter.d.ts b/dist/lib/services/implementations/FootPlanter.d.ts
-index cb9ec218790bcbe6ea8ba4ee45a46a0607217daa..b0afbfeedce9e60d49172ad49431930fdfdfb10e 100644
+index cb9ec218790bcbe6ea8ba4ee45a46a0607217daa..0c9aa44cb734a33d43b0d3050aebd1b9e08cbc3c 100644
 --- a/dist/lib/services/implementations/FootPlanter.d.ts
 +++ b/dist/lib/services/implementations/FootPlanter.d.ts
 @@ -8,10 +8,14 @@
@@ -10019,8 +10069,12 @@ index cb9ec218790bcbe6ea8ba4ee45a46a0607217daa..b0afbfeedce9e60d49172ad49431930f
   *
   * Uses the same IKSolver.solveTwoBone() that arm IK uses - the math is
   * identical, just applied to leg chains with a forward pole hint (knees
-@@ -30,15 +34,38 @@ export declare class FootPlanter implements IFootPlanter {
+@@ -28,17 +32,42 @@ export declare class FootPlanter implements IFootPlanter {
+     private config;
+     private leftFoot;
      private rightFoot;
++    private readonly leftPose;
++    private readonly rightPose;
      private leftLegChain;
      private rightLegChain;
 +    private leftToe;
@@ -10035,11 +10089,11 @@ index cb9ec218790bcbe6ea8ba4ee45a46a0607217daa..b0afbfeedce9e60d49172ad49431930f
 -    private readonly worldUp;
 +    private readonly tempQuat;
 +    private readonly tempToeWorld;
-+    private readonly tempToeTip;
 +    private readonly tempAnkleWorld;
 +    private readonly tempWarp;
 +    private readonly tempWarped;
 +    private readonly tempPelvisRide;
++    private readonly tempPrevLock;
 +    private readonly tempPelvisScale;
 +    private readonly tempPelvisDelta;
      private initialized;
@@ -10059,7 +10113,7 @@ index cb9ec218790bcbe6ea8ba4ee45a46a0607217daa..b0afbfeedce9e60d49172ad49431930f
      initialize(skeleton: IAvatarSkeletonBuilder, legIKSolver: ILegIKSolver, contactCurveCache: IContactCurveCache): void;
      update(delta: number, input: FootPlanterInput): void;
      configure(config: FootPlanterConfig): void;
-@@ -50,14 +77,119 @@ export declare class FootPlanter implements IFootPlanter {
+@@ -50,14 +79,124 @@ export declare class FootPlanter implements IFootPlanter {
       */
      private updateFootVelocity;
      /**
@@ -10077,6 +10131,23 @@ index cb9ec218790bcbe6ea8ba4ee45a46a0607217daa..b0afbfeedce9e60d49172ad49431930f
      /**
 -     * Smoothly ramp IK weight toward target (1 when locked, 0 when free).
 -     * Uses exponential lerp for framerate-independent blending.
++     * Pin this foot to the ground under it, carrying whatever the plant it
++     * replaces is still asking for.
++     *
++     * The correction is rebuilt from the plant every frame, so moving the plant
++     * in one frame moves the ankle by the whole difference in one frame. That
++     * is the teleport: a foot standing still, then standing still a plant's
++     * width away, with nothing in between. Carrying the difference and easing
++     * it out walks the foot across instead. Letting the lock go rather than
++     * replacing it is not the alternative - that strands the same correction
++     * one blend later.
++     *
++     * `carryWeight` is how much of the old plant is still reaching the pose,
++     * which is the lock's own blend weight. Zero means nothing was being
++     * applied, so there is nothing to be continuous with.
++     */
++    private takePlant;
++    /**
 +     * Weight bearing on one foot in 0..1, from whichever source can speak to
 +     * the pose currently on screen.
 +     */
@@ -10150,18 +10221,6 @@ index cb9ec218790bcbe6ea8ba4ee45a46a0607217daa..b0afbfeedce9e60d49172ad49431930f
 +     *  pose so the blend has one thing to fade. */
 +    private computeLockCorrection;
 +    /**
-+     * How high the ball of the foot has to be held for the whole shoe to clear.
-+     *
-+     * What the plant holds is one joint, and the foot carries on in front of it.
-+     * Retarget a walk onto a rig whose foot sits at a different angle and the
-+     * tip hangs over a centimetre below that joint, so holding the joint at the
-+     * floor puts the tip through it - a foot through the stage on a plant that
-+     * is doing exactly what it was asked. Measured live rather than once per
-+     * clip, because the hang is the foot's current roll and changes every frame
-+     * of a stance.
-+     */
-+    private toeClearance;
-+    /**
 +     * Refuse to reach further for a plant than the animation is already reaching.
 +     *
 +     * This is the defence against a foot pushing through the floor. A target
@@ -10184,7 +10243,7 @@ index cb9ec218790bcbe6ea8ba4ee45a46a0607217daa..b0afbfeedce9e60d49172ad49431930f
       */
      private updateIKWeight;
      /**
-@@ -65,17 +197,61 @@ export declare class FootPlanter implements IFootPlanter {
+@@ -65,17 +204,77 @@ export declare class FootPlanter implements IFootPlanter {
       */
      private fadeOutFoot;
      /**
@@ -10206,15 +10265,12 @@ index cb9ec218790bcbe6ea8ba4ee45a46a0607217daa..b0afbfeedce9e60d49172ad49431930f
 +    /**
 +     * Move the pelvis by a world-space offset, remembering it in the bone's own
 +     * space so releasePelvisCorrection can take exactly it back.
-      *
--     * Without this, a planted foot on one side can pull the leg straight
--     * while the other foot floats above ground.
++     *
 +     * The conversion matters because performers face every direction and are not
 +     * all the same size: writing a world offset straight into a local position
 +     * sends a rig facing east sideways, and scales it wrong on any rig the scene
 +     * has resized.
-      */
--    private adjustPelvisHeight;
++     */
 +    private applyPelvisCorrection;
 +    /**
 +     * Undo last frame's pelvis correction before this frame measures anything.
@@ -10227,18 +10283,37 @@ index cb9ec218790bcbe6ea8ba4ee45a46a0607217daa..b0afbfeedce9e60d49172ad49431930f
 +    /**
 +     * How far this foot wants the pelvis lowered: the distance by which its
 +     * ankle target exceeds the leg.
-+     *
+      *
+-     * Without this, a planted foot on one side can pull the leg straight
+-     * while the other foot floats above ground.
 +     * The gap to the floor is no longer asked about. It used to be, because the
 +     * plant was an ankle position and a planted ankle still in the air meant the
 +     * leg had to stretch for it. The ankle target is now derived from the ball of
 +     * the foot and already sits where the pose puts it, so the only thing left
 +     * for the pelvis to answer is a leg genuinely out of reach.
-+     */
+      */
+-    private adjustPelvisHeight;
 +    private pelvisDemand;
      /**
       * Solve two-bone IK for one leg using the hinge-constrained leg solver.
       * The solver handles weight blending internally, so no slerp is needed here.
       */
++    /**
++     * Take back the frames the mixer sat out.
++     *
++     * A bone still holding the exact rotation the IK wrote is one the mixer
++     * left alone, so the clip's rotation for it is the one recorded the last
++     * time it did write. A bone holding anything else was just refreshed, and
++     * that new rotation is the clip's.
++     *
++     * Without this the planter measures its own output and corrects it again:
++     * a planted foot climbs a centimetre or two a frame until it is level with
++     * its own hip with the knee folded double, then drops the whole way back
++     * the frame the contact curve lets go.
++     */
++    private restoreAnimatedPose;
++    /** Record what the solve left behind, for the next frame to recognise. */
++    private rememberAppliedPose;
      private applyFootIK;
 +    /**
 +     * Point the knee where the performer is facing.
@@ -10262,10 +10337,10 @@ index 756125321be9ddfe04e11cf726909db56ac0a0d6..7c756b4c993b2f4861e02cbc8623fa20
 +{"version":3,"file":"FootPlanter.d.ts","sourceRoot":"","sources":["../../../../src/lib/services/implementations/FootPlanter.ts"],"names":[],"mappings":"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"}
 \ No newline at end of file
 diff --git a/dist/lib/services/implementations/FootPlanter.js b/dist/lib/services/implementations/FootPlanter.js
-index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed349834ff24 100644
+index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..a370dfb681c223b61e3ab16d15d83fff4128ad49 100644
 --- a/dist/lib/services/implementations/FootPlanter.js
 +++ b/dist/lib/services/implementations/FootPlanter.js
-@@ -8,18 +8,34 @@
+@@ -8,18 +8,42 @@
   * Algorithm per frame:
   * 1. Read each foot bone's world position (written by animation mixer)
   * 2. Track foot velocity to detect contact phase (velocity near zero = planted)
@@ -10290,6 +10365,7 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
 +import { Quaternion, Vector3 } from "three";
  import { LocomotionState } from "../contracts/IAnimationStateMachine";
  import { KneeHingeAxisCalibrator } from "./KneeHingeAxisCalibrator";
++import { toeTipClearance } from "../leg-geometry";
 +/**
 + * Critically damped approach, the standard game-loop form. Never overshoots,
 + * never rings, and stays stable when the frame time jumps.
@@ -10302,10 +10378,17 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
 +    const temp = (velocity + omega * change) * dt;
 +    return [target + (change + temp) * decay, (velocity - omega * temp) * decay];
 +}
++/**
++ * Smoothstep. Flat at both ends, so whatever it scales starts and stops
++ * without a velocity step.
++ */
++function ease(t) {
++    return t * t * (3 - 2 * t);
++}
  // ── Defaults ──
  const DEFAULT_CONFIG = {
      contactVelocityThreshold: 0.15,
-@@ -30,14 +46,49 @@ const DEFAULT_CONFIG = {
+@@ -30,14 +54,71 @@ const DEFAULT_CONFIG = {
      // Measured from typical Mixamo humanoid: ankle joint sits ~7cm above ground.
      // Too small = feet clip into floor. Too large = feet hover.
      footHeightOffset: 0.07,
@@ -10336,8 +10419,26 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
 + */
 +const CONTACT_ENTER = 0.6;
 +const CONTACT_EXIT = 0.35;
++/**
++ * How long a foot takes to walk from an abandoned plant onto its replacement,
++ * seconds.
++ *
++ * The handover is eased at both ends, so this is the whole width of a curve
++ * with no corner at either edge rather than a slide that starts and stops
++ * abruptly. Long enough that a plant's width of ground covered over it stays
++ * near a walking pace; short enough that the foot is on its new plant well
++ * inside the stance that asked for it.
++ */
++const PLANT_HANDOVER_TIME = 0.22;
 +/** How quickly the pelvis follows the drop the planted feet ask for. */
 +const PELVIS_SMOOTH_TIME = 0.12;
++function createLegPose() {
++    return {
++        animated: [new Quaternion(), new Quaternion(), new Quaternion()],
++        applied: [new Quaternion(), new Quaternion(), new Quaternion()],
++        valid: false,
++    };
++}
  function createFootState() {
      return {
          prevWorldPos: new Vector3(),
@@ -10346,8 +10447,12 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
 -        lockTarget: new Vector3(),
 +        blendPhase: 0,
 +        lockToe: new Vector3(),
++        lockAnchor: new Vector3(),
++        lockCarry: new Vector3(),
++        carryPhase: 0,
 +        plantedToe: new Vector3(),
 +        ankleTarget: new Vector3(),
++        kneeBendSign: null,
 +        rebalanceX: 0,
 +        rebalanceZ: 0,
          isLocked: false,
@@ -10356,8 +10461,12 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
      };
  }
  export class FootPlanter {
-@@ -49,6 +100,8 @@ export class FootPlanter {
+@@ -47,8 +128,12 @@ export class FootPlanter {
+     config = { ...DEFAULT_CONFIG };
+     leftFoot = createFootState();
      rightFoot = createFootState();
++    leftPose = createLegPose();
++    rightPose = createLegPose();
      leftLegChain = null;
      rightLegChain = null;
 +    leftToe = null;
@@ -10365,7 +10474,7 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
      // Per-leg hinge axes derived from bind-pose rest directions at init time.
      // These never change during playback - the knee is a hinge, not a ball joint.
      leftKneeHingeAxis = new Vector3(1, 0, 0);
-@@ -57,16 +110,41 @@ export class FootPlanter {
+@@ -57,16 +142,46 @@ export class FootPlanter {
      tempFootWorld = new Vector3();
      tempHipsWorld = new Vector3();
      tempTarget = new Vector3();
@@ -10374,11 +10483,11 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
 -    worldUp = new Vector3(0, 1, 0);
 +    tempQuat = new Quaternion();
 +    tempToeWorld = new Vector3();
-+    tempToeTip = new Vector3();
 +    tempAnkleWorld = new Vector3();
 +    tempWarp = new Vector3();
 +    tempWarped = new Vector3();
 +    tempPelvisRide = new Vector3();
++    tempPrevLock = new Vector3();
 +    tempPelvisScale = new Vector3();
 +    tempPelvisDelta = new Vector3();
      initialized = false;
@@ -10399,6 +10508,11 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
          this.skeleton = skeleton;
          this.legIKSolver = legIKSolver;
          this.contactCurveCache = contactCurveCache;
++        // Whatever the previous rig's knees did says nothing about this one's.
++        this.leftFoot.kneeBendSign = null;
++        this.rightFoot.kneeBendSign = null;
++        this.leftPose.valid = false;
++        this.rightPose.valid = false;
          this.leftLegChain = skeleton.getLeftLegChain();
          this.rightLegChain = skeleton.getRightLegChain();
 +        // A rig without toes still plants, on the ankle alone. It just cannot be
@@ -10408,15 +10522,17 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
          this.initialized = !!(this.leftLegChain && this.rightLegChain);
          if (!this.initialized) {
              console.warn("[FootPlanter] Leg chains not available - foot IK disabled");
-@@ -86,6 +164,7 @@ export class FootPlanter {
+@@ -86,6 +201,9 @@ export class FootPlanter {
              return;
          if (!this.leftLegChain || !this.rightLegChain)
              return;
 +        this.releasePelvisCorrection();
++        this.restoreAnimatedPose(this.leftLegChain, this.leftPose);
++        this.restoreAnimatedPose(this.rightLegChain, this.rightPose);
          // Skip foot planting during airborne states - let the animation play freely
          if (input.locomotionState === LocomotionState.JUMPING ||
              input.locomotionState === LocomotionState.FALLING) {
-@@ -132,16 +211,22 @@ export class FootPlanter {
+@@ -132,16 +250,24 @@ export class FootPlanter {
          this.leftFoot.prevWorldPos.copy(leftFootPos);
          this.rightFoot.prevWorldPos.copy(rightFootPos);
          // 3. Detect contact phase and manage lock targets
@@ -10443,10 +10559,12 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
 +        this.updateFacing(input);
 +        this.applyFootIK(this.leftLegChain, this.leftFoot, this.leftToe, this.leftKneeHingeAxis);
 +        this.applyFootIK(this.rightLegChain, this.rightFoot, this.rightToe, this.rightKneeHingeAxis);
++        this.rememberAppliedPose(this.leftLegChain, this.leftPose);
++        this.rememberAppliedPose(this.rightLegChain, this.rightPose);
      }
      configure(config) {
          this.config = { ...this.config, ...config };
-@@ -155,8 +240,17 @@ export class FootPlanter {
+@@ -155,8 +281,17 @@ export class FootPlanter {
          this.contactCurveCache = null;
          this.leftLegChain = null;
          this.rightLegChain = null;
@@ -10464,7 +10582,7 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
          this.leftFoot = createFootState();
          this.rightFoot = createFootState();
      }
-@@ -178,162 +272,490 @@ export class FootPlanter {
+@@ -178,162 +313,559 @@ export class FootPlanter {
      }
      // ── Contact phase detection ──
      /**
@@ -10493,7 +10611,14 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
 +        if (!chain)
 +            return;
 +        if (!foot.isLocked) {
-+            this.computePlantTarget(chain, toe, input, foot.lockToe);
++            // A lock the contact curve dropped and is asking for again a few frames
++            // later is the same stance resuming, not a new footfall - the blend-out
++            // has barely started, so most of the last plant's correction is still
++            // being applied. Carrying it by exactly the weight still in force keeps
++            // the resumed plant continuous with the released one. A foot that has
++            // actually been through a swing arrives at zero weight and carries
++            // nothing, which is right: it landed somewhere new.
++            this.takePlant(foot, chain, toe, input, foot.ikWeight);
 +            foot.isLocked = true;
 +            return;
 +        }
@@ -10501,13 +10626,54 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
 +        // curve still reads contact. Once the animation has carried the foot a
 +        // whole plant's width away, the plant describes ground the performer has
 +        // left, and holding it would drag the foot backwards through the floor.
++        //
++        // Measured on the raw anchor, with the warp left out of both sides. The
++        // warp is not the foot leaving its ground; it is a displacement along the
++        // direction of travel, and when travel rotates under a foot - circling,
++        // or sweeping the heading in place - it sweeps an arc that reads as drift
++        // the animation never had.
 +        this.anchorWorld(chain, toe, this.tempToeWorld);
-+        this.strideWarp(this.tempToeWorld, input, this.tempWarp);
-+        const driftX = this.tempToeWorld.x + this.tempWarp.x - foot.lockToe.x;
-+        const driftZ = this.tempToeWorld.z + this.tempWarp.z - foot.lockToe.z;
++        const driftX = this.tempToeWorld.x - foot.lockAnchor.x;
++        const driftZ = this.tempToeWorld.z - foot.lockAnchor.z;
 +        const radius = this.config.unplantRadius;
-+        if (driftX * driftX + driftZ * driftZ > radius * radius)
-+            foot.isLocked = false;
++        if (driftX * driftX + driftZ * driftZ <= radius * radius)
++            return;
++        // The foot has genuinely walked off its plant, so it gets a new one, at
++        // full weight because the lock never let go.
++        this.takePlant(foot, chain, toe, input, 1);
++    }
++    /**
++     * Pin this foot to the ground under it, carrying whatever the plant it
++     * replaces is still asking for.
++     *
++     * The correction is rebuilt from the plant every frame, so moving the plant
++     * in one frame moves the ankle by the whole difference in one frame. That
++     * is the teleport: a foot standing still, then standing still a plant's
++     * width away, with nothing in between. Carrying the difference and easing
++     * it out walks the foot across instead. Letting the lock go rather than
++     * replacing it is not the alternative - that strands the same correction
++     * one blend later.
++     *
++     * `carryWeight` is how much of the old plant is still reaching the pose,
++     * which is the lock's own blend weight. Zero means nothing was being
++     * applied, so there is nothing to be continuous with.
++     */
++    takePlant(foot, chain, toe, input, carryWeight) {
++        this.tempPrevLock
++            .copy(foot.lockToe)
++            .addScaledVector(foot.lockCarry, ease(foot.carryPhase));
++        this.computePlantTarget(chain, toe, input, foot.lockToe);
++        foot.lockAnchor.copy(this.tempToeWorld);
++        if (carryWeight < 0.001) {
++            foot.lockCarry.set(0, 0, 0);
++            foot.carryPhase = 0;
++            return;
++        }
++        foot.lockCarry
++            .copy(this.tempPrevLock)
++            .sub(foot.lockToe)
++            .multiplyScalar(carryWeight);
++        foot.carryPhase = 1;
 +    }
 +    /**
 +     * Weight bearing on one foot in 0..1, from whichever source can speak to
@@ -10638,6 +10804,8 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
 +        if (foot.solveWeight < 0.001) {
 +            foot.ankleTarget.copy(this.tempAnkleWorld);
 +            foot.lockCorrection.set(0, 0, 0);
++            foot.lockCarry.set(0, 0, 0);
++            foot.carryPhase = 0;
              return;
          }
 -        // Velocity fallback (existing behavior - preserved exactly)
@@ -10734,8 +10902,9 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
 +        // the second away with the first, and then pays for it: the toe is pinned
 +        // at whatever height the roll had reached when contact was called, and
 +        // every part of the foot in front of that pin goes under the stage.
-+        foot.plantedToe.set(foot.lockToe.x, this.tempToeWorld.y, foot.lockToe.z);
-+        const toeFloor = input.groundY + this.toeClearance(toe);
++        const carry = ease(foot.carryPhase);
++        foot.plantedToe.set(foot.lockToe.x + foot.lockCarry.x * carry, this.tempToeWorld.y, foot.lockToe.z + foot.lockCarry.z * carry);
++        const toeFloor = input.groundY + toeTipClearance(toe, this.config.toeHeightOffset);
 +        if (foot.plantedToe.y < toeFloor)
 +            foot.plantedToe.y = toeFloor;
 +        foot.lockCorrection
@@ -10743,25 +10912,6 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
 +            .add(this.tempAnkleWorld)
 +            .sub(this.tempToeWorld)
 +            .sub(this.tempWarped);
-+    }
-+    /**
-+     * How high the ball of the foot has to be held for the whole shoe to clear.
-+     *
-+     * What the plant holds is one joint, and the foot carries on in front of it.
-+     * Retarget a walk onto a rig whose foot sits at a different angle and the
-+     * tip hangs over a centimetre below that joint, so holding the joint at the
-+     * floor puts the tip through it - a foot through the stage on a plant that
-+     * is doing exactly what it was asked. Measured live rather than once per
-+     * clip, because the hang is the foot's current roll and changes every frame
-+     * of a stance.
-+     */
-+    toeClearance(toe) {
-+        const floor = this.config.toeHeightOffset;
-+        const tip = toe?.children.find((c) => c.name.endsWith("Toe_End"));
-+        if (!tip)
-+            return floor;
-+        tip.getWorldPosition(this.tempToeTip);
-+        return Math.max(floor, this.tempToeWorld.y - this.tempToeTip.y);
 +    }
 +    /**
 +     * Refuse to reach further for a plant than the animation is already reaching.
@@ -10819,6 +10969,9 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
 -        if (foot.ikWeight > 0.995)
 -            foot.ikWeight = 1;
 +        const step = rampTime > 0 ? delta / rampTime : 1;
++        foot.carryPhase -= delta / PLANT_HANDOVER_TIME;
++        if (foot.carryPhase < 0)
++            foot.carryPhase = 0;
 +        foot.blendPhase += foot.isLocked ? step : -step;
 +        if (foot.blendPhase < 0)
 +            foot.blendPhase = 0;
@@ -10939,7 +11092,18 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
 +            parent.getWorldScale(this.tempPelvisScale);
 +            this.tempPelvisDelta.applyQuaternion(this.tempQuat.invert());
 +            this.tempPelvisDelta.set(this.tempPelvisDelta.x / (this.tempPelvisScale.x || 1), this.tempPelvisDelta.y / (this.tempPelvisScale.y || 1), this.tempPelvisDelta.z / (this.tempPelvisScale.z || 1));
-+        }
+         }
+-        // Use the larger drop (the foot that's furthest from ground)
+-        const drop = Math.max(leftDrop, rightDrop);
+-        if (drop <= 0)
+-            return; // Feet are already at or below ground
+-        // Clamp to prevent extreme corrections
+-        const clampedDrop = Math.min(drop, this.config.maxPelvisAdjust);
+-        // Scale by max IK weight so the adjustment fades with the IK blend
+-        const adjustedDrop = clampedDrop * maxWeight;
+-        // Apply: lower Hips in local space (Y is up for Mixamo skeletons)
+-        hipsBone.position.y -= adjustedDrop;
+-        hipsBone.updateMatrixWorld(true);
 +        hips.position.add(this.tempPelvisDelta);
 +        this.appliedPelvisOffset.copy(this.tempPelvisDelta);
 +        this.pelvisAfterApply.copy(hips.position);
@@ -10967,18 +11131,7 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
 +        if (hipsBone) {
 +            hipsBone.position.sub(this.appliedPelvisOffset);
 +            hipsBone.updateMatrixWorld(true);
-         }
--        // Use the larger drop (the foot that's furthest from ground)
--        const drop = Math.max(leftDrop, rightDrop);
--        if (drop <= 0)
--            return; // Feet are already at or below ground
--        // Clamp to prevent extreme corrections
--        const clampedDrop = Math.min(drop, this.config.maxPelvisAdjust);
--        // Scale by max IK weight so the adjustment fades with the IK blend
--        const adjustedDrop = clampedDrop * maxWeight;
--        // Apply: lower Hips in local space (Y is up for Mixamo skeletons)
--        hipsBone.position.y -= adjustedDrop;
--        hipsBone.updateMatrixWorld(true);
++        }
 +        this.appliedPelvisOffset.set(0, 0, 0);
 +    }
 +    /**
@@ -11005,6 +11158,36 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
       */
 -    applyFootIK(chain, foot, groundY, hingeAxis) {
 -        if (foot.ikWeight < 0.001 || !this.legIKSolver)
++    /**
++     * Take back the frames the mixer sat out.
++     *
++     * A bone still holding the exact rotation the IK wrote is one the mixer
++     * left alone, so the clip's rotation for it is the one recorded the last
++     * time it did write. A bone holding anything else was just refreshed, and
++     * that new rotation is the clip's.
++     *
++     * Without this the planter measures its own output and corrects it again:
++     * a planted foot climbs a centimetre or two a frame until it is level with
++     * its own hip with the knee folded double, then drops the whole way back
++     * the frame the contact curve lets go.
++     */
++    restoreAnimatedPose(chain, pose) {
++        const bones = [chain.root, chain.middle, chain.effector];
++        for (let i = 0; i < bones.length; i++) {
++            const live = bones[i].quaternion;
++            if (pose.valid && live.equals(pose.applied[i]))
++                live.copy(pose.animated[i]);
++            else
++                pose.animated[i].copy(live);
++        }
++    }
++    /** Record what the solve left behind, for the next frame to recognise. */
++    rememberAppliedPose(chain, pose) {
++        const bones = [chain.root, chain.middle, chain.effector];
++        for (let i = 0; i < bones.length; i++)
++            pose.applied[i].copy(bones[i].quaternion);
++        pose.valid = true;
++    }
 +    applyFootIK(chain, foot, toe, hingeAxis) {
 +        if (foot.solveWeight < 0.001 || !this.legIKSolver)
              return;
@@ -11025,9 +11208,13 @@ index f213a2d8d9f708fd48280b934fc3c9cf0ac4d5cf..aeaa401eea20f59be7e2ff23fba1ed34
              poleDirection: this.poleDirection,
 -            weight: foot.ikWeight,
 +            weight: foot.solveWeight,
++            bendSign: foot.kneeBendSign ?? undefined,
          };
 -        this.legIKSolver.solve(input);
-+        this.legIKSolver.solve(ikInput);
++        const solved = this.legIKSolver.solve(ikInput);
++        if (foot.kneeBendSign === null && solved.reliable) {
++            foot.kneeBendSign = solved.bendSign;
++        }
          // ILegIKSolver does its own weight blending, so no slerp here.
          // Update matrices from hip down so foot world position reflects the solve.
          chain.root.updateMatrixWorld(true);
@@ -11070,11 +11257,11 @@ index d4cd270d24a9bc3d8a88154ce6ff95aa2a6b40c4..75cf006005163e2239bddb9393d7c643
 -//# sourceMappingURL=FormationManager.d.ts.map
 \ No newline at end of file
 diff --git a/dist/lib/services/implementations/HingeConstrainedLegIKSolver.d.ts b/dist/lib/services/implementations/HingeConstrainedLegIKSolver.d.ts
-index 5fd06b3a58ed2a7cce425a85f035abcf681da846..80bfa5509350ed4ea825209e446023cf98813f24 100644
+index 5fd06b3a58ed2a7cce425a85f035abcf681da846..a149347afd9920a4535cc960c75ca1ffc3e34a76 100644
 --- a/dist/lib/services/implementations/HingeConstrainedLegIKSolver.d.ts
 +++ b/dist/lib/services/implementations/HingeConstrainedLegIKSolver.d.ts
 @@ -1,24 +1,4 @@
- import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
+-import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
 -/**
 - * HingeConstrainedLegIKSolver
 - *
@@ -11095,6 +11282,7 @@ index 5fd06b3a58ed2a7cce425a85f035abcf681da846..80bfa5509350ed4ea825209e446023cf
 - *      the target.
 - *   5. Optional slerp blend against original rotations for weight<1.
 - */
++import type { ILegIKSolver, LegIKInput, LegIKResult } from "../contracts/ILegIKSolver";
  export declare class HingeConstrainedLegIKSolver implements ILegIKSolver {
      private readonly tempHipWorld;
      private readonly tempCurrentFootDir;
@@ -11110,6 +11298,7 @@ index 5fd06b3a58ed2a7cce425a85f035abcf681da846..80bfa5509350ed4ea825209e446023cf
      private readonly tempBasisMatrix;
      private readonly tempDesiredWorldQuat;
      private readonly tempFootParentWorldQuat;
+-    solve(input: LegIKInput): void;
 +    private readonly tempToeWorld;
 +    private readonly tempCurrentToeDir;
 +    private readonly tempTargetToeDir;
@@ -11124,7 +11313,7 @@ index 5fd06b3a58ed2a7cce425a85f035abcf681da846..80bfa5509350ed4ea825209e446023cf
 +     * knee will be bent towards.
 +     */
 +    private aimFromCurrentPose;
-     solve(input: LegIKInput): void;
++    solve(input: LegIKInput): LegIKResult;
 +    /**
 +     * Turn the ankle onto its plant without discarding the pose the animation
 +     * gave it.
@@ -11155,10 +11344,10 @@ index 5b379fcec3e0caa1a6f0d3a4fea4d4c4d08a2569..3d4561cab29f8a3445030b74ba4ebbda
 +{"version":3,"file":"HingeConstrainedLegIKSolver.d.ts","sourceRoot":"","sources":["../../../../src/lib/services/implementations/HingeConstrainedLegIKSolver.ts"],"names":[],"mappings":"AAGA,OAAO,KAAK,EAAE,YAAY,EAAE,UAAU,EAAE,MAAM,2BAA2B,CAAC;AA8B1E,qBAAa,2BAA4B,YAAW,YAAY;IAC9D,OAAO,CAAC,QAAQ,CAAC,YAAY,CAAiB;IAC9C,OAAO,CAAC,QAAQ,CAAC,kBAAkB,CAAiB;IACpD,OAAO,CAAC,QAAQ,CAAC,aAAa,CAAiB;IAC/C,OAAO,CAAC,QAAQ,CAAC,UAAU,CAAoB;IAC/C,OAAO,CAAC,QAAQ,CAAC,mBAAmB,CAAoB;IACxD,OAAO,CAAC,QAAQ,CAAC,eAAe,CAAoB;IACpD,OAAO,CAAC,QAAQ,CAAC,eAAe,CAAoB;IACpD,OAAO,CAAC,QAAQ,CAAC,gBAAgB,CAAoB;IACrD,OAAO,CAAC,QAAQ,CAAC,gBAAgB,CAAoB;IACrD,OAAO,CAAC,QAAQ,CAAC,aAAa,CAAoB;IAClD,OAAO,CAAC,QAAQ,CAAC,cAAc,CAAoB;IACnD,OAAO,CAAC,QAAQ,CAAC,cAAc,CAAoB;IACnD,OAAO,CAAC,QAAQ,CAAC,YAAY,CAAoB;IACjD,OAAO,CAAC,QAAQ,CAAC,YAAY,CAAoB;IACjD,OAAO,CAAC,QAAQ,CAAC,oBAAoB,CAAiB;IACtD,OAAO,CAAC,QAAQ,CAAC,aAAa,CAAiB;IAC/C,OAAO,CAAC,QAAQ,CAAC,cAAc,CAAiB;IAChD,OAAO,CAAC,QAAQ,CAAC,kBAAkB,CAAiB;IACpD,OAAO,CAAC,QAAQ,CAAC,SAAS,CAAiB;IAC3C,OAAO,CAAC,QAAQ,CAAC,eAAe,CAAiB;IACjD,OAAO,CAAC,QAAQ,CAAC,oBAAoB,CAAoB;IACzD,OAAO,CAAC,QAAQ,CAAC,uBAAuB,CAAoB;IAC5D,OAAO,CAAC,QAAQ,CAAC,YAAY,CAAiB;IAC9C,OAAO,CAAC,QAAQ,CAAC,iBAAiB,CAAiB;IACnD,OAAO,CAAC,QAAQ,CAAC,gBAAgB,CAAiB;IAClD,OAAO,CAAC,QAAQ,CAAC,cAAc,CAAoB;IACnD,OAAO,CAAC,QAAQ,CAAC,YAAY,CAAoB;IAEjD;;;;;;;OAOG;IACH,OAAO,CAAC,kBAAkB;IAkB1B,KAAK,CAAC,KAAK,EAAE,UAAU,GAAG,IAAI;IA2H9B;;;;;;;;;OASG;IACH,OAAO,CAAC,WAAW;IA8CnB;;;;OAIG;IACH,OAAO,CAAC,YAAY;CAwBrB"}
 \ No newline at end of file
 diff --git a/dist/lib/services/implementations/HingeConstrainedLegIKSolver.js b/dist/lib/services/implementations/HingeConstrainedLegIKSolver.js
-index d5beba55a02f869e87510a90c38af430a2d34278..1979213591d7e11ff3de1bfdcb348520973a3cd8 100644
+index d5beba55a02f869e87510a90c38af430a2d34278..9fe42ab971d0b07736839a5019572d654903138f 100644
 --- a/dist/lib/services/implementations/HingeConstrainedLegIKSolver.js
 +++ b/dist/lib/services/implementations/HingeConstrainedLegIKSolver.js
-@@ -18,8 +18,15 @@ import { Vector3, Quaternion, Matrix4 } from "three";
+@@ -18,8 +18,26 @@ import { Vector3, Quaternion, Matrix4 } from "three";
   *      the foot still reaches the target. Flip the bend if needed.
   *   4. Aim the UpLeg so that after the knee bend, the foot lands on
   *      the target.
@@ -11172,10 +11361,21 @@ index d5beba55a02f869e87510a90c38af430a2d34278..1979213591d7e11ff3de1bfdcb348520
 + * honouring it would break the ankle rather than place the foot.
 + */
 +const MAX_ANKLE_CORRECTION = 0.6;
++/**
++ * How squarely the knee's offset has to point along the pole before the
++ * reading is worth keeping. Near a right angle the two bend directions put
++ * the knee in almost the same place and whichever one wins is a coin toss.
++ */
++const MIN_POLE_ALIGNMENT = 0.5;
++/** And how tall the bend has to be, in metres, for there to be a reading. */
++const MIN_BEND_HEIGHT = 0.05;
++/** Past a quarter turn the aim carries the offset around an axis that two
++ *  nearly opposite directions barely pin down. */
++const MAX_READABLE_SWING = Math.PI / 2;
  export class HingeConstrainedLegIKSolver {
      tempHipWorld = new Vector3();
      tempCurrentFootDir = new Vector3();
-@@ -36,13 +43,36 @@ export class HingeConstrainedLegIKSolver {
+@@ -36,17 +54,40 @@ export class HingeConstrainedLegIKSolver {
      tempBendQuat = new Quaternion();
      tempFlipQuat = new Quaternion();
      tempCurrentFootWorld = new Vector3();
@@ -11213,7 +11413,12 @@ index d5beba55a02f869e87510a90c38af430a2d34278..1979213591d7e11ff3de1bfdcb348520
      solve(input) {
          const { chain, footTarget, kneeHingeAxis, weight } = input;
          if (weight <= 0)
-@@ -57,11 +87,17 @@ export class HingeConstrainedLegIKSolver {
+-            return;
++            return { bendSign: input.bendSign ?? 1, reliable: false };
+         const hip = chain.root;
+         const knee = chain.middle;
+         const foot = chain.effector;
+@@ -57,17 +98,24 @@ export class HingeConstrainedLegIKSolver {
          this.tempOrigFootQuat.copy(foot.quaternion);
          hip.getWorldPosition(this.tempHipWorld);
          const hipWorld = this.tempHipWorld;
@@ -11234,7 +11439,15 @@ index d5beba55a02f869e87510a90c38af430a2d34278..1979213591d7e11ff3de1bfdcb348520
          const D = Math.max(minReach, Math.min(rawD, maxReach));
          // Law of cosines: angle at the knee between UpLeg and Leg vectors.
          const cosInterior = (L1 * L1 + L2 * L2 - D * D) / (2 * L1 * L2);
-@@ -75,38 +111,35 @@ export class HingeConstrainedLegIKSolver {
+         const interiorKnee = Math.acos(Math.max(-1, Math.min(1, cosInterior)));
+         const bendAngle = Math.PI - interiorKnee;
+-        this.tempBendQuat.setFromAxisAngle(kneeHingeAxis, bendAngle);
++        const givenSign = input.bendSign;
++        this.tempBendQuat.setFromAxisAngle(kneeHingeAxis, bendAngle * (givenSign ?? 1));
+         knee.quaternion.copy(this.tempBendQuat);
+         hip.updateMatrixWorld(true);
+         knee.updateMatrixWorld(true);
+@@ -75,38 +123,46 @@ export class HingeConstrainedLegIKSolver {
          // target. Aim the UpLeg so the hip→foot direction matches hip→target
          // direction.
          foot.getWorldPosition(this.tempCurrentFootWorld);
@@ -11244,11 +11457,10 @@ index d5beba55a02f869e87510a90c38af430a2d34278..1979213591d7e11ff3de1bfdcb348520
 -        // calibration in Task 4) can produce backward-bending knees that
 -        // still reach the target via the aim rotation - visually wrong but
 -        // numerically undetectable from foot position alone.
-+        // Pole direction check - ensure the knee ends up bent toward
-+        // poleDirection. Without it, hinge axis sign differences between left and
-+        // right legs (from the cross-product calibration in Task 4) can produce
-+        // backward-bending knees that still reach the target via the aim rotation:
-+        // visually wrong, and undetectable from foot position alone.
++        // Which way the knee folds. The hinge axis is calibrated from a bind
++        // pose whose legs are nearly straight, so its plane is right but its sign
++        // is decided by sub-millimetre noise and comes out backwards on some
++        // rigs; without this the knee reaches the target bending the wrong way.
          //
 -        // Geometric reasoning: the aim step is a rigid rotation of the
 -        // hip-knee-foot triangle around the hip. The knee ends up on the
@@ -11265,21 +11477,33 @@ index d5beba55a02f869e87510a90c38af430a2d34278..1979213591d7e11ff3de1bfdcb348520
 -            // Foot is on the pole side → knee will land on the wrong side.
 -            // Flip the hinge rotation and recompute the foot position.
 +        // What gets tested is where the knee sits relative to the hip-foot line,
-+        // carried through the aim rotation, because the aim is a rigid rotation of
-+        // the whole hip-knee-foot triangle about the hip and takes the knee with
-+        // it. That offset is the height of the bend, so it only shrinks toward
-+        // zero as the leg straightens - which is the one case where the two
-+        // choices are the same pose anyway, and the decision stops mattering
-+        // exactly as fast as it stops being measurable.
++        // carried through the aim rotation, because the aim is a rigid rotation
++        // of the whole hip-knee-foot triangle about the hip and takes the knee
++        // with it. Testing the foot's offset from the hip-target chord instead
++        // reads the sign off a vector that is mostly vertical while the pole is
++        // horizontal, and near full extension that horizontal remainder is
++        // numerical dust.
 +        //
-+        // Testing the foot's offset from the hip-target chord instead reads the
-+        // sign off a vector that is mostly vertical while the pole is horizontal.
-+        // Near full extension that horizontal remainder is numerical dust, the
-+        // sign alternates frame to frame, and the knee snaps front to back on a
-+        // walk's every toe-off.
++        // The reading is only as good as the pose it is taken from, so the caller
++        // latches the first one this reports `reliable` and passes it back from
++        // then on. Deciding afresh every frame changes its mind a couple of times
++        // a second, and each change rotates the knee most of the way around
++        // between two frames.
 +        this.tempTargetDir.subVectors(footTarget, hipWorld).normalize();
 +        this.aimFromCurrentPose(knee, hipWorld);
-+        if (this.tempKneeOffset.dot(input.poleDirection) < 0) {
++        const dot = this.tempKneeOffset.dot(input.poleDirection);
++        // How much of a reading this frame actually is. The offset is the height
++        // of the bend, so a straight leg has none to speak of; and a swing that
++        // lands near a half turn takes the offset around an axis picked out of
++        // whatever is left after two nearly opposite directions cancel.
++        const offsetLength = this.tempKneeOffset.length();
++        const swing = 2 * Math.acos(Math.min(1, Math.abs(this.tempAimRot.w)));
++        const reliable = offsetLength > MIN_BEND_HEIGHT &&
++            Math.abs(dot) / offsetLength > MIN_POLE_ALIGNMENT &&
++            swing < MAX_READABLE_SWING;
++        let bendSign = givenSign ?? 1;
++        if (givenSign === undefined && dot < 0) {
++            bendSign = -1;
              this.tempFlipQuat.setFromAxisAngle(kneeHingeAxis, -bendAngle);
              knee.quaternion.copy(this.tempFlipQuat);
              hip.updateMatrixWorld(true);
@@ -11295,7 +11519,7 @@ index d5beba55a02f869e87510a90c38af430a2d34278..1979213591d7e11ff3de1bfdcb348520
          if (hip.parent) {
              // Convert world-space aim rotation to UpLeg's local space:
              // local = parent_world^-1 * world_aim * parent_world
-@@ -124,41 +157,7 @@ export class HingeConstrainedLegIKSolver {
+@@ -124,41 +180,7 @@ export class HingeConstrainedLegIKSolver {
          hip.updateMatrixWorld(true);
          knee.updateMatrixWorld(true);
          foot.updateMatrixWorld(true);
@@ -11338,10 +11562,12 @@ index d5beba55a02f869e87510a90c38af430a2d34278..1979213591d7e11ff3de1bfdcb348520
          if (weight < 1) {
              // Weight blending: slerp from original rotation toward the solved
              // rotation. Save the solved rotations first - otherwise restoring
-@@ -184,4 +183,80 @@ export class HingeConstrainedLegIKSolver {
+@@ -183,5 +205,82 @@ export class HingeConstrainedLegIKSolver {
+             knee.updateMatrixWorld(true);
              foot.updateMatrixWorld(true);
          }
-     }
++        return { bendSign, reliable };
++    }
 +    /**
 +     * Turn the ankle onto its plant without discarding the pose the animation
 +     * gave it.
@@ -11417,7 +11643,7 @@ index d5beba55a02f869e87510a90c38af430a2d34278..1979213591d7e11ff3de1bfdcb348520
 +            foot.quaternion.copy(this.tempDesiredWorldQuat);
 +        }
 +        foot.updateMatrixWorld(true);
-+    }
+     }
  }
 diff --git a/dist/lib/services/implementations/IKSolver.d.ts b/dist/lib/services/implementations/IKSolver.d.ts
 index 20a31a8df594d3db1d189c42d2278be6a6948109..f0fc8c836471c04e340d15db353a8df35828ed15 100644
@@ -11580,7 +11806,7 @@ index e2ad276197cfcb019800a407b2fe3d4739b38861..968e77dd0ce5c8ac07bc87563887781a
 +{"version":3,"file":"LocomotionAnimator.d.ts","sourceRoot":"","sources":["../../../../src/lib/services/implementations/LocomotionAnimator.ts"],"names":[],"mappings":"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"}
 \ No newline at end of file
 diff --git a/dist/lib/services/implementations/LocomotionAnimator.js b/dist/lib/services/implementations/LocomotionAnimator.js
-index 56279f173c47d912a9cb02a35e4e27abc07c41d6..bd653b9a5254b4123fe2b5ee04cf6a678469c981 100644
+index 56279f173c47d912a9cb02a35e4e27abc07c41d6..41d323b008775ba0ab51c39d506959bad0d2aea1 100644
 --- a/dist/lib/services/implementations/LocomotionAnimator.js
 +++ b/dist/lib/services/implementations/LocomotionAnimator.js
 @@ -11,9 +11,12 @@
@@ -12082,7 +12308,26 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..bd653b9a5254b4123fe2b5ee04cf6a67
      }
      /**
       * Create actions from clips - only bone prefix remapping, no track filtering.
-@@ -299,7 +625,12 @@ export class LocomotionAnimator {
+@@ -290,6 +616,18 @@ export class LocomotionAnimator {
+     createActions() {
+         if (!this.mixer)
+             return;
++        // Three remembers each bone's value the first time an action binds it, and
++        // fills any weight the running clips do not supply with that remembered
++        // value. The pelvis track is a delta - update() zeroes the bone, lets the
++        // mixer write, then adds the rig's height back - so the remembered value
++        // has to be that same zero. Bound at rest instead, a clip carrying no
++        // pelvis track leaves the binding short mid-crossfade and the rig's height
++        // lands on the pelvis twice: the performer stands a whole leg off the floor
++        // and sinks back as the crossfade finishes.
++        const hips = this.hipsBone;
++        const hipsBeforeBind = hips ? hips.position.clone() : null;
++        if (hips)
++            hips.position.set(0, 0, 0);
+         // Idle - starts at weight 1
+         const idleClip = this.prepareClip("idle");
+         if (idleClip && !this.idleAction) {
+@@ -299,7 +637,12 @@ export class LocomotionAnimator {
              this.idleAction.play();
          }
          // Walk directions - start at weight 0
@@ -12096,7 +12341,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..bd653b9a5254b4123fe2b5ee04cf6a67
              const clip = this.prepareClip(key);
              if (clip && !this.walkActions[key]) {
                  const action = this.mixer.clipAction(clip);
-@@ -307,6 +638,14 @@ export class LocomotionAnimator {
+@@ -307,6 +650,14 @@ export class LocomotionAnimator {
                  this.setWeight(action, 0);
                  action.play();
                  this.walkActions[key] = action;
@@ -12111,7 +12356,16 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..bd653b9a5254b4123fe2b5ee04cf6a67
              }
          }
          // Jump (one-shot)
-@@ -381,7 +720,29 @@ export class LocomotionAnimator {
+@@ -343,6 +694,8 @@ export class LocomotionAnimator {
+             this.setWeight(this.crouchAction, 0);
+             this.crouchAction.play();
+         }
++        if (hips && hipsBeforeBind)
++            hips.position.copy(hipsBeforeBind);
+     }
+     /**
+      * Set weight on an action - same helper as the Three.js example.
+@@ -381,7 +734,29 @@ export class LocomotionAnimator {
          else {
              this.applyLegacyWeights(blendFactor);
          }
@@ -12142,7 +12396,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..bd653b9a5254b4123fe2b5ee04cf6a67
      }
      isReady() {
          return this.initialized && this.clipsLoaded;
-@@ -397,37 +758,13 @@ export class LocomotionAnimator {
+@@ -397,37 +772,13 @@ export class LocomotionAnimator {
          return obj ?? null;
      }
      dispose() {
@@ -12181,7 +12435,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..bd653b9a5254b4123fe2b5ee04cf6a67
      updateDirectionalTargets(input) {
          const dir = input.moveDirection ?? { x: 0, z: 1 };
          const fw = Math.max(0, dir.z);
-@@ -463,12 +800,160 @@ export class LocomotionAnimator {
+@@ -463,12 +814,160 @@ export class LocomotionAnimator {
              }
              return;
          }
@@ -12345,7 +12599,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..bd653b9a5254b4123fe2b5ee04cf6a67
      applyStateWeights(blendFactor) {
          const state = this.activeState;
          // Phase-based jump: each state has its own clip.
-@@ -483,7 +968,7 @@ export class LocomotionAnimator {
+@@ -483,7 +982,7 @@ export class LocomotionAnimator {
          // "hunched walk" without needing a dedicated crouch-walk animation clip.
          // Without movement, 100% crouch-idle plays normally.
          const isCrouching = state === LocomotionState.CROUCHING;
@@ -12354,7 +12608,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..bd653b9a5254b4123fe2b5ee04cf6a67
          const crouchWalking = isCrouching && hasMovement;
          const wantWalk = state === LocomotionState.WALKING ? 1 : crouchWalking ? 0.4 : 0;
          const wantCrouch = isCrouching ? (crouchWalking ? 0.6 : 1) : 0;
-@@ -506,7 +991,8 @@ export class LocomotionAnimator {
+@@ -506,7 +1005,8 @@ export class LocomotionAnimator {
          // On state entry: snap weights for instant transitions on one-shot clips.
          if (state !== this.currentActiveState) {
              // Zero out ground animations instantly when entering any airborne state
@@ -20068,7 +20322,7 @@ index 90ba82c982d73882ebf0ab4456ac422b1468ab37..a32e842f51d7f972376698f24d57196b
  
  export interface IFootPlanter {
 diff --git a/src/lib/services/contracts/ILegIKSolver.ts b/src/lib/services/contracts/ILegIKSolver.ts
-index df13878005926639ee48b400e7eb19647b92b020..dc3fbdb63f5a4aab46df8532885e3877bebf3bcf 100644
+index df13878005926639ee48b400e7eb19647b92b020..d088fcd3981c750bcc8d6df5e4bbae3b9442817b 100644
 --- a/src/lib/services/contracts/ILegIKSolver.ts
 +++ b/src/lib/services/contracts/ILegIKSolver.ts
 @@ -10,14 +10,15 @@
@@ -20091,7 +20345,7 @@ index df13878005926639ee48b400e7eb19647b92b020..dc3fbdb63f5a4aab46df8532885e3877
  import type { BoneChain } from "./IAvatarSkeletonBuilder";
  
  export interface LegIKInput {
-@@ -25,12 +26,26 @@ export interface LegIKInput {
+@@ -25,17 +26,45 @@ export interface LegIKInput {
    chain: BoneChain;
    /** World-space target position for the foot bone */
    footTarget: Vector3;
@@ -20124,6 +20378,56 @@ index df13878005926639ee48b400e7eb19647b92b020..dc3fbdb63f5a4aab46df8532885e3877
    /** Sagittal hinge axis in UpLeg local space.
     *  Derived at skeleton-build time from the cross product of the
     *  rest-pose UpLeg direction and the rest-pose Leg direction -
+-   *  that gives the axis perpendicular to the natural bend plane. */
++   *  that gives the axis perpendicular to the natural bend plane.
++   *
++   *  Its plane is reliable; its sign is not. A bind pose stands with the
++   *  legs all but straight, so that cross product is a short vector whose
++   *  direction is decided by whatever fraction of a degree of bend the
++   *  rig happens to carry. Which end of the axis it comes out on is not
++   *  a property of the leg. `bendSign` is what settles that. */
+   kneeHingeAxis: Vector3;
++  /** Which way around `kneeHingeAxis` this knee folds.
++   *
++   *  Left out on the first solves, and the solver works it out from where
++   *  the bend puts the knee relative to `poleDirection`. Pass the sign it
++   *  reports back on every solve after that: a knee does not change which
++   *  way it bends, and re-deciding each frame lets it snap front to back
++   *  whenever the leg passes through a pose the test cannot read. */
++  bendSign?: -1 | 1;
+   /** Forward vector biasing the knee bend direction. Prevents the
+    *  knee from flipping backward when the target is directly below. */
+   poleDirection: Vector3;
+@@ -43,6 +72,22 @@ export interface LegIKInput {
+   weight: number;
+ }
+ 
++/** Which way the knee folded, and whether that was worth remembering. */
++export interface LegIKResult {
++  /** The sign applied to the bend, ready to pass back as `bendSign`. */
++  bendSign: -1 | 1;
++  /**
++   * True when the pose the sign was read off was one the test can read.
++   *
++   * The reading is taken from where the knee sits off the hip-foot line
++   * after the swing onto the target. A leg near full extension has almost
++   * no such offset, and a swing that lands near a half turn carries what
++   * offset there is around an axis that is mostly rounding error. Latch
++   * only what came back true.
++   */
++  reliable: boolean;
++}
++
+ export interface ILegIKSolver {
+   /**
+    * Solve leg IK in place - modifies the bones in `input.chain`
+@@ -50,5 +95,5 @@ export interface ILegIKSolver {
+    *
+    * Stateless: same input produces same output, no internal memory.
+    */
+-  solve(input: LegIKInput): void;
++  solve(input: LegIKInput): LegIKResult;
+ }
 diff --git a/src/lib/services/contracts/ILocomotionAnimator.ts b/src/lib/services/contracts/ILocomotionAnimator.ts
 index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..bd7c9aa63fc37b65f4e51bcf7dc1acd6efed0e14 100644
 --- a/src/lib/services/contracts/ILocomotionAnimator.ts
@@ -22186,7 +22490,7 @@ index 0000000000000000000000000000000000000000..bfb225b4ca23ec24e5fc624fa646dcd5
 +  }
 +}
 diff --git a/src/lib/services/implementations/FootPlanter.ts b/src/lib/services/implementations/FootPlanter.ts
-index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9c4da1cf4 100644
+index a47113296e4edce51a40e2a1c3498c4f13969e4f..8623e111a45357927d013a08b07c994a3788ea73 100644
 --- a/src/lib/services/implementations/FootPlanter.ts
 +++ b/src/lib/services/implementations/FootPlanter.ts
 @@ -8,17 +8,21 @@
@@ -22216,7 +22520,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
  import type {
    IFootPlanter,
    FootPlanterInput,
-@@ -29,6 +33,26 @@ import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
+@@ -29,6 +33,34 @@ import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
  import type { IContactCurveCache } from "../contracts/IContactCurveCache";
  import { LocomotionState } from "../contracts/IAnimationStateMachine";
  import { KneeHingeAxisCalibrator } from "./KneeHingeAxisCalibrator";
@@ -22240,10 +22544,18 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 +  const temp = (velocity + omega * change) * dt;
 +  return [target + (change + temp) * decay, (velocity - omega * temp) * decay];
 +}
++
++/**
++ * Smoothstep. Flat at both ends, so whatever it scales starts and stops
++ * without a velocity step.
++ */
++function ease(t: number): number {
++  return t * t * (3 - 2 * t);
++}
  
  // ── Defaults ──
  
-@@ -41,8 +65,40 @@ const DEFAULT_CONFIG: Required<FootPlanterConfig> = {
+@@ -41,8 +73,52 @@ const DEFAULT_CONFIG: Required<FootPlanterConfig> = {
    // Measured from typical Mixamo humanoid: ankle joint sits ~7cm above ground.
    // Too small = feet clip into floor. Too large = feet hover.
    footHeightOffset: 0.07,
@@ -22278,13 +22590,25 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 +const CONTACT_ENTER = 0.6;
 +const CONTACT_EXIT = 0.35;
 +
++/**
++ * How long a foot takes to walk from an abandoned plant onto its replacement,
++ * seconds.
++ *
++ * The handover is eased at both ends, so this is the whole width of a curve
++ * with no corner at either edge rather than a slide that starts and stops
++ * abruptly. Long enough that a plant's width of ground covered over it stays
++ * near a walking pace; short enough that the foot is on its new plant well
++ * inside the stance that asked for it.
++ */
++const PLANT_HANDOVER_TIME = 0.22;
++
 +/** How quickly the pelvis follows the drop the planted feet ask for. */
 +const PELVIS_SMOOTH_TIME = 0.12;
 +
  /**
   * Per-foot tracking state.
   * Tracks position history for velocity computation and IK blend weight.
-@@ -54,10 +110,34 @@ interface FootState {
+@@ -54,10 +130,109 @@ interface FootState {
    smoothedVelocity: number;
    /** Current IK blend weight: 0 = animation drives, 1 = IK drives */
    ikWeight: number;
@@ -22294,11 +22618,55 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 +  blendPhase: number;
 +  /** Where the ball of this foot is pinned in world space while it bears weight. */
 +  lockToe: Vector3;
++  /**
++   * Where the animation had the ball of the foot when this plant was taken,
++   * before the stride warp.
++   *
++   * The drift test is against this and not against `lockToe`, because
++   * `lockToe` has the warp baked into it. The warp is a deliberate,
++   * continuous displacement along the direction of travel; when travel
++   * rotates - circling, or sweeping the heading while the body holds still -
++   * that displacement swings through an arc, and measuring drift against a
++   * warped anchor reads the swing as the foot having left its ground.
++   */
++  lockAnchor: Vector3;
++  /**
++   * What is left of the previous plant while a new one takes over, world
++   * space, decaying to zero.
++   *
++   * A plant can be replaced mid-stance while the lock is still at nearly full
++   * weight, and the correction is rebuilt from `lockToe` every frame, so
++   * moving `lockToe` in one frame moves the ankle by the whole difference in
++   * one frame. That is the teleport. Carrying the difference and letting it
++   * decay makes the handover continuous, the same way `lockCorrection` is
++   * held across a release so the blend-out has something to blend out of.
++   */
++  lockCarry: Vector3;
++  /**
++   * How much of `lockCarry` is still owed, 1 at the handover down to 0.
++   *
++   * Eased rather than counted down straight: a linear fade would start and
++   * stop the slide with a velocity step at each end, which is a smaller
++   * version of the jump it exists to remove.
++   */
++  carryPhase: number;
 +  /** Where the ball of the foot is asked to be this frame: the plant's
 +   *  horizontal position at the height the clip currently holds it. */
 +  plantedToe: Vector3;
 +  /** Where the ankle goes this frame, derived from the pin and the pose. */
 +  ankleTarget: Vector3;
++  /**
++   * Which way this knee folds, once the solver has seen a pose clear enough
++   * to read it off. Null until then.
++   *
++   * The solver decides the direction from where the bend puts the knee
++   * relative to the pole, and near a straight leg or a half-turn swing that
++   * test is reading noise. Left to decide every frame it changes its mind a
++   * couple of times a second, and each change is the knee rotating most of
++   * the way around between two frames. It is a property of the rig, so it is
++   * read once and held.
++   */
++  kneeBendSign: -1 | 1 | null;
 +  /** How far the ankle target sits from where the animation put the ankle,
 +   *  horizontally. The pelvis follows a fraction of this to stay over its
 +   *  support. */
@@ -22318,18 +22686,53 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 +  /** Weight the solver runs at: the lock's ramp, or 1 while the stride warp
 +   *  is carrying the foot. */
 +  solveWeight: number;
++}
++
++/**
++ * One leg's animated rotations, and the ones the IK left in their place.
++ *
++ * The mixer skips writing a bone whose value it has not changed since the
++ * last frame - a scene-graph optimisation that holds only while the mixer is
++ * the bone's sole writer. The IK is a second writer, so on a skipped frame
++ * the bone still carries the IK's pose and reading it back reports the
++ * correction as though the animation had asked for it. Both poses are kept
++ * so the planter can tell those frames apart: a bone still holding exactly
++ * what the IK wrote was never refreshed, and the animated rotation from the
++ * last frame that was refreshed is the one the clip is still asking for.
++ *
++ * The clip's flat stretches are where this bites - a stance knee holds one
++ * value for half a second at a time, which is exactly when the mixer goes
++ * quiet and the correction has a run of frames to compound over.
++ */
++interface LegPose {
++  /** Root, middle, effector, in that order. */
++  animated: Quaternion[];
++  applied: Quaternion[];
++  valid: boolean;
++}
++
++function createLegPose(): LegPose {
++  return {
++    animated: [new Quaternion(), new Quaternion(), new Quaternion()],
++    applied: [new Quaternion(), new Quaternion(), new Quaternion()],
++    valid: false,
++  };
  }
  
  function createFootState(): FootState {
-@@ -65,8 +145,15 @@ function createFootState(): FootState {
+@@ -65,8 +240,19 @@ function createFootState(): FootState {
      prevWorldPos: new Vector3(),
      smoothedVelocity: 1, // Start high so feet don't lock on first frame
      ikWeight: 0,
 -    lockTarget: new Vector3(),
 +    blendPhase: 0,
 +    lockToe: new Vector3(),
++    lockAnchor: new Vector3(),
++    lockCarry: new Vector3(),
++    carryPhase: 0,
 +    plantedToe: new Vector3(),
 +    ankleTarget: new Vector3(),
++    kneeBendSign: null,
 +    rebalanceX: 0,
 +    rebalanceZ: 0,
      isLocked: false,
@@ -22338,8 +22741,13 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
    };
  }
  
-@@ -81,6 +168,8 @@ export class FootPlanter implements IFootPlanter {
+@@ -79,8 +265,13 @@ export class FootPlanter implements IFootPlanter {
+   private leftFoot: FootState = createFootState();
+   private rightFoot: FootState = createFootState();
  
++  private readonly leftPose = createLegPose();
++  private readonly rightPose = createLegPose();
++
    private leftLegChain: BoneChain | null = null;
    private rightLegChain: BoneChain | null = null;
 +  private leftToe: Object3D | null = null;
@@ -22347,7 +22755,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
  
    // Per-leg hinge axes derived from bind-pose rest directions at init time.
    // These never change during playback - the knee is a hinge, not a ball joint.
-@@ -91,12 +180,33 @@ export class FootPlanter implements IFootPlanter {
+@@ -91,12 +282,34 @@ export class FootPlanter implements IFootPlanter {
    private readonly tempFootWorld = new Vector3();
    private readonly tempHipsWorld = new Vector3();
    private readonly tempTarget = new Vector3();
@@ -22360,6 +22768,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 +  private readonly tempWarp = new Vector3();
 +  private readonly tempWarped = new Vector3();
 +  private readonly tempPelvisRide = new Vector3();
++  private readonly tempPrevLock = new Vector3();
 +  private readonly tempPelvisScale = new Vector3();
 +  private readonly tempPelvisDelta = new Vector3();
  
@@ -22382,8 +22791,15 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
    initialize(
      skeleton: IAvatarSkeletonBuilder,
      legIKSolver: ILegIKSolver,
-@@ -107,6 +217,10 @@ export class FootPlanter implements IFootPlanter {
+@@ -105,8 +318,17 @@ export class FootPlanter implements IFootPlanter {
+     this.skeleton = skeleton;
+     this.legIKSolver = legIKSolver;
      this.contactCurveCache = contactCurveCache;
++    // Whatever the previous rig's knees did says nothing about this one's.
++    this.leftFoot.kneeBendSign = null;
++    this.rightFoot.kneeBendSign = null;
++    this.leftPose.valid = false;
++    this.rightPose.valid = false;
      this.leftLegChain = skeleton.getLeftLegChain();
      this.rightLegChain = skeleton.getRightLegChain();
 +    // A rig without toes still plants, on the ankle alone. It just cannot be
@@ -22393,16 +22809,17 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
      this.initialized = !!(this.leftLegChain && this.rightLegChain);
  
      if (!this.initialized) {
-@@ -132,6 +246,8 @@ export class FootPlanter implements IFootPlanter {
+@@ -131,6 +353,9 @@ export class FootPlanter implements IFootPlanter {
+   update(delta: number, input: FootPlanterInput): void {
      if (!this.initialized || !this.skeleton || !this.legIKSolver) return;
      if (!this.leftLegChain || !this.rightLegChain) return;
- 
 +    this.releasePelvisCorrection();
-+
++    this.restoreAnimatedPose(this.leftLegChain, this.leftPose);
++    this.restoreAnimatedPose(this.rightLegChain, this.rightPose);
+ 
      // Skip foot planting during airborne states - let the animation play freely
      if (
-       input.locomotionState === LocomotionState.JUMPING ||
-@@ -189,20 +305,26 @@ export class FootPlanter implements IFootPlanter {
+@@ -189,20 +414,29 @@ export class FootPlanter implements IFootPlanter {
      this.rightFoot.prevWorldPos.copy(rightFootPos);
  
      // 3. Detect contact phase and manage lock targets
@@ -22421,22 +22838,25 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 +    //    pelvis needs to know where the feet are going in order to follow them.
 +    this.computeAnkleTarget(this.leftFoot, this.leftLegChain, this.leftToe, input);
 +    this.computeAnkleTarget(this.rightFoot, this.rightLegChain, this.rightToe, input);
- 
--    // 6. Solve and apply leg IK for each foot
--    this.applyFootIK(this.leftLegChain, this.leftFoot, input.groundY, this.leftKneeHingeAxis);
--    this.applyFootIK(this.rightLegChain, this.rightFoot, input.groundY, this.rightKneeHingeAxis);
++
 +    // 6. Move the pelvis: down so planted feet reach the floor, across so the
 +    //    body stays over its support.
 +    this.adjustPelvis(input.groundY, delta);
  
+-    // 6. Solve and apply leg IK for each foot
+-    this.applyFootIK(this.leftLegChain, this.leftFoot, input.groundY, this.leftKneeHingeAxis);
+-    this.applyFootIK(this.rightLegChain, this.rightFoot, input.groundY, this.rightKneeHingeAxis);
 +    // 7. Solve and apply leg IK for each foot
 +    this.updateFacing(input);
 +    this.applyFootIK(this.leftLegChain, this.leftFoot, this.leftToe, this.leftKneeHingeAxis);
 +    this.applyFootIK(this.rightLegChain, this.rightFoot, this.rightToe, this.rightKneeHingeAxis);
+ 
++    this.rememberAppliedPose(this.leftLegChain, this.leftPose);
++    this.rememberAppliedPose(this.rightLegChain, this.rightPose);
    }
  
    configure(config: FootPlanterConfig): void {
-@@ -219,8 +341,17 @@ export class FootPlanter implements IFootPlanter {
+@@ -219,8 +453,17 @@ export class FootPlanter implements IFootPlanter {
      this.contactCurveCache = null;
      this.leftLegChain = null;
      this.rightLegChain = null;
@@ -22454,7 +22874,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
      this.leftFoot = createFootState();
      this.rightFoot = createFootState();
    }
-@@ -247,22 +378,71 @@ export class FootPlanter implements IFootPlanter {
+@@ -247,22 +490,130 @@ export class FootPlanter implements IFootPlanter {
    // ── Contact phase detection ──
  
    /**
@@ -22498,7 +22918,14 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 +    if (!chain) return;
 +
 +    if (!foot.isLocked) {
-+      this.computePlantTarget(chain, toe, input, foot.lockToe);
++      // A lock the contact curve dropped and is asking for again a few frames
++      // later is the same stance resuming, not a new footfall - the blend-out
++      // has barely started, so most of the last plant's correction is still
++      // being applied. Carrying it by exactly the weight still in force keeps
++      // the resumed plant continuous with the released one. A foot that has
++      // actually been through a swing arrives at zero weight and carries
++      // nothing, which is right: it landed somewhere new.
++      this.takePlant(foot, chain, toe, input, foot.ikWeight);
 +      foot.isLocked = true;
 +      return;
 +    }
@@ -22507,12 +22934,64 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 +    // curve still reads contact. Once the animation has carried the foot a
 +    // whole plant's width away, the plant describes ground the performer has
 +    // left, and holding it would drag the foot backwards through the floor.
++    //
++    // Measured on the raw anchor, with the warp left out of both sides. The
++    // warp is not the foot leaving its ground; it is a displacement along the
++    // direction of travel, and when travel rotates under a foot - circling,
++    // or sweeping the heading in place - it sweeps an arc that reads as drift
++    // the animation never had.
 +    this.anchorWorld(chain, toe, this.tempToeWorld);
-+    this.strideWarp(this.tempToeWorld, input, this.tempWarp);
-+    const driftX = this.tempToeWorld.x + this.tempWarp.x - foot.lockToe.x;
-+    const driftZ = this.tempToeWorld.z + this.tempWarp.z - foot.lockToe.z;
++    const driftX = this.tempToeWorld.x - foot.lockAnchor.x;
++    const driftZ = this.tempToeWorld.z - foot.lockAnchor.z;
 +    const radius = this.config.unplantRadius;
-+    if (driftX * driftX + driftZ * driftZ > radius * radius) foot.isLocked = false;
++    if (driftX * driftX + driftZ * driftZ <= radius * radius) return;
++
++    // The foot has genuinely walked off its plant, so it gets a new one, at
++    // full weight because the lock never let go.
++    this.takePlant(foot, chain, toe, input, 1);
++  }
++
++  /**
++   * Pin this foot to the ground under it, carrying whatever the plant it
++   * replaces is still asking for.
++   *
++   * The correction is rebuilt from the plant every frame, so moving the plant
++   * in one frame moves the ankle by the whole difference in one frame. That
++   * is the teleport: a foot standing still, then standing still a plant's
++   * width away, with nothing in between. Carrying the difference and easing
++   * it out walks the foot across instead. Letting the lock go rather than
++   * replacing it is not the alternative - that strands the same correction
++   * one blend later.
++   *
++   * `carryWeight` is how much of the old plant is still reaching the pose,
++   * which is the lock's own blend weight. Zero means nothing was being
++   * applied, so there is nothing to be continuous with.
++   */
++  private takePlant(
++    foot: FootState,
++    chain: BoneChain,
++    toe: Object3D | null,
++    input: FootPlanterInput,
++    carryWeight: number
++  ): void {
++    this.tempPrevLock
++      .copy(foot.lockToe)
++      .addScaledVector(foot.lockCarry, ease(foot.carryPhase));
++
++    this.computePlantTarget(chain, toe, input, foot.lockToe);
++    foot.lockAnchor.copy(this.tempToeWorld);
++
++    if (carryWeight < 0.001) {
++      foot.lockCarry.set(0, 0, 0);
++      foot.carryPhase = 0;
++      return;
++    }
++
++    foot.lockCarry
++      .copy(this.tempPrevLock)
++      .sub(foot.lockToe)
++      .multiplyScalar(carryWeight);
++    foot.carryPhase = 1;
 +  }
 +
 +  /**
@@ -22536,7 +23015,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
      if (
        this.contactCurveCache &&
        input.currentClipName &&
-@@ -273,77 +453,282 @@ export class FootPlanter implements IFootPlanter {
+@@ -273,77 +624,293 @@ export class FootPlanter implements IFootPlanter {
          input.currentClipName,
          input.currentClipPhase
        );
@@ -22671,6 +23150,8 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 +    if (foot.solveWeight < 0.001) {
 +      foot.ankleTarget.copy(this.tempAnkleWorld);
 +      foot.lockCorrection.set(0, 0, 0);
++      foot.lockCarry.set(0, 0, 0);
++      foot.carryPhase = 0;
        return;
      }
  
@@ -22791,7 +23272,12 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 +    // the second away with the first, and then pays for it: the toe is pinned
 +    // at whatever height the roll had reached when contact was called, and
 +    // every part of the foot in front of that pin goes under the stage.
-+    foot.plantedToe.set(foot.lockToe.x, this.tempToeWorld.y, foot.lockToe.z);
++    const carry = ease(foot.carryPhase);
++    foot.plantedToe.set(
++      foot.lockToe.x + foot.lockCarry.x * carry,
++      this.tempToeWorld.y,
++      foot.lockToe.z + foot.lockCarry.z * carry
++    );
 +    const toeFloor =
 +      input.groundY + toeTipClearance(toe, this.config.toeHeightOffset);
 +    if (foot.plantedToe.y < toeFloor) foot.plantedToe.y = toeFloor;
@@ -22822,6 +23308,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 +      this.tempHipJoint.distanceTo(this.tempAnkleWorld),
 +      legChain.totalLength * MAX_LEG_USE
 +    );
++
 +    const length = this.tempHipJoint.distanceTo(foot.ankleTarget);
 +    if (length <= ceiling - EXTENSION_SOFTENING || length < 1e-6) return;
 +
@@ -22862,6 +23349,9 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 -      const factor = 1 - Math.exp(-delta / rampTime);
 -      foot.ikWeight += (targetWeight - foot.ikWeight) * factor;
 -    }
++    foot.carryPhase -= delta / PLANT_HANDOVER_TIME;
++    if (foot.carryPhase < 0) foot.carryPhase = 0;
++
 +    foot.blendPhase += foot.isLocked ? step : -step;
 +    if (foot.blendPhase < 0) foot.blendPhase = 0;
 +    if (foot.blendPhase > 1) foot.blendPhase = 1;
@@ -22874,7 +23364,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
    }
  
    /**
-@@ -351,61 +736,187 @@ export class FootPlanter implements IFootPlanter {
+@@ -351,61 +918,187 @@ export class FootPlanter implements IFootPlanter {
     */
    private fadeOutFoot(foot: FootState, delta: number): void {
      foot.isLocked = false;
@@ -22891,14 +23381,14 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 -   * without over-extending the leg chain.
 +   * Lower the Hips so planted feet can reach the ground without the leg
 +   * going straight.
-    *
--   * Without this, a planted foot on one side can pull the leg straight
--   * while the other foot floats above ground.
++   *
 +   * Two things ask for the drop: a planted foot still above the floor, and a
 +   * lock the leg is running out of reach for. The second is what a lengthened
 +   * stride produces, and measuring only the first lets the leg saturate while
 +   * the correction stays smooth and looks fine in isolation.
-+   *
+    *
+-   * Without this, a planted foot on one side can pull the leg straight
+-   * while the other foot floats above ground.
 +   * The correction is sprung rather than applied outright. Taking the largest
 +   * drop each foot asks for and writing it straight into the bone means the
 +   * pelvis jumps every time contact changes, which reads as a limp.
@@ -22990,9 +23480,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 +      PELVIS_SMOOTH_TIME,
 +      dt
 +    );
- 
--    // Clamp to prevent extreme corrections
--    const clampedDrop = Math.min(drop, this.config.maxPelvisAdjust);
++
 +    if (
 +      this.pelvisDrop === 0 &&
 +      Math.abs(this.pelvisShiftX) < 1e-5 &&
@@ -23001,8 +23489,8 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 +      return;
 +    }
  
--    // Scale by max IK weight so the adjustment fades with the IK blend
--    const adjustedDrop = clampedDrop * maxWeight;
+-    // Clamp to prevent extreme corrections
+-    const clampedDrop = Math.min(drop, this.config.maxPelvisAdjust);
 +    this.applyPelvisCorrection(
 +      hipsBone,
 +      this.pelvisShiftX,
@@ -23010,7 +23498,9 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 +      this.pelvisShiftZ
 +    );
 +  }
-+
+ 
+-    // Scale by max IK weight so the adjustment fades with the IK blend
+-    const adjustedDrop = clampedDrop * maxWeight;
 +  /**
 +   * Move the pelvis by a world-space offset, remembering it in the bone's own
 +   * space so releasePelvisCorrection can take exactly it back.
@@ -23027,7 +23517,10 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 +    worldZ: number
 +  ): void {
 +    this.tempPelvisDelta.set(worldX, worldY, worldZ);
-+
+ 
+-    // Apply: lower Hips in local space (Y is up for Mixamo skeletons)
+-    hipsBone.position.y -= adjustedDrop;
+-    hipsBone.updateMatrixWorld(true);
 +    const parent = hips.parent;
 +    if (parent) {
 +      parent.getWorldQuaternion(this.tempQuat);
@@ -23071,10 +23564,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 +    }
 +    this.appliedPelvisOffset.set(0, 0, 0);
 +  }
- 
--    // Apply: lower Hips in local space (Y is up for Mixamo skeletons)
--    hipsBone.position.y -= adjustedDrop;
--    hipsBone.updateMatrixWorld(true);
++
 +  /**
 +   * How far this foot wants the pelvis lowered: the distance by which its
 +   * ankle target exceeds the leg.
@@ -23096,7 +23586,39 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
    }
  
    // ── Foot IK solve ──
-@@ -417,29 +928,57 @@ export class FootPlanter implements IFootPlanter {
+@@ -414,32 +1107,92 @@ export class FootPlanter implements IFootPlanter {
+    * Solve two-bone IK for one leg using the hinge-constrained leg solver.
+    * The solver handles weight blending internally, so no slerp is needed here.
+    */
++  /**
++   * Take back the frames the mixer sat out.
++   *
++   * A bone still holding the exact rotation the IK wrote is one the mixer
++   * left alone, so the clip's rotation for it is the one recorded the last
++   * time it did write. A bone holding anything else was just refreshed, and
++   * that new rotation is the clip's.
++   *
++   * Without this the planter measures its own output and corrects it again:
++   * a planted foot climbs a centimetre or two a frame until it is level with
++   * its own hip with the knee folded double, then drops the whole way back
++   * the frame the contact curve lets go.
++   */
++  private restoreAnimatedPose(chain: BoneChain, pose: LegPose): void {
++    const bones = [chain.root, chain.middle, chain.effector];
++    for (let i = 0; i < bones.length; i++) {
++      const live = bones[i].quaternion;
++      if (pose.valid && live.equals(pose.applied[i])) live.copy(pose.animated[i]);
++      else pose.animated[i].copy(live);
++    }
++  }
++
++  /** Record what the solve left behind, for the next frame to recognise. */
++  private rememberAppliedPose(chain: BoneChain, pose: LegPose): void {
++    const bones = [chain.root, chain.middle, chain.effector];
++    for (let i = 0; i < bones.length; i++) pose.applied[i].copy(bones[i].quaternion);
++    pose.valid = true;
++  }
++
    private applyFootIK(
      chain: BoneChain,
      foot: FootState,
@@ -23106,13 +23628,13 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
    ): void {
 -    if (foot.ikWeight < 0.001 || !this.legIKSolver) return;
 +    if (foot.solveWeight < 0.001 || !this.legIKSolver) return;
++    this.clampToAnimatedReach(foot, chain);
++    this.tempTarget.copy(foot.ankleTarget);
  
 -    // Build IK target: the locked ground position, snapped to ground Y
 -    this.tempTarget.copy(foot.lockTarget);
 -    this.tempTarget.y = groundY + this.config.footHeightOffset;
-+    this.clampToAnimatedReach(foot, chain);
-+    this.tempTarget.copy(foot.ankleTarget);
- 
+-
 -    const input: LegIKInput = {
 +    const ikInput: LegIKInput = {
        chain,
@@ -23125,10 +23647,14 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
        poleDirection: this.poleDirection,
 -      weight: foot.ikWeight,
 +      weight: foot.solveWeight,
++      bendSign: foot.kneeBendSign ?? undefined,
      };
  
 -    this.legIKSolver.solve(input);
-+    this.legIKSolver.solve(ikInput);
++    const solved = this.legIKSolver.solve(ikInput);
++    if (foot.kneeBendSign === null && solved.reliable) {
++      foot.kneeBendSign = solved.bendSign;
++    }
  
      // ILegIKSolver does its own weight blending, so no slerp here.
      // Update matrices from hip down so foot world position reflects the solve.
@@ -23165,18 +23691,24 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..b32fc140c661f174fe51f0418bbef1b9
 +  }
  }
 diff --git a/src/lib/services/implementations/HingeConstrainedLegIKSolver.ts b/src/lib/services/implementations/HingeConstrainedLegIKSolver.ts
-index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..ac5227a023912ba7f2766a88e7fb40a8ebe7ff10 100644
+index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..5c17a3f37d4c7d07c715f19b6c125e42d5a21ac8 100644
 --- a/src/lib/services/implementations/HingeConstrainedLegIKSolver.ts
 +++ b/src/lib/services/implementations/HingeConstrainedLegIKSolver.ts
-@@ -1,6 +1,6 @@
+@@ -1,7 +1,11 @@
  // src/lib/shared/3d/services/implementations/HingeConstrainedLegIKSolver.ts
  
 -import { Vector3, Quaternion, Matrix4 } from "three";
+-import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
 +import { Vector3, Quaternion, Matrix4, type Object3D } from "three";
- import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
++import type {
++  ILegIKSolver,
++  LegIKInput,
++  LegIKResult,
++} from "../contracts/ILegIKSolver";
  
  /**
-@@ -21,8 +21,16 @@ import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
+  * HingeConstrainedLegIKSolver
+@@ -21,8 +25,28 @@ import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
   *      the foot still reaches the target. Flip the bend if needed.
   *   4. Aim the UpLeg so that after the knee bend, the foot lands on
   *      the target.
@@ -23191,10 +23723,22 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..ac5227a023912ba7f2766a88e7fb40a8
 + * honouring it would break the ankle rather than place the foot.
 + */
 +const MAX_ANKLE_CORRECTION = 0.6;
++/**
++ * How squarely the knee's offset has to point along the pole before the
++ * reading is worth keeping. Near a right angle the two bend directions put
++ * the knee in almost the same place and whichever one wins is a coin toss.
++ */
++const MIN_POLE_ALIGNMENT = 0.5;
++/** And how tall the bend has to be, in metres, for there to be a reading. */
++const MIN_BEND_HEIGHT = 0.05;
++/** Past a quarter turn the aim carries the offset around an axis that two
++ *  nearly opposite directions barely pin down. */
++const MAX_READABLE_SWING = Math.PI / 2;
++
  export class HingeConstrainedLegIKSolver implements ILegIKSolver {
    private readonly tempHipWorld = new Vector3();
    private readonly tempCurrentFootDir = new Vector3();
-@@ -39,13 +47,44 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
+@@ -39,17 +63,48 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
    private readonly tempBendQuat = new Quaternion();
    private readonly tempFlipQuat = new Quaternion();
    private readonly tempCurrentFootWorld = new Vector3();
@@ -23238,9 +23782,15 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..ac5227a023912ba7f2766a88e7fb40a8
 +    this.tempKneeOffset.applyQuaternion(this.tempAimRot);
 +  }
  
-   solve(input: LegIKInput): void {
+-  solve(input: LegIKInput): void {
++  solve(input: LegIKInput): LegIKResult {
      const { chain, footTarget, kneeHingeAxis, weight } = input;
-@@ -64,11 +103,17 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
+-    if (weight <= 0) return;
++    if (weight <= 0) return { bendSign: input.bendSign ?? 1, reliable: false };
+ 
+     const hip = chain.root;
+     const knee = chain.middle;
+@@ -64,11 +119,17 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
      hip.getWorldPosition(this.tempHipWorld);
      const hipWorld = this.tempHipWorld;
  
@@ -23261,7 +23811,20 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..ac5227a023912ba7f2766a88e7fb40a8
      const D = Math.max(minReach, Math.min(rawD, maxReach));
  
      // Law of cosines: angle at the knee between UpLeg and Leg vectors.
-@@ -87,47 +132,37 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
+@@ -76,7 +137,11 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
+     const interiorKnee = Math.acos(Math.max(-1, Math.min(1, cosInterior)));
+     const bendAngle = Math.PI - interiorKnee;
+ 
+-    this.tempBendQuat.setFromAxisAngle(kneeHingeAxis, bendAngle);
++    const givenSign = input.bendSign;
++    this.tempBendQuat.setFromAxisAngle(
++      kneeHingeAxis,
++      bendAngle * (givenSign ?? 1),
++    );
+     knee.quaternion.copy(this.tempBendQuat);
+ 
+     hip.updateMatrixWorld(true);
+@@ -87,47 +152,50 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
      // direction.
      foot.getWorldPosition(this.tempCurrentFootWorld);
  
@@ -23271,11 +23834,10 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..ac5227a023912ba7f2766a88e7fb40a8
 -    // calibration in Task 4) can produce backward-bending knees that
 -    // still reach the target via the aim rotation - visually wrong but
 -    // numerically undetectable from foot position alone.
-+    // Pole direction check - ensure the knee ends up bent toward
-+    // poleDirection. Without it, hinge axis sign differences between left and
-+    // right legs (from the cross-product calibration in Task 4) can produce
-+    // backward-bending knees that still reach the target via the aim rotation:
-+    // visually wrong, and undetectable from foot position alone.
++    // Which way the knee folds. The hinge axis is calibrated from a bind
++    // pose whose legs are nearly straight, so its plane is right but its sign
++    // is decided by sub-millimetre noise and comes out backwards on some
++    // rigs; without this the knee reaches the target bending the wrong way.
      //
 -    // Geometric reasoning: the aim step is a rigid rotation of the
 -    // hip-knee-foot triangle around the hip. The knee ends up on the
@@ -23295,22 +23857,36 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..ac5227a023912ba7f2766a88e7fb40a8
 -      // Foot is on the pole side → knee will land on the wrong side.
 -      // Flip the hinge rotation and recompute the foot position.
 +    // What gets tested is where the knee sits relative to the hip-foot line,
-+    // carried through the aim rotation, because the aim is a rigid rotation of
-+    // the whole hip-knee-foot triangle about the hip and takes the knee with
-+    // it. That offset is the height of the bend, so it only shrinks toward
-+    // zero as the leg straightens - which is the one case where the two
-+    // choices are the same pose anyway, and the decision stops mattering
-+    // exactly as fast as it stops being measurable.
++    // carried through the aim rotation, because the aim is a rigid rotation
++    // of the whole hip-knee-foot triangle about the hip and takes the knee
++    // with it. Testing the foot's offset from the hip-target chord instead
++    // reads the sign off a vector that is mostly vertical while the pole is
++    // horizontal, and near full extension that horizontal remainder is
++    // numerical dust.
 +    //
-+    // Testing the foot's offset from the hip-target chord instead reads the
-+    // sign off a vector that is mostly vertical while the pole is horizontal.
-+    // Near full extension that horizontal remainder is numerical dust, the
-+    // sign alternates frame to frame, and the knee snaps front to back on a
-+    // walk's every toe-off.
++    // The reading is only as good as the pose it is taken from, so the caller
++    // latches the first one this reports `reliable` and passes it back from
++    // then on. Deciding afresh every frame changes its mind a couple of times
++    // a second, and each change rotates the knee most of the way around
++    // between two frames.
 +    this.tempTargetDir.subVectors(footTarget, hipWorld).normalize();
 +    this.aimFromCurrentPose(knee, hipWorld);
 +
-+    if (this.tempKneeOffset.dot(input.poleDirection) < 0) {
++    const dot = this.tempKneeOffset.dot(input.poleDirection);
++    // How much of a reading this frame actually is. The offset is the height
++    // of the bend, so a straight leg has none to speak of; and a swing that
++    // lands near a half turn takes the offset around an axis picked out of
++    // whatever is left after two nearly opposite directions cancel.
++    const offsetLength = this.tempKneeOffset.length();
++    const swing = 2 * Math.acos(Math.min(1, Math.abs(this.tempAimRot.w)));
++    const reliable =
++      offsetLength > MIN_BEND_HEIGHT &&
++      Math.abs(dot) / offsetLength > MIN_POLE_ALIGNMENT &&
++      swing < MAX_READABLE_SWING;
++
++    let bendSign: -1 | 1 = givenSign ?? 1;
++    if (givenSign === undefined && dot < 0) {
++      bendSign = -1;
        this.tempFlipQuat.setFromAxisAngle(kneeHingeAxis, -bendAngle);
        knee.quaternion.copy(this.tempFlipQuat);
        hip.updateMatrixWorld(true);
@@ -23332,7 +23908,7 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..ac5227a023912ba7f2766a88e7fb40a8
      if (hip.parent) {
        // Convert world-space aim rotation to UpLeg's local space:
        // local = parent_world^-1 * world_aim * parent_world
-@@ -146,47 +181,7 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
+@@ -146,47 +214,7 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
      knee.updateMatrixWorld(true);
      foot.updateMatrixWorld(true);
  
@@ -23381,10 +23957,13 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..ac5227a023912ba7f2766a88e7fb40a8
  
      if (weight < 1) {
        // Weight blending: slerp from original rotation toward the solved
-@@ -213,4 +208,90 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
+@@ -212,5 +240,93 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
+       knee.updateMatrixWorld(true);
        foot.updateMatrixWorld(true);
      }
-   }
++
++    return { bendSign, reliable };
++  }
 +
 +  /**
 +   * Turn the ankle onto its plant without discarding the pose the animation
@@ -23470,10 +24049,10 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..ac5227a023912ba7f2766a88e7fb40a8
 +      foot.quaternion.copy(this.tempDesiredWorldQuat);
 +    }
 +    foot.updateMatrixWorld(true);
-+  }
+   }
  }
 diff --git a/src/lib/services/implementations/LocomotionAnimator.ts b/src/lib/services/implementations/LocomotionAnimator.ts
-index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..613bd2d84f78a4007e4ca17982abf14edd0a62d9 100644
+index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cb5e9c2a835c5fe9c75443cddd89c82532704f3a 100644
 --- a/src/lib/services/implementations/LocomotionAnimator.ts
 +++ b/src/lib/services/implementations/LocomotionAnimator.ts
 @@ -13,8 +13,14 @@
@@ -24089,15 +24668,25 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..613bd2d84f78a4007e4ca17982abf14e
    }
  
    /**
-@@ -327,7 +750,6 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -327,6 +750,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    private createActions(): void {
      if (!this.mixer) return;
  
--
++    // Three remembers each bone's value the first time an action binds it, and
++    // fills any weight the running clips do not supply with that remembered
++    // value. The pelvis track is a delta - update() zeroes the bone, lets the
++    // mixer write, then adds the rig's height back - so the remembered value
++    // has to be that same zero. Bound at rest instead, a clip carrying no
++    // pelvis track leaves the binding short mid-crossfade and the rig's height
++    // lands on the pelvis twice: the performer stands a whole leg off the floor
++    // and sinks back as the crossfade finishes.
++    const hips = this.hipsBone;
++    const hipsBeforeBind = hips ? hips.position.clone() : null;
++    if (hips) hips.position.set(0, 0, 0);
+ 
      // Idle - starts at weight 1
      const idleClip = this.prepareClip("idle");
-     if (idleClip && !this.idleAction) {
-@@ -338,7 +760,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -338,7 +772,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      }
  
      // Walk directions - start at weight 0
@@ -24111,7 +24700,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..613bd2d84f78a4007e4ca17982abf14e
        const clip = this.prepareClip(key);
        if (clip && !this.walkActions[key]) {
          const action = this.mixer.clipAction(clip);
-@@ -346,6 +773,14 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -346,6 +785,14 @@ export class LocomotionAnimator implements ILocomotionAnimator {
          this.setWeight(action, 0);
          action.play();
          this.walkActions[key] = action;
@@ -24126,7 +24715,16 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..613bd2d84f78a4007e4ca17982abf14e
        }
      }
  
-@@ -428,7 +863,29 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -386,6 +833,8 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+       this.setWeight(this.crouchAction, 0);
+       this.crouchAction.play();
+     }
++
++    if (hips && hipsBeforeBind) hips.position.copy(hipsBeforeBind);
+   }
+ 
+   /**
+@@ -428,7 +877,29 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        this.applyLegacyWeights(blendFactor);
      }
  
@@ -24157,7 +24755,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..613bd2d84f78a4007e4ca17982abf14e
    }
  
    isReady(): boolean {
-@@ -447,40 +904,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -447,40 +918,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    }
  
    dispose(): void {
@@ -24199,7 +24797,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..613bd2d84f78a4007e4ca17982abf14e
    private updateDirectionalTargets(input: LocomotionInput): void {
      const dir = input.moveDirection ?? { x: 0, z: 1 };
      const fw = Math.max(0, dir.z);
-@@ -521,12 +953,170 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -521,12 +967,170 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        return;
      }
  
@@ -24374,7 +24972,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..613bd2d84f78a4007e4ca17982abf14e
    }
  
    private applyStateWeights(blendFactor: number): void {
-@@ -545,10 +1135,11 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -545,10 +1149,11 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // "hunched walk" without needing a dedicated crouch-walk animation clip.
      // Without movement, 100% crouch-idle plays normally.
      const isCrouching = state === LocomotionState.CROUCHING;
@@ -24388,7 +24986,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..613bd2d84f78a4007e4ca17982abf14e
      const wantCrouch = isCrouching ? (crouchWalking ? 0.6 : 1) : 0;
  
      // Idle
-@@ -573,7 +1164,10 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -573,7 +1178,10 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // On state entry: snap weights for instant transitions on one-shot clips.
      if (state !== this.currentActiveState) {
        // Zero out ground animations instantly when entering any airborne state
