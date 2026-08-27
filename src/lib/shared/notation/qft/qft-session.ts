@@ -85,7 +85,19 @@ function readTrajectory(value: unknown): QftTrajectory | null {
   );
   if (propRate.some((rate) => Number.isNaN(rate))) return null;
   if (raw.handDirection !== 1 && raw.handDirection !== -1) return null;
-  const [rate0, rate1, rate2, rate3, rate4, rate5, rate6, rate7] = propRate;
+  // The length-8 check above proves this is a full tuple; map() cannot carry
+  // that proof through, so the destructure asserts it.
+  const [rate0, rate1, rate2, rate3, rate4, rate5, rate6, rate7] =
+    propRate as [
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+    ];
 
   return {
     radius: num(raw.radius, 0, MAX_RADIUS, 1),

@@ -313,6 +313,9 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
     [BrowseSortMethod.SEQUENCE_LENGTH]: "length",
     [BrowseSortMethod.AUTHOR]: "author",
     [BrowseSortMethod.POPULARITY]: "letter",
+    // Curated has no natural section; letter sections keep the index useful,
+    // which is what the missing-key fallback below always resolved to anyway.
+    [BrowseSortMethod.CURATED]: "letter",
   };
 
   const effectiveSectionGroupBy = $derived.by((): SectionGroupBy => {

@@ -219,10 +219,10 @@ export function validateWinterComposerPlacement(
   const [x, , z] = placement.position;
   for (const route of protectedRoutes) {
     for (let index = 1; index < route.points.length; index += 1) {
-      if (
-        distanceToSegment(x, z, route.points[index - 1], route.points[index]) <
-        route.halfWidth
-      ) {
+      // Starting at 1 keeps both ends of the segment inside the array.
+      const from = route.points[index - 1]!;
+      const to = route.points[index]!;
+      if (distanceToSegment(x, z, from, to) < route.halfWidth) {
         return "Protected settlement route";
       }
     }

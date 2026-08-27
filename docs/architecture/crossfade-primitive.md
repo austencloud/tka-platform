@@ -7,7 +7,7 @@
 ## Decision
 
 There is exactly one sanctioned way to crossfade content:
-`src/lib/shared/components/Crossfade.svelte`. Every *true crossfade* of cheap
+`src/lib/shared/components/Crossfade.svelte`. Every _true crossfade_ of cheap
 content uses it. Heavy/stateful content uses the dual-source no-remount path.
 Single enter/exit fades stay plain `transition:fade`. The boundary between these
 three is recorded here so future work doesn't re-litigate it.
@@ -22,8 +22,8 @@ Crossfades were repeatedly hand-rolled as two in-flow siblings each with
 take each other's space, and shove neighbors — layout shift across the whole
 transition. The grid-stack fix (both layers pinned to one cell) was known and
 copied around in feature code, but with no primitive to reach for, each new
-crossfade re-derived it and often got it wrong. Austen (2026-06-30): *"this has
-already been solved time and time again in our code base."*
+crossfade re-derived it and often got it wrong. Austen (2026-06-30): _"this has
+already been solved time and time again in our code base."_
 
 ## The boundary (the load-bearing decision)
 
@@ -51,19 +51,23 @@ are NOT crossfades. Wrapping one in `<Crossfade>` means inventing a meaningless
 
 ### Sizing is a primitive option, not a boundary
 
-Content-sized (default grid mode) vs parent-filled (`fill` → `absolute; inset:0`)
-is just a prop. It does NOT decide the boundary — remount cost does. A parent-
-filled crossfade of cheap content is fine on the primitive (`fill`); a parent-
-filled crossfade of heavy content is not (regardless of `fill`).
+Similarly sized content (default grid mode), materially different natural
+heights (`animateHeight`), and parent-filled layers (`fill` → `absolute; inset:0`)
+are primitive options. They do NOT decide the boundary — remount cost does.
+`animateHeight` measures the incoming layer and eases the wrapper to it on the
+same clock as the fade, in either direction. A parent-filled crossfade of cheap
+content is fine on the primitive (`fill`); a parent-filled crossfade of heavy
+content is not (regardless of `fill`).
 
 ## What is on the primitive (migrated 2026-06-30)
 
-| File | Mode | Note |
-|---|---|---|
-| `landing/SpinnerStatsBar` | grid, crossfade | flex stat sets, real shift bug fixed |
-| `tool-panel/ToolPanel` sub-tab | `fill`, crossfade | heavy but already keyed; gained reduced-motion |
-| `mandala/MandalaLoader` | `fill` | parent-filled stage, already cycles |
-| `generate/GenerateEmptyState` | grid, `delay=120` | tuned stagger preserved via `delay` |
+| File                                             | Mode              | Note                                                                |
+| ------------------------------------------------ | ----------------- | ------------------------------------------------------------------- |
+| `landing/SpinnerStatsBar`                        | grid, crossfade   | flex stat sets, real shift bug fixed                                |
+| `tool-panel/ToolPanel` sub-tab                   | `fill`, crossfade | heavy but already keyed; gained reduced-motion                      |
+| `mandala/MandalaLoader`                          | `fill`            | parent-filled stage, already cycles                                 |
+| `generate/GenerateEmptyState`                    | grid, `delay=120` | tuned stagger preserved via `delay`                                 |
+| `navigation/profile-settings/PasswordChangeForm` | `animateHeight`   | compact trigger ↔ credential form; symmetric expansion and collapse |
 
 Consolidation tax accepted: bespoke asymmetric in/out durations (e.g. in 260 /
 out 180) collapse to one `DURATION.*` token. Differences are imperceptible;

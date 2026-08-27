@@ -38,7 +38,7 @@ describe("createAssembleHistoryTransition", () => {
         {
           startPosition: "n",
           endPosition: "e",
-          rotationDirection: "clockwise",
+          rotationDirection: "cw",
           turnCount: 1,
           startOrientation: "in",
           endOrientation: "out",
@@ -46,7 +46,7 @@ describe("createAssembleHistoryTransition", () => {
       ],
       currentPosition: "e",
       currentOrientation: "out",
-      rotationDirection: "clockwise",
+      rotationDirection: "cw",
       turnCount: 1,
       selectedStepIndex: 0,
       stepEditMode: "replace",

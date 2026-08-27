@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { createSheetDismiss } from "../BottomSheet.svelte";
+import { createSheetDismiss } from "../sheet-dismiss";
 
 // The suite runs jsdom-global, but tests/setup/vitest-setup.ts stubs
 // document.createElement (non-canvas tags) and document.body. createElementNS is

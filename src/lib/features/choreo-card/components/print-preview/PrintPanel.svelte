@@ -9,9 +9,7 @@
   import type { PrintPDFMode } from "../../services/print-pdf-exporter";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
-
-  /** The side picker's four choices. 'zip' = card images (download only). */
-  export type PrintSide = "fronts" | "backs" | "combined" | "zip";
+  import type { PrintSide } from "./print-side";
 
   interface Props {
     cardCount: number;
