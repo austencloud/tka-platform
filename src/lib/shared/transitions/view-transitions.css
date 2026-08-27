@@ -683,6 +683,63 @@ html.named-route-morph::view-transition {
   --portal-origin-y: 95%;
 }
 
+/* A module can own named snapshots inside the root snapshot (workspace stages,
+   module content, shared cards). The browser gives those names a 250ms default
+   lifecycle, which used to remove the prior module 100ms before the 350ms
+   Settings portal had finished. Keep every captured layer alive on the portal
+   clock; the root-specific rules below retain the zoom choreography, while
+   named old/new layers use an even blend for their full lifetime. */
+.settings-portal-enter::view-transition-group(*),
+.settings-portal-exit::view-transition-group(*) {
+  animation-duration: var(--duration-dramatic);
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: both;
+}
+
+.settings-portal-enter::view-transition-old(*),
+.settings-portal-enter::view-transition-new(*),
+.settings-portal-exit::view-transition-old(*),
+.settings-portal-exit::view-transition-new(*) {
+  animation-duration: var(--duration-dramatic);
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+
+/* The sidebar is one persistent named element on both sides of the module
+   change. Chrome therefore morphs its box but gives the old/new image pair no
+   opacity animation, even though the tree inside changed from modules to
+   Settings (or back). Own that pair explicitly so the rail changes with the
+   portal instead of swapping live underneath it. */
+.settings-portal-enter::view-transition-old(sidebar),
+.settings-portal-exit::view-transition-old(sidebar) {
+  animation: settings-sidebar-fade-out var(--duration-dramatic) linear both;
+  mix-blend-mode: plus-lighter;
+}
+
+.settings-portal-enter::view-transition-new(sidebar),
+.settings-portal-exit::view-transition-new(sidebar) {
+  animation: settings-sidebar-fade-in var(--duration-dramatic) linear both;
+  mix-blend-mode: plus-lighter;
+}
+
+@keyframes settings-sidebar-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes settings-sidebar-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* ENTERING SETTINGS - Dive in (zoom from button) */
 .settings-portal-enter::view-transition-old(root) {
   animation: settings-zoom-out var(--duration-dramatic)
@@ -759,10 +816,12 @@ html.named-route-morph::view-transition {
 
 /* Accessibility - instant transition for reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .settings-portal-enter::view-transition-old(root),
-  .settings-portal-enter::view-transition-new(root),
-  .settings-portal-exit::view-transition-old(root),
-  .settings-portal-exit::view-transition-new(root) {
+  .settings-portal-enter::view-transition-group(*),
+  .settings-portal-enter::view-transition-old(*),
+  .settings-portal-enter::view-transition-new(*),
+  .settings-portal-exit::view-transition-group(*),
+  .settings-portal-exit::view-transition-old(*),
+  .settings-portal-exit::view-transition-new(*) {
     animation: none !important;
   }
 }
