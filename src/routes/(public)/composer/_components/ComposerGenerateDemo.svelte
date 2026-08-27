@@ -101,7 +101,7 @@
         loopType: circular.LOOPType.ROTATED,
         period: circular.Period.QUARTERED,
         length: 16,
-        turnIntensity: 3,
+        turnIntensity: 1.5,
         gridMode: grid.GridMode.DIAMOND,
         propType: prop.PropType.STAFF,
         difficulty: models.DifficultyLevel.INTERMEDIATE,
