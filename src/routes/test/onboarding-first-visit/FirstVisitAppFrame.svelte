@@ -40,10 +40,10 @@
       action: "Use this photo",
       icon: "fa-camera",
     },
-    "favorite-prop": {
+    props: {
       kicker: "My Props drawer",
-      title: "Choose your favorite prop",
-      action: "Set staff as favorite",
+      title: "Choose the props you spin",
+      action: "Save prop choices",
       icon: "fa-fire",
     },
     theme: {
@@ -301,7 +301,7 @@
                     <span><i class="fas fa-upload" aria-hidden="true"></i></span
                     >
                   </div>
-                {:else if simulation.activeSetupTask === "favorite-prop"}
+                {:else if simulation.activeSetupTask === "props"}
                   <div class="prop-drawer-preview" aria-label="Prop choices">
                     <span class="chosen-prop"
                       ><i class="fas fa-wand-sparkles" aria-hidden="true"></i> Staff</span

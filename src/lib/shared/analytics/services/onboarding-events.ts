@@ -30,7 +30,7 @@ export type GenerateTourSource = "first_run_offer" | "help_button";
 export type AccountSetupTask =
   | "display-name"
   | "profile-photo"
-  | "favorite-prop"
+  | "props"
   | "theme";
 
 function captureOnboardingEvent(

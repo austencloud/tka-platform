@@ -33,6 +33,8 @@ function statusWith(accountSetup: AccountSetupProgress): OnboardingStatus {
     appSkipped: false,
     appCompletedAt: null,
     lastSeenVersion: null,
+    viewer3DIntroSeen: false,
+    sceneStudioSetupSeen: false,
     accountSetup: normalizeAccountSetupProgress(accountSetup),
   };
 }
@@ -46,7 +48,7 @@ export function createFirstVisitSimulationState() {
   });
 
   let storedProgress = createDefaultAccountSetupProgress();
-  let favoritePropPresent = false;
+  let propsPresent = false;
   let scene = $state<FirstVisitScene>("arrival");
   let reminderDismissed = $state(false);
   let activeSetupTask = $state<AccountSetupTaskId | null>(null);
@@ -58,7 +60,7 @@ export function createFirstVisitSimulationState() {
       storedProgress = normalizeAccountSetupProgress(status.accountSetup);
     },
     loadPropPreferences: async () => ({
-      propsISpinWith: [],
+      propsISpinWith: propsPresent ? (["staff"] as never) : [],
       favoriteProp: null,
       favoriteCatdog: null,
     }),
@@ -77,8 +79,8 @@ export function createFirstVisitSimulationState() {
     identity.displayName = null;
     identity.photoURL = null;
     storedProgress = createDefaultAccountSetupProgress();
-    favoritePropPresent = false;
-    accountSetup.markFavoritePropPresent(false);
+    propsPresent = false;
+    accountSetup.markPropsPresent(false);
     reminderDismissed = false;
     activeSetupTask = null;
     scene = "arrival";
@@ -129,9 +131,9 @@ export function createFirstVisitSimulationState() {
       case "profile-photo":
         identity.photoURL = "sandbox-profile-photo";
         break;
-      case "favorite-prop":
-        favoritePropPresent = true;
-        accountSetup.markFavoritePropPresent(true);
+      case "props":
+        propsPresent = true;
+        accountSetup.markPropsPresent(true);
         break;
       case "theme":
         await accountSetup.markThemeChosen();
@@ -208,8 +210,8 @@ export function createFirstVisitSimulationState() {
     get hasProfilePhoto() {
       return Boolean(identity.photoURL);
     },
-    get hasFavoriteProp() {
-      return favoritePropPresent;
+    get hasProps() {
+      return propsPresent;
     },
     initialize,
     reset,

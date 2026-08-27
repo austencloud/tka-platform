@@ -161,7 +161,9 @@
                 alt={getPropTypeDisplayInfo(prop).label}
               />
               {#if prop === userProfile.favoriteProp}
-                <span class="favorite-star" aria-label="Favorite">&#9733;</span>
+                <span class="favorite-star" aria-label="Profile prop"
+                  >&#9733;</span
+                >
               {/if}
             </div>
           {/each}

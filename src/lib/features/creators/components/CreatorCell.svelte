@@ -28,10 +28,7 @@
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import FollowButton from "$lib/shared/community/components/FollowButton.svelte";
   import { getEffectiveProp } from "$lib/shared/community/domain/get-effective-prop";
-  import {
-    getBasePropType,
-    getPropTypeDisplayInfo,
-  } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import { formatTimeAgo } from "$lib/shared/i18n/i18n-formatters";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { BandKey } from "../domain/creator-recency";
@@ -73,15 +70,15 @@
   }: Props = $props();
 
   const prop = $derived(getEffectiveProp(creator));
-  const propLabel = $derived(
-    prop ? getPropTypeDisplayInfo(getBasePropType(prop))?.label : null
-  );
+  const propLabel = $derived(prop ? getPropTypeDisplayInfo(prop)?.label : null);
   const ringTone = $derived(ringToneFor(band));
 
   // The two creators with no lastActiveAt did not "fail to report" — they
   // joined and never returned, which is a real and useful thing to say.
   const activity = $derived(
-    creator.lastActiveAt ? formatTimeAgo(creator.lastActiveAt) : "never returned"
+    creator.lastActiveAt
+      ? formatTimeAgo(creator.lastActiveAt)
+      : "never returned"
   );
 
   const isPortrait = $derived(density === "portrait");
@@ -329,8 +326,13 @@
     right: 0.5em;
     padding: 0.15em 0.45em;
     border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 14%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 14%,
+      transparent
+    );
     color: color-mix(in srgb, var(--theme-accent, #6366f1) 55%, #fff);
     font-size: 0.5625em;
     font-weight: 600;

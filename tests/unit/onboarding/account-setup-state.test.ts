@@ -28,13 +28,13 @@ describe("account setup state", () => {
   function createHarness({
     displayName = "Austen",
     photoURL = "https://example.com/avatar.png",
-    favoriteProp = "staff",
+    propsISpinWith = ["staff"],
     accountSetup = createDefaultAccountSetupProgress(),
     isFullAccount = true,
   }: {
     displayName?: string | null;
     photoURL?: string | null;
-    favoriteProp?: string | null;
+    propsISpinWith?: string[];
     accountSetup?: ReturnType<typeof createDefaultAccountSetupProgress>;
     isFullAccount?: boolean;
   } = {}) {
@@ -53,8 +53,8 @@ describe("account setup state", () => {
       loadStatus: async () => structuredClone(status),
       saveStatus,
       loadPropPreferences: async () => ({
-        propsISpinWith: [],
-        favoriteProp: favoriteProp as never,
+        propsISpinWith: propsISpinWith as never,
+        favoriteProp: null,
         favoriteCatdog: null,
       }),
       now: () => now,
@@ -63,7 +63,7 @@ describe("account setup state", () => {
     return { state, saveStatus, getStatus: () => status };
   }
 
-  it("derives three tasks from canonical account data and requires an explicit theme choice", async () => {
+  it("derives four tasks from canonical account data and requires an explicit theme choice", async () => {
     const { state } = createHarness();
     await state.loadForCurrentUser();
 
@@ -79,7 +79,7 @@ describe("account setup state", () => {
     expect(state.isComplete).toBe(true);
   });
 
-  it("counts a catdog favorite as a completed prop task", async () => {
+  it("completes the prop task from selected props without requiring a favorite", async () => {
     const status = createStatus();
     const state = createAccountSetupState({
       getIdentity: () => ({
@@ -91,27 +91,24 @@ describe("account setup state", () => {
       loadStatus: async () => status,
       saveStatus: async () => {},
       loadPropPreferences: async () => ({
-        propsISpinWith: [],
+        propsISpinWith: ["staff", "fan"] as never,
         favoriteProp: null,
-        favoriteCatdog: {
-          bluePropType: "staff" as never,
-          redPropType: "fan" as never,
-        },
+        favoriteCatdog: null,
       }),
     });
 
     await state.loadForCurrentUser();
 
-    expect(
-      state.tasks.find((task) => task.id === "favorite-prop")?.complete
-    ).toBe(true);
+    expect(state.tasks.find((task) => task.id === "props")?.complete).toBe(
+      true
+    );
   });
 
   it("shows a requested reminder once per session and snoozes a dismissal for seven days", async () => {
     const { state, getStatus } = createHarness({
       displayName: null,
       photoURL: null,
-      favoriteProp: null,
+      propsISpinWith: [],
     });
     await state.loadForCurrentUser();
 
@@ -131,7 +128,7 @@ describe("account setup state", () => {
     const { state } = createHarness({
       displayName: null,
       photoURL: null,
-      favoriteProp: null,
+      propsISpinWith: [],
       accountSetup: {
         backgroundChosenAt: null,
         reminderDismissals: 2,
@@ -151,7 +148,7 @@ describe("account setup state", () => {
       isFullAccount: false,
       displayName: null,
       photoURL: null,
-      favoriteProp: null,
+      propsISpinWith: [],
     });
     await state.loadForCurrentUser();
 
@@ -201,8 +198,8 @@ describe("account setup state", () => {
         status = structuredClone(next);
       },
       loadPropPreferences: async () => ({
-        propsISpinWith: [],
-        favoriteProp: "staff" as never,
+        propsISpinWith: ["staff"] as never,
+        favoriteProp: null,
         favoriteCatdog: null,
       }),
       now: () => now,

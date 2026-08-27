@@ -30,7 +30,7 @@ describe("first-visit onboarding simulator", () => {
     for (const taskId of [
       "display-name",
       "profile-photo",
-      "favorite-prop",
+      "props",
       "theme",
     ] as const) {
       const completedBefore = simulation.accountSetup.completedCount;
@@ -46,7 +46,7 @@ describe("first-visit onboarding simulator", () => {
 
     expect(simulation.displayName).toBe("Sky");
     expect(simulation.hasProfilePhoto).toBe(true);
-    expect(simulation.hasFavoriteProp).toBe(true);
+    expect(simulation.hasProps).toBe(true);
     expect(simulation.accountSetup.completedCount).toBe(4);
     expect(simulation.accountSetup.isComplete).toBe(true);
   });
