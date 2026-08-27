@@ -509,30 +509,6 @@
     }
   }
 
-  /* Big-screen tier: one type step up so the footer doesn't read miniature.
-     1680, not 2200 — a 4K monitor at 200% OS scaling reports ~1920 CSS px, so
-     the old 2200 query never fired on the primary target display. */
-  @media (min-width: 1680px) {
-    .col a,
-    .tagline {
-      font-size: 1.05rem;
-    }
-    .col-title {
-      font-size: 0.9rem;
-    }
-    .legal-line,
-    .bottom-links a {
-      font-size: 1rem;
-    }
-    .composer-cta {
-      font-size: 1rem;
-      padding: 12px 22px;
-    }
-    .wordmark {
-      font-size: 1.9rem;
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .col a,
     .col-toggle,

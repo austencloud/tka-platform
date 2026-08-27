@@ -41,9 +41,8 @@
 
   .inner {
     width: 100%;
-    /* rem, not px, so the card rides the lockstep root ramp (src/app.css)
-       instead of staying a 560px postage stamp on a 4K screen: 35rem is 560px
-       at the 16px root and 840px at the 24px root (3840px viewport). */
+    /* A deliberate reading-card measure. The surrounding public shell owns
+       wide-canvas composition while browser zoom scales this rem measure. */
     max-width: 35rem;
     text-align: center;
   }
@@ -106,10 +105,5 @@
   /* Waitlist form visuals live in WaitlistForm.svelte (shared with the
      per-product "not on sale yet" state). */
 
-  /* 4K / ultrawide: one scale step so the gate doesn't read miniature. */
-  /* The 4K step tier that used to sit here is gone: the lockstep root ramp
-     (src/app.css) scales this whole card continuously from 1680→3840, and the
-     old 2200px seam never fired on the most common 4K setup (200% scaling,
-     ~1920 CSS px) — so every stranger landing on /shop from a 4K machine got
-     the 1080p layout. */
+  /* No wide-screen scale tier: this gate keeps its authored logical size. */
 </style>

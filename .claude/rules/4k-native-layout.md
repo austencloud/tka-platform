@@ -1,98 +1,102 @@
-# 4K Is Home — ENFORCED
+# 4K Is Home: Composition, Not Auto-Zoom — ENFORCED
 
-## The Problem This Solves
+## What 4K Means
 
-TKA is built, demoed, and used on a 4K monitor, and shown on widescreen TVs at
-jams. Pages kept shipping as a phone layout scaled up: a narrow band centered in
-a sea of empty rail, one thin row of controls stretched across the top, and a
-big-screen media query keyed to a width that never fires.
+TKA must feel composed on a wide display without assuming that screen width is
+viewing distance. Windows display scaling and browser zoom already map CSS
+pixels to comfortable physical sizes. A 3840×2160 panel at 150% scaling commonly
+exposes about 2560×1440 CSS pixels.
 
-Austen (2026-07-20): *"every single page should feel just gorgeously at home on
-a 4K monitor ... everything is the right size and displayed with the right kind
-of layout ... as soon as you go to a page you feel like wow boom layout is
-gorgeous right in your face."*
+| Real setup            | Approximate CSS viewport | Required response                                 |
+| --------------------- | ------------------------ | ------------------------------------------------- |
+| 4K at 200% OS scaling | 1920×1080                | desktop composition                               |
+| 4K at 150% OS scaling | 2560×1440                | wider composition band and optional extra columns |
+| 4K at 100% OS scaling | 3840×2160                | native wide-canvas composition                    |
 
-The glossary landing was the case that earned this rule: a full-bleed shell
-~500px wider than SiteHeader, nine category cards `auto-fill`ed into a row of 8
-plus one orphan, a `min-width: 2200px` tier that never fired at all, and three
-different content widths stacked down one page.
+The third setup does not prove the viewer is across the room. If a jam, kiosk,
+or TV needs distance-readable UI, that is an explicit presentation mode.
 
-## The Three 4K Viewports (know which one you mean)
+## The Four Independent Concerns
 
-| Real setup | CSS viewport | What it needs |
-|---|---|---|
-| 4K @ 200% OS scaling (Windows default) | **~1920px** | Composition only — OS already scaled the pixels |
-| 4K @ 150–160% scaling | **~2350–2560px** | Composition + wider band |
-| 4K @ 100%, or a TV across the room | **~3840px** | Wider band **AND** element/type scale — nothing is scaling for you |
+1. **Logical size**: generic UI type and controls use stable CSS-pixel/rem roles.
+2. **Composition**: columns, rails, gutters, and content bands respond to space.
+3. **Reading measure**: prose keeps a comfortable maximum line length.
+4. **Presentation distance**: deliberate magnification belongs to an explicit mode.
 
-A single `min-width: 2200px` query misses the first case entirely, which is the
-most common one. **The site-wide big-screen seam is `1680`**
-(`src/lib/shared/landing/styles/public-editorial.css`) — 1680 catches 4K@200%,
-1440p@100%, and fullscreen 1920 desktops while leaving laptops on the base
-design. Use it. Add a second tier above ~2600px when scale (not just layout)
-needs to step.
+Never use one mechanism to impersonate another.
 
-## The Two Mechanisms (use these, don't invent a third)
+## The Shared Mechanisms
 
-1. **`--shell-w`** (`src/app.css`) — the one content band, shared by SiteHeader,
-   SiteFooter, `.editorial`, and every public page shell. Floor 1720px, fluid
-   88vw, ceiling 2600px. Consume it as
-   `max-width: var(--shell-w, min(1720px, 92vw))`. Never hardcode a band.
-2. **The lockstep root ramp** (`src/app.css`, scoped to `html:has(.mkt-shell)`
-   and `html:has(.legal-container)`; the guide has its own identical rule in
-   `guide.css`) — root font ramps 16px→24px continuously from 1680→3840. Every
-   rem/em/ch measure grows by the SAME multiplier, so nothing can outgrow its
-   neighbours and the disjointed-4K failure becomes impossible by construction.
+1. **Global typography roles** in `src/app.css` own generic UI type. The root is
+   16px at every viewport width; browser zoom remains the user's scale control.
+2. **`--shell-w`** in `src/app.css` owns the public composition band. Full-bleed
+   backgrounds may span the viewport while authored content uses the band.
+3. **Editorial measures** in `editorial-measure.css` own prose, lede, and note
+   line length. They are maximums and collapse naturally on small screens.
+4. **Container queries** own component-local recomposition. Media queries own
+   viewport shell and input-mode changes.
 
-**Consequence: express sizes in `rem`, not `px`.** A `max-width: 600px` card is
-frozen at 1080p proportions forever; `37.5rem` is the same card that grows with
-the ramp. px is correct only for things that must NOT scale: touch-target
-floors, hairline borders, and media capped by source resolution (e.g. a 400×400
-PNG capped at 360px).
+The 1680px and 2600px seams are composition vocabulary, not scale modes. Keep a
+large-screen tier when it adds a column, changes grid areas, widens a capped
+band, or reveals an auxiliary rail. Remove it when it only enlarges type,
+controls, padding, or gaps.
 
-**Consequence: a step-tier that only bumps type/spacing is now redundant** —
-delete it and let the ramp do it continuously. Keep a tier only when it
-*recomposes* (column counts, grid areas, stacked→side-by-side).
+## Surface Rules
 
-## The Rules
+- **Authenticated app**: keep the 16px root and global type roles. More canvas
+  may reveal more information or workspace, but the same button stays the same
+  logical size.
+- **Public pages**: use `--shell-w` for page composition and the editorial
+  measure tokens for reading. A visual grid may be wide; prose may not stretch
+  merely to fill the band.
+- **Mobile**: preserve feature parity, touch targets, safe areas, and readable
+  type while allowing layout to reflow or become full-screen.
+- **Artifacts**: stages, pictographs, maps, timelines, and other visual workspaces
+  may scale their content relative to their container. Their surrounding UI and
+  prose stay on the global roles.
 
-1. **Fill the canvas.** The content band grows with the viewport above its
-   floor. A hard `1720px` cap leaves 27% dead rail at 2350px and 55% at 3840px —
-   that is the "not at home" feeling. Bands are fluid; only the *floor* is fixed.
-2. **Never a row of one.** Column counts are a design decision per tier, not
-   whatever `repeat(auto-fill, minmax(Npx, 1fr))` happens to emit. Auto-fill
-   against a floor produces *more, thinner* items as the screen grows and
-   orphans the last one. Pin the count per breakpoint and pick counts where
-   `itemCount % cols != 1`.
-3. **One width per page.** Shell, content grid, and CTA all share the band. Three
-   stacked widths (full-bleed grid over a 46rem CTA over capped prose) reads as
-   three unrelated pages. No `ch`/narrow-`rem` reading caps on public prose —
-   see `feedback_no_text_max_width` memory.
-4. **Use the vertical too.** A wide screen is also a tall one. Fewer/bigger rows
-   beat one thin row with 40% of the viewport empty below the fold. If the page
-   dead-ends a third of the way down at 4K, it is not done.
-5. **Screenshot at all three widths.** 1920 / 2350 / 3840, yourself, before
-   claiming done — plus the small end (`visual-verification-mandatory.md` has
-   the full list). Arithmetic about column counts is not verification of
-   composition, and neither is a green typecheck. Austen should never again
-   have to say "now make it work on 4K" — arriving there is the job, not a
-   follow-up round.
+## Wide-Canvas Composition
+
+1. Use the available canvas intentionally. A capped reading column can sit in a
+   generous shell with balanced rail or supporting content.
+2. Avoid accidental orphan rows for known fixed item counts. Choose deliberate
+   column counts at each composition tier.
+3. Keep one authored composition band per page. Smaller reading measures live
+   inside that band; they do not create competing page shells.
+4. Use vertical space as part of the composition, without enlarging controls to
+   consume it.
+
+## Verification
+
+Visual changes must be verified at these CSS viewports:
+
+- 375×667
+- 960×412
+- 820×1180
+- 1440×900
+- 1920×1080
+- 2560×1440
+- 3840×2160
+
+Also check 200% browser zoom for reflow, clipping, keyboard reachability, and
+dialog access. Record the CSS viewport and computed root font size in the
+evidence. A physical monitor resolution is not a viewport measurement.
 
 ## Forbidden
 
-- A new `@media (min-width: 2200px)` big-screen tier (dead on 4K@200%). Use 1680,
-  plus a ≥2600 tier when scale must step.
-- `repeat(auto-fill, minmax(Npx, 1fr))` as the wide-screen grid for a known,
-  fixed item count.
-- A hard `max-width` cap on a page's content band with no fluid growth above it.
-- Shipping a layout change on a public page without checking it at 4K widths.
-- "It matches the header" as the sole justification for dead rail — if the header
-  is the thing that's wrong, say so.
+- A viewport-driven root font-size ramp for ordinary app, marketing, legal, or
+  settings UI.
+- Redefining `--font-size-*` tokens inside a large-screen media or container query.
+- Enlarging the same control because `min-width: 1680px` or `2600px` matched.
+- Inferring viewing distance from viewport width, device-pixel ratio, or physical
+  panel resolution.
+- Stretching paragraphs across a wide shell to eliminate empty rail.
+- A hard content band that never grows on wide screens unless the surface is a
+  deliberate reading or media measure.
+- Shipping a visual layout change without the full viewport verification pass.
 
 ## Related
 
-- Memory: `feedback_4k_is_home`, `feedback_no_text_max_width`,
-  `feedback_design_system_mandatory`
+- `docs/architecture/responsive-design.md`
+- `docs/superpowers/specs/active/2026-08-27-logical-pixel-responsive-composition-design.md`
 - `no-layout-shift.md`, `never-hand-roll.md`, `verification-protocol.md`
-- `src/lib/shared/landing/styles/public-editorial.css` — the shared editorial
-  shell and the documented 1680 seam

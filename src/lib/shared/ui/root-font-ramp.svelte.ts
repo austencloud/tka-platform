@@ -1,22 +1,20 @@
 /**
  * Root-font ramp scale.
  *
- * Marketing and editorial surfaces ramp the document's root font size from
- * 16px to 24px across 1680 -> 3840 (see `src/app.css`), so every rem-based
- * measure grows in lockstep on a large display. Anything sized by a hardcoded
- * px constant does not, and a pictograph frozen at its 1080p size inside a
- * grid that grew around it is the visible result.
+ * Ordinary app and public surfaces keep the standard 16px root at every
+ * viewport width. A deliberately scaled artifact shell may still opt into a
+ * different root, and hardcoded pixel geometry inside it must follow that
+ * explicit scale.
  *
- * Consumers multiply their px constant by `scale` so those constants ramp with
- * everything else. The app shell does not ramp — its root stays 16px at any
- * width — so `scale` is 1 there and the stock size is what renders.
+ * Consumers multiply their px constant by `scale`. Standard surfaces resolve
+ * to 1, so the authored size is unchanged.
  */
 
 /** The root font size every hardcoded px constant in the app was authored against. */
 const BASE_ROOT_FONT_PX = 16;
 
 export interface RootFontRamp {
-  /** 1 on a non-ramping surface; up to 1.5 at the top of the marketing ramp. */
+  /** 1 on a standard surface; higher only in an explicitly scaled shell. */
   readonly scale: number;
   /** A px constant scaled by the ramp and rounded to a whole pixel. */
   scaled(px: number): number;
@@ -39,8 +37,8 @@ export function createRootFontRamp(): RootFontRamp {
     };
 
     read();
-    // The ramp is a viewport-width clamp, so a resize is the only thing that
-    // moves it.
+    // Root size can change when an explicit presentation or artifact mode
+    // enters, exits, or crosses its responsive boundary.
     window.addEventListener("resize", read);
     return () => window.removeEventListener("resize", read);
   });

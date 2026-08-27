@@ -1,8 +1,12 @@
 # App Shell 4K Lockstep Scaling
 
 **Date:** 2026-08-06  
-**Status:** Proposed, awaiting Austen's approval  
+**Status:** Superseded on 2026-08-27; do not implement
 **Origin:** [Gallery + Library Shared Filter Workspace handoff](../2026-08-06-gallery-library-shared-workspace-handoff.md)
+
+> This proposal treated viewport width as a proxy for viewing distance. It was
+> superseded by [Logical-Pixel Responsive Composition](2026-08-27-logical-pixel-responsive-composition-design.md),
+> which keeps the app root at 16px and uses wide viewports for composition.
 
 ## Outcome
 

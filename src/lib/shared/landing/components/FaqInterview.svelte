@@ -182,13 +182,9 @@
     }
   }
 
-  /* 4K scaling is handled by the site-wide lockstep root ramp (src/app.css):
-     every rem here — gutters, serif sizes, padding — grows by one multiplier
-     from 1680→3840. The old @media (min-width: 2200px) step tier that used to
-     live here was doing this job in one jolt, at a width that never fires on a
-     4K monitor at 200% OS scaling (~1920 CSS px). The CTA's px min-height/
-     padding are the only things that don't ride the ramp; they're touch-target
-     floors, correct as-is. */
+  /* No wide-screen type tier: the interview keeps its authored logical roles
+     while the surrounding editorial shell owns composition. The CTA's px
+     min-height and padding are touch-target floors. */
 
   @media (prefers-reduced-motion: reduce) {
     .faq-cta {

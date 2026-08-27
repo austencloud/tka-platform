@@ -539,8 +539,7 @@
     margin-bottom: 0;
   }
 
-  /* Entry text carries no size of its own; without this it stays at the
-     inherited 16px while the rest of the block steps up. */
+  /* Entry text uses the primary UI role at every desktop width. */
   .change-groups :global(.change-item) {
     font-size: var(--font-size-base);
     line-height: 1.55;
@@ -586,48 +585,6 @@
 
     .empty-adders[data-groups="3"] {
       grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-
-  /* Very wide canvases: step the scale so the page reads at TV distance
-     instead of shrinking into the corner. */
-  @container (min-width: 2000px) {
-    .version-detail-body {
-      gap: 1.5rem;
-      --font-size-compact: 1.05rem;
-      --font-size-sm: 1.25rem;
-      --font-size-base: 1.25rem;
-      --font-size-lg: 1.6rem;
-      --font-size-xl: 2rem;
-    }
-  }
-
-  /* Rows gain real presence at these sizes, so the pane reads as a page
-     rather than a strip of text pinned to the top edge. */
-  @container (min-width: 2000px) {
-    .change-groups :global(.change-item) {
-      padding: 1.1rem 1.4rem;
-      border-radius: 0.9rem;
-    }
-
-    .change-groups :global(.change-list) {
-      gap: 0.75rem;
-    }
-
-    .change-groups :global(.add-entry-btn),
-    .empty-adders :global(.add-entry-btn) {
-      padding: 1rem 1.4rem;
-      border-radius: 0.9rem;
-    }
-  }
-
-  @container (min-width: 2800px) {
-    .version-detail-body {
-      --font-size-compact: 1.25rem;
-      --font-size-sm: 1.5rem;
-      --font-size-base: 1.5rem;
-      --font-size-lg: 1.9rem;
-      --font-size-xl: 2.4rem;
     }
   }
 

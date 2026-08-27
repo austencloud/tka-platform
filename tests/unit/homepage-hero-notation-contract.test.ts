@@ -127,7 +127,7 @@ describe("homepage hero notation rail contract", () => {
     expect(homeHero).not.toContain("@media (min-width: 2200px)");
   });
 
-  it("keeps the wide launchpad on the shared lockstep scale", () => {
+  it("keeps the wide launchpad on the shared composition band", () => {
     expect(landingPage).toContain(
       "max-width: var(--shell-w, min(1720px, 92vw))"
     );
