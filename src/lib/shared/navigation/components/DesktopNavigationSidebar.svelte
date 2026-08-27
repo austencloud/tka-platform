@@ -8,8 +8,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
-  import { fade } from "svelte/transition";
-  import { Sidebar } from "@austencloud/sidebar";
+  import {
+    Sidebar,
+    type ModuleDefinition as SidebarModuleDefinition,
+  } from "@austencloud/sidebar";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { HapticFeedback } from "../../application/services/haptic-feedback";
   import type { ModuleDefinition, Section, ModuleId } from "../domain/types";
@@ -20,7 +22,6 @@
     saveDesktopSidebarCollapsedState,
   } from "../../layout/desktop-sidebar-state.svelte";
   import SidebarFooter from "./desktop-sidebar/SidebarFooter.svelte";
-  import CollapsedTabButton from "./desktop-sidebar/CollapsedTabButton.svelte";
   import SidebarContextMenu from "./desktop-sidebar/SidebarContextMenu.svelte";
   import type { ContextMenuState } from "./desktop-sidebar/SidebarContextMenu.svelte";
   import AccountPopover from "./account/AccountPopover.svelte";
@@ -88,6 +89,10 @@
 
   function translateLabel(id: string): string {
     getReactiveLocale(); // re-run on locale change
+    if (isInSettings) {
+      const settingsTab = SETTINGS_TABS.find((tab) => tab.id === id);
+      if (settingsTab) return t(settingsTab.labelKey);
+    }
     const m = modules.find((x: ModuleDefinition) => x.id === id);
     return m ? t(m.labelKey) : id;
   }
@@ -122,6 +127,7 @@
   }
 
   function onModuleHover(id: string) {
+    if (isInSettings) return;
     prefetchOnIntent(id);
   }
 
@@ -130,6 +136,14 @@
   // activating a module — the external @austencloud/sidebar package has no
   // concept of a plain link cell, so this is the seam that intercepts it.
   function handleModuleChange(moduleId: string, targetSection?: string) {
+    if (isInSettings) {
+      const settingsTab = SETTINGS_TABS.find((tab) => tab.id === moduleId);
+      if (settingsTab) {
+        onSectionChange?.(settingsTab.id);
+        return;
+      }
+    }
+
     const def = modules.find((m: ModuleDefinition) => m.id === moduleId);
     if (def?.linkHref) {
       goto(def.linkHref);
@@ -191,13 +205,6 @@
     contextMenuState.mode !== "closed" || accountPopoverOpen
   );
 
-  // --- Settings sub-nav (rendered in the beforeTree slot) -------------------
-  const filteredSettingsSections = $derived(
-    SETTINGS_TABS.filter((section) =>
-      featureFlagService.canAccessTab("settings", section.id)
-    )
-  );
-
   async function handleOpenSettings() {
     hapticService?.trigger("selection");
     if (navigationState.currentModule !== "settings") {
@@ -211,14 +218,26 @@
     await onModuleChange?.(previousModule as ModuleId);
   }
 
-  function handleSettingsSectionTap(section: Section) {
-    hapticService?.trigger("selection");
-    onSectionChange?.(section.id);
-  }
-
-  // In settings mode the module tree is empty; the settings nav renders in
-  // beforeTree instead.
-  const hostModules = $derived<ModuleDefinition[]>(isInSettings ? [] : modules);
+  // Settings is one flat destination list, not a Settings menu containing a
+  // second menu. Present each tab through the package's top-level module row so
+  // its icon stays put while the label appears beside it.
+  const hostModules = $derived<SidebarModuleDefinition[]>(
+    isInSettings
+      ? SETTINGS_TABS.filter((tab) =>
+          featureFlagService.canAccessTab("settings", tab.id)
+        ).map((tab) => ({
+          id: tab.id,
+          label: tab.label,
+          icon: tab.icon,
+          color: "#64748b",
+          isMain: true,
+          sections: [],
+        }))
+      : modules
+  );
+  const hostCurrentModule = $derived(
+    isInSettings ? navigationState.activeTab : currentModule
+  );
 
   onMount(() => {
     hapticService = getHapticFeedback();
@@ -229,7 +248,7 @@
 
 <Sidebar
   modules={hostModules}
-  {currentModule}
+  currentModule={hostCurrentModule}
   {currentSection}
   bind:pinned={sidebarPinned}
   railWidth={desktopSidebarState.collapsedWidth}
@@ -237,7 +256,7 @@
   homeHref="/"
   onModuleChange={handleModuleChange}
   {onSectionChange}
-  onModuleContextMenu={featureFlagService.isAdmin
+  onModuleContextMenu={featureFlagService.isAdmin && !isInSettings
     ? openModuleContextMenu
     : undefined}
   onSectionContextMenu={featureFlagService.isAdmin
@@ -262,14 +281,7 @@
 
   {#snippet beforeTree(expanded)}
     {#if isInSettings}
-      <div class="sidebar-settings-nav">
-        {#if expanded}
-          <div class="settings-header">
-            <i class="fas fa-cog settings-header-icon" aria-hidden="true"></i>
-            <span class="settings-header-text">Settings</span>
-          </div>
-        {/if}
-
+      <div class="sidebar-settings-nav" class:collapsed={!expanded}>
         <button
           type="button"
           class="settings-back-button"
@@ -277,47 +289,11 @@
           onclick={handleSettingsBack}
           aria-label="Back to modules"
         >
-          <div class="back-icon">
+          <span class="back-icon">
             <i class="fas fa-arrow-left" aria-hidden="true"></i>
-          </div>
-          {#if expanded}
-            <span class="back-label">Back</span>
-          {/if}
+          </span>
+          <span class="back-label" aria-hidden={!expanded}>Back</span>
         </button>
-
-        {#if !expanded}
-          <div class="collapsed-settings-tabs">
-            {#each filteredSettingsSections as section, index}
-              {@const isSectionActive =
-                navigationState.activeTab === section.id}
-              <div in:fade={{ duration: 150, delay: index * 25 }}>
-                <CollapsedTabButton
-                  {section}
-                  moduleId="settings"
-                  isActive={isSectionActive}
-                  onClick={() => handleSettingsSectionTap(section)}
-                />
-              </div>
-            {/each}
-          </div>
-        {:else}
-          <div class="settings-sections">
-            {#each filteredSettingsSections as section, index}
-              {@const isSectionActive =
-                navigationState.activeTab === section.id}
-              <button
-                class="section-button"
-                class:active={isSectionActive}
-                onclick={() => handleSettingsSectionTap(section)}
-                in:fade={{ duration: 150, delay: 50 + index * 30 }}
-                style="--section-color: {section.color || '#64748b'};"
-              >
-                <span class="section-icon">{@html section.icon}</span>
-                <span class="section-label">{t(section.labelKey)}</span>
-              </button>
-            {/each}
-          </div>
-        {/if}
       </div>
     {/if}
   {/snippet}
@@ -404,21 +380,27 @@
      ============================================================================ */
   .sidebar-settings-nav {
     width: 100%;
+    margin-bottom: 4px;
   }
 
   .settings-back-button {
     width: 100%;
+    height: var(--min-touch-target);
+    min-height: var(--min-touch-target);
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    margin-bottom: 12px;
+    gap: 0;
+    padding: 0 14px 0 0;
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all var(--duration-normal) ease;
+    overflow: hidden;
+    transition:
+      background-color var(--duration-normal) ease,
+      border-color var(--duration-normal) ease,
+      color var(--duration-normal) ease;
     font-size: var(--font-size-sm);
     font-weight: 500;
   }
@@ -430,42 +412,30 @@
   }
 
   .settings-back-button.collapsed {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
     padding: 0;
-    justify-content: center;
-    margin-bottom: 8px;
   }
 
   .back-icon {
-    width: 32px;
-    height: 32px;
+    width: var(--min-touch-target);
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
     font-size: var(--font-size-base);
-    border-radius: 8px;
-    background: var(--theme-card-bg);
-    transition: all var(--duration-normal) ease;
-  }
-
-  .settings-back-button.collapsed .back-icon {
-    width: 100%;
-    height: 100%;
-    background: transparent;
-    border-radius: 12px;
-  }
-
-  .settings-back-button:hover .back-icon {
-    background: var(--theme-card-hover-bg);
   }
 
   .back-label {
     flex: 1;
     text-align: left;
     font-weight: 500;
-    animation: label-fade-in var(--duration-normal) ease-out
-      var(--duration-fast) both;
+    white-space: nowrap;
+    opacity: 1;
+    transition: opacity var(--duration-normal) ease;
+  }
+
+  .settings-back-button.collapsed .back-label {
+    opacity: 0;
   }
 
   .settings-back-button:focus-visible {
@@ -473,128 +443,10 @@
     outline-offset: 2px;
   }
 
-  .settings-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 4px 14px 12px;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    opacity: 0.7;
-  }
-
-  .settings-header-icon {
-    font-size: var(--font-size-sm);
-  }
-
-  .settings-header-text {
-    flex: 1;
-  }
-
-  .settings-sections {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(6px, 4cqw, 10px);
-  }
-
-  .section-button {
-    width: 100%;
-    min-height: var(--min-touch-target);
-    display: flex;
-    align-items: center;
-    gap: clamp(10px, 6cqw, 14px);
-    padding: clamp(12px, 7cqw, 16px) clamp(12px, 7cqw, 16px);
-    background: transparent;
-    border: none;
-    border-radius: clamp(8px, 5cqw, 12px);
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-    font-size: clamp(13px, 7.5cqw, 15px);
-    font-weight: 600;
-    text-align: left;
-  }
-
-  .section-button:hover {
-    background: var(--theme-card-hover-bg);
-    color: var(--theme-text);
-  }
-
-  .section-button.active {
-    background: color-mix(in srgb, var(--section-color) 18%, transparent);
-    color: white;
-    border-left: 3px solid var(--section-color);
-    padding-left: 9px;
-  }
-
-  .section-icon {
-    width: clamp(20px, 12cqw, 26px);
-    height: clamp(20px, 12cqw, 26px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: clamp(16px, 10cqw, 20px);
-    opacity: 0.8;
-    transition: all var(--duration-normal) ease;
-    flex-shrink: 0;
-  }
-
-  .section-button:hover .section-icon {
-    opacity: 1;
-  }
-
-  .section-button.active .section-icon {
-    opacity: 1;
-    color: var(--section-color);
-  }
-
-  .section-icon :global(i) {
-    font-size: inherit;
-  }
-
-  .section-label {
-    flex: 1;
-    animation: label-fade-in var(--duration-normal) ease-out
-      var(--duration-fast) both;
-  }
-
-  .collapsed-settings-tabs {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .section-button:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
-    outline-offset: 2px;
-  }
-
-  @keyframes label-fade-in {
-    from {
-      opacity: 0;
-      transform: translateX(-4px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .settings-back-button,
-    .back-icon,
-    .section-button,
-    .section-icon {
+    .back-label {
       transition: none !important;
-    }
-    .back-label,
-    .section-label {
-      animation: none;
     }
   }
 </style>

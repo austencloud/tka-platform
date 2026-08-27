@@ -125,12 +125,35 @@
 
     // rAF ensures we're past the first frame, setTimeout ensures the browser
     // has actually painted the overlay before we start the heavy 3D mount.
-    requestAnimationFrame(() => {
-      setTimeout(() => {
+    // Hidden tabs do not receive animation frames, so waiting only on rAF can
+    // strand the museum on its loading screen until the user returns. Move to
+    // the task queue whenever the tab is hidden, including when it becomes
+    // hidden while the first frame is still pending.
+    let rafId = 0;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const startDeferred = () => {
+      rafId = 0;
+      timeoutId = setTimeout(() => {
+        timeoutId = null;
         deferredReady = true;
       }, 0);
-    });
+    };
+    const onVisibilityChange = () => {
+      if (document.hidden && !deferredReady && rafId) {
+        cancelAnimationFrame(rafId);
+        startDeferred();
+      }
+    };
+    if (document.hidden) {
+      startDeferred();
+    } else {
+      rafId = requestAnimationFrame(startDeferred);
+      document.addEventListener("visibilitychange", onVisibilityChange);
+    }
     return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      if (rafId) cancelAnimationFrame(rafId);
+      if (timeoutId !== null) clearTimeout(timeoutId);
       // Resume the global animated background for the rest of the app.
       releaseBackground("museum");
       // Restore sidebar when leaving museum
