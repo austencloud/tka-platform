@@ -9152,7 +9152,7 @@ index d49f92a..31e0250 100644
 -//# sourceMappingURL=FingerAnimator.d.ts.map
 \ No newline at end of file
 diff --git a/dist/lib/services/implementations/FootPlanter.d.ts b/dist/lib/services/implementations/FootPlanter.d.ts
-index cb9ec21..e78fd0f 100644
+index cb9ec21..b0afbfe 100644
 --- a/dist/lib/services/implementations/FootPlanter.d.ts
 +++ b/dist/lib/services/implementations/FootPlanter.d.ts
 @@ -8,10 +8,14 @@
@@ -9174,7 +9174,7 @@ index cb9ec21..e78fd0f 100644
   *
   * Uses the same IKSolver.solveTwoBone() that arm IK uses - the math is
   * identical, just applied to leg chains with a forward pole hint (knees
-@@ -30,15 +34,35 @@ export declare class FootPlanter implements IFootPlanter {
+@@ -30,15 +34,38 @@ export declare class FootPlanter implements IFootPlanter {
      private rightFoot;
      private leftLegChain;
      private rightLegChain;
@@ -9190,6 +9190,7 @@ index cb9ec21..e78fd0f 100644
 -    private readonly worldUp;
 +    private readonly tempQuat;
 +    private readonly tempToeWorld;
++    private readonly tempToeTip;
 +    private readonly tempAnkleWorld;
 +    private readonly tempWarp;
 +    private readonly tempWarped;
@@ -9200,6 +9201,8 @@ index cb9ec21..e78fd0f 100644
      private firstFrame;
 +    /** Last frame's pelvis correction, taken back before the next measurement. */
 +    private readonly appliedPelvisOffset;
++    /** Where the pelvis was left last frame, to tell our offset from the mixer's. */
++    private readonly pelvisAfterApply;
 +    /** The correction itself, held across frames so it can be sprung rather
 +     *  than snapped to whatever this frame's feet happen to ask for. */
 +    private pelvisDrop;
@@ -9211,7 +9214,7 @@ index cb9ec21..e78fd0f 100644
      initialize(skeleton: IAvatarSkeletonBuilder, legIKSolver: ILegIKSolver, contactCurveCache: IContactCurveCache): void;
      update(delta: number, input: FootPlanterInput): void;
      configure(config: FootPlanterConfig): void;
-@@ -50,14 +74,107 @@ export declare class FootPlanter implements IFootPlanter {
+@@ -50,14 +77,119 @@ export declare class FootPlanter implements IFootPlanter {
       */
      private updateFootVelocity;
      /**
@@ -9302,6 +9305,18 @@ index cb9ec21..e78fd0f 100644
 +     *  pose so the blend has one thing to fade. */
 +    private computeLockCorrection;
 +    /**
++     * How high the ball of the foot has to be held for the whole shoe to clear.
++     *
++     * What the plant holds is one joint, and the foot carries on in front of it.
++     * Retarget a walk onto a rig whose foot sits at a different angle and the
++     * tip hangs over a centimetre below that joint, so holding the joint at the
++     * floor puts the tip through it - a foot through the stage on a plant that
++     * is doing exactly what it was asked. Measured live rather than once per
++     * clip, because the hang is the foot's current roll and changes every frame
++     * of a stance.
++     */
++    private toeClearance;
++    /**
 +     * Refuse to reach further for a plant than the animation is already reaching.
 +     *
 +     * This is the defence against a foot pushing through the floor. A target
@@ -9324,7 +9339,7 @@ index cb9ec21..e78fd0f 100644
       */
      private updateIKWeight;
      /**
-@@ -65,17 +182,61 @@ export declare class FootPlanter implements IFootPlanter {
+@@ -65,17 +197,61 @@ export declare class FootPlanter implements IFootPlanter {
       */
      private fadeOutFoot;
      /**
@@ -9393,16 +9408,16 @@ index cb9ec21..e78fd0f 100644
  //# sourceMappingURL=FootPlanter.d.ts.map
 \ No newline at end of file
 diff --git a/dist/lib/services/implementations/FootPlanter.d.ts.map b/dist/lib/services/implementations/FootPlanter.d.ts.map
-index 7561253..7a32dcd 100644
+index 7561253..7c756b4 100644
 --- a/dist/lib/services/implementations/FootPlanter.d.ts.map
 +++ b/dist/lib/services/implementations/FootPlanter.d.ts.map
 @@ -1 +1 @@
 -{"version":3,"file":"FootPlanter.d.ts","sourceRoot":"","sources":["../../../../src/lib/services/implementations/FootPlanter.ts"],"names":[],"mappings":"AAAA;;;;;;;;;;;;;;;;;;GAkBG;AAGH,OAAO,KAAK,EACV,YAAY,EACZ,gBAAgB,EAChB,iBAAiB,EAClB,MAAM,2BAA2B,CAAC;AACnC,OAAO,KAAK,EAAE,sBAAsB,EAAa,MAAM,qCAAqC,CAAC;AAC7F,OAAO,KAAK,EAAE,YAAY,EAAc,MAAM,2BAA2B,CAAC;AAC1E,OAAO,KAAK,EAAE,kBAAkB,EAAE,MAAM,iCAAiC,CAAC;AA4C1E,qBAAa,WAAY,YAAW,YAAY;IAC9C,OAAO,CAAC,QAAQ,CAAuC;IACvD,OAAO,CAAC,WAAW,CAA6B;IAChD,OAAO,CAAC,iBAAiB,CAAmC;IAC5D,OAAO,CAAC,MAAM,CAAsD;IAEpE,OAAO,CAAC,QAAQ,CAAgC;IAChD,OAAO,CAAC,SAAS,CAAgC;IAEjD,OAAO,CAAC,YAAY,CAA0B;IAC9C,OAAO,CAAC,aAAa,CAA0B;IAI/C,OAAO,CAAC,iBAAiB,CAAwB;IACjD,OAAO,CAAC,kBAAkB,CAAwB;IAGlD,OAAO,CAAC,QAAQ,CAAC,aAAa,CAAiB;IAC/C,OAAO,CAAC,QAAQ,CAAC,aAAa,CAAiB;IAC/C,OAAO,CAAC,QAAQ,CAAC,UAAU,CAAiB;IAC5C,OAAO,CAAC,QAAQ,CAAC,aAAa,CAAwB;IACtD,OAAO,CAAC,QAAQ,CAAC,OAAO,CAAwB;IAEhD,OAAO,CAAC,WAAW,CAAS;IAC5B,OAAO,CAAC,UAAU,CAAQ;IAE1B,UAAU,CACR,QAAQ,EAAE,sBAAsB,EAChC,WAAW,EAAE,YAAY,EACzB,iBAAiB,EAAE,kBAAkB,GACpC,IAAI;IA2BP,MAAM,CAAC,KAAK,EAAE,MAAM,EAAE,KAAK,EAAE,gBAAgB,GAAG,IAAI;IA6EpD,SAAS,CAAC,MAAM,EAAE,iBAAiB,GAAG,IAAI;IAI1C,OAAO,IAAI,OAAO;IAIlB,OAAO,IAAI,IAAI;IAcf;;;OAGG;IACH,OAAO,CAAC,kBAAkB;IAe1B;;;;OAIG;IACH,OAAO,CAAC,kBAAkB;IAyE1B;;;OAGG;IACH,OAAO,CAAC,cAAc;IAkBtB;;OAEG;IACH,OAAO,CAAC,WAAW;IASnB;;;;;;OAMG;IACH,OAAO,CAAC,kBAAkB;IA6C1B;;;OAGG;IACH,OAAO,CAAC,WAAW;CA4BpB"}
 \ No newline at end of file
-+{"version":3,"file":"FootPlanter.d.ts","sourceRoot":"","sources":["../../../../src/lib/services/implementations/FootPlanter.ts"],"names":[],"mappings":"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"}
++{"version":3,"file":"FootPlanter.d.ts","sourceRoot":"","sources":["../../../../src/lib/services/implementations/FootPlanter.ts"],"names":[],"mappings":"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"}
 \ No newline at end of file
 diff --git a/dist/lib/services/implementations/FootPlanter.js b/dist/lib/services/implementations/FootPlanter.js
-index f213a2d..043f28f 100644
+index f213a2d..aeaa401 100644
 --- a/dist/lib/services/implementations/FootPlanter.js
 +++ b/dist/lib/services/implementations/FootPlanter.js
 @@ -8,18 +8,34 @@
@@ -9505,7 +9520,7 @@ index f213a2d..043f28f 100644
      // Per-leg hinge axes derived from bind-pose rest directions at init time.
      // These never change during playback - the knee is a hinge, not a ball joint.
      leftKneeHingeAxis = new Vector3(1, 0, 0);
-@@ -57,16 +110,38 @@ export class FootPlanter {
+@@ -57,16 +110,41 @@ export class FootPlanter {
      tempFootWorld = new Vector3();
      tempHipsWorld = new Vector3();
      tempTarget = new Vector3();
@@ -9514,6 +9529,7 @@ index f213a2d..043f28f 100644
 -    worldUp = new Vector3(0, 1, 0);
 +    tempQuat = new Quaternion();
 +    tempToeWorld = new Vector3();
++    tempToeTip = new Vector3();
 +    tempAnkleWorld = new Vector3();
 +    tempWarp = new Vector3();
 +    tempWarped = new Vector3();
@@ -9524,6 +9540,8 @@ index f213a2d..043f28f 100644
      firstFrame = true;
 +    /** Last frame's pelvis correction, taken back before the next measurement. */
 +    appliedPelvisOffset = new Vector3();
++    /** Where the pelvis was left last frame, to tell our offset from the mixer's. */
++    pelvisAfterApply = new Vector3();
 +    /** The correction itself, held across frames so it can be sprung rather
 +     *  than snapped to whatever this frame's feet happen to ask for. */
 +    pelvisDrop = 0;
@@ -9545,7 +9563,7 @@ index f213a2d..043f28f 100644
          this.initialized = !!(this.leftLegChain && this.rightLegChain);
          if (!this.initialized) {
              console.warn("[FootPlanter] Leg chains not available - foot IK disabled");
-@@ -86,6 +161,7 @@ export class FootPlanter {
+@@ -86,6 +164,7 @@ export class FootPlanter {
              return;
          if (!this.leftLegChain || !this.rightLegChain)
              return;
@@ -9553,7 +9571,7 @@ index f213a2d..043f28f 100644
          // Skip foot planting during airborne states - let the animation play freely
          if (input.locomotionState === LocomotionState.JUMPING ||
              input.locomotionState === LocomotionState.FALLING) {
-@@ -132,16 +208,22 @@ export class FootPlanter {
+@@ -132,16 +211,22 @@ export class FootPlanter {
          this.leftFoot.prevWorldPos.copy(leftFootPos);
          this.rightFoot.prevWorldPos.copy(rightFootPos);
          // 3. Detect contact phase and manage lock targets
@@ -9583,7 +9601,7 @@ index f213a2d..043f28f 100644
      }
      configure(config) {
          this.config = { ...this.config, ...config };
-@@ -155,8 +237,17 @@ export class FootPlanter {
+@@ -155,8 +240,17 @@ export class FootPlanter {
          this.contactCurveCache = null;
          this.leftLegChain = null;
          this.rightLegChain = null;
@@ -9601,7 +9619,7 @@ index f213a2d..043f28f 100644
          this.leftFoot = createFootState();
          this.rightFoot = createFootState();
      }
-@@ -178,162 +269,462 @@ export class FootPlanter {
+@@ -178,162 +272,490 @@ export class FootPlanter {
      }
      // ── Contact phase detection ──
      /**
@@ -9614,13 +9632,7 @@ index f213a2d..043f28f 100644
 +     * blending right now, an authored curve for a single named clip, then foot
 +     * velocity. All three feed the same Schmitt trigger, so none of them can
 +     * chatter the lock at a threshold crossing.
-      */
--    updateContactPhase(foot, currentPos, input, legChain, isLeftFoot) {
--        // Contact curve path: if the current clip has authored curves, use them
--        // instead of velocity detection. Curves are authoritative because turn
--        // clips have pivot feet with zero velocity for their entire stance phase -
--        // the velocity heuristic would either lock too aggressively or miss the
--        // planting entirely depending on how the threshold is tuned.
++     */
 +    updateContactPhase(foot, input, toe, isLeftFoot) {
 +        const contactValue = this.resolveContact(foot, input, isLeftFoot);
 +        // Two thresholds with a gap: it takes a clear signal to plant, and a
@@ -9655,7 +9667,13 @@ index f213a2d..043f28f 100644
 +    /**
 +     * Weight bearing on one foot in 0..1, from whichever source can speak to
 +     * the pose currently on screen.
-+     */
+      */
+-    updateContactPhase(foot, currentPos, input, legChain, isLeftFoot) {
+-        // Contact curve path: if the current clip has authored curves, use them
+-        // instead of velocity detection. Curves are authoritative because turn
+-        // clips have pivot feet with zero velocity for their entire stance phase -
+-        // the velocity heuristic would either lock too aggressively or miss the
+-        // planting entirely depending on how the threshold is tuned.
 +    resolveContact(foot, input, isLeftFoot) {
 +        // Measured gait. A walk blends up to three clips at once, so this arrives
 +        // already combined across them - one clip name and one phase could not
@@ -9872,7 +9890,7 @@ index f213a2d..043f28f 100644
 +        // at whatever height the roll had reached when contact was called, and
 +        // every part of the foot in front of that pin goes under the stage.
 +        foot.plantedToe.set(foot.lockToe.x, this.tempToeWorld.y, foot.lockToe.z);
-+        const toeFloor = input.groundY + this.config.toeHeightOffset;
++        const toeFloor = input.groundY + this.toeClearance(toe);
 +        if (foot.plantedToe.y < toeFloor)
 +            foot.plantedToe.y = toeFloor;
 +        foot.lockCorrection
@@ -9880,6 +9898,25 @@ index f213a2d..043f28f 100644
 +            .add(this.tempAnkleWorld)
 +            .sub(this.tempToeWorld)
 +            .sub(this.tempWarped);
++    }
++    /**
++     * How high the ball of the foot has to be held for the whole shoe to clear.
++     *
++     * What the plant holds is one joint, and the foot carries on in front of it.
++     * Retarget a walk onto a rig whose foot sits at a different angle and the
++     * tip hangs over a centimetre below that joint, so holding the joint at the
++     * floor puts the tip through it - a foot through the stage on a plant that
++     * is doing exactly what it was asked. Measured live rather than once per
++     * clip, because the hang is the foot's current roll and changes every frame
++     * of a stance.
++     */
++    toeClearance(toe) {
++        const floor = this.config.toeHeightOffset;
++        const tip = toe?.children.find((c) => c.name.endsWith("Toe_End"));
++        if (!tip)
++            return floor;
++        tip.getWorldPosition(this.tempToeTip);
++        return Math.max(floor, this.tempToeWorld.y - this.tempToeTip.y);
 +    }
 +    /**
 +     * Refuse to reach further for a plant than the animation is already reaching.
@@ -10057,20 +10094,10 @@ index f213a2d..043f28f 100644
 +            parent.getWorldScale(this.tempPelvisScale);
 +            this.tempPelvisDelta.applyQuaternion(this.tempQuat.invert());
 +            this.tempPelvisDelta.set(this.tempPelvisDelta.x / (this.tempPelvisScale.x || 1), this.tempPelvisDelta.y / (this.tempPelvisScale.y || 1), this.tempPelvisDelta.z / (this.tempPelvisScale.z || 1));
-         }
--        // Use the larger drop (the foot that's furthest from ground)
--        const drop = Math.max(leftDrop, rightDrop);
--        if (drop <= 0)
--            return; // Feet are already at or below ground
--        // Clamp to prevent extreme corrections
--        const clampedDrop = Math.min(drop, this.config.maxPelvisAdjust);
--        // Scale by max IK weight so the adjustment fades with the IK blend
--        const adjustedDrop = clampedDrop * maxWeight;
--        // Apply: lower Hips in local space (Y is up for Mixamo skeletons)
--        hipsBone.position.y -= adjustedDrop;
--        hipsBone.updateMatrixWorld(true);
++        }
 +        hips.position.add(this.tempPelvisDelta);
 +        this.appliedPelvisOffset.copy(this.tempPelvisDelta);
++        this.pelvisAfterApply.copy(hips.position);
 +        hips.updateMatrixWorld(true);
 +    }
 +    /**
@@ -10084,10 +10111,29 @@ index f213a2d..043f28f 100644
 +        if (this.appliedPelvisOffset.lengthSq() === 0)
 +            return;
 +        const hipsBone = this.skeleton?.getBone("Hips");
++        // Unless the mixer got there first. A clip that carries pelvis motion
++        // rewrites this bone outright every frame, so last frame's offset is
++        // already gone and subtracting it again would sink the pelvis by one
++        // correction per frame.
++        if (hipsBone && !hipsBone.position.equals(this.pelvisAfterApply)) {
++            this.appliedPelvisOffset.set(0, 0, 0);
++            return;
++        }
 +        if (hipsBone) {
 +            hipsBone.position.sub(this.appliedPelvisOffset);
 +            hipsBone.updateMatrixWorld(true);
-+        }
+         }
+-        // Use the larger drop (the foot that's furthest from ground)
+-        const drop = Math.max(leftDrop, rightDrop);
+-        if (drop <= 0)
+-            return; // Feet are already at or below ground
+-        // Clamp to prevent extreme corrections
+-        const clampedDrop = Math.min(drop, this.config.maxPelvisAdjust);
+-        // Scale by max IK weight so the adjustment fades with the IK blend
+-        const adjustedDrop = clampedDrop * maxWeight;
+-        // Apply: lower Hips in local space (Y is up for Mixamo skeletons)
+-        hipsBone.position.y -= adjustedDrop;
+-        hipsBone.updateMatrixWorld(true);
 +        this.appliedPelvisOffset.set(0, 0, 0);
 +    }
 +    /**
@@ -10434,7 +10480,7 @@ index adb85b1..b36c49d 100644
 -//# sourceMappingURL=LegAnimator.d.ts.map
 \ No newline at end of file
 diff --git a/dist/lib/services/implementations/LocomotionAnimator.d.ts b/dist/lib/services/implementations/LocomotionAnimator.d.ts
-index cc7a4e3..1965755 100644
+index cc7a4e3..895f09a 100644
 --- a/dist/lib/services/implementations/LocomotionAnimator.d.ts
 +++ b/dist/lib/services/implementations/LocomotionAnimator.d.ts
 @@ -17,7 +17,6 @@ import { LocomotionState } from "../contracts/IAnimationStateMachine";
@@ -10445,10 +10491,12 @@ index cc7a4e3..1965755 100644
      private modelPrefix;
      private idleAction;
      private walkActions;
-@@ -35,11 +34,33 @@ export declare class LocomotionAnimator implements ILocomotionAnimator {
+@@ -35,11 +34,35 @@ export declare class LocomotionAnimator implements ILocomotionAnimator {
      private targetIdleWeight;
      private currentDirWeights;
      private targetDirWeights;
++    private hipsBone;
++    private hipsRest;
 +    private gaits;
 +    /**
 +     * One phase drives all four walk clips. They have different durations, so
@@ -10479,7 +10527,7 @@ index cc7a4e3..1965755 100644
      loadAnimations(urls: AnimationUrls): Promise<void>;
      /**
       * Remap a pending clip's track names to match this model's bone prefix.
-@@ -64,9 +85,60 @@ export declare class LocomotionAnimator implements ILocomotionAnimator {
+@@ -64,9 +87,60 @@ export declare class LocomotionAnimator implements ILocomotionAnimator {
      configure(config: LocomotionConfig): void;
      getHipsBone(): Bone | null;
      dispose(): void;
@@ -10542,16 +10590,16 @@ index cc7a4e3..1965755 100644
      private applyLegacyWeights;
      private blendAction;
 diff --git a/dist/lib/services/implementations/LocomotionAnimator.d.ts.map b/dist/lib/services/implementations/LocomotionAnimator.d.ts.map
-index e2ad276..c6b396b 100644
+index e2ad276..b25396d 100644
 --- a/dist/lib/services/implementations/LocomotionAnimator.d.ts.map
 +++ b/dist/lib/services/implementations/LocomotionAnimator.d.ts.map
 @@ -1 +1 @@
 -{"version":3,"file":"LocomotionAnimator.d.ts","sourceRoot":"","sources":["../../../../src/lib/services/implementations/LocomotionAnimator.ts"],"names":[],"mappings":"AAAA;;;;;;;;;;;;GAYG;AAEH,OAAO,KAAK,EAAmB,QAAQ,EAAE,IAAI,EAAE,MAAM,OAAO,CAAC;AAG7D,OAAO,KAAK,EACV,mBAAmB,EACnB,eAAe,EACf,aAAa,EACb,gBAAgB,EACjB,MAAM,kCAAkC,CAAC;AAC1C,OAAO,EAAE,eAAe,EAAE,MAAM,qCAAqC,CAAC;AAkJtE,qBAAa,kBAAmB,YAAW,mBAAmB;IAC5D,OAAO,CAAC,KAAK,CAA+B;IAC5C,OAAO,CAAC,IAAI,CAAyB;IACrC,OAAO,CAAC,MAAM,CAAoB;IAClC,OAAO,CAAC,WAAW,CAAe;IAGlC,OAAO,CAAC,UAAU,CAAgC;IAClD,OAAO,CAAC,WAAW,CAKjB;IACF,OAAO,CAAC,UAAU,CAAgC;IAClD,OAAO,CAAC,UAAU,CAAgC;IAClD,OAAO,CAAC,UAAU,CAAgC;IAClD,OAAO,CAAC,YAAY,CAAgC;IAGpD,OAAO,CAAC,YAAY,CAAyC;IAG7D,OAAO,CAAC,WAAW,CAAgC;IACnD,OAAO,CAAC,kBAAkB,CAAgC;IAC1D,OAAO,CAAC,WAAW,CAAS;IAC5B,OAAO,CAAC,WAAW,CAAS;IAE5B,OAAO,CAAC,MAAM,CAMZ;IAGF,OAAO,CAAC,iBAAiB,CAAK;IAC9B,OAAO,CAAC,gBAAgB,CAAK;IAC7B,OAAO,CAAC,iBAAiB,CAKvB;IACF,OAAO,CAAC,gBAAgB,CAKtB;IAEF,UAAU,CAAC,IAAI,EAAE,QAAQ,GAAG,IAAI;IAWhC;;OAEG;IACH,OAAO,CAAC,iBAAiB;IAcnB,cAAc,CAAC,IAAI,EAAE,aAAa,GAAG,OAAO,CAAC,IAAI,CAAC;IAuCxD;;;;OAIG;IACH,OAAO,CAAC,WAAW;IA4BnB;;;;OAIG;IACH,OAAO,CAAC,aAAa;IAgErB;;OAEG;IACH,OAAO,CAAC,SAAS;IAMjB,aAAa,CAAC,KAAK,EAAE,eAAe,GAAG,IAAI;IAc3C,cAAc,CAAC,KAAK,EAAE,eAAe,GAAG,IAAI;IAI5C,MAAM,CAAC,KAAK,EAAE,MAAM,GAAG,IAAI;IAgB3B,OAAO,IAAI,OAAO;IAIlB,SAAS,CAAC,MAAM,EAAE,gBAAgB,GAAG,IAAI;IAIzC,WAAW,IAAI,IAAI,GAAG,IAAI;IAO1B,OAAO,IAAI,IAAI;IA6Bf,OAAO,CAAC,QAAQ;IAMhB,OAAO,CAAC,wBAAwB;IA4BhC,OAAO,CAAC,mBAAmB;IAoB3B,OAAO,CAAC,iBAAiB;IAwEzB,OAAO,CAAC,kBAAkB;IAc1B,OAAO,CAAC,WAAW;CASpB"}
 \ No newline at end of file
-+{"version":3,"file":"LocomotionAnimator.d.ts","sourceRoot":"","sources":["../../../../src/lib/services/implementations/LocomotionAnimator.ts"],"names":[],"mappings":"AAAA;;;;;;;;;;;;GAYG;AAEH,OAAO,KAAK,EAAmB,QAAQ,EAAE,IAAI,EAAE,MAAM,OAAO,CAAC;AAS7D,OAAO,KAAK,EACV,mBAAmB,EACnB,eAAe,EACf,aAAa,EACb,gBAAgB,EACjB,MAAM,kCAAkC,CAAC;AAC1C,OAAO,EAAE,eAAe,EAAE,MAAM,qCAAqC,CAAC;AAuWtE,qBAAa,kBAAmB,YAAW,mBAAmB;IAC5D,OAAO,CAAC,KAAK,CAA+B;IAC5C,OAAO,CAAC,IAAI,CAAyB;IACrC,OAAO,CAAC,WAAW,CAAe;IAGlC,OAAO,CAAC,UAAU,CAAgC;IAClD,OAAO,CAAC,WAAW,CAKjB;IACF,OAAO,CAAC,UAAU,CAAgC;IAClD,OAAO,CAAC,UAAU,CAAgC;IAClD,OAAO,CAAC,UAAU,CAAgC;IAClD,OAAO,CAAC,YAAY,CAAgC;IAGpD,OAAO,CAAC,YAAY,CAAyC;IAG7D,OAAO,CAAC,WAAW,CAAgC;IACnD,OAAO,CAAC,kBAAkB,CAAgC;IAC1D,OAAO,CAAC,WAAW,CAAS;IAC5B,OAAO,CAAC,WAAW,CAAS;IAE5B,OAAO,CAAC,MAAM,CAMZ;IAGF,OAAO,CAAC,iBAAiB,CAAK;IAC9B,OAAO,CAAC,gBAAgB,CAAK;IAC7B,OAAO,CAAC,iBAAiB,CAKvB;IACF,OAAO,CAAC,gBAAgB,CAKtB;IAIF,OAAO,CAAC,KAAK,CAKX;IAEF;;;;;OAKG;IACH,OAAO,CAAC,WAAW,CAAK;IACxB,OAAO,CAAC,QAAQ,CAAK;IACrB,OAAO,CAAC,WAAW,CAAK;IACxB,OAAO,CAAC,cAAc,CAAK;IAC3B,OAAO,CAAC,WAAW,CAAM;IACzB,OAAO,CAAC,YAAY,CAAM;IAC1B,OAAO,CAAC,cAAc,CAAK;IAC3B,OAAO,CAAC,QAAQ,CAAC,SAAS,CAAiB;IAE3C,UAAU,CAAC,IAAI,EAAE,QAAQ,GAAG,IAAI;IAgBhC;;OAEG;IACH,OAAO,CAAC,iBAAiB;IAiBzB;;;;OAIG;IACH,OAAO,CAAC,MAAM;IAOd,OAAO,CAAC,cAAc;IA+BhB,cAAc,CAAC,IAAI,EAAE,aAAa,GAAG,OAAO,CAAC,IAAI,CAAC;IAgCxD;;;;OAIG;IACH,OAAO,CAAC,WAAW;IAiDnB;;;;OAIG;IACH,OAAO,CAAC,aAAa;IA4ErB;;OAEG;IACH,OAAO,CAAC,SAAS;IAMjB,aAAa,CAAC,KAAK,EAAE,eAAe,GAAG,IAAI;IAc3C,cAAc,CAAC,KAAK,EAAE,eAAe,GAAG,IAAI;IAI5C,MAAM,CAAC,KAAK,EAAE,MAAM,GAAG,IAAI;IA2B3B,OAAO,IAAI,OAAO;IAIlB,SAAS,CAAC,MAAM,EAAE,gBAAgB,GAAG,IAAI;IAIzC,WAAW,IAAI,IAAI,GAAG,IAAI;IAO1B,OAAO,IAAI,IAAI;IAUf,OAAO,CAAC,wBAAwB;IA4BhC,OAAO,CAAC,mBAAmB;IA0B3B,OAAO,CAAC,OAAO;IASf;;;;;;;;;;;;OAYG;IACH,OAAO,CAAC,eAAe;IAgBvB,6DAA6D;IAC7D,OAAO,CAAC,kBAAkB;IAgB1B;;;;OAIG;IACH,OAAO,CAAC,gBAAgB;IA4CxB;;;OAGG;IACH;;;;;;OAMG;IACH,aAAa,IAAI,MAAM;IASvB;;;;;;OAMG;IACH,YAAY,IAAI,MAAM;IAStB,cAAc,IAAI,MAAM;IAIxB;;;OAGG;IACH,cAAc,IAAI;QAAE,IAAI,EAAE,MAAM,CAAC;QAAC,KAAK,EAAE,MAAM,CAAA;KAAE;IAIjD,OAAO,CAAC,iBAAiB;IA4EzB,OAAO,CAAC,kBAAkB;IAc1B,OAAO,CAAC,WAAW;CASpB"}
++{"version":3,"file":"LocomotionAnimator.d.ts","sourceRoot":"","sources":["../../../../src/lib/services/implementations/LocomotionAnimator.ts"],"names":[],"mappings":"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"}
 \ No newline at end of file
 diff --git a/dist/lib/services/implementations/LocomotionAnimator.js b/dist/lib/services/implementations/LocomotionAnimator.js
-index 56279f1..c47eac1 100644
+index 56279f1..d6e08f4 100644
 --- a/dist/lib/services/implementations/LocomotionAnimator.js
 +++ b/dist/lib/services/implementations/LocomotionAnimator.js
 @@ -11,9 +11,10 @@
@@ -10567,7 +10615,14 @@ index 56279f1..c47eac1 100644
  /**
   * Known Mixamo bone prefixes. Animation files may use a different
   * variant than the model (e.g., "mixamorig:" vs "mixamorig").
-@@ -65,8 +66,14 @@ function detectClipPrefix(clip) {
+@@ -59,14 +60,21 @@ function detectClipPrefix(clip) {
+  *   "strip"    - Remove Hips position entirely (default for idle/jump/fall/land)
+  *   "rootMotion" - Keep and make Z relative to first frame (for walk/run root motion)
+  *   "pose"     - Keep as-is, no baseline subtraction (for crouch - absolute Y is the pose)
++ *   "bob"      - Keep only the pelvis's rise, as a fraction of hip height
+  */
+ /**
+  * Leg bone names to strip when stripLegBones is true.
   * Exhibit performers don't need leg animation - feet stay planted.
   */
  const LEG_BONE_NAMES = new Set([
@@ -10584,7 +10639,7 @@ index 56279f1..c47eac1 100644
  ]);
  function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBones = false) {
      const clipPrefix = detectClipPrefix(clip);
-@@ -77,7 +84,9 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
+@@ -77,7 +85,9 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
              return false;
          const boneName = track.name.slice(0, dotIdx);
          const property = track.name.slice(dotIdx + 1);
@@ -10595,7 +10650,7 @@ index 56279f1..c47eac1 100644
          // Skip bones that don't exist on our models
          if (coreName.endsWith("_End"))
              return false;
-@@ -92,7 +101,9 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
+@@ -92,7 +102,9 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
          if (coreName === "Hips" && property === "quaternion")
              return false;
          // Keep Hips position track when needed for root motion or crouch pose.
@@ -10606,7 +10661,7 @@ index 56279f1..c47eac1 100644
              return true;
          // Keep all other quaternion tracks - bone rotations are the animation.
          // Filter out position/scale tracks (position teleports, scale vanishes).
-@@ -104,7 +115,9 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
+@@ -104,7 +116,9 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
          const dotIdx = track.name.indexOf(".");
          const boneName = track.name.slice(0, dotIdx);
          const property = track.name.slice(dotIdx);
@@ -10617,7 +10672,7 @@ index 56279f1..c47eac1 100644
          const cloned = track.clone();
          // Remap bone prefix if needed
          if (clipPrefix !== modelPrefix) {
-@@ -115,7 +128,9 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
+@@ -115,20 +129,65 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
          // first keyframe's Z preserves the natural vertical bob (hips go up
          // and down ~2-3cm per step) while removing the absolute offset that
          // would slam the avatar underground.
@@ -10628,7 +10683,53 @@ index 56279f1..c47eac1 100644
              const values = cloned.values;
              const baseZ = values[2] ?? 0; // First keyframe's Z = rest height
              for (let i = 2; i < values.length; i += 3) {
-@@ -128,7 +143,9 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
+                 values[i] -= baseZ; // Relative offset preserves vertical bob
+             }
+         }
++        // Bob mode: keep the pelvis rising over each supporting foot.
++        //
++        // A walk raises and lowers its pelvis about eight centimetres per step,
++        // and that is what gives a foot a stance to stand through: the pelvis
++        // travels over a foot that stays put. Strip the track to stop the avatar
++        // teleporting and the pelvis is pinned at one height, so the only way
++        // left for the leg to fold and unfold is to move the foot instead. The
++        // stance flattens out of the clip - measured here, a foot that is on the
++        // floor for 56% of the source cycle is on it for 32% once the track is
++        // gone - and the plant is then asked to hold a foot the animation is
++        // still swinging through ten centimetres of air.
++        //
++        // Only the vertical survives. Travel belongs to whatever is moving the
++        // performer, and the sway across it is worth about two centimetres at
++        // the foot, which is not worth the risk of reintroducing it here.
++        //
++        // What is left is written as a fraction of the clip's own hip height,
++        // not as centimetres. Avatars are not all one size, and an absolute
++        // eight centimetres is a different walk on each of them.
++        //
++        // The mean is what it is measured from, so the pelvis spends the walk at
++        // the height the rig was authored at rather than above it. Anchoring the
++        // low point at rest instead reads as walking on tiptoe: it lifts the
++        // whole body four centimetres and the feet stop reaching the floor for
++        // long enough to stand on.
++        if (coreName === "Hips" &&
++            property.includes("position") &&
++            hipsMode === "bob") {
++            const values = cloned.values;
++            const frames = values.length / 3;
++            let sum = 0;
++            for (let i = 0; i < frames; i++)
++                sum += values[i * 3 + 2];
++            const mean = frames > 0 ? sum / frames : 0;
++            const height = Math.abs(mean) || 1;
++            for (let i = 0; i < frames; i++) {
++                values[i * 3] = 0;
++                values[i * 3 + 1] = -(values[i * 3 + 2] - mean) / height;
++                values[i * 3 + 2] = 0;
++            }
++        }
+         // Pose mode (crouch): Mixamo FBX→GLB Hips position values are in
+         // centimeters (~85cm) but the skeleton is in meters (~0.85m). Scale
+         // by 0.01 to fix the unit mismatch. Then nudge Z (vertical in GLB)
          // up by 0.04m - measured via foot bone world-Y logging: the grounded
          // foot's toeBase averaged -0.005m (slightly below floor). The 0.04m
          // correction centers it at +0.035m (flush with floor surface).
@@ -10639,7 +10740,7 @@ index 56279f1..c47eac1 100644
              const values = cloned.values;
              for (let i = 0; i < values.length; i++) {
                  values[i] *= 0.01;
-@@ -142,10 +159,140 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
+@@ -142,10 +201,156 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
      });
      return new AnimationClip(clip.name, clip.duration, tracks);
  }
@@ -10691,9 +10792,19 @@ index 56279f1..c47eac1 100644
 +    const toeY = new Float32Array(GAIT_SAMPLES).fill(Infinity);
 +    const leftXZ = [];
 +    const rightXZ = [];
++    // The clip's pelvis track carries the bob and no height, so the rig's own
++    // height has to go back on before anything is measured against the floor.
++    const hips = root.getObjectByName(`${prefix}Hips`);
++    const hipsRest = hips ? hips.position.clone() : null;
 +    const local = new Vector3();
 +    for (let i = 0; i < GAIT_SAMPLES; i++) {
++        if (hips)
++            hips.position.set(0, 0, 0);
 +        probeMixer.update(i === 0 ? 0 : dt);
++        if (hips && hipsRest) {
++            hips.position.y *= hipsRest.y;
++            hips.position.add(hipsRest);
++        }
 +        // Only the two leg chains matter here, and refreshing the whole rig 64
 +        // times per clip per avatar is the difference between a few milliseconds
 +        // at load and a visible hitch.
@@ -10746,6 +10857,12 @@ index 56279f1..c47eac1 100644
 +    // the planter falls back to pinning anyway.
 +    if (!Number.isFinite(toeOffset))
 +        toeOffset = soleOffset;
++    // The plant holds a foot at this height, so a negative one holds it inside
++    // the stage. Retargeting can dip a pose below the rig's own origin - the
++    // pelvis bob did, by just over a centimetre on the shortest rig - and the
++    // floor is the floor whatever the pose says.
++    soleOffset = Math.max(0, soleOffset);
++    toeOffset = Math.max(0, toeOffset);
 +    for (let i = 0; i < GAIT_SAMPLES; i++) {
 +        const prev = leftContact[(i + GAIT_SAMPLES - 1) % GAIT_SAMPLES];
 +        if (prev === 0 && leftContact[i] === 1) {
@@ -10781,11 +10898,13 @@ index 56279f1..c47eac1 100644
      modelPrefix = "mixamorig";
      // Actions - created from raw clips, no processing
      idleAction = null;
-@@ -188,7 +335,32 @@ export class LocomotionAnimator {
+@@ -188,11 +393,42 @@ export class LocomotionAnimator {
          strafeLeft: 0,
          strafeRight: 0,
      };
 +    // -- Gait --
++    hipsBone = null;
++    hipsRest = null;
 +    gaits = {
 +        forward: null,
 +        backward: null,
@@ -10814,7 +10933,15 @@ index 56279f1..c47eac1 100644
          this.root = root;
          this.mixer = new AnimationMixer(root);
          this.modelPrefix = this.detectModelPrefix(root);
-@@ -202,17 +374,62 @@ export class LocomotionAnimator {
+         this.initialized = true;
++        // Read before anything animates: the clips carry the pelvis's motion but
++        // not its height, and every avatar has its own.
++        this.hipsBone = this.getHipsBone();
++        this.hipsRest = this.hipsBone ? this.hipsBone.position.clone() : null;
+         if (this.clipsLoaded) {
+             this.createActions();
+         }
+@@ -202,17 +438,62 @@ export class LocomotionAnimator {
       */
      detectModelPrefix(root) {
          for (const prefix of KNOWN_PREFIXES) {
@@ -10884,7 +11011,7 @@ index 56279f1..c47eac1 100644
      }
      async loadAnimations(urls) {
          const entries = [
-@@ -231,15 +448,7 @@ export class LocomotionAnimator {
+@@ -231,15 +512,7 @@ export class LocomotionAnimator {
          if (urls.crouch)
              entries.push({ key: "crouch", url: urls.crouch });
          const results = await Promise.allSettled(entries.map(async ({ key, url }) => {
@@ -10901,7 +11028,16 @@ index 56279f1..c47eac1 100644
              return { key, clip };
          }));
          for (const result of results) {
-@@ -280,7 +489,21 @@ export class LocomotionAnimator {
+@@ -273,14 +546,28 @@ export class LocomotionAnimator {
+         // (Mixamo FBX→GLB values are in centimeters, skeleton is in meters).
+         // This lets the Hips bone drop to the correct crouched height.
+         let hipsMode = "strip";
+-        if (this.config.enableRootMotion && isLocomotionClip)
+-            hipsMode = "rootMotion";
++        if (isLocomotionClip)
++            hipsMode = this.config.enableRootMotion ? "rootMotion" : "bob";
+         if (key === "crouch")
+             hipsMode = "pose";
          // Strip leg bones from idle clip for exhibit performers so feet
          // stay perfectly planted during sequence playback.
          const stripLegs = this.config.stripLegBones && key === "idle";
@@ -10924,7 +11060,7 @@ index 56279f1..c47eac1 100644
      }
      /**
       * Create actions from clips - only bone prefix remapping, no track filtering.
-@@ -299,7 +522,12 @@ export class LocomotionAnimator {
+@@ -299,7 +586,12 @@ export class LocomotionAnimator {
              this.idleAction.play();
          }
          // Walk directions - start at weight 0
@@ -10938,7 +11074,7 @@ index 56279f1..c47eac1 100644
              const clip = this.prepareClip(key);
              if (clip && !this.walkActions[key]) {
                  const action = this.mixer.clipAction(clip);
-@@ -307,6 +535,14 @@ export class LocomotionAnimator {
+@@ -307,6 +599,14 @@ export class LocomotionAnimator {
                  this.setWeight(action, 0);
                  action.play();
                  this.walkActions[key] = action;
@@ -10953,10 +11089,11 @@ index 56279f1..c47eac1 100644
              }
          }
          // Jump (one-shot)
-@@ -381,6 +617,16 @@ export class LocomotionAnimator {
+@@ -381,7 +681,30 @@ export class LocomotionAnimator {
          else {
              this.applyLegacyWeights(blendFactor);
          }
+-        this.mixer.update(delta);
 +        if (this.hasGait()) {
 +            if (this.root) {
 +                this.tempScale.setFromMatrixScale(this.root.matrixWorld);
@@ -10967,10 +11104,24 @@ index 56279f1..c47eac1 100644
 +            this.updateGaitSplit();
 +            this.advanceGaitPhase(delta);
 +        }
-         this.mixer.update(delta);
++        // Zeroed first so the two cases agree: a clip carrying the pelvis track
++        // writes the bob and this adds the rig's height under it, and a clip
++        // without one leaves zero, which is the same height on its own. Adding to
++        // whatever last frame left would walk the pelvis off in either case.
++        const hips = this.hipsBone;
++        if (hips && this.hipsRest) {
++            hips.position.set(0, 0, 0);
++            this.mixer.update(delta);
++            hips.position.y *= this.hipsRest.y;
++            hips.position.add(this.hipsRest);
++        }
++        else {
++            this.mixer.update(delta);
++        }
      }
      isReady() {
-@@ -397,37 +643,13 @@ export class LocomotionAnimator {
+         return this.initialized && this.clipsLoaded;
+@@ -397,37 +720,13 @@ export class LocomotionAnimator {
          return obj ?? null;
      }
      dispose() {
@@ -11009,7 +11160,7 @@ index 56279f1..c47eac1 100644
      updateDirectionalTargets(input) {
          const dir = input.moveDirection ?? { x: 0, z: 1 };
          const fw = Math.max(0, dir.z);
-@@ -463,11 +685,159 @@ export class LocomotionAnimator {
+@@ -463,12 +762,160 @@ export class LocomotionAnimator {
              }
              return;
          }
@@ -11062,8 +11213,7 @@ index 56279f1..c47eac1 100644
 +    blendedNativeSpeed() {
 +        let sum = 0;
 +        let weight = 0;
-         for (const key of Object.keys(this.walkActions)) {
--            this.walkActions[key]?.setEffectiveTimeScale(timeScale);
++        for (const key of Object.keys(this.walkActions)) {
 +            const gait = this.gaits[key];
 +            // Smoothed weights, not targets: stride and contact have to describe
 +            // the pose on screen, not the pose being blended toward.
@@ -11099,7 +11249,8 @@ index 56279f1..c47eac1 100644
 +        }
 +        let left = 0;
 +        let right = 0;
-+        for (const key of Object.keys(this.walkActions)) {
+         for (const key of Object.keys(this.walkActions)) {
+-            this.walkActions[key]?.setEffectiveTimeScale(timeScale);
 +            const gait = this.gaits[key];
 +            const action = this.walkActions[key];
 +            if (!gait || !action)
@@ -11122,8 +11273,8 @@ index 56279f1..c47eac1 100644
 +            // whichever foot the phase stopped on.
 +            this.contactLeft = -1;
 +            this.contactRight = -1;
-+        }
-+    }
+         }
+     }
 +    /**
 +     * How much longer or shorter each step should be than the clip authored it.
 +     * FootPlanter applies this where the foot lands.
@@ -11141,7 +11292,7 @@ index 56279f1..c47eac1 100644
 +            const gait = this.gaits[key];
 +            if (gait)
 +                lowest = Math.min(lowest, gait.soleOffset);
-         }
++        }
 +        return Number.isFinite(lowest) ? lowest * this.rootWorldScale : 0;
 +    }
 +    /**
@@ -11169,10 +11320,11 @@ index 56279f1..c47eac1 100644
 +     */
 +    getFootContact() {
 +        return { left: this.contactLeft, right: this.contactRight };
-     }
++    }
      applyStateWeights(blendFactor) {
          const state = this.activeState;
-@@ -483,7 +853,7 @@ export class LocomotionAnimator {
+         // Phase-based jump: each state has its own clip.
+@@ -483,7 +930,7 @@ export class LocomotionAnimator {
          // "hunched walk" without needing a dedicated crouch-walk animation clip.
          // Without movement, 100% crouch-idle plays normally.
          const isCrouching = state === LocomotionState.CROUCHING;
@@ -11181,7 +11333,7 @@ index 56279f1..c47eac1 100644
          const crouchWalking = isCrouching && hasMovement;
          const wantWalk = state === LocomotionState.WALKING ? 1 : crouchWalking ? 0.4 : 0;
          const wantCrouch = isCrouching ? (crouchWalking ? 0.6 : 1) : 0;
-@@ -506,7 +876,8 @@ export class LocomotionAnimator {
+@@ -506,7 +953,8 @@ export class LocomotionAnimator {
          // On state entry: snap weights for instant transitions on one-shot clips.
          if (state !== this.currentActiveState) {
              // Zero out ground animations instantly when entering any airborne state
@@ -19805,7 +19957,7 @@ index f8a2b8d..b89f4c9 100644
          bestDist = dist;
          best = clip;
 diff --git a/src/lib/services/implementations/FootPlanter.ts b/src/lib/services/implementations/FootPlanter.ts
-index a471132..759c9a9 100644
+index a471132..620f510 100644
 --- a/src/lib/services/implementations/FootPlanter.ts
 +++ b/src/lib/services/implementations/FootPlanter.ts
 @@ -8,17 +8,21 @@
@@ -19965,7 +20117,7 @@ index a471132..759c9a9 100644
  
    // Per-leg hinge axes derived from bind-pose rest directions at init time.
    // These never change during playback - the knee is a hinge, not a ball joint.
-@@ -91,12 +179,31 @@ export class FootPlanter implements IFootPlanter {
+@@ -91,12 +179,34 @@ export class FootPlanter implements IFootPlanter {
    private readonly tempFootWorld = new Vector3();
    private readonly tempHipsWorld = new Vector3();
    private readonly tempTarget = new Vector3();
@@ -19974,6 +20126,7 @@ index a471132..759c9a9 100644
 -  private readonly worldUp = new Vector3(0, 1, 0);
 +  private readonly tempQuat = new Quaternion();
 +  private readonly tempToeWorld = new Vector3();
++  private readonly tempToeTip = new Vector3();
 +  private readonly tempAnkleWorld = new Vector3();
 +  private readonly tempWarp = new Vector3();
 +  private readonly tempWarped = new Vector3();
@@ -19986,6 +20139,8 @@ index a471132..759c9a9 100644
  
 +  /** Last frame's pelvis correction, taken back before the next measurement. */
 +  private readonly appliedPelvisOffset = new Vector3();
++  /** Where the pelvis was left last frame, to tell our offset from the mixer's. */
++  private readonly pelvisAfterApply = new Vector3();
 +  /** The correction itself, held across frames so it can be sprung rather
 +   *  than snapped to whatever this frame's feet happen to ask for. */
 +  private pelvisDrop = 0;
@@ -19998,7 +20153,7 @@ index a471132..759c9a9 100644
    initialize(
      skeleton: IAvatarSkeletonBuilder,
      legIKSolver: ILegIKSolver,
-@@ -107,6 +214,10 @@ export class FootPlanter implements IFootPlanter {
+@@ -107,6 +217,10 @@ export class FootPlanter implements IFootPlanter {
      this.contactCurveCache = contactCurveCache;
      this.leftLegChain = skeleton.getLeftLegChain();
      this.rightLegChain = skeleton.getRightLegChain();
@@ -20009,7 +20164,7 @@ index a471132..759c9a9 100644
      this.initialized = !!(this.leftLegChain && this.rightLegChain);
  
      if (!this.initialized) {
-@@ -132,6 +243,8 @@ export class FootPlanter implements IFootPlanter {
+@@ -132,6 +246,8 @@ export class FootPlanter implements IFootPlanter {
      if (!this.initialized || !this.skeleton || !this.legIKSolver) return;
      if (!this.leftLegChain || !this.rightLegChain) return;
  
@@ -20018,7 +20173,7 @@ index a471132..759c9a9 100644
      // Skip foot planting during airborne states - let the animation play freely
      if (
        input.locomotionState === LocomotionState.JUMPING ||
-@@ -189,20 +302,26 @@ export class FootPlanter implements IFootPlanter {
+@@ -189,20 +305,26 @@ export class FootPlanter implements IFootPlanter {
      this.rightFoot.prevWorldPos.copy(rightFootPos);
  
      // 3. Detect contact phase and manage lock targets
@@ -20052,7 +20207,7 @@ index a471132..759c9a9 100644
    }
  
    configure(config: FootPlanterConfig): void {
-@@ -219,8 +338,17 @@ export class FootPlanter implements IFootPlanter {
+@@ -219,8 +341,17 @@ export class FootPlanter implements IFootPlanter {
      this.contactCurveCache = null;
      this.leftLegChain = null;
      this.rightLegChain = null;
@@ -20070,7 +20225,7 @@ index a471132..759c9a9 100644
      this.leftFoot = createFootState();
      this.rightFoot = createFootState();
    }
-@@ -247,22 +375,71 @@ export class FootPlanter implements IFootPlanter {
+@@ -247,22 +378,71 @@ export class FootPlanter implements IFootPlanter {
    // ── Contact phase detection ──
  
    /**
@@ -20152,7 +20307,7 @@ index a471132..759c9a9 100644
      if (
        this.contactCurveCache &&
        input.currentClipName &&
-@@ -273,77 +450,281 @@ export class FootPlanter implements IFootPlanter {
+@@ -273,77 +453,300 @@ export class FootPlanter implements IFootPlanter {
          input.currentClipName,
          input.currentClipPhase
        );
@@ -20322,7 +20477,7 @@ index a471132..759c9a9 100644
 -      foot.isLocked = false;
 +    if (foot.isLocked) {
 +      this.computeLockCorrection(foot, legChain, toe, input);
-     }
++    }
 +
 +    // The pelvis moves after this runs and carries the whole leg with it. A
 +    // foot the plant is not holding goes along for that ride; only the planted
@@ -20367,7 +20522,7 @@ index a471132..759c9a9 100644
 +      foot.rebalanceX = cx;
 +      foot.rebalanceZ = cz;
 +      return;
-+    }
+     }
 +
 +    const ux = travel.x / travelLength;
 +    const uz = travel.z / travelLength;
@@ -20408,7 +20563,7 @@ index a471132..759c9a9 100644
 +    // at whatever height the roll had reached when contact was called, and
 +    // every part of the foot in front of that pin goes under the stage.
 +    foot.plantedToe.set(foot.lockToe.x, this.tempToeWorld.y, foot.lockToe.z);
-+    const toeFloor = input.groundY + this.config.toeHeightOffset;
++    const toeFloor = input.groundY + this.toeClearance(toe);
 +    if (foot.plantedToe.y < toeFloor) foot.plantedToe.y = toeFloor;
 +
 +    foot.lockCorrection
@@ -20416,6 +20571,25 @@ index a471132..759c9a9 100644
 +      .add(this.tempAnkleWorld)
 +      .sub(this.tempToeWorld)
 +      .sub(this.tempWarped);
++  }
++
++  /**
++   * How high the ball of the foot has to be held for the whole shoe to clear.
++   *
++   * What the plant holds is one joint, and the foot carries on in front of it.
++   * Retarget a walk onto a rig whose foot sits at a different angle and the
++   * tip hangs over a centimetre below that joint, so holding the joint at the
++   * floor puts the tip through it - a foot through the stage on a plant that
++   * is doing exactly what it was asked. Measured live rather than once per
++   * clip, because the hang is the foot's current roll and changes every frame
++   * of a stance.
++   */
++  private toeClearance(toe: Object3D | null): number {
++    const floor = this.config.toeHeightOffset;
++    const tip = toe?.children.find((c) => c.name.endsWith("Toe_End"));
++    if (!tip) return floor;
++    tip.getWorldPosition(this.tempToeTip);
++    return Math.max(floor, this.tempToeWorld.y - this.tempToeTip.y);
 +  }
 +
 +  /**
@@ -20489,7 +20663,7 @@ index a471132..759c9a9 100644
    }
  
    /**
-@@ -351,61 +732,178 @@ export class FootPlanter implements IFootPlanter {
+@@ -351,61 +754,187 @@ export class FootPlanter implements IFootPlanter {
     */
    private fadeOutFoot(foot: FootState, delta: number): void {
      foot.isLocked = false;
@@ -20542,7 +20716,12 @@ index a471132..759c9a9 100644
 +      dropTarget =
 +        Math.min(Math.max(demand, 0), this.config.maxPelvisAdjust) * maxWeight;
 +    }
-+
+ 
+-    if (this.leftFoot.ikWeight > 0.01 && this.leftLegChain) {
+-      this.leftLegChain.effector.getWorldPosition(this.tempFootWorld);
+-      const footY = this.tempFootWorld.y;
+-      const targetY = groundY + this.config.footHeightOffset;
+-      leftDrop = footY - targetY; // Positive when foot is above ground
 +    [this.pelvisDrop, this.pelvisDropVelocity] = springTo(
 +      this.pelvisDrop,
 +      this.pelvisDropVelocity,
@@ -20553,13 +20732,13 @@ index a471132..759c9a9 100644
 +    if (this.pelvisDrop < 1e-5) {
 +      this.pelvisDrop = 0;
 +      this.pelvisDropVelocity = 0;
-+    }
+     }
  
--    if (this.leftFoot.ikWeight > 0.01 && this.leftLegChain) {
--      this.leftLegChain.effector.getWorldPosition(this.tempFootWorld);
+-    if (this.rightFoot.ikWeight > 0.01 && this.rightLegChain) {
+-      this.rightLegChain.effector.getWorldPosition(this.tempFootWorld);
 -      const footY = this.tempFootWorld.y;
 -      const targetY = groundY + this.config.footHeightOffset;
--      leftDrop = footY - targetY; // Positive when foot is above ground
+-      rightDrop = footY - targetY;
 +    // Weight distribution. Where the plants sit relative to where the clip put
 +    // the feet is where the performer's weight has actually gone, and a body
 +    // that does not follow it is balancing on ground it is not standing over.
@@ -20583,11 +20762,9 @@ index a471132..759c9a9 100644
 +      shiftZ = Math.min(Math.max(shiftZ, -reach), reach);
      }
  
--    if (this.rightFoot.ikWeight > 0.01 && this.rightLegChain) {
--      this.rightLegChain.effector.getWorldPosition(this.tempFootWorld);
--      const footY = this.tempFootWorld.y;
--      const targetY = groundY + this.config.footHeightOffset;
--      rightDrop = footY - targetY;
+-    // Use the larger drop (the foot that's furthest from ground)
+-    const drop = Math.max(leftDrop, rightDrop);
+-    if (drop <= 0) return; // Feet are already at or below ground
 +    [this.pelvisShiftX, this.pelvisShiftXVelocity] = springTo(
 +      this.pelvisShiftX,
 +      this.pelvisShiftXVelocity,
@@ -20602,18 +20779,17 @@ index a471132..759c9a9 100644
 +      PELVIS_SMOOTH_TIME,
 +      dt
 +    );
-+
+ 
+-    // Clamp to prevent extreme corrections
+-    const clampedDrop = Math.min(drop, this.config.maxPelvisAdjust);
 +    if (
 +      this.pelvisDrop === 0 &&
 +      Math.abs(this.pelvisShiftX) < 1e-5 &&
 +      Math.abs(this.pelvisShiftZ) < 1e-5
 +    ) {
 +      return;
-     }
- 
--    // Use the larger drop (the foot that's furthest from ground)
--    const drop = Math.max(leftDrop, rightDrop);
--    if (drop <= 0) return; // Feet are already at or below ground
++    }
++
 +    this.applyPelvisCorrection(
 +      hipsBone,
 +      this.pelvisShiftX,
@@ -20622,8 +20798,8 @@ index a471132..759c9a9 100644
 +    );
 +  }
  
--    // Clamp to prevent extreme corrections
--    const clampedDrop = Math.min(drop, this.config.maxPelvisAdjust);
+-    // Scale by max IK weight so the adjustment fades with the IK blend
+-    const adjustedDrop = clampedDrop * maxWeight;
 +  /**
 +   * Move the pelvis by a world-space offset, remembering it in the bone's own
 +   * space so releasePelvisCorrection can take exactly it back.
@@ -20652,9 +20828,13 @@ index a471132..759c9a9 100644
 +        this.tempPelvisDelta.z / (this.tempPelvisScale.z || 1)
 +      );
 +    }
-+
+ 
+-    // Apply: lower Hips in local space (Y is up for Mixamo skeletons)
+-    hipsBone.position.y -= adjustedDrop;
+-    hipsBone.updateMatrixWorld(true);
 +    hips.position.add(this.tempPelvisDelta);
 +    this.appliedPelvisOffset.copy(this.tempPelvisDelta);
++    this.pelvisAfterApply.copy(hips.position);
 +    hips.updateMatrixWorld(true);
 +  }
 +
@@ -20667,20 +20847,23 @@ index a471132..759c9a9 100644
 +   */
 +  private releasePelvisCorrection(): void {
 +    if (this.appliedPelvisOffset.lengthSq() === 0) return;
- 
--    // Scale by max IK weight so the adjustment fades with the IK blend
--    const adjustedDrop = clampedDrop * maxWeight;
++
 +    const hipsBone = this.skeleton?.getBone("Hips");
++    // Unless the mixer got there first. A clip that carries pelvis motion
++    // rewrites this bone outright every frame, so last frame's offset is
++    // already gone and subtracting it again would sink the pelvis by one
++    // correction per frame.
++    if (hipsBone && !hipsBone.position.equals(this.pelvisAfterApply)) {
++      this.appliedPelvisOffset.set(0, 0, 0);
++      return;
++    }
 +    if (hipsBone) {
 +      hipsBone.position.sub(this.appliedPelvisOffset);
 +      hipsBone.updateMatrixWorld(true);
 +    }
 +    this.appliedPelvisOffset.set(0, 0, 0);
 +  }
- 
--    // Apply: lower Hips in local space (Y is up for Mixamo skeletons)
--    hipsBone.position.y -= adjustedDrop;
--    hipsBone.updateMatrixWorld(true);
++
 +  /**
 +   * How far this foot wants the pelvis lowered: the distance by which its
 +   * ankle target exceeds the leg.
@@ -20702,7 +20885,7 @@ index a471132..759c9a9 100644
    }
  
    // ── Foot IK solve ──
-@@ -417,29 +915,57 @@ export class FootPlanter implements IFootPlanter {
+@@ -417,29 +946,57 @@ export class FootPlanter implements IFootPlanter {
    private applyFootIK(
      chain: BoneChain,
      foot: FootState,
@@ -20953,7 +21136,7 @@ index 732eb44..e5e7471 100644
 +  }
  }
 diff --git a/src/lib/services/implementations/LocomotionAnimator.ts b/src/lib/services/implementations/LocomotionAnimator.ts
-index 25b0660..954aaac 100644
+index 25b0660..e49514d 100644
 --- a/src/lib/services/implementations/LocomotionAnimator.ts
 +++ b/src/lib/services/implementations/LocomotionAnimator.ts
 @@ -13,8 +13,14 @@
@@ -20989,7 +21172,14 @@ index 25b0660..954aaac 100644
  /**
   * Known Mixamo bone prefixes. Animation files may use a different
   * variant than the model (e.g., "mixamorig:" vs "mixamorig").
-@@ -76,8 +88,14 @@ function detectClipPrefix(clip: AnimationClip): string {
+@@ -70,20 +82,27 @@ function detectClipPrefix(clip: AnimationClip): string {
+  *   "strip"    - Remove Hips position entirely (default for idle/jump/fall/land)
+  *   "rootMotion" - Keep and make Z relative to first frame (for walk/run root motion)
+  *   "pose"     - Keep as-is, no baseline subtraction (for crouch - absolute Y is the pose)
++ *   "bob"      - Keep only the pelvis's rise, as a fraction of hip height
+  */
+ /**
+  * Leg bone names to strip when stripLegBones is true.
   * Exhibit performers don't need leg animation - feet stay planted.
   */
  const LEG_BONE_NAMES = new Set([
@@ -21006,7 +21196,14 @@ index 25b0660..954aaac 100644
  ]);
  
  function remapClipToSkeleton(
-@@ -95,7 +113,9 @@ function remapClipToSkeleton(
+   clip: AnimationClip,
+   modelPrefix: string,
+-  hipsMode: "strip" | "rootMotion" | "pose" = "strip",
++  hipsMode: "strip" | "rootMotion" | "pose" | "bob" = "strip",
+   stripLegBones = false
+ ): AnimationClip {
+   const clipPrefix = detectClipPrefix(clip);
+@@ -95,7 +114,9 @@ function remapClipToSkeleton(
  
        const boneName = track.name.slice(0, dotIdx);
        const property = track.name.slice(dotIdx + 1);
@@ -21017,7 +21214,7 @@ index 25b0660..954aaac 100644
  
        // Skip bones that don't exist on our models
        if (coreName.endsWith("_End")) return false;
-@@ -110,7 +130,13 @@ function remapClipToSkeleton(
+@@ -110,7 +131,13 @@ function remapClipToSkeleton(
        if (coreName === "Hips" && property === "quaternion") return false;
  
        // Keep Hips position track when needed for root motion or crouch pose.
@@ -21032,7 +21229,7 @@ index 25b0660..954aaac 100644
  
        // Keep all other quaternion tracks - bone rotations are the animation.
        // Filter out position/scale tracks (position teleports, scale vanishes).
-@@ -122,7 +148,9 @@ function remapClipToSkeleton(
+@@ -122,7 +149,9 @@ function remapClipToSkeleton(
        const dotIdx = track.name.indexOf(".");
        const boneName = track.name.slice(0, dotIdx);
        const property = track.name.slice(dotIdx);
@@ -21043,7 +21240,7 @@ index 25b0660..954aaac 100644
  
        const cloned = track.clone();
  
-@@ -136,7 +164,11 @@ function remapClipToSkeleton(
+@@ -136,7 +165,11 @@ function remapClipToSkeleton(
        // first keyframe's Z preserves the natural vertical bob (hips go up
        // and down ~2-3cm per step) while removing the absolute offset that
        // would slam the avatar underground.
@@ -21056,7 +21253,56 @@ index 25b0660..954aaac 100644
          const values = cloned.values as Float32Array;
          const baseZ = values[2] ?? 0; // First keyframe's Z = rest height
          for (let i = 2; i < values.length; i += 3) {
-@@ -150,7 +182,11 @@ function remapClipToSkeleton(
+@@ -144,13 +177,60 @@ function remapClipToSkeleton(
+         }
+       }
+ 
++      // Bob mode: keep the pelvis rising over each supporting foot.
++      //
++      // A walk raises and lowers its pelvis about eight centimetres per step,
++      // and that is what gives a foot a stance to stand through: the pelvis
++      // travels over a foot that stays put. Strip the track to stop the avatar
++      // teleporting and the pelvis is pinned at one height, so the only way
++      // left for the leg to fold and unfold is to move the foot instead. The
++      // stance flattens out of the clip - measured here, a foot that is on the
++      // floor for 56% of the source cycle is on it for 32% once the track is
++      // gone - and the plant is then asked to hold a foot the animation is
++      // still swinging through ten centimetres of air.
++      //
++      // Only the vertical survives. Travel belongs to whatever is moving the
++      // performer, and the sway across it is worth about two centimetres at
++      // the foot, which is not worth the risk of reintroducing it here.
++      //
++      // What is left is written as a fraction of the clip's own hip height,
++      // not as centimetres. Avatars are not all one size, and an absolute
++      // eight centimetres is a different walk on each of them.
++      //
++      // The mean is what it is measured from, so the pelvis spends the walk at
++      // the height the rig was authored at rather than above it. Anchoring the
++      // low point at rest instead reads as walking on tiptoe: it lifts the
++      // whole body four centimetres and the feet stop reaching the floor for
++      // long enough to stand on.
++      if (
++        coreName === "Hips" &&
++        property.includes("position") &&
++        hipsMode === "bob"
++      ) {
++        const values = cloned.values as Float32Array;
++        const frames = values.length / 3;
++        let sum = 0;
++        for (let i = 0; i < frames; i++) sum += values[i * 3 + 2]!;
++        const mean = frames > 0 ? sum / frames : 0;
++        const height = Math.abs(mean) || 1;
++        for (let i = 0; i < frames; i++) {
++          values[i * 3] = 0;
++          values[i * 3 + 1] = -(values[i * 3 + 2]! - mean) / height;
++          values[i * 3 + 2] = 0;
++        }
++      }
++
+       // Pose mode (crouch): Mixamo FBX→GLB Hips position values are in
+       // centimeters (~85cm) but the skeleton is in meters (~0.85m). Scale
+       // by 0.01 to fix the unit mismatch. Then nudge Z (vertical in GLB)
        // up by 0.04m - measured via foot bone world-Y logging: the grounded
        // foot's toeBase averaged -0.005m (slightly below floor). The 0.04m
        // correction centers it at +0.035m (flush with floor surface).
@@ -21069,7 +21315,7 @@ index 25b0660..954aaac 100644
          const values = cloned.values as Float32Array;
          for (let i = 0; i < values.length; i++) {
            values[i]! *= 0.01;
-@@ -167,10 +203,193 @@ function remapClipToSkeleton(
+@@ -167,10 +247,210 @@ function remapClipToSkeleton(
    return new AnimationClip(clip.name, clip.duration, tracks);
  }
  
@@ -21162,9 +21408,19 @@ index 25b0660..954aaac 100644
 +  const leftXZ: Array<[number, number]> = [];
 +  const rightXZ: Array<[number, number]> = [];
 +
++  // The clip's pelvis track carries the bob and no height, so the rig's own
++  // height has to go back on before anything is measured against the floor.
++  const hips = root.getObjectByName(`${prefix}Hips`);
++  const hipsRest = hips ? hips.position.clone() : null;
++
 +  const local = new Vector3();
 +  for (let i = 0; i < GAIT_SAMPLES; i++) {
++    if (hips) hips.position.set(0, 0, 0);
 +    probeMixer.update(i === 0 ? 0 : dt);
++    if (hips && hipsRest) {
++      hips.position.y *= hipsRest.y;
++      hips.position.add(hipsRest);
++    }
 +    // Only the two leg chains matter here, and refreshing the whole rig 64
 +    // times per clip per avatar is the difference between a few milliseconds
 +    // at load and a visible hitch.
@@ -21225,6 +21481,13 @@ index 25b0660..954aaac 100644
 +  // A rig without toes answers the toe question with its ankle, which is what
 +  // the planter falls back to pinning anyway.
 +  if (!Number.isFinite(toeOffset)) toeOffset = soleOffset;
++  // The plant holds a foot at this height, so a negative one holds it inside
++  // the stage. Retargeting can dip a pose below the rig's own origin - the
++  // pelvis bob did, by just over a centimetre on the shortest rig - and the
++  // floor is the floor whatever the pose says.
++  soleOffset = Math.max(0, soleOffset);
++  toeOffset = Math.max(0, toeOffset);
++
 +
 +  for (let i = 0; i < GAIT_SAMPLES; i++) {
 +    const prev = leftContact[(i + GAIT_SAMPLES - 1) % GAIT_SAMPLES]!;
@@ -21264,12 +21527,14 @@ index 25b0660..954aaac 100644
    private modelPrefix = "mixamorig";
  
    // Actions - created from raw clips, no processing
-@@ -219,7 +438,36 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -219,12 +499,48 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      strafeRight: 0,
    };
  
 +  // -- Gait --
 +
++  private hipsBone: Bone | null = null;
++  private hipsRest: Vector3 | null = null;
 +  private gaits: Record<DirectionKey, ClipGait | null> = {
 +    forward: null,
 +    backward: null,
@@ -21301,7 +21566,17 @@ index 25b0660..954aaac 100644
      this.root = root;
      this.mixer = new AnimationMixer(root);
      this.modelPrefix = this.detectModelPrefix(root);
-@@ -235,16 +483,62 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+     this.initialized = true;
+ 
++    // Read before anything animates: the clips carry the pelvis's motion but
++    // not its height, and every avatar has its own.
++    this.hipsBone = this.getHipsBone();
++    this.hipsRest = this.hipsBone ? this.hipsBone.position.clone() : null;
++
+     if (this.clipsLoaded) {
+       this.createActions();
+     }
+@@ -235,16 +551,62 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     */
    private detectModelPrefix(root: Object3D): string {
      for (const prefix of KNOWN_PREFIXES) {
@@ -21371,7 +21646,7 @@ index 25b0660..954aaac 100644
    }
  
    async loadAnimations(urls: AnimationUrls): Promise<void> {
-@@ -262,14 +556,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -262,14 +624,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
  
      const results = await Promise.allSettled(
        entries.map(async ({ key, url }) => {
@@ -21387,13 +21662,15 @@ index 25b0660..954aaac 100644
          return { key, clip };
        })
      );
-@@ -309,14 +596,35 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -308,15 +663,36 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+     // Crouch uses "pose" mode - keeps Hips position track but scales cm→m
      // (Mixamo FBX→GLB values are in centimeters, skeleton is in meters).
      // This lets the Hips bone drop to the correct crouched height.
-     let hipsMode: "strip" | "rootMotion" | "pose" = "strip";
+-    let hipsMode: "strip" | "rootMotion" | "pose" = "strip";
 -    if (this.config.enableRootMotion && isLocomotionClip) hipsMode = "rootMotion";
-+    if (this.config.enableRootMotion && isLocomotionClip)
-+      hipsMode = "rootMotion";
++    let hipsMode: "strip" | "rootMotion" | "pose" | "bob" = "strip";
++    if (isLocomotionClip)
++      hipsMode = this.config.enableRootMotion ? "rootMotion" : "bob";
      if (key === "crouch") hipsMode = "pose";
  
      // Strip leg bones from idle clip for exhibit performers so feet
@@ -21425,7 +21702,7 @@ index 25b0660..954aaac 100644
    }
  
    /**
-@@ -327,7 +635,6 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -327,7 +703,6 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    private createActions(): void {
      if (!this.mixer) return;
  
@@ -21433,7 +21710,7 @@ index 25b0660..954aaac 100644
      // Idle - starts at weight 1
      const idleClip = this.prepareClip("idle");
      if (idleClip && !this.idleAction) {
-@@ -338,7 +645,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -338,7 +713,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      }
  
      // Walk directions - start at weight 0
@@ -21447,7 +21724,7 @@ index 25b0660..954aaac 100644
        const clip = this.prepareClip(key);
        if (clip && !this.walkActions[key]) {
          const action = this.mixer.clipAction(clip);
-@@ -346,6 +658,14 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -346,6 +726,14 @@ export class LocomotionAnimator implements ILocomotionAnimator {
          this.setWeight(action, 0);
          action.play();
          this.walkActions[key] = action;
@@ -21462,10 +21739,11 @@ index 25b0660..954aaac 100644
        }
      }
  
-@@ -428,6 +748,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -428,7 +816,30 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        this.applyLegacyWeights(blendFactor);
      }
  
+-    this.mixer.update(delta);
 +    if (this.hasGait()) {
 +      if (this.root) {
 +        this.tempScale.setFromMatrixScale(this.root.matrixWorld);
@@ -21477,10 +21755,23 @@ index 25b0660..954aaac 100644
 +      this.advanceGaitPhase(delta);
 +    }
 +
-     this.mixer.update(delta);
++    // Zeroed first so the two cases agree: a clip carrying the pelvis track
++    // writes the bob and this adds the rig's height under it, and a clip
++    // without one leaves zero, which is the same height on its own. Adding to
++    // whatever last frame left would walk the pelvis off in either case.
++    const hips = this.hipsBone;
++    if (hips && this.hipsRest) {
++      hips.position.set(0, 0, 0);
++      this.mixer.update(delta);
++      hips.position.y *= this.hipsRest.y;
++      hips.position.add(this.hipsRest);
++    } else {
++      this.mixer.update(delta);
++    }
    }
  
-@@ -447,40 +778,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+   isReady(): boolean {
+@@ -447,40 +858,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    }
  
    dispose(): void {
@@ -21522,7 +21813,7 @@ index 25b0660..954aaac 100644
    private updateDirectionalTargets(input: LocomotionInput): void {
      const dir = input.moveDirection ?? { x: 0, z: 1 };
      const fw = Math.max(0, dir.z);
-@@ -521,12 +827,170 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -521,12 +907,170 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        return;
      }
  
@@ -21606,8 +21897,7 @@ index 25b0660..954aaac 100644
 +  private advanceGaitPhase(delta: number): void {
 +    let cadence = 0;
 +    let weight = 0;
-     for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
--      this.walkActions[key]?.setEffectiveTimeScale(timeScale);
++    for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
 +      const gait = this.gaits[key];
 +      const w = this.currentDirWeights[key];
 +      if (!gait || w <= 1e-4) continue;
@@ -21622,7 +21912,8 @@ index 25b0660..954aaac 100644
 +
 +    let left = 0;
 +    let right = 0;
-+    for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
+     for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
+-      this.walkActions[key]?.setEffectiveTimeScale(timeScale);
 +      const gait = this.gaits[key];
 +      const action = this.walkActions[key];
 +      if (!gait || !action) continue;
@@ -21664,7 +21955,7 @@ index 25b0660..954aaac 100644
 +    for (const key of Object.keys(this.gaits) as DirectionKey[]) {
 +      const gait = this.gaits[key];
 +      if (gait) lowest = Math.min(lowest, gait.soleOffset);
-     }
++    }
 +    return Number.isFinite(lowest) ? lowest * this.rootWorldScale : 0;
 +  }
 +
@@ -21680,7 +21971,7 @@ index 25b0660..954aaac 100644
 +    for (const key of Object.keys(this.gaits) as DirectionKey[]) {
 +      const gait = this.gaits[key];
 +      if (gait) lowest = Math.min(lowest, gait.toeOffset);
-+    }
+     }
 +    return Number.isFinite(lowest) ? lowest * this.rootWorldScale : 0;
 +  }
 +
@@ -21697,7 +21988,7 @@ index 25b0660..954aaac 100644
    }
  
    private applyStateWeights(blendFactor: number): void {
-@@ -545,10 +1009,11 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -545,10 +1089,11 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // "hunched walk" without needing a dedicated crouch-walk animation clip.
      // Without movement, 100% crouch-idle plays normally.
      const isCrouching = state === LocomotionState.CROUCHING;
@@ -21711,7 +22002,7 @@ index 25b0660..954aaac 100644
      const wantCrouch = isCrouching ? (crouchWalking ? 0.6 : 1) : 0;
  
      // Idle
-@@ -573,7 +1038,10 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -573,7 +1118,10 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // On state entry: snap weights for instant transitions on one-shot clips.
      if (state !== this.currentActiveState) {
        // Zero out ground animations instantly when entering any airborne state
