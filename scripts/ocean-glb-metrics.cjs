@@ -1,4 +1,3 @@
-// ocean-glb-metrics.cjs
 //
 // One owner for "what are this GLB's bounds". Extracted from
 // measure-ocean-models.cjs so measure-ocean-assets.cjs can consume the same

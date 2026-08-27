@@ -220,7 +220,6 @@ export class PinchZoomGridController {
 			// Update cumulative scale for threshold detection
 			this.cumulativeScale *= scaleChange;
 
-			// Check thresholds for column change
 			if (this.cumulativeScale > SCALE_THRESHOLD) {
 				// Pinch out = fewer columns (larger cards)
 				this.changeColumns(-1);
@@ -245,7 +244,6 @@ export class PinchZoomGridController {
 		// Accumulate scroll delta
 		this.cumulativeScrollDelta += ev.deltaY;
 
-		// Check thresholds for column change
 		if (this.cumulativeScrollDelta > SCROLL_THRESHOLD) {
 			// Scroll down with Shift = more columns (smaller cards)
 			this.changeColumns(1);

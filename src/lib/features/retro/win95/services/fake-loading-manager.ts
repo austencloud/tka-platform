@@ -13,9 +13,6 @@
 
 import type { LoadingContext, LoadingSession } from "./types";
 
-// ============================================================================
-// MESSAGE POOLS
-// ============================================================================
 
 const MESSAGE_POOLS: Record<LoadingContext, readonly string[]> = {
 	generate: [
@@ -70,9 +67,6 @@ const MESSAGE_POOLS: Record<LoadingContext, readonly string[]> = {
 	],
 } as const;
 
-// ============================================================================
-// TUNING CONSTANTS
-// ============================================================================
 
 /** How often the progress ticker fires (ms) */
 const TICK_INTERVAL_MS = 200;
@@ -102,9 +96,6 @@ const MESSAGE_CHANGE_MAX_MS = 800;
 /** Default total session duration (ms) */
 const DEFAULT_DURATION_MS = 3000;
 
-// ============================================================================
-// IMPLEMENTATION
-// ============================================================================
 
 export class FakeLoadingManager {
 	private progress = 0;
@@ -158,7 +149,6 @@ export class FakeLoadingManager {
 		};
 	}
 
-	// ── Private ─────────────────────────────────────────────────
 
 	private tick(): void {
 		if (this.isComplete) return;
@@ -270,7 +260,6 @@ export class FakeLoadingManager {
 	}
 }
 
-// ── Helpers ──────────────────────────────────────────────────
 
 /** Inclusive random integer between min and max. */
 function randomInt(min: number, max: number): number {

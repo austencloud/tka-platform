@@ -1,4 +1,3 @@
-// --- From CollaborativeVideoManager ---
 /**
  * Collaborative Video Service Contract
  *

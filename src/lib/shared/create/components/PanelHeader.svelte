@@ -123,12 +123,6 @@
     grid-column: 3; /* Explicitly place in right column */
   }
 
-  /*
-   * ============================================================================
-   * UNIFIED BUTTON STYLING - Circular buttons with gradient backgrounds
-   * Matches ButtonPanel style for consistency
-   * ============================================================================
-   */
 
   /* Base styling for all header buttons - circular with 48px touch targets */
   :global(.panel-header .action-button),

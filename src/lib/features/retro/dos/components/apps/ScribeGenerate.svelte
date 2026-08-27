@@ -23,9 +23,7 @@
     type RetroGenerationResult,
   } from "../../../win95/adapters/notation-adapter";
 
-  /* ------------------------------------------------------------------ */
   /* Props                                                               */
-  /* ------------------------------------------------------------------ */
 
   interface Props {
     onreturn: () => void;
@@ -33,9 +31,7 @@
 
   let { onreturn }: Props = $props();
 
-  /* ------------------------------------------------------------------ */
   /* Internal state                                                      */
-  /* ------------------------------------------------------------------ */
 
   type GenerateStep = "waiting-for-word" | "processing" | "displaying" | "done";
 
@@ -46,9 +42,7 @@
 
   const renderer = new BrailleHybridRenderer();
 
-  /* ------------------------------------------------------------------ */
   /* Processing animation helpers                                        */
-  /* ------------------------------------------------------------------ */
 
   async function writeProcessingLine(label: string): Promise<void> {
     if (cancelled) return;

@@ -394,7 +394,6 @@
 
   <div class="header-divider" aria-hidden="true"></div>
 
-  <!-- ─── Tab panes ─── -->
   <div class="tab-content">
     {#if activeTab === "avatar"}
       <div
@@ -577,7 +576,6 @@
     min-height: 0;
   }
 
-  /* ─── Accent strip ─── */
   .accent-strip {
     height: 2px;
     background: linear-gradient(
@@ -587,7 +585,6 @@
     );
   }
 
-  /* ─── Dividers ─── */
   .header-divider {
     height: 1px;
     margin: 0 14px;
@@ -678,7 +675,6 @@
     letter-spacing: 0.02em;
   }
 
-  /* ─── Tab content ─── */
   .tab-content {
     flex: 1 1 auto;
     padding: 12px 14px 14px;
@@ -710,7 +706,6 @@
     }
   }
 
-  /* ─── Section label ─── */
   .section-label {
     font-size: 14px;
     font-weight: 700;
@@ -720,12 +715,10 @@
     margin-bottom: 8px;
   }
 
-  /* ─── Avatar tab ─── */
   .avatar-section {
     container-type: inline-size;
   }
 
-  /* ─── Prop tab ─── */
   .prop-section {
     display: flex;
     flex-direction: column;
@@ -733,12 +726,10 @@
     container-type: inline-size;
   }
 
-  /* ─── Planes tab ─── */
   .planes-section :global(.cascade-badge) {
     display: none;
   }
 
-  /* ─── Effort tab ─── */
   .effort-section {
     --min-touch-target: 44px;
   }
@@ -753,7 +744,6 @@
     min-width: 0;
   }
 
-  /* ─── Effects tab ─── */
   .effects-section {
     --theme-card-bg: transparent;
     --min-touch-target: 44px;
@@ -789,7 +779,6 @@
     outline-offset: 2px;
   }
 
-  /* ─── Reduced motion ─── */
   @media (prefers-reduced-motion: reduce) {
     .tab-indicator {
       transition: none;

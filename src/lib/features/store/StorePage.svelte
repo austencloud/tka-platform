@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/StorePage.svelte -->
 <script lang="ts">
   import * as singleBuyCheckoutCreator from "$lib/features/store/services/single-buy-checkout-creator";
   import { getProductLoader } from "$lib/features/store/get-product-loader";
@@ -386,7 +385,6 @@
             </div>
           </section>
 
-          <!-- ============ WHAT'S IN THE BOX ============ -->
           <section class="band band-box">
             <h2 class="section-title">What's in the box</h2>
             <ul class="box-list">
@@ -412,7 +410,6 @@
             </ul>
           </section>
 
-          <!-- ============ BETA RUN STORY ============ -->
           <section class="band story band-story">
             <h2 class="section-title">First run, made by hand</h2>
             <div class="story-card">
@@ -452,7 +449,6 @@
     padding: 40px clamp(24px, 4vw, 64px) 80px;
   }
 
-  /* ---------- hero ---------- */
   .hero {
     text-align: center;
     margin-bottom: 72px;
@@ -584,7 +580,6 @@
     }
   }
 
-  /* ---------- the deck-line listings ---------- */
   .deck-listing {
     margin-bottom: 72px;
     display: grid;
@@ -721,7 +716,6 @@
     }
   }
 
-  /* ---------- the book ---------- */
   .book-band {
     margin-bottom: 72px;
   }
@@ -768,7 +762,6 @@
     }
   }
 
-  /* ---------- bands ---------- */
   .band {
     margin-bottom: 72px;
   }

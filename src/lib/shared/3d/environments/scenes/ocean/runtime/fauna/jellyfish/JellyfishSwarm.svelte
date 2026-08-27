@@ -6,7 +6,6 @@
   import { createJellyfishChime, buildPentatonicNotes, midiToFreq } from "./jellyfish-chime";
   import type { OceanQualityConfig } from "../../../quality/ocean-quality";
 
-  // ── Props ──────────────────────────────────────────────────────────────
 
   interface Props {
     quality: OceanQualityConfig;
@@ -14,7 +13,6 @@
 
   let { quality }: Props = $props();
 
-  // ── Constants ──────────────────────────────────────────────────────────
 
   const SCALE = 0.012;
   const DRIFT_SPEED = 0.15;
@@ -38,7 +36,6 @@
   // of the old wide sprawl that also covered the now-excluded glow/tentacles.
   const HOVER_RADIUS = 0.3;
 
-  // ── Spawn position generation ──────────────────────────────────────────
 
   function generateSpawnPosition(seed: number): { x: number; y: number; z: number } {
     // Deterministic pseudo-random from seed — avoids hydration jitter
@@ -66,7 +63,6 @@
     return { x, y, z };
   }
 
-  // ── Jellyfish instances ────────────────────────────────────────────────
 
   interface JellyfishInstance {
     medusae: Medusae;
@@ -249,7 +245,6 @@
     };
   });
 
-  // ── Per-frame update ───────────────────────────────────────────────────
 
   useTask((delta) => {
     const dt = Math.min(delta * 1000, 50);
@@ -298,7 +293,6 @@
     }
   });
 
-  // ── Cleanup ────────────────────────────────────────────────────────────
 
   onDestroy(() => {
     for (const inst of instances) inst.medusae.dispose();

@@ -55,13 +55,11 @@ function createCollectionsBrowseState() {
     error = null;
 
     try {
-      // Get all creators
       const creators = await getUsers(undefined, currentUserId);
 
       // For each creator, fetch their public content
       const librariesPromises = creators.map(async (creator) => {
         try {
-          // Get public collections
           const publicCollections =
             await getUserPublicCollections(creator.id);
 

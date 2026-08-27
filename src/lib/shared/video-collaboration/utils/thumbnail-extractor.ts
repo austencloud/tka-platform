@@ -38,13 +38,11 @@ export async function extractVideoThumbnail(
   } = options;
 
   return new Promise((resolve, reject) => {
-    // Create video element
     const video = document.createElement("video");
     video.preload = "metadata";
     video.muted = true;
     video.playsInline = true;
 
-    // Create object URL for the video file
     const videoUrl = URL.createObjectURL(videoFile);
 
     const cleanup = () => {
@@ -93,7 +91,6 @@ export async function extractVideoThumbnail(
         // Get data URL for preview
         const dataUrl = canvas.toDataURL("image/jpeg", quality);
 
-        // Convert to blob
         canvas.toBlob(
           (blob) => {
             cleanup();
@@ -117,7 +114,6 @@ export async function extractVideoThumbnail(
       reject(new Error("Failed to load video for thumbnail extraction"));
     };
 
-    // Start loading video
     video.src = videoUrl;
     video.load();
   });

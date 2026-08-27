@@ -39,10 +39,8 @@ export function parseMarkdown(markdown: string): ParsedMarkdown {
 			const lines = tableMatch.trim().split('\n');
 			if (lines.length < 2) return tableMatch;
 
-			// Parse header row
 			const headerCells = lines[0]!.split('|').slice(1, -1).map((c) => c.trim());
 			// Skip separator row (line[1])
-			// Parse data rows
 			const dataRows = lines.slice(2).map((row) => row.split('|').slice(1, -1).map((c) => c.trim()));
 
 			let tableHtml = '<table><thead><tr>';

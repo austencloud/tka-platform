@@ -30,9 +30,7 @@ export type Coordinates = _Coordinates;
 // Re-export runtime values from the canonical package
 export { CARDINAL_LOCATIONS, INTERCARDINAL_LOCATIONS, isCardinal } from "@tka/render-core";
 
-// ============================================================================
 // Const objects for enum-style member access
-// ============================================================================
 
 export const GridLocation = {
   NORTH: "n" as GridLocation,

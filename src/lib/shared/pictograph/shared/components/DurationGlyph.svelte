@@ -26,7 +26,6 @@ Dark mode: Uses white text on dark backgrounds, dark text on light backgrounds.
     centerX?: number;
   }>();
 
-  // Get centralized visibility manager for dark mode state
   const visibilityManager = getAnimationVisibilityManager();
 
   // Track dark mode from centralized state (polls visibility manager)

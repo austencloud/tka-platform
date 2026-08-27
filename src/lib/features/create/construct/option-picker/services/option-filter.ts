@@ -23,9 +23,6 @@ export class OptionFilter {
     private positionAnalyzer: PositionAnalyzer
   ) {}
 
-  /**
-   * Apply type filtering to options
-   */
   applyTypeFiltering(
     options: PictographData[],
     typeFilter: TypeFilter
@@ -147,9 +144,6 @@ export class OptionFilter {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import { positionAnalyzer } from "./position-analyzer";
 
 export const optionFilter = new OptionFilter(positionAnalyzer);

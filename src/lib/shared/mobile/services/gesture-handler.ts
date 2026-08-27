@@ -107,7 +107,6 @@ export class GestureHandler {
         config.onSnapBack?.();
       }
 
-      // Reset state
       state.isDragging = false;
       state.touchStartX = 0;
       state.touchStartY = 0;

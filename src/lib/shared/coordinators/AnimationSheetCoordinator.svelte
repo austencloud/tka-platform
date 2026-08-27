@@ -364,7 +364,6 @@
         throw new Error("Failed to load sequence");
       }
 
-      // Initialize playback controller
       animationPanelState.setShouldLoop(true);
       const success = playbackController.initialize(
         loadedSequence,

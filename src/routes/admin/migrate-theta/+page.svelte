@@ -123,7 +123,6 @@
       const firestore = await getFirestoreInstance();
       console.log("🔍 Scanning all users for Greek letter case issues...");
 
-      // Get all users
       const usersSnapshot = await getDocs(collection(firestore, "users"));
       totalUsers = usersSnapshot.size;
       console.log(`Found ${totalUsers} users`);

@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-// src/lib/shared/gamification/services/prop-collection-persistence.test.ts
 import { describe, expect, it, beforeEach } from "vitest";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {

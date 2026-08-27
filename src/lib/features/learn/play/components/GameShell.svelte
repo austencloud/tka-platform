@@ -258,7 +258,6 @@ animations, exactly as the legacy quizzes did.
     min-height: 0;
   }
 
-  /* ── Top bar ─────────────────────────────────────────────────────── */
 
   .top-bar {
     display: flex;
@@ -435,7 +434,6 @@ animations, exactly as the legacy quizzes did.
     text-align: right;
   }
 
-  /* ── Stage ───────────────────────────────────────────────────────── */
 
   .stage {
     flex: 1;

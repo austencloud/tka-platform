@@ -25,11 +25,9 @@ import type {
   PropDimensions,
 } from "./IAnimationPrecomputer";
 
-// ============================================================================
 // GLOBAL PATH CACHE
 // Survives component remounts so drag-to-move doesn't re-precompute.
 // Keyed by sequence content hash. Capped at 20 entries (LRU eviction).
-// ============================================================================
 const MAX_GLOBAL_CACHE_SIZE = 20;
 const globalPathCacheMap = new Map<string, AnimationPathCache>();
 

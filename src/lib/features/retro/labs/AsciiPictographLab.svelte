@@ -24,7 +24,6 @@
     pictographPreparer,
   );
 
-  // ── State ──
 
   let allPictographs = $state<PictographData[]>([]);
   let currentIndex = $state(0);
@@ -168,7 +167,6 @@
     color: var(--theme-text, #fff);
   }
 
-  /* ── Toolbar ── */
 
   .lab-toolbar {
     display: flex;
@@ -267,7 +265,6 @@
     outline-offset: 2px;
   }
 
-  /* ── Split view ── */
 
   .compare-split {
     display: flex;
@@ -331,7 +328,6 @@
     overflow: auto;
   }
 
-  /* ── Status ── */
 
   .lab-status {
     display: flex;

@@ -131,9 +131,6 @@ export class HandTrackingStabilizer {
     };
   }
 
-  /**
-   * Get the current hand assignment
-   */
   getAssignedHand(handId: "blue" | "red"): "left" | "right" {
     return this._getHistory(handId).assignedHand;
   }
@@ -152,9 +149,6 @@ export class HandTrackingStabilizer {
     return this._getHistory(handId).positions.length > 0;
   }
 
-  /**
-   * Get the history length for a hand
-   */
   getHistoryLength(handId: "blue" | "red"): number {
     return this._getHistory(handId).positions.length;
   }

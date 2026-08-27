@@ -111,7 +111,6 @@ async function main() {
   console.log(isDryRun ? '=== DRY RUN ===' : '=== SCRAPING INSTAGRAM CAPTIONS ===');
   console.log('');
 
-  // Get all shortcodes
   const allShortcodes = getShortcodesFromFiles();
   console.log(`Found ${allShortcodes.length} videos total`);
 

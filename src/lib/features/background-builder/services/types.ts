@@ -3,7 +3,6 @@
  */
 
 
-// === From ICoralSceneRenderer ===
 
 export interface CoralSceneConfig {
   /** Total number of coral pieces to place (default 20) */
@@ -12,7 +11,6 @@ export interface CoralSceneConfig {
   layerCounts?: [number, number, number];
 }
 
-// === From ICosmicLabController ===
 
 export interface CosmicLayers {
   stars: boolean;
@@ -24,7 +22,6 @@ export interface CosmicLayers {
   ufo: boolean;
 }
 
-// === From IPreviewAnimationController ===
 
 export interface PreviewStats {
   fireflies: number;
@@ -37,7 +34,6 @@ export interface PlacementConfig {
   style: number;
 }
 
-// === From IUFOStatusPoller ===
 
 export interface UFOStatusSnapshot {
   active: boolean;
@@ -49,7 +45,6 @@ export interface UFOStatusSnapshot {
   scannedStars: number;
 }
 
-// === From ICosmicLabController ===
 
 export interface CosmicLayers {
   stars: boolean;
@@ -61,7 +56,6 @@ export interface CosmicLayers {
   ufo: boolean;
 }
 
-// === From IPreviewAnimationController ===
 
 export interface PreviewStats {
   fireflies: number;
@@ -75,7 +69,6 @@ export interface PlacementConfig {
   style: number;
 }
 
-// === From IUFOStatusPoller ===
 
 export interface UFOStatusSnapshot {
   active: boolean;

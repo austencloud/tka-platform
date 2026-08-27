@@ -89,7 +89,6 @@
     }
   });
 
-  // ── Pill specs ──
 
   const gridSummary = $derived(`${p.gridCols}×${p.gridRows}`);
 

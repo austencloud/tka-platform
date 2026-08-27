@@ -31,7 +31,6 @@ const AA_WIDTH = 0.05;
 const ALPHA_SUBTRACT = 1.0 / 255.0;
 const MESH_BUFFER_VERTS = 8192;
 
-// ── WGSL Shaders ───────────────────────────────────────────────────
 
 const FULLSCREEN_VERT_WGSL = /* wgsl */ `
 struct VertexOutput {
@@ -231,7 +230,6 @@ fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
 }
 `;
 
-// ── Decay + Composite ──────────────────────────────────────────────
 
 const DECAY_FRAG_WGSL = /* wgsl */ `
 struct DecayUniforms {
@@ -268,7 +266,6 @@ fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
 }
 `;
 
-// ── Types ──────────────────────────────────────────────────────────
 
 interface AccumPair {
   textures: [AccumTex, AccumTex];
@@ -282,7 +279,6 @@ interface AccumTex {
   view: GPUTextureView;
 }
 
-// ── Executor ───────────────────────────────────────────────────────
 
 export class WebGPUOverlayEffectsExecutor {
   private device: GPUDevice;
@@ -596,7 +592,6 @@ export class WebGPUOverlayEffectsExecutor {
     this.compositeAccumToScreen(accum, presentView);
   }
 
-  // ── Lifecycle ───────────────────────────────────────────────────
 
   dispose(): void {
     if (!this.initialized) return;
@@ -616,7 +611,6 @@ export class WebGPUOverlayEffectsExecutor {
     this.initialized = false;
   }
 
-  // ── Initialization ──────────────────────────────────────────────
 
   private ensureInit(): void {
     if (this.initialized) return;
@@ -673,7 +667,6 @@ export class WebGPUOverlayEffectsExecutor {
       alpha: { srcFactor: "one", dstFactor: "one", operation: "add" },
     };
 
-    // ── Halo ──
     this.haloLayout = device.createBindGroupLayout({
       entries: [
         { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
@@ -683,7 +676,6 @@ export class WebGPUOverlayEffectsExecutor {
       HALO_FRAG_WGSL, this.haloLayout, presentFmt, additiveBlend,
     );
 
-    // ── Ring ──
     this.ringLayout = device.createBindGroupLayout({
       entries: [
         { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
@@ -693,7 +685,6 @@ export class WebGPUOverlayEffectsExecutor {
       RING_FRAG_WGSL, this.ringLayout, presentFmt, additiveBlend,
     );
 
-    // ── Frost ──
     this.frostLayout = device.createBindGroupLayout({
       entries: [
         { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
@@ -758,7 +749,6 @@ export class WebGPUOverlayEffectsExecutor {
       primitive: { topology: "triangle-strip", stripIndexFormat: "uint32" },
     });
 
-    // ── Decay ──
     this.decayLayout = device.createBindGroupLayout({
       entries: [
         { binding: 0, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
@@ -770,7 +760,6 @@ export class WebGPUOverlayEffectsExecutor {
       DECAY_FRAG_WGSL, this.decayLayout, accumFmt,
     );
 
-    // ── Composite ──
     this.compositeLayout = device.createBindGroupLayout({
       entries: [
         { binding: 0, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
@@ -801,7 +790,6 @@ export class WebGPUOverlayEffectsExecutor {
     });
   }
 
-  // ── Accumulator management ──────────────────────────────────────
 
   private ensureAccum(name: "ink" | "silk" | "frost", w: number, h: number): void {
     const field = `${name}Accum` as const;

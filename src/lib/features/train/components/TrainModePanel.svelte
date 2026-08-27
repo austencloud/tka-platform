@@ -56,7 +56,6 @@
   let showModePicker = $state(false);
   let showGridSettings = $state(false);
 
-  // Initialize train state
   const trainState = createTrainState();
   const screenWakeLockManager = createScreenWakeLockManager();
 
@@ -476,9 +475,6 @@
 </div>
 
 <style>
-  /* ============================================
-     TRAIN MODE PANEL - Unified Bento Layout
-     ============================================ */
   .train-mode-panel {
     position: relative;
     display: flex;
@@ -498,9 +494,6 @@
     position: relative;
   }
 
-  /* ============================================
-     ERROR TOAST
-     ============================================ */
   .error-toast {
     position: absolute;
     bottom: 80px;

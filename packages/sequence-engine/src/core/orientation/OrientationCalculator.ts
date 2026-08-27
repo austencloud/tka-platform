@@ -70,7 +70,6 @@ const HASH_IN_PAIRS = [
   ["ne", "c"], ["se", "c"], ["sw", "c"], ["nw", "c"],
 ];
 
-// Build handpath map
 const handpathMap = new Map<string, HandPath>();
 
 CLOCKWISE_PAIRS.forEach(([start, end]) => {

@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/BuyButton.svelte -->
 <!--
   Buy CTA with an availability gate: a product with no Stripe price is NOT
   purchasable, so instead of a Buy Now that spins and errors after the click,

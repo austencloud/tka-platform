@@ -542,7 +542,6 @@
     stroke-width: 0.8;
   }
 
-  /* ── Edit mode affordances ─────────────────────────────────────────────── */
   .run.edit,
   .para.edit,
   .combo.edit {

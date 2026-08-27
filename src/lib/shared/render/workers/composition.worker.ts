@@ -1,4 +1,3 @@
-// src/lib/shared/render/workers/composition.worker.ts
 //
 // Off-thread composition worker for thumbnail / export rendering.
 // Instantiated by CompositionDispatcher as a pool of N workers.
@@ -19,9 +18,7 @@ import type { PictographBlobCache } from '../services/pictograph-blob-cache';
 import type { PictographMemoryCache } from '../services/pictograph-memory-cache';
 import type { TextRenderer } from '../services/text-renderer';
 
-// ---------------------------------------------------------------------------
 // Worker-safe cache stubs
-// ---------------------------------------------------------------------------
 // The worker performs fresh renders every time — caching is handled by the
 // main-thread ThumbnailRenderOrchestrator. These stubs satisfy the
 // ImageComposer constructor without pulling in IndexedDB ($app/environment)

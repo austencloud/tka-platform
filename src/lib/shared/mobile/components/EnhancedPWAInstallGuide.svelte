@@ -49,7 +49,6 @@
   // Get instructions based on detected platform/browser
   const instructions = $derived(getInstallInstructions(platform, browser));
 
-  // Handle close
   function handleClose() {
     showGuide = false;
   }

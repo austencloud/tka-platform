@@ -63,7 +63,6 @@
     }
   }
 
-  // Initialize on mount
   onMount(async () => {
     const ready = await state.initializeServices();
     if (ready) {

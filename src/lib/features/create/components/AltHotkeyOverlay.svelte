@@ -339,7 +339,6 @@
 {/if}
 
 <style>
-  /* ===== Layout ===== */
   .alt-overlay {
     position: fixed;
     top: 12px;
@@ -376,7 +375,6 @@
     to { opacity: 0; transform: translateX(-50%) translateY(-8px); }
   }
 
-  /* ===== Alt badge - compact pill ===== */
   .alt-badge-section {
     display: flex;
     align-items: center;
@@ -396,7 +394,6 @@
     line-height: 1;
   }
 
-  /* ===== Dividers ===== */
   .divider {
     width: 1px;
     align-self: stretch;
@@ -410,7 +407,6 @@
     flex-shrink: 0;
   }
 
-  /* ===== Sections ===== */
   .section {
     flex-shrink: 0;
     display: flex;
@@ -438,7 +434,6 @@
 
   .section-header .section-label { margin-bottom: 0; }
 
-  /* ===== Shared button base ===== */
   .rotate-btn,
   .transform-item,
   .action-item,
@@ -468,7 +463,6 @@
   .transform-item:disabled,
   .action-item:disabled { opacity: 0.3; cursor: default; }
 
-  /* ===== Rotate - stacked vertically ===== */
   .rotate-col {
     display: flex;
     flex-direction: column;
@@ -506,7 +500,6 @@
     min-height: 44px;
   }
 
-  /* ===== Shared icon + label + key ===== */
   .icon-badge {
     display: flex;
     align-items: center;
@@ -592,7 +585,6 @@
   .preset-key { background: rgba(255, 180, 50, 0.2); border-color: rgba(255, 180, 50, 0.3); color: #f5c842; }
   .preset-key.selected-key { background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.3); color: #a855f7; }
 
-  /* ===== Edit button ===== */
   .edit-btn {
     display: flex;
     align-items: center;
@@ -617,7 +609,6 @@
 
   .edit-btn i { font-size: 9px; }
 
-  /* ===== Close button - inline flex item ===== */
   .close-btn {
     display: flex;
     align-items: center;
@@ -641,7 +632,6 @@
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
-  /* ===== Reduced motion ===== */
   @media (prefers-reduced-motion: reduce) {
     .alt-overlay { animation: none; }
     .alt-overlay.fade-out { animation: none; opacity: 0; }

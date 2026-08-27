@@ -33,9 +33,7 @@ const projectRoot = path.resolve(
   "../.."
 );
 
-// ---------------------------------------------------------------------------
 // Frozen legacy reference (pre-consolidation production processReversals)
-// ---------------------------------------------------------------------------
 
 function legacyGetPropRotDir(step: StepData, color: "blue" | "red"): string | null {
   if (!step || step.isBlank) return null;
@@ -105,9 +103,7 @@ function legacyProcessReversals(sequence: SequenceData): Array<{ blue: boolean; 
   return out;
 }
 
-// ---------------------------------------------------------------------------
 // Corpus loading (same harness shape as reversal-derivation-parity.test.ts)
-// ---------------------------------------------------------------------------
 
 interface RawDoc {
   word?: string;

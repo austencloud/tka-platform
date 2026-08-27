@@ -17,9 +17,7 @@
 import type { GridLocation, GridMode } from "$lib/shared/render/core/types";
 import type { Vec2 } from "../models/grid-topology";
 
-// ============================================================================
 // LOCATION OFFSETS (normalized: radius = 1.0)
-// ============================================================================
 
 /**
  * Offset from grid center to each location, in abstract units where radius = 1.0.
@@ -51,9 +49,6 @@ export const LOCATION_OFFSETS: Readonly<Record<GridLocation, Vec2>> = {
   c:  { x: 0,         y: 0 },
 };
 
-// ============================================================================
-// HAND POINTS PER GRID MODE
-// ============================================================================
 
 /**
  * Which locations are "hand points" (primary positions where hands can be placed)
@@ -82,9 +77,6 @@ export const CW_PERIMETER_ORDER: readonly GridLocation[] = [
   "n", "ne", "e", "se", "s", "sw", "w", "nw",
 ];
 
-// ============================================================================
-// OUTER POINT SCALE
-// ============================================================================
 
 /**
  * Outer points sit at 2x the hand point radius from center.
@@ -102,9 +94,6 @@ export const CW_PERIMETER_ORDER: readonly GridLocation[] = [
  */
 export const OUTER_POINT_MULTIPLIER = 2.0;
 
-// ============================================================================
-// ADJACENCY
-// ============================================================================
 
 /**
  * Diametrically opposite location on the 4-point grid.
@@ -115,9 +104,6 @@ export const OPPOSITE_LOCATION: Readonly<Partial<Record<GridLocation, GridLocati
   ne: "sw", sw: "ne", se: "nw", nw: "se",
 };
 
-// ============================================================================
-// CONVERSION HELPERS
-// ============================================================================
 
 /** Pixels per abstract unit in the canonical 950x950 SVG coordinate space */
 export const PIXELS_PER_UNIT = 150;

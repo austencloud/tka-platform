@@ -86,7 +86,6 @@ function loadAllPictographs(): PictographData[] {
     const lines = csvContent.trim().replace(/\r/g, "").split("\n");
     if (lines.length < 2) return [];
 
-    // Parse header
     const headers = lines[0].split(",");
     const getIndex = (name: string) => headers.indexOf(name);
 
@@ -133,7 +132,6 @@ function loadPictographData(letter: string): PictographData | null {
   return all.find((d) => d.letter === letter) || null;
 }
 
-// Calculate total canvas dimensions based on groups
 function calculateCanvasDimensions(): { width: number; height: number } {
   let totalHeight = GROUP_PADDING; // Top padding
 

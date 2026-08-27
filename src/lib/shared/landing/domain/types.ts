@@ -1,4 +1,3 @@
-// --- From EndlessSpinnerOrchestrator ---
 /**
  * Endless Spinner Orchestrator Interface
  *

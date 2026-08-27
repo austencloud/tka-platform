@@ -81,7 +81,6 @@ Card-based architecture with integrated Generate button:
   // Animation is always sequential with gentle bloom
   const isSequentialAnimation = true;
 
-  // ===== State Management =====
   const configState = createGenerationConfigState();
   const spellModeState = createSpellModeState();
   const actionsState = createGenerationActionsState(
@@ -222,7 +221,6 @@ Card-based architecture with integrated Generate button:
     };
   });
 
-  // ===== Dirty-State Detection =====
   const hasSettingsChanged = $derived.by(() => {
     const last = actionsState.lastGeneratedConfig;
     if (!last) return false;
@@ -247,7 +245,6 @@ Card-based architecture with integrated Generate button:
 
   let hapticService = $state<HapticFeedback | null>(null);
 
-  // ===== Device Service Integration =====
   onMount(() => {
     try {
       const deviceService = getDeviceDetector();

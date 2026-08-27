@@ -79,7 +79,6 @@
     onClose();
   }
 
-  // Handle new chat
   function handleNewChat() {
     onNewChat();
     onClose();

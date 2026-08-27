@@ -54,7 +54,6 @@ export const SYNONYMS: Record<string, string[]> = {
  */
 const REVERSE_LOOKUP = new Map<string, string>();
 
-// Build reverse lookup
 for (const [canonical, synonyms] of Object.entries(SYNONYMS)) {
   REVERSE_LOOKUP.set(canonical.toLowerCase(), canonical);
   for (const syn of synonyms) {

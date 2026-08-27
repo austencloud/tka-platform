@@ -53,7 +53,6 @@ async function doInitialize(): Promise<void> {
   try {
     logger.info("Initializing global arrow adjustment system...");
 
-    // Create persister and repository
     const { GlobalArrowAdjustmentPersister } =
       await import("./global-arrow-adjustment-persister");
     const { GlobalArrowAdjustmentRepository } =

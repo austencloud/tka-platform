@@ -36,7 +36,6 @@
   const fireflyCounts = $derived(allocateAutumnFireflies(quality.fireflyCount));
 </script>
 
-<!-- ── Leaves ─────────────────────────────────────────────────────────────── -->
 <!-- Each emitter sits beneath a real authored canopy, so no leaf appears to
      enter from the open sky above the performance clearing. -->
 {#key quality.leafCount}
@@ -63,7 +62,6 @@
   {/each}
 {/key}
 
-<!-- ── Spores ─────────────────────────────────────────────────────────────── -->
 <!-- Bioluminescent teal motes rising from the forest floor.                  -->
 <!-- type="bubbles" rises (gravity −0.100), additive blending, circle shape.  -->
 {#key quality.sporeCount}
@@ -80,7 +78,6 @@
   </T.Group>
 {/key}
 
-<!-- ── Fireflies ──────────────────────────────────────────────────────────── -->
 <!-- Warm-glow pulses live around the pond, fallen wood, and the subtle rear arc. -->
 {#key quality.fireflyCount}
   {#each AUTUMN_FIREFLY_CLUSTERS as cluster, index (cluster.id)}

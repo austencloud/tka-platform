@@ -151,7 +151,6 @@ export class HybridChunkManager extends ChunkManager {
         state.memoryBytes = this.calculateChunkMemory(meshData);
         this.totalMemoryBytes += state.memoryBytes;
 
-        // Update octree
         const worldX = chunkX * this.config.chunkSize + this.config.chunkSize / 2;
         const worldZ = chunkZ * this.config.chunkSize + this.config.chunkSize / 2;
         this.octree.insert(chunkX * 1000000 + chunkZ, { x: worldX, y: 0, z: worldZ });
@@ -159,7 +158,6 @@ export class HybridChunkManager extends ChunkManager {
         // Notify callback
         this.onChunkLoaded?.(key, state);
 
-        // Check memory budget
         this.enforceMemoryBudget();
 
         this.activeLoads--;
@@ -283,9 +281,6 @@ export class HybridChunkManager extends ChunkManager {
   }
 }
 
-/**
- * Create a hybrid chunk manager with GPU support
- */
 export function createHybridChunkManager(
   worldSeed: number,
   config: Partial<HybridChunkManagerConfig> = {}

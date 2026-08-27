@@ -15,9 +15,7 @@ export function createPanelPersistenceState() {
   // Key format: "moduleId:tabId" (e.g., "create:construct", "create:assembler")
   let lastPanelByTab = $state<Record<string, string | null>>({});
 
-  // ─────────────────────────────────────────────────────────────────────────
   // Persistence Helpers
-  // ─────────────────────────────────────────────────────────────────────────
 
   function persist() {
     if (typeof localStorage === "undefined") return;
@@ -28,9 +26,6 @@ export function createPanelPersistenceState() {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Load Persisted State
-  // ─────────────────────────────────────────────────────────────────────────
 
   /**
    * Load persisted panel state from localStorage

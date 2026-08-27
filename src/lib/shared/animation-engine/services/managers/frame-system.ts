@@ -31,7 +31,6 @@ import type { EffectRendererManager } from "../effect-renderer-manager";
 import type { MandalaPathOptions } from "$lib/shared/mandala/services/types";
 
 export class FrameSystem {
-  // ── Owned services ──────────────────────────────────────────────────────────
   readonly frameParameterBuilder = new FrameParameterBuilder();
   private readonly frameBuilder = new FrameBuilder();
   private readonly mandalaPathOptions: MandalaPathOptions = {
@@ -47,7 +46,6 @@ export class FrameSystem {
     }
   ) {}
 
-  // ── Per-frame parameter building ─────────────────────────────────────────────
 
   /**
    * Build the RenderFrameParams for the current frame.
@@ -87,7 +85,6 @@ export class FrameSystem {
     return params;
   }
 
-  // ── Label calculations ───────────────────────────────────────────────────────
 
   calculateBeatNumber(props: AnimationEngineProps): number {
     return this.frameBuilder.calculateBeatNumber(
@@ -111,7 +108,6 @@ export class FrameSystem {
     );
   }
 
-  // ── Glyph-state sync ─────────────────────────────────────────────────────────
 
   /**
    * Sync the glyph transition service state into AnimatorState.
@@ -142,7 +138,6 @@ export class FrameSystem {
     });
   }
 
-  // ── FrameParameterBuilder passthroughs ──────────────────────────────────────
 
   enforceUnilateralConstraint(
     settings: TrailSettings,

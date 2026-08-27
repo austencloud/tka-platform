@@ -47,22 +47,18 @@ export function createFeedbackManageState() {
   const filteredItems = $derived.by(() => {
     let result = items;
 
-    // Apply type filter
     if (filters.type !== "all") {
       result = result.filter((item) => item.type === filters.type);
     }
 
-    // Apply status filter
     if (filters.status !== "all") {
       result = result.filter((item) => item.status === filters.status);
     }
 
-    // Apply priority filter
     if (filters.priority !== "all") {
       result = result.filter((item) => item.priority === filters.priority);
     }
 
-    // Apply search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter(

@@ -35,9 +35,6 @@ function getOnboardingService(): OnboardingPersister | null {
   }
 }
 
-// ============================================================================
-// APP-WIDE ONBOARDING
-// ============================================================================
 
 /** localStorage key for app-wide onboarding completion status */
 export const ONBOARDING_COMPLETED_KEY = "tka-onboarding-completed";
@@ -57,9 +54,6 @@ export const VIEWER3D_INTRO_SEEN_KEY = "tka-viewer3d-intro-seen";
 /** localStorage key for the 3D Studio's first-run guided scene setup */
 export const SCENE_STUDIO_SETUP_SEEN_KEY = "tka-scene-studio-setup-seen";
 
-// ============================================================================
-// CLOUD SYNC
-// ============================================================================
 
 /**
  * Sync onboarding status from Firebase to localStorage.

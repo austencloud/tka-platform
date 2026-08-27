@@ -1,9 +1,6 @@
 import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
 import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";
 
-// ============================================================================
-// HMR STATE PRESERVATION
-// ============================================================================
 const hmrData = import.meta.hot?.data as
   | { isInitialized?: boolean; settingsService?: SettingsState | null }
   | undefined;

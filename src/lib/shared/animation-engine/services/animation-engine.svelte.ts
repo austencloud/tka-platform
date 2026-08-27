@@ -123,17 +123,12 @@ export interface AnimationEngineCallbacks {
 
 
 export class AnimationEngine {
-  // ============================================================================
   // REACTIVE STATE - Component derives from this
-  // ============================================================================
   private readonly _animatorState = createAnimatorState();
 
   get state(): AnimatorState { return this._animatorState; }
   get animatorState(): AnimatorState { return this._animatorState; }
 
-  // ============================================================================
-  // EXTRACTED MODULES
-  // ============================================================================
   private readonly lifecycleManager = new CanvasLifecycleManager();
   private readonly effectSystem = new EffectSystem(this._animatorState, { lifecycleManager: this.lifecycleManager });
   private readonly propSystem = new PropSystem(this._animatorState, { lifecycleManager: this.lifecycleManager });
@@ -159,17 +154,11 @@ export class AnimationEngine {
     buildFrameDeps: () => this.buildFrameDeps(),
   });
 
-  // ============================================================================
-  // PRIVATE SERVICES
-  // ============================================================================
   private readonly canvasInitializer = new AnimatorCanvasInitializer();
   private readonly frameBudgetMonitor: FrameBudgetMonitor =
     new FrameBudgetMonitor(detectDeviceTier());
   private fireDefaultsLoader: FireDefaultsLoader | null = null;
 
-  // ============================================================================
-  // PRIVATE STATE
-  // ============================================================================
   private containerElement: HTMLDivElement | null = null;
   private callbacks: AnimationEngineCallbacks = {};
   private instanceId = Math.random().toString(36).substring(2, 8);
@@ -183,9 +172,6 @@ export class AnimationEngine {
    *  instead of reading the global visibility manager. */
   private _performerEffortResolver: ((performerId: string) => EffortId) | null = null;
 
-  // ============================================================================
-  // PUBLIC API
-  // ============================================================================
 
   /**
    * Set a per-instance visibility manager override. Must be called before
@@ -478,9 +464,6 @@ export class AnimationEngine {
     this.lifecycleManager.renderLoop?.renderSync(params, timeMs, dtSeconds);
   }
 
-  /**
-   * Handle glyph SVG ready callback from GlyphRenderer
-   */
   handleGlyphSvgReady(
     svgString: string,
     width: number,
@@ -665,9 +648,6 @@ export class AnimationEngine {
     this.effectSystem.setCellTipEffortMap(map);
   }
 
-  // ============================================================================
-  // PRIVATE METHODS
-  // ============================================================================
 
   /**
    * Build the per-frame deps object passed to FrameSystem.buildFrameParams().

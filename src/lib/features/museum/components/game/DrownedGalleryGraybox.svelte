@@ -55,7 +55,6 @@
     onLightPlanChange,
   }: Props = $props();
 
-  // ── Palette ───────────────────────────────────────────────────────────────
   const ROCK = "#2b2620";
   const ROCK_WET = "#3a332a";
   const FLOOR_WET = "#4a3d2d";
@@ -151,7 +150,6 @@
     for (const material of Object.values(materials)) material.dispose();
   });
 
-  // ── Seeded RNG ────────────────────────────────────────────────────────────
   function mulberry32(seed: number): () => number {
     let a = seed >>> 0;
     return () => {
@@ -162,7 +160,6 @@
     };
   }
 
-  // ── Box helpers ───────────────────────────────────────────────────────────
   interface Box {
     id: string;
     pos: [number, number, number];

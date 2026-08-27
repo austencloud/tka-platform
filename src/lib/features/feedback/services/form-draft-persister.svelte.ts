@@ -42,7 +42,6 @@ export class FormDraftPersister {
     // value associated with this timer behind the persister's back.
     this.pendingDraft = { ...formData };
 
-    // Set status to saving
     this._saveStatus = "saving";
 
     // Debounce save

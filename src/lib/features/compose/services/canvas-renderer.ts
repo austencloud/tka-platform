@@ -241,7 +241,6 @@ function drawStaff(
   const propWidth = viewBoxDimensions.width * gridScaleFactor;
   const propHeight = viewBoxDimensions.height * gridScaleFactor;
 
-  // Calculate center point from viewBox dimensions
   const propCenterX = viewBoxDimensions.width / 2;
   const propCenterY = viewBoxDimensions.height / 2;
 

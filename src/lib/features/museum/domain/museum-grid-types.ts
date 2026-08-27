@@ -236,7 +236,6 @@ export function deserializeGrid(data: MuseumGridSerialized): MuseumGrid {
   };
 }
 
-// ── Helpers ──
 
 export function tileKey(x: number, y: number): string {
   return `${x},${y}`;

@@ -155,7 +155,6 @@ export class ConstructCoordinator {
         }) as (event: CustomEvent) => void,
       };
 
-      // Add event listeners
       document.addEventListener(
         "start-position-selected",
         this.boundEventHandlers.startPositionSelected as EventListener

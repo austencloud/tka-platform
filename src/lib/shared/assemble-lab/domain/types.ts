@@ -5,7 +5,6 @@
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Orientation, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
-// === From IGridHitTargetCalculator ===
 
 export interface GridHitTarget {
 	readonly location: GridLocation;
@@ -14,7 +13,6 @@ export interface GridHitTarget {
 	readonly label: string;
 }
 
-// === From ISvgPropAnimator ===
 
 export interface AnimationParams {
   /** The SVG <g> element wrapping the prop to animate */

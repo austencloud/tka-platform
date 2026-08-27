@@ -100,7 +100,6 @@
       padding: 0;
     }
 
-    /* ---- variant deltas ---- */
 
     /* Demo gives back height so the bento can carry rank + meaning. */
     .v-demo :global(.home-hero),

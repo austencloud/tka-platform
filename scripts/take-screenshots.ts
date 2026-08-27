@@ -21,7 +21,6 @@ const CAPTURES_DIR = join(ROOT, "tests", "screenshots", "captures");
 const GALLERY_SCRIPT = join(ROOT, "tests", "screenshots", "generate-gallery.ts");
 const PW_CONFIG = join(ROOT, "tests", "screenshots", "screenshot.config.ts");
 
-// ─── Help Text ───────────────────────────────────────────────────────────────
 
 const HELP_TEXT = `
   Multi-Device Screenshot Testing
@@ -63,7 +62,6 @@ const HELP_TEXT = `
     tests/screenshots/baselines/   Reference screenshots for regression
 `;
 
-// ─── Parse CLI Args ──────────────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
 
@@ -105,7 +103,6 @@ const routePatterns = args
   )
   .map(stripGitBashExpansion);
 
-// ─── Env Vars ────────────────────────────────────────────────────────────────
 
 const env: Record<string, string> = { ...process.env } as Record<string, string>;
 
@@ -116,7 +113,6 @@ if (routePatterns.length > 0) env.SCREENSHOT_ROUTES = routePatterns.join(",");
 if (landscape) env.SCREENSHOT_LANDSCAPE = "true";
 if (portable) env.SCREENSHOT_PORTABLE = "true";
 
-// ─── Preflight Checks ───────────────────────────────────────────────────────
 
 // Use 127.0.0.1 explicitly — Node 18+ resolves "localhost" to IPv6 (::1) first,
 // but Vite only binds to IPv4 by default, causing ERR_CONNECTION_REFUSED.
@@ -191,12 +187,10 @@ function checkPlaywrightBrowsers(): boolean {
   }
 }
 
-// ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
   console.log("\n  Screenshot Capture\n");
 
-  // Check Playwright browsers
   if (!checkPlaywrightBrowsers()) {
     console.error(
       "  Playwright browsers not installed.\n" +
@@ -207,7 +201,6 @@ async function main() {
   }
   console.log("  Playwright: OK");
 
-  // Check dev server
   if (!(await checkDevServer())) {
     console.error(
       "  Dev server not reachable at localhost:5173.\n" +

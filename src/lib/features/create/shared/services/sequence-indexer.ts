@@ -49,7 +49,6 @@ export class SequenceIndexer {
         this.sequenceIndex = this.scanSequenceDirectory();
       }
 
-      // Build search index
       if (this.sequenceIndex) {
         this.buildSearchIndex(this.sequenceIndex);
       }
@@ -322,7 +321,4 @@ export class SequenceIndexer {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 export const sequenceIndexer = new SequenceIndexer();

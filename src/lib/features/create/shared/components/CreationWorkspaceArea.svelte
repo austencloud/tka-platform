@@ -19,7 +19,6 @@
   import { getCreateModuleContext } from "../context/create-module-context";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
-  // Get context
   const ctx = getCreateModuleContext();
   const { CreateModuleState, panelState, layout } = ctx;
 

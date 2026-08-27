@@ -97,9 +97,7 @@ Pointer discipline
     return () => observer.disconnect();
   });
 
-  // ---------------------------------------------------------------------
   // Pointer plumbing
-  // ---------------------------------------------------------------------
 
   /** Elements we called setPointerCapture on, so unmount can always let go. */
   const captures = new Map<number, HTMLElement>();
@@ -282,9 +280,7 @@ Pointer discipline
 
   onDestroy(releaseEverything);
 
-  // ---------------------------------------------------------------------
   // Tap Route
-  // ---------------------------------------------------------------------
 
   /**
    * In Tap Route mode the same waypoints are plain clicks. Nearest-stop

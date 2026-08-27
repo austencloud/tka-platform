@@ -11,9 +11,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { paintBackJob, applyLinearGradient } from "../card-back-raster";
 import type { BackJob, GradientSpec, PlacedBitmap } from "../back-job";
 
-// ---------------------------------------------------------------------------
 // Fake canvas infrastructure
-// ---------------------------------------------------------------------------
 
 interface FakeGradient {
   type: "linearGradient";
@@ -103,9 +101,7 @@ function makeFakeCtx(canvasW = 1644, canvasH = 2244) {
   return { ctx, calls, createdGradients, fakeCanvas };
 }
 
-// ---------------------------------------------------------------------------
 // Helpers for building minimal BackJob fixtures
-// ---------------------------------------------------------------------------
 
 function makeGrad(angleDeg = 180): GradientSpec {
   return {
@@ -135,9 +131,7 @@ function makeFakeBitmap(): ImageBitmap {
   return {} as ImageBitmap;
 }
 
-// ---------------------------------------------------------------------------
 // applyLinearGradient — geometry unit tests
-// ---------------------------------------------------------------------------
 
 describe("applyLinearGradient", () => {
   const W = 100, H = 200;
@@ -243,9 +237,7 @@ describe("applyLinearGradient", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // paintBackJob — call-order and drawImage placement tests
-// ---------------------------------------------------------------------------
 
 describe("paintBackJob", () => {
   it("emits two fillRects in order: full canvas then inner rect", () => {

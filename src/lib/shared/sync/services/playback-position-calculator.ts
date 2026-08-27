@@ -74,7 +74,6 @@ export class PlaybackPositionCalculator {
 		// Calculate raw step position
 		const rawStep = intent.anchorStep + beatsElapsed;
 
-		// Handle looping and bounds
 		const { step, isAtEnd, isLooping } = this.resolveStepBounds(
 			rawStep,
 			intent.totalSteps,

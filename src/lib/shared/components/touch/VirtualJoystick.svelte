@@ -191,7 +191,6 @@
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
 
-    // Update on resize
     const handleResize = () => {
       centerY = window.innerHeight - bottom - size / 2;
     };

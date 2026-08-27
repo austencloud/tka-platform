@@ -195,7 +195,6 @@ export interface SequenceData {
   /** Per-beat pairings linking each blue motion to its corresponding red motion */
   readonly stepPairings?: readonly StepPairingData[];
 
-  // === Content hashes for cross-tier queries ===
   /** Hash of the blue performer's combined dual-prop path (for equivalence detection) */
   readonly bluePathHash?: string;
   /** Hash of the red performer's combined dual-prop path (for equivalence detection) */
@@ -389,9 +388,6 @@ export function removeStepFromSequence(
   });
 }
 
-// ============================================================================
-// SEQUENCE METADATA
-// ============================================================================
 
 /**
  * Prop dimensions for rendering

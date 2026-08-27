@@ -55,9 +55,7 @@ import {
 } from "../services/score-trace-round";
 import { sampleSegmentPath } from "../services/trace-path-sampler";
 
-// ---------------------------------------------------------------------------
 // Phase machine
-// ---------------------------------------------------------------------------
 
 /**
  * loading → preview → arming → tracing → feedback → (next round's) preview,
@@ -96,9 +94,7 @@ export type TracePauseReason =
   /** The tab or app went to the background mid-round. */
   | "hidden";
 
-// ---------------------------------------------------------------------------
 // Settings
-// ---------------------------------------------------------------------------
 
 /**
  * Six independent switches. None of them gate content: Tap Route and the
@@ -120,9 +116,7 @@ export interface TraceSettings {
 
 export type TraceSettingKey = keyof TraceSettings;
 
-// ---------------------------------------------------------------------------
 // Options + outcome
-// ---------------------------------------------------------------------------
 
 export interface TraceRoundOutcome {
   readonly round: TraceRound;
@@ -150,9 +144,7 @@ export interface TracePathsStateOptions {
   onRoundScored?: (outcome: TraceRoundOutcome) => void;
 }
 
-// ---------------------------------------------------------------------------
 // Small helpers
-// ---------------------------------------------------------------------------
 
 /**
  * How a grid location reads out loud. Cardinal and intercardinal are LOCATION
@@ -242,9 +234,7 @@ interface PointerAssignment {
   readonly roundToken: number;
 }
 
-// ---------------------------------------------------------------------------
 // Factory
-// ---------------------------------------------------------------------------
 
 export function createTracePathsState(options: TracePathsStateOptions = {}) {
   let phase = $state<TracePhase>({ name: "loading" });
@@ -294,9 +284,7 @@ export function createTracePathsState(options: TracePathsStateOptions = {}) {
 
   const haptics = getHapticFeedback();
 
-  // -------------------------------------------------------------------------
   // Computed views
-  // -------------------------------------------------------------------------
   //
   // These are plain recomputing functions, NOT `$derived`. Same reason
   // arcade-session-state.svelte.ts uses a plain getter for `accuracy`:

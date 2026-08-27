@@ -127,7 +127,6 @@ describe("SeasonSystem", () => {
 		const system = new SeasonSystem(defaultConfig, emitter);
 		const world = createVillageWorld();
 
-		// Create 6 entities
 		const entities = [];
 		for (let i = 0; i < 6; i++) {
 			const e = makeEntity(world, `Avatar${i}`);

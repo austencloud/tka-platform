@@ -125,9 +125,6 @@ export function createAnimation(
   };
 }
 
-/**
- * Update an Animation entity
- */
 export function updateAnimation(
   animation: Animation,
   updates: Partial<Omit<Animation, "id" | "creatorId" | "createdAt">>
@@ -152,9 +149,6 @@ export function createAnimationSequenceSlot(
   };
 }
 
-/**
- * Create default canvas settings
- */
 export function createCanvasSettings(
   canvasId?: string,
   trailMode: TrailMode = TrailMode.FADE

@@ -14,7 +14,6 @@ export function interpolatePhrase(
   const clampedBeats = Math.max(0, Math.min(beatsIntoPhrase, phraseDuration - 0.001));
   const phraseProgress = clampedBeats / phraseDuration;
 
-  // Apply the effort easing to the phrase-level progress
   const easedProgress = applyEffort(phrase.effortId, phraseProgress, phrase.params);
 
   // Map eased progress back to a beat offset within the phrase

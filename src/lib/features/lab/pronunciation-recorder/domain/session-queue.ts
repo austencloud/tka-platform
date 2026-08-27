@@ -1,4 +1,3 @@
-// src/lib/features/lab/pronunciation-recorder/domain/session-queue.ts
 /** How far down a failed word is reinserted, in words. */
 export const REQUEUE_DISTANCE = 8;
 /** Attempts before a word is retired to the end-of-session report. */

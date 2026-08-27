@@ -16,19 +16,11 @@
  * 5. Elevated panel (modal, sheet) → --surface-glass + backdrop blur
  */
 
-/* =============================================================================
-   TRANSPARENT CONTAINERS
-   Use on module/tab root elements to let app background show through
-   ============================================================================= */
 
 .panel-transparent {
   background: transparent;
 }
 
-/* =============================================================================
-   GLASS PANELS
-   Semi-transparent panels that float over the background
-   ============================================================================= */
 
 .panel-glass {
   background: var(--theme-panel-bg);
@@ -68,10 +60,6 @@
   border-color: var(--theme-stroke-strong, var(--theme-stroke-strong));
 }
 
-/* =============================================================================
-   TEXT UTILITIES
-   Consistent text colors that adapt to theme
-   ============================================================================= */
 
 .text-primary {
   color: var(--theme-text);
@@ -85,10 +73,6 @@
   color: var(--theme-text-dim, var(--theme-text-dim));
 }
 
-/* =============================================================================
-   DIVIDERS
-   Horizontal/vertical separators
-   ============================================================================= */
 
 .divider-horizontal {
   height: 1px;

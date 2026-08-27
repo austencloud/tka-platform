@@ -24,14 +24,12 @@
     return url.startsWith("/");
   }
 
-  // Handle internal navigation
   async function handleInternalNavigation(url: string) {
     // Parse the URL to extract module and tab
     // Expected format: /settings?tab=release-notes or /module?tab=tabname
     const [path, queryString] = url.split("?");
     const moduleId = (path ?? "").replace("/", "") as ModuleId;
 
-    // Parse query params
     const params = new URLSearchParams(queryString || "");
     const tab = params.get("tab");
 
@@ -211,9 +209,6 @@
     }
   }
 
-  /* ============================================================================
-     MODAL HEADER
-     ============================================================================ */
   .modal-header {
     position: relative;
     display: flex;
@@ -263,9 +258,6 @@
     color: var(--theme-text);
   }
 
-  /* ============================================================================
-     MODAL BODY
-     ============================================================================ */
   .modal-body {
     padding: 32px 24px;
     flex: 1 1 auto; /* Take remaining space */
@@ -301,9 +293,6 @@
     white-space: pre-wrap;
   }
 
-  /* ============================================================================
-     MODAL FOOTER
-     ============================================================================ */
   .modal-footer {
     display: flex;
     gap: 12px;
@@ -363,9 +352,6 @@
     transform: translateY(0);
   }
 
-  /* ============================================================================
-     RESPONSIVE
-     ============================================================================ */
   @media (max-width: 640px) {
     .modal-content {
       border-radius: 16px;
@@ -405,9 +391,6 @@
     }
   }
 
-  /* ============================================================================
-     ACCESSIBILITY
-     ============================================================================ */
   @media (prefers-reduced-motion: reduce) {
     .modal-overlay,
     .modal-content {

@@ -190,7 +190,6 @@
 		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
 	}
 
-	/* ─── Custom dropdown trigger ─── */
 	.family-dropdown {
 		position: relative;
 		flex-shrink: 0;
@@ -237,7 +236,6 @@
 		transform: rotate(180deg);
 	}
 
-	/* ─── Dropdown menu ─── */
 	.family-menu {
 		position: absolute;
 		top: calc(100% + 6px);
@@ -312,7 +310,6 @@
 		background: rgba(255, 255, 255, 0.06);
 	}
 
-	/* ─── Variant buttons ─── */
 	.variant-buttons {
 		display: flex;
 		gap: 6px;

@@ -28,9 +28,6 @@ type PictographFilter = typeof PictographFilterSingleton;
 export class LOOPParameterProvider {
   constructor(private PictographFilter: PictographFilter) {}
 
-  // ============================================================================
-  // INVERTED LETTER OPERATIONS
-  // ============================================================================
 
   /**
    * Get the inverted letter for a given letter
@@ -42,9 +39,6 @@ export class LOOPParameterProvider {
     return getInvertedLetter(letter);
   }
 
-  // ============================================================================
-  // LEVEL CONVERSION OPERATIONS
-  // ============================================================================
 
   /**
    * Convert DifficultyLevel enum to numeric value
@@ -82,9 +76,6 @@ export class LOOPParameterProvider {
     }
   }
 
-  // ============================================================================
-  // ROTATION DIRECTION OPERATIONS
-  // ============================================================================
 
   /**
    * Determine rotation directions for blue and red props based on prop continuity
@@ -110,9 +101,6 @@ export class LOOPParameterProvider {
     return { blueRotationDirection: "", redRotationDirection: "" };
   }
 
-  // ============================================================================
-  // TURN INTENSITY OPERATIONS
-  // ============================================================================
 
   /**
    * Get allowed turn intensity values for UI display
@@ -210,9 +198,6 @@ export class LOOPParameterProvider {
     return Math.round(turn * 2) % 4;
   }
 
-  // ============================================================================
-  // PRIVATE HELPERS
-  // ============================================================================
 
   private randomChoice<T>(array: T[]): T {
     if (array.length === 0) {
@@ -222,9 +207,6 @@ export class LOOPParameterProvider {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import { pictographFilter } from "./pictograph-filter";
 
 export const loopParameterProvider = new LOOPParameterProvider(pictographFilter);

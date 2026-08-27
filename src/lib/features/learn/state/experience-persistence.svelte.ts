@@ -36,9 +36,7 @@ interface AllExperiencesState {
 
 const STORAGE_KEY = "tka_experience_state";
 
-// ============================================================================
 // Active Concept Persistence (which concept detail view is open)
-// ============================================================================
 
 /**
  * Get the currently active concept ID (if any)
@@ -66,9 +64,7 @@ export function clearActiveConceptId(): void {
 	saveAllStates(states);
 }
 
-// ============================================================================
 // Experience State Persistence (step/phase within a concept)
-// ============================================================================
 
 /**
  * Load all experience states from localStorage
@@ -115,9 +111,6 @@ export function getExperiencePersistence(conceptId: string) {
 		return { step: 0 };
 	}
 
-	/**
-	 * Save the current step
-	 */
 	function saveStep(step: number): void {
 		const allStates = loadAllStates();
 		const existing = allStates[conceptId];
@@ -132,9 +125,6 @@ export function getExperiencePersistence(conceptId: string) {
 		saveAllStates(allStates);
 	}
 
-	/**
-	 * Save a phase data value
-	 */
 	function savePhaseData(key: string, value: unknown): void {
 		const allStates = loadAllStates();
 		const existing = allStates[conceptId];

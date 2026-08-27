@@ -319,9 +319,6 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* ============================================================================
-     BACK HEADER - Dark glass style matching settings panels
-     ============================================================================ */
   .back-header {
     display: flex;
     flex-shrink: 0;
@@ -448,9 +445,6 @@
     margin: 0 auto;
   }
 
-  /* ============================================================================
-     SWIPE INDICATOR - Visual feedback for edge-swipe gesture
-     ============================================================================ */
   .swipe-indicator {
     position: absolute;
     left: 0;

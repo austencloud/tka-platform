@@ -5,7 +5,6 @@
   import { createOceanAudio } from './ocean-audio';
   import { sceneAudioState } from '../../../../../state/scene-audio-state.svelte';
 
-  // ── Props ─────────────────────────────────────────────────────────────
 
   export interface CursorRay {
     origin: Vector3;
@@ -23,15 +22,12 @@
 
   const { renderer, camera } = useThrelte();
 
-  // ── Fish scatter state ─────────────────────────────────────────────────
 
   const scatter: CursorRayState = createFishScatterState();
 
-  // ── Audio ──────────────────────────────────────────────────────────────
 
   const audio = createOceanAudio();
 
-  // ── Pointer tracking ───────────────────────────────────────────────────
 
   let mouseOnCanvas = false;
   let lastNdcX = 0;
@@ -67,7 +63,6 @@
     mouseOnCanvas = false;
   }
 
-  // ── Per-frame raycast update ───────────────────────────────────────────
 
   useTask(() => {
     const cam = getCam();
@@ -81,7 +76,6 @@
     cursorRay.active = scatter.active;
   });
 
-  // ── Event listeners ────────────────────────────────────────────────────
 
   $effect(() => {
     window.addEventListener('pointermove', onPointerMove);
@@ -97,7 +91,6 @@
     };
   });
 
-  // ── Reactive audio sync ────────────────────────────────────────────────
 
   $effect(() => {
     // Track effectiveVolume reactively

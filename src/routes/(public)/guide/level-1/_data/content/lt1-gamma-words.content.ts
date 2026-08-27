@@ -27,7 +27,6 @@ const { IN, OUT } = Orientation;
 const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-// ── Motion authoring - copied from GammaWordsPage.svelte ───────────────────
 const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
 const hpDir = (from: GridLocation, to: GridLocation) => (HP_CW.has(`${from}-${to}`) ? CW : CCW);
 const hand = (color: MotionColor, from: GridLocation, to: GridLocation, anti: boolean, so: Orientation) => {

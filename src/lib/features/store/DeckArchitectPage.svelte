@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/DeckArchitectPage.svelte -->
 <!--
   The Deck Architect: the power-user wing of the LOOP deck listing. Buyers
   who outgrow the packs and single-pool dials compose a full recipe here —
@@ -852,7 +851,6 @@
     color: rgba(255, 255, 255, 0.85);
   }
 
-  /* ---------- slice cards ---------- */
   /* Grid of slice cards: the recipe reads as a hand you're assembling, and
      width scales with slice count instead of leaving sparse full-width rows. */
   .slice-list {
@@ -1030,7 +1028,6 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
   }
 
-  /* ---------- buy rail ---------- */
   /* .price and .spec-line/.spec-sep are byte-identical with
      LoopDeckConfiguratorPage and live in config-page.css. */
   .buy-blocked {
@@ -1043,7 +1040,6 @@
     font-weight: 600;
     color: rgba(255, 255, 255, 0.9);
   }
-  /* ---------- flavor modal ---------- */
   .modal-backdrop {
     position: fixed;
     inset: 0;
@@ -1078,7 +1074,6 @@
     flex: 0 0 auto;
   }
 
-  /* ---------- sample lightbox ---------- */
   .sample-lightbox {
     display: flex;
     flex-direction: column;
@@ -1169,7 +1164,6 @@
   }
 
 
-  /* ---------- mobile ---------- */
   @media (max-width: 720px) {
     /* Phone slice card: the (bigger, tappable) sample centered up top, the
        uniform tile board below. The × keeps its pinned corner. */

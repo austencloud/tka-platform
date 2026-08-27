@@ -24,7 +24,6 @@ const { IN, OUT } = Orientation;
 const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-// ── Step authoring ──────────────────────────────────────────────────────────
 const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
 const flip = (o: Orientation) => (o === IN ? OUT : IN);
 type HandStep = { anti?: boolean; still?: boolean; from: GridLocation; to: GridLocation; so: Orientation };

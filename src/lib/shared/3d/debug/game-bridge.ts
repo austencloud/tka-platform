@@ -27,9 +27,6 @@ import type {
 } from "./game-bridge-types";
 import { DEFAULT_BRIDGE_CONFIG } from "./game-bridge-types";
 
-// ============================================================================
-// GAME BRIDGE CLASS
-// ============================================================================
 
 export class GameBridge {
   private ws: WebSocket | null = null;
@@ -53,9 +50,6 @@ export class GameBridge {
     this.currentReconnectDelay = this.config.reconnectDelay;
   }
 
-  // --------------------------------------------------------------------------
-  // CONNECTION
-  // --------------------------------------------------------------------------
 
   async connect(wsUrl?: string): Promise<void> {
     const url = wsUrl ?? this.config.wsUrl;

@@ -149,9 +149,6 @@ export class ResponsiveLayoutManager {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import { deviceDetector } from "$lib/shared/device/services/device-detector";
 import { viewportManager } from "$lib/shared/device/services/viewport-manager.svelte";
 

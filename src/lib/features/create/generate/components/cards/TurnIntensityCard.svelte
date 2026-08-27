@@ -52,7 +52,6 @@ Uses stepper pattern for direct increment/decrement interaction
   const canIncrement = $derived(currentIndex < allowedValues.length - 1);
   const canDecrement = $derived(currentIndex > 0);
 
-  // Get min/max from allowed values for stepper
   const minValue = $derived(Math.min(...allowedValues));
   const maxValue = $derived(Math.max(...allowedValues));
 

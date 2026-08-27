@@ -163,7 +163,6 @@ export class SnapPoints {
       }
     }
 
-    // Check distance threshold
     const thresholdDistance = Math.abs(
       (this.snapPointsPx[nearestIndex]! -
         (this.snapPointsPx[nearestIndex - 1] ?? 0)) *
@@ -184,9 +183,6 @@ export class SnapPoints {
     return nearestIndex;
   }
 
-  /**
-   * Set current snap point index
-   */
   setSnapPoint(index: number) {
     const clampedIndex = Math.max(
       0,
@@ -254,9 +250,6 @@ export class SnapPoints {
     return false;
   }
 
-  /**
-   * Update options
-   */
   updateOptions(options: Partial<SnapPointsOptions>) {
     this.options = { ...this.options, ...options };
     if (options.snapPoints) {

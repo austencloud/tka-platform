@@ -269,12 +269,6 @@
 {/key}
 
 <style>
-  /*
-   * ============================================================================
-   * SHARED DRAWER POSITIONING & STYLING
-   * These styles apply to ALL Create module panels for consistency
-   * ============================================================================
-   */
 
   /* Base drawer content styling - more opaque for floating over busy content */
   :global(.drawer-content[class*="-panel-container"]) {
@@ -393,11 +387,6 @@
     left: var(--desktop-sidebar-width, 220px);
   }
 
-  /*
-   * ============================================================================
-   * PANEL CONTENT WRAPPER
-   * ============================================================================
-   */
 
   .create-drawer-body {
     position: relative;
@@ -410,11 +399,6 @@
     background: transparent; /* Background is on drawer-content */
   }
 
-  /*
-   * ============================================================================
-   * ACCESSIBILITY & MOTION PREFERENCES
-   * ============================================================================
-   */
 
   /* Reduced motion preference - disable height transitions */
   @media (prefers-reduced-motion: reduce) {

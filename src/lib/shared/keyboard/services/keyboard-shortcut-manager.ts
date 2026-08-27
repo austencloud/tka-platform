@@ -55,7 +55,6 @@ export class KeyboardShortcutManager {
   }
 
   register(options: ShortcutRegistrationOptions): () => void {
-    // Validate options
     if (!options.id) {
       throw new Error("Shortcut ID is required");
     }
@@ -109,7 +108,6 @@ export class KeyboardShortcutManager {
 
     const shortcut = new Shortcut(shortcutDefinition);
 
-    // Add to registry
     this.registry.add(shortcut);
 
     // Return unregister function
@@ -211,9 +209,6 @@ export class KeyboardShortcutManager {
     }));
   }
 
-  /**
-   * Handle keydown events
-   */
   private handleKeydown(event: KeyboardEvent): void {
     // A feature may temporarily own raw key input (e.g. the Assemble numpad
     // builder claims all Numpad* codes). Honour suppressors first so global

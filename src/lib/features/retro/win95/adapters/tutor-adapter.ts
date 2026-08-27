@@ -20,9 +20,7 @@ import { getLetterType } from "$lib/shared/foundation/domain/models/letter";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { LetterType } from "$lib/shared/foundation/domain/models/letter-type";
 
-// ============================================================================
 // Concepts tab
-// ============================================================================
 
 export interface RetroConcept {
   id: string;
@@ -78,9 +76,7 @@ export function loadConcepts(): RetroConcept[] {
   ];
 }
 
-// ============================================================================
 // Quiz tab
-// ============================================================================
 
 export interface RetroQuizQuestion {
   question: string;

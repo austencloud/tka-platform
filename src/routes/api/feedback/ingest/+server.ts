@@ -23,7 +23,6 @@ import {
 	type FeedbackPriority,
 } from "$lib/shared/feedback/domain/models/feedback-models";
 
-// ── Constants ────────────────────────────────────────────────────────
 
 const COLLECTION = "feedback";
 const MAX_TITLE_LENGTH = 120;
@@ -38,7 +37,6 @@ const AGENT_USER = {
 	userDisplayName: "Agent",
 };
 
-// ── Helpers ──────────────────────────────────────────────────────────
 
 /** Strip HTML tags and trim whitespace */
 function sanitize(input: string, maxLength: number): string {
@@ -68,7 +66,6 @@ export const GET: RequestHandler = async () => {
 	);
 };
 
-// ── Handler ──────────────────────────────────────────────────────────
 
 export const POST: RequestHandler = async (event) => {
 	// 1. Auth: validate API key from header (not query params)

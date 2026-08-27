@@ -1,4 +1,3 @@
-// tests/unit/film-director/plane-axes.test.ts
 import { describe, expect, it } from "vitest";
 import { Plane } from "@austencloud/scene-3d";
 

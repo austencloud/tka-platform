@@ -119,7 +119,6 @@ export function bodyDiffBuffers(
   };
 }
 
-// ── Canvas wrappers ─────────────────────────────────────────────────────────
 
 function ctxData(c: HTMLCanvasElement, w: number, h: number): Uint8ClampedArray {
   return c.getContext("2d")!.getImageData(0, 0, w, h).data;

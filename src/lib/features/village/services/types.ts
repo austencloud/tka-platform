@@ -2,7 +2,6 @@
  * Co-exported types from retired interface contracts.
  */
 
-// === From ISequenceMutator ===
 
 export type MutationType =
 	| "mirror"

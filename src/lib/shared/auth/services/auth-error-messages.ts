@@ -1,4 +1,3 @@
-// src/lib/shared/auth/services/auth-error-messages.ts
 //
 // Single source of truth for turning a Firebase Auth error code into a
 // user-facing message. Extracted from SocialAuthCompact so AccountPopover's

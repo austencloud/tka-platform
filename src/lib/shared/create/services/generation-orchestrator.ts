@@ -311,9 +311,6 @@ export class GenerationOrchestrator {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 import { BrowserVariationProvider } from "$lib/shared/create/services/browser-variation-provider";
 import { BuildResultTransformer } from "$lib/shared/create/services/build-result-transformer";

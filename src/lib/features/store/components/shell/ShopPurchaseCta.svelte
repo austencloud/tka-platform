@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/shell/ShopPurchaseCta.svelte -->
 <!--
   The buy area, rendered from the purchase-state resolver instead of from each
   page's own idea of what's for sale. Three honest outcomes: charge now, charge

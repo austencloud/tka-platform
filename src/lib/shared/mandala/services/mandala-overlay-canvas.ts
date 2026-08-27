@@ -351,9 +351,7 @@ export class MandalaOverlayCanvas {
 		this.lastGuideOpacity = -1;
 	}
 
-	// -------------------------------------------------------------------
 	// Internal helpers
-	// -------------------------------------------------------------------
 
 	private beginGuideTransition(): void {
 		if (

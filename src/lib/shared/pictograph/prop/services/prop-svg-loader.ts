@@ -25,12 +25,8 @@ import { getAnimationVisibilityManager } from "../../../animation-engine/state/a
 import { assetFetch } from "../../../net/asset-fetch";
 
 
-// ============================================================================
-// HMR-AWARE MODULE-LEVEL CACHE STORAGE
-// ============================================================================
 // Persist caches across HMR to prevent mass network requests during development.
 // Without this, every code change would trigger many SVG refetches.
-// ============================================================================
 
 const hmrRawSvgCache: Map<string, string> =
   import.meta.hot?.data?.propRawSvgCache ?? new Map();

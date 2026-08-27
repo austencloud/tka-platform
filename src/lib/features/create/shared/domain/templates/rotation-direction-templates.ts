@@ -50,9 +50,6 @@ export interface CategoryInfo {
   readonly color: string;
 }
 
-/**
- * Get display info for a category
- */
 export function getCategoryInfo(category: TemplateCategory): CategoryInfo {
   switch (category) {
     case "uniform":
@@ -231,9 +228,6 @@ export function getTemplatesForStepCount(
   return TEMPLATE_DEFINITIONS.filter((t) => stepCount >= t.minSteps);
 }
 
-/**
- * Get templates filtered by category
- */
 export function getTemplatesByCategory(
   stepCount: number,
   category: TemplateCategory | "all"
@@ -261,9 +255,6 @@ export function templateToPattern(
   };
 }
 
-/**
- * Get all unique categories from available templates
- */
 export function getAvailableCategories(stepCount: number): TemplateCategory[] {
   const templates = getTemplatesForStepCount(stepCount);
   const categories = new Set(templates.map((t) => t.category));

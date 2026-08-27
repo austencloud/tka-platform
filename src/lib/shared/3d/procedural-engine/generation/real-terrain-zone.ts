@@ -10,9 +10,6 @@
  * - Blending: Smooth transition between real and procedural terrain at edges
  */
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 export interface RealTerrainZone {
   /** Human-readable zone name. */
@@ -115,13 +112,7 @@ export type ImportedTerrainData =
   | LegacyImportedTerrainData
   | ImportedTerrainDataV2;
 
-// ============================================================================
-// ZONE CREATION
-// ============================================================================
 
-/**
- * Create a RealTerrainZone from imported terrain data
- */
 export function createRealTerrainZone(
   data: ImportedTerrainData
 ): RealTerrainZone {

@@ -104,7 +104,6 @@
    */
   const DECK_TOP = $derived(DECK_HEIGHT);
 
-  // ─── Plank layout ─────────────────────────────────────────────────
   //
   // Lay planks running along the X axis, stacked in Z. The count is
   // chosen so each plank is PLANK_WIDTH wide with PLANK_GAP between
@@ -159,7 +158,6 @@
   const skirtCenterY = $derived(DECK_TOP - PLANK_THICKNESS - SKIRT_HEIGHT / 2);
   const skirtInset = LEG_THICKNESS * 0.3;
 
-  // ─── Downstage corner torches ────────────────────────────────────────
   //
   // Wooden posts with glowing flames at the two front corners of the
   // stage. They sit ON the deck (base at DECK_TOP) and rise upward.

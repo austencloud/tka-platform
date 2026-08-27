@@ -29,9 +29,6 @@ import {
 	RotationDirection,
 } from "../../shared/domain/pictograph-types";
 
-// ============================================================================
-// CONSTANTS
-// ============================================================================
 
 const BUFFER_WIDTH = 66;
 const DIAMOND_HEIGHT = 26;
@@ -65,9 +62,6 @@ const BULGE_FACTOR = 0.55;
 const CURVE_SAMPLES = 120;
 const ASCII_COLLISION_MARGIN = 1; // cells around ASCII to avoid
 
-// ============================================================================
-// GRID COORDINATE MAPS
-// ============================================================================
 
 interface GridCoord {
 	readonly col: number;
@@ -122,9 +116,6 @@ const BOX_HAND: Record<GridLocation, GridCoord> = {
 	[GridLocation.CENTER]: { col: 32, row: 10 },
 };
 
-// ============================================================================
-// BETA OFFSET MAPS
-// ============================================================================
 
 interface BetaOffset {
 	readonly dcol: number;
@@ -160,9 +151,6 @@ const BOX_BETA: Partial<Record<GridLocation, BetaOffsetPair>> = {
 	[GridLocation.CENTER]: { blue: { dcol: -2, drow: 0 }, red: { dcol: 2, drow: 0 } },
 };
 
-// ============================================================================
-// LABEL HELPERS
-// ============================================================================
 
 const LOCATION_LABELS: Record<GridLocation, string> = {
 	[GridLocation.NORTH]: "N",
@@ -184,12 +172,10 @@ const MOTION_LABELS: Record<MotionType, string> = {
 	[MotionType.STATIC]: "stc",
 };
 
-// ============================================================================
 // ASCII STRUCTURE LAYER
 //
 // Character grid for structural elements: grid dots, center marker, staves.
 // ASCII cells always win over Braille in the final composite.
-// ============================================================================
 
 interface AsciiCell {
 	char: string | null;
@@ -231,13 +217,11 @@ class AsciiLayer {
 	}
 }
 
-// ============================================================================
 // BRAILLE PIXEL LAYER
 //
 // Sub-pixel bitmap for smooth curves. Each character cell maps to a 2x4
 // pixel block. Color is tracked per pixel; the dominant color in each 2x4
 // block determines the character's foreground color.
-// ============================================================================
 
 interface BrailleCell {
 	char: string;
@@ -320,9 +304,6 @@ class BrailleLayer {
 	}
 }
 
-// ============================================================================
-// GEOMETRY HELPERS
-// ============================================================================
 
 /** Convert char-buffer coordinates to braille pixel coordinates */
 function charToPixel(col: number, row: number): { x: number; y: number } {
@@ -419,15 +400,9 @@ function getMaxReach(lineChar: string): number {
 /** Grid reference chars the staff must not overwrite */
 const GRID_REFS = new Set(["\u25CF", "O", "o"]);
 
-// ============================================================================
-// BRAILLE HYBRID RENDERER
-// ============================================================================
 
 export class BrailleHybridRenderer implements IAsciiRenderer {
 
-	// ========================================================================
-	// PUBLIC INTERFACE
-	// ========================================================================
 
 	renderPictograph(data: RetroPictographData, options?: AsciiRenderOptions): string[] {
 		const isBox = data.gridMode === GridMode.BOX;

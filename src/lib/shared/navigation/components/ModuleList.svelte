@@ -421,9 +421,6 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
     z-index: 2;
   }
 
-  /* ============================================================================
-     HOVER STATES - Enhanced with module color
-     ============================================================================ */
   .module-cell:hover .cell-background {
     background: linear-gradient(
       145deg,
@@ -488,9 +485,6 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
     font-weight: 700;
   }
 
-  /* ============================================================================
-     ICON STYLING - Compact sizing for dense grid
-     ============================================================================ */
   .cell-icon {
     /* Compact icons: min 24px, preferred 3.5vh, max 36px */
     font-size: clamp(24px, 3.5vh, 36px);
@@ -519,9 +513,6 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
     );
   }
 
-  /* ============================================================================
-     LABEL STYLING - Compact sizing for dense grid
-     ============================================================================ */
   .cell-label {
     /* Compact labels: min 11px, preferred 1.6vh, max 14px */
     font-size: clamp(11px, 1.6vh, 14px);
@@ -536,9 +527,6 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
     color: var(--theme-text);
   }
 
-  /* ============================================================================
-     DISABLED BADGE
-     ============================================================================ */
   .cell-badge {
     position: absolute;
     top: 6px;
@@ -596,9 +584,6 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
     transform: scale(0.96);
   }
 
-  /* ============================================================================
-     DISABLED STATE
-     ============================================================================ */
   .module-cell.disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -818,9 +803,6 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
     }
   }
 
-  /* ============================================================================
-     LANDSCAPE MOBILE - Optimize for horizontal space
-     ============================================================================ */
   @media (max-height: 500px) and (orientation: landscape) {
     .module-grid.layout-few,
     .module-grid.layout-quad,
@@ -872,10 +854,6 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
     }
   }
 
-  /* ============================================================================
-     SCALED CONTENT FOR LARGER CELLS
-     Icons and labels grow proportionally with cell size
-     ============================================================================ */
   .module-grid.layout-few .cell-icon,
   .module-grid.layout-quad .cell-icon {
     font-size: clamp(32px, 5vh, 48px);
@@ -913,9 +891,6 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
     }
   }
 
-  /* ============================================================================
-     ACCESSIBILITY & REDUCED MOTION
-     ============================================================================ */
   @media (prefers-reduced-motion: reduce) {
     .module-cell {
       animation: none !important;

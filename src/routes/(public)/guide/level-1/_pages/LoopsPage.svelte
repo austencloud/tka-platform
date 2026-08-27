@@ -56,7 +56,6 @@
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
 
-  // ── Step authoring ──────────────────────────────────────────────────────────
   // Each hand per step: motion type, path, start orientation; end orientation
   // follows the algebra (pro/static keep, anti/dash flip). Prop rotation: pro
   // rides the handpath, anti counter-rotates, dash/static none.

@@ -1,4 +1,3 @@
-// pattern-strip-types.ts
 import type { RhythmDef } from "$lib/shared/create/domain/rhythm/rhythm-catalog";
 
 export type StripValue = number | "fl" | boolean;

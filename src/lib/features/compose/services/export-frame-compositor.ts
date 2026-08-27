@@ -316,7 +316,6 @@ export class ExportFrameCompositor {
       offscreenCtx.restore();
     }
 
-    // Render word header
     if (showWordHeader) {
       renderWordHeaderToCanvas(
         offscreenCtx,
@@ -333,7 +332,6 @@ export class ExportFrameCompositor {
       );
     }
 
-    // Render progress bar
     if (showProgressBar && !isCompositeMode) {
       const progressBarY = headerHeight + outputCanvasSize;
       const progressBeat = isInStartPosition

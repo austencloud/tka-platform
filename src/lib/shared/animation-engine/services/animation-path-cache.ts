@@ -17,9 +17,6 @@ import {
   type PropEndpointConfig,
 } from "$lib/shared/animation-engine/services/prop-position-calculator";
 
-// ============================================================================
-// PATH CACHE CONSTANTS
-// ============================================================================
 
 /** Default cache FPS - high for ultra-smooth trails */
 const DEFAULT_CACHE_FPS = 120;
@@ -210,7 +207,6 @@ export class AnimationPathCache {
     const blueBeatLookup = this.buildBeatLookup(bluePositions);
     const redBeatLookup = this.buildBeatLookup(redPositions);
 
-    // Create cache data
     this.cacheData = {
       bluePropPath: {
         positions: bluePositions,
@@ -494,9 +490,6 @@ export class AnimationPathCache {
     return this.cacheData?.isValid ?? false;
   }
 
-  /**
-   * Get cache metadata
-   */
   getCacheInfo() {
     if (!this.cacheData) {
       return null;

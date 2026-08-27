@@ -39,7 +39,6 @@
       backgroundSystem = new WinterBackgroundSystem();
       backgroundSystem.initialize(dimensions, quality);
 
-      // Apply layer visibility
       if (backgroundSystem.setLayerVisibility) {
         backgroundSystem.setLayerVisibility(layers);
       }

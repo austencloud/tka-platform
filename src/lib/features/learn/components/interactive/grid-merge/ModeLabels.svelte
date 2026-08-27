@@ -138,7 +138,6 @@
 		}
 	}
 
-	/* === REDUCED MOTION === */
 	@media (prefers-reduced-motion: reduce) {
 		.mode-labels,
 		.mode-label,

@@ -46,9 +46,6 @@ import {
 } from "../domain/models/user-firestore-schemas";
 import type { UserFirestoreDataParsed } from "../domain/models/user-firestore-schemas";
 
-// ============================================================================
-// INTERNAL TYPES
-// ============================================================================
 
 interface FirestoreUserData extends DocumentData {
   displayName?: string;
@@ -96,9 +93,6 @@ interface FollowDocument {
   createdAt: Timestamp;
 }
 
-// ============================================================================
-// CONSTANTS
-// ============================================================================
 
 const USERS_COLLECTION = "users";
 
@@ -115,9 +109,6 @@ interface SocialCounts {
   followingCount: number;
 }
 
-// ============================================================================
-// PRIVATE HELPERS
-// ============================================================================
 
 async function getFollowingIds(userId: string): Promise<Set<string>> {
   try {

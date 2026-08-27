@@ -25,9 +25,7 @@
   let menuElement: HTMLDivElement | undefined = $state();
   let activeSubmenuIndex = $state<number | null>(null);
 
-  /* ------------------------------------------------------------------ */
   /* Position clamping - keep menu within viewport                       */
-  /* ------------------------------------------------------------------ */
 
   const clampedX = $derived.by(() => {
     if (!menuElement) return x;
@@ -49,9 +47,7 @@
     return Math.min(y, Math.max(0, maxY));
   });
 
-  /* ------------------------------------------------------------------ */
   /* Click-outside dismiss                                               */
-  /* ------------------------------------------------------------------ */
 
   function handleWindowPointerDown(event: PointerEvent) {
     if (!menuElement) return;
@@ -61,9 +57,7 @@
     }
   }
 
-  /* ------------------------------------------------------------------ */
   /* Item handlers                                                       */
-  /* ------------------------------------------------------------------ */
 
   function handleItemClick(item: RetroContextMenuItem) {
     if (item.separator || item.disabled) return;
@@ -87,9 +81,7 @@
     onclose();
   }
 
-  /* ------------------------------------------------------------------ */
   /* Keyboard navigation                                                 */
-  /* ------------------------------------------------------------------ */
 
   function handleKeydown(event: KeyboardEvent) {
     if (!menuElement) return;
@@ -218,9 +210,7 @@
     font-size: var(--retro-font-size, 11px);
   }
 
-  /* ------------------------------------------------------------------ */
   /* Menu items                                                          */
-  /* ------------------------------------------------------------------ */
   .context-menu-item {
     display: flex;
     align-items: center;
@@ -256,9 +246,7 @@
     padding-right: 4px;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Separator                                                           */
-  /* ------------------------------------------------------------------ */
   .context-menu-separator {
     border: none;
     border-top: 1px solid var(--retro-button-shadow, #808080);
@@ -266,9 +254,7 @@
     margin: 2px 4px;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Submenu                                                             */
-  /* ------------------------------------------------------------------ */
   .context-submenu {
     position: absolute;
     left: 100%;

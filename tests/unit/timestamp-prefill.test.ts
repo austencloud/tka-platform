@@ -1,4 +1,3 @@
-// tests/unit/timestamp-prefill.test.ts
 import { describe, it, expect } from "vitest";
 import { beatIndexToTimestamp, prefillTimestamps } from "$lib/features/write/services/timestamp-prefill";
 

@@ -19,9 +19,7 @@ import type {
   MotionData,
 } from "../../../src/core/types/sequence-engine-types.js";
 
-// ---------------------------------------------------------------------------
 // Test sequence factories
-// ---------------------------------------------------------------------------
 
 /**
  * Build a minimal MotionData value. Fields not relevant to executor logic

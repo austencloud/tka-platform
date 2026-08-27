@@ -21,9 +21,7 @@
   import { terminalState } from "../../state/terminal-state.svelte";
   import { DosSoundManager } from "../../services/dos-sound-manager";
 
-  /* ------------------------------------------------------------------ */
   /* Props                                                               */
-  /* ------------------------------------------------------------------ */
 
   interface Props {
     /** Called when Tutorial mode finishes and should return to menu */
@@ -34,9 +32,7 @@
 
   const soundManager = new DosSoundManager();
 
-  /* ------------------------------------------------------------------ */
   /* Tutorial state                                                      */
-  /* ------------------------------------------------------------------ */
 
   /** Current view: index (lesson selection) or lesson (reading pages) */
   let view = $state<"index" | "lesson">("index");
@@ -47,9 +43,7 @@
   /** Current page within the active lesson (0-based) */
   let currentPage = $state(0);
 
-  /* ------------------------------------------------------------------ */
   /* Lesson content                                                      */
-  /* ------------------------------------------------------------------ */
 
   interface TutorialPage {
     readonly lines: readonly string[];
@@ -423,9 +417,7 @@
     },
   ];
 
-  /* ------------------------------------------------------------------ */
   /* Display helpers                                                      */
-  /* ------------------------------------------------------------------ */
 
   /** Render the lesson index to the terminal buffer. */
   function drawIndex(): void {

@@ -28,7 +28,6 @@
   const rows = $derived(verdictRows(report));
   const failing = $derived(countFailing(report));
 
-  // -- Footfall strip geometry -------------------------------------------
   const STRIP_W = 1000;
   const window = $derived.by(() => {
     const r = report;
@@ -40,7 +39,6 @@
   const xOf = (t: number) =>
     ((t - window.t0) / Math.max(1e-6, window.t1 - window.t0)) * STRIP_W;
 
-  // -- Floor trace -------------------------------------------------------
   const TRACE = 320;
   const traceBox = $derived.by(() => {
     const points: Vec3[] = [...trail];

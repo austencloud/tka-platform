@@ -17,9 +17,7 @@
   import { terminalState } from "../../state/terminal-state.svelte";
   import { DosSoundManager } from "../../services/dos-sound-manager";
 
-  /* ------------------------------------------------------------------ */
   /* Props                                                               */
-  /* ------------------------------------------------------------------ */
 
   interface Props {
     /** Called when Config mode finishes and should return to menu */
@@ -30,7 +28,6 @@
 
   const soundManager = new DosSoundManager();
 
-  /** Build the display label for the current color scheme. */
   function colorSchemeLabel(): string {
     return terminalState.colorScheme === "green" ? "GREEN PHOSPHOR" : "AMBER PHOSPHOR";
   }

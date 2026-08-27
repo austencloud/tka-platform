@@ -425,17 +425,14 @@
 
 <style>
   .kanban-card {
-    /* ===== FLUID SPACING ===== */
     --kc-space-2xs: clamp(4px, 1cqi, 8px);
     --kc-space-xs: clamp(8px, 2cqi, 12px);
     --kc-space-sm: clamp(12px, 3cqi, 18px);
 
-    /* ===== FLUID TYPOGRAPHY - Accessible minimums ===== */
     --kc-text-2xs: clamp(0.75rem, 2cqi, 0.8125rem); /* min 12px - accessible */
     --kc-text-xs: clamp(0.8125rem, 2.2cqi, 0.875rem); /* min 13px */
     --kc-text-sm: clamp(0.875rem, 2.5cqi, 1rem); /* min 14px */
 
-    /* ===== FLUID RADII ===== */
     --kc-radius-sm: clamp(8px, 2cqi, 12px);
     --kc-radius-md: clamp(12px, 3cqi, 18px);
 
@@ -786,7 +783,6 @@
       );
   }
 
-  /* ===== Mobile optimizations ===== */
   @container kanban (max-width: 652px) {
     .kanban-card {
       /* Remove hover transform on mobile - feels janky */
@@ -825,7 +821,6 @@
     }
   }
 
-  /* ===== Reduced Motion ===== */
   @media (prefers-reduced-motion: reduce) {
     .kanban-card {
       transition: none;

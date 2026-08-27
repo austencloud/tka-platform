@@ -57,7 +57,6 @@
     return () => performanceRecorder.stop();
   });
 
-  // ── Loading gate ──
   // A fade-from-black covers the scene until the lobby is ready. A progress
   // bar gives real feedback so a slow or stalled load is visible instead of a
   // bare icon on black. Two parallel load tracks feed it:
@@ -164,7 +163,6 @@
     };
   });
 
-  // ── Room isolation ──
   // URL query param `?room=vulcan-cave` filters the museum to a single room.
   // null = full museum (all rooms + corridors).
   // Derived from SvelteKit's page store so it updates when goto() navigates.

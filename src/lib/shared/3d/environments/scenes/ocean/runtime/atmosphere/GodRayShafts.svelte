@@ -27,7 +27,6 @@
     shaftCentreForTarget,
   } from "./god-ray-axis";
 
-  // ── Config ─────────────────────────────────────────────────────────────
   // One hero column plus a supporting cast. The hero descends from the water
   // plane onto the stage and is the scene's key light made visible; the other 13
   // are background depth cues, deliberately far dimmer so they cannot compete

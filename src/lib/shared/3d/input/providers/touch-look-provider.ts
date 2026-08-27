@@ -51,9 +51,7 @@ export class TouchLookProvider implements IInputProvider {
 		this.config = { ...DEFAULT_INPUT_CONFIG, ...config };
 	}
 
-	// =========================================================================
 	// IInputProvider implementation
-	// =========================================================================
 
 	getLookDelta(): LookDelta {
 		return { yaw: this.velocity.yaw, pitch: this.velocity.pitch };
@@ -115,9 +113,7 @@ export class TouchLookProvider implements IInputProvider {
 		this.disable();
 	}
 
-	// =========================================================================
 	// Internal helpers
-	// =========================================================================
 
 	private reset(): void {
 		this.activeTouch = null;
@@ -151,9 +147,7 @@ export class TouchLookProvider implements IInputProvider {
 		};
 	}
 
-	// =========================================================================
 	// Event handlers
-	// =========================================================================
 
 	private handlePointerDown = (e: PointerEvent): void => {
 		if (!this.enabled) return;
@@ -189,7 +183,6 @@ export class TouchLookProvider implements IInputProvider {
 		const rawYaw = -deltaX * this.config.lookSensitivity;
 		const rawPitch = -deltaY * this.config.lookSensitivity;
 
-		// Apply smoothing
 		const smoothed = this.smoothDelta(rawYaw, rawPitch);
 		this.velocity.yaw = smoothed.yaw;
 		this.velocity.pitch = smoothed.pitch;

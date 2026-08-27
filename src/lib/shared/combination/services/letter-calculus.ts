@@ -96,9 +96,7 @@ export function edgesFromSequence(seq: SequenceData): LetterEdge[] {
   return edges;
 }
 
-// ---------------------------------------------------------------------------
 // Primitivity (necklace aperiodicity) — enumeration layer, NOT display layer
-// ---------------------------------------------------------------------------
 
 /**
  * Reject any letter sequence that is itself a whole-number repetition of a
@@ -153,9 +151,7 @@ function canonicalRotation(letters: readonly Letter[]): Letter[] {
   return [...best];
 }
 
-// ---------------------------------------------------------------------------
 // Exact ingredient cover (bipartite matching) — I4
-// ---------------------------------------------------------------------------
 
 /**
  * Does there exist an assignment of each used edge-occurrence to ONE of its
@@ -217,9 +213,7 @@ export function findIngredientCoverWitness<T>(
   return ingredients;
 }
 
-// ---------------------------------------------------------------------------
 // Display-name disambiguation — N2
-// ---------------------------------------------------------------------------
 
 /**
  * Identity is by ARRAY POSITION, never by `name` — two ingredients can share

@@ -43,9 +43,7 @@ const {
   stampNewSequenceTimestamps,
 } = require("./import-sequence.cjs");
 
-// ---------------------------------------------------------------------------
 // Args
-// ---------------------------------------------------------------------------
 
 const argv = process.argv.slice(2);
 const flags = {
@@ -76,9 +74,7 @@ if (!flags.purgeDemos && !jsonPath && !flags.stdin) {
   process.exit(1);
 }
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 async function readInput() {
   if (flags.stdin) {
@@ -104,9 +100,7 @@ function contentHashOf(raw) {
   return crypto.createHash("sha256").update(canonical).digest("hex").slice(0, 32);
 }
 
-// ---------------------------------------------------------------------------
 // Purge demos
-// ---------------------------------------------------------------------------
 
 async function purgeDemos(db) {
   const libSnap = await db
@@ -149,9 +143,7 @@ async function purgeDemos(db) {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Pipeline
-// ---------------------------------------------------------------------------
 
 async function run() {
   const { db, FieldValue, isAdmin } = await initFirestore();

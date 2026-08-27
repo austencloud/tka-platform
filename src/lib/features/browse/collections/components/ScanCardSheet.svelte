@@ -864,7 +864,6 @@ the geo dashboard).
     outline-offset: 2px;
   }
 
-  /* ── Desktop handoff panel ────────────────────────────────────── */
 
   .handoff-panel {
     flex: 1;

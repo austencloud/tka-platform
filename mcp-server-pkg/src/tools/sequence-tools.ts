@@ -190,7 +190,6 @@ export function registerSequenceTools(server: McpServer): void {
         };
       }
 
-      // Get or build the transition matrix
       const matrix = getTransitionMatrix(allPictographs, gridMode);
 
       // Analyze the word

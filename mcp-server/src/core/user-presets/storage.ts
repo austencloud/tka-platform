@@ -36,7 +36,6 @@ export function loadUserPresets(): UserPresetsFile {
 		const content = fs.readFileSync(PRESETS_FILE, "utf-8");
 		const data = JSON.parse(content) as UserPresetsFile;
 
-		// Validate structure
 		if (data.version !== 1 || !Array.isArray(data.presets)) {
 			console.warn("Invalid presets file structure, returning empty");
 			return createEmptyPresetsFile();

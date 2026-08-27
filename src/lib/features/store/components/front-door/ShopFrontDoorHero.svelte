@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/front-door/ShopFrontDoorHero.svelte -->
 <!--
   The teaching hero. Someone landing here has probably never seen a card that
   does anything, so the first screen holds up one real card and says what

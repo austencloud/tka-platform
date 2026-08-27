@@ -1,4 +1,3 @@
-// --- From ArrowLocator ---
 /**
  * Arrow Location Service Contract
  *
@@ -12,7 +11,6 @@ export interface ArrowLocationInput {
   motionType: string;
 }
 
-// --- From DirectionalTupleGenerator ---
 /**
  * Directional Tuple Service Contracts
  *
@@ -20,7 +18,6 @@ export interface ArrowLocationInput {
  * Direct TypeScript port of the Python DirectionalTupleProcessor.
  */
 
-// --- From HandpathDirectionCalculator ---
 
 /**
  * Handpath direction types.

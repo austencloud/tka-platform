@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/LoopDeckConfiguratorPage.svelte -->
 <!--
   The LOOP Deck configurator: the buyer's decision funnel — Level (difficulty)
   → Length (depth) → Flavor (taste) → Prop — rendered on the generate-panel
@@ -348,7 +347,6 @@
     return cfg;
   });
 
-  // ── preview ──
   const selectedSku = $derived(
     flavor === "variety" ? null : (skuByFlavor.get(flavor) ?? null)
   );
@@ -801,7 +799,6 @@
      assurances, load and failure states, mobile checkout dock — belongs to
      ShopProductShell. What is left here is the stage and the dials. */
 
-  /* ---------- preview stage ---------- */
   /* The shell's framed stage is turned off for this page (mediaFrame={false}):
      the nebula wash, the clipped payoff overlays, and a height the card maths
      reads back are all specific to this fan, and nesting them inside the
@@ -909,7 +906,6 @@
     }
   }
 
-  /* ---------- the choice ---------- */
   /* The instruction that sits on the bubble strip — quiet label, not a third
      stacked sentence competing with the title. */
   .picker-label {
@@ -1035,7 +1031,6 @@
     opacity: 0.85;
   }
 
-  /* ---------- bento board ---------- */
   .bento-board {
     display: flex;
     flex-direction: column;
@@ -1090,7 +1085,6 @@
   /* .spec-line/.spec-sep are shared with DeckArchitectPage and live in
      config-page.css. */
 
-  /* ---------- mobile ---------- */
   @media (max-width: 720px) {
     /* The first screen is the beauty shot + the choice, nothing else. The
        descriptive caption is prose that competes with the fan — drop it on

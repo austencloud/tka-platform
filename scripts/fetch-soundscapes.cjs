@@ -62,7 +62,6 @@ async function readGenerated() {
 	}
 }
 
-// Parse the curated manifest by walking the CURATED_WING_SOUNDSCAPES array
 // character-by-character, tracking brace/bracket depth. A regex-based parser
 // crosses wing boundaries because TypeScript string literals and nested object
 // literals confuse lazy matchers. This depth-walker is robust for the shapes

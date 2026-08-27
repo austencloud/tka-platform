@@ -83,9 +83,6 @@ export function isUserProject(obj: unknown): obj is UserProject {
   );
 }
 
-/**
- * Create a new UserProject instance with defaults
- */
 export function createUserProject(
   name: string,
   options: {

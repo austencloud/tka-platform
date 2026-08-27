@@ -1,4 +1,3 @@
-// --- From PropPlacer ---
 /**
  * Prop Placement Service Interface
  *
@@ -14,7 +13,6 @@ export interface PropPlacementVisibility {
   showRed?: boolean;
 }
 
-// --- From PropSvgLoader ---
 /**
  * Prop SVG Loader Interface
  *

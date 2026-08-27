@@ -78,7 +78,6 @@
     white-space: nowrap;
   }
 
-  /* ---- Tile types ---- */
 
   .tile-floor {
     background: #2a2520;
@@ -113,7 +112,6 @@
     border: 1px solid rgba(200, 180, 140, 0.2);
   }
 
-  /* ---- Exhibit panel - display frame on the wall ---- */
 
   .tile-exhibit {
     background: #12123a;
@@ -138,7 +136,6 @@
     color: #c8b890;
   }
 
-  /* ---- Performer station - raised green stage ---- */
 
   .tile-performer {
     background: #0e2e0e;
@@ -165,7 +162,6 @@
     color: #7ad67a;
   }
 
-  /* ---- Pedestal - solid raised stone block ---- */
 
   .tile-pedestal {
     background: #3a3028;
@@ -238,7 +234,6 @@
     border: 1px solid rgba(255, 255, 255, 0.02);
   }
 
-  /* ---- Floor materials ---- */
 
   .material-stone {
     background-image:

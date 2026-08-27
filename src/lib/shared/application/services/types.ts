@@ -1,4 +1,3 @@
-// --- From HapticFeedback ---
 
 export type HapticImpactStyle = "light" | "medium" | "heavy";
 export type HapticNotificationType = "success" | "warning" | "error";
@@ -17,7 +16,6 @@ export interface HapticFeedbackConfig {
   customPatterns: Record<string, number[]>;
 }
 
-// --- From RippleEffect ---
 
 export interface RippleOptions {
   duration?: number;
@@ -25,7 +23,6 @@ export interface RippleOptions {
   opacity?: number;
 }
 
-// --- From IAnimator ---
 
 export interface FoldTransitionParams {
   duration?: number;
@@ -57,7 +54,6 @@ export interface TransitionResult {
   css?: (t: number) => string;
 }
 
-// --- From IDataTransformer ---
 
 import type { PictographData } from "../../pictograph/shared/domain/models/pictograph-data";
 import type { MotionColor } from "../../pictograph/shared/domain/enums/pictograph-enums";
@@ -79,7 +75,6 @@ export interface PictographDisplayData {
   motionsToRender: MotionRenderData[];
 }
 
-// --- From IDeepLinkResolver ---
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 

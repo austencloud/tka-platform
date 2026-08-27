@@ -185,9 +185,7 @@ export function calculateFooterHeight(stepSize: number): number {
   return sharedCalculateFooterHeight(stepSize);
 }
 
-// ---------------------------------------------------------------------------
 // Contextual captions (humor profile) — MCP-specific feature
-// ---------------------------------------------------------------------------
 
 /**
  * Get a contextual caption based on the word content.

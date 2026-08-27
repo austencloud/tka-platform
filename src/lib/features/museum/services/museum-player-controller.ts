@@ -17,7 +17,6 @@ import type { MuseumGrid } from "../domain/museum-grid-types";
 import type { MuseumPhysicsProvider } from "./museum-physics-provider";
 import type { PortalProximityChecker } from "./museum-portals";
 
-// ── Constants ──
 
 const TOP_DOWN_MOVE_SPEED = 3;
 const TOP_DOWN_SPRINT_MULTIPLIER = 2.5;
@@ -53,7 +52,6 @@ export class MuseumPlayerController {
     this.portalChecker = portalChecker;
   }
 
-  // ── Facing direction ──
 
   /**
    * Convert a yaw angle (radians) to a compass facing string.
@@ -68,7 +66,6 @@ export class MuseumPlayerController {
     ][idx]!;
   }
 
-  // ── Top-down movement ──
 
   /**
    * Process WASD input in top-down mode. Moves the player via the physics

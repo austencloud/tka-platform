@@ -1,4 +1,3 @@
-// src/lib/features/lab/pronunciation-recorder/domain/letter-syllables.ts
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
 
 /**

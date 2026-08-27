@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/shell/ShopCheckoutDock.svelte -->
 <!--
   The phone-sized buy bar. On a narrow screen the real buy rail sits far below a
   tall configurator, so once it scrolls out of sight this pinned bar keeps the

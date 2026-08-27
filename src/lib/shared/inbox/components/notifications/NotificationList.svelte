@@ -45,12 +45,10 @@
   const filteredNotifications = $derived.by(() => {
     let result = notifications;
 
-    // Filter by type
     if (filters.type !== "all") {
       result = result.filter((n) => n.type === filters.type);
     }
 
-    // Filter by search query
     if (filters.searchQuery.trim()) {
       const query = filters.searchQuery.toLowerCase();
       result = result.filter((n) => n.message.toLowerCase().includes(query));

@@ -24,9 +24,7 @@
 
 import type { BackJob, GradientSpec } from "./back-job";
 
-// ---------------------------------------------------------------------------
 // Gradient helper — exported for unit tests
-// ---------------------------------------------------------------------------
 
 /**
  * Minimal shape of a canvas-like gradient receiver.  Using a structural type
@@ -85,9 +83,7 @@ export function applyLinearGradient(
   return g;
 }
 
-// ---------------------------------------------------------------------------
 // Main painter
-// ---------------------------------------------------------------------------
 
 /**
  * Render `job` onto an OffscreenCanvas and return it.

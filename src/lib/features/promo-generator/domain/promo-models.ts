@@ -6,9 +6,6 @@
 
 import type * as THREE from "three";
 
-// ============================================================================
-// DEVICE CONFIGURATION
-// ============================================================================
 
 /**
  * Supported device types for mockups
@@ -41,9 +38,6 @@ export interface DeviceConfig {
   };
 }
 
-// ============================================================================
-// ENVIRONMENT CONFIGURATION
-// ============================================================================
 
 /**
  * Environment/lighting presets
@@ -73,9 +67,6 @@ export interface EnvironmentConfig {
   transparent?: boolean;
 }
 
-// ============================================================================
-// ANIMATION CONFIGURATION
-// ============================================================================
 
 /**
  * Camera state at a specific point in time
@@ -139,9 +130,6 @@ export interface AnimationPreset {
   useSeconds?: boolean;
 }
 
-// ============================================================================
-// EXPORT CONFIGURATION
-// ============================================================================
 
 /**
  * Video export resolution presets
@@ -181,9 +169,6 @@ export const RESOLUTION_DIMENSIONS: Record<
   "4k": { width: 3840, height: 2160 },
 };
 
-// ============================================================================
-// PROMO GENERATOR STATE
-// ============================================================================
 
 /**
  * Current state of the promo generator
@@ -217,9 +202,6 @@ export interface ScreenshotContent {
   endTime?: number;
 }
 
-// ============================================================================
-// THREE.JS SCENE REFERENCES
-// ============================================================================
 
 /**
  * References to Three.js scene objects

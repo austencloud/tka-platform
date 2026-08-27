@@ -30,9 +30,7 @@ export interface PublicSequenceIndex {
   /** Reference path to source: users/{ownerId}/sequences/{id} */
   readonly sourceRef: string;
 
-  // ============================================================
   // OWNER INFO (denormalized)
-  // ============================================================
 
   /** Owner user ID */
   readonly ownerId: string;
@@ -43,9 +41,6 @@ export interface PublicSequenceIndex {
   /** Owner avatar URL (denormalized from user profile) */
   readonly ownerAvatarUrl?: string;
 
-  // ============================================================
-  // SEQUENCE DISPLAY FIELDS
-  // ============================================================
 
   /** Sequence name */
   readonly name: string;
@@ -74,9 +69,6 @@ export interface PublicSequenceIndex {
   /** LOOP period: 2 = halved (180°), 4 = quartered (90°). Only set for rotated LOOPs. */
   readonly period?: number;
 
-  // ============================================================
-  // ENGAGEMENT METRICS
-  // ============================================================
 
   /** Number of times this has been forked */
   readonly forkCount: number;
@@ -93,16 +85,10 @@ export interface PublicSequenceIndex {
   /** Creation time of the newest public performance, when one exists. */
   readonly latestPublicPerformanceAt?: Date;
 
-  // ============================================================
-  // CATEGORIZATION
-  // ============================================================
 
   /** Denormalized tag names (not IDs) for filtering */
   readonly tags: readonly string[];
 
-  // ============================================================
-  // FORK INFO
-  // ============================================================
 
   /** Whether this is a forked sequence */
   readonly isForked: boolean;
@@ -113,9 +99,7 @@ export interface PublicSequenceIndex {
   /** Original creator name (if forked) */
   readonly originalCreatorName?: string;
 
-  // ============================================================
   // COMPOSITIONAL DATA (self-contained rendering)
-  // ============================================================
 
   /** Full motion content hash (SHA-256) for deduplication */
   readonly contentHash?: string;
@@ -144,16 +128,10 @@ export interface PublicSequenceIndex {
   /** Hash of red performer's solo prop */
   readonly redSoloHash?: string;
 
-  // ============================================================
-  // CREATOR INTENT
-  // ============================================================
 
   /** Creator's presentation intent (prop config + effort timeline) */
   readonly creatorIntent?: CreatorIntent | null;
 
-  // ============================================================
-  // TIMESTAMPS
-  // ============================================================
 
   /** Original creation date (backfilled from source library doc) */
   readonly birthday?: Date;

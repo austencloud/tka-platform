@@ -72,9 +72,6 @@ export interface MandalaViewerSelection {
   pathShape: MandalaPathShape;
 }
 
-// ============================================================================
-// PERSISTENCE HELPERS
-// ============================================================================
 
 const sequenceActionsPanelPersistence = createPersistenceHelper({
   key: "tka_sequence_actions_panel_open",
@@ -399,7 +396,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   // Video record panel state (persisted)
   let isVideoRecordPanelOpen = $state(videoRecordPanelPersistence.load());
 
-  // Filter panel state
   let isFilterPanelOpen = $state(false);
 
   // Sequence Actions panel state (persisted)

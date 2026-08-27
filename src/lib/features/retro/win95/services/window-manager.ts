@@ -149,7 +149,6 @@ export class WindowManager {
 		return desktopState.windows.some((w) => w.id === id);
 	}
 
-	// ── Private helpers ──────────────────────────────────────
 
 	private findWindow(id: string): RetroWindowState | undefined {
 		return desktopState.windows.find((w) => w.id === id);

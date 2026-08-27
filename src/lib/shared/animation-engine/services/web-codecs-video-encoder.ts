@@ -65,7 +65,6 @@ export class WebCodecsVideoEncoder {
     });
     await this.output.start();
 
-    // Create encoder
     this.encoder = new VideoEncoder({
       output: async (chunk, meta) => {
         const packet = EncodedPacket.fromEncodedChunk(chunk);
@@ -140,7 +139,6 @@ export class WebCodecsVideoEncoder {
     // Calculate exact timestamp for this frame in microseconds
     const timestamp = this.frameIndex * this.frameDurationUs;
 
-    // Create VideoFrame from canvas with explicit timestamp
     const frame = new VideoFrame(canvasToEncode, {
       timestamp,
       duration: this.frameDurationUs,
@@ -171,7 +169,6 @@ export class WebCodecsVideoEncoder {
     this.videoSource?.close();
     await this.output.finalize();
 
-    // Get the buffer
     const buffer = (this.output.target as BufferTarget).buffer!;
 
     // Clean up

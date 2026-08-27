@@ -134,7 +134,6 @@
     gap: 0.75rem;
   }
 
-  /* ── Navigation ── */
 
   .nav-bar {
     display: flex;
@@ -192,7 +191,6 @@
     letter-spacing: 0.5px;
   }
 
-  /* ── Layer chips ── */
 
   .layer-chips {
     display: flex;
@@ -201,7 +199,6 @@
     justify-content: center;
   }
 
-  /* ── Status ── */
 
   .lab-status {
     display: flex;
@@ -216,7 +213,6 @@
     color: var(--semantic-error, #ef4444);
   }
 
-  /* ── Preview ── */
 
   .lab-preview {
     flex: 1;

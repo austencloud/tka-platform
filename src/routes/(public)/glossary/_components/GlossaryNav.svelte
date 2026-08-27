@@ -120,7 +120,6 @@
     font-family: "Inter", system-ui, sans-serif;
   }
 
-  /* ── filter box ── */
   .gnav-search {
     position: relative;
     display: flex;
@@ -192,7 +191,6 @@
     color: oklch(0.55 0.02 270);
   }
 
-  /* ── category rows ── */
   .gnav-list {
     min-height: 0;
     overflow-y: auto;

@@ -66,9 +66,7 @@ export interface GroundConfig {
   opacity?: number;
 }
 
-// ============================================================================
 // Per-scene platform configs
-// ============================================================================
 
 export interface IcePlatformConfig {
   enabled: boolean;

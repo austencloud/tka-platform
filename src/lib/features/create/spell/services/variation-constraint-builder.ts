@@ -48,9 +48,6 @@ export class VariationConstraintBuilder {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import * as letterTypeClassifier from "./letter-type-classifier";
 
 export const variationConstraintBuilder = new VariationConstraintBuilder(

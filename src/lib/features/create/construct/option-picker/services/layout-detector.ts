@@ -72,9 +72,6 @@ export class LayoutDetector {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import { deviceDetector } from "$lib/shared/device/services/device-detector";
 
 export const layoutDetector = new LayoutDetector(deviceDetector);

@@ -8,9 +8,7 @@
  * Scoped to .retro-shell so nothing leaks into the main app.
  */
 
-/* -------------------------------------------------------------------- */
 /* Pixelated rendering and anti-aliasing kill                           */
-/* -------------------------------------------------------------------- */
 .retro-shell {
 	-webkit-font-smoothing: none;
 	-moz-osx-font-smoothing: unset;
@@ -19,7 +17,6 @@
 	text-rendering: optimizeSpeed;
 }
 
-/* -------------------------------------------------------------------- */
 /* Kill all transitions and animations                                  */
 /* Windows 95 had zero motion design. Neither does TKA-OS.              */
 /*                                                                      */
@@ -29,7 +26,6 @@
 /* (prefers-reduced-motion) blocks - this override handles it.          */
 /* Exceptions (like CRT scanline flicker) use inline styles or          */
 /* JS-driven animation to bypass this when intentional.                 */
-/* -------------------------------------------------------------------- */
 .retro-shell *,
 .retro-shell *::before,
 .retro-shell *::after {
@@ -39,10 +35,8 @@
 	transition-duration: 0s !important;
 }
 
-/* -------------------------------------------------------------------- */
 /* Title bar: enforce navy gradient-free flat color                     */
 /* 98.css defaults are close but we lock them to our token values.      */
-/* -------------------------------------------------------------------- */
 .retro-shell .title-bar {
 	background: var(--retro-titlebar-bg);
 	color: var(--retro-titlebar-text);
@@ -52,17 +46,13 @@
 	background: var(--retro-titlebar-inactive-bg);
 }
 
-/* -------------------------------------------------------------------- */
 /* Selection colors                                                     */
-/* -------------------------------------------------------------------- */
 .retro-shell ::selection {
 	background: var(--retro-selection-bg);
 	color: var(--retro-selection-text);
 }
 
-/* -------------------------------------------------------------------- */
 /* Cursor: default arrow everywhere unless explicitly overridden        */
-/* -------------------------------------------------------------------- */
 .retro-shell {
 	cursor: default;
 }

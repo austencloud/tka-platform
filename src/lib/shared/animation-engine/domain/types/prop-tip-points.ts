@@ -33,7 +33,6 @@ export interface PropTipConfig {
   points: TipPoint[];
 }
 
-// ─── Staff Family ─────────────────────────────────────────────────────────────
 
 // Bilateral — two mirror-symmetric ends, each ~126 from the pivot (the 252.8
 // pictograph half-width), so the staff spans ~253 tip to tip.
@@ -88,7 +87,6 @@ const BIGSTAFF_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-// ─── Club Family ──────────────────────────────────────────────────────────────
 
 // The regular club is center-pivoted inside a 258.67-unit viewBox. Using its
 // exact half-width keeps the mandala and live trails on the resized visible tip.
@@ -107,7 +105,6 @@ const BIGCLUB_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-// ─── Fan Family ───────────────────────────────────────────────────────────────
 
 export const FAN_TIP_POINTS: PropTipConfig = {
   points: [
@@ -131,7 +128,6 @@ const BIGFAN_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-// ─── Triad Family ─────────────────────────────────────────────────────────────
 
 export const TRIAD_TIP_POINTS: PropTipConfig = {
   points: [
@@ -149,7 +145,6 @@ const BIGTRIAD_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-// ─── Hoop Family ──────────────────────────────────────────────────────────────
 
 const MINIHOOP_TIP_POINTS: PropTipConfig = {
   points: [
@@ -171,7 +166,6 @@ const BIGHOOP_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-// ─── Buugeng Family ───────────────────────────────────────────────────────────
 
 const BUUGENG_TIP_POINTS: PropTipConfig = {
   points: [
@@ -201,13 +195,11 @@ const TRIGENG_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-// ─── Sword ────────────────────────────────────────────────────────────────────
 
 const SWORD_TIP_POINTS: PropTipConfig = {
   points: [{ dx: 280, dy: 0 }],
 };
 
-// ─── Sickles ─────────────────────────────────────────────────────────────────
 
 // The SVG pivot is the lower wrapped grip at (190, 150). The physical kama is
 // rotated around that hand point so its blade apex lands on the +X kinetic axis;
@@ -236,7 +228,6 @@ const ENERGY_STAFF_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-// ─── Triquetra Family ─────────────────────────────────────────────────────────
 
 const TRIQUETRA_TIP_POINTS: PropTipConfig = {
   points: [
@@ -256,7 +247,6 @@ const TRIQUETRA2_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-// ─── Chicken Family ───────────────────────────────────────────────────────────
 
 // Regular (small) chicken is single-ended — one weighted tip at the outer
 // (+dx) end, matching the club/sword single-tip convention.
@@ -274,7 +264,6 @@ const BIGCHICKEN_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-// ─── Guitar Family ────────────────────────────────────────────────────────────
 
 const GUITAR_TIP_POINTS: PropTipConfig = {
   points: [{ dx: 290.78, dy: 0 }],
@@ -284,7 +273,6 @@ const UKULELE_TIP_POINTS: PropTipConfig = {
   points: [{ dx: 170, dy: 0 }],
 };
 
-// ─── Doublestar Family ────────────────────────────────────────────────────────
 
 const DOUBLESTAR_TIP_POINTS: PropTipConfig = {
   points: [
@@ -304,7 +292,6 @@ const BIGDOUBLESTAR_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-// ─── Eightrings Family ────────────────────────────────────────────────────────
 
 // Both entries used to sit on the top of a ring at roughly half the real
 // reach, so the mandala came out ~34% short. These are the artwork's own outer
@@ -323,7 +310,6 @@ const BIGEIGHTRINGS_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-// ─── Quiad ────────────────────────────────────────────────────────────────────
 
 export const QUIAD_TIP_POINTS: PropTipConfig = {
   points: [
@@ -334,7 +320,6 @@ export const QUIAD_TIP_POINTS: PropTipConfig = {
   ],
 };
 
-// ─── Torch ────────────────────────────────────────────────────────────────────
 
 const TORCH_TIP_POINTS: PropTipConfig = {
   points: [{ dx: -140, dy: 0 }],
@@ -344,7 +329,6 @@ const BIGTORCH_TIP_POINTS: PropTipConfig = {
   points: [{ dx: -120, dy: 0 }],
 };
 
-// ─── Poi ──────────────────────────────────────────────────────────────────────
 
 const POI_TIP_POINTS: PropTipConfig = {
   // Same overall reach as the club (grip to far tip = ~129.3); trail follows

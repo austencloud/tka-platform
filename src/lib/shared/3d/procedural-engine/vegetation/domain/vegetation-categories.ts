@@ -5,9 +5,6 @@
  * Categories map to the 12 model folders in static/models/vegetation/
  */
 
-// ============================================================================
-// CATEGORY TYPES
-// ============================================================================
 
 /**
  * All vegetation model categories from the manifest
@@ -48,9 +45,6 @@ export const SCATTER_CATEGORIES: VegetationCategory[] = [
  */
 export type ManifestBiome = "plains" | "forest" | "mountains" | "desert";
 
-// ============================================================================
-// MODEL MANIFEST TYPES
-// ============================================================================
 
 /**
  * Single model entry from manifest.json
@@ -75,9 +69,6 @@ export interface VegetationManifest {
   models: ManifestModel[];
 }
 
-// ============================================================================
-// CATEGORY CONFIG
-// ============================================================================
 
 /**
  * Default scale ranges by category
@@ -131,27 +122,15 @@ export const CATEGORY_Y_OFFSET: Record<VegetationCategory, number> = {
   misc: 0,
 };
 
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
 
-/**
- * Get the spacing for a category
- */
 export function getCategorySpacing(category: VegetationCategory): number {
   return CATEGORY_SPACING[category];
 }
 
-/**
- * Get the scale range for a category
- */
 export function getCategoryScaleRange(category: VegetationCategory): [number, number] {
   return CATEGORY_SCALE_RANGES[category];
 }
 
-// ============================================================================
-// TYPE GUARDS
-// ============================================================================
 
 /**
  * Check if a string is a valid VegetationCategory

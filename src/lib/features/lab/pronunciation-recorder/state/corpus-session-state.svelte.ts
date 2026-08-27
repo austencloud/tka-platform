@@ -1,4 +1,3 @@
-// src/lib/features/lab/pronunciation-recorder/state/corpus-session-state.svelte.ts
 import { cellsCoveredBy, type CoverageCounts } from "../domain/corpus-plan";
 import { syllablesInWord } from "../domain/letter-syllables";
 import { createRateTracker } from "../domain/read-plausibility";

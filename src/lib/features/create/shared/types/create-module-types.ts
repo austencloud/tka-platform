@@ -55,7 +55,6 @@ export interface IConstructTabState {
   // Selection state
   readonly selectedStartPosition: StartPositionData | null;
 
-  // Filter state
   readonly isContinuousOnly: boolean;
 
   // Services

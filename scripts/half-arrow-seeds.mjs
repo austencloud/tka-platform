@@ -1,4 +1,3 @@
-// scripts/half-arrow-seeds.mjs
 // Shared seed table for the half-arrow asset pipeline. Run under tsx only
 // (imports app TypeScript): both build-half-arrow-templates.mjs and
 // ingest-half-arrows.mjs consume this, so the seed motion, anchor, rotation,

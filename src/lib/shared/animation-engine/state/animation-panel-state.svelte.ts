@@ -14,9 +14,6 @@ import {
   PLAYBACK_MAX_SPEED,
 } from "$lib/shared/animation-engine/domain/constants/timing";
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 /** Playback mode: continuous animation or step-by-step */
 export type PlaybackMode = "continuous" | "step";
@@ -24,9 +21,6 @@ export type PlaybackMode = "continuous" | "step";
 /** Step size for step playback mode: half-beat or full beat */
 export type StepPlaybackStepSize = 0.5 | 1;
 
-// ============================================================================
-// PERSISTENCE
-// ============================================================================
 
 const speedPersistence = createPersistenceHelper({
   key: "tka_animation_speed",

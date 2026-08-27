@@ -80,7 +80,6 @@
   const CENTER_POINT_RADIUS = 12;
   const CLICK_TARGET_RADIUS = 24;
 
-  // Compute viewBox
   const viewBoxData = $derived<ViewBoxData>(computeTopologyViewBox(topology));
 
   // Background and grid colors

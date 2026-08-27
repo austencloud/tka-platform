@@ -447,7 +447,6 @@
     container-type: inline-size;
   }
 
-  /* ── shared tile ───────────────────────────────────────── */
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -556,7 +555,6 @@
     padding-inline-start: 8px;
   }
 
-  /* ── stats ──────────────────────────────────────────────── */
   .stats-row { display: flex; gap: 28px; margin-top: 4px; }
   .stat { display: flex; flex-direction: column; gap: 1px; }
   .stat-value { font-size: var(--font-size-lg); font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -576,7 +574,6 @@
   }
   .follow-btn:hover { filter: brightness(1.1); }
 
-  /* ── Variant A ──────────────────────────────────────────── */
   .a-hero {
     position: relative;
     border-radius: 16px;
@@ -603,7 +600,6 @@
   .a-handle { font-size: var(--font-size-base); font-weight: 500; color: rgba(255,255,255,0.7); }
   .a-sub { font-size: var(--font-size-sm); color: rgba(255,255,255,0.8); margin-top: 2px; }
 
-  /* ── Variant B ──────────────────────────────────────────── */
   .b-hero {
     position: relative;
     display: flex;
@@ -643,7 +639,6 @@
     .ig { margin-inline: auto; }
   }
 
-  /* ── Variant C ──────────────────────────────────────────── */
   .c-hero {
     padding: clamp(18px, 3.5cqi, 28px);
     border-radius: 16px;

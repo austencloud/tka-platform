@@ -1,20 +1,6 @@
-<!--
-  PostShareSheet.svelte — viewer → Instagram/Facebook in as few steps as the
-  platform allows.
-
-  Owns the whole handoff: which artifact, what the caption says, and where it
-  goes. Rendered ONLY from SequenceViewerShell so the drawer, /q/[code] and
-  /sequence/[id] are identical by construction (.claude/rules/sequence-viewer-shell.md).
-
-  Two behaviors are load-bearing and easy to regress:
-
-  1. The sheet NEVER blocks on a render. The card is cached and lands
-     immediately; picking Video kicks the export off and the destination
-     buttons stay disabled-with-progress until the blob exists.
-  2. Nothing here resizes when state changes. The preview stage is a fixed
-     aspect box, the status line reserves its row, and the QR view swaps
-     inside a min-height stage (.claude/rules/no-layout-shift.md).
--->
+<!-- Owns the artifact, caption, and destination handoff for every sequence
+     viewer. Rendering stays asynchronous, and fixed preview/status geometry
+     prevents state changes from moving the sheet. -->
 <script lang="ts">
   import { onDestroy, untrack } from "svelte";
   import { slide } from "svelte/transition";
@@ -72,80 +58,26 @@
   interface Props {
     isOpen: boolean;
     sequence: SequenceData | null;
-    /**
-     * Canonical share link for this sequence. Used for the caption only when it
-     * is already a post link (the visual harness passes one) — the viewer's own
-     * URL carries the sequence inline and is far too long to post, so the sheet
-     * mints a short code and builds the link itself.
-     */
+    /** Ignored for captions unless already in the canonical post-link form. */
     shareUrl: string;
-    /** Object URL of an already-rendered export, if the viewer has one. */
     videoBlobUrl: string | null;
     isExportingVideo: boolean;
-    /**
-     * A 3D scene video is a live camera performance the user drives and stops,
-     * not a background render. While that take is running the viewer owns the
-     * screen, so the sheet must neither ask for a second one nor call it
-     * "rendering".
-     */
+    /** Distinguishes a user-driven scene take from background export work. */
     isRecordingScene?: boolean;
-    /** 0–1 render progress, or null when idle. */
     exportProgress: number | null;
-    /**
-     * Asks the viewer to start a video export. Non-blocking. Resolving `false`
-     * means the viewer refused the request outright — the export account gate,
-     * a canvas that has not mounted, a take already running — and the sheet
-     * stops waiting for a render that is never coming.
-     */
+    /** `false` means no render started, so the sheet must stop waiting. */
     onRequestVideo: () => void | Promise<boolean>;
-    /** Fires when the sheet dismisses itself (backdrop, escape, swipe). */
     onClose: () => void;
-    /**
-     * Testing seam. Connection state normally arrives over a Firestore
-     * subscription, which a visual harness cannot produce — and the sheet
-     * composes differently depending on which accounts are connected, so all
-     * three states have to be checkable at every viewport. Only
-     * `src/routes/test/post-share-sheet` passes this.
-     */
+    /** Visual-test seam for connection states normally supplied by Firestore. */
     metaStatusOverride?: MetaPublishStatus;
-    /**
-     * Hands the sequence to another TKA user. App-internal, so it is not a
-     * handoff destination — the host owns the send sheet and passes the opener.
-     * Omitted on hosts with no inbox (the /q scan page, the visual harness),
-     * where the tile simply does not appear.
-     */
+    /** Omitted by hosts without an inbox. */
     onSendInTka?: () => void;
-    /**
-     * What the video option is called, and what it is. "Video" is the sequence
-     * animation; the Mandala and Tunnel views hand their own render in under
-     * their own name, because sharing from those views means sharing what is on
-     * screen, not the animation behind it.
-     */
+    /** Labels view-specific renders such as Mandala or Tunnel. */
     videoLabel?: string;
-    /**
-     * Which artifact the sheet opens on. The art views open on their render and
-     * ask for it immediately — you pressed Share on a mandala, so the mandala is
-     * what you are sharing. Everywhere else the card is already in hand and the
-     * sheet is actionable the moment it appears.
-     */
     initialArtifact?: ShareArtifact;
-    /**
-     * The geometry the live card preview settled on. With the column count on
-     * Auto the card has no fixed shape — the on-screen preview measures its
-     * container and picks one. Without this the shared PNG re-derives its own,
-     * and the user posts a card laid out differently from the card they were
-     * looking at when they pressed Share. Austen (2026-08-11): "when you click
-     * share on a card it should respect the current card settings that you've
-     * set."
-     */
+    /** Reuses the live card's resolved auto-layout so the exported image matches. */
     resolvedCardAutoLayout?: ResolvedAutoLayout | null;
-    /**
-     * Sends the user to Post Studio, which is a sequence-viewer surface rather
-     * than a child of this modal. The sheet links to it and closes, so leaving
-     * the studio lands on the viewer — a destination — instead of backing into
-     * a modal. Hosts without a viewer body to switch (the visual harness) omit
-     * it, and the tile does not appear.
-     */
+    /** Omitted when the host cannot switch its viewer body to Post Studio. */
     onOpenPostStudio?: () => void;
   }
 
@@ -212,29 +144,13 @@
   const captions = getCaptionPresetManager();
   const exportOptions = getExportOptionsState();
 
-  /** Title glyph height in px, measured off a CSS-sized element. */
   let glyphHeight = $state(0);
 
   let artifact = $state<ShareArtifact>("card");
-  /**
-   * The settings layer, folded away until asked for. Austen (2026-08-11): "the
-   * settings are really just a customization layer that is optional between
-   * clicking share and sharing to the destination." So the sheet opens ready to
-   * post with the settings the user already has, and only unfolds them when the
-   * answer to "what am I about to send" is "not quite that."
-   */
+  /** Sharing starts actionable; customization unfolds only on request. */
   let customizeOpen = $state(false);
 
-  /**
-   * Bring the panel into view once it has finished unfolding.
-   *
-   * On a short landscape phone (960x412) the toggle already sits near the
-   * bottom of the sheet, so the panel unfolds entirely below the fold: the tap
-   * looks like it did nothing until you happen to scroll. `block: "nearest"`
-   * so a panel that is already visible — every desktop width — does not move.
-   * After `introend`, or the element would still be mid-slide and only its
-   * first few pixels would be scrolled to.
-   */
+  /** Reveal after the slide finishes so short viewports reach the full panel. */
   function revealCustomize(event: Event): void {
     const el = event.currentTarget;
     if (!(el instanceof HTMLElement)) return;
@@ -250,7 +166,6 @@
   let captionTouched = $state(false);
   let statusMessage = $state("");
   let busyDestination = $state<HandoffDestinationId | null>(null);
-  /** The viewer turned the render down. See {@link requestVideo}. */
   let videoRefused = $state(false);
 
   let videoBlob = $state<Blob | null>(null);
@@ -258,16 +173,7 @@
   let activeHasAudio = $state<boolean | null>(false);
   let audioInspectionVersion = 0;
 
-  /**
-   * The card the sheet previews and posts. Post Studio shows the same picture,
-   * so the render, its cache key, and the observer plumbing that keeps it
-   * reactive live in the shared owner rather than twice.
-   *
-   * Gated on `isOpen`: a viewer that never shares never pays the render.
-   * `exportOptions.imageDarkMode`, not the composition manager's own darkMode —
-   * the Card pane's on-screen preview reads this one, and the file has to match
-   * the card the user was looking at when they pressed Share.
-   */
+  /** Shared with Post Studio and gated on open so unused viewers pay no render. */
   const cardPreview = createCardPreviewState({
     getSequence: () => sequence,
     getEnabled: () => isOpen,
@@ -278,7 +184,6 @@
     },
   });
 
-  /** Post link for this sequence, once the code lands. */
   let shortUrl = $state<string | null>(null);
 
   let qrDataUrl = $state<string | null>(null);
@@ -292,12 +197,7 @@
   let postStage = $state("");
   let postedPermalinks = $state<Partial<Record<MetaPublishTarget, string>>>({});
 
-  /**
-   * `deriveWord`, not `sequence.word`: a workspace sequence has not been saved,
-   * so its `word` field is empty and only its steps carry the letters. Reading
-   * the raw field left the Create surface with no title and a caption that was
-   * a bare URL, while the card beside it rendered the word correctly.
-   */
+  /** Derive unsaved workspace words instead of trusting their empty stored field. */
   const alphabetWord = $derived(sequence ? deriveWord(sequence) : "");
 
   const word = $derived(
@@ -306,25 +206,14 @@
     )
   );
 
-  /**
-   * The header renders in the alphabet, so it takes the alphabet word rather
-   * than {@link word} — a custom displayName is prose and has no glyphs. It is
-   * simplified for the same reason every other surface is: a LOOP repeats its
-   * word by construction, and FΨ is the word, not FΨFΨFΨFΨ
-   * (.claude/rules/simplified-word-display.md).
-   */
+  /** The glyph header uses the simplified alphabet word, never display prose. */
   const glyphWord = $derived(simplifyRepeatedWord(alphabetWord));
 
-  /**
-   * A caller-supplied link is used only if it is already the post-link form.
-   * The visual harness passes one; the viewer passes its own inline-encoded
-   * share URL, which is dropped in favour of the minted code below.
-   */
+  /** Drop inline viewer URLs in favor of a minted post link. */
   const seededShortUrl = $derived(
     isPostLink(shareUrl ?? "") ? shareUrl.trim() : ""
   );
 
-  /** The only link that ever reaches a caption. */
   const postUrl = $derived(shortUrl ?? seededShortUrl);
 
   const presets = $derived(
@@ -339,9 +228,7 @@
   );
 
   const filename = $derived(buildArtifactFilename(word, artifact));
-  // The shell decides what the video slot holds — a Post Studio render, a
-  // mandala bake, a tunnel bake, or the plain animation export. The sheet just
-  // shows whatever arrives.
+  // The host owns which view-specific render occupies the video slot.
   const activeVideoUrl = $derived(videoBlobUrl);
   const reviewPreviewUrl = $derived(
     artifact === "video" ? activeVideoUrl : cardPreview.url
@@ -364,21 +251,13 @@
     resolveDestinations({ artifact, blob: activeBlob, filename })
   );
 
-  /**
-   * The device's own share affordance, when it has one — and the sheet's test
-   * for being on a phone. `resolveDestinations` gates this on the DEVICE, not
-   * the capability, so desktop Chrome never produces it even though it
-   * implements `navigator.share`.
-   */
+  /** Device-gated so desktop Chrome's API support does not imply a phone flow. */
   const nativeShare = $derived(
     destinations.find((destination) => destination.id === "native-share") ??
       null
   );
 
-  /**
-   * The flag hides posting everywhere; the harness override is how the visual
-   * pass still reaches all three connection states while it is off.
-   */
+  /** The visual harness can exercise connection states while posting is disabled. */
   const postingAvailable = $derived(
     META_POSTING_ENABLED || metaStatusOverride !== undefined
   );
@@ -390,32 +269,17 @@
   interface NetworkPlan {
     key: "instagram" | "facebook";
     brand: "instagram" | "facebook";
-    /** The network's own name, for labels the account name would otherwise own. */
     name: string;
     label: string;
     hint: string;
     kind: NetworkKind;
-    /** Set for every kind that talks to Meta. */
     target?: MetaPublishTarget;
-    /** Set for `handoff`: the mechanism that reaches this network without an API. */
     destination?: HandoffDestinationId;
   }
 
   /**
-   * Instagram and Facebook, as the two things this sheet exists for.
-   *
-   * They used to be small chips under a generic accent button, which is how a
-   * sheet whose entire purpose is those two networks ended up with no trace of
-   * either on it (Austen, 2026-08-11: "there's no evidence of the Facebook or
-   * Instagram logo"). Each network is now one button in its own colours at
-   * every state, and the state changes only what the button DOES: post when
-   * the account is connected, connect when it is not, and — when posting is
-   * switched off — the handoff that genuinely reaches that network, which is
-   * the QR for Instagram and the clipboard for Facebook.
-   *
-   * A phone is the exception: its OS share sheet reaches both networks in one
-   * tap and is the honest primary there, so the fallbacks are desktop-only and
-   * the row can legitimately come back empty.
+   * Each network keeps one branded button while its action changes with account
+   * state. Native mobile sharing can replace both desktop fallbacks.
    */
   const networks = $derived.by(() => {
     const plans: NetworkPlan[] = [];
@@ -454,9 +318,7 @@
       });
     }
 
-    // A connection with no Page chosen is not a post target yet: "Post to
-    // Facebook" would have to name a Page, and the only name available would
-    // be a guess. It asks for the Page instead.
+    // A connection is not a post target until the user chooses its Page.
     if (page?.selectedPageId) {
       plans.push({
         key: "facebook",
@@ -502,7 +364,6 @@
     return plans;
   });
 
-  /** Every connected Meta target, for the disconnect chips in the setup row. */
   const autoPostTargets = $derived(
     networks
       .filter((plan) => plan.kind === "post" || plan.kind === "review")
@@ -513,11 +374,7 @@
       }))
   );
 
-  /**
-   * Whatever the network buttons did not claim. A handoff promoted onto a
-   * network button must not also sit in the tile row underneath it, or the
-   * same action appears twice with two different names.
-   */
+  /** Excludes actions already promoted to a branded network button. */
   const tileDestinations = $derived.by(() => {
     const claimed = new Set(
       networks
@@ -529,20 +386,13 @@
       (destination) =>
         destination.id !== "native-share" &&
         !claimed.has(destination.id) &&
-        // A network with its own button owns that network. Leaving the
-        // clipboard handoff in the tile row too puts Facebook on the sheet
-        // twice, under two different names, doing two different things.
         !(destination.brand && branded.has(destination.brand))
     );
   });
 
   const facebookPages = $derived(metaStatus.facebookPage?.pages ?? []);
 
-  /**
-   * Connected, administers several Pages, and hasn't said which one. The chip
-   * is the ask — it is the only thing standing between here and posting, so it
-   * reads as an action rather than a settled setting.
-   */
+  /** A connected account still needs an explicit Page before it can post. */
   const pageChoicePending = $derived(
     !!metaStatus.facebookPage && !metaStatus.facebookPage.selectedPageId
   );
@@ -559,11 +409,7 @@
 
   const videoBusy = $derived(artifact === "video" && !videoBlob);
 
-  /**
-   * The four knobs a video render is made from. A card re-renders the instant a
-   * setting moves — it costs a moment. A video costs minutes, so changing a
-   * setting after one has landed offers a re-render instead of taking one.
-   */
+  /** Detect setting changes without automatically replacing an expensive render. */
   const videoSettingsKey = $derived(
     [
       exportOptions.videoResolution,
@@ -572,28 +418,16 @@
       exportOptions.videoLoopCount,
     ].join("|")
   );
-  /** Settings the render in hand was made with. */
   let renderedVideoKey = $state<string | null>(null);
   /**
-   * Settings the render in flight was STARTED with. Stamping on arrival instead
-   * would credit a take with whatever the knobs happen to say minutes later, so
-   * moving a setting mid-render would silently mark the finished take current
-   * and never offer the re-render it needs.
+   * Capture settings at request time so changes made during rendering correctly
+   * mark the result stale.
    */
   let requestedVideoKey: string | null = null;
 
-  /**
-   * A render has landed, even if its bytes are still being read.
-   *
-   * `videoBlob` is fetched FROM `videoBlobUrl`, asynchronously — so for the tick
-   * between an export finishing and that fetch resolving, `videoBlob` is null
-   * while a perfectly good render exists. Every decision about whether to ASK
-   * for a render reads this, never the blob: gating on `videoBlob` is what made
-   * the sheet fire a second 3D take the instant it reopened holding the first.
-   */
+  /** The URL counts immediately, before its bytes finish loading into a blob. */
   const hasVideo = $derived(!!activeVideoUrl || !!videoBlob);
 
-  /** A render is in hand, but not of the settings now selected. */
   const videoSettingsStale = $derived(
     artifact === "video" &&
       hasVideo &&
@@ -605,8 +439,7 @@
 
   const progressLabel = $derived.by(() => {
     if (!videoBusy) return "";
-    // A scene take is the user recording, not the machine rendering. Saying
-    // "Rendering video…" over it is what made the 3D path look hung.
+    // A user-driven scene take is recording, not background rendering.
     if (isRecordingScene) return "Recording the scene…";
     if (isExportingVideo && exportProgress !== null) {
       return `Rendering ${videoLabel.toLowerCase()}… ${Math.round(exportProgress * 100)}%`;
@@ -614,17 +447,14 @@
     return `Rendering ${videoLabel.toLowerCase()}…`;
   });
 
-  // Open on the artifact this host is about. Keyed off the isOpen edge rather
-  // than a prop mirror so a re-render mid-session cannot yank the user's own
-  // pick out from under them.
+  // Reset on the open edge only, preserving choices during an active session.
   let wasOpen = false;
   $effect(() => {
     if (isOpen === wasOpen) return;
     wasOpen = isOpen;
     if (!isOpen) return;
     artifact = initialArtifact;
-    // Every share starts on the short path: the settings you already have, one
-    // press from the destination. Customize is there when the answer is no.
+    // Reuse current settings until the user asks to customize.
     customizeOpen = false;
     if (
       initialArtifact === "video" &&
@@ -636,22 +466,16 @@
     }
   });
 
-  // The viewer owns the export; this only adopts the resulting blob.
   $effect(() => {
     const url = videoBlobUrl;
-    // An empty slot means empty. Holding the previous render here is how a
-    // mandala share ended up showing the animation the viewer exported an hour
-    // ago, under the label "Mandala".
+    // Never relabel and reuse a previous view's render.
     if (!url) {
       videoBlob = null;
       return;
     }
 
-    // Promote the settings this render was STARTED with. `untrack`, or the
-    // stamp would re-subscribe to the settings it exists to compare against and
-    // update itself the instant they change — staleness could never fire. A
-    // render the sheet did not ask for (one the viewer already had) is credited
-    // to the settings now showing, which is the only claim available about it.
+    // `untrack` prevents the completed-render stamp from following later edits.
+    // Preexisting renders are credited to the only settings currently available.
     renderedVideoKey = requestedVideoKey ?? untrack(() => videoSettingsKey);
     requestedVideoKey = null;
 
@@ -670,10 +494,7 @@
     };
   });
 
-  // The caption's link. Minting writes a Firestore doc and dedups by content,
-  // so it runs on open — the same "sheet opens instantly, the slow part fills
-  // in" contract the card render follows. Until it lands the caption is just
-  // the word; it never shows the long viewer URL on the way.
+  // Mint asynchronously on open; captions never expose the long viewer URL.
   $effect(() => {
     if (!isOpen || !sequence || seededShortUrl) return;
 
@@ -686,13 +507,9 @@
         const result = await getShortCodeManager().createShortCode(target, {
           embedSequenceData: true,
         });
-        // result.url is the QR form (HTTPS://TKA.RUN/CODE). A caption takes the
-        // share route instead — see buildPostLink for why.
         if (!stale) shortUrl = buildPostLink(result.code);
       } catch (error) {
-        // Short codes are signed-in-only, and a sequence that switches between
-        // one-hand and two-hand choreography has none. Both are ordinary — the
-        // caption carries the word alone and the share still works.
+        // A missing short code leaves a still-usable word-only caption.
         console.warn("[PostShareSheet] No short link for the caption:", error);
       }
     })();
@@ -702,17 +519,14 @@
     };
   });
 
-  // Seed the caption once, and stop the moment the user types — the textarea
-  // is the source of truth from then on. Re-runs when the short link lands,
-  // which is what fills the URL in behind an untouched caption.
+  // Keep seeding until the user edits; an arriving short link can then fill in.
   $effect(() => {
     if (!isOpen || captionTouched) return;
     const first = presets[0];
     if (first) caption = first.text;
   });
 
-  // Which Meta accounts are connected, live. Only while the sheet is open —
-  // a viewer that never shares should not hold a Firestore listener.
+  // Hold the connection listener only while the sheet is open.
   $effect(() => {
     if (!isOpen || metaStatusOverride || !META_POSTING_ENABLED) return;
 
@@ -730,12 +544,10 @@
     artifact = next;
     statusMessage = "";
     qrDataUrl = null;
-    // A "View post" that points at the card is wrong once the video is
-    // selected, so the posted-state resets with the artifact.
+    // Posted links belong to the selected artifact.
     postedPermalinks = {};
 
-    // isRecordingScene counts as in flight: a 3D take reads as idle to both
-    // other flags, so without it re-picking Video starts a second recording.
+    // A live scene take also prevents duplicate export requests.
     if (
       next === "video" &&
       !hasVideo &&
@@ -746,12 +558,7 @@
     }
   }
 
-  /**
-   * Post Studio is a sequence-viewer surface now, not a full-screen takeover
-   * inside this modal. The sheet links to it and gets out of the way, so
-   * leaving the studio lands on the viewer — a destination — instead of
-   * backing into a modal.
-   */
+  /** Close before switching viewer surfaces so Back never returns to the modal. */
   function openPostStudio(): void {
     statusMessage = "";
     qrDataUrl = null;
@@ -957,11 +764,7 @@
     qrError = "";
   }
 
-  /**
-   * The direct post. Meta fetches the media itself, so the artifact goes to R2
-   * first and only its URL is handed over — the same upload the QR handoff
-   * already uses, which is why an unsaved sequence has nowhere to put it.
-   */
+  /** Uploads first because Meta ingests the artifact from a public URL. */
   async function postToTarget(target: MetaPublishTarget): Promise<void> {
     const blob = activeBlob;
     if (!blob) return;
@@ -976,16 +779,13 @@
     postStage = "Uploading…";
 
     try {
-      // Both viewer encoders emit H.264 MP4, which is what Meta ingests. If a
-      // future export path ever hands back WebM, say so here rather than
-      // uploading it and letting Meta reject the container minutes later.
+      // Reject unsupported containers before paying for upload and processing.
       if (artifact === "video" && blob.type && !blob.type.includes("mp4")) {
         statusMessage =
           "This video isn't in a format Instagram or Facebook accepts.";
         return;
       }
 
-      // Instagram's container endpoint accepts JPEG only; the card renders PNG.
       const media =
         target === "instagram" && artifact === "card"
           ? await toInstagramJpeg(blob)
@@ -1040,16 +840,7 @@
     }
   }
 
-  /**
-   * What a network button does depends only on where that account currently
-   * stands, so the button itself carries no branching — the plan does.
-   */
-  /**
-   * Tiles the sheet owns rather than the handoff resolver: one is app-internal
-   * (the TKA inbox), the other needs the short code the sheet just resolved.
-   * They live here so the workspace and the viewer stop needing a context menu
-   * to reach them.
-   */
+  /** Local actions depend on sheet-owned inbox and short-link context. */
   interface LocalTile {
     id: string;
     label: string;
@@ -1114,9 +905,6 @@
         void connectTarget(plan.target as MetaPublishTarget);
         return;
       case "choose-page":
-        // The list of Pages Meta shared lives in the setup row's dropdown,
-        // directly under this button. Opening it there keeps one owner for
-        // the Page choice instead of a second copy inside the button.
         pageMenuOpen = true;
         return;
       case "handoff":
@@ -1124,10 +912,7 @@
     }
   }
 
-  /**
-   * Connecting and picking a Page are account setup and need no artifact.
-   * Everything else moves the file, so it waits for the render.
-   */
+  /** Account setup can run before the artifact is ready; delivery cannot. */
   function networkDisabled(plan: NetworkPlan): boolean {
     if (plan.kind === "connect" || plan.kind === "choose-page") return metaBusy;
     return !activeBlob || metaBusy || busyDestination !== null || qrPending;
@@ -1171,12 +956,7 @@
     }
   }
 
-  /**
-   * The dropdown can only offer Pages Meta actually shared. Reaching one that
-   * was left out of the original grant means asking Meta again, which it will
-   * only do once the current grant is released — so this drops it and reopens
-   * the dialog in one action.
-   */
+  /** Reopens Meta consent when the desired Page was absent from the grant. */
   async function changeSharedPages(): Promise<void> {
     pageMenuOpen = false;
     connectingTarget = "facebook-page";
@@ -1197,8 +977,7 @@
     }
   }
 
-  // The Page menu is fixed-positioned outside the chip, so a click anywhere
-  // else has to close it explicitly.
+  // The fixed-positioned menu cannot rely on the chip's outside-click boundary.
   $effect(() => {
     if (!pageMenuOpen) return;
     const close = (event: PointerEvent) => {
@@ -1228,11 +1007,7 @@
   </span>
 {/snippet}
 
-<!-- One network, one button, in that network's own colours.
-
-     The posted state reuses the SAME box rather than adding a "View post" row:
-     a new element appearing after a successful post would shove the sheet
-     (.claude/rules/no-layout-shift.md). -->
+<!-- Posted state reuses the network button so success cannot shift layout. -->
 {#snippet networkButton(plan: NetworkPlan)}
   {@const permalink = plan.target ? postedPermalinks[plan.target] : undefined}
   {@const busy =
@@ -1274,8 +1049,7 @@
       </span>
       <span class="network-text">
         <span class="network-label">{plan.label}</span>
-        <!-- The account name is the hint at rest and the stage while posting,
-             so progress replaces it in place instead of adding a line. -->
+        <!-- Progress replaces the account hint in place. -->
         <span class="network-hint">
           {busy && postStage ? postStage : plan.hint}
         </span>
@@ -1309,15 +1083,7 @@
         onReconnect={() => void connectTarget("instagram")}
       />
     {:else}
-      <!-- The QR is a focused step, not a sibling of the setup controls: with the
-       picker, caption, tiles and connections all hidden, the two-column grid
-       leaves the whole right column empty under the title. One column. -->
-      <!-- `autofocus` on the container, not on a control. A native <dialog> that
-       finds no autofocus target focuses its first focusable child, which here
-       is Close — so the sheet opened with a focus ring around the one button
-       that throws the sheet away, drawing the eye there instead of to the
-       destinations. Taking the focus itself is also the standard dialog
-       behaviour: the sheet is announced, and Tab starts at the first control. -->
+      <!-- Focus the surface so the dialog does not highlight Close on arrival. -->
       <!-- svelte-ignore a11y_autofocus -->
       <div
         class="sheet"
@@ -1327,12 +1093,8 @@
         autofocus
       >
         <header class="panel-header">
-          <!-- The word is a word in this alphabet, so it renders in the alphabet —
-           the same glyph component the card, the gallery and compose use. A
-           system font here spells FΨ as two unrelated symbols. -->
           <h2 class="panel-title">
-            <!-- The glyph takes a px height, but the size belongs with the other
-             tier rules in CSS, so a zero-width sizer carries it across. -->
+            <!-- A zero-width CSS sizer bridges the glyph's pixel API. -->
             <span class="glyph-sizer" bind:clientHeight={glyphHeight}></span>
             <TKAWordGlyph
               word={glyphWord}
@@ -1350,10 +1112,6 @@
           </button>
         </header>
 
-        <!-- A compact glass pill, not a full-width bar: two short labels size to
-         their labels (.claude/rules/visual-verification-mandatory.md). It sits
-         above the artwork rather than on it, because the card preview IS the
-         content and an overlay would cover a pictograph. -->
         {#if !qrDataUrl}
           <div class="artifact-picker">
             <SegmentedControl
@@ -1424,10 +1182,7 @@
           {/if}
         </div>
 
-        <!-- The customization layer: optional, folded away, and sitting directly
-         under what it changes so a toggled setting is visible in the preview
-         above it. Card settings redraw the card as you press them; video
-         settings apply to the next render, so a landed take offers one. -->
+        <!-- Customization sits next to the preview it changes. -->
         {#if !qrDataUrl && sequence}
           <div class="customize">
             <button
@@ -1485,20 +1240,13 @@
 
         {#if !qrDataUrl}
           <div class="caption-block">
-            <!-- One scrolling chip row instead of a label row plus a chip row: the
-             presets and "save this one" are the same gesture family, and the
-             placeholder already names the field. -->
             <label class="visually-hidden" for="post-share-caption"
               >Caption</label
             >
 
             <div class="presets">
               {#each presets as preset (preset.id)}
-                <!-- Toggle, not action: these are one-of-N choices where the Nth
-                 option is "typed my own", so the row has a none-selected state
-                 and no indicator to slide. Without `active` all the presets
-                 rendered identically and nothing said which caption you were
-                 looking at. -->
+                <!-- Custom text is the implicit none-selected state. -->
                 <FilterChipBase
                   label={preset.label}
                   mode="toggle"
@@ -1530,9 +1278,6 @@
             ></textarea>
           </div>
 
-          <!-- The destinations, in the order they matter: the phone's own share
-           sheet when there is one (one tap, reaches everything), then a
-           full-width button per network. -->
           <div class="actions">
             {#if nativeShare}
               <button
@@ -1617,16 +1362,11 @@
             </div>
           {/if}
 
-          <!-- Setup for accounts that are ALREADY connected — which Page, and how
-           to drop the connection. Connecting itself is not here any more: it
-           is the network button above, in that network's own colours. -->
           {#if metaStatus.facebookPage || autoPostTargets.length}
             <div class="connections">
               {#if metaStatus.facebookPage}
                 {@const selected = metaStatus.facebookPage}
-                <!-- A dropdown, not a segmented control: Page names are long and
-                 unbounded, and laying them all out side by side is what pushed
-                 this row past the sheet's width. -->
+                <!-- Page names are unbounded, so they belong in a dropdown. -->
                 <div class="page-chip">
                   <FilterChipBase
                     label={selected.selectedPageName || "Choose a Page"}
@@ -1658,10 +1398,6 @@
                           {/if}
                         </button>
                       {/each}
-                      <!-- Lives here because this is where you look when the Page
-                       you want is not on the list. The setup row above is one
-                       scrolling line by design and has no room for a fourth
-                       chip. -->
                       <button
                         class="page-option page-option--add"
                         type="button"
@@ -1686,9 +1422,6 @@
               {/if}
 
               {#each autoPostTargets as target (target.id)}
-                <!-- The network, not the account: the account is already named on
-                 the post button above, and a variable-width label here is what
-                 made this row overflow the sheet. -->
                 <FilterChipBase
                   label={`Disconnect ${target.network}`}
                   ariaLabel={`Disconnect ${target.account} from ${target.network}`}
@@ -1705,8 +1438,7 @@
           {/if}
         {/if}
 
-        <!-- Reserved row: status text appears and disappears without moving the
-         sheet's contents. -->
+        <!-- Reserve status height so messages cannot move the sheet. -->
         <p
           class="status"
           role="status"
@@ -1720,11 +1452,7 @@
 </ShareSheetFrame>
 
 <style>
-  /* Phone portrait is the tight case, so it is the base: everything from the
-     title to the tile row has to fit above the fold at 375x667. Taller
-     viewports get the roomier version back in the min-height tier below.
-     (The surface itself — drawer under 900px, dialog above — is
-     ShareSheetFrame's; this file only lays out what sits on it.) */
+  /* Phone portrait is the base; `ShareSheetFrame` owns drawer/dialog behavior. */
   .sheet {
     display: flex;
     flex-direction: column;
@@ -1734,9 +1462,6 @@
     margin: 0 auto;
   }
 
-  /* The app's sheet header, not a new one: title left, one action right, a
-     hairline under it. Matches ScanCardSheet's .panel-header, which is what
-     every other bottom sheet in this app already looks like. */
   .panel-header {
     display: flex;
     align-items: center;
@@ -1751,7 +1476,6 @@
     align-items: center;
     margin: 0;
     min-width: 0;
-    /* The glyph carries the word; this element only positions it. */
     font-size: var(--font-size-lg, 18px);
     color: var(--theme-text, #fff);
   }
@@ -1786,8 +1510,6 @@
     }
   }
 
-  /* Brand marks size themselves off the surrounding text so they sit on the
-     same optical line as FontAwesome glyphs in the same row. */
   .brand-mark {
     display: inline-flex;
     flex: 0 0 auto;
@@ -1798,8 +1520,7 @@
     height: 1.15em;
   }
 
-  /* Fixed box: the preview, the pending spinner and the QR view all live here,
-     so swapping between them never resizes the sheet. */
+  /* All preview states share fixed geometry. */
   .stage {
     position: relative;
     display: grid;
@@ -1819,11 +1540,7 @@
     overflow: hidden;
   }
 
-  /* The frame belongs to the spinner and the QR view, which need a surface to
-     sit on. Real artwork does not: the card renders its own rounded edge and
-     shadow, so keeping the box around it draws a bordered well with a portrait
-     card floating in the middle of it — the artwork centres on empty space
-     instead (.claude/rules/visual-verification-mandatory.md, dead space). */
+  /* Rendered media supplies its own frame; pending and QR states use the stage. */
   .stage.showing-media {
     padding: 0;
     border-color: transparent;
@@ -1831,14 +1548,7 @@
     box-shadow: none;
   }
 
-  /* Capped in rem, not %: the stage row is content-sized, so a percentage here
-     resolves against an indefinite height and stops capping anything. Each tier
-     sets --preview-h to its stage height minus padding.
-
-     The 24vh ceiling is the second half of the cap, and it is what keeps the
-     sheet on screen: the artwork is the one element that can give height back,
-     and without it the wide-screen tiers grow the card on a 1080-tall desktop
-     until the setup row falls past the bottom of the drawer. */
+  /* A real rem/vh ceiling works inside the content-sized stage; percentages do not. */
   .preview {
     max-width: 100%;
     max-height: min(var(--preview-h, 10.5rem), 30vh);
@@ -1855,8 +1565,6 @@
     font-size: 0.9375rem;
   }
 
-  /* Stacked, because the retry is an action rather than a continuation of the
-     sentence, and the stage is taller than it is wide at every width. */
   .stage-refused {
     flex-direction: column;
     color: var(--theme-text, rgba(255, 255, 255, 0.92));
@@ -1879,11 +1587,7 @@
     background: var(--theme-surface-hover, rgba(255, 255, 255, 0.14));
   }
 
-  /* Centered above the artwork, and otherwise left alone: SegmentedControl
-     already carries the app's look, and re-skinning it into a glass capsule is
-     what made this control read as hand-rolled. Only the width override stays,
-     so it sizes to its two labels rather than the sheet
-     (.claude/rules/visual-verification-mandatory.md). */
+  /* Keep the shared control content-sized above the artwork. */
   .artifact-picker {
     display: flex;
     align-items: center;
@@ -1942,8 +1646,7 @@
     text-align: center;
   }
 
-  /* The vh cap is what keeps the step's own Back button above the fold on a
-     short window — the code is the only part of this view that can give. */
+  /* Let the code shrink enough to keep Back above the fold. */
   .qr-view img {
     width: min(11rem, 26vh);
     height: min(11rem, 26vh);
@@ -1966,9 +1669,6 @@
     gap: 0.625rem;
   }
 
-  /* A row, not a card: closed, this is one line of chrome between the preview
-     and the caption, and it has to read as "there is more here if you want it"
-     without competing with the destinations below. */
   .customize-toggle {
     display: flex;
     align-items: center;
@@ -2025,11 +1725,7 @@
     background: var(--theme-surface-2, rgba(255, 255, 255, 0.04));
   }
 
-  /* The panel lets its SegmentedControl fill the row (ExportImagePanel's
-     .seg-fill), which is right in a narrow rail and wrong here: across the
-     width this sheet gives the panel, two short labels stretch into a progress
-     bar (.claude/rules/visual-verification-mandatory.md). Cap it at a width
-     that still reads as a pair of buttons. */
+  /* Keep the panel's short segmented control from stretching like a progress bar. */
   .customize-body :global(.seg-fill) {
     max-width: 24rem;
   }
@@ -2087,15 +1783,13 @@
     white-space: nowrap;
   }
 
-  /* Scrolls rather than wraps: a second chip line is 44px the phone doesn't
-     have, and a row that grows by a line is layout shift. */
+  /* Scroll instead of adding a layout-shifting chip row. */
   .presets {
     display: flex;
     gap: 0.375rem;
     overflow-x: auto;
     scrollbar-width: none;
     padding-bottom: 0.125rem;
-    /* Bleed to the sheet edges so a scrolled row reads as scrollable. */
     margin-inline: -1rem;
     padding-inline: 1rem;
   }
@@ -2110,9 +1804,7 @@
 
   textarea {
     width: 100%;
-    /* The drawer is sized to its content and already fills the phone. A native
-       grabber here lets a drag push the post buttons off the bottom of the
-       screen, and it draws an OS widget into a designed surface. */
+    /* Prevent user resizing from pushing actions below the drawer. */
     resize: none;
     padding: 0.75rem 0.875rem;
     border-radius: 0.875rem;
@@ -2144,8 +1836,6 @@
     display: contents;
   }
 
-  /* One filled action. Buttons, never text links: every clickable here reads as
-     clickable (.claude/rules/clickables-look-like-buttons.md). */
   .cta {
     display: flex;
     align-items: center;
@@ -2178,8 +1868,6 @@
     text-align: center;
   }
 
-  /* Same box as the primary so a second connected account does not change the
-     rhythm — only the fill tells you which one leads. */
   .cta.secondary-cta {
     background: var(--theme-surface-2, rgba(255, 255, 255, 0.06));
     border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
@@ -2203,9 +1891,7 @@
     min-width: 0;
   }
 
-  /* Account names and Page names are user data of unbounded length. They ride
-     one line and truncate rather than wrapping the button taller than its
-     sibling (.claude/rules/no-layout-shift.md). */
+  /* Unbounded account names truncate instead of changing button height. */
   .cta-label,
   .cta-hint {
     overflow: hidden;
@@ -2239,12 +1925,6 @@
     box-shadow: none;
   }
 
-  /* A network destination, wearing that network's colours.
-
-     The fills are the platforms' own: Instagram's is the mark's five-stop
-     ramp, Facebook's is its single blue. Nothing else in this sheet is
-     coloured, so these two read as the destinations and everything around
-     them as the settings that feed them. */
   .network {
     display: flex;
     align-items: center;
@@ -2284,8 +1964,7 @@
     --network-glow: color-mix(in srgb, #1877f2 34%, transparent);
   }
 
-  /* A disc behind the mark so the logo stays legible over the brightest stop
-     of the Instagram ramp, where white-on-yellow otherwise disappears. */
+  /* Preserve white-mark contrast across the Instagram gradient. */
   .network-mark {
     display: grid;
     place-items: center;
@@ -2305,9 +1984,7 @@
     min-width: 0;
   }
 
-  /* Account names and Page names are user data of unbounded length: they ride
-     one line and truncate rather than growing the button taller than its
-     sibling (.claude/rules/no-layout-shift.md). */
+  /* Unbounded account names truncate instead of changing button height. */
   .network-label,
   .network-hint {
     overflow: hidden;
@@ -2347,14 +2024,11 @@
     box-shadow: none;
   }
 
-  /* Posted: the button stays put and stops shouting — the destination is no
-     longer a thing to do, it is a thing to go look at. */
   .network.is-posted {
     filter: saturate(0.72);
   }
 
-  /* Equal columns: the row must not reflow as the destination set changes with
-     artifact or device (.claude/rules/no-layout-shift.md). */
+  /* Equal columns keep destination changes from reflowing the row. */
   .tiles {
     display: grid;
     grid-auto-flow: column;
@@ -2414,8 +2088,7 @@
     cursor: not-allowed;
   }
 
-  /* Account setup. Scrolls like the preset row for the same reason: a second
-     line of chips is a row the phone layout has not budgeted. */
+  /* Account setup scrolls instead of adding an unbudgeted row. */
   .connections {
     display: flex;
     align-items: center;
@@ -2434,7 +2107,6 @@
     flex: 0 0 auto;
   }
 
-  /* Anchors the Page menu, which FilterChipBase positions against this chip. */
   .page-chip {
     position: relative;
   }
@@ -2473,7 +2145,6 @@
     font-size: 0.625rem;
   }
 
-  /* Separated because it is an action, not one more Page to pick. */
   .page-option--add {
     margin-top: 0.25rem;
     padding-top: 0.75rem;
@@ -2504,7 +2175,7 @@
     background: var(--theme-surface-3, rgba(255, 255, 255, 0.12));
   }
 
-  /* Always occupies its row: appearing text must not push the sheet. */
+  /* Reserve the row even when no message is visible. */
   .status {
     margin: 0;
     min-height: 1.25rem;
@@ -2518,16 +2189,9 @@
     visibility: visible;
   }
 
-  /* The stage only claims its full height once the viewport can afford the
-     whole sheet above the fold. 940, not 800: a connected account adds a second
-     post button and the setup row, and at 900 the difference is exactly what
-     pushed the setup row past the drawer's 85vh. */
+  /* Expand only when connected-account controls still fit above the fold. */
   @media (min-height: 940px) {
     .sheet {
-      /* Past 18rem the rem figure stops binding and the 30vh half of the cap
-         takes over, which is the intent on a tablet: 288px of card in a
-         1180px-tall viewport left the thing you came to look at smaller than
-         the button under it, with 260px of viewport still unspent. */
       --stage-h: 22rem;
       --preview-h: 24rem;
       gap: 1rem;
@@ -2561,17 +2225,7 @@
     }
   }
 
-  /* Five tiles do not fit across a phone. At 375 the equal-column row gives each
-     one 58.7px, and "Download" alone needs 69px — the labels ran into their
-     neighbours and the row overflowed its own box. Three columns give each tile
-     ~100px, which is room for the word at full size and a 44px icon above it.
-     5 % 3 = 2, so the second row holds two tiles, never a lone orphan
-     (.claude/rules/4k-native-layout.md).
-
-     Width, not height, is the axis that matters here: the stacked tile above is
-     gated on min-height 940, so a short phone (375x667) kept the side-by-side
-     icon+label that cannot fit at any label size. This block sits after it and
-     wins on every narrow viewport regardless of height. */
+  /* Three phone columns leave labels readable and avoid an orphaned fifth tile. */
   @media (max-width: 480px) {
     .tiles {
       grid-auto-flow: row;
@@ -2591,17 +2245,7 @@
     }
   }
 
-  /* Two columns from 900px up — the artwork beside the controls, not above them.
-     Stacked, the preview is capped by whatever vertical the controls leave over,
-     which on a 1920x1080 desktop is a 165px-wide card marooned in a 624px-wide
-     frame: the exact dead-space failure in visual-verification-mandatory.md.
-     Beside them the stage is a tall column the card fills, so the thing you came
-     here to look at is actually the biggest thing on screen.
-
-     900 is the seam because it takes in every wide case at once: the folded
-     Z Fold in landscape (960x412), where stacking pushes the actions off the
-     bottom, and every laptop and desktop above it. Tablet portrait (820) stays
-     stacked — one column is right when the viewport is taller than it is wide. */
+  /* Wide layouts put artwork beside controls so the preview can use their height. */
   @media (min-width: 900px) {
     .sheet {
       display: grid;
@@ -2616,9 +2260,7 @@
         "stage connections"
         "stage status"
         "stage customize";
-      /* The caption row takes the slack. The card is the tallest thing here,
-         and the leftover beside it has to go somewhere: into the box you are
-         actually typing in, rather than into a hole above the status line. */
+      /* Let the useful caption field absorb the card column's extra height. */
       grid-template-rows: auto auto minmax(5rem, 1fr) auto auto auto auto auto;
       align-content: start;
       column-gap: 1.5rem;
@@ -2634,10 +2276,7 @@
       align-self: start;
     }
 
-    /* With no artwork the stage IS the frame, so it takes the column: a status
-       line top-aligned beside a full-height controls column reads as a fragment
-       floating in dead space. Artwork keeps `start` — a portrait card should
-       hang from the title, not centre in a well. */
+    /* Pending states fill the stage column; media remains top-aligned. */
     .stage:not(.showing-media) {
       align-self: stretch;
     }
@@ -2663,27 +2302,17 @@
       grid-area: status;
     }
 
-    /* Named in every area map from here up, or it auto-places into whatever
-       cell is free. The 2350 tier opens a 1fr spacer above the header to centre
-       the control stack against the card, and an unnamed item lands in it: at
-       3840 the Card settings panel rendered ABOVE the sheet's own title. */
+    /* Explicit placement prevents later spacer rows from capturing customization. */
     .customize {
       grid-area: customize;
     }
 
-    /* vh, not the stage: the stage is content-sized here, so a percentage cap
-       resolves against an indefinite height and stops capping. Without a real
-       ceiling the card's natural size sets the sheet's height, and a laptop
-       viewport gets a share sheet that scrolls. */
+    /* The content-sized stage requires a viewport-based media ceiling. */
     .preview {
       max-width: 100%;
       max-height: 58vh;
     }
 
-    /* Grows into the slack the card column leaves, but only so far: a caption
-       is a few lines, and past that the box stops being an input you are
-       filling and starts being a hole in the layout
-       (.claude/rules/visual-verification-mandatory.md, dead space). */
     textarea {
       flex: 1 1 auto;
       height: auto;
@@ -2691,9 +2320,7 @@
       max-height: 9rem;
     }
 
-    /* The edge bleed exists so a scrolled row reads as scrollable against the
-       sheet's own padding. In two columns these rows start mid-sheet, where
-       bleeding would run them under the stage. */
+    /* Cancel phone edge bleed once these rows begin mid-sheet. */
     .presets,
     .connections {
       margin-inline: 0;
@@ -2703,32 +2330,18 @@
       grid-area: connections;
     }
 
-    /* Scanning distance is arm's length across a desk, not phone-in-hand — but
-       capped against the viewport, because the QR step also has to clear the
-       fold on a wide-and-short window (960x412), where a fixed 13rem code
-       pushes its own Back button off the bottom. */
+    /* Desktop QR grows for arm's-length scanning but still clears short windows. */
     .qr-view img {
       width: min(13rem, 34vh);
       height: min(13rem, 34vh);
     }
   }
 
-  /* Wide AND short (folded Z Fold landscape, a laptop with browser chrome
-     eating the viewport): same two columns, every vertical measure tightened so
-     the setup row still clears the fold. */
+  /* Tighten wide, short viewports so account setup remains above the fold. */
   @media (min-width: 900px) and (max-height: 620px) {
-    /* The setup row moves under the artwork. The stage column here is ~170px
-       wide against a 412px-tall viewport, so the left side has vertical to
-       spare while the right side is the thing running out of it — keeping every
-       row on the right is what pushed the setup chips off the bottom once
-       connected accounts started adding a row. The tiles stay on the right:
-       given the full width they stretch three short labels across 880px. */
     .sheet {
       width: min(52rem, 100%);
-      /* Customize spans both columns here alone. Expanded on a 412px-tall
-         viewport it IS the screen, and confined to the right column it left the
-         card's column as a strip of empty black beside it — the panel's own
-         chip rows are what should be using that width. */
+      /* Expanded customization needs both columns at this height. */
       grid-template-areas:
         "stage header"
         "stage picker"
@@ -2755,12 +2368,7 @@
       padding: 0.5rem 1rem;
     }
 
-    /* Side by side, not stacked. Stacked they cost two rows on the one viewport
-       with no vertical to give — 56px more than the dialog has, which pushed the
-       tiles under the fold — while each ran 490px wide across a column that had
-       width to spare. One row spends the axis that is free to buy back the axis
-       that is not, and lands the buttons at a proportion that reads like a pair
-       of buttons rather than two progress bars. */
+    /* Spend spare width to keep both network actions on one row. */
     .actions {
       flex-direction: row;
       flex-wrap: wrap;
@@ -2784,10 +2392,7 @@
       font-size: 0.875rem;
     }
 
-    /* Two per row leaves the text 129px and "Connect Instagram" needs 140. The
-       chevron and its gap are 26 of those px, and it is the one part of the row
-       carrying no information — a full-bleed brand-coloured button already reads
-       as pressable. */
+    /* Brand-colored compact buttons do not need chevrons consuming label width. */
     .network-chevron {
       display: none;
     }
@@ -2799,9 +2404,7 @@
       text-align: right;
     }
 
-    /* Fixed basis rather than the three rows it asks for: on a 412px-tall
-       viewport the caption has no slack to absorb, and `rows=3` is 38px the
-       setup row needs more. */
+    /* Override textarea rows where vertical space is fixed. */
     textarea {
       flex: 1 1 3.25rem;
       height: 3.25rem;
@@ -2809,12 +2412,8 @@
     }
   }
 
-  /* A bottom drawer on a 4K panel reads as a phone strip unless the sheet grows
-     with the canvas (.claude/rules/4k-native-layout.md, 1680 seam). */
+  /* Grow the sheet with large canvases instead of leaving a phone-width strip. */
   @media (min-width: 1680px) {
-    /* No --stage-h/--preview-h from here up: every viewport this wide is also
-       past the 900px seam, so the stage is stretching and the preview's cap has
-       already lifted. Width and type are what still have to step. */
     .sheet {
       width: min(74rem, 100%);
       column-gap: 2rem;
@@ -2857,41 +2456,23 @@
     }
   }
 
-  /* 2350, not 2600: 4K at 150% scaling lands here, and it is the tier a single
-     big-screen seam always misses (.claude/rules/4k-native-layout.md). */
+  /* Includes 4K at 150% display scaling. */
   @media (min-width: 2350px) {
     .sheet {
       width: min(100rem, 100%);
-      /* A fixed stage track from here up, not a fraction. The card render is a
-         960x1280 raster (sharer.ts stepSize 240, four columns), so the track is
-         sized toward that instead of left to float: a fraction either starves
-         the card or opens rail around it, and it changes width when the render
-         lands, shoving the column (.claude/rules/no-layout-shift.md). */
+      /* A fixed track matches the card raster and cannot shift when media lands. */
       grid-template-columns: 44rem minmax(0, 1fr);
       column-gap: 2.5rem;
       row-gap: 1rem;
       padding: 2rem;
     }
 
-    /* The vh ceiling exists to stop a laptop scrolling. A 1440-tall panel is
-       not that panel, and holding 58vh here would cap the card below the track
-       the tier just widened for it. */
     .preview {
       max-height: 66vh;
     }
 
-    /* Beside a card this tall the controls no longer need the caption row to
-       soak up slack — there is more slack than a caption can honestly use, and
-       a 1fr row with a capped input inside it opens the hole ABOVE the post
-       buttons rather than filling anything. Size the caption to its own content
-       and let the trailing row hold what is left, so the column reads as a
-       stack that ends rather than one with a gap punched through it. */
     .sheet {
-      /* `align-content` cannot centre this: the stage spans every row, so there
-         is no free space in the track list for it to distribute. Flexible rows
-         above and below the control block do the same job against a spanning
-         item — the stack sits opposite the middle of the card instead of
-         hanging from its top edge with a column of black beneath it. */
+      /* Flexible bookend rows center controls beside the spanning stage. */
       grid-template-areas:
         "stage ."
         "stage header"
@@ -2966,12 +2547,7 @@
       font-size: 1.25rem;
     }
 
-    /* The panel inside is the shared ExportImagePanel, and its scale is fixed
-       in tokens rather than stepped — beside type this tier has already grown,
-       its labels and chips read as punctuation. Raising the tokens for this
-       subtree only is how the other big-screen consumers step it
-       (DeckReleaserTab, AssembleToolPanel), and it leaves the rail's copy of
-       the panel alone. */
+    /* Scale the embedded panel locally without changing its other consumers. */
     .customize-body {
       --font-size-compact: 1rem;
       --font-size-min: 1.125rem;
@@ -2989,15 +2565,10 @@
     }
   }
 
-  /* 4K at 100%, or a TV across the room: nothing is scaling for you, so type
-     and elements step again rather than the band alone. */
+  /* Native 4K needs another type and control step for viewing distance. */
   @media (min-width: 3200px) {
     .sheet {
-      /* 60rem is the card's own raster at 1:1 — 960px. Below it the artwork is
-         downscaled on the one screen with the pixels to show it at full size,
-         which is what made this sheet read as a small island in a black sea at
-         3840. The rest of the band goes to the controls, at roughly the same
-         8:1 button proportion the 1920 tier already ships. */
+      /* The 60rem track displays the 960px card raster at 1:1. */
       width: min(118rem, 100%);
       grid-template-columns: 60rem minmax(0, 1fr);
       column-gap: 3rem;
@@ -3005,8 +2576,6 @@
       padding: 2.5rem;
     }
 
-    /* 72vh of 2160 is 1555px — clear of the card's own 1280px height, so the
-       raster finally renders 1:1 instead of being downscaled by its ceiling. */
     .preview {
       max-height: 72vh;
     }
@@ -3088,10 +2657,7 @@
     }
   }
 
-  /* The QR step, at every width. Higher specificity than the tier rules above,
-     so it re-collapses the two-column grid they build: with everything but the
-     title and the code hidden, those tiers otherwise leave a 90rem sheet whose
-     right half is empty. Last in the file so it reads as the state it is. */
+  /* QR mode collapses every wide two-column tier back to one focused column. */
   .sheet.qr-step {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
@@ -3107,9 +2673,7 @@
     align-self: center;
   }
 
-  /* Tracks the QR's own step (15rem, then 19rem) rather than the setup sheet's
-     width. Any wider and the title and the close button drift to opposite ends
-     of a column holding one code. */
+  /* Track the QR size instead of inheriting the setup sheet's width. */
   @media (min-width: 2350px) {
     .sheet.qr-step {
       width: min(38rem, 100%);
@@ -3122,9 +2686,7 @@
     }
   }
 
-  /* Last in the file so it beats every width tier above: inside the dialog the
-     frame owns the sheet's width, and a rem cap here would centre a 34rem
-     column in a 90rem dialog — the dead rail the modal exists to remove. */
+  /* The modal frame owns width; an inner rem cap would recreate dead rails. */
   .sheet[data-surface="modal"] {
     width: 100%;
     max-width: none;

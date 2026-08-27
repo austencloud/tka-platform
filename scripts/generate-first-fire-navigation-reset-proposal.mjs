@@ -17,9 +17,7 @@ const OUT_DIR = join(
   "docs/superpowers/specs/first-fire-cinder-court/navigation-reset"
 );
 
-// ---------------------------------------------------------------------------
 // Geometry (room-local metres; origin = NW interior corner; x east, z south)
-// ---------------------------------------------------------------------------
 const ROOM = { w: 58, d: 44 };
 const WEST_DOOR = { min: 20, max: 24 }; // Water, centre z 22
 const EAST_DOOR = { min: 32, max: 36 }; // Earth, centre z 34
@@ -107,9 +105,7 @@ const FRAMES = [
   },
 ];
 
-// ---------------------------------------------------------------------------
 // Small vector helpers
-// ---------------------------------------------------------------------------
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
 const len = (v) => Math.hypot(v[0], v[1]);
 const norm = (v) => {
@@ -177,9 +173,7 @@ function rectWalls(rect, height, openings = []) {
   return walls;
 }
 
-// ---------------------------------------------------------------------------
 // Perspective projection (pinhole; y up, camera at EYE height)
-// ---------------------------------------------------------------------------
 const VIEW_W = 1280;
 const VIEW_H = 720;
 const FOV_DEG = 78;

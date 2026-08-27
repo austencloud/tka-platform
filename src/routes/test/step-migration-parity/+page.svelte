@@ -146,7 +146,6 @@
 
   const imageDataToUrl = imageDataToPngDataUrl;
 
-  // ─── Load real sequences ────────────────────────────────────────────────────
 
   async function loadInputs(n: number): Promise<SequenceData[]> {
     const loader = new PublicSequencesLoader();

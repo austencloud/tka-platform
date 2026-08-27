@@ -84,9 +84,6 @@ export function countReversals(sequence: SequenceData): {
   };
 }
 
-/**
- * Get average beat duration
- */
 export function getAverageBeatDuration(sequence: SequenceData): number {
   if (sequence.steps.length === 0) return 0;
   return calculateSequenceDuration(sequence) / sequence.steps.length;

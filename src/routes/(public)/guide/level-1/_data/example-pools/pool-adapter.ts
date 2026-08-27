@@ -48,7 +48,6 @@ import { bakeReversals } from "../guide-sequence-adapter";
 
 export type { PoolEntry };
 
-// ── Raw JSON shapes ────────────────────────────────────────────────────────
 // Shared by every page's pool JSON (one JSON per page, same schema - rollout
 // spec section 2a). `RawPool` is deliberately loose on `generationDefaults`
 // (only `gridMode` is read today; the rest is provenance for humans, not the

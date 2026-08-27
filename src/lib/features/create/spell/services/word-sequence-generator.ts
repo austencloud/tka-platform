@@ -47,7 +47,6 @@ export class WordSequenceGenerator {
   async generateFromWord(
     options: SpellGenerationOptions
   ): Promise<SpellResult> {
-    // Validate word
     const validation = this.validateWord(options.word);
     if (!validation.valid) {
       return this.createErrorResult(

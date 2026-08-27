@@ -13,9 +13,7 @@
 
 import { getLocale } from "./i18n.svelte.js";
 
-// ============================================================================
 // FORMATTER CACHES (avoid recreating Intl objects on every call)
-// ============================================================================
 
 type FormatterCache<T> = Map<string, T>;
 

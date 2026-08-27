@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/front-door/ShopCatalogTile.svelte -->
 <!--
   One item on the shelf. Every tile in the grid is built from this, so the five
   products read as one line instead of five layouts: same art box, same kicker,
@@ -40,7 +39,6 @@
     purchase === "preorder" ? "Pre-order" : purchase === "buy" ? "View" : "See details"
   );
 
-  // ── art sizing ────────────────────────────────────────────────────────────
   // The art box reserves its height in CSS from its own width (see the .art
   // rule), which pins what a card in the fan may be: the box width over the
   // fan's span pitch, `cardW · (1 + 0.82(n-1)) · 1.05`.

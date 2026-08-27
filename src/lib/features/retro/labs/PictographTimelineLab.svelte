@@ -36,7 +36,6 @@
   const PIXEL_INTERNAL_SIZE = 128;
   const XP_INTERNAL_SIZE = 256;
 
-  // ── State ──
 
   let allPictographs = $state<PictographData[]>([]);
   let currentIndex = $state(0);
@@ -276,7 +275,6 @@
     color: var(--theme-text, #fff);
   }
 
-  /* ── Toolbar ── */
 
   .lab-toolbar {
     display: flex;
@@ -542,7 +540,6 @@
     font-family: "SF Mono", "Fira Code", "Courier New", monospace;
   }
 
-  /* ── Status ── */
 
   .lab-status {
     display: flex;

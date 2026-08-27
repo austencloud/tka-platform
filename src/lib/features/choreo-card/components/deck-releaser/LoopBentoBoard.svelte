@@ -155,7 +155,6 @@
     rs.persist();
   }
 
-  // ── derived labels ─────────────────────────────────────────────────────────
   const currentLoop = $derived(
     ([...rs.selectedLoopTypes][0] as LOOPType) ?? LOOPType.ROTATED
   );
@@ -866,7 +865,6 @@
     border: 0;
   }
 
-  /* ── start position + orientation picker ── */
   .pos-controls {
     display: flex;
     flex-wrap: wrap;

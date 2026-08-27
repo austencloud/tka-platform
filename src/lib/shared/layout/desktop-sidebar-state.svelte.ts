@@ -93,9 +93,6 @@ export function shouldShowDesktopSidebar(
   );
 }
 
-/**
- * Update sidebar visibility based on current conditions
- */
 export function updateDesktopSidebarVisibility(
   isDesktop: boolean,
   viewportWidth: number,

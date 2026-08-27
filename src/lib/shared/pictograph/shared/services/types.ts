@@ -1,4 +1,3 @@
-// --- From PictographCoordinator ---
 /**
  * Pictograph Coordinator Contract
  *
@@ -18,7 +17,6 @@ export interface PictographRenderingState {
  * Pictograph Coordinator - Single point of coordination for pictograph lifecycle
  */
 
-// --- From PictographPreparer ---
 /**
  * PictographPreparer - Contract for pictograph preparation
  *

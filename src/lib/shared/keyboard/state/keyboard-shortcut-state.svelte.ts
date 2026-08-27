@@ -71,9 +71,6 @@ function detectOS(): "macos" | "windows" | "linux" | "unknown" {
   return "unknown";
 }
 
-/**
- * Create keyboard shortcut state
- */
 export function createKeyboardShortcutState() {
   // Current shortcut context
   let currentContext = $state<ShortcutContext>("global");

@@ -29,9 +29,7 @@ const {
   validateRotationDirections,
 } = require("./lib/resolve-rotation-direction.cjs");
 
-// ============================================================================
 // Firebase Admin Setup
-// ============================================================================
 
 const serviceAccountPath = path.join(__dirname, "..", "serviceAccountKey.json");
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -50,9 +48,6 @@ try {
   process.exit(1);
 }
 
-// ============================================================================
-// TURN VARIANT DEFINITIONS
-// ============================================================================
 
 const SOURCE_DECK_ID = "l1-tnd-motions";
 
@@ -68,9 +63,6 @@ const TURN_VARIANTS = [
   { ratio: "7:1", turns: 3,   deckId: "tnd-7to1-motions", name: "TnD Motions (7:1 ratio)" },
 ];
 
-// ============================================================================
-// ORIENTATION RECALCULATION
-// ============================================================================
 
 /**
  * Apply a turn value to all motions in a sequence's steps, recalculating
@@ -161,9 +153,6 @@ function cloneStartPosition(startPosition) {
   };
 }
 
-// ============================================================================
-// FIRESTORE READ & WRITE
-// ============================================================================
 
 /**
  * Load all 19 sequences from the source deck.

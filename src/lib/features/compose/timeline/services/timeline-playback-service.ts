@@ -26,9 +26,7 @@ export class TimelinePlayer {
 
   constructor() {}
 
-  // =========================================================================
   // State Getters
-  // =========================================================================
 
   get isPlaying(): boolean {
     return getTimelineState().playhead.isPlaying;
@@ -67,9 +65,7 @@ export class TimelinePlayer {
     return this._activeClipInfos;
   }
 
-  // =========================================================================
   // Transport Controls
-  // =========================================================================
 
   play(): void {
     const state = getTimelineState();
@@ -123,9 +119,7 @@ export class TimelinePlayer {
     this.seek(state.totalDuration);
   }
 
-  // =========================================================================
   // Shuttle Controls (J/K/L)
-  // =========================================================================
 
   shuttleForward(): void {
     const state = getTimelineState();
@@ -177,9 +171,7 @@ export class TimelinePlayer {
     this.stopEngine();
   }
 
-  // =========================================================================
   // Frame Stepping
-  // =========================================================================
 
   stepForward(frames: number = 1): void {
     const state = getTimelineState();
@@ -193,9 +185,7 @@ export class TimelinePlayer {
     this.seek(Math.max(0, state.playhead.position - frameTime * frames));
   }
 
-  // =========================================================================
   // Loop Region
-  // =========================================================================
 
   setLoopRegion(start: TimeSeconds, end: TimeSeconds): void {
     const state = getTimelineState();
@@ -219,9 +209,7 @@ export class TimelinePlayer {
     state.setLoopRegion(start, state.playhead.position);
   }
 
-  // =========================================================================
   // Audio Sync
-  // =========================================================================
 
   connectAudio(audioElement: HTMLAudioElement): void {
     this.audioElement = audioElement;
@@ -243,9 +231,7 @@ export class TimelinePlayer {
     this.audioSyncEnabled = false;
   }
 
-  // =========================================================================
   // Lifecycle
-  // =========================================================================
 
   initialize(): void {
   }
@@ -260,9 +246,7 @@ export class TimelinePlayer {
     }
   }
 
-  // =========================================================================
   // Private Methods
-  // =========================================================================
 
   private startEngine(): void {
     if (this.isRunning) return;
@@ -374,7 +358,6 @@ export class TimelinePlayer {
         const sourceRange = clip.outPoint - clip.inPoint;
         const rawProgress = timeInClip / clipDuration;
 
-        // Handle looping
         let progress: number;
         let isLooping = false;
 
@@ -453,9 +436,7 @@ export class TimelinePlayer {
   };
 }
 
-// ============================================================================
 // Singleton Instance
-// ============================================================================
 
 let serviceInstance: TimelinePlayer | null = null;
 

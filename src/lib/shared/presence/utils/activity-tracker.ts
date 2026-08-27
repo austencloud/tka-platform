@@ -44,7 +44,6 @@ export class ActivityTracker {
     // Bind event handler
     const handleActivity = this.handleActivity.bind(this);
 
-    // Add listeners for all activity events
     for (const eventType of ACTIVITY_EVENTS) {
       window.addEventListener(eventType, handleActivity, { passive: true });
       this.listeners.push(() =>
@@ -75,7 +74,6 @@ export class ActivityTracker {
     this.listeners = [];
   }
 
-  /** Handle an activity event */
   private handleActivity(): void {
     const now = Date.now();
 

@@ -70,9 +70,7 @@ import {
   clampColumnsToWidth,
 } from "$lib/shared/browse/services/grid-column-breakpoints";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function deduplicateById(sequences: SequenceData[]): SequenceData[] {
   const seen = new Set<string>();
@@ -109,9 +107,7 @@ function currentFilterLabel(filter: ActiveFilter): string {
   return filter.label;
 }
 
-// ---------------------------------------------------------------------------
 // Persistence
-// ---------------------------------------------------------------------------
 
 function loadPersisted(key: string | null): PersistedEngineState | null {
   if (!key) return null;
@@ -133,19 +129,15 @@ function persist(key: string | null, state: PersistedEngineState): void {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Factory
-// ---------------------------------------------------------------------------
 
 export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
   // --- Services (singleton factories) ---
   const loaderService = getBrowseLoader();
 
-  // --- Resolve persisted state ---
   const persisted = loadPersisted(config.persistKey);
   const minColumns = config.minColumns ?? MIN_COLUMNS_DEFAULT;
 
-  // --- Build locked filters from constraints ---
   const lockedFilters = new Map<string, ActiveFilter>();
   if (config.constraints) {
     for (const c of config.constraints) {
@@ -177,7 +169,6 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
     return merged;
   }
 
-  // --- Reactive state ---
   let isLoading = $state(false);
   let error = $state<string | null>(null);
   // A persisted source the config no longer offers (e.g. the gallery dropped
@@ -277,14 +268,12 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
   const filteredAndSorted = $derived.by(() => {
     let result = allSequences;
 
-    // Apply filters
     if (activeFilters.size > 0) {
       // applyFilters is generic over `T extends ActiveFilter`, so the engine's
       // richer ActiveFilter (with `locked`) passes structurally — no cast needed.
       result = applyMultiFilters(result, activeFilters, connectives);
     }
 
-    // Apply search
     if (_searchQuery.trim()) {
       result = applyBrowseFilter(
         result,
@@ -293,7 +282,6 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       );
     }
 
-    // Apply sorting
     const sorted = browseSortSequences(result, sortMethod);
     if (sortDirection === "desc") {
       sorted.reverse();

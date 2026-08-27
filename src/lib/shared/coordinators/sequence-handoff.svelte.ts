@@ -126,9 +126,7 @@ export function clearSequenceHandoff(): void {
 	sessionStorage.removeItem(HANDOFF_STORAGE_KEY);
 }
 
-// ============================================================================
 // ROUTE HANDOFF (Browse → /sequence/[id])
-// ============================================================================
 
 /**
  * Save route handoff data for Browse → /sequence/[id] navigation.
@@ -198,9 +196,6 @@ export function clearSequenceRouteHandoff(): void {
 	sessionStorage.removeItem(ROUTE_HANDOFF_STORAGE_KEY);
 }
 
-// ============================================================================
-// RETURN CONTEXT HELPER
-// ============================================================================
 
 /**
  * Return context for sequence viewer navigation.

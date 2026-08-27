@@ -41,9 +41,7 @@ export function createGeneratorTabState(
   SequenceTransformer?: SequenceTransformer,
   sequenceValidationService?: SequenceValidator
 ) {
-  // ============================================================================
   // REACTIVE STATE (Generator-specific)
-  // ============================================================================
 
   let isLoading = $state(false);
   let error = $state<string | null>(null);
@@ -78,18 +76,12 @@ export function createGeneratorTabState(
       })
     : null;
 
-  // ============================================================================
-  // DERIVED STATE
-  // ============================================================================
 
   const hasError = $derived(error !== null);
   const hasSequence = $derived(() => {
     return sequenceState ? sequenceState.hasSequence() : false;
   });
 
-  // ============================================================================
-  // INITIALIZATION
-  // ============================================================================
 
   /**
    * Initialize generator tab - called from component onMount
@@ -116,9 +108,6 @@ export function createGeneratorTabState(
     }
   }
 
-  // ============================================================================
-  // STATE MUTATIONS
-  // ============================================================================
 
   function setLoading(loading: boolean) {
     isLoading = loading;
@@ -152,9 +141,6 @@ export function createGeneratorTabState(
     }
   }
 
-  // ============================================================================
-  // PUBLIC API
-  // ============================================================================
 
   return {
     // Readonly state access

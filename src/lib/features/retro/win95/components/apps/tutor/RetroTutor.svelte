@@ -25,9 +25,7 @@
     type RetroCodexLetter,
   } from "../../../adapters/tutor-adapter";
 
-  /* ------------------------------------------------------------------ */
   /* Props                                                               */
-  /* ------------------------------------------------------------------ */
 
   let {
     onclose,
@@ -35,9 +33,7 @@
     onclose?: () => void;
   } = $props();
 
-  /* ------------------------------------------------------------------ */
   /* Tab state                                                           */
-  /* ------------------------------------------------------------------ */
 
   let activeTab = $state("concepts");
 
@@ -47,9 +43,7 @@
     { id: "codex", label: "Codex" },
   ];
 
-  /* ------------------------------------------------------------------ */
   /* Concepts tab state                                                  */
-  /* ------------------------------------------------------------------ */
 
   const CONCEPT_CARDS: RetroConcept[] = loadConcepts();
 
@@ -83,9 +77,7 @@
     showIndex = false;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Quiz tab state                                                      */
-  /* ------------------------------------------------------------------ */
 
   let quizQuestions: RetroQuizQuestion[] = $state(loadQuizQuestions(5));
   // Use $derived to compute initial answers from quizQuestions (avoids state_referenced_locally)
@@ -119,9 +111,7 @@
     quizChecked = false;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Codex tab state                                                     */
-  /* ------------------------------------------------------------------ */
 
   let codexLetters: RetroCodexLetter[] = $state([]);
   let codexLoading = $state(true);
@@ -185,9 +175,7 @@
   <div class="tutor-content">
     <RetroTabControl {tabs} bind:activeTab>
       {#snippet children()}
-        <!-- ====================================================== -->
         <!-- Concepts tab                                            -->
-        <!-- ====================================================== -->
         {#if activeTab === "concepts"}
           <div class="concepts-tab">
             {#if showIndex}
@@ -232,9 +220,7 @@
             </div>
           </div>
 
-        <!-- ====================================================== -->
         <!-- Quiz tab                                                -->
-        <!-- ====================================================== -->
         {:else if activeTab === "quiz"}
           <div class="quiz-tab">
             <div class="quiz-questions">
@@ -288,9 +274,7 @@
             </div>
           </div>
 
-        <!-- ====================================================== -->
         <!-- Codex tab                                               -->
-        <!-- ====================================================== -->
         {:else if activeTab === "codex"}
           <div class="codex-tab">
             {#if codexLoading}
@@ -343,9 +327,7 @@
 </div>
 
 <style>
-  /* ------------------------------------------------------------------ */
   /* Shell layout                                                        */
-  /* ------------------------------------------------------------------ */
   .tutor-shell {
     display: flex;
     flex-direction: column;
@@ -379,9 +361,7 @@
     flex-shrink: 0;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Concepts tab                                                        */
-  /* ------------------------------------------------------------------ */
   .concepts-tab {
     display: flex;
     flex-direction: column;
@@ -462,9 +442,7 @@
     font-style: italic;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Quiz tab                                                            */
-  /* ------------------------------------------------------------------ */
   .quiz-tab {
     display: flex;
     flex-direction: column;
@@ -547,9 +525,7 @@
     color: var(--retro-navy, #000080);
   }
 
-  /* ------------------------------------------------------------------ */
   /* Codex tab                                                           */
-  /* ------------------------------------------------------------------ */
   .codex-loading {
     padding: 16px;
     font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);

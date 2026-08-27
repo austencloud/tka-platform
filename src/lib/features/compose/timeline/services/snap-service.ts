@@ -16,9 +16,7 @@ import type {
 import { getClipEndTime } from "$lib/shared/animation-engine/domain/timeline-types";
 import { generateStepTimestamps } from "$lib/features/compose/compose/phases/audio/bpm-analyzer";
 
-// ============================================================================
 // Types
-// ============================================================================
 
 export interface SnapResult {
   /** The snapped time value */
@@ -54,9 +52,7 @@ export interface SnapContext {
   settings: SnapSettings;
 }
 
-// ============================================================================
 // Constants
-// ============================================================================
 
 /** Default snap threshold in seconds */
 export const DEFAULT_SNAP_THRESHOLD = 0.15;
@@ -73,13 +69,8 @@ const SNAP_PRIORITY: Record<SnapType, number> = {
   grid: 3,
 };
 
-// ============================================================================
 // Snap Functions
-// ============================================================================
 
-/**
- * Calculate snap points for the given context
- */
 export function calculateSnapPoints(context: SnapContext): SnapPoint[] {
   const {
     clips,

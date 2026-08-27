@@ -20,9 +20,6 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// ============================================================================
-// CONFIG
-// ============================================================================
 
 const MESSAGES_DIR = path.resolve(__dirname, '../messages');
 const SRC_DIR = path.resolve(__dirname, '../src');
@@ -36,9 +33,6 @@ const COVERAGE_ONLY = args.includes('--coverage');
 let errorCount = 0;
 let warningCount = 0;
 
-// ============================================================================
-// UTILITIES
-// ============================================================================
 
 function error(message) {
   console.error(`\n❌ ERROR: ${message}`);

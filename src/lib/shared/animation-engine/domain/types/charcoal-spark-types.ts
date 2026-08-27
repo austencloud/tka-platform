@@ -10,9 +10,7 @@ import type { PropTipData } from "./fire-types";
 import type { CharcoalEmissionStyle } from "$lib/shared/effects/domain/effects-config";
 import { resolveCharcoal3DMotionProfile } from "$lib/shared/effects/translators/charcoal-3d-motion-profiles";
 
-// ============================================================================
 // Core Particle
-// ============================================================================
 
 /** A single spark particle in the pool. */
 export interface CharcoalSpark {
@@ -36,9 +34,7 @@ export interface CharcoalSpark {
 	active: boolean;
 }
 
-// ============================================================================
 // Tip Tracking
-// ============================================================================
 
 /** Per-tip data with jerk (rate of velocity change) for burst detection. */
 export interface CharcoalTipData extends PropTipData {
@@ -46,13 +42,10 @@ export interface CharcoalTipData extends PropTipData {
 	jerk: number;
 }
 
-// ============================================================================
 // Tunable Parameters
-// ============================================================================
 
 /** All tunable parameters for the charcoal spark system. */
 export interface CharcoalSparkParams {
-	// -- Emission --
 	/** Jerk magnitude above which a burst fires (viewbox units/s^2) */
 	burstThreshold: number;
 	/** Spark count multiplier when jerk exceeds threshold */
@@ -66,7 +59,6 @@ export interface CharcoalSparkParams {
 	/** Sparks per second when tip is stationary (embers falling off a still-burning prop) */
 	idleRate: number;
 
-	// -- Physics --
 	/** Downward acceleration (viewbox units/s^2). Higher = sparks fall faster. */
 	gravity: number;
 	/** Velocity decay per second (0-1). 1 = no drag, 0.5 = halves each second. */
@@ -80,7 +72,6 @@ export interface CharcoalSparkParams {
 	/** Half-angle of perturbation cone centered on tip's velocity direction (radians). PI = full sphere. */
 	spreadAngle: number;
 
-	// -- Appearance --
 	/** Minimum spark lifetime (seconds) */
 	lifetimeMin: number;
 	/** Maximum spark lifetime (seconds) */
@@ -100,20 +91,16 @@ export interface CharcoalSparkParams {
 	/** Coolest spark color (near death) */
 	coolColor: [number, number, number];
 
-	// -- Ember glow --
 	/** Radius of the soft glow around each spark (viewbox units) */
 	emberGlowRadius: number;
 	/** Opacity multiplier for the ember glow [0-1] */
 	emberGlowIntensity: number;
 
-	// -- Pool --
 	/** Maximum particles alive at once. Oldest are recycled when full. */
 	maxParticles: number;
 }
 
-// ============================================================================
 // Default Parameters (steel-wool baseline)
-// ============================================================================
 
 /** Slider definition for charcoal controls UI. */
 export interface CharcoalSliderDef {

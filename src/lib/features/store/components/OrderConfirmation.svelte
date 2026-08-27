@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/OrderConfirmation.svelte -->
 <!--
   The receipt page. It used to dead-end: a checkmark, two sentences, and a
   button back to a shop that had nothing on it. The confirmation still leads,

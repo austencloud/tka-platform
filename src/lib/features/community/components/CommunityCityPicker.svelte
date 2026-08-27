@@ -169,7 +169,6 @@
     border-color: var(--theme-stroke-strong);
   }
 
-  /* ── prediction row ───────────────────────────────────────────────────── */
   .pin {
     flex-shrink: 0;
     color: var(--theme-text-dim);

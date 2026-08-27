@@ -1,4 +1,3 @@
-// tests/unit/film-director/directive-random.test.ts
 import { describe, expect, it } from "vitest";
 
 import {

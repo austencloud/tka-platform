@@ -42,7 +42,6 @@ export interface AnimationExportState {
   bluePropState: PropState3D | null;
   redPropState: PropState3D | null;
 
-  // Export
   exportLoopCount: number;
   isExporting: boolean;
   exportProgress: VideoExportProgress | null;
@@ -79,7 +78,6 @@ export interface AnimationExportActions {
   onToggleBlue: () => void;
   onToggleRed: () => void;
 
-  // Export
   onLoopCountChange: (count: number) => void;
   onExportVideo: () => void;
   onCancelExport: () => void;

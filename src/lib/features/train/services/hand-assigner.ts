@@ -104,7 +104,6 @@ export class HandAssigner {
       redPosition = hand1.position;
     }
 
-    // Apply smoothing
     bluePosition = this._applySmoothingToPosition(
       bluePosition,
       "blue",

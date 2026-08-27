@@ -11,9 +11,6 @@
  * - No storage needed (regenerate any chunk on demand)
  */
 
-// ============================================================================
-// SEEDED RANDOM NUMBER GENERATOR
-// ============================================================================
 
 /**
  * Mulberry32 PRNG - fast, high-quality, 32-bit output
@@ -64,9 +61,6 @@ export function hashString(str: string): number {
   return hash >>> 0;
 }
 
-// ============================================================================
-// NOISE FUNCTIONS
-// ============================================================================
 
 /**
  * Permutation table for noise (seeded)
@@ -242,9 +236,6 @@ export class SeededNoise {
   }
 }
 
-// ============================================================================
-// TERRAIN GENERATION
-// ============================================================================
 
 /**
  * Terrain height at a world position
@@ -329,9 +320,6 @@ export function shouldPlaceTree(
   return distSq < 0.5 && rng() < density;
 }
 
-// ============================================================================
-// EROSION SIMULATION
-// ============================================================================
 
 /**
  * Erosion simulation configuration
@@ -577,9 +565,6 @@ export function applyThermalErosion(
   }
 }
 
-// ============================================================================
-// WORLD SEED UTILITIES
-// ============================================================================
 
 /**
  * Generate a random world seed

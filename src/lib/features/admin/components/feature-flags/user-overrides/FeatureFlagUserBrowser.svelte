@@ -53,7 +53,6 @@
   let hasMore = $state(true);
   let lastDoc = $state<DocumentSnapshot | null>(null);
 
-  // Filter state
   let searchQuery = $state("");
   let roleFilter = $state<RoleFilter>("all");
 

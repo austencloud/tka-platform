@@ -1,11 +1,9 @@
-// reversal-strip-store.svelte.ts
 //
 // Module-level persistence for the Direction drawer's reversal matrix. The
 // editor (`ReversalPatternView`) unmounts whenever the user navigates back to
 // the Sequence Actions grid (or closes the panel), so a component-local `$state`
 // loses the matrix every time. Hoisting it here lets the matrix survive across
 // open/close — the user's last reversal layout is exactly what they see on
-// return.
 //
 // The strip array encodes both the period (its length) and the per-beat values,
 // so persisting it alone restores the full editor state.

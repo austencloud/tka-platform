@@ -141,7 +141,6 @@ export async function runOverrideMigration(opts: {
     sources.set(key, { pictographData, motion, arrowColor, letter });
   }
 
-  // --- Apply staged overrides into the in-memory repo ---
   for (const row of staged.values()) {
     const input = buildInput(row);
     if (!input) {

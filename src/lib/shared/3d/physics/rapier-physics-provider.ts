@@ -41,9 +41,6 @@ export class RapierPhysicsProvider implements PhysicsProvider {
 		return this.playerState.isGrounded;
 	}
 
-	/**
-	 * Get player velocity
-	 */
 	getVelocity(): Vector3 {
 		return this.playerState.velocity;
 	}

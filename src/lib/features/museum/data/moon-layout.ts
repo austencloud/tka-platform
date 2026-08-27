@@ -155,7 +155,6 @@ export const MOON_STATIONS = [
   { suffix: "or", dx: 0, dz: MOON_STATION_RADIUS_M, facing: "north" },
 ] as const;
 
-// ── Types ───────────────────────────────────────────────────────────────────
 
 export interface MoonMound {
   id: string;

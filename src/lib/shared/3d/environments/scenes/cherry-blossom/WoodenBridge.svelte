@@ -44,7 +44,6 @@
     return archHeight * Math.PI * Math.cos(t * Math.PI);
   }
 
-  // --- Deck planks ---
   const planks = $derived.by(() => {
     const items: { x: number; y: number; rot: number; w: number }[] = [];
     const plankSpan = length / PLANK_COUNT;

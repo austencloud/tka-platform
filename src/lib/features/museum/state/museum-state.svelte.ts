@@ -283,7 +283,6 @@ export function createMuseumState(grid: MuseumGrid) {
 		heldDirections = new Set<Direction>();
 	}
 
-	// ── Interaction ──
 
 	function checkTriggerAtPosition(x: number, y: number) {
 		const trigger = grid.triggers.find((t) => t.tileX === x && t.tileY === y);

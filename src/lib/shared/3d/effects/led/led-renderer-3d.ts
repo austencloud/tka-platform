@@ -275,7 +275,6 @@ export class LedRenderer3D {
       this.instanceStretches[si + 1] = stretchAngle;
       headIndex++;
 
-      // --- Trail ribbon ---
       if (this.fadeDuration <= 0) continue;
 
       const key = `${t}`;

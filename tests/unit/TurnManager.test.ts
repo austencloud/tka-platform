@@ -70,9 +70,7 @@ function isSpinningRotation(rot: string | undefined): boolean {
 
 describe("TurnManager.updateDashStaticRotationDirections", () => {
 
-  // ──────────────────────────────────────────────────────────────────────
   // CONTINUOUS mode (smooth preset) — the failing case from the bug report
-  // ──────────────────────────────────────────────────────────────────────
 
   it("inherits previous cw rotation for a static motion with turns in CONTINUOUS mode", () => {
     const step = makeStep({
@@ -128,9 +126,7 @@ describe("TurnManager.updateDashStaticRotationDirections", () => {
     expect(isSpinningRotation(step.motions.blue!.rotationDirection)).toBe(true);
   });
 
-  // ──────────────────────────────────────────────────────────────────────
   // RANDOM mode — already worked but pinning the invariant
-  // ──────────────────────────────────────────────────────────────────────
 
   it("assigns a concrete rotation to static+turns in RANDOM mode", () => {
     const step = makeStep({
@@ -156,9 +152,7 @@ describe("TurnManager.updateDashStaticRotationDirections", () => {
     expect(isSpinningRotation(step.motions.red!.rotationDirection)).toBe(true);
   });
 
-  // ──────────────────────────────────────────────────────────────────────
   // Zero-turn motions must stay noRotation — a held static has no spin
-  // ──────────────────────────────────────────────────────────────────────
 
   it("leaves static at 0 turns as noRotation in CONTINUOUS mode", () => {
     const step = makeStep({
@@ -184,9 +178,7 @@ describe("TurnManager.updateDashStaticRotationDirections", () => {
     expect(step.motions.blue!.rotationDirection).toBe(RotationDirection.NO_ROTATION);
   });
 
-  // ──────────────────────────────────────────────────────────────────────
   // Non-static/dash motions are untouched
-  // ──────────────────────────────────────────────────────────────────────
 
   it("leaves pro motions untouched regardless of turns or mode", () => {
     const step = makeStep({
@@ -201,9 +193,7 @@ describe("TurnManager.updateDashStaticRotationDirections", () => {
     expect(step.motions.blue!.rotationDirection).toBe(RotationDirection.CLOCKWISE);
   });
 
-  // ──────────────────────────────────────────────────────────────────────
   // Full-sequence invariant — the bug report scenario
-  // ──────────────────────────────────────────────────────────────────────
 
   it("produces a valid rotation on every static-with-turns beat when stepping through a sequence", () => {
     // Simulate the caller pattern from generate-actions.svelte.ts: apply

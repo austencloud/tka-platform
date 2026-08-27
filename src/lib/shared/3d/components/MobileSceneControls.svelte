@@ -1,4 +1,3 @@
-<!-- src/lib/shared/3d/components/MobileSceneControls.svelte -->
 <script lang="ts">
   import BottomSheet from "./controls/BottomSheet.svelte";
   import MobileScenePerformerSheet from "./MobileScenePerformerSheet.svelte";

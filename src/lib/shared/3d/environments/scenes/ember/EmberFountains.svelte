@@ -169,7 +169,6 @@
     for (let i = 0; i < particles.length; i++) {
       const p = particles[i]!;
 
-      // Apply gravity
       p.vy -= config.gravity * delta;
       p.x += p.vx * delta;
       p.y += p.vy * delta;

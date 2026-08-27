@@ -1,4 +1,3 @@
-// tests/unit/film-director/directives.test.ts
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 

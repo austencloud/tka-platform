@@ -146,7 +146,6 @@ export function extractInlineContent(output: unknown): InlineContent {
 		}
 	}
 
-	// Check for inline step grid
 	if (obj.inlineStepGrid && typeof obj.inlineStepGrid === 'object') {
 		const grid = obj.inlineStepGrid as Record<string, unknown>;
 		if (grid.type === 'inline-step-grid' && Array.isArray(grid.steps)) {
@@ -154,7 +153,6 @@ export function extractInlineContent(output: unknown): InlineContent {
 		}
 	}
 
-	// Check for inline quiz
 	if (obj.inlineQuiz && typeof obj.inlineQuiz === 'object') {
 		const quiz = obj.inlineQuiz as Record<string, unknown>;
 		if (quiz.type === 'inline-quiz' && typeof quiz.question === 'string') {

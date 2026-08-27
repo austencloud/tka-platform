@@ -105,7 +105,6 @@
   } from "../../services/museum-geometry-builder";
   import { MUSEUM_EDGES } from "../../data/museum-room-graph";
 
-  // ── Extracted modules ──
   import { MuseumCameraFlipController } from "../../services/museum-camera-flip-controller";
   import type { CameraFlipState } from "../../services/museum-camera-flip-controller";
   import { MuseumGeometryStreamer } from "../../services/museum-geometry-streamer";

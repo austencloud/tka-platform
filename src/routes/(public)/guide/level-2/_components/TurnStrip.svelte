@@ -157,7 +157,6 @@
     return activeCheckpointIndex === i;
   }
 
-  // ── Pose-frame accessibility text ───────────────────────────────────────
   // "pose" and the null-fallback "half" frames aren't real StepData, so they
   // don't get GuidePictograph's synchronous describePictograph aria-label -
   // this builds the equivalent sentence from the HalfwayMotion + fraction.

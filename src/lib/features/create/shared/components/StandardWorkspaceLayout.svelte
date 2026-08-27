@@ -27,9 +27,6 @@
 
   type CreateModuleState = ReturnType<typeof CreateModuleStateType>;
 
-  // ============================================================================
-  // PROPS
-  // ============================================================================
   let {
     shouldUseSideBySideLayout,
     CreateModuleState,
@@ -68,16 +65,11 @@
     onCloseFilters: () => void;
   } = $props();
 
-  // ============================================================================
-  // LOCAL STATE
-  // ============================================================================
   let workspaceContainerRef: HTMLElement | null = $state(null);
   let layoutWrapperRef: HTMLElement | null = $state(null);
   let buttonPanelHeight = $state(0);
 
-  // ============================================================================
   // DERIVED STATE - Workspace Color Coding & Visibility
-  // ============================================================================
 
   // Check if workspace has any content to display
   // Use the exposed getActiveTabSequenceState() method which handles tab-specific sequence states

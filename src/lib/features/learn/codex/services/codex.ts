@@ -198,9 +198,6 @@ export class Codex {
 
   // Additional clean helper methods
 
-  /**
-   * Get available lesson types
-   */
   async getAvailableQuizTypes(): Promise<string[]> {
     await this.initialize();
 

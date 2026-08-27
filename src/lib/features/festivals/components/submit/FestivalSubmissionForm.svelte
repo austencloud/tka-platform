@@ -357,7 +357,6 @@
 </BaseModal>
 
 <style>
-  /* ---- Body / form ---- */
 
   .form-body {
     padding: 20px;
@@ -440,7 +439,6 @@
     color: var(--semantic-error, #ef4444);
   }
 
-  /* ---- Seeking toggles ---- */
 
   .toggles-row {
     display: flex;
@@ -473,7 +471,6 @@
     color: var(--theme-accent, #3b82f6);
   }
 
-  /* ---- Submit error ---- */
 
   .submit-error {
     display: flex;
@@ -487,7 +484,6 @@
     font-size: var(--font-size-min, 14px);
   }
 
-  /* ---- Success state ---- */
 
   .success-state {
     display: flex;
@@ -546,7 +542,6 @@
     background: var(--theme-accent-hover, #2563eb);
   }
 
-  /* ---- Reduced motion ---- */
 
   @media (prefers-reduced-motion: reduce) {
     .toggle-btn,

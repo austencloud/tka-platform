@@ -42,9 +42,7 @@ import type {
   MotionData,
 } from "../../../src/core/types/sequence-engine-types.js";
 
-// ---------------------------------------------------------------------------
 // Step / motion construction (mirrors spec-executor-parity.test.ts shape).
-// ---------------------------------------------------------------------------
 
 function makeMotion(o: Partial<MotionData> = {}): MotionData {
   return {

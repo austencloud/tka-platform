@@ -15,9 +15,6 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,9 +51,6 @@ const STATIC_ENTRY_PATTERNS = [
   "svelte.config.js",
 ];
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 interface ImportGraph {
   [filePath: string]: Set<string>;
@@ -70,9 +64,6 @@ interface AnalysisResult {
   warnings: string[];
 }
 
-// ============================================================================
-// UTILITIES
-// ============================================================================
 
 function normalizePath(p: string): string {
   return p.replace(/\\/g, "/");

@@ -66,7 +66,6 @@
 
   const groundY = $derived(userProportionsState.groundY);
 
-  // ── Volcanic tint ──────────────────────────────────────────────────────
 
   function volcanicClone(
     sourceScene: {
@@ -94,7 +93,6 @@
     return cloned;
   }
 
-  // ── Rock placements ────────────────────────────────────────────────────
 
   const rockPlacements = $derived.by(() => {
     const count = activeConfig.rockCount;
@@ -126,7 +124,6 @@
     { x: -9.5, z: 7.0, scale: 1.5, rotY: Math.PI * 0.2, large: false },
   ];
 
-  // ── Fire vent position ─────────────────────────────────────────────────
 
   const firePosition = $derived.by(() => {
     const fv = activeConfig.fireVent;
@@ -165,7 +162,6 @@
       disposeSceneGraph(campfireClone as import("three").Object3D);
   });
 
-  // ── Fog ────────────────────────────────────────────────────────────────
 
   let fogInstance: FogExp2 | null = null;
   $effect(() => {
@@ -184,7 +180,6 @@
     };
   });
 
-  // ── Loading progress ───────────────────────────────────────────────────
 
   $effect(() => {
     if (!sceneFeatures) return;

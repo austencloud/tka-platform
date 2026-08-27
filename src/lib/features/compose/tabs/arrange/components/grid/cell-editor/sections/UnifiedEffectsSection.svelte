@@ -346,7 +346,6 @@
     color: rgba(255, 255, 255, 0.7);
   }
 
-  /* ── Scope selector ───────────────────────────────────────── */
   .scope-row {
     display: flex;
     align-items: center;
@@ -402,7 +401,6 @@
 
   .scope-seg i { font-size: 11px; }
 
-  /* ── Channel rows ─────────────────────────────────────────── */
   .assign-label {
     font-size: 13px;
     font-weight: 700;
@@ -527,7 +525,6 @@
     color: var(--c);
   }
 
-  /* ── Trail mode ───────────────────────────────────────────── */
   .sub-group {
     display: flex;
     flex-direction: column;
@@ -575,7 +572,6 @@
     color: var(--theme-accent, #60a5fa);
   }
 
-  /* ── Accordion ────────────────────────────────────────────── */
   .accordion-row {
     display: flex;
     align-items: center;
@@ -608,7 +604,6 @@
     font-size: 10px;
   }
 
-  /* ── Reduced motion ───────────────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
     .unified-effects { animation: none; }
     .grid-cell,

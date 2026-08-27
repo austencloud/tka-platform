@@ -24,9 +24,7 @@ import { createUIStateActions } from "$lib/shared/animation-engine/timeline/stat
 import { getTimelineUndoManager } from "$lib/shared/animation-engine/timeline/services/timeline-undo-manager";
 import type { TimelineUndoOperationType } from "$lib/shared/animation-engine/timeline/domain/types";
 
-// ============================================================================
 // Project Deduplication Helper
-// ============================================================================
 
 /**
  * Deduplicate clips and tracks within a project to prevent Svelte each_key_duplicate errors.

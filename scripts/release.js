@@ -57,7 +57,6 @@ import {
   toPublicChangelog,
 } from "./lib/release-module-gate.mjs";
 
-// Load service account key
 const serviceAccount = JSON.parse(
   readFileSync("./serviceAccountKey.json", "utf8")
 );

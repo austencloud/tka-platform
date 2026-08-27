@@ -175,9 +175,6 @@ export async function setFilters(filters: ReportFilters): Promise<void> {
 	await loadReports();
 }
 
-/**
- * Clear all filters and reload.
- */
 export async function clearFilters(): Promise<void> {
 	_state.filters = {};
 	await loadReports();
@@ -205,9 +202,6 @@ export async function selectReport(reportId: string): Promise<void> {
 	}
 }
 
-/**
- * Clear the selected report.
- */
 export function clearSelectedReport(): void {
 	_state.selectedReport = null;
 	_state.mobileDetailOpen = false;
@@ -233,9 +227,6 @@ export function updateLocalReport(updatedReport: UserReport): void {
 	}
 }
 
-/**
- * Start reviewing a report.
- */
 export async function startReview(reportId: string): Promise<void> {
 	try {
 		const reportResolver = getReportResolver();

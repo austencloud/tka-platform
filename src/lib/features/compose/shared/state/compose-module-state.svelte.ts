@@ -77,7 +77,6 @@ export type ComposeModuleState = {
   goToBrowse: () => void;
   goToTimeline: () => void;
 
-  // Reset
   reset: () => void;
 
   // Tear down the standalone reactive scope created by the factory
@@ -210,7 +209,6 @@ export function createComposeModuleState(): ComposeModuleState {
       debug.log("Navigating to Timeline");
     },
 
-    // Reset
     reset() {
       currentTab = "arrange";
       currentMode = "single";

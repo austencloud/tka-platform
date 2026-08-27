@@ -3,7 +3,6 @@
  */
 
 
-// === From ISharer ===
 
 export type ImageGenerationProgressCallback = (progress: {
   current: number;
@@ -11,14 +10,12 @@ export type ImageGenerationProgressCallback = (progress: {
   stage: "preparing" | "rendering" | "finalizing";
 }) => void;
 
-// === From ISequenceImageSharer ===
 
 export interface ShareResult {
   success: boolean;
   error?: Error;
 }
 
-// === From IVideoUploader ===
 
 export interface VideoUploadResult {
   /** Public CDN URL for the uploaded file */

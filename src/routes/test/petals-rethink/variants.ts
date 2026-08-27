@@ -59,9 +59,7 @@ export interface PetalVariant {
   dispose(): void;
 }
 
-/* ─────────────────────────────────────────────────────────────────────── */
 /*                       Shared base for the 3 new models                  */
-/* ─────────────────────────────────────────────────────────────────────── */
 
 interface P {
   x: number;
@@ -260,10 +258,8 @@ abstract class BaseVariant implements PetalVariant {
   }
 }
 
-/* ─────────────────────────────────────────────────────────────────────── */
 /*  A — Airstream inheritance: petal is born with the tip's velocity and    */
 /*      decays into a settle. The prop carves a ribbon through the air.      */
-/* ─────────────────────────────────────────────────────────────────────── */
 
 class AirstreamVariant extends BaseVariant {
   readonly id = "airstream";
@@ -304,10 +300,8 @@ class AirstreamVariant extends BaseVariant {
   }
 }
 
-/* ─────────────────────────────────────────────────────────────────────── */
 /*  B — Turbulence wake: petals float ambiently; the prop stirs a curl +     */
 /*      orbital wake that sweeps the ones nearby. You see the disturbance.    */
-/* ─────────────────────────────────────────────────────────────────────── */
 
 function curl(x: number, y: number, t: number): { x: number; y: number } {
   const a = Math.sin(x * 1.3 + t) + Math.cos(y * 1.7 - t * 0.8);
@@ -364,10 +358,8 @@ class TurbulenceVariant extends BaseVariant {
   }
 }
 
-/* ─────────────────────────────────────────────────────────────────────── */
 /*  C — Gentle settle: today's falling feel, but every petal flutters on its  */
 /*      OWN frequency (no global sine), smaller, with leaf-like autorotation.  */
-/* ─────────────────────────────────────────────────────────────────────── */
 
 class SettleVariant extends BaseVariant {
   readonly id = "settle";
@@ -395,9 +387,7 @@ class SettleVariant extends BaseVariant {
   }
 }
 
-/* ─────────────────────────────────────────────────────────────────────── */
 /*  Baseline — wraps the real production renderer, unchanged.               */
-/* ─────────────────────────────────────────────────────────────────────── */
 
 class BaselineVariant implements PetalVariant {
   readonly id = "baseline";

@@ -218,7 +218,6 @@
     contain: strict;
   }
 
-  /* ── Torch glow - warm radial light pools ── */
 
   .torch-glow {
     position: absolute;
@@ -240,7 +239,6 @@
     100% { opacity: 1; transform: scale(1.05); }
   }
 
-  /* ── Wing theme color tints ── */
 
   .theme-cave :global(.museum-tile.tile-floor),
   .theme-cave :global(.museum-tile.tile-corridor) {

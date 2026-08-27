@@ -34,9 +34,6 @@ import type {
   MessageOutboxRecord,
 } from "$lib/shared/inbox/domain/message-delivery-models";
 
-// ============================================================================
-// DATABASE CLASS
-// ============================================================================
 
 /**
  * TKA Database Class
@@ -94,9 +91,6 @@ export class TKADatabase extends Dexie {
   }
 }
 
-// ============================================================================
-// DATABASE INSTANCE
-// ============================================================================
 
 /**
  * Single database instance for your entire app
@@ -104,9 +98,6 @@ export class TKADatabase extends Dexie {
  */
 export const db = new TKADatabase();
 
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
 
 /**
  * Initialize database - call this when your app starts
@@ -156,9 +147,6 @@ export async function clearAllData(): Promise<void> {
   );
 }
 
-/**
- * Get database info for debugging
- */
 export async function getDatabaseInfo(): Promise<{
   sequences: number;
   pictographs: number;

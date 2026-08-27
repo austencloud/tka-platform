@@ -144,9 +144,6 @@
 </div>
 
 <style>
-  /* ============================================================================
-     TRIGGER BUTTON - Compact pill showing current model
-     ============================================================================ */
   .model-picker-trigger {
     display: flex;
     align-items: center;
@@ -213,9 +210,6 @@
     transform: rotate(180deg);
   }
 
-  /* ============================================================================
-     POPOVER - Native Popover API
-     ============================================================================ */
   :global(#tika-model-popover) {
     /* Position as dropdown below trigger on desktop, bottom sheet on mobile */
     position: fixed !important;
@@ -285,9 +279,6 @@
     }
   }
 
-  /* ============================================================================
-     MODEL OPTIONS - Stacked list
-     ============================================================================ */
   .model-list {
     display: flex;
     flex-direction: column;
@@ -390,9 +381,6 @@
     flex-shrink: 0;
   }
 
-  /* ============================================================================
-     ACCESSIBILITY
-     ============================================================================ */
   @media (prefers-reduced-motion: reduce) {
     .model-picker-trigger,
     .model-option,

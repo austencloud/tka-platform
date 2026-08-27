@@ -21,9 +21,6 @@ export class Workbench {
     private sequenceService: SequenceRepository,
   ) {}
 
-  // ============================================================================
-  // CORE WORKBENCH OPERATIONS
-  // ============================================================================
 
   /**
    * Handle beat click interaction

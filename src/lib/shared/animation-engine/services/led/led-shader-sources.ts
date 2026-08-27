@@ -24,7 +24,6 @@ void main() {
 }
 `;
 
-// ─── LED Streak Shader ────────────────────────────────────────────────────────
 // One instance is one sub-step of one LED: the capsule swept between two
 // consecutive points on that LED's path this frame. Geometry is in device
 // pixels, because the photometry is in device pixels - sigma, chord length and
@@ -131,7 +130,6 @@ void main() {
 }
 `;
 
-// ─── Shutter Accumulation ─────────────────────────────────────────────────────
 // Replaces the per-frame decay multiplier, which was framerate-dependent: the
 // same value produced different trails at 30 and 60fps. Decay is exp(-dt/tau)
 // and the deposit is divided by the sum of the weights the shutter will apply.
@@ -154,7 +152,6 @@ void main() {
 }
 `;
 
-// ─── Box Shutter Resolve ──────────────────────────────────────────────────────
 // A box shutter holds every contribution at full weight until it falls off the
 // end of the exposure. An exponential accumulator cannot represent that at any
 // decay rate, and a ring buffer of one texture per frame is unaffordable — 2.5s
@@ -205,7 +202,6 @@ void main() {
 }
 `;
 
-// ─── Bloom Downsample ─────────────────────────────────────────────────────────
 // 13-tap kernel, Froyok/LearnOpenGL layout. No threshold and no knee: a
 // threshold would make glare depend on how bright an LED happens to be, and the
 // whole HDR buffer is emitter light already.
@@ -274,7 +270,6 @@ void main() {
 }
 `;
 
-// ─── Bloom Upsample ──────────────────────────────────────────────────────────
 // 3x3 tent. The caller blends the result into the level above with constant
 // alpha equal to the glare weight, which is the `mix(up, tent(lower), w)` the
 // geometric falloff needs; additive accumulation would flatten the kernel and
@@ -307,7 +302,6 @@ void main() {
 }
 `;
 
-// ─── Display Composite ────────────────────────────────────────────────────────
 // The only tone map in the pipeline, applied once, last. AgX is the published
 // minimal fit (three.js / Filament / Benjamin Wrensch): it desaturates toward
 // white as a channel clips, which is what makes an LED core read as blinding

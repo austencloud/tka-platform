@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/StarterPackPage.svelte -->
 <!--
   The Starter Pack: ONE bundle listing (product with listing === "starter-pack")
   — trilogy + curated mixed LOOP deck + the book + boxes + waterproof holder.
@@ -222,7 +221,6 @@
 </ShopProductShell>
 
 <style>
-  /* ---------- preview stage ---------- */
   /* The stage BOX is the shell's (border, radius, padding, reserved height).
      The fixed height here is what the fill-mode crossfade measures against:
      its layers stack absolutely, so no slide can resize the box. Width flows
@@ -289,7 +287,6 @@
     max-width: 56ch;
   }
 
-  /* ---------- box contents ---------- */
   /* .field/.field-label are shared with TnDTrilogyPage and live in
      config-page.css. */
   .box-list {

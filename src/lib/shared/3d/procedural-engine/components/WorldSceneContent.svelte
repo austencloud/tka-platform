@@ -102,9 +102,6 @@
   // Set to false to use simple vertex colors (faster, fallback)
   const USE_TERRAIN_TEXTURING = true;
 
-  // ============================================================================
-  // PROPS
-  // ============================================================================
 
   interface Props {
     activeConfig: RealmConfig;
@@ -229,7 +226,6 @@
     terrainData = null,
   }: Props = $props();
 
-  // Get Threlte context
   const { scene, camera, renderer } = useThrelte();
 
   // Access the raw Three.js Scene directly from Threlte's internal context.
@@ -303,9 +299,6 @@
   const floorPlaneSet = new Set([Plane.FLOOR]);
   const activePlaneSet = $derived(stageMode ? stagePlaneSet : floorPlaneSet);
 
-  // ============================================================================
-  // INITIALIZATION
-  // ============================================================================
 
   let isInitialized = $state(false);
   let isReadyToRender = $state(false); // True after ground snap - prevents showing underground
@@ -348,7 +341,6 @@
   onMount(async () => {
     inputCapabilities.init();
 
-    // Initialize physics
     physicsState = createPhysicsWorldState();
     await initPhysicsWorld(physicsState, {
       x: 0,
@@ -356,7 +348,6 @@
       z: 0,
     });
 
-    // Create terrain physics manager
     terrainPhysics = new TerrainPhysicsManager(physicsState);
 
     // Add immediate ground collider for spawn clearing or stage zone
@@ -405,7 +396,6 @@
 
     // Skip outdoor environment systems for indoor scenes (archive cave)
     if (!isArchiveRealm) {
-      // Initialize vegetation manager with GLTF models
       vegetationManager = new VegetationManager(rawScene, {
         useGLTFModels: true,
       });
@@ -435,7 +425,6 @@
     // Skip terrain chunk generation for indoor scenes (archive cave)
     // Indoor scenes only need the physics ground collider, not terrain meshes
     if (!isArchiveRealm) {
-      // Initialize hybrid chunk manager
       // GPU compute is disabled until Three.js WebGPU compute API stabilizes
       // (readStorageBufferAsync API changed in recent versions)
       chunkManager = createHybridChunkManager(worldSeed, {
@@ -466,7 +455,6 @@
         // Logging disabled - was contributing to console spam
       }
 
-      // Handle chunk loaded
       // Skip processing during disposal to prevent Rapier WASM errors
       chunkManager.onChunkLoaded = (key, state) => {
         if (isDisposed) return;
@@ -558,12 +546,10 @@
         }
       };
 
-      // Handle chunk unloaded
       // Skip cleanup during disposal to prevent Rapier WASM errors
       chunkManager.onChunkUnloaded = (key) => {
         if (isDisposed) return;
 
-        // Remove mesh from scene
         const mesh = chunkMeshes.get(key);
         if (mesh) {
           rawScene.remove(mesh);
@@ -589,10 +575,8 @@
           }
         }
 
-        // Remove vegetation
         vegetationManager?.removeChunkVegetation(key);
 
-        // Remove drainage water
         drainageWaterManager?.removeChunkWater(chunkX, chunkZ);
       };
     } // end: skip terrain chunks for archive
@@ -724,9 +708,6 @@
     inputCapabilities.destroy();
   });
 
-  // ============================================================================
-  // LIGHTING
-  // ============================================================================
 
   // Outdoor lighting references (disabled for indoor scenes like the archive)
   let outdoorAmbient: AmbientLight | null = null;
@@ -777,9 +758,6 @@
     sunLight = sun;
   }
 
-  // ============================================================================
-  // CAMPGROUND OBJECTS
-  // ============================================================================
 
   /**
    * Load a GLTF model and add it to the scene

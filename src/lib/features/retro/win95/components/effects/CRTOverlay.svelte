@@ -91,9 +91,7 @@
 </div>
 
 <style>
-  /* ------------------------------------------------------------------ */
   /* Hidden SVG filter definition - no visual footprint                  */
-  /* ------------------------------------------------------------------ */
   .crt-filters {
     position: absolute;
     width: 0;
@@ -102,9 +100,7 @@
     pointer-events: none;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Overlay wrapper - fixed fullscreen, non-interactive                  */
-  /* ------------------------------------------------------------------ */
   .crt-overlay {
     position: absolute;
     inset: 0;
@@ -112,9 +108,7 @@
     z-index: 9999;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Flicker - rare opacity dips on the wrapper itself                    */
-  /* ------------------------------------------------------------------ */
   .crt-flicker {
     animation: crt-flicker-cycle 8s infinite;
   }
@@ -152,9 +146,7 @@
     }
   }
 
-  /* ------------------------------------------------------------------ */
   /* Barrel distortion - SVG displacement filter applied over the screen  */
-  /* ------------------------------------------------------------------ */
   .crt-barrel {
     position: absolute;
     inset: 0;
@@ -171,9 +163,7 @@
     border-radius: 8px;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Scanlines - horizontal dark bands every 3px                         */
-  /* ------------------------------------------------------------------ */
   .crt-scanlines {
     position: absolute;
     inset: 0;
@@ -186,9 +176,7 @@
     );
   }
 
-  /* ------------------------------------------------------------------ */
   /* Vignette - radial darkening at edges and corners                    */
-  /* ------------------------------------------------------------------ */
   .crt-vignette {
     position: absolute;
     inset: 0;
@@ -200,14 +188,12 @@
     );
   }
 
-  /* ------------------------------------------------------------------ */
   /* Phosphor glow - blurred brightness bloom                            */
   /*                                                                     */
   /* A 1.5px blur with brightness boost at 6% screen opacity gives the  */
   /* soft bloom you see around bright pixels on real phosphor screens.   */
   /* Applied only when motion is allowed - the animation of brightness   */
   /* interacting with flicker can feel uncomfortable for some users.     */
-  /* ------------------------------------------------------------------ */
   .crt-phosphor {
     position: absolute;
     inset: 0;
@@ -227,7 +213,6 @@
     }
   }
 
-  /* ------------------------------------------------------------------ */
   /* Color fringing - lateral chromatic aberration                       */
   /*                                                                     */
   /* Real CRT electron guns for R/G/B have slight convergence errors.   */
@@ -235,7 +220,6 @@
   /* edges by overlaying two semi-transparent colored layers shifted     */
   /* 0.5px in opposite horizontal directions. Opacity 0.04 keeps it    */
   /* subconscious - you feel the age of the screen without seeing it.  */
-  /* ------------------------------------------------------------------ */
   .crt-fringe {
     position: absolute;
     inset: 0;

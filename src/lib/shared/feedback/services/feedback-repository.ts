@@ -51,9 +51,6 @@ export class FeedbackRepository {
     return wf;
   }
 
-  // ============================================================
-  // SUBMISSION
-  // ============================================================
 
   async submitFeedback(
     formData: FeedbackFormData,
@@ -73,9 +70,6 @@ export class FeedbackRepository {
     );
   }
 
-  // ============================================================
-  // QUERY
-  // ============================================================
 
   async loadFeedback(
     filters: FeedbackFilterOptions,
@@ -105,9 +99,6 @@ export class FeedbackRepository {
     return feedbackQuerierModule.getFeedback(feedbackId);
   }
 
-  // ============================================================
-  // STATUS & UPDATES
-  // ============================================================
 
   async updateStatus(
     feedbackId: string,
@@ -153,9 +144,6 @@ export class FeedbackRepository {
     return this.statusService.deleteUserFeedback(feedbackId);
   }
 
-  // ============================================================
-  // TESTER WORKFLOW
-  // ============================================================
 
   async sendAdminResponse(
     feedbackId: string,
@@ -192,9 +180,6 @@ export class FeedbackRepository {
     return this.testerWorkflow.notifyTesterResolved(feedbackId, message);
   }
 
-  // ============================================================
-  // SUBSCRIPTIONS
-  // ============================================================
 
   subscribeToFeedback(
     onUpdate: (items: FeedbackItem[]) => void,

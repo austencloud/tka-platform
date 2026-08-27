@@ -103,7 +103,6 @@
   function handleSaveRequest() {
     if (!selectedUser || !hasChanges()) return;
 
-    // Calculate impact
     const newOverrides = buildOverridesFromStates(overrideStates);
     const impact = calculateImpact(
       featureFlags,

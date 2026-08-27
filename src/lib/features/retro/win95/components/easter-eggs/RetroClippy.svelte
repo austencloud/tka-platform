@@ -14,9 +14,7 @@
     ondismiss?: () => void;
   } = $props();
 
-  /* ------------------------------------------------------------------ */
   /* Messages                                                            */
-  /* ------------------------------------------------------------------ */
 
   const MESSAGES = [
     "It looks like you're trying to notate a sequence. Would you like help?",
@@ -31,9 +29,7 @@
   const DISMISS_DELAY_MS = 2000;
   const PUPIL_RANGE = 3;
 
-  /* ------------------------------------------------------------------ */
   /* State                                                               */
-  /* ------------------------------------------------------------------ */
 
   let messageIndex = $state(0);
   let dismissing = $state(false);
@@ -45,9 +41,7 @@
     dismissing ? DISMISS_MESSAGE : MESSAGES[messageIndex]
   );
 
-  /* ------------------------------------------------------------------ */
   /* Entry animation trigger                                             */
-  /* ------------------------------------------------------------------ */
 
   $effect(() => {
     /* Slight delay before sliding in so the transition fires */
@@ -55,9 +49,7 @@
     return () => clearTimeout(id);
   });
 
-  /* ------------------------------------------------------------------ */
   /* Message rotation                                                    */
-  /* ------------------------------------------------------------------ */
 
   $effect(() => {
     if (dismissing) return;
@@ -69,9 +61,7 @@
     return () => clearInterval(id);
   });
 
-  /* ------------------------------------------------------------------ */
   /* Mouse tracking for googly eyes                                      */
-  /* ------------------------------------------------------------------ */
 
   let staffEl: HTMLDivElement | undefined = $state();
 
@@ -100,9 +90,7 @@
     return () => window.removeEventListener("mousemove", handleMouseMove);
   });
 
-  /* ------------------------------------------------------------------ */
   /* Dismiss                                                             */
-  /* ------------------------------------------------------------------ */
 
   let dismissTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -178,9 +166,7 @@
 </div>
 
 <style>
-  /* ------------------------------------------------------------------ */
   /* Container - fixed bottom-right                                      */
-  /* ------------------------------------------------------------------ */
   .clippy-container {
     position: absolute;
     bottom: 40px;
@@ -199,9 +185,7 @@
     transform: translateY(0);
   }
 
-  /* ------------------------------------------------------------------ */
   /* Speech bubble                                                       */
-  /* ------------------------------------------------------------------ */
   .speech-bubble {
     position: relative;
     background: #FFFFCC;
@@ -242,9 +226,7 @@
     border-top: 10px solid #000;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Close button                                                        */
-  /* ------------------------------------------------------------------ */
   .speech-close {
     position: absolute;
     top: 2px;
@@ -277,17 +259,13 @@
     border-style: inset;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Speech text                                                         */
-  /* ------------------------------------------------------------------ */
   .speech-text {
     margin: 0;
     line-height: 1.4;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Staff SVG                                                           */
-  /* ------------------------------------------------------------------ */
   .staff-svg {
     display: block;
     filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.3));

@@ -336,7 +336,6 @@ export const GET: RequestHandler = async (event) => {
 			showGrid: true
 		})
 
-		// Convert Buffer to Uint8Array for Response
 		return new Response(new Uint8Array(pngBuffer), {
 			headers: {
 				'Content-Type': 'image/png',

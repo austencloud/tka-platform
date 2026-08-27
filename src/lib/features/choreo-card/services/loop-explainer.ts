@@ -66,9 +66,6 @@ export function explainLOOP(
   return explainSimple(steps, loopComponents, sequence);
 }
 
-// ============================================================================
-// SIMPLE LOOP EXPLANATION
-// ============================================================================
 
 function explainSimple(
   steps: readonly StepData[],

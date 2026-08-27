@@ -144,9 +144,6 @@ export class VariationExplorationOrchestrator {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 import * as spellServiceLoader from "./spell-service-loader";
 
 export const variationExplorationOrchestrator = new VariationExplorationOrchestrator(

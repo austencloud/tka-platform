@@ -76,7 +76,6 @@
   // own.
   const transitionVisual = tryGetEnvironmentTransitionVisualContext();
 
-  // Map BackgroundType to scene type and variant
   type SceneConfig =
     | { scene: "forest"; variant: "firefly" }
     | { scene: "autumn" }

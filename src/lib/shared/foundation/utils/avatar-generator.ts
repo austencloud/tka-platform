@@ -22,7 +22,6 @@ export function generateAvatarUrl(
   const backgroundColor = generateColorFromString(displayName);
   const textColor = "#ffffff";
 
-  // Create SVG
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
       <rect width="${size}" height="${size}" fill="${backgroundColor}" />

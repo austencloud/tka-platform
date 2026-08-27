@@ -52,7 +52,6 @@ registerLoopTools(server);
 registerPresetTools(server);
 registerUtilityTools(server);
 
-// Start the server
 async function main() {
   console.error("[MCP] Starting TKA Domain MCP Server v2.0.0...");
 

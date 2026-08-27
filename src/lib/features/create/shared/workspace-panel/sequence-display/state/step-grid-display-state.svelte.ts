@@ -59,9 +59,6 @@ export function isPendingGenerationAnimation(): boolean {
  */
 const MAX_CONTENT_GATE_MS = 2000;
 
-/**
- * Create step grid display animation state
- */
 export function createStepGridDisplayState() {
   // Animation state
   let newlyAddedStepIndex = $state<number | null>(null);

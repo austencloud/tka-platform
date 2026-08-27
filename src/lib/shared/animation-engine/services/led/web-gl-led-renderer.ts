@@ -83,9 +83,7 @@ const MAX_STREAK_VIEWBOX = 400;
 const FALLBACK_DT = 1 / 60;
 const MIN_DT = 1 / 240;
 
-// ============================================================
 // Framebuffer types (mirrored from WebGLFireRenderer)
-// ============================================================
 
 interface DoubleFBO {
 	read: FBOAttachment;
@@ -97,9 +95,7 @@ interface FBOAttachment {
 	texture: WebGLTexture;
 }
 
-// ============================================================
 // Shader program with cached uniform locations
-// ============================================================
 
 interface ShaderProgram {
 	program: WebGLProgram;
@@ -495,9 +491,7 @@ export class WebGLLedRenderer {
 		gl.bindVertexArray(null);
 	}
 
-	// ============================================================
 	// Photometry -> instance data
-	// ============================================================
 
 	/**
 	 * Integrates this frame's deposit into the two staggered box accumulators and
@@ -918,9 +912,7 @@ export class WebGLLedRenderer {
 		if (this.canvas) this.canvas.style.zIndex = String(z);
 	}
 
-	// ============================================================
 	// Geometry creation
-	// ============================================================
 
 	private createGeometry(): void {
 		const gl = this.gl!;
@@ -999,9 +991,7 @@ export class WebGLLedRenderer {
 		gl.bindVertexArray(null);
 	}
 
-	// ============================================================
 	// Framebuffer management
-	// ============================================================
 
 	private createFramebuffers(): void {
 		const w = this.displayWidth;
@@ -1132,9 +1122,7 @@ export class WebGLLedRenderer {
 		this.bloomMipSizes = [];
 	}
 
-	// ============================================================
 	// Shader compilation
-	// ============================================================
 
 	private compileAllPrograms(): boolean {
 		// Streak program needs explicit attribute bindings before linking

@@ -10,17 +10,13 @@
 <script lang="ts">
   import { DoomLoader } from "../../../services/doom-loader";
 
-  /* ------------------------------------------------------------------ */
   /* Props                                                               */
-  /* ------------------------------------------------------------------ */
 
   const props: {
     onclose?: () => void;
   } = $props();
 
-  /* ------------------------------------------------------------------ */
   /* State                                                               */
-  /* ------------------------------------------------------------------ */
 
   let containerEl: HTMLDivElement | undefined = $state();
   let isLoading = $state(true);
@@ -29,9 +25,7 @@
 
   const loader = new DoomLoader();
 
-  /* ------------------------------------------------------------------ */
   /* Launch DOOM when the container div is available                     */
-  /* ------------------------------------------------------------------ */
 
   $effect(() => {
     if (!containerEl) return;
@@ -109,7 +103,6 @@ Press any key to close this window.</pre>
     display: none;
   }
 
-  /* ── Loading overlay ─────────────────────────────────── */
 
   .doom-loading {
     position: absolute;

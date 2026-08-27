@@ -63,7 +63,6 @@
   // Comparison: Winter 0.018, Autumn 0.022, Forest 0.034.
   const OCEAN_FOG_DENSITY = 0.026;
 
-  // ── Props ─────────────────────────────────────────────────────────────
 
   interface Props {
     performerCount?: number;
@@ -85,7 +84,6 @@
     active = true,
   }: Props = $props();
 
-  // ── Quality detection ─────────────────────────────────────────────────
 
   const { scene, renderer } = useThrelte() as unknown as {
     scene: Scene;
@@ -105,11 +103,9 @@
   const quality = $derived(getOceanQualityConfig(qualityTier));
   const floraRequired = $derived(quality.enableAuthoredFlora);
 
-  // ── Scene feature readiness ────────────────────────────────────────────
 
   const sceneFeatures = getSceneFeatureContext();
 
-  // ── Environment GLB ───────────────────────────────────────────────────
 
   const environmentGlb = useGltf("/models/ocean/ocean-environment.glb", {
     meshoptDecoder: useMeshopt(),
@@ -160,7 +156,6 @@
     }
   });
 
-  // ── Fog ───────────────────────────────────────────────────────────────
 
   $effect(() => {
     if (!active) return;
@@ -183,7 +178,6 @@
     };
   });
 
-  // ── Image-based lighting ───────────────────────────────────────────────
   // Keep one scene-level intensity so the seabed and authored reef receive the
   // same low-energy wet/specular fill. Per-material values stay neutral (1.0).
   $effect(() => {
@@ -209,7 +203,6 @@
     };
   });
 
-  // ── Seabed material + shadow setup ─────────────────────────────────────
   // The floor receives the hero structures' shadows but does not spend a draw
   // casting underneath itself. Its neutral envMapIntensity lets the scene-level
   // underwater IBL control match the authored reef exactly.

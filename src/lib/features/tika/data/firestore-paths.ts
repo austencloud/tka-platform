@@ -4,9 +4,6 @@
  * Centralized path definitions for Tika conversation persistence.
  */
 
-// ============================================================================
-// USER TIKA PATHS
-// ============================================================================
 
 /**
  * Path to a user's Tika conversations collection

@@ -53,9 +53,6 @@ export interface RecordingMetadata {
   };
 }
 
-/**
- * Create a new recording metadata object
- */
 export function createRecordingMetadata(
   data: Partial<RecordingMetadata> & {
     userId: string;

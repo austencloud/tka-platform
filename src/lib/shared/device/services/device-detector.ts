@@ -53,7 +53,6 @@ export class DeviceDetector {
       return this._cachedDeviceType;
     }
 
-    // Calculate device type
     const hasTouch = "ontouchstart" in window;
     let deviceType: DeviceType;
 

@@ -254,7 +254,6 @@
   emberGeo.setAttribute("position", new Float32BufferAttribute(emberPositions, 3));
   const emberPoints = new Points(emberGeo, emberMat);
 
-  // ── Point light ──
   let light: PointLight | undefined = $state();
   let elapsed = Math.random() * 100;
   const isFireBased = config.hasFlame;
@@ -264,7 +263,6 @@
   // particle calculations per frame across ~30 torches.
   const EMBER_PROXIMITY_SQ = 5 * 5; // 5 world units squared
 
-  // ── Animation loop ──
   useTask((delta) => {
     // Keep-alive: pause flicker + ember animation while hidden.
     if (props.visible === false) return;

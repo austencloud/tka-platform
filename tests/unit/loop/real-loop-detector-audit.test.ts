@@ -55,9 +55,7 @@ const autoLabelCjs = require(path.join(repoRoot, "scripts/auto-label-loops.cjs")
 
 const validateCjs = require(path.join(repoRoot, "scripts/validate-loop-detection.cjs"));
 
-// ---------------------------------------------------------------------------
 // Fixtures
-// ---------------------------------------------------------------------------
 
 interface FixtureMotion {
   motionType: string;
@@ -92,9 +90,7 @@ const FIXTURES: Record<string, FixtureSample[]> = JSON.parse(
   ),
 );
 
-// ---------------------------------------------------------------------------
 // Adapters — each detector takes a different input shape
-// ---------------------------------------------------------------------------
 
 /** #1/#2: fixtures are already engine SequenceStep-shaped. */
 function toEngineSteps(sample: FixtureSample): FixtureStep[] {

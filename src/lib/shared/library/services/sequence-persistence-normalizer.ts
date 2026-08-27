@@ -56,9 +56,7 @@ import {
   computeHash,
 } from "$lib/shared/library/services/sequence-content-hasher";
 
-// ---------------------------------------------------------------------------
 // Types
-// ---------------------------------------------------------------------------
 
 /**
  * Fields that must never reach a stored document.
@@ -195,9 +193,7 @@ export type SequenceNormalizationResult<T extends SequenceData = SequenceData> =
       readonly error: IncompleteWordError;
     };
 
-// ---------------------------------------------------------------------------
 // Normalization
-// ---------------------------------------------------------------------------
 
 /**
  * Normalize a sequence for persistence, or refuse with a typed error.

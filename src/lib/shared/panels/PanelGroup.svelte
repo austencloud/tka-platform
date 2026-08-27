@@ -148,7 +148,6 @@
       newSize1 += diff;
     }
 
-    // Update sizes
     const newSizes = [...sizes];
     newSizes[index] = Math.max(0.1, newSize1);
     newSizes[index + 1] = Math.max(0.1, newSize2);

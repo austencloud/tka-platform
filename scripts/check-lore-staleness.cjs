@@ -17,9 +17,7 @@ const admin = require("firebase-admin");
 const { readFileSync, existsSync } = require("fs");
 const path = require("path");
 
-// ---------------------------------------------------------------------------
 // Firebase init
-// ---------------------------------------------------------------------------
 
 const serviceAccountPath = path.resolve(__dirname, "..", "serviceAccountKey.json");
 const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, "utf8"));
@@ -31,9 +29,7 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 const COLLECTION = "museumDev";
 
-// ---------------------------------------------------------------------------
 // Story bible date extraction
-// ---------------------------------------------------------------------------
 
 const STORY_BIBLE_PATH = path.resolve(__dirname, "..", "docs", "museum", "story-bible.md");
 
@@ -54,9 +50,7 @@ function readStoryBibleDate() {
   return match[1];
 }
 
-// ---------------------------------------------------------------------------
 // Deprecated doc detection
-// ---------------------------------------------------------------------------
 
 const DEPRECATED_DOCS = [
   // Deleted 2026-03-04 (consolidated into story-bible.md).
@@ -79,9 +73,7 @@ function findDeprecatedDocs() {
   return found;
 }
 
-// ---------------------------------------------------------------------------
 // Firestore query
-// ---------------------------------------------------------------------------
 
 async function fetchNewerLoreItems(sinceDate) {
   // sinceDate is "YYYY-MM-DD" — we want items updated strictly after this date.
@@ -120,9 +112,7 @@ async function fetchNewerLoreItems(sinceDate) {
   return newer;
 }
 
-// ---------------------------------------------------------------------------
 // Report
-// ---------------------------------------------------------------------------
 
 function truncate(str, max) {
   if (str.length <= max) return str;

@@ -186,7 +186,6 @@
 		transform: scale(1);
 	}
 
-	/* === HIGHLIGHT STATES === */
 
 	/* Dim non-highlighted point types */
 	.highlight-center .outer-point,
@@ -245,7 +244,6 @@
 		animation-delay: 240ms;
 	}
 
-	/* === KEYFRAMES === */
 	@keyframes pointPop {
 		0% {
 			opacity: 0;
@@ -276,7 +274,6 @@
 		}
 	}
 
-	/* === REDUCED MOTION === */
 	@media (prefers-reduced-motion: reduce) {
 		.rotating-grid,
 		.center-point,

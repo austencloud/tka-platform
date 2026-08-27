@@ -29,7 +29,6 @@
   import { getStartPositionDisplayLabel } from "../../construct/start-position-picker/services/start-position-display-label";
   import { areStartPositionsEquivalent } from "../../construct/start-position-picker/services/start-position-equivalence";
 
-  // Get context
   const ctx = getCreateModuleContext();
   const {
     CreateModuleState: createModuleState,

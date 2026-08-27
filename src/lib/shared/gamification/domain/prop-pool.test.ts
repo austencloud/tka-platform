@@ -1,4 +1,3 @@
-// src/lib/shared/gamification/domain/prop-pool.test.ts
 import { describe, expect, it } from "vitest";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {

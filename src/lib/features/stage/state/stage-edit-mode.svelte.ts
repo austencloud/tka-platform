@@ -1,4 +1,3 @@
-// src/lib/features/stage/state/stage-edit-mode.svelte.ts
 
 export interface StageEditMode {
   readonly selectedPerformerId: string | null;

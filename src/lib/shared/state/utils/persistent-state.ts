@@ -27,9 +27,6 @@ export interface PersistenceOptions<T> {
   defaultValue: T;
 }
 
-/**
- * Create a persistence helper for a specific state type
- */
 export function createPersistenceHelper<T>(options: PersistenceOptions<T>) {
   const { key, defaultValue } = options;
 

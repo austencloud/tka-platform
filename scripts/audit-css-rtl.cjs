@@ -22,9 +22,6 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// ============================================================================
-// CONFIG
-// ============================================================================
 
 const SRC_DIR = path.resolve(__dirname, '../src');
 
@@ -32,9 +29,6 @@ const args = process.argv.slice(2);
 const SUMMARY_ONLY = args.includes('--summary');
 const FIX_MODE = args.includes('--fix');
 
-// ============================================================================
-// DIRECTIONAL PROPERTY PATTERNS
-// ============================================================================
 
 const DIRECTIONAL_PATTERNS = {
   // Margin
@@ -152,9 +146,6 @@ const DIRECTIONAL_PATTERNS = {
   },
 };
 
-// ============================================================================
-// UTILITIES
-// ============================================================================
 
 function header(title) {
   console.log(`\n${'='.repeat(80)}`);

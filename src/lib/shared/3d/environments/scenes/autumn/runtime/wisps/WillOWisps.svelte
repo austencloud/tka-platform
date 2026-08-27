@@ -35,7 +35,6 @@
   const WISP_COLORS = ["#68f4dc", "#b58cff", "#ffbf73"] as const;
   const BASE_EMISSIVE = 1.6;
 
-  // ── Per-wisp drift state ─────────────────────────────────────────────
 
   interface Wisp {
     group: Group;
@@ -119,7 +118,6 @@
     );
   });
 
-  // ── Drift animation ──────────────────────────────────────────────────
 
   let elapsed = 0;
 
@@ -157,7 +155,6 @@
     }
   });
 
-  // ── Cleanup ──────────────────────────────────────────────────────────
 
   onDestroy(() => {
     // Shared geometry disposed once; materials disposed per-wisp.

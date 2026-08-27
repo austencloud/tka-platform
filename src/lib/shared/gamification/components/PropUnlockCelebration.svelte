@@ -1,4 +1,3 @@
-<!-- src/lib/shared/gamification/components/PropUnlockCelebration.svelte -->
 <script lang="ts">
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";

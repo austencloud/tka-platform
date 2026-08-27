@@ -14,7 +14,6 @@ import {
   MODULE_LAST_TABS_KEY,
 } from "../../src/lib/shared/navigation/config/storage-keys";
 
-// ─── Device Presets ──────────────────────────────────────────────────────────
 
 export interface DevicePreset {
   slug: string;
@@ -123,7 +122,6 @@ export const DEVICES: DevicePreset[] = [
   },
 ];
 
-// ─── Device Filter Helpers ───────────────────────────────────────────────────
 
 /**
  * Filter devices by category, slug, or mixed (comma-separated).

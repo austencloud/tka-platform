@@ -7,9 +7,7 @@
 
 import type { QualityLevel } from "@austencloud/backgrounds";
 
-// ============================================================================
 // Cosmic Lab
-// ============================================================================
 
 export interface CosmicLabLayers {
   stars: boolean;
@@ -31,9 +29,7 @@ export interface CosmicLabSettings {
   mode: CosmicLabMode;
 }
 
-// ============================================================================
 // Forest Lab
-// ============================================================================
 
 export interface ForestLabLayers {
   gradient: boolean;
@@ -64,9 +60,7 @@ export interface ForestLabSettings {
   treeTypes: ForestTreeTypes;
 }
 
-// ============================================================================
 // Blossom Lab
-// ============================================================================
 
 export type BlossomTimeOfDay = "twilight" | "goldenHour" | "night";
 
@@ -97,9 +91,7 @@ export interface BlossomLabSettings {
   windPreset: BlossomWindPreset;
 }
 
-// ============================================================================
 // Rainbow Lab
-// ============================================================================
 
 export type RainbowPaletteOption =
   | "classic"
@@ -127,9 +119,7 @@ export interface RainbowLabSettings {
   layers: RainbowLabLayers;
 }
 
-// ============================================================================
 // Ocean Lab
-// ============================================================================
 
 export interface OceanLabLayers {
   gradient: boolean;
@@ -161,9 +151,7 @@ export const DEFAULT_OCEAN_SETTINGS: OceanLabSettings = {
   },
 };
 
-// ============================================================================
 // Combined Lab Settings
-// ============================================================================
 
 export interface BackgroundLabSettings {
   cosmic?: CosmicLabSettings;
@@ -176,9 +164,7 @@ export interface BackgroundLabSettings {
   void?: VoidLabSettings;
 }
 
-// ============================================================================
 // Default Values
-// ============================================================================
 
 export const DEFAULT_COSMIC_SETTINGS: CosmicLabSettings = {
   quality: "high",
@@ -255,9 +241,7 @@ export const DEFAULT_RAINBOW_SETTINGS: RainbowLabSettings = {
   },
 };
 
-// ============================================================================
 // Ember Lab
-// ============================================================================
 
 export interface EmberLabLayers {
   gradient: boolean;
@@ -300,9 +284,7 @@ export const DEFAULT_EMBER_SETTINGS: EmberLabSettings = {
   densityPreset: "normal",
 };
 
-// ============================================================================
 // Celestial Lab
-// ============================================================================
 
 export interface CelestialLabLayers {
   clouds: boolean;
@@ -326,9 +308,7 @@ export const DEFAULT_CELESTIAL_LAB_SETTINGS: CelestialLabSettings = {
   },
 };
 
-// ============================================================================
 // Void Lab
-// ============================================================================
 
 export interface VoidLabLayers {
   grid: boolean;

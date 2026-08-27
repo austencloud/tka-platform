@@ -27,7 +27,6 @@ const metadata = {
     remaining: "Architectural reference for Phase 2+ implementation",
   },
 
-  // === BACKLOG ===
   "backlog/2026-03-10-store-screenshot-capture-design.md": {
     status: "backlog", value: 2, effort: "M",
     remaining: "Admin capture button, Firebase gallery drawer, Play Store slots",

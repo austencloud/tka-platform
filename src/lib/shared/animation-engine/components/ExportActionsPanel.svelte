@@ -270,9 +270,6 @@
     transition: width var(--duration-emphasis) ease;
   }
 
-  /* ===========================
-     INLINE REPETITIONS CONTROL
-     =========================== */
 
   .repetitions-row {
     display: flex;
@@ -347,9 +344,6 @@
     color: white;
   }
 
-  /* ===========================
-     RESPONSIVE
-     =========================== */
 
   @media (max-width: 360px) {
     .save-btn {
@@ -389,9 +383,6 @@
     }
   }
 
-  /* ===========================
-     ACCESSIBILITY
-     =========================== */
 
   @media (prefers-reduced-motion: reduce) {
     .save-btn,

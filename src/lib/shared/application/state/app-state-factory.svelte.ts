@@ -36,9 +36,7 @@ export function createAppState(): AppState {
   let showSettings = $state<boolean>(false);
 
   return {
-    // ============================================================================
     // GETTERS (Reactive)
-    // ============================================================================
 
     get isFullScreen() {
       return isFullScreen;
@@ -62,9 +60,6 @@ export function createAppState(): AppState {
       return !showSettings; // isReady check removed since app is always ready
     },
 
-    // ============================================================================
-    // ACTIONS
-    // ============================================================================
 
     setFullScreen(fullScreen: boolean): void {
       isFullScreen = fullScreen;
@@ -90,9 +85,6 @@ export function createAppState(): AppState {
       showSettings = !showSettings;
     },
 
-    // ============================================================================
-    // STATE MANAGEMENT
-    // ============================================================================
 
     getStateSnapshot(): object {
       return {

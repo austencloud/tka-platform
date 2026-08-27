@@ -6,9 +6,6 @@
 
 import type RAPIER from "@dimforge/rapier3d-compat";
 
-// ============================================================================
-// WORLD STATE
-// ============================================================================
 
 /**
  * Physics world state
@@ -20,9 +17,6 @@ export interface PhysicsWorldState {
 	gravity: { x: number; y: number; z: number };
 }
 
-// ============================================================================
-// COLLIDER CONFIG
-// ============================================================================
 
 /**
  * Collider configuration
@@ -41,9 +35,6 @@ export interface ColliderConfig {
 	density?: number;
 }
 
-// ============================================================================
-// RIGID BODY CONFIG
-// ============================================================================
 
 /**
  * Rigid body configuration
@@ -67,9 +58,6 @@ export interface PhysicsBodyComponent {
 	bodyType: "dynamic" | "static" | "kinematic";
 }
 
-// ============================================================================
-// PLAYER CONTROLLER CONFIG
-// ============================================================================
 
 /**
  * Player controller configuration
@@ -109,9 +97,6 @@ export interface PlayerControllerState {
 	noclipEnabled: boolean;
 }
 
-// ============================================================================
-// RAYCAST RESULT
-// ============================================================================
 
 /**
  * Ray cast result
@@ -131,9 +116,6 @@ export interface GroundCheckResult {
 	groundDistance: number;
 }
 
-// ============================================================================
-// TERRAIN COLLIDER TYPES
-// ============================================================================
 
 /**
  * Mesh data required for terrain collider creation
@@ -153,9 +135,6 @@ export interface TerrainCollider {
 	chunkZ: number;
 }
 
-// ============================================================================
-// DEFAULT CONFIGS
-// ============================================================================
 
 /**
  * Default player controller configuration

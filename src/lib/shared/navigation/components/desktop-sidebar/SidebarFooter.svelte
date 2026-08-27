@@ -253,9 +253,6 @@
 </div>
 
 <style>
-  /* ============================================================================
-     SIDEBAR FOOTER - Settings button + account row
-     ============================================================================ */
   /* Both modes share identical vertical metrics (padding, gap, row heights)
      so the footer's total height — and therefore every row's y-position —
      is the same in rail and expanded states. The tree swap must not shift
@@ -280,9 +277,6 @@
     width: 64px;
   }
 
-  /* ============================================================================
-     ACCOUNT SECTION
-     ============================================================================ */
   .account-section {
     position: relative;
   }
@@ -355,9 +349,6 @@
     outline-offset: 2px;
   }
 
-  /* ============================================================================
-     BUTTON ICON
-     ============================================================================ */
   /* Fixed 32px glyph + 6px side margins = a rock-solid 44px icon column,
      pinned by flex-shrink:0 so the button's width flip can't squeeze it.
      Identical in both states → icon center stays at x=32 through the swap,
@@ -406,9 +397,6 @@
     }
   }
 
-  /* ============================================================================
-     PROP SWITCHER BUTTON
-     ============================================================================ */
   .prop-button {
     border-color: color-mix(
       in srgb,
@@ -441,9 +429,6 @@
     filter: brightness(1.3) saturate(1.3);
   }
 
-  /* ============================================================================
-     INBOX BUTTON
-     ============================================================================ */
   .inbox-icon-wrapper {
     position: relative;
   }
@@ -509,9 +494,6 @@
     }
   }
 
-  /* ============================================================================
-     ACCESSIBILITY
-     ============================================================================ */
   @media (prefers-reduced-motion: reduce) {
     .sidebar-footer,
     .footer-button,
@@ -524,9 +506,6 @@
     }
   }
 
-  /* ============================================================================
-     MIC BUTTON
-     ============================================================================ */
   .mic-button {
     position: relative;
     width: 32px;

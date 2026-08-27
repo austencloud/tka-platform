@@ -780,9 +780,6 @@ Delegates ALL logic to services (SRP compliant)
 </div>
 
 <style>
-  /* ============================================================ */
-  /* CARD GRID */
-  /* ============================================================ */
 
   .card-settings-container {
     /* Position relative for LOOP expanded overlay */

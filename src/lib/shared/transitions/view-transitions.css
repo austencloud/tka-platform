@@ -6,9 +6,6 @@
  * Provides smooth, native-feeling transitions between module views
  */
 
-/* ============================================================================
-   VIEW TRANSITION ROOT
-   ============================================================================ */
 ::view-transition {
   /* Prevent white flash - match the app's dark background */
   background: #0a0a0a;
@@ -61,10 +58,6 @@ html.named-route-morph::view-transition {
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ============================================================================
-   COMMUNITY PANEL TRANSITIONS
-   Smooth slide-fade for community tab switching
-   ============================================================================ */
 ::view-transition-old(community-panel),
 ::view-transition-new(community-panel) {
   animation-duration: var(--duration-emphasis);
@@ -173,10 +166,6 @@ html.named-route-morph::view-transition {
   }
 }
 
-/* ============================================================================
-   MODULE-SPECIFIC TRANSITIONS
-   Different modules can have unique transition styles
-   ============================================================================ */
 ::view-transition-group(module-content) {
   animation-duration: var(--duration-emphasis);
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -254,9 +243,6 @@ html.named-route-morph::view-transition {
   }
 }
 
-/* ============================================================================
-   ACCESSIBILITY
-   ============================================================================ */
 @media (prefers-reduced-motion: reduce) {
   ::view-transition {
     --transition-duration: 1ms !important;
@@ -563,9 +549,6 @@ html.named-route-morph::view-transition {
   }
 }
 
-/* ============================================================================
-   HIGH CONTRAST MODE
-   ============================================================================ */
 @media (prefers-contrast: high) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
@@ -693,15 +676,68 @@ html.named-route-morph::view-transition {
   position: relative;
 }
 
-/* ============================================================================
-   SETTINGS ZOOM TRANSITION
-   Dive-in/pull-out effect - same feel as dashboard module transitions
-   ============================================================================ */
 
 /* CSS custom properties for zoom origin (set via JS from button position) */
 :root {
   --portal-origin-x: 90%;
   --portal-origin-y: 95%;
+}
+
+/* A module can own named snapshots inside the root snapshot (workspace stages,
+   module content, shared cards). The browser gives those names a 250ms default
+   lifecycle, which used to remove the prior module 100ms before the 350ms
+   Settings portal had finished. Keep every captured layer alive on the portal
+   clock; the root-specific rules below retain the zoom choreography, while
+   named old/new layers use an even blend for their full lifetime. */
+.settings-portal-enter::view-transition-group(*),
+.settings-portal-exit::view-transition-group(*) {
+  animation-duration: var(--duration-dramatic);
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: both;
+}
+
+.settings-portal-enter::view-transition-old(*),
+.settings-portal-enter::view-transition-new(*),
+.settings-portal-exit::view-transition-old(*),
+.settings-portal-exit::view-transition-new(*) {
+  animation-duration: var(--duration-dramatic);
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+
+/* The sidebar is one persistent named element on both sides of the module
+   change. Chrome therefore morphs its box but gives the old/new image pair no
+   opacity animation, even though the tree inside changed from modules to
+   Settings (or back). Own that pair explicitly so the rail changes with the
+   portal instead of swapping live underneath it. */
+.settings-portal-enter::view-transition-old(sidebar),
+.settings-portal-exit::view-transition-old(sidebar) {
+  animation: settings-sidebar-fade-out var(--duration-dramatic) linear both;
+  mix-blend-mode: plus-lighter;
+}
+
+.settings-portal-enter::view-transition-new(sidebar),
+.settings-portal-exit::view-transition-new(sidebar) {
+  animation: settings-sidebar-fade-in var(--duration-dramatic) linear both;
+  mix-blend-mode: plus-lighter;
+}
+
+@keyframes settings-sidebar-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes settings-sidebar-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* ENTERING SETTINGS - Dive in (zoom from button) */
@@ -780,10 +816,12 @@ html.named-route-morph::view-transition {
 
 /* Accessibility - instant transition for reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .settings-portal-enter::view-transition-old(root),
-  .settings-portal-enter::view-transition-new(root),
-  .settings-portal-exit::view-transition-old(root),
-  .settings-portal-exit::view-transition-new(root) {
+  .settings-portal-enter::view-transition-group(*),
+  .settings-portal-enter::view-transition-old(*),
+  .settings-portal-enter::view-transition-new(*),
+  .settings-portal-exit::view-transition-group(*),
+  .settings-portal-exit::view-transition-old(*),
+  .settings-portal-exit::view-transition-new(*) {
     animation: none !important;
   }
 }

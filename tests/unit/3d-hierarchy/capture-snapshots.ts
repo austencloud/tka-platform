@@ -25,7 +25,6 @@ import {
 } from "../../../src/lib/shared/3d/components/props/prop3d-transforms.ts";
 import type { PropState3D } from "../../../src/lib/shared/3d/domain/models/PropState3D.ts";
 
-// ── Constants matching the current pipeline defaults ─────────────────────────
 
 /** staffLength 0.95 * HAND_RADIUS_STAFF_RATIO 0.6 */
 const GRID_RADIUS = 0.57;
@@ -47,7 +46,6 @@ const LOC = {
   W: Math.PI,
 };
 
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface PropSnapshot {
   /** Human-readable label e.g. "blue@N" */
@@ -84,7 +82,6 @@ interface Snapshot {
   beats: StepSnapshot[];
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 /**
  * Build a minimal PropState3D so we can feed it through computePropPosition
@@ -155,7 +152,6 @@ function captureOneProp(
   };
 }
 
-// ── Wall Mode Capture ─────────────────────────────────────────────────────────
 
 /**
  * Wall mode: both props spin on the WALL plane in front of the performer.

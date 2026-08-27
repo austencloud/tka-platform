@@ -9,50 +9,40 @@
  */
 
 :root {
-  /* ===== Durations ===== */
   --spotlight-duration-in: 350ms;
   --spotlight-duration-out: 250ms;
   --spotlight-duration-nav: 300ms;
   --spotlight-duration-chrome: 200ms;
 
-  /* ===== Easings ===== */
   --spotlight-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --spotlight-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --spotlight-ease-content: cubic-bezier(0.22, 1, 0.36, 1);
 
-  /* ===== Gesture Thresholds ===== */
   --spotlight-swipe-threshold: 80px;
   --spotlight-fast-swipe-threshold: 50px;
   --spotlight-dismiss-threshold: 150px;
   --spotlight-fast-swipe-velocity: 0.5; /* px/ms */
 
-  /* ===== Chrome Auto-Hide ===== */
   --spotlight-chrome-timeout: 3000ms;
 
-  /* ===== Backdrop ===== */
   --spotlight-backdrop-bg: rgba(0, 0, 0, 0.92);
   --spotlight-backdrop-blur: 12px;
 
-  /* ===== Arrow Buttons ===== */
   --spotlight-arrow-size: 64px;
   --spotlight-arrow-size-mobile: 80px;
   --spotlight-arrow-bg: rgba(0, 0, 0, 0.4);
   --spotlight-arrow-bg-hover: rgba(0, 0, 0, 0.6);
 
-  /* ===== Zoom ===== */
   --spotlight-zoom-min: 1;
   --spotlight-zoom-max: 5;
   --spotlight-zoom-double-tap: 2;
 
-  /* ===== Filmstrip ===== */
   --spotlight-filmstrip-height: 80px;
   --spotlight-filmstrip-thumb-size: 60px;
   --spotlight-filmstrip-gap: 4px;
 
-  /* ===== Tag Panel ===== */
   --spotlight-tag-panel-width: 280px;
 
-  /* ===== Spacing ===== */
   --spotlight-chrome-padding: 16px;
   --spotlight-chrome-padding-mobile: 12px;
   --spotlight-safe-area-top: env(safe-area-inset-top, 0px);
@@ -61,7 +51,6 @@
   --spotlight-safe-area-right: env(safe-area-inset-right, 0px);
 }
 
-/* ===== Base Spotlight Dialog ===== */
 dialog.media-spotlight {
   /* Reset browser defaults */
   border: none;
@@ -107,12 +96,10 @@ dialog.media-spotlight[open] {
   }
 }
 
-/* ===== Exit Animation State ===== */
 dialog.media-spotlight[data-closing="true"] {
   opacity: 0;
 }
 
-/* ===== Backdrop Styles ===== */
 dialog.media-spotlight::backdrop {
   background: var(--spotlight-backdrop-bg);
   backdrop-filter: blur(var(--spotlight-backdrop-blur));
@@ -141,12 +128,10 @@ dialog.media-spotlight[data-closing="true"]::backdrop {
   -webkit-backdrop-filter: blur(0);
 }
 
-/* ===== Swipe Dismiss Transform ===== */
 dialog.media-spotlight[data-swiping="true"] {
   transition: none;
 }
 
-/* ===== Chrome Auto-Hide Animation ===== */
 .spotlight-chrome {
   opacity: 0;
   pointer-events: none;
@@ -183,7 +168,6 @@ dialog.media-spotlight[data-swiping="true"] {
   /* No transform, just opacity */
 }
 
-/* ===== Image Navigation Transition ===== */
 .spotlight-image-container {
   position: absolute;
   inset: 0;
@@ -233,7 +217,6 @@ dialog.media-spotlight[data-swiping="true"] {
   }
 }
 
-/* ===== Arrow Button Styles ===== */
 .spotlight-arrow {
   position: absolute;
   top: 50%;
@@ -300,7 +283,6 @@ dialog.media-spotlight[data-swiping="true"] {
   }
 }
 
-/* ===== Filmstrip Styles ===== */
 .spotlight-filmstrip {
   position: absolute;
   bottom: 0;
@@ -357,7 +339,6 @@ dialog.media-spotlight[data-swiping="true"] {
   outline-offset: 2px;
 }
 
-/* ===== Tag Panel Styles ===== */
 .spotlight-tag-panel {
   position: absolute;
   top: 0;
@@ -376,7 +357,6 @@ dialog.media-spotlight[data-swiping="true"] {
   transform: translateX(0);
 }
 
-/* ===== Close Button ===== */
 .spotlight-close {
   position: absolute;
   top: calc(var(--spotlight-chrome-padding) + var(--spotlight-safe-area-top));
@@ -416,7 +396,6 @@ dialog.media-spotlight[data-swiping="true"] {
   height: 24px;
 }
 
-/* ===== Counter Badge ===== */
 .spotlight-counter {
   position: absolute;
   top: calc(var(--spotlight-chrome-padding) + var(--spotlight-safe-area-top));
@@ -430,7 +409,6 @@ dialog.media-spotlight[data-swiping="true"] {
   z-index: 10;
 }
 
-/* ===== Loading Skeleton ===== */
 .spotlight-skeleton {
   position: absolute;
   inset: 20%;
@@ -454,7 +432,6 @@ dialog.media-spotlight[data-swiping="true"] {
   }
 }
 
-/* ===== Reduced Motion ===== */
 @media (prefers-reduced-motion: reduce) {
   dialog.media-spotlight,
   dialog.media-spotlight::backdrop,

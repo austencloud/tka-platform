@@ -351,7 +351,6 @@
     font-weight: 700;
   }
 
-  /* ── Edit mode affordances ─────────────────────────────────────────────── */
   .para.edit {
     outline: 1px dashed rgba(55, 48, 163, 0.4);
     cursor: move;

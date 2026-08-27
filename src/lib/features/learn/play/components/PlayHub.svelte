@@ -41,9 +41,7 @@
   import LevelPicker from "./LevelPicker.svelte";
   import ArcadeResults from "./ArcadeResults.svelte";
 
-  // ==========================================================================
   // Session: engine + view-transitioned navigation seam
-  // ==========================================================================
 
   const engine = createArcadeSession();
 
@@ -124,9 +122,7 @@
   const gameCountWord =
     COUNT_WORDS[GAME_REGISTRY.length] ?? String(GAME_REGISTRY.length);
 
-  // ==========================================================================
   // Progress reads (store is non-reactive; bump the version after writes)
-  // ==========================================================================
 
   let progressVersion = $state(0);
 
@@ -151,9 +147,7 @@
       });
   });
 
-  // ==========================================================================
   // Results-phase side effects — exactly once per completed session
-  // ==========================================================================
 
   let resultsOutcome = $state<{
     progress: GameProgress;
@@ -236,9 +230,7 @@
     );
   });
 
-  // ==========================================================================
   // One shared IntersectionObserver pauses offscreen preview loops
-  // ==========================================================================
 
   let pauseObserver: IntersectionObserver | null = null;
 

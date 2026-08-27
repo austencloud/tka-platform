@@ -1,4 +1,3 @@
-// src/lib/shared/gamification/state/prop-collection-state.svelte.ts
 /**
  * Reactive mirror of the user's prop collection. The PropUnlockManager is the
  * writer; UI reads these values. Follows the "export $state + action

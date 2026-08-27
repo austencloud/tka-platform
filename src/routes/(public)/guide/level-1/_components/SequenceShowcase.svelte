@@ -81,7 +81,6 @@
 
   const propType = $derived(render?.propType ?? PropType.HAND);
 
-  // ── Example cycling ────────────────────────────────────────────────────────
   // Index is CLIENT state (default 0), so entries 1+ never render server-side -
   // only the default example's strip prerenders (the SEO / page-weight split).
   // A `strip` override disables the pool (see the prop doc above).

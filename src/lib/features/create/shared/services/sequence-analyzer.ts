@@ -68,7 +68,6 @@ export class SequenceAnalyzer {
    * Analyze a sequence for circular properties
    */
   analyzeCircularity(sequence: SequenceData): CircularityAnalysis {
-    // Get start and end steps
     const startStep = this.getStartBeat(sequence);
     const endStep = this.getEndBeat(sequence);
 

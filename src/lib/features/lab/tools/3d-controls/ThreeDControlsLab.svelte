@@ -19,7 +19,6 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
 
-  // ── State ────────────────────────────────────────────────────────────
 
   // Grid locations
   let blueLocation: GridLocation = $state(GridLocation.NORTH);
@@ -60,7 +59,6 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
   const bluePropState = $derived(blueVisible ? makePropState(blueLocation, blueTurns, activePlane) : null);
   const redPropState = $derived(redVisible ? makePropState(redLocation, redTurns, activePlane) : null);
 
-  // ── Grid point data ──────────────────────────────────────────────────
 
   const points: Array<{ loc: GridLocation; x: number; y: number; label: string }> = [
     { loc: GridLocation.NORTH, x: 50, y: 10, label: "N" },
@@ -361,7 +359,6 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
 </div>
 
 <style>
-  /* ── Layout ────────────────────────────────────────────────────────── */
   .lab-layout {
     display: flex;
     height: 100%;
@@ -399,7 +396,6 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
     .controls-panel { width: 100%; border-left: none; border-top: 1px solid var(--theme-stroke, rgba(255,255,255,0.1)); flex: 1; min-height: 0; }
   }
 
-  /* ── Section titles ────────────────────────────────────────────────── */
   .control-section {
     display: flex;
     flex-direction: column;
@@ -414,7 +410,6 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
     font-weight: 600;
   }
 
-  /* ── Toggle row ────────────────────────────────────────────────────── */
   .toggle-row {
     display: flex;
     align-items: center;
@@ -445,7 +440,6 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
     color: var(--theme-text-dim, rgba(255,255,255,0.5));
   }
 
-  /* ── Config Cards ──────────────────────────────────────────────────── */
   .config-card {
     background: var(--theme-card-bg, rgba(255,255,255,0.04));
     border: 1px solid var(--theme-stroke, rgba(255,255,255,0.1));
@@ -491,7 +485,6 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
   .blue-dot { background: var(--prop-blue, #2196f3); }
   .red-dot { background: var(--prop-red, #f44336); }
 
-  /* ── Segmented Controls ────────────────────────────────────────────── */
   .segmented-row {
     display: flex;
     gap: 2px;
@@ -517,7 +510,6 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
   .seg-btn.blue-accent { background: var(--prop-blue, #2196f3); }
   .seg-btn.red-accent { background: var(--prop-red, #f44336); }
 
-  /* ── Grid Point Selector ───────────────────────────────────────────── */
   .position-pair {
     display: flex;
     align-items: center;
@@ -566,7 +558,6 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
   .point-group:hover .point-text,
   .point-group.selected .point-text { opacity: 1; }
 
-  /* ── Labeled Section ───────────────────────────────────────────────── */
   .labeled-section {
     display: flex;
     flex-direction: column;
@@ -580,7 +571,6 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
     letter-spacing: 0.05em;
   }
 
-  /* ── Direction + Turns ─────────────────────────────────────────────── */
   .dir-turns-row {
     display: flex;
     gap: 0.5rem;
@@ -633,7 +623,6 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
     color: var(--theme-text, #fff);
   }
 
-  /* ── Presets ────────────────────────────────────────────────────────── */
   .preset-group {
     display: flex;
     flex-wrap: wrap;
@@ -659,7 +648,6 @@ import { gridLocationToPosition3D, calculatePropRotation } from "$lib/shared/3d/
   .blue-preset:hover { background: var(--prop-blue, #2196f3); border-color: var(--prop-blue, #2196f3); color: #fff; }
   .red-preset:hover { background: var(--prop-red, #f44336); border-color: var(--prop-red, #f44336); color: #fff; }
 
-  /* ── Summary chips ─────────────────────────────────────────────────── */
   .active-configs {
     display: flex;
     flex-direction: column;

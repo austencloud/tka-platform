@@ -3,9 +3,6 @@ import {
   initializeAppServices,
 } from "./services.svelte";
 
-// ============================================================================
-// HMR STATE PRESERVATION
-// ============================================================================
 // Preserve initialization flags across HMR so the app doesn't re-run the
 // full init cascade (auth → Firestore → settings → theme) on every edit.
 const hmrInitData = import.meta.hot?.data as

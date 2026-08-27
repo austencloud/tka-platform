@@ -14,7 +14,6 @@ import { GRID_CONFIG } from "../../museum/data/museum-room-graph";
 
 export const PERSONAL_MUSEUM_GRID_CONFIG = GRID_CONFIG;
 
-// ── Room definition ──
 
 const PERSONAL_GALLERY: RoomNode = {
   id: "personal-gallery",
@@ -84,7 +83,6 @@ const PERSONAL_GALLERY: RoomNode = {
   ],
 };
 
-// ── Exports ──
 
 export const PERSONAL_MUSEUM_ROOMS: RoomNode[] = [PERSONAL_GALLERY];
 

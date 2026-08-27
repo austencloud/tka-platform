@@ -1,4 +1,3 @@
-// src/lib/features/choreo-card/state/catalog-browse-types.ts
 
 export interface FilterState {
   loopTypes: string[];

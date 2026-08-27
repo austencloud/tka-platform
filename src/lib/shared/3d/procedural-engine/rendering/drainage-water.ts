@@ -31,9 +31,6 @@ import {
 } from "three";
 import type { DrainageData } from "../generation/gpu/terrain-compute-types";
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 export interface DrainageWaterConfig {
   /** Base water color (deep water) */
@@ -84,9 +81,7 @@ interface ChunkWaterMesh {
   };
 }
 
-// ============================================================================
 // DEFAULT CONFIG - Tuned for realistic lake/pond water
-// ============================================================================
 
 const DEFAULT_DRAINAGE_WATER_CONFIG: DrainageWaterConfig = {
   deepColor: "#0a4d5c",
@@ -108,9 +103,6 @@ const DEFAULT_DRAINAGE_WATER_CONFIG: DrainageWaterConfig = {
   specularPower: 256.0,
 };
 
-// ============================================================================
-// WATER SHADER
-// ============================================================================
 
 const WaterShader = {
   uniforms: {
@@ -350,9 +342,6 @@ const WaterShader = {
   `,
 };
 
-// ============================================================================
-// DRAINAGE WATER MANAGER
-// ============================================================================
 
 export class DrainageWaterManager {
   private scene: Scene;
@@ -369,7 +358,6 @@ export class DrainageWaterManager {
     // Create shared shader material
     this.sharedMaterial = this.createWaterMaterial();
 
-    // Load normal maps
     this.loadNormalMaps();
   }
 
@@ -419,9 +407,6 @@ export class DrainageWaterManager {
     );
   }
 
-  /**
-   * Create water shader material
-   */
   private createWaterMaterial(): ShaderMaterial {
     const material = new ShaderMaterial({
       uniforms: UniformsUtils.clone(WaterShader.uniforms),

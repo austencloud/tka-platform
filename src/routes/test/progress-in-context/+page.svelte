@@ -44,13 +44,11 @@
     isPlaying = !isPlaying;
 
     if (isPlaying && sequenceData) {
-      // Start animation
       const totalSteps = sequenceData.steps.length;
       animationInterval = window.setInterval(() => {
         currentStep = (currentStep + 0.05) % totalSteps;
       }, 50) as unknown as number;
     } else if (animationInterval !== null) {
-      // Stop animation
       clearInterval(animationInterval);
       animationInterval = null;
     }

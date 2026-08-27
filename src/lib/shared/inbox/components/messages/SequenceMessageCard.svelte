@@ -72,7 +72,6 @@
       null
   );
 
-  // Initialize haptic service
   onMount(() => {
     hapticService = getHapticFeedback();
   });

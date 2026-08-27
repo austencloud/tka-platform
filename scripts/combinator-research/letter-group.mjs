@@ -18,7 +18,6 @@ import { readFileSync } from "node:fs";
 const DIR = "E:/tka-platform/mcp-server-pkg/assets/data/pictographs";
 const RING = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
 
-// ---------------------------------------------------------------- load
 
 const rows = [];
 for (const file of ["DiamondPictographDataframe.csv", "BoxPictographDataframe.csv"]) {
@@ -342,7 +341,6 @@ for (const l of [...byLetter.keys()].sort((a, b) => lorder(a) - lorder(b))) {
 	console.log(`${l.padEnd(6)}   ${gs.map((g) => `${g}=${gapName(g)}`).join("  ")}`);
 }
 
-// ---------------------------------------------------------------- character x gap
 
 console.log("\n\n########## CHARACTERS x GAPS ##########");
 console.log("One orbit of the 90 gap step = one MOTION CHARACTER, seen at all four");

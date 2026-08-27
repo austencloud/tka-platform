@@ -9,9 +9,6 @@
  * Keeping these unified ensures consistency across the app.
  */
 
-// ============================================================================
-// DIFFICULTY LEVEL
-// ============================================================================
 
 export type DifficultyLevel = 1 | 2 | 3 | 4 | 5;
 
@@ -98,9 +95,6 @@ export const DIFFICULTY_LEVELS: Record<DifficultyLevel, DifficultyLevelConfig> =
     },
   };
 
-// ============================================================================
-// STARTING POSITION
-// ============================================================================
 
 export type StartingPosition = "alpha" | "beta" | "gamma";
 
@@ -141,9 +135,6 @@ export const STARTING_POSITIONS_LIST: StartingPositionConfig[] = [
   STARTING_POSITIONS.gamma,
 ];
 
-// ============================================================================
-// SEQUENCE LENGTH
-// ============================================================================
 
 export interface SequenceLengthConfig {
   min: number;
@@ -168,9 +159,6 @@ export const FILTER_LENGTH_CONFIG: SequenceLengthConfig = {
   default: 8,
 };
 
-// ============================================================================
-// STARTING LETTER
-// ============================================================================
 
 export const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -182,9 +170,6 @@ export interface LetterConfig {
 // Default color for letter cards
 export const LETTER_CARD_COLOR = "#10b981"; // Emerald green
 
-// ============================================================================
-// UNIFIED PARAMETER INTERFACE
-// ============================================================================
 
 /**
  * Core sequence parameters shared between Generate and Filter.

@@ -652,7 +652,6 @@
     color: var(--theme-accent, #6366f1);
   }
 
-  /* ---- Drop zones ---- */
 
   .drop-zone {
     display: flex;
@@ -715,7 +714,6 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
   }
 
-  /* ---- Loaded card ---- */
 
   .card {
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -794,7 +792,6 @@
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
-  /* ---- Start ---- */
 
   .start-area {
     display: flex;

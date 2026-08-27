@@ -1371,9 +1371,6 @@ Last audit: 2025-12-27
     min-height: 0;
   }
 
-  /* ===========================================
-     REDUCED MOTION
-     =========================================== */
 
   @media (prefers-reduced-motion: reduce) {
     .content-wrapper,

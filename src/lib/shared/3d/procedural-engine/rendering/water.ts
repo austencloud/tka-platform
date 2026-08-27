@@ -16,9 +16,6 @@ import {
   type Scene,
 } from "three";
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 export interface WaterConfig {
   size: number;
@@ -30,9 +27,6 @@ export interface WaterConfig {
   metalness: number;
 }
 
-// ============================================================================
-// DEFAULT CONFIG
-// ============================================================================
 
 const DEFAULT_WATER_CONFIG: WaterConfig = {
   size: 500, // 500 meters - large ocean surface
@@ -44,9 +38,6 @@ const DEFAULT_WATER_CONFIG: WaterConfig = {
   metalness: 0.1,
 };
 
-// ============================================================================
-// WATER MANAGER
-// ============================================================================
 
 export class WaterManager {
   private scene: Scene;
@@ -78,7 +69,6 @@ export class WaterManager {
       clearcoatRoughness: 0.2,
     });
 
-    // Create water geometry
     const waterGeometry = new PlaneGeometry(size, size, segments, segments);
     waterGeometry.rotateX(-Math.PI / 2);
 
@@ -107,9 +97,6 @@ export class WaterManager {
     // Physical material uses scene lights automatically
   }
 
-  /**
-   * Set water level
-   */
   setWaterLevel(level: number): void {
     this.config.waterLevel = level;
     if (this.waterMesh) {

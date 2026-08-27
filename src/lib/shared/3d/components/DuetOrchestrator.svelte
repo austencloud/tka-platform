@@ -52,9 +52,6 @@
     }
   }
 
-  /**
-   * Handle duet selection
-   */
   function handleDuetSelect(duet: DuetSequenceWithData) {
     try {
       // Ensure we have at least 2 performers

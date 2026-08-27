@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
 
-// ── Block transitive imports that crash in jsdom ──────────────────────────────
 vi.mock("$lib/shared/di", () => ({ container: {} }));
 vi.mock("$lib/shared/di/containers/core-container", () => ({}));
 vi.mock("@firebase/firestore", () => ({}));

@@ -27,9 +27,7 @@ import { keyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
 export class ShortcutCustomizer {
   constructor(private readonly registry: ShortcutRegistry) {}
 
-  // ============================================
   // Binding Management
-  // ============================================
 
   setCustomBinding(
     shortcutId: string,
@@ -151,9 +149,7 @@ export class ShortcutCustomizer {
     }
   }
 
-  // ============================================
   // Conflict Detection
-  // ============================================
 
   detectConflict(
     shortcutId: string,
@@ -171,7 +167,6 @@ export class ShortcutCustomizer {
       : [shortcut.context];
     const conflicts: ShortcutConflict[] = [];
 
-    // Get all registered shortcuts
     const allShortcuts = this.registry.getAll();
 
     for (const other of allShortcuts) {
@@ -260,7 +255,6 @@ export class ShortcutCustomizer {
           ? other.context
           : [other.context];
 
-        // Check for context overlap
         for (const context of contexts) {
           if (contextsCanConflict(context, otherContexts)) {
             const hasDirectOverlap = otherContexts.some(
@@ -283,9 +277,7 @@ export class ShortcutCustomizer {
     return conflicts;
   }
 
-  // ============================================
   // Binding Resolution
-  // ============================================
 
   getEffectiveBinding(shortcutId: string): ParsedKeyCombo | null {
     const customBinding = this.getCustomBinding(shortcutId);
@@ -350,9 +342,7 @@ export class ShortcutCustomizer {
     return custom?.disabled ?? false;
   }
 
-  // ============================================
   // Queries
-  // ============================================
 
   getAllShortcutsWithBindings(): ShortcutWithBinding[] {
     const allShortcuts = this.registry.getAll();
@@ -367,7 +357,6 @@ export class ShortcutCustomizer {
       const effectiveBinding =
         this.getEffectiveBinding(shortcut.id) || defaultBinding;
 
-      // Convert Shortcut to ShortcutRegistrationOptions
       const options: ShortcutRegistrationOptions = {
         id: shortcut.id,
         label: shortcut.label,

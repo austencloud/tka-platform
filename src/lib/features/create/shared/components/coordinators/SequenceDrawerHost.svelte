@@ -56,7 +56,6 @@ import { getExportOrchestrator } from "$lib/shared/export-panel/get-export-orche
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
-  // Get context
   const ctx = getCreateModuleContext();
   const { CreateModuleState, panelState } = ctx;
 

@@ -41,7 +41,6 @@ Handles the forceShowAll logic for showing all glyphs in settings panel.
     forceShowAll && !previewMode ? true : undefined
   );
 
-  // Use pictographData or extract from stepData
   const effectiveData = $derived(pictographData || stepData);
 </script>
 

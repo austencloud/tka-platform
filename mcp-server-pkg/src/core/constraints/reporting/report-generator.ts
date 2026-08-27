@@ -53,7 +53,6 @@ export function generateConstraintReport(
     }
   }
 
-  // Calculate final score
   const softScore = totalWeight > 0 ? totalScore / totalWeight : 1.0;
   const finalScore = allSatisfied ? softScore : 0;
 

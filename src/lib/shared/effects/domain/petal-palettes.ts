@@ -63,9 +63,7 @@ export interface PetalPalette {
   readonly emberEdge?: { chance: number; color: string };
 }
 
-/* ---------------------------------------------------------------------- */
 /*                            Palette registries                          */
-/* ---------------------------------------------------------------------- */
 
 const BLOSSOM: PetalPalette = {
   id: "blossom",
@@ -285,9 +283,7 @@ export function resolvePetalOpacity(
   return silhouetteOpacity * (ambient ? 0.7 : 1);
 }
 
-/* ---------------------------------------------------------------------- */
 /*                       SVG path data (production)                       */
-/* ---------------------------------------------------------------------- */
 
 interface SvgLeafData {
   d: string;
@@ -393,9 +389,7 @@ const GINKGO: SvgLeafData = {
   fallback: "stylized",
 };
 
-/* ---------------------------------------------------------------------- */
 /*                   Path2D cache + rendering (production)                */
-/* ---------------------------------------------------------------------- */
 
 const hasPath2D =
   typeof Path2D !== "undefined" && typeof DOMMatrix !== "undefined";

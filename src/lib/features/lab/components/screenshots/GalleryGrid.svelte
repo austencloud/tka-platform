@@ -39,7 +39,6 @@
     onCancelLongPress,
   }: Props = $props();
 
-  // ─── Constants ──────────────────────────────────────────────────────────────
 
   const MODULE_NAMES: Record<string, string> = {
     public: "Public Pages",
@@ -67,7 +66,6 @@
     "desktop-fhd": { name: "Desktop FHD", w: 1920, h: 1080, category: "desktop" },
   };
 
-  // ─── Helpers ────────────────────────────────────────────────────────────────
 
   function getAspectRatio(slug: string): number {
     const d = DEVICE_MAP[slug];

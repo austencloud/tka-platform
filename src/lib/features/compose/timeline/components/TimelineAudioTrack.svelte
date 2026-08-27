@@ -100,16 +100,12 @@
     wavesurfer.zoom(pixelsPerSecond);
   });
 
-  /**
-   * Load audio file
-   */
   async function loadAudio(file: File) {
     if (!waveformContainer) return;
 
     isLoadingAudio = true;
 
     try {
-      // Create object URL for the file
       const audioUrl = URL.createObjectURL(file);
 
       // Initialize wavesurfer if not already
@@ -158,7 +154,6 @@
         });
       }
 
-      // Load the audio
       await wavesurfer.load(audioUrl);
 
       // Update project state
@@ -170,9 +165,6 @@
     }
   }
 
-  /**
-   * Remove audio
-   */
   function removeAudio() {
     if (wavesurfer) {
       wavesurfer.destroy();
@@ -186,9 +178,6 @@
     getState().clearAudio();
   }
 
-  /**
-   * Handle file drop
-   */
   function handleDrop(e: DragEvent) {
     e.preventDefault();
     const file = e.dataTransfer?.files[0];

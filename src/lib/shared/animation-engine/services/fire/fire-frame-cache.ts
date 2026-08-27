@@ -30,9 +30,7 @@ export function hasReachedFireFrameCacheCapacity(frameIndex: number, capacity: n
   return capacity <= 0 || frameIndex >= capacity;
 }
 
-// ============================================================
 // Blit shader: draw a cached texture to the screen
-// ============================================================
 
 const BLIT_FRAG = `#version 300 es
 precision highp float;
@@ -356,9 +354,7 @@ export class FireFrameCache {
     this.state = "idle";
   }
 
-  // ============================================================
   // Internal
-  // ============================================================
 
   blitTextureToScreen(texture: WebGLTexture): void {
     const gl = this.gl;

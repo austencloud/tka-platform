@@ -21,9 +21,6 @@ import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enum
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createArrowPlacementData } from "$lib/shared/pictograph/arrow/positioning/placement/domain/create-arrow-placement-data";
 
-// ============================================================================
-// OUTWARD OFFSET VECTORS
-// ============================================================================
 
 // For each grid location, the outward direction vector is the unit vector
 // pointing away from the center of the 950×950 coordinate space.
@@ -54,9 +51,6 @@ const OUTWARD_OFFSETS: Record<GridLocation, OffsetVector> = {
   [GridLocation.CENTER]:    { x:   0, y:   0 },
 };
 
-// ============================================================================
-// PUBLIC API
-// ============================================================================
 
 /**
  * Returns a new steps array where any step with blue and red arrows ending
@@ -70,9 +64,6 @@ export function resolveCollisions(steps: PictographData[]): PictographData[] {
   return steps.map((step) => resolveStep(step));
 }
 
-// ============================================================================
-// PRIVATE
-// ============================================================================
 
 function resolveStep(step: PictographData): PictographData {
   const blue = step.motions[MotionColor.BLUE];

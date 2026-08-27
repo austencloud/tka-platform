@@ -1,4 +1,3 @@
-// scripts/build-half-arrow-templates.mjs
 // Run: npx tsx scripts/build-half-arrow-templates.mjs [baseUrl]
 //      (default baseUrl https://localhost:5173 — the dev server must be up)
 //

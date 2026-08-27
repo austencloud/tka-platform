@@ -43,7 +43,6 @@ import { getHallOfShameLoader } from "$lib/features/hall-of-shame/get-hall-of-sh
   let isLoadingMore = $state(false);
   let lastDoc = $state<unknown>(null);
 
-  // Filter/sort state
   let selectedCategory = $state<ShameCategory | "all">("all");
   let sortOption = $state<ShameSortOption>("newest");
 
@@ -135,7 +134,6 @@ import { getHallOfShameLoader } from "$lib/features/hall-of-shame/get-hall-of-sh
     error = null;
 
     try {
-      // Load featured entries
       const featured = await hallOfShameLoader.loadFeatured(5);
       featuredEntries = featured;
 

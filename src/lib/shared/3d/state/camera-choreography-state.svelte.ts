@@ -49,17 +49,11 @@ export function createCameraChoreographyState() {
     isEnabled = !isEnabled;
   }
 
-  /**
-   * Load a choreography
-   */
   function loadChoreography(choreography: CameraChoreography) {
     choreographer.loadChoreography(choreography);
     cameraState = choreographer.currentState;
   }
 
-  /**
-   * Clear choreography
-   */
   function clearChoreography() {
     choreographer.clearChoreography();
     cameraState = createDefaultCameraState();
@@ -98,9 +92,6 @@ export function createCameraChoreographyState() {
     );
   }
 
-  /**
-   * Add a keyframe at the current beat
-   */
   function addKeyframe(
     stepNumber: number,
     position: CameraPosition,
@@ -109,9 +100,6 @@ export function createCameraChoreographyState() {
     choreographer.captureKeyframe(stepNumber, position, target);
   }
 
-  /**
-   * Remove a keyframe by ID
-   */
   function removeKeyframe(id: string) {
     choreographer.removeKeyframe(id);
   }
@@ -123,16 +111,10 @@ export function createCameraChoreographyState() {
     isRecording = true;
   }
 
-  /**
-   * Stop recording mode
-   */
   function stopRecording() {
     isRecording = false;
   }
 
-  /**
-   * Get current choreography for saving
-   */
   function getChoreography(): CameraChoreography | null {
     return choreographer.choreography;
   }

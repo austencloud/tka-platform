@@ -114,7 +114,6 @@ export class SmokeOverlayRenderer implements EffectRendererLike {
   }
 }
 
-// ── EffectPlugin descriptor ──────────────────────────────────────────────────
 import type { EffectPlugin } from "./effects/effect-plugin";
 import type { SmokeIntent } from "$lib/shared/effects/domain/effects-config";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";

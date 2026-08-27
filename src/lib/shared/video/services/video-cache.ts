@@ -259,7 +259,6 @@ export class VideoCache {
     this.blobUrls.clear();
   }
 
-  // --- Private methods ---
 
   private async getCachedVideo(url: string): Promise<CachedVideo | null> {
     const db = await this.getDb();

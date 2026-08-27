@@ -28,9 +28,6 @@ function getAuthenticatedUserId(context: functions.https.CallableContext): strin
   return null;
 }
 
-/**
- * Add a tamper-proof journal entry
- */
 async function addJournalEntry(
   feedbackId: string,
   type: string,

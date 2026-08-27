@@ -32,9 +32,7 @@ const {
   calculateEndOrientation,
 } = require("../packages/sequence-engine/dist/core/orientation/OrientationCalculator.js");
 
-// ============================================================================
 // Firebase Admin Setup
-// ============================================================================
 
 const serviceAccountPath = path.join(__dirname, "..", "serviceAccountKey.json");
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -58,9 +56,6 @@ try {
   process.exit(1);
 }
 
-// ============================================================================
-// TURN/RATIO DEFINITIONS
-// ============================================================================
 
 const SOURCE_DECK_ID = "l1-tnd-motions";
 

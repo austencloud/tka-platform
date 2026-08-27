@@ -160,9 +160,6 @@ export interface IAnimationRenderer {
    */
   destroy(): void;
 
-  /**
-   * Get the canvas element
-   */
   getCanvas(): HTMLCanvasElement | null;
 
   /**

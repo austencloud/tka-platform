@@ -1,4 +1,3 @@
-// tests/unit/pronunciation/wav-encoder.test.ts
 import { describe, expect, it } from "vitest";
 
 import { encodeWav24 } from "$lib/features/lab/pronunciation-recorder/domain/wav-encoder";

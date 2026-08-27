@@ -74,9 +74,7 @@
     engine.allFilterChips.filter((c) => !c.locked).length
   );
 
-  // ---------------------------------------------------------------------------
   // Sort dropdown state
-  // ---------------------------------------------------------------------------
 
   interface SortOption {
     id: BrowseSortMethod;
@@ -241,9 +239,7 @@
     closeSort();
   }
 
-  // ---------------------------------------------------------------------------
   // Inline filter state (wide screens only — mirrors BrowseFilterBar)
-  // ---------------------------------------------------------------------------
 
   const activeLevel = $derived.by(() => {
     const f = engine.activeFilters.get("difficulty");
@@ -688,7 +684,6 @@
     font-weight: 600;
   }
 
-  /* ---- Back pill ---- */
   .back-pill {
     display: flex;
     align-items: center;
@@ -762,7 +757,6 @@
     outline-offset: 1px;
   }
 
-  /* ---- Sort dropdown ---- */
   .sort-dropdown-wrapper {
     position: relative;
     flex-shrink: 0;
@@ -1185,7 +1179,6 @@
     outline-offset: 1px;
   }
 
-  /* ---- Search slot ---- */
   .search-slot {
     flex: 1;
     min-width: 0;
@@ -1193,7 +1186,6 @@
     align-items: center;
   }
 
-  /* ---- Result count ---- */
   .result-count {
     flex-shrink: 0;
     margin-left: auto;
@@ -1218,7 +1210,6 @@
     }
   }
 
-  /* ---- Reduced motion ---- */
   @media (prefers-reduced-motion: reduce) {
     .sort-trigger,
     .sort-chevron,

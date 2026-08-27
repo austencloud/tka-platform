@@ -24,9 +24,7 @@ export interface ObjectDefinition {
 }
 
 export const OBJECT_CATALOG: ObjectDefinition[] = [
-	// ─────────────────────────────────────────────────────────────
 	// TENTS - Camping structures
-	// ─────────────────────────────────────────────────────────────
 	{
 		key: "bell-tent",
 		name: "Bell Tent",
@@ -80,9 +78,7 @@ export const OBJECT_CATALOG: ObjectDefinition[] = [
 		color: 0xe8e8e8, // Light gray
 	},
 
-	// ─────────────────────────────────────────────────────────────
 	// MARKERS - Points of interest
-	// ─────────────────────────────────────────────────────────────
 	{
 		key: "pin-marker",
 		name: "Pin Marker",
@@ -123,9 +119,7 @@ export const OBJECT_CATALOG: ObjectDefinition[] = [
 		color: 0x4ecdc4, // Teal
 	},
 
-	// ─────────────────────────────────────────────────────────────
 	// PROPS - Decorative items
-	// ─────────────────────────────────────────────────────────────
 	{
 		key: "fire-pit",
 		name: "Fire Pit",
@@ -192,9 +186,7 @@ export const OBJECT_CATALOG: ObjectDefinition[] = [
 		color: 0xffcc00, // Yellow
 	},
 
-	// ─────────────────────────────────────────────────────────────
 	// ZONES - Area markers
-	// ─────────────────────────────────────────────────────────────
 	{
 		key: "sound-camp",
 		name: "Sound Camp Zone",
@@ -249,16 +241,10 @@ export const OBJECT_CATALOG: ObjectDefinition[] = [
 	},
 ];
 
-/**
- * Get object definition by key
- */
 export function getObjectDefinition(key: string): ObjectDefinition | undefined {
 	return OBJECT_CATALOG.find((def) => def.key === key);
 }
 
-/**
- * Get all objects of a specific type
- */
 export function getObjectsByType(type: PlacedObjectType): ObjectDefinition[] {
 	return OBJECT_CATALOG.filter((def) => def.type === type);
 }

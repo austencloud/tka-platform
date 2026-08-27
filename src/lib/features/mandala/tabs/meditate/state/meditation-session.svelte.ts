@@ -64,7 +64,6 @@ function getPhaseDuration(pattern: BreathingPattern, phase: BreathPhase): number
  * One instance per viewer/modal context.
  */
 export function createMeditationSession(): MeditationSession {
-	// ── Core reactive state ────────────────────────────────────────
 	let status = $state<MeditationSessionStatus>("idle");
 	let pattern = $state<BreathingPattern>(null!);
 	let durationMinutes = $state(10);
@@ -90,7 +89,6 @@ export function createMeditationSession(): MeditationSession {
 	let onPhaseChangeCallback: ((phase: BreathPhase) => void) | undefined;
 	const screenWakeLockManager = createScreenWakeLockManager();
 
-	// ── Visibility change handler ──────────────────────────────────
 	function handleVisibilityChange() {
 		if (document.hidden) {
 			tabHiddenAt = performance.now();
@@ -104,7 +102,6 @@ export function createMeditationSession(): MeditationSession {
 		}
 	}
 
-	// ── Breath phase computation ───────────────────────────────────
 	function computePhase(elapsed: number) {
 		const cycleTime = getPatternCycleTime(pattern);
 		if (cycleTime <= 0) return;
@@ -159,7 +156,6 @@ export function createMeditationSession(): MeditationSession {
 		}
 	}
 
-	// ── RAF tick loop ──────────────────────────────────────────────
 	function tick() {
 		if (status !== "running") return;
 
@@ -181,7 +177,6 @@ export function createMeditationSession(): MeditationSession {
 		rafId = requestAnimationFrame(tick);
 	}
 
-	// ── Session lifecycle ──────────────────────────────────────────
 	function completeSession() {
 		status = "complete";
 		stopInternal();

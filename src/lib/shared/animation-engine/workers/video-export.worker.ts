@@ -31,9 +31,7 @@ import {
 } from "mediabunny";
 import type { CapturedFrame } from "$lib/shared/video-export/domain/captured-frame";
 
-// ---------------------------------------------------------------------------
 // WebCodecs feature detection
-// ---------------------------------------------------------------------------
 
 const hasWebCodecs = typeof VideoEncoder !== "undefined";
 
@@ -61,9 +59,7 @@ const IS_MOBILE = (() => {
   }
 })();
 
-// ---------------------------------------------------------------------------
 // h264-mp4-encoder type (mirrors WasmVideoEncoder.ts)
-// ---------------------------------------------------------------------------
 
 type H264MP4Encoder = {
   width: number;
@@ -80,9 +76,7 @@ type H264MP4Encoder = {
   delete: () => void;
 };
 
-// ---------------------------------------------------------------------------
 // Message types -- IN (main thread -> worker)
-// ---------------------------------------------------------------------------
 
 interface ConfigMessage {
   type: "config";
@@ -120,9 +114,7 @@ export type ExportWorkerMessage =
   | FinishMessage
   | CancelMessage;
 
-// ---------------------------------------------------------------------------
 // Message types -- OUT (worker -> main thread)
-// ---------------------------------------------------------------------------
 
 interface ReadyResponse {
   type: "ready";
@@ -149,9 +141,7 @@ export type ExportWorkerResponse =
   | CompleteResponse
   | ErrorResponse;
 
-// ---------------------------------------------------------------------------
 // Export configuration
-// ---------------------------------------------------------------------------
 
 export interface ExportConfig {
   width: number;
@@ -181,9 +171,7 @@ export interface ExportConfig {
   };
 }
 
-// ---------------------------------------------------------------------------
 // Worker state -- WebCodecs path
-// ---------------------------------------------------------------------------
 
 let encoder: VideoEncoder | null = null;
 let output: Output | null = null;
@@ -194,15 +182,11 @@ let originalAudioSource: AudioSampleSource | null = null;
 let originalAudioRange: { startSeconds: number; endSeconds: number } | null =
   null;
 
-// ---------------------------------------------------------------------------
 // Worker state -- WASM fallback path
-// ---------------------------------------------------------------------------
 
 let wasmEncoder: H264MP4Encoder | null = null;
 
-// ---------------------------------------------------------------------------
 // Worker state -- shared
-// ---------------------------------------------------------------------------
 
 let cancelled = false;
 let encoderErrored = false;
@@ -222,9 +206,7 @@ let encoderHeight = 0;
 let sourceWidth = 0; // eslint-disable-line @typescript-eslint/no-unused-vars
 let sourceHeight = 0; // eslint-disable-line @typescript-eslint/no-unused-vars
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 /**
  * H.264 codec string. Profile prefix tracks the platform's HW path:

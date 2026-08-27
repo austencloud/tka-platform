@@ -184,9 +184,6 @@ export class SequenceEquivalenceDetector {
     return results;
   }
 
-  // ============================================================================
-  // PRIVATE HELPERS
-  // ============================================================================
 
   /**
    * Rotation-only equivalence used as the differing-hash fast path in
@@ -270,7 +267,6 @@ export class SequenceEquivalenceDetector {
     seqA: SequenceData,
     seqB: SequenceData
   ): EquivalenceResult {
-    // Use word cyclic equivalence detector
     const wordResult = this.wordCyclicEquivalenceDetector.areCyclicEquivalent(
       seqA.word,
       seqB.word
@@ -419,7 +415,6 @@ export class SequenceEquivalenceDetector {
           return false;
         }
       } else {
-        // Check spatial rotation
         if (!this.spatialTransformDetector.isRotationOf(stepA, stepB, spatialSteps)) {
           return false;
         }

@@ -1,4 +1,3 @@
-// --- From FileDownloader ---
 /**
  * File Download Service Contract
  *
@@ -25,7 +24,6 @@ export interface DownloadResult {
   error?: Error;
 }
 
-// --- From HandPathRepository ---
 import type {
   GridLocation,
   GridMode,
@@ -42,7 +40,6 @@ export interface HandPathFilters {
   readonly limit?: number;
 }
 
-// --- From SeoManager ---
 /**
  * SEO Service Contract
  *
@@ -56,7 +53,6 @@ export interface SEOLinkOptions {
   seoMode?: boolean;
 }
 
-// --- From SoloPropRepository ---
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export interface SoloPropFilters {
@@ -70,7 +66,6 @@ export interface SoloPropFilters {
   readonly limit?: number;
 }
 
-// --- From StepDeriver ---
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 export interface ViewerPreferences {

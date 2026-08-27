@@ -58,7 +58,6 @@
   // Show keyboard hints only on non-touch devices (true desktop with physical keyboard)
   const showKeyboardHints = $derived(!isTouchDevice);
 
-  // Get haptic feedback service
   const hapticService = getHapticFeedback();
 
   function handleTypeChange(event: PointerEvent, type: FeedbackType) {

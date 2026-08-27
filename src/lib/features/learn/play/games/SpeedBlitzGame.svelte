@@ -336,7 +336,6 @@ correct letter" for free).
     border-radius: 20px;
   }
 
-  /* ── Drain bar ───────────────────────────────────────────────────── */
   /* Reserved height regardless of scale — scaleX never changes the box's
      footprint, so nothing around it shifts as time drains. */
 

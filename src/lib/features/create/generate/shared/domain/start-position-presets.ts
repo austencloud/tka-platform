@@ -45,9 +45,7 @@ export const PRESET_DESCRIPTIONS: Record<StartPositionPreset, string> = {
   [StartPositionPreset.CUSTOM]: "Your selection",
 };
 
-// =============================================================================
 // DIAMOND MODE POSITIONS (odd numbers)
-// =============================================================================
 
 /** All diamond mode positions */
 export const ALL_DIAMOND_POSITIONS: GridPosition[] = [
@@ -76,9 +74,7 @@ export const CLASSIC_DIAMOND_POSITIONS: GridPosition[] = [
   GridPosition.GAMMA11,
 ];
 
-// =============================================================================
 // BOX MODE POSITIONS (even numbers)
-// =============================================================================
 
 /** All box mode positions */
 export const ALL_BOX_POSITIONS: GridPosition[] = [
@@ -107,9 +103,6 @@ export const CLASSIC_BOX_POSITIONS: GridPosition[] = [
   GridPosition.GAMMA12,
 ];
 
-// =============================================================================
-// HELPER FUNCTIONS
-// =============================================================================
 
 /**
  * Get all positions for a grid mode

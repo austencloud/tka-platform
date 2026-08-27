@@ -40,7 +40,6 @@
     darkMode?: boolean;
   }>();
 
-  // Get centralized visibility manager for dark mode state
   const visibilityManager = getAnimationVisibilityManager();
 
   // Track dark mode from centralized state (polls visibility manager)

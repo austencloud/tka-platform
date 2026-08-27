@@ -69,9 +69,7 @@ const OFFLINE_RENDER_PROBE = "/images/grid/diamond_grid.svg";
 
 type Ctor = ConstructorParameters<typeof OfflineCacheOrchestrator>;
 
-// ---------------------------------------------------------------------------
 // Fakes
-// ---------------------------------------------------------------------------
 
 function makeNetworkMonitor(overrides: { isOnline?: boolean } = {}) {
   return {
@@ -128,11 +126,9 @@ async function waitFor(cond: () => boolean, timeoutMs = 2000): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Environment shims — offlineCachingSupported() needs: dev=false (mocked above),
 // serviceWorker in navigator, a global `caches`, and a non-localhost hostname
 // (jsdom's default IS localhost, so we stub location to the prod origin).
-// ---------------------------------------------------------------------------
 
 let cachesMatch: ReturnType<typeof vi.fn>;
 let fetchMock: ReturnType<typeof vi.fn>;
@@ -156,9 +152,7 @@ afterEach(() => {
   vi.mocked(loadManifest).mockResolvedValue(0);
 });
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 describe("downloadForOffline — environment gating", () => {
   // Guards the honesty fix: on dev/localhost there is no SW cache to warm into,

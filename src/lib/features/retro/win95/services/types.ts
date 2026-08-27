@@ -1,6 +1,5 @@
 import type { RetroWindowState } from "../domain/types/retro-types";
 
-// --- From IFakeLoadingManager ---
 /**
  * IFakeLoadingManager - Contract for theatrical loading sequences
  *
@@ -32,7 +31,6 @@ export interface LoadingSession {
 	isComplete: boolean;
 }
 
-// --- From IWindowManager ---
 /**
  * IWindowManager Contract
  *

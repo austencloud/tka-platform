@@ -51,7 +51,6 @@
   // ─── Services ready flag (set in onMount) ────────────────────────────
   let servicesReady = false;
 
-  // ─── Playback ────────────────────────────────────────────────────────
   const visibilityManager = getAnimationVisibilityManager();
 
   // ─── Library load tracking (distinguish loading from empty) ───────────
@@ -61,7 +60,6 @@
     !lab.sequence && (awaitingLibraryLoad || libraryState.isLoading)
   );
 
-  // ─── Keyboard shortcuts ───────────────────────────────────────────────
   function handleKeydown(e: KeyboardEvent) {
     if ((e.key === "Delete" || e.key === "Backspace") && lab.selectedPhraseId) {
       e.preventDefault();
@@ -73,7 +71,6 @@
     }
   }
 
-  // ─── Session restoration ─────────────────────────────────────────
   let hasRestored = false;
 
   function tryRestoreSession(): boolean {
@@ -135,7 +132,6 @@
     }
   });
 
-  // ─── RAF loop ────────────────────────────────────────────────────────
   function onFrame(timestamp: number) {
     if (!lab.isPlaying || lab.steps.length === 0) {
       lab.lastTime = null;
@@ -163,7 +159,6 @@
     lab.rafId = requestAnimationFrame(onFrame);
   }
 
-  // ─── Per-frame state computation ────────────────────────────────────
 
   /**
    * Find the next phrase after the given beat, for blend crossfade.
@@ -269,7 +264,6 @@
     }
   }
 
-  // ─── Sequence loading ───────────────────────────────────────────────
   function handleSequenceSelected(seq: SequenceData) {
     awaitingLibraryLoad = false;
     lab.loadSequence(seq);
@@ -280,7 +274,6 @@
     }
   }
 
-  // ─── Controls ────────────────────────────────────────────────────────
   function togglePlayback() {
     lab.togglePlayback();
   }
@@ -314,7 +307,6 @@
     lab.clearTimeline();
   }
 
-  // ─── Presets ───────────────────────────────────────────────────────
   /** 4x4 preset: divide beats into 4 equal sections, assign efforts */
   const PRESET_4X4_COMBOS: {
     label: string;
@@ -330,7 +322,6 @@
     lab.applyPreset4x4(efforts);
   }
 
-  // ─── Save ────────────────────────────────────────────────────────────
   async function handleSave() {
     const sequence = lab.sequence;
     if (!sequence?.id || lab.saving) return;
@@ -634,7 +625,6 @@
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
   }
 
-  /* ─── Header ───────────────────────────────────────────────────── */
 
   .lab-header {
     display: flex;
@@ -678,7 +668,6 @@
     border: 1px solid color-mix(in srgb, var(--phrase-accent) 30%, transparent);
   }
 
-  /* ─── Buttons ──────────────────────────────────────────────────── */
 
   .pick-btn,
   .save-btn {
@@ -751,7 +740,6 @@
     color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, white);
   }
 
-  /* ─── Empty State ──────────────────────────────────────────────── */
 
   .empty-state {
     flex: 1;
@@ -792,7 +780,6 @@
     border-color: color-mix(in srgb, var(--phrase-accent) 60%, transparent);
   }
 
-  /* ─── Canvas Area ──────────────────────────────────────────────── */
 
   .canvas-area {
     flex: 1;
@@ -803,7 +790,6 @@
     overflow: hidden;
   }
 
-  /* ─── Transport Bar ────────────────────────────────────────────── */
 
   .transport-bar {
     display: flex;
@@ -815,7 +801,6 @@
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
-  /* ─── Palette Section ──────────────────────────────────────────── */
 
   .palette-section {
     padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
@@ -823,7 +808,6 @@
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
-  /* ─── Timeline Section ─────────────────────────────────────────── */
 
   .timeline-section {
     padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
@@ -878,7 +862,6 @@
     );
   }
 
-  /* ─── Restart Button ─────────────────────────────────────────── */
 
   .restart-btn {
     display: flex;
@@ -901,7 +884,6 @@
     background: color-mix(in srgb, var(--phrase-accent) 15%, transparent);
   }
 
-  /* ─── Preset Menu ────────────────────────────────────────────── */
 
   .preset-wrapper {
     position: relative;
@@ -962,7 +944,6 @@
     text-transform: capitalize;
   }
 
-  /* ─── Transition Bar ───────────────────────────────────────────── */
 
   .transition-bar {
     display: flex;
@@ -1012,7 +993,6 @@
     background: rgba(255, 255, 255, 0.04);
   }
 
-  /* ─── Reduced Motion ───────────────────────────────────────────── */
 
   @media (prefers-reduced-motion: reduce) {
     .pick-btn,

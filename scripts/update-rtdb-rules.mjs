@@ -52,7 +52,6 @@ try {
   console.log("RTDB rules updated successfully!");
   console.log("Added: sync-rooms — authenticated users can read all, write rooms.");
 
-  // Verify
   const rules = await admin.database().getRules();
   const parsed = JSON.parse(rules);
   if (parsed.rules["sync-rooms"]) {

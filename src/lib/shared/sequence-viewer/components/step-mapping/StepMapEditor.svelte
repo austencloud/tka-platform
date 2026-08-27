@@ -90,7 +90,6 @@
 
   const totalMarks = $derived(moveCount * passes + 1);
 
-  // ---- Video ----
   let videoEl: HTMLVideoElement | undefined = $state();
   let isPlaying = $state(false);
   let currentTime = $state(0);
@@ -101,7 +100,6 @@
    */
   let rate = $state(untrack(() => initialStepMap) ? 1 : MARKING_RATE);
 
-  // ---- Marks ----
   /**
    * One timestamp per arrival, in tap order. Shorter than totalMarks while a
    * run is in progress.
@@ -217,7 +215,6 @@
     return Math.max(1, Math.ceil(map.beatTimestamps.length / moves));
   }
 
-  // ---- Playback ----
 
   function applyRate(next: number): void {
     rate = next;
@@ -262,7 +259,6 @@
     seekTo((videoEl?.currentTime ?? currentTime) + seconds);
   }
 
-  // ---- Audience view ----
 
   /**
    * A performer works in their own frame; the camera sees it reflected, so a
@@ -297,7 +293,6 @@
     mirroredStart = startPosition ? mirrorStartPosition(startPosition) : null;
   }
 
-  // ---- Marking ----
 
   function startMarking(): void {
     mode = "mark";
@@ -410,7 +405,6 @@
     seekTo(marks[0] ?? 0);
   }
 
-  // ---- Review ----
 
   function selectMark(index: number): void {
     selectedMark = Math.max(0, Math.min(index, marks.length - 1));
@@ -441,7 +435,6 @@
     if (moved !== undefined) seekTo(moved);
   }
 
-  // ---- Keyboard ----
 
   function handleKeyboard(event: KeyboardEvent): void {
     const target = event.target;
@@ -493,7 +486,6 @@
     }
   }
 
-  // ---- Save ----
 
   async function handleSave(): Promise<void> {
     isSaving = true;

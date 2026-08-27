@@ -1,6 +1,5 @@
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
-// ===== Layout Types =====
 export interface OptionPickerLayout {
   optionsPerRow: number;
   optionSize: number;
@@ -10,7 +9,6 @@ export interface OptionPickerLayout {
   containerHeight: number;
 }
 
-// ===== Selection Types =====
 export interface OptionSelection {
   option: PictographData;
   timestamp: number;

@@ -24,9 +24,7 @@ export class ArrangeUndoManager {
     this.getSnapshot = getSnapshot;
   }
 
-  // =========================================================================
   // State Getters
-  // =========================================================================
 
   get canUndo(): boolean {
     return this.undoStack.length > 0;
@@ -46,9 +44,7 @@ export class ArrangeUndoManager {
     return entry?.description ?? null;
   }
 
-  // =========================================================================
   // Core Operations
-  // =========================================================================
 
   captureState(type: ArrangeUndoOperationType, description: string): void {
     if (!this.getSnapshot) {

@@ -118,7 +118,6 @@ export class Bloom2DRenderer {
     this.accumUnavailable = false;
   }
 
-  // ── Accumulation buffer ─────────────────────────────────────────────
 
   /** Decay-only frame (no tips): fade the afterglow, blit, no new light. */
   private decayOnly(

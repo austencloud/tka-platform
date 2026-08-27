@@ -1,4 +1,3 @@
-// scripts/build-tnd-base-words.ts
 // Bakes the 22 l1-tnd-motions base words to static/data/hero/tnd-base-words.json.
 // These are the ONLY data the firebase-free landing hero pool needs: every
 // shape-matrix cell+mode realization is CONSTRUCTED from a base word at runtime

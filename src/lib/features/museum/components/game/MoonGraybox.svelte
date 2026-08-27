@@ -75,7 +75,6 @@
   }
   const { grid, currentRoomId = null, visible = true }: Props = $props();
 
-  // ── Palette ───────────────────────────────────────────────────────────────
   // Regolith is not grey-blue moonlight — that is what the Moon looks like from
   // Earth, through air. Standing on it, it is a warm-neutral dust, and the only
   // reason it reads as cold is that nothing is scattering the light.
@@ -138,7 +137,6 @@
   const SHAFT_DEPTH = 7;
   const SLAB_T = 0.3;
 
-  // ── Shared geometry + materials ───────────────────────────────────────────
   const unitBox = new BoxGeometry(1, 1, 1);
 
   const materials = {

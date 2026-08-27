@@ -1,4 +1,3 @@
-// tests/unit/film-director/performer-sequences.test.ts
 import { describe, expect, it } from "vitest";
 
 import { resolveFilmDirectorSpec } from "../../../src/routes/test/film-director/_lib/resolve-film-director-spec";

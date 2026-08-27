@@ -1,4 +1,3 @@
-// --- From CameraKeyframeInterpolator ---
 
 export interface InterpolatedCamera {
   position: [number, number, number];

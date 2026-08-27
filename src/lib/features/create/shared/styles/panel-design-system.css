@@ -8,9 +8,6 @@
  */
 
 :root {
-  /* ============================================================================
-   * PANEL BACKGROUNDS
-   * ============================================================================ */
 
   /* Current default - Dark gradient */
   --panel-bg-default: linear-gradient(
@@ -35,9 +32,6 @@
 
   --panel-bg-elevated: linear-gradient(135deg, #1a1f2e 0%, #12161f 100%);
 
-  /* ============================================================================
-   * PANEL BORDERS
-   * ============================================================================ */
 
   --panel-border-subtle: 1px solid var(--theme-stroke);
   --panel-border-medium: 1px solid var(--theme-stroke-strong);
@@ -45,9 +39,6 @@
   --panel-border-accent-purple: 1px solid rgba(139, 92, 246, 0.25);
   --panel-border-glow: 1px solid rgba(139, 92, 246, 0.4);
 
-  /* ============================================================================
-   * PANEL SHADOWS
-   * ============================================================================ */
 
   /* Current default */
   --panel-shadow-default:
@@ -79,9 +70,6 @@
   --section-border-radius: 12px;
   --section-padding: 20px;
 
-  /* ============================================================================
-   * BUTTON STYLES
-   * ============================================================================ */
 
   /* Primary action buttons */
   --btn-primary-bg: linear-gradient(
@@ -126,9 +114,6 @@
   );
   --btn-header-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 
-  /* ============================================================================
-   * SPACING & LAYOUT
-   * ============================================================================ */
 
   --panel-padding: 24px;
   --panel-padding-mobile: 16px;
@@ -138,9 +123,6 @@
   --section-gap: 16px;
   --content-gap: 12px;
 
-  /* ============================================================================
-   * TYPOGRAPHY
-   * ============================================================================ */
 
   --panel-title-size: 20px;
   --panel-title-weight: 700;
@@ -156,18 +138,12 @@
   --text-secondary: rgba(255, 255, 255, 0.7);
   --text-muted: rgba(255, 255, 255, 0.5);
 
-  /* ============================================================================
-   * TRANSITIONS & ANIMATIONS
-   * ============================================================================ */
 
   --transition-fast: var(--duration-fast) ease;
   --transition-normal: var(--duration-normal) ease;
   --transition-smooth: var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* ============================================================================
-   * Z-INDEX LAYERS
-   * ============================================================================ */
 
   --z-panel-backdrop: 40;
   --z-panel-content: 50;
@@ -176,9 +152,6 @@
   --z-toast: 1000;
 }
 
-/* ============================================================================
- * UTILITY CLASSES
- * ============================================================================ */
 
 /* Apply default panel background */
 .panel-bg {

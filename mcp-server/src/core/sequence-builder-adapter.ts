@@ -20,9 +20,7 @@ import {
 import { getLetterTransitionGraph } from "./letter-transition-graph.js";
 import { recalculateAllOrientations } from "./orientation-propagation.js";
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Types (re-exported for consumers)
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface MotionData {
   color?: string;
@@ -74,15 +72,11 @@ export interface BridgeInfo {
   selectedIndex: number;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Constants
-// ─────────────────────────────────────────────────────────────────────────────
 
 const TYPE_6_LETTERS = ["α", "β", "γ"];
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Bridge expansion (uses the shared transition graph)
-// ─────────────────────────────────────────────────────────────────────────────
 
 function expandLettersWithBridges(
   letters: string[],
@@ -147,9 +141,7 @@ function expandLettersWithBridges(
   return { expanded, bridges, bridgeIndices };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Legacy builder: random walk (no constraints)
-// ─────────────────────────────────────────────────────────────────────────────
 
 function pickRandom<T>(items: T[]): T | null {
   if (items.length === 0) return null;

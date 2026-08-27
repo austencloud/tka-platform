@@ -85,7 +85,6 @@ export function generateChunkCPU(
     }
   }
 
-  // Calculate colors
   for (let i = 0; i < vertexCount; i++) {
     const h = heights[i] ?? 0;
     const color = cpuBiomeColor(h, config);
@@ -94,7 +93,6 @@ export function generateChunkCPU(
     colors[i * 3 + 2] = color.b;
   }
 
-  // Build geometry
   const { vertices, indices } = buildTerrainGeometry(heights, resolution, originX, originZ, chunkSize);
 
   // Generate blend weights
@@ -106,7 +104,6 @@ export function generateChunkCPU(
   // Generate vegetation
   const vegetation = generateVegetationForChunk(heights, normals, originX, originZ, resolution, biome, lod, config, noise);
 
-  // Add skirt geometry
   const withSkirts = addSkirtGeometry(
     vertices,
     normals,

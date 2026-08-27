@@ -44,7 +44,6 @@ export function compare(letterA: string, letterB: string): LetterComparison | nu
   return { letterA: breakdownA, letterB: breakdownB, relationship, explanation };
 }
 
-// ─── Summary builders ───────────────────────────────────────────
 
 function buildPositionDescription(entry: LetterBreakdownEntry): string {
   // Hands return to the same position they started from (e.g. Type 6 static

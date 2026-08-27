@@ -186,7 +186,6 @@
   async function saveAndNext() {
     if (!editedTitle.trim()) return;
 
-    // Save title
     await controller.updateTitle(editedTitle.trim());
 
     // Link sequence if selected

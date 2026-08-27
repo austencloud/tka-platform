@@ -68,7 +68,6 @@ export type CompositionWorkerOutMessage =
   | { type: "error"; id: number; message: string }
   | { type: "probe-result"; ok: boolean; error?: string };
 
-// ---- Pool management ----
 
 interface WorkerEntry {
   worker: Worker;
@@ -327,7 +326,6 @@ export class CompositionDispatcher {
     );
   }
 
-  // ---- Worker path ----
 
   private async composeOnWorker(
     sequence: SequenceData,
@@ -555,7 +553,6 @@ export class CompositionDispatcher {
     });
   }
 
-  // ---- Pool lifecycle ----
 
   async ensureInitialized(): Promise<void> {
     // If a pre-warm is mid-flight (building its bundle), wait for it to set the

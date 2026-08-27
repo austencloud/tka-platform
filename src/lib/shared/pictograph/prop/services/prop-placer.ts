@@ -223,11 +223,7 @@ export class PropPlacer {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 // Use this instead of propPlacer to avoid DI container rebuilds.
-// ============================================================================
 
 import { betaDetector } from "./beta-detector";
 

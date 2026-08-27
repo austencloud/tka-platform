@@ -61,7 +61,6 @@
     hubState.performanceSettings.mode === "record" ? "Record" : "Upload"
   );
 
-  // Initialize camera
   async function initializeCamera() {
     if (!cameraService) {
       error = "Camera service not loaded";

@@ -117,9 +117,7 @@
     color: var(--retro-field-text, #000);
   }
 
-  /* ------------------------------------------------------------------ */
   /* Column headers: raised 3D button appearance                         */
-  /* ------------------------------------------------------------------ */
   .retro-datagrid-header {
     background: var(--retro-button-face, #c0c0c0);
     border: 2px outset var(--retro-button-face, #c0c0c0);
@@ -134,9 +132,7 @@
     z-index: 1;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Data rows                                                           */
-  /* ------------------------------------------------------------------ */
   .retro-datagrid-row {
     cursor: default;
     user-select: none;
@@ -155,9 +151,7 @@
     color: inherit;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Cells                                                               */
-  /* ------------------------------------------------------------------ */
   .retro-datagrid-cell {
     padding: 1px 6px;
     white-space: nowrap;

@@ -34,7 +34,6 @@ export class ConnectOrchestrator {
 		private lanSyncCoordinator: LanSyncCoordinator
 	) {}
 
-	// ==================== State Getters ====================
 
 	get currentUserId(): string | null {
 		return this.presenceTracker.currentUserId;
@@ -78,7 +77,6 @@ export class ConnectOrchestrator {
 		);
 	}
 
-	// ==================== Session Actions ====================
 
 	async startSharing(sequenceId: string, sequenceWord: string, sequenceData?: Record<string, unknown>): Promise<string> {
 		// Ensure we're online
@@ -89,7 +87,6 @@ export class ConnectOrchestrator {
 		// Create session via SessionManager
 		const sessionId = await this.sessionManager.createSession(sequenceId, sequenceWord);
 
-		// Update presence with current session
 		await this.presenceTracker.setCurrentSession(sessionId);
 
 		// Store sequence data in the P2P layer so joining peers receive it via FULL_STATE
@@ -117,7 +114,6 @@ export class ConnectOrchestrator {
 		// Join via SessionManager
 		await this.sessionManager.joinSession(sessionId, this._displayPreference);
 
-		// Update presence
 		await this.presenceTracker.setCurrentSession(sessionId);
 
 		// Connect PeerJS
@@ -138,7 +134,6 @@ export class ConnectOrchestrator {
 		// Disconnect PeerJS
 		this.lanSyncCoordinator.disconnect();
 
-		// Clear session from presence
 		await this.presenceTracker.setCurrentSession(null);
 
 		// Leave via SessionManager
@@ -160,7 +155,6 @@ export class ConnectOrchestrator {
 		await this.sessionManager.updateDisplayPreference(preference);
 	}
 
-	// ==================== Invite Actions ====================
 
 	async inviteUser(userId: string): Promise<void> {
 		if (!this.isInSession || !this.currentSession) {
@@ -191,7 +185,6 @@ export class ConnectOrchestrator {
 		return this.inviteHandler.pendingInvites;
 	}
 
-	// ==================== Friend Actions ====================
 
 	async searchUsers(query: string): Promise<UserSearchResult[]> {
 		return this.friendshipManager.searchUsers(query);
@@ -209,7 +202,6 @@ export class ConnectOrchestrator {
 		return this.friendshipManager.friends;
 	}
 
-	// ==================== Presence ====================
 
 	async goOnline(): Promise<void> {
 		await this.presenceTracker.goOnline();
@@ -224,7 +216,6 @@ export class ConnectOrchestrator {
 		await this.presenceTracker.goOffline();
 	}
 
-	// ==================== Events ====================
 
 	onInviteReceived(callback: (invite: Invite) => void): () => void {
 		const unsub = this.inviteHandler.onInviteReceived(callback);
@@ -263,13 +254,11 @@ export class ConnectOrchestrator {
 		return unsub;
 	}
 
-	// ==================== Lifecycle ====================
 
 	async initialize(): Promise<void> {
 		// Go online
 		await this.presenceTracker.goOnline();
 
-		// Load friends
 		await this.friendshipManager.loadFriends();
 
 		// Start listening for invites

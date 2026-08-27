@@ -1,4 +1,3 @@
-// blender-to-placements.cjs
 // Converts Blender-exported placement JSON → placements.ts
 // Uses EXACT Blender world-space transforms for perfect fidelity.
 // Run: node scripts/blender-to-placements.cjs

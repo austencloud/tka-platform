@@ -1,4 +1,3 @@
-// src/lib/features/stage/locomotion/motion-matching/test-support/fake-rig.ts
 
 import { Bone, Object3D, Vector3 } from "three";
 import type { RigBinding, LegChain } from "../rig-binding";

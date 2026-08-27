@@ -259,10 +259,6 @@ export class ArrowLocationCalculator {
   }
 }
 
-// ============================================================================
-// DIRECT SINGLETON EXPORT
-// ============================================================================
 // Use this instead of arrowLocationCalculator to avoid DI container rebuilds.
-// ============================================================================
 
 export const arrowLocationCalculator = new ArrowLocationCalculator();

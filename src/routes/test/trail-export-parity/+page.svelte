@@ -41,7 +41,6 @@
   import { diff, bodyDiff, flattenToCanvas, AA_TOLERANCE } from "$lib/shared/parity/image-diff";
   import type { ParityRun, ParityRow, ParityVerdict } from "$lib/shared/parity/parity-types";
 
-  // ---- Gate thresholds ---------------------------------------------------
   // Bit-exact parity vs a lossy codec is impossible — residual lives on hard
   // edges (4:2:0 chroma). The meaningful test is BODY parity: diff only the
   // interior with high-contrast edges masked out.
@@ -173,9 +172,7 @@
     return new Promise((r) => requestAnimationFrame(() => r()));
   }
 
-  // -------------------------------------------------------------------------
   // Live-reference pass support.
-  // -------------------------------------------------------------------------
 
   // Re-implements the orchestrator's frame→beat math (timeToBeat) so the live
   // pass lands on the SAME playback position the offscreen export used for each

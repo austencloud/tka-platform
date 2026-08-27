@@ -52,7 +52,6 @@ async function addAttachment(db, docId, filePath, description = null, type = nul
   const docRef = collection.doc(docId);
 
   try {
-    // Verify item exists
     const doc = await docRef.get();
     if (!doc.exists) {
       return { success: false, error: `Item not found: ${docId}` };

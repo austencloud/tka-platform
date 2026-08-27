@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/front-door/HeroPhone.svelte -->
 <!--
   The hero's phone — and the page's whole argument.
 
@@ -534,7 +533,6 @@
     isolation: isolate;
   }
 
-  /* ── camera view ──────────────────────────────────────────────────────── */
 
   .camera {
     position: absolute;
@@ -666,7 +664,6 @@
     }
   }
 
-  /* ── the real page ────────────────────────────────────────────────────── */
 
   /* Swipes up from below, the way tapping a code hands you the page. */
   .page {
@@ -791,7 +788,6 @@
     box-shadow: 0 0 0.4rem rgba(126, 224, 255, 0.8);
   }
 
-  /* ── way out ──────────────────────────────────────────────────────────── */
 
   /* Seated fully BELOW the phone, never on its bezel. It used to hang at
      `bottom: -1.4rem`, which put its top 19px INSIDE the screen and covered the

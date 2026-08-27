@@ -36,9 +36,7 @@ try {
   process.exit(1);
 }
 
-// ============================================================================
 // Level computation (mirrors sequence-difficulty-calculator.ts)
-// ============================================================================
 
 function computeLevel(steps) {
   if (!steps || steps.length === 0) return 1;
@@ -73,9 +71,7 @@ function computeLevel(steps) {
   return 1;
 }
 
-// ============================================================================
 // Main
-// ============================================================================
 
 async function main() {
   console.log("=== Fix TnD Sequence Levels ===\n");

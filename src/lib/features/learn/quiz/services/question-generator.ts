@@ -20,9 +20,7 @@ import {
   type QuizQuestionData,
 } from "../domain/models/quiz-models";
 
-// ============================================================================
 // Module-level state
-// ============================================================================
 
 let previousCorrectLetter: Letter | null = null;
 let allPictographs: PictographData[] = [];
@@ -30,9 +28,7 @@ const pictographsByLetter: Map<Letter, PictographData[]> = new Map();
 let availableLetters: Letter[] = [];
 let isInitialized = false;
 
-// ============================================================================
 // Public API
-// ============================================================================
 
 /**
  * Initialize the module - must be called before generating questions.

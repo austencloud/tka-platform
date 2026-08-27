@@ -1,4 +1,3 @@
-// tests/unit/pronunciation/corpus-session-store.test.ts
 import { describe, expect, it } from "vitest";
 
 import { buildWordFiles, nextWordId } from "$lib/features/lab/pronunciation-recorder/services/implementations/CorpusSessionStore";

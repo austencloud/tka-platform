@@ -1,4 +1,3 @@
-// src/lib/features/lab/pronunciation-recorder/domain/wav-encoder.ts
 const BYTES_PER_SAMPLE = 3;
 const HEADER_BYTES = 44;
 const FULL_SCALE = 8_388_607; // 2^23 - 1

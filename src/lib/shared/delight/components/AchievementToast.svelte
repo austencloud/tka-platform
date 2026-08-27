@@ -48,14 +48,12 @@
 		}, duration);
 	}
 
-	// Register with orchestrator on mount
 	onMount(() => {
 		if (orchestrator) {
 			orchestrator.registerToastTrigger(showToast);
 		}
 	});
 
-	// Unregister on destroy
 	onDestroy(() => {
 		if (orchestrator) {
 			orchestrator.registerToastTrigger(() => {});

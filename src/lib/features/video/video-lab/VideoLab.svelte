@@ -17,7 +17,6 @@
   import StepMappingView from "./views/StepMappingView.svelte";
   import SyncedPlaybackView from "./views/SyncedPlaybackView.svelte";
 
-  // ---- Shared state across views ----
   type VideoLabView = "upload" | "mapping" | "preview";
   let activeView = $state<VideoLabView>("upload");
 
@@ -33,7 +32,6 @@
   // Beat map produced by the mapping view
   let beatMap = $state<StepMap | null>(null);
 
-  // ---- View transitions ----
 
   function handleStartMapping(
     url: string,

@@ -46,7 +46,6 @@
   type EntranceType = "fade" | "warp" | "zoom" | "descend";
   type ExitType = "fade" | "warp" | "zoom" | "shootUp";
 
-  // --- Mode Management ---
   function setMode(newMode: CosmicLabMode) {
     mode = newMode;
     updateCosmicSettings({ mode: newMode });
@@ -64,7 +63,6 @@
     }
   }
 
-  // --- Settings Handlers ---
   function handleQualityChange(q: QualityLevel) {
     quality = q;
     updateCosmicSettings({ quality: q });
@@ -87,7 +85,6 @@
     controller.regenerate(quality, layers);
   }
 
-  // --- Event Triggers ---
   function triggerMeteor() {
     controller.getSystem()?.triggerMeteor();
   }
@@ -96,7 +93,6 @@
     controller.getSystem()?.triggerComet();
   }
 
-  // --- UFO Commands ---
   const UFO_ACTIVE_KEY = "nightsky-ufo-active";
 
   function spawnUFO() {
@@ -204,7 +200,6 @@
     }
   });
 
-  // --- Canvas Interaction ---
   function handleCanvasClick(event: MouseEvent) {
     if (!canvas) return;
 
@@ -218,7 +213,6 @@
     controller.handleResize();
   }
 
-  // --- Lifecycle ---
   onMount(() => {
     if (canvas) {
       controller.initialize(canvas, quality, layers);

@@ -267,9 +267,6 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     height: 100%;
   }
 
-  /* ===========================================
-     REDUCED MOTION
-     =========================================== */
 
   @media (prefers-reduced-motion: reduce) {
     .split-canvases {

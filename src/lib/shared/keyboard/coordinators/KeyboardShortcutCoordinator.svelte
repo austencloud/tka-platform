@@ -40,10 +40,8 @@
         shortcutManager = manager;
         commandPalette = palette;
 
-        // Initialize the shortcut manager
         manager.initialize();
 
-        // Register global shortcuts
         registerGlobalShortcuts(manager, keyboardShortcutState);
 
         // Register CREATE module shortcuts

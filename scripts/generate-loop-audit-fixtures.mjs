@@ -38,9 +38,7 @@ const { isSequenceCircular } = await import(
   "../packages/sequence-engine/dist/loop/detection/LOOPDetector.js"
 );
 
-// ---------------------------------------------------------------------------
 // Real dataset provider (DiamondPictographDataframe.csv — canonical source)
-// ---------------------------------------------------------------------------
 
 function loadVariations(csvPath) {
   const lines = readFileSync(csvPath, "utf8").split("\n");

@@ -399,7 +399,6 @@
     overflow: visible;
   }
 
-  /* ── Edit mode affordances ─────────────────────────────────────────────── */
   .para.edit,
   .label.edit {
     outline: 1px dashed rgba(55, 48, 163, 0.4);

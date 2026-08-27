@@ -1,4 +1,3 @@
-// --- From IPromoVideoExporter ---
 /**
  * Promo Video Exporter Contract
  *
@@ -6,9 +5,6 @@
  * Uses h264-mp4-encoder/mediabunny for high-quality MP4 output.
  */
 
-/**
- * Export progress callback
- */
 export type ExportProgressCallback = (
   progress: number,
   stage: ExportStage
@@ -24,9 +20,6 @@ export type ExportStage =
   | "finalizing"
   | "complete";
 
-/**
- * Export result
- */
 export interface ExportResult {
   /** Whether the export succeeded */
   success: boolean;
@@ -42,7 +35,6 @@ export interface ExportResult {
   fileSize?: number;
 }
 
-// --- From IPromoAnimationController ---
 /**
  * Promo Animation Controller Contract
  *

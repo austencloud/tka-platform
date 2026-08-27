@@ -367,9 +367,6 @@
     margin-top: 2px;
   }
 
-  /* ===========================
-     ADJUST BUTTONS
-     =========================== */
 
   .adjust-btn {
     display: flex;
@@ -412,9 +409,6 @@
     cursor: not-allowed;
   }
 
-  /* ===========================
-     PRESET CHIPS
-     =========================== */
 
   .preset-chips {
     display: flex;
@@ -619,9 +613,6 @@
     margin-top: 2px;
   }
 
-  /* ===========================
-     RESPONSIVE
-     =========================== */
 
   @media (max-width: 480px) {
     .adjust-btn {
@@ -637,9 +628,6 @@
     }
   }
 
-  /* ===========================
-     ACCESSIBILITY
-     =========================== */
 
   @media (prefers-reduced-motion: reduce) {
     .adjust-btn,

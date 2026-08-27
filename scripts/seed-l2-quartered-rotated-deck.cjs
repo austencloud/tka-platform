@@ -30,9 +30,7 @@ const DECK_ID = "l2-quartered-rotated-4step-t1";
 // Start positions — one per position family
 const DEFAULT_STARTS = ["alpha1", "beta5", "gamma11"];
 
-// ============================================================================
 // CSV Loading
-// ============================================================================
 
 const CSV_PATH = path.join(
   __dirname, "..", "static", "data", "pictographs", "DiamondPictographDataframe.csv"

@@ -112,7 +112,6 @@ export class AnimationPlaybackController {
       return false;
     }
 
-    // Get metadata from engine
     const metadata = this.animationEngine.getMetadata();
     state.setTotalSteps(metadata.totalSteps);
     state.setSequenceMetadata(metadata.word, metadata.author);
@@ -161,7 +160,6 @@ export class AnimationPlaybackController {
       return;
     }
 
-    // Update metadata
     const metadata = this.animationEngine.getMetadata();
     this.state.setTotalSteps(metadata.totalSteps);
     this.state.setSequenceMetadata(metadata.word, metadata.author);

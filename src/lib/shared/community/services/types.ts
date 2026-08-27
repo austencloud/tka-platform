@@ -6,7 +6,6 @@ import type {
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { Timestamp } from 'firebase/firestore';
 
-// --- From IUserRepository ---
 /**
  * IUserRepository
  * Service contract for user profiles with social features (follow/unfollow)
@@ -32,7 +31,6 @@ export interface PaginatedQueryOptions {
   cursor?: DocumentSnapshot | null;
 }
 
-// --- From IConnectionManager ---
 
 export interface ConnectionDocument {
   notes?: string;
@@ -74,7 +72,6 @@ export interface ConnectionInfo {
   sharedSequenceCount: number;
 }
 
-// --- From IPropPreferencePersister ---
 
 export interface CatdogCombo {
   bluePropType: PropType;

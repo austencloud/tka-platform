@@ -19,7 +19,6 @@
   // Tabs that support the Sequence Actions Panel
   const SUPPORTED_TABS = new Set(["construct", "assemble", "generate", "spell"]);
 
-  // Get context
   const ctx = getCreateModuleContext();
   const { CreateModuleState, panelState } = ctx;
 

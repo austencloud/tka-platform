@@ -766,7 +766,6 @@ export class WebGL2Backend implements RenderBackend {
     }
   }
 
-  // ── Effect pass executors ──────────────────────────────────────────
 
   private executeFirePass(payload: FirePassPayload, dt: number): void {
     if (!this.fireExecutor) {

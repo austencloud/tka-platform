@@ -64,9 +64,6 @@ export function createRendererForBackend(
   return createWebGLRenderer(canvas, profile);
 }
 
-/**
- * Create a standard WebGL renderer
- */
 function createWebGLRenderer(
   canvas: HTMLCanvasElement,
   profile: RendererProfile

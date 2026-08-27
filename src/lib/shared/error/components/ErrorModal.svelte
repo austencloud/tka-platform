@@ -362,7 +362,6 @@ import { onDestroy } from "svelte";
     }
   }
 
-  /* ── Header ── */
 
   .error-header {
     display: flex;
@@ -464,7 +463,6 @@ import { onDestroy } from "svelte";
     gap: 16px;
   }
 
-  /* ── Error message ── */
 
   .error-message {
     margin: 0 0 16px;
@@ -474,7 +472,6 @@ import { onDestroy } from "svelte";
     color: var(--theme-text);
   }
 
-  /* ── Params grid ── */
 
   .params-grid {
     display: grid;
@@ -526,7 +523,6 @@ import { onDestroy } from "svelte";
     word-break: break-all;
   }
 
-  /* ── Report section ── */
 
   .report-section {
     display: flex;
@@ -561,7 +557,6 @@ import { onDestroy } from "svelte";
     border-color: var(--error-color);
   }
 
-  /* ── Footer ── */
 
   .error-actions {
     display: flex;

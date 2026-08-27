@@ -2,7 +2,6 @@
  * Co-exported types from retired interface contracts.
  */
 
-// === From IActManager ===
 
 export interface ActSummary {
   id: string;

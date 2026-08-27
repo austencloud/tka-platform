@@ -42,9 +42,7 @@ const LOCAL_STORAGE_PREFIX = "tka_feature_overrides_";
 export class UserFeatureFlagPersister {
   private unsubscribe: Unsubscribe | null = null;
 
-  // ------------------------------------------------------------------
   // Firestore document reference
-  // ------------------------------------------------------------------
 
   private async getDocRef(userId: string) {
     const firestore = await getFirestoreInstance();

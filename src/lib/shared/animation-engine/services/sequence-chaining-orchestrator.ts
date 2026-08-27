@@ -46,10 +46,8 @@ export class SequenceChainingOrchestrator {
   private swapCallback: ((seq: SequenceData) => void) | null = null;
   private errorCallback: ((message: string) => void) | null = null;
 
-  // --- Configurable propType ---
   private _propType: PropType = PropType.STAFF;
 
-  // --- History tracking ---
   private _history: PlaybackHistoryEntry[] = [];
   private _historyCapacity: number;
 
@@ -222,7 +220,6 @@ export class SequenceChainingOrchestrator {
     this._history = [];
   }
 
-  // --- Private helpers ---
 
   /** Surface a failure to the user: consumer callback when wired, toast otherwise. */
   private notifyError(message: string): void {

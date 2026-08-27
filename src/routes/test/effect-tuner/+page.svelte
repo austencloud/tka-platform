@@ -68,7 +68,6 @@
   const effectsConfig = createEffectsConfigState(undefined, { persist: false });
   setEffectsConfigContext(effectsConfig);
 
-  // ── Knobs ───────────────────────────────────────────────────
   let scene = $state<Scene>("clean");
   let fold = $state<Fold>(4);
   let mirror = $state(false);
@@ -201,7 +200,6 @@
     saveTarget = t;
   }
 
-  // ── Sequences ───────────────────────────────────────────────
   let base = $state<SequenceData | null>(null);
   let rotated = $state<SequenceData[]>([]); // additional layers beyond base
   let playheadBeat = $state(0);

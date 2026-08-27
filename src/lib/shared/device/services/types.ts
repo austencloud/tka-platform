@@ -1,4 +1,3 @@
-// --- From GeoLocationProvider ---
 /**
  * GeoLocation Provider Interface
  *

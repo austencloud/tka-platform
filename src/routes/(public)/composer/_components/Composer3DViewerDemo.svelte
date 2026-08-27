@@ -73,7 +73,6 @@
     `Live 3D performance of ${simplifyRepeatedWord(sequence.word)} with ${performerCount === 1 ? "one performer" : `${performerCount} performers`}`
   );
 
-  // ── playback clock ────────────────────────────────────────────────────────
   // The scene's puppet loop positions every performer to `currentStep` (a
   // continuous float: integer = beat, fraction = sub-beat) each frame and wraps
   // past the sequence length — so autoplay means advancing this float. 60 BPM =

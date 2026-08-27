@@ -19,15 +19,10 @@ import { PropType } from "../../pictograph/prop/domain/enums/prop-type";
 import type { MotionDataSchema } from "../../pictograph/shared/domain/schemas/pictograph-schemas";
 import { PictographDataSchema } from "../../pictograph/shared/domain/schemas/pictograph-schemas";
 
-// ============================================================================
-// COORDINATE AND PLACEMENT SCHEMAS
-// ============================================================================
 
 // Pictograph-specific schemas moved to pictograph/shared/domain/schemas/
 
-// ============================================================================
 // STEP AND SEQUENCE SCHEMAS - The Main Targets
-// ============================================================================
 
 export const StepDataSchema = PictographDataSchema.extend({
   // Beat context properties
@@ -86,9 +81,7 @@ export const SequenceDataSchema = z.object({
     .default({} as Record<string, unknown>),
 });
 
-// ============================================================================
 // PNG IMPORT SCHEMAS - Second Target
-// ============================================================================
 
 const PngMotionAttributesSchema = z.object({
   motion_type: z.string(), // PNG uses string values like "static", "pro", "anti"
@@ -120,9 +113,7 @@ export const PngStepSchema = z.object({
 
 export const PngMetadataArraySchema = z.array(PngStepSchema);
 
-// ============================================================================
 // TYPE INFERENCE - Automatic TypeScript types from schemas
-// ============================================================================
 
 export type ValidatedSequenceData = z.infer<typeof SequenceDataSchema>;
 export type ValidatedStepData = z.infer<typeof StepDataSchema>;
@@ -130,9 +121,6 @@ export type ValidatedPngStep = z.infer<typeof PngStepSchema>;
 export type ValidatedMotionData = z.infer<typeof MotionDataSchema>;
 export type ValidatedPictographData = z.infer<typeof PictographDataSchema>;
 
-// ============================================================================
-// VALIDATION UTILITIES
-// ============================================================================
 
 /**
  * Safe parsing that returns detailed error information

@@ -8,9 +8,7 @@
  */
 
 .retro-shell {
-	/* ------------------------------------------------------------------ */
 	/* VGA 16-Color Palette                                               */
-	/* ------------------------------------------------------------------ */
 	--retro-black: #000000;
 	--retro-white: #ffffff;
 	--retro-light-gray: #c0c0c0;
@@ -28,9 +26,7 @@
 	--retro-aqua: #00ffff;
 	--retro-fuchsia: #ff00ff;
 
-	/* ------------------------------------------------------------------ */
 	/* Semantic Aliases                                                    */
-	/* ------------------------------------------------------------------ */
 	--retro-desktop-bg: var(--retro-teal);
 	--retro-window-bg: var(--retro-light-gray);
 	--retro-titlebar-bg: var(--retro-navy);
@@ -46,24 +42,18 @@
 	--retro-button-shadow: var(--retro-dark-gray);
 	--retro-button-dark-shadow: var(--retro-black);
 
-	/* ------------------------------------------------------------------ */
 	/* Typography                                                         */
-	/* ------------------------------------------------------------------ */
 	--retro-font-family: "Pixelated MS Sans Serif", "Microsoft Sans Serif", Arial, sans-serif;
 	--retro-font-size: 11px;
 	--retro-font-mono: "Fixedsys", "Courier New", monospace;
 
-	/* ------------------------------------------------------------------ */
 	/* Spacing                                                            */
-	/* ------------------------------------------------------------------ */
 	--retro-border-width: 2px;
 	--retro-padding-sm: 2px;
 	--retro-padding-md: 4px;
 	--retro-padding-lg: 8px;
 
-	/* ------------------------------------------------------------------ */
 	/* Z-Index Layers                                                     */
-	/* ------------------------------------------------------------------ */
 	--retro-z-desktop: 0;
 	--retro-z-window: 10;
 	--retro-z-active-window: 20;
@@ -72,8 +62,6 @@
 	--retro-z-dropdown: 500;
 	--retro-z-boot: 1000;
 
-	/* ------------------------------------------------------------------ */
 	/* Tooltip                                                            */
-	/* ------------------------------------------------------------------ */
 	--retro-tooltip-bg: #ffffe1;
 }

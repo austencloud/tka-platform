@@ -142,7 +142,6 @@ export function metaErrorCode(error: unknown): string {
   return "meta/provider-error";
 }
 
-// ------------------------------------------------------------------ status
 
 /**
  * Live connection state, straight from the token-free mirror the functions
@@ -240,7 +239,6 @@ export function readMetaPublishStatus(
   };
 }
 
-// ----------------------------------------------------------------- connect
 
 interface StartMetaConnectResponse {
   authorizationUrl: string;

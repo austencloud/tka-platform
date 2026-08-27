@@ -49,7 +49,6 @@
 		}, 3000);
 	}
 
-	// Register with orchestrator on mount
 	onMount(() => {
 		if (orchestrator) {
 			orchestrator.registerConfettiTrigger(triggerBurst);

@@ -76,9 +76,6 @@ export function createConstructTabState(
   sequenceValidationService?: SequenceValidator,
   createModuleState?: CreateModuleStateMinimal | null
 ) {
-  // ============================================================================
-  // HMR STATE BACKUP
-  // ============================================================================
 
   // Create HMR backup for critical state - temporarily disabled to debug effect_orphan error
   const hmrBackup = {
@@ -89,9 +86,7 @@ export function createConstructTabState(
     },
   };
 
-  // ============================================================================
   // REACTIVE STATE (Construct-specific)
-  // ============================================================================
 
   let isLoading = $state(false);
   let error = $state<string | null>(null);

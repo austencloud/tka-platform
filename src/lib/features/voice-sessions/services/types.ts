@@ -7,7 +7,6 @@ import type {
 } from "$lib/shared/voice-control/domain/voice-session-types";
 import type { VoiceCommandCategory } from "$lib/shared/voice-control/domain/voice-command-types";
 
-// === From IVoiceSessionAnalyzer ===
 
 export interface FailingTranscript {
   /** Normalized transcript text (lowercased, trimmed) */

@@ -61,7 +61,6 @@ export class ShortcutRegistry {
       // Check if condition is met
       if (!shortcut.isConditionMet()) continue;
 
-      // Check for custom binding
       const customBinding = customBindings[shortcut.id];
 
       if (customBinding) {

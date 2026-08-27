@@ -7,7 +7,6 @@ import { z } from "zod";
 import { firestoreDate } from "$lib/shared/firestore";
 import { NOTIFICATION_TYPES } from "$lib/shared/feedback/domain/models/notification-models";
 
-// --- Enums / Literals ---
 
 const FeedbackTypeSchema = z.enum(["bug", "feature", "general"]);
 const FeedbackPrioritySchema = z.enum(["low", "medium", "high", "critical"]);
@@ -35,7 +34,6 @@ const TesterConfirmationStatusSchema = z.enum([
 ]);
 const SubtaskStatusSchema = z.enum(["pending", "in-progress", "completed"]);
 
-// --- Nested objects ---
 
 const DeviceContextSchema = z
   .object({
@@ -92,7 +90,6 @@ const FeedbackSubtaskSchema = z
   })
   .passthrough();
 
-// --- Main FeedbackItem schema ---
 
 export const FeedbackItemSchema = z
   .object({
@@ -162,7 +159,6 @@ export const FeedbackItemSchema = z
   })
   .passthrough();
 
-// --- Contributor schema ---
 
 export const ContributorSchema = z
   .object({

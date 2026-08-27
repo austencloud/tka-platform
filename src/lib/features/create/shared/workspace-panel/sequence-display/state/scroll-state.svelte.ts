@@ -4,9 +4,6 @@
  * Svelte 5 runes-based state management for scroll detection and auto-scroll behavior.
  */
 
-/**
- * Create scroll state for step grid
- */
 export function createScrollState() {
   // Scroll state
   let hasVerticalScrollbar = $state(false);
@@ -59,9 +56,6 @@ export function createScrollState() {
     }, 100);
   }
 
-  /**
-   * Set scroll container reference
-   */
   function setScrollContainer(element: HTMLElement | null) {
     scrollContainerRef = element;
     if (element) {

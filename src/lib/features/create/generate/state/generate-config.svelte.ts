@@ -26,7 +26,6 @@ import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils
 // Re-export for convenience
 export type { UIGenerationConfig };
 
-// ===== Persistence =====
 const STORAGE_KEY = "tka-generate-config";
 
 interface SerializedConfig {
@@ -200,7 +199,6 @@ function clearConfig(): void {
   }
 }
 
-// ===== Default Config =====
 // Opinionated starting state for anyone with no saved config: a rotated LOOP
 // with a quartered slice at length 8, so a first-run Generate tab produces a
 // LOOP out of the box instead of a loop-off freeform prompt. Overridden by any
@@ -272,7 +270,6 @@ const GUEST_DEFAULT_OVERRIDES: Partial<UIGenerationConfig> = {
   level: 1,
 };
 
-// ===== Simple State Creator =====
 /**
  * Creates simple reactive state for generation configuration
  * Automatically loads saved settings from localStorage and persists changes

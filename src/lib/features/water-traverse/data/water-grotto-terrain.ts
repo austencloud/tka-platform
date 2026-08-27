@@ -55,7 +55,6 @@ import {
 
 export type { FloorRect, WallRect, WorldRect };
 
-// ── The one datum everything hangs off ──────────────────────────────────────
 
 /** The pool's surface. Every elevation in this file is relative to it. */
 export const WATERLINE_Y = 0;
@@ -69,7 +68,6 @@ export const APRON_Y = 1.2;
 /** Parapet top. Waist-high from the apron: a place to stand and look over. */
 export const PARAPET_TOP_Y = APRON_Y + 0.9;
 
-// ── Elevations ──────────────────────────────────────────────────────────────
 
 /** The sump floor. Eye lands 1.6 m under the surface — properly submerged. */
 export const SUMP_FLOOR_Y = -3.2;
@@ -86,7 +84,6 @@ export const ICE_Y = WATERLINE_Y;
 /** The grotto roof. One flat slab — a dome is an art-pass problem. */
 export const CEILING_Y = 14;
 
-// ── Plan ────────────────────────────────────────────────────────────────────
 
 /** The pool, in plan. 22 × 28 m — squarish, which is what keeps it a room. */
 export const POOL_MIN_X = -11;
@@ -129,7 +126,6 @@ export const EXIT_BAY_MIN_X = 11;
 export const EXIT_BAY_MAX_X = 15;
 export const EXIT_RAMP_END_Z = 20;
 
-// ── Types ───────────────────────────────────────────────────────────────────
 
 /** Which of the pool's three temperaments a performer stands in. */
 export type Station = "ice" | "basin" | "shallows";
@@ -158,7 +154,6 @@ export interface WaterGrottoLayout {
   surfaceBreak: { x: number; z: number };
 }
 
-// ── Performers ──────────────────────────────────────────────────────────────
 
 /**
  * All three sit OFF the axis of the mouth you arrive through.
@@ -172,7 +167,6 @@ export const ICE_PERFORMER = { x: -5, z: 36 } as const;
 export const BASIN_PERFORMER = { x: -6, z: 23 } as const;
 export const SHALLOWS_PERFORMER = { x: 5, z: 13 } as const;
 
-// ── Build ───────────────────────────────────────────────────────────────────
 
 function rect(minX: number, minZ: number, maxX: number, maxZ: number): WorldRect {
   return { minX, minZ, maxX, maxZ };
@@ -254,7 +248,6 @@ function buildWalls(): WallRect[] {
   const OUTER_TOP = CEILING_Y;
   const T = 2; // wall thickness
 
-  // ── Sump corridor ────────────────────────────────────────────────────────
   // Side walls run all the way to the roof, not just to head height. The low
   // sump ceiling below hides everything above it, but the moment the roof stops
   // and you surface on the ramp, a wall that ended at 3.2 m would open onto
@@ -265,7 +258,6 @@ function buildWalls(): WallRect[] {
   // The roof that makes the sump a sump, and stops before you surface.
   w.push(wall("sump-ceiling", rect(SUMP_MIN_X, SUMP_START_Z, SUMP_MAX_X, SUMP_ROOF_END_Z), SUMP_ROOF_Y, SUMP_ROOF_Y + 0.6));
 
-  // ── Room shell ───────────────────────────────────────────────────────────
   w.push(wall("hall-west", rect(ROOM_MIN_X - T, ROOM_MIN_Z, ROOM_MIN_X, ROOM_MAX_Z), 0, OUTER_TOP));
   w.push(wall("hall-east", rect(ROOM_MAX_X, ROOM_MIN_Z, ROOM_MAX_X + T, ROOM_MAX_Z), 0, OUTER_TOP));
   w.push(wall("hall-north", rect(ROOM_MIN_X - T, ROOM_MAX_Z, ROOM_MAX_X + T, ROOM_MAX_Z + T), 0, OUTER_TOP));
@@ -277,7 +269,6 @@ function buildWalls(): WallRect[] {
   // effect is the ceiling LIFTING as you surface, which is the reveal.
   w.push(wall("hall-ceiling", rect(ROOM_MIN_X - T, SUMP_START_Z - T, ROOM_MAX_X + T, ROOM_MAX_Z + T), CEILING_Y, CEILING_Y + 1));
 
-  // ── Pool edge ────────────────────────────────────────────────────────────
   // One rect per edge does two jobs: it contains the water volume from the
   // pool floor up, and its top 0.9 m is the parapet you lean on to look
   // across. Standing at it and seeing a performer framed over still water IS
@@ -410,7 +401,6 @@ export function buildWaterGrottoLayout(): WaterGrottoLayout {
   };
 }
 
-// ── Queries ─────────────────────────────────────────────────────────────────
 
 function floorAtIn(floors: FloorRect[], x: number, z: number): number {
   let best = Number.NEGATIVE_INFINITY;

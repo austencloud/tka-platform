@@ -53,6 +53,7 @@ instead of showing an empty shell.
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { getSharedCollectionsContext } from "../context/shared-collections-context";
   import UserVideoLibraryView from "$lib/shared/video-collaboration/components/UserVideoLibraryView.svelte";
+  import WorkShelfRail, { type WorkShelfId } from "./WorkShelfRail.svelte";
   import {
     trackBrowseCollectionOpened,
     trackBrowseVisualTypeOpened,
@@ -161,7 +162,6 @@ instead of showing an empty shell.
   let smartBuilderOpen = $state(false);
   let smartEditTarget = $state<LibraryCollection | null>(null);
 
-  // ── "All" shelf ──────────────────────────────────────────────────────────
   // The library pile itself, pinned above Favorites (it's the superset).
   // Synthetic — not a Firestore doc. Its id "all" can't collide with real
   // collections (Firestore auto-ids are 20 chars; system ids use "system_").
@@ -291,6 +291,33 @@ instead of showing an empty shell.
       ownerName: undefined as string | undefined,
     }
   );
+
+  let activeShelf = $state<WorkShelfId>("collections");
+
+  const hasSharedShelf = $derived(
+    sharedCollections.length > 0 ||
+      sharedCollectionsState.loading ||
+      !!sharedCollectionsState.error ||
+      followedCollectionsState.items.length > 0
+  );
+
+  function shelfForSelection(selection: {
+    id: string;
+    ownerId: string | null;
+  }): WorkShelfId {
+    if (selection.ownerId) return "shared";
+    if (isPerformancesId(selection.id)) return "performances";
+    if (isArtId(selection.id)) return "art";
+    if (isFoundingId(selection.id)) return "core";
+    return "collections";
+  }
+
+  // Back, forward, and restored deep links keep the rail on the shelf that
+  // contains the item showing in the detail pane. Switching shelves locally
+  // does not disturb that detail until the user chooses a new card.
+  $effect(() => {
+    activeShelf = shelfForSelection(railSelection);
+  });
   const isYouSequences = $derived(
     browseNavigationState.currentLocation?.primary === "you" &&
       browseNavigationState.currentLocation?.section === "sequences"
@@ -330,7 +357,6 @@ instead of showing an empty shell.
     browseNavigationState.viewCollections();
   }
 
-  // ── "Art" shelf ──────────────────────────────────────────────────────────
   // The three Art collections (tunnels, 3D scenes, mandalas) as category
   // cards — a count + latest-poster cover per category. Selecting one opens
   // its gallery IN the detail pane, exactly like a sequence collection: same
@@ -750,56 +776,59 @@ instead of showing an empty shell.
   {/each}
 {/snippet}
 
+{#snippet shelfContent(shelfId: WorkShelfId)}
+  {#if shelfId === "collections"}
+    {#if loading && collections.length === 0}
+      <div class="rail-cards" aria-hidden="true">
+        {#each Array(5) as _}
+          <span class="tile-skeleton"></span>
+        {/each}
+      </div>
+    {:else}
+      <div class="rail-cards">
+        {@render ownShelves(railSelection)}
+      </div>
+    {/if}
+  {:else if shelfId === "performances"}
+    <div class="rail-cards">
+      {@render performancesShelfCard(railSelection)}
+    </div>
+  {:else if shelfId === "art"}
+    <div class="rail-cards">
+      {@render artShelf(railSelection)}
+    </div>
+  {:else if shelfId === "core"}
+    <div class="rail-cards">
+      {@render tkaOriginalsShelf(railSelection)}
+    </div>
+  {:else}
+    {#if sharedCollections.length > 0 || sharedCollectionsState.loading || sharedCollectionsState.error}
+      <h4 class="shelf-subheading">Shared with you</h4>
+      <div class="rail-cards">
+        {@render sharedShelfContent(railSelection)}
+      </div>
+    {/if}
+
+    {#if followedCollectionsState.items.length > 0}
+      <h4 class="shelf-subheading">Following</h4>
+      <div class="rail-cards">
+        {@render followedShelves(railSelection)}
+      </div>
+    {/if}
+  {/if}
+{/snippet}
+
 {#if !signedIn && isYouSequences}
   <AllLibraryView />
 {:else if isSideBySide && signedIn}
   <div class="library-split">
     <aside class="rail" aria-label="Your collections">
-      <header class="list-header">
-        <h2 class="list-title">Your work</h2>
-      </header>
-
-      {#if loading && collections.length === 0}
-        <div class="rail-cards" aria-hidden="true">
-          {#each Array(5) as _}
-            <span class="tile-skeleton"></span>
-          {/each}
-        </div>
-      {:else}
-        <h3 class="shelf-heading">My Collections</h3>
-        <div class="rail-cards">
-          {@render ownShelves(railSelection)}
-        </div>
-
-        <h3 class="shelf-heading">Performances</h3>
-        <div class="rail-cards">
-          {@render performancesShelfCard(railSelection)}
-        </div>
-
-        <h3 class="shelf-heading">Art</h3>
-        <div class="rail-cards">
-          {@render artShelf(railSelection)}
-        </div>
-
-        <h3 class="shelf-heading">TKA Core</h3>
-        <div class="rail-cards">
-          {@render tkaOriginalsShelf(railSelection)}
-        </div>
-
-        {#if sharedCollections.length > 0 || sharedCollectionsState.loading || sharedCollectionsState.error}
-          <h3 class="shelf-heading">Shared with you</h3>
-          <div class="rail-cards">
-            {@render sharedShelfContent(railSelection)}
-          </div>
-        {/if}
-
-        {#if followedCollectionsState.items.length > 0}
-          <h3 class="shelf-heading">Following</h3>
-          <div class="rail-cards">
-            {@render followedShelves(railSelection)}
-          </div>
-        {/if}
-      {/if}
+      <WorkShelfRail
+        value={activeShelf}
+        sharedAvailable={hasSharedShelf}
+        onchange={(shelfId) => (activeShelf = shelfId)}
+        content={shelfContent}
+      />
     </aside>
 
     <section class="detail-pane">
@@ -960,11 +989,18 @@ instead of showing an empty shell.
   .rail {
     display: flex;
     flex-direction: column;
-    gap: 14px;
     min-height: 0;
-    overflow-y: auto;
-    padding: clamp(12px, 1.8cqi, 24px);
+    overflow: hidden;
     border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .shelf-subheading {
+    margin: 4px 0 0;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
   }
 
   .rail-cards {
@@ -1045,7 +1081,6 @@ instead of showing an empty shell.
     font-size: 24px;
   }
 
-  /* ── Phone list ─────────────────────────────────────────────────── */
 
   .collections-list {
     display: flex;

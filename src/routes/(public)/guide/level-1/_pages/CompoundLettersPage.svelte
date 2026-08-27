@@ -60,7 +60,6 @@
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
 
-  // ── Motion authoring ────────────────────────────────────────────────────────
   // Handpath direction on the compass ring (N→E→S→W = CW): pro's prop rides it,
   // anti's prop counter-rotates and flips the thumb (in↔out).
   const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);

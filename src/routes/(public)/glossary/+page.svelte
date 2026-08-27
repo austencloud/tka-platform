@@ -1408,7 +1408,6 @@
     color: oklch(0.72 0.09 275);
   }
 
-  /* ── master-detail split ── */
   .split {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -1608,7 +1607,6 @@
     display: none;
   }
 
-  /* ── mobile Contents drawer ── */
   .drawer {
     position: fixed;
     inset: 0;
@@ -1656,7 +1654,6 @@
     flex-direction: column;
   }
 
-  /* ── back to top ── */
   .back-top {
     all: unset;
     box-sizing: border-box;

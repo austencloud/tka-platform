@@ -41,11 +41,9 @@
     onBack,
   }: Props = $props();
 
-  // ============ WIZARD STATE ============
 
   let wizardStep = $state<WizardStep>("style");
 
-  // ============ PROP OPTIONS ============
 
   const NON_PROP_TYPES = new Set([PropType.HAND]);
 
@@ -66,7 +64,6 @@
       }));
   });
 
-  // ============ DERIVED ============
 
   const selectedGradient = $derived(
     ALL_GRADIENTS.find((g) => g.id === selectedGradientId) ?? ALL_GRADIENTS[0]!
@@ -82,7 +79,6 @@
     PROPS.find((p) => p.id === selectedProp)?.image ?? ""
   );
 
-  // ============ NAVIGATION ============
 
   function wizardNext() {
     if (wizardStep === "style") wizardStep = "shade";
@@ -106,7 +102,6 @@
     }
   }
 
-  // ============ ACTIONS ============
 
   function selectFamily(familyId: string) {
     const firstInFamily = ALL_GRADIENTS.find((g) => g.family === familyId);

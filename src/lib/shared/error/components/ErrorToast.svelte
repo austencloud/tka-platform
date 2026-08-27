@@ -74,7 +74,6 @@
 </div>
 
 <style>
-  /* ── Container ─────────────────────────────────────────────────────────── */
 
   .toast-region {
     position: fixed;
@@ -89,7 +88,6 @@
     width: calc(100vw - 48px);
   }
 
-  /* ── Overflow badge ────────────────────────────────────────────────────── */
 
   .overflow-badge {
     pointer-events: auto;
@@ -106,7 +104,6 @@
     user-select: none;
   }
 
-  /* ── Individual toast ──────────────────────────────────────────────────── */
 
   .toast {
     pointer-events: auto;
@@ -151,7 +148,6 @@
       color-mix(in srgb, var(--semantic-info, #3b82f6) 20%, transparent);
   }
 
-  /* ── Body row ──────────────────────────────────────────────────────────── */
 
   .toast-body {
     display: flex;
@@ -162,7 +158,6 @@
     padding-bottom: 11px;
   }
 
-  /* ── Severity icon ─────────────────────────────────────────────────────── */
 
   .toast-icon {
     flex-shrink: 0;
@@ -178,7 +173,6 @@
     color: var(--semantic-info, #60a5fa);
   }
 
-  /* ── Message ───────────────────────────────────────────────────────────── */
 
   .toast-message {
     flex: 1;
@@ -189,7 +183,6 @@
     word-break: break-word;
   }
 
-  /* ── "Logged" indicator ────────────────────────────────────────────────── */
 
   .toast-logged {
     flex-shrink: 0;
@@ -206,7 +199,6 @@
     color: rgba(134, 239, 172, 0.7);
   }
 
-  /* ── Close button ──────────────────────────────────────────────────────── */
 
   .toast-close {
     flex-shrink: 0;
@@ -238,7 +230,6 @@
     outline-offset: -2px;
   }
 
-  /* ── Progress bar ──────────────────────────────────────────────────────── */
 
   .toast-progress {
     position: absolute;
@@ -283,7 +274,6 @@
     }
   }
 
-  /* ── Entrance animation ────────────────────────────────────────────────── */
 
   @keyframes toast-enter {
     from {

@@ -133,7 +133,6 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
           return;
         }
 
-        // Initialize playback
         const ok = currentController!.initialize(fullSeq, animState);
         if (!ok) {
           error = "Failed to initialize playback";

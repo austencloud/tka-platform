@@ -276,7 +276,6 @@ const THREE_D_SHAPES: VTGHybrid[] = [
 	},
 ];
 
-// ─── Hands-vs-Poi Timing/Direction Divergence ─────────────────────────
 // VTG2 introduced the insight that in hybrid patterns, the hands and
 // poi can have DIFFERENT timing/direction classifications. This is the
 // key conceptual leap from VTG1 to VTG2.
@@ -366,7 +365,6 @@ const HANDS_VS_POI_CONCEPTS: VTGHybrid[] = [
 	},
 ];
 
-// ─── Vanish Shape Primitives ──────────────────────────────────────────
 
 const VANISH_PRIMITIVES: VTGHybrid[] = [
 	{

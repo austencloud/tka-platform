@@ -5,7 +5,6 @@ import type {
   TimelineProject,
 } from "$lib/shared/animation-engine/domain/timeline-types";
 
-// --- From ITimelineSnapper ---
 /**
  * ITimelineSnapper - Contract for timeline snapping functionality
  *
@@ -51,7 +50,6 @@ export interface SnapContext {
   settings: SnapSettings;
 }
 
-// --- From ITimelineUndoManager ---
 /**
  * ITimelineUndoManager - Contract for timeline undo/redo functionality
  *
@@ -114,7 +112,6 @@ export interface TimelineUndoEntry {
  * Undo manager interface for timeline operations
  */
 
-// --- From ITimelinePlayer ---
 /**
  * ITimelinePlayer - Contract for timeline playback management
  *

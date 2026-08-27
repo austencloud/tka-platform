@@ -46,9 +46,7 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { LOOPComponent } from "@tka/sequence-engine/loop";
 
-// ---------------------------------------------------------------------------
 // Fixtures
-// ---------------------------------------------------------------------------
 
 const CYCLE: readonly GridLocation[] = [
   GridLocation.NORTH,

@@ -224,7 +224,6 @@ function fourTipsToEmitters(four: FourTipPositions): EmitterTip[] {
   return out;
 }
 
-// ── Trails wrapper ─────────────────────────────────────────────
 
 function createTrailsRenderer(): WorkerEffectRenderer {
   const renderer = new Canvas2DTrailRenderer();

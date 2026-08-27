@@ -24,7 +24,6 @@ import { resolve, relative, join } from "path";
 const SRC_ROOT = resolve("src");
 const MANIFEST_PATH = resolve("scripts/component-manifest.json");
 
-// ── Tunable thresholds ───────────────────────────────────────────────
 // EXTRACT_SCORE captures roughly the worst ~22 logic monsters measured 2026-06-02
 // (the 22nd scored 599). The lint gate (Phase 4) ratchets from here.
 const EXTRACT_SCORE = 600;
@@ -34,7 +33,6 @@ const BIG_TOTAL = 800; // the old (wrong) raw-line trigger, kept only for cross-
 // Path fragments that mark a likely declarative 3D / scene-graph keeper.
 const SCENE_PATH = /\/(3d|scenes|environments|procedural-engine|render-graph)\//;
 
-// ── Helpers ──────────────────────────────────────────────────────────
 
 async function walk(dir, acc) {
 	for (const entry of await readdir(dir, { withFileTypes: true })) {

@@ -248,7 +248,6 @@
     font-style: italic;
   }
 
-  /* ─── Modal body ──────────────────────────────────────────────────────────── */
 
   .bio-modal-body {
     padding: 20px;

@@ -33,7 +33,6 @@
   import { FIXTURE_REGISTRY } from "../../domain/fixture-registry";
   import { resolveScene, resolveCamera, resolveRenderer } from "../resolve-threlte-scene";
 
-  // ── Constants ──
 
   const TILE_SIZE = 0.5;
   const UP = new Vector3(0, 1, 0);
@@ -41,7 +40,6 @@
   const COLOR_VALID = new Color(0x22dd77);
   const COLOR_INVALID = new Color(0xdd3344);
 
-  // ── Props ──
 
   interface Props {
     def: PlaceableObjectDef;
@@ -52,7 +50,6 @@
 
   const { def, onPlace, onDelete, onUndo }: Props = $props();
 
-  // ── Threlte context ──
   // useThrelte() may return raw objects or CurrentWritable wrappers depending
   // on version. Use the ?.current ?? fallback pattern the codebase uses elsewhere.
 
@@ -61,7 +58,6 @@
   function getCamera() { return resolveCamera(threlteCtx); }
   function getRenderer() { return resolveRenderer(threlteCtx); }
 
-  // ── Ghost state ──
 
   let ghostX = $state(0);
   let ghostY = $state(0);
@@ -78,7 +74,6 @@
   const hitPoint = new Vector3();
   const tempQuat = new Quaternion();
 
-  // ── Material & geometry ──
 
   const ghostMaterial = new MeshStandardMaterial({
     transparent: true,
@@ -115,7 +110,6 @@
     ghostModel = buildGhostFromCache();
   });
 
-  // ── Surface classification ──
 
   function classifySurface(normal: Vector3): "floor" | "wall" | "unknown" {
     const dot = normal.dot(UP);
@@ -165,7 +159,6 @@
     return null;
   }
 
-  // ── Find manual placement ID from raycast hit ──
 
   function findManualPlacementId(obj: Object3D): string | null {
     let current: Object3D | null = obj;
@@ -177,7 +170,6 @@
     return null;
   }
 
-  // ── Snap helpers ──
 
   function snapToTileGrid(v: number): number {
     return Math.round(v / TILE_SIZE) * TILE_SIZE;
@@ -187,7 +179,6 @@
     return Math.floor(v / TILE_SIZE) * TILE_SIZE + TILE_SIZE / 2;
   }
 
-  // ── Wall orientation ──
 
   function computeWallQuaternion(worldNormal: Vector3): [number, number, number, number] {
     // Handle anti-parallel edge case (FORWARD and worldNormal are exactly opposite)
@@ -208,7 +199,6 @@
     return Math.atan2(v.x, v.z);
   }
 
-  // ── Wall facing direction string ──
 
   function wallFacingFromNormal(n: Vector3): string {
     // Return Direction-compatible values matching museum-grid-types
@@ -218,17 +208,14 @@
     return n.z > 0 ? "south" : "north";
   }
 
-  // ── Hover glow state for deletable manual placements ──
 
   let hoveredPlacementId: string | null = null;
   let hoveredObject: Object3D | null = null;
 
-  // ── Stored hit data for click handler ──
 
   let lastHitNormal = new Vector3();
   let lastSurface: "floor" | "wall" | "unknown" = "unknown";
 
-  // ── Event handlers ──
 
   function onPointerMove(event: PointerEvent): void {
     const ren = getRenderer();

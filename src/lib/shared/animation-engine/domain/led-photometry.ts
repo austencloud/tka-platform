@@ -61,7 +61,6 @@ export const EMITTER_DUTY_CYCLE = 0.5;
  */
 export const EMITTER_DIE_LENGTH_FRACTION = 1 / 40;
 
-// ─── Flux budget ──────────────────────────────────────────────────────────────
 
 /**
  * Luminous flux one prop emits at brightness 1.0, in linear HDR render units
@@ -105,7 +104,6 @@ export function perLedFlux(propFlux: number, ledCount: number): number {
   return propFlux / ledCount;
 }
 
-// ─── Emitter footprint ────────────────────────────────────────────────────────
 
 /**
  * The on-screen footprint of one LED, derived from how densely the strip packs
@@ -177,7 +175,6 @@ export function stripSurfaceBrightness(
   return propFlux / area;
 }
 
-// ─── Motion ───────────────────────────────────────────────────────────────────
 
 /**
  * Path length an emitter's energy spreads over, floored at its own footprint.
@@ -251,7 +248,6 @@ export function subStepCount(
   return Math.min(MAX_SUB_STEPS, Math.max(1, Math.ceil(sweptAngle / maxStepAngle)));
 }
 
-// ─── Shutter ──────────────────────────────────────────────────────────────────
 
 /**
  * How accumulated frames are weighted by age.
@@ -431,7 +427,6 @@ export function shutterCutoffSeconds(shutter: LedShutter): number {
     : shutter.timeConstantSeconds * 5;
 }
 
-// ─── Glare ────────────────────────────────────────────────────────────────────
 
 /**
  * Per-mip weight of the bloom pyramid, the single control over glare shape.

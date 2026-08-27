@@ -41,7 +41,6 @@ uniform int uSpawnCount;
 uniform int uSpawnStartIdx;
 uniform vec4 uSpawnVelocities[64];
 
-// ── Simplex noise ──────────────────────────────────────────────────────
 
 vec4 permute(vec4 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
 vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
@@ -100,7 +99,6 @@ vec3 curlNoise(vec3 p) {
   return vec3(py - pz, pz - px, px - py) / (2.0 * e);
 }
 
-// ── Safe normalize ─────────────────────────────────────────────────────
 
 vec3 safeNormalize(vec3 v) {
   float l = length(v);
@@ -112,7 +110,6 @@ vec2 safeNormalize2(vec2 v) {
   return l > 1e-6 ? v / l : vec2(0.0, 1.0);
 }
 
-// ── Main ───────────────────────────────────────────────────────────────
 
 void main() {
   int fishIdx = int(gl_FragCoord.y) * int(resolution.x) + int(gl_FragCoord.x);

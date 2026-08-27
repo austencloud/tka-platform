@@ -185,7 +185,6 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
     const [, rws] = calculateLayout(stepCount, deps.includeStartPosition, spl);
 
     // Column layout only: mandala fill needs at least one col-1 empty between
-    // start and QR.
     if (
       deps.showMandala
       && deps.showQRCode

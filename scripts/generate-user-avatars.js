@@ -21,7 +21,6 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load service account key
 const serviceAccount = JSON.parse(
   readFileSync("./serviceAccountKey.json", "utf8")
 );
@@ -37,7 +36,6 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
 
-// ============ GRADIENT DEFINITIONS ============
 const ALL_GRADIENTS = {
   // Warm family
   sunset: "linear-gradient(135deg, #ff6b6b 0%, #feca57 50%, #ff9ff3 100%)",
@@ -124,10 +122,8 @@ const PROP_IMAGES = {
   default: "/images/props/buttons/staff.svg",
 };
 
-// ============ TARGET USERS ============
 const TARGET_USERS = ["Sire Royal", "Be Love", "Dustin Michael Pullman"];
 
-// ============ HELPER FUNCTIONS ============
 
 /**
  * Parse CSS gradient and draw on canvas
@@ -171,7 +167,6 @@ function drawGradient(ctx, cssGradient, size) {
     }
   });
 
-  // Add color stops
   stops.forEach((stop) => {
     try {
       gradient.addColorStop(stop.position, stop.color);
@@ -379,7 +374,6 @@ async function getUserByDisplayName(displayName) {
   return { id: doc.id, ...doc.data() };
 }
 
-// ============ MAIN ============
 
 async function main() {
   console.log("\n🎨 Avatar Generation Script");

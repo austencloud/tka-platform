@@ -13,7 +13,6 @@ import type {
   TesterConfirmationStatus,
 } from "./enums.js";
 
-// ── Status display ─────────────────────────────────────────────────
 
 export const STATUS_CONFIG: Record<
   FeedbackStatus,
@@ -30,7 +29,6 @@ export const STATUS_CONFIG: Record<
   archived: { label: "Archived", color: "#6b7280", icon: "fa-archive" },
 };
 
-// ── Tester confirmation status display ─────────────────────────────
 
 export const CONFIRMATION_STATUS_CONFIG: Record<
   TesterConfirmationStatus,
@@ -58,7 +56,6 @@ export const CONFIRMATION_STATUS_CONFIG: Record<
   },
 };
 
-// ── Priority display ───────────────────────────────────────────────
 
 export const PRIORITY_CONFIG: Record<
   FeedbackPriority,
@@ -70,7 +67,6 @@ export const PRIORITY_CONFIG: Record<
   critical: { label: "Critical", color: "#ef4444", icon: "fa-exclamation" },
 };
 
-// ── Type display ───────────────────────────────────────────────────
 
 export const TYPE_CONFIG: Record<
   FeedbackType,

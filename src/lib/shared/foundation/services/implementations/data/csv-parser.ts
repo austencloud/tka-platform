@@ -42,7 +42,6 @@ export function parseCSV(csvText: string): CsvParseResult {
       return result;
     }
 
-    // Parse headers
     const headerLine = lines[0];
     if (!headerLine) {
       result.errors.push({

@@ -1,4 +1,3 @@
-// src/lib/shared/3d/scene-composer/registry.ts
 
 import type { SceneComposerPlugin } from "./types";
 

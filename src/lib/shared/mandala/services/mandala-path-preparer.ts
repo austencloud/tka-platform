@@ -37,7 +37,6 @@ import {
 import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 import { propTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 
-// ─── Path length measurement ───────────────────────────────────────────────
 
 /**
  * Measures the total length of an SVG path string by creating a temporary
@@ -50,7 +49,6 @@ function measurePathLength(d: string): number {
 	return temp.getTotalLength();
 }
 
-// ─── Scale calculation ─────────────────────────────────────────────────────
 
 /**
  * Maps mandala coordinates directly into the animation engine's coordinate

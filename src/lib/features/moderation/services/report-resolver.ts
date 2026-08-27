@@ -56,7 +56,6 @@ export class ReportResolver {
 			throw new Error('Report not found');
 		}
 
-		// Update the report
 		await updateDoc(reportRef, {
 			status: 'resolved',
 			resolution: input.resolution,

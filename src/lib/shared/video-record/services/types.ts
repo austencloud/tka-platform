@@ -1,6 +1,5 @@
 
 
-// --- From IVideoRecorder ---
 /**
  * IVideoRecorder
  *

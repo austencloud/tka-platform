@@ -13,7 +13,6 @@
   import { createFishRenderSystem, type FishRenderSystem, type ExtractedModel } from './fish-render';
   import type { CursorRay } from '../../interaction/OceanInteraction.svelte';
 
-  // ── Props ─────────────────────────────────────────────────────────────
 
   interface Props {
     targetSize?: number;
@@ -92,7 +91,6 @@
   const groundY = $derived(worldOffset ? 0 : userProportionsState.groundY);
   const { renderer, camera } = useThrelte();
 
-  // ── State ─────────────────────────────────────────────────────────────
 
   let meshes = $state<InstancedMesh[]>([]);
   let gpuFailed = $state(false);
@@ -114,7 +112,6 @@
   let pendingSpawns: { group: VisitorGroup; speciesIdx: number[] }[] = [];
   let pendingDespawns: { startIndex: number; count: number }[] = [];
 
-  // ── Init ──────────────────────────────────────────────────────────────
 
   $effect(() => {
     const gy = groundY;
@@ -256,7 +253,6 @@
     if (ambient !== undefined) mat.uniforms.uAmbient!.value = ambient;
   }
 
-  // ── Per-frame update ──────────────────────────────────────────────────
 
   let elapsed = 0;
   const cursorRayOrigin = new Vector3();
@@ -282,7 +278,6 @@
       cursorRayDir.copy(cursorRay.dir);
     }
 
-    // ── Handle pending spawns ──
     if (pendingSpawns.length > 0) {
       const spawn = pendingSpawns.shift()!;
       const { group, speciesIdx } = spawn;
@@ -334,14 +329,12 @@
         trophicRoles,
       );
     } else {
-      // Clear spawn counts
       const posUni = computeSystem.posVar.material.uniforms;
       const velUni = computeSystem.velVar.material.uniforms;
       posUni.uSpawnCount!.value = 0;
       velUni.uSpawnCount!.value = 0;
     }
 
-    // ── Handle pending despawns ──
     if (pendingDespawns.length > 0) {
       const despawn = pendingDespawns.shift()!;
       computeSystem.processDespawn(despawn.startIndex, despawn.count);
@@ -349,7 +342,6 @@
       computeSystem.posVar.material.uniforms.uDespawnCount!.value = 0;
     }
 
-    // ── Species rotation ──
     if (rotationManager) {
       const newGroup = rotationManager.tick(dt);
 
@@ -418,7 +410,6 @@
       }
     }
 
-    // ── GPU compute ──
     const frameUniforms: FishFrameUniforms = {
       delta: dt,
       time: elapsed,
@@ -437,7 +428,6 @@
 
     computeSystem.update(frameUniforms);
 
-    // ── Update render materials ──
     renderSystem.updateTextures(
       computeSystem.positionTexture!,
       computeSystem.velocityTexture!,

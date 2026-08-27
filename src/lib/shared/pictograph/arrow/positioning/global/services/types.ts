@@ -1,4 +1,3 @@
-// --- From GlobalAdjustmentKeyGenerator ---
 /**
  * Global Adjustment Key Generator Contract
  *
@@ -17,7 +16,6 @@ export interface KeyGeneratorPropOptions {
   otherPropType?: string;
 }
 
-// --- From GlobalArrowAdjustmentRepository ---
 /**
  * Global Arrow Adjustment Repository Contract
  *

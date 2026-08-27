@@ -50,18 +50,14 @@ const LOCAL_ROLE_OVERRIDES_KEY = "tka-global-role-overrides";
 export class GlobalFeatureFlagPersister {
   private unsubscribe: Unsubscribe | null = null;
 
-  // ------------------------------------------------------------------
   // Firestore document reference
-  // ------------------------------------------------------------------
 
   private async getDocRef() {
     const firestore = await getFirestoreInstance();
     return doc(firestore, FIRESTORE_DOC_PATH);
   }
 
-  // ------------------------------------------------------------------
   // load()
-  // ------------------------------------------------------------------
 
   async load(): Promise<GlobalFlagOverrides> {
     try {

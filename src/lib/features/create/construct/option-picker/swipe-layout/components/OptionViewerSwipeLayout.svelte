@@ -35,7 +35,6 @@ Features:
   import OptionPicker456Group from "./OptionViewer456Group.svelte";
   import OptionViewerSection from "./OptionViewerSection.svelte";
 
-  // ===== Props =====
   const {
     organizedPictographs = [],
     onPictographSelected = () => {},
@@ -75,7 +74,6 @@ Features:
     openIntoWorkspace?: boolean;
   }>();
 
-  // ===== Panel Position Persistence =====
   type UtilityPanel = "settings" | "info";
 
   const PANEL_STORAGE_KEY = "tka-option-picker-panel";

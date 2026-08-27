@@ -119,7 +119,6 @@ export class StepSignatureGenerator {
     const handAngleMatch =
       a.startHandAngle === b.startHandAngle && a.endHandAngle === b.endHandAngle;
 
-    // Calculate weighted similarity
     let score = 0;
     score += SCORING_WEIGHTS.blueMotion * blueComparison.similarity;
     score += SCORING_WEIGHTS.redMotion * redComparison.similarity;
@@ -148,9 +147,6 @@ export class StepSignatureGenerator {
     return steps.map((step) => this.generateSignature(step));
   }
 
-  // ============================================================================
-  // PRIVATE HELPERS
-  // ============================================================================
 
   /**
    * Derive position group from a GridPosition.

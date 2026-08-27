@@ -6,7 +6,6 @@
 
 import type { ClaimHealth, StaleReason } from "./enums.js";
 
-// ── Claim management ───────────────────────────────────────────────
 
 export const STALE_THRESHOLDS = {
   /** No activity for this long = stale (agent likely crashed or forgot) */
@@ -42,7 +41,6 @@ export const EMERGENCY_CONFIG = {
   REQUIRE_CONFIRMATION: true,
 } as const;
 
-// ── WIP limits ─────────────────────────────────────────────────────
 
 export const WIP_LIMITS = {
   new: 0,
@@ -51,7 +49,6 @@ export const WIP_LIMITS = {
   completed: 0,
 } as const;
 
-// ── Utility functions ──────────────────────────────────────────────
 
 function normalizeTimestamp(
   value: Date | number | null | undefined

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
 
-// ── Block transitive imports that crash in jsdom ──────────────────────────────
 vi.mock("$lib/shared/di", () => ({ container: {} }));
 vi.mock("$lib/shared/di/containers/core-container", () => ({}));
 vi.mock("@firebase/firestore", () => ({}));
@@ -50,7 +49,6 @@ import type {
   IInfiniteSequenceGenerator,
 } from "$lib/shared/animation-engine/domain/chaining-types";
 
-// ── Mock factories ────────────────────────────────────────────────────────────
 
 function mockSpinner(): IEndlessSpinnerOrchestrator {
   return {
@@ -105,7 +103,6 @@ async function flushPromises() {
   await Promise.resolve();
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe("SequenceChainingOrchestrator — propType", () => {
   it("defaults to PropType.STAFF", () => {

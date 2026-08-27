@@ -231,7 +231,6 @@
     width: 100%;
   }
 
-  /* ---- bento grid ---- */
   .bento {
     list-style: none;
     margin: 0 0 1.4rem;

@@ -57,9 +57,6 @@ export interface AnimationPlayerProps {
 	onCancelExport?: () => void;
 }
 
-/**
- * Export progress state
- */
 export interface ExportProgress {
 	stage: "capturing" | "encoding" | "complete" | "error";
 	progress: number;
@@ -111,9 +108,6 @@ export interface CreatorInfo {
  */
 export type MediaFormat = "animation" | "static" | "performance";
 
-/**
- * Export settings passed to export handler
- */
 export interface ExportSettings {
 	format: MediaFormat;
 	animationSettings?: {

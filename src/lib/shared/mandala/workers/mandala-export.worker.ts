@@ -42,7 +42,6 @@ function queueDepthFor(size: number): number {
   return Math.max(8, Math.min(24, Math.round(150_000_000 / frameBytes)));
 }
 
-// ── Messages ────────────────────────────────────────────────────────────────
 
 interface StartMessage {
   type: "start";

@@ -273,7 +273,6 @@
     }
   });
 
-  // ── Rig state ──
   // Standalone avatar instance with NO sequence loaded: its blue prop state
   // stays null, so only the red (right) hand is active — the single arm.
   let avatarState = $state<ReturnType<typeof createAvatarInstanceState> | null>(
@@ -404,7 +403,6 @@
   const effArmDeg = $derived(weaveAuto ? trackArmDeg(warpedWeaveThetaDeg) : 0);
   const effArmRad = $derived((effArmDeg * Math.PI) / 180);
 
-  // ── Natural-reach measurement ──
   // The production GLB's arm bones, measured once after the avatar loads.
   // PerformerRig exposes no skeleton API, so the page traverses the scene
   // graph under its own wrapper group for the arm chain (exact bone names
@@ -1135,7 +1133,6 @@
     return clearedGripTarget.z + (weaveAuto ? 0 : handTravelCm / 100);
   });
 
-  // ── Grid adherence ──
   // The drawn grid re-centers and rescales so its hand-point ring passes
   // through the natural grip. Center stays on the body axis; its height
   // follows the relaxed home reach, so a horizontal point (E/W) lands
@@ -1206,7 +1203,6 @@
     z: redPropState.worldPosition.z + STAGE.AVATAR_GRID_OFFSET,
   });
 
-  // ── Quarter-phase freeze ──
   // The weave decomposes into four quarter-phases. Freezing at each one lets
   // us inspect the actual grip pose as a still: does the hand's thumb side
   // stay on the staff's thumb end (the T-bar), or has the solver regripped?
@@ -1217,7 +1213,6 @@
     staffAngleDeg = angleDeg;
   }
 
-  // ── Pose sharing ──
   // The station tuning sliders are gone (2026-08-23, Austen: maximum stage
   // space). Dwell remains exposed because it shapes the timing of the whole
   // track rather than tuning a single pose.

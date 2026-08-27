@@ -54,9 +54,7 @@ export interface RawWalk {
   readonly signature: string;
 }
 
-// ---------------------------------------------------------------------------
 // Repeat units
-// ---------------------------------------------------------------------------
 
 /**
  * One letter unit: a letter optionally followed by its dash suffix, so "Φ-Ψ-"
@@ -116,9 +114,7 @@ function isWholeUnit(block: WalkBlock, unitA: number, unitB: number): boolean {
   return unit === null || block.steps.length % unit === 0;
 }
 
-// ---------------------------------------------------------------------------
 // Verdict
-// ---------------------------------------------------------------------------
 
 /**
  * How the two cards met, read off the block shape.
@@ -172,9 +168,7 @@ export function classifyBlocks(
   return "HYBRID";
 }
 
-// ---------------------------------------------------------------------------
 // Derivation sentence
-// ---------------------------------------------------------------------------
 
 /**
  * A card's DISPLAY word: the simplified form, always (per

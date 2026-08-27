@@ -11,9 +11,6 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
  * Creates record tab state for practice and recording functionality
  */
 export function createRecordTabState(sequenceData: SequenceData | null = null) {
-  // ============================================================================
-  // REACTIVE STATE
-  // ============================================================================
 
   let isPlaying = $state(false);
   let currentStepIndex = $state(0);
@@ -24,9 +21,6 @@ export function createRecordTabState(sequenceData: SequenceData | null = null) {
   const hasSequence = $derived(sequence !== null && totalSteps > 0);
   const isAtEnd = $derived(currentStepIndex >= totalSteps - 1);
 
-  // ============================================================================
-  // STATE MUTATIONS
-  // ============================================================================
 
   function play() {
     if (!hasSequence) {
@@ -82,9 +76,6 @@ export function createRecordTabState(sequenceData: SequenceData | null = null) {
     }
   }
 
-  // ============================================================================
-  // PUBLIC API
-  // ============================================================================
 
   return {
     // Readonly state

@@ -28,9 +28,7 @@ import {
   GLB_CRYSTAL_FRAGMENT_EMISSIVE,
 } from './crystal-shaders';
 
-// ---------------------------------------------------------------------------
 // Types
-// ---------------------------------------------------------------------------
 
 export interface CrystalPlacement {
   x: number;
@@ -45,9 +43,7 @@ export interface CrystalPlacement {
 
 export type CrystalSpecies = 'spire' | 'cluster' | 'plate' | 'branch';
 
-// ---------------------------------------------------------------------------
 // Procedural geometry factories (fallback when GLBs not available)
-// ---------------------------------------------------------------------------
 
 function createSpireGeometry(): BufferGeometry {
   const shaft = new CylinderGeometry(0.08, 0.12, 1.0, 6, 1);
@@ -118,9 +114,7 @@ export function createCrystalGeometry(species: CrystalSpecies): BufferGeometry {
   return GEOMETRY_FACTORIES[species]();
 }
 
-// ---------------------------------------------------------------------------
 // Procedural instancing (custom material, per-instance color)
-// ---------------------------------------------------------------------------
 
 export function createCrystalInstancedMesh(
   geometry: BufferGeometry,

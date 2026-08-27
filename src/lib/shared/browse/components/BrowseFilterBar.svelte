@@ -48,9 +48,7 @@ Reads from / writes to a headless BrowseEngine instance.
     hapticService = getHapticFeedback() ?? null;
   });
 
-  // ---------------------------------------------------------------------------
   // Derived state from engine
-  // ---------------------------------------------------------------------------
 
   const activeLevel = $derived.by(() => {
     const f = engine.activeFilters.get("difficulty");
@@ -84,9 +82,7 @@ Reads from / writes to a headless BrowseEngine instance.
     return null;
   });
 
-  // ---------------------------------------------------------------------------
   // Handlers
-  // ---------------------------------------------------------------------------
 
   function handleLevelSelect(level: number | null) {
     hapticService?.trigger("selection");
@@ -309,7 +305,6 @@ Reads from / writes to a headless BrowseEngine instance.
     gap: var(--spacing-xs, 4px);
   }
 
-  /* --- Chip row --- */
 
   .filter-chip-row {
     display: flex;

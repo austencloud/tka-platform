@@ -9,9 +9,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
-// ---------------------------------------------------------------------------
 // Entry Abstraction (polymorphic: sequences now, compositions later)
-// ---------------------------------------------------------------------------
 
 export type ArenaEntryKind = "sequence" | "composition";
 
@@ -23,9 +21,7 @@ export interface ArenaEntry {
   ownerDisplayName?: string;
 }
 
-// ---------------------------------------------------------------------------
 // Glicko-2 Rating
-// ---------------------------------------------------------------------------
 
 export interface ArenaRating {
   entryId: string;
@@ -50,9 +46,7 @@ export interface ArenaRating {
   ownerId: string;
 }
 
-// ---------------------------------------------------------------------------
 // Voting
-// ---------------------------------------------------------------------------
 
 export type MatchupReason = "cold_start" | "info_gain" | "random";
 
@@ -64,9 +58,7 @@ export interface ArenaVote {
   matchupReason: MatchupReason;
 }
 
-// ---------------------------------------------------------------------------
 // Matchup (presented to the voter)
-// ---------------------------------------------------------------------------
 
 export interface ArenaMatchup {
   entryA: ArenaEntry;
@@ -79,9 +71,7 @@ export interface ArenaMatchup {
   reason: MatchupReason;
 }
 
-// ---------------------------------------------------------------------------
 // Leaderboard
-// ---------------------------------------------------------------------------
 
 export interface ArenaLeaderboardEntry {
   rank: number;
@@ -91,9 +81,7 @@ export interface ArenaLeaderboardEntry {
   rankChange: number;
 }
 
-// ---------------------------------------------------------------------------
 // User Stats
-// ---------------------------------------------------------------------------
 
 export interface ArenaUserStats {
   totalVotes: number;
@@ -102,9 +90,7 @@ export interface ArenaUserStats {
   firstVoteDate: Date | null;
 }
 
-// ---------------------------------------------------------------------------
 // Glicko-2 Update Result (returned by RatingCalculator)
-// ---------------------------------------------------------------------------
 
 export interface RatingUpdate {
   winnerMu: number;

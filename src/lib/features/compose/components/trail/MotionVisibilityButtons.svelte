@@ -151,9 +151,6 @@
     }
   }
 
-  /* ===========================
-     ACCESSIBILITY
-     =========================== */
 
   @media (prefers-reduced-motion: reduce) {
     .vis-btn {

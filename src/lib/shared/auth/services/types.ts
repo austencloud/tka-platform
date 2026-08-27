@@ -1,4 +1,3 @@
-// --- From GlobalFeatureFlagPersister ---
 /**
  * Global Feature Flag Persister Interface
  *
@@ -13,7 +12,6 @@ export interface GlobalFlagOverrides {
   globalRoleOverrides: Record<string, UserRole>;
 }
 
-// --- From Impersonator ---
 /**
  * Impersonation Service Interface
  *
@@ -28,7 +26,6 @@ export interface ImpersonatedUser {
   role: UserRole;
 }
 
-// --- From ProfilePictureManager ---
 /**
  * ProfilePictureManager
  *

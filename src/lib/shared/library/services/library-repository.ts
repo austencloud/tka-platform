@@ -382,9 +382,6 @@ export class LibraryRepository {
     } as LibrarySequence;
   }
 
-  // ============================================================
-  // CRUD OPERATIONS
-  // ============================================================
 
   async saveSequence(
     sequence: SequenceData,

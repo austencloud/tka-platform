@@ -4,9 +4,6 @@
  * Complete interfaces for motion generation, sequence generation, and related algorithms.
  * Updated to match exact legacy generation parameters and options.
  */
-// ============================================================================
-// GENERATION OPTIONS
-// ============================================================================
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type {
   LOOPType,
@@ -25,9 +22,7 @@ import type {
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
-// ============================================================================
 // DATA CONTRACTS (Domain Models)
-// ============================================================================
 
 export interface GenerationOptions {
   mode?: GenerationMode | undefined;
@@ -186,9 +181,6 @@ export enum GenerationMode {
   CIRCULAR = "circular",
 }
 
-// ============================================================================
-// LOOP PARAMETER TYPES
-// ============================================================================
 
 /**
  * Rotation directions for blue and red props

@@ -140,7 +140,6 @@ Always renders as a pure button. Word input is now in WordInputCard.
     outline-offset: 2px;
   }
 
-  /* ─── Button styles ─── */
 
   .generate-button-card.dirty {
     box-shadow:

@@ -583,7 +583,6 @@
     line-height: 1;
   }
 
-  /* ── Step / Continuous toggle ── */
 
   /* The control itself is PlaybackModeToggle (layout="inline"); this slot only
      keeps it from being stretched by the bar's flex. */
@@ -592,7 +591,6 @@
     flex: 0 0 auto;
   }
 
-  /* ── Host-owned trailing controls ── */
 
   .pill-trailing {
     display: flex;
@@ -605,7 +603,6 @@
        right-aligns the last chip alone on its line and reads as an orphan. */
   }
 
-  /* ── Loop button ── */
 
   .pill-loop {
     width: var(--min-touch-target, 44px);
@@ -877,7 +874,6 @@
     box-shadow: 0 0 12px rgba(99, 102, 241, 0.25);
   }
 
-  /* ── Focus indicators ── */
 
   .pill-play:focus-visible,
   .tempo-adjust:focus-visible,

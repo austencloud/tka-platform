@@ -218,7 +218,6 @@
     }
   }
 
-  // ── Loading-state word glyphs ──
   // The scanned word arrives at SSR (data.meta.word) long before the heavy
   // sequence resolve finishes. We priority-load just this word's glyphs so it
   // paints as a pulsing loader instead of a generic spinner.
@@ -233,7 +232,6 @@
     !isSolo && data?.meta?.word ? simplifyRepeatedWord(data.meta.word) : ""
   );
 
-  // ── Load progress bar ──
   // The heavy resolve+cache+player phase is opaque (one big Promise.all with no
   // sub-progress), so we anchor the bar to real phase completions and trickle
   // it toward each milestone's ceiling in between — it never stalls and never
@@ -283,7 +281,6 @@
     if (shortCode) saveScanPlaybackBpm(shortCode, bpm);
   }
 
-  // ── Viewer ──
   // The orchestrator is the full viewer brain; lazy-loaded so the scan page's
   // first paint (the word-glyph loader) isn't blocked by the viewer chunk.
   let OrchestratorComponent:
@@ -317,7 +314,6 @@
   // ── Export takeover overlay (dim scrim + progress ring over the live canvas) ──
   const takeover = $derived(toExportTakeoverPhase(exportProgress, isExporting));
 
-  // ── Layout detection ──
   // Same breakpoint as SequenceViewerDrawerHost (<768 = mobile) so the
   // orchestrator and the shared shell agree with the app viewer exactly.
   let viewportWidth = $state(0);
@@ -326,7 +322,6 @@
     viewportWidth > 0 ? viewportWidth < 768 : true
   );
 
-  // ── OG metadata ──
   const rawWord = $derived(
     (pageState.kind === "playing" ? pageState.word : data?.meta?.word) ||
       "Sequence"
@@ -1221,7 +1216,6 @@
     --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
   }
 
-  /* ── Non-playing states ── */
 
   .center-content {
     text-align: center;
@@ -1285,7 +1279,6 @@
     letter-spacing: 0.01em;
   }
 
-  /* ── Player ── */
 
   /* Full-bleed host for the shared viewer shell — no inset card, no max-width
      cap: the scan page IS the viewer, edge to edge, exactly like the app

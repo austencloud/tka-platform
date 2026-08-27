@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/ShopPropPicker.svelte -->
 <!--
   Exactly-one prop chip row for the shop pages (listing configurator + Deck
   Architect). One surface per chip, the prop art directly inside — no frame

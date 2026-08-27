@@ -22,9 +22,7 @@ import { randomBytes, createHash } from "crypto";
 import http from "http";
 import { URL } from "url";
 
-// ---------------------------------------------------------------------------
 // Firebase & OAuth Configuration
-// ---------------------------------------------------------------------------
 
 const OAUTH_CONFIG = {
   // Desktop OAuth client with PKCE (OAuth 2.1 standard for CLI tools)
@@ -47,17 +45,13 @@ const ADMIN_IDENTITY = {
   authMethod: "service-account",
 };
 
-// ---------------------------------------------------------------------------
 // Paths
-// ---------------------------------------------------------------------------
 
 const TKA_DIR = join(homedir(), ".tka");
 const CREDENTIALS_PATH = join(TKA_DIR, "credentials.json");
 const SERVICE_ACCOUNT_PATH = "./serviceAccountKey.json";
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function ensureTkaDir() {
   if (!existsSync(TKA_DIR)) {

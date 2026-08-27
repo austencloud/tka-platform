@@ -220,7 +220,6 @@
     padding: 12px 16px;
   }
 
-  /* ---- Header ---- */
 
   .playback-header {
     display: flex;
@@ -254,7 +253,6 @@
     color: var(--theme-text, #ffffff);
   }
 
-  /* ---- Content grid ---- */
 
   .content-grid {
     display: grid;
@@ -290,7 +288,6 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
   }
 
-  /* ---- Transport ---- */
 
   .transport-bar {
     display: flex;
@@ -355,7 +352,6 @@
     white-space: nowrap;
   }
 
-  /* ---- Rate controls ---- */
 
   .rate-controls {
     display: flex;
@@ -413,7 +409,6 @@
     font-weight: 700;
   }
 
-  /* ---- Beat indicator ---- */
 
   .beat-indicator {
     display: flex;

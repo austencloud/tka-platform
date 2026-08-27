@@ -8,9 +8,6 @@
    */
   import { ChipToggle } from '@austencloud/chip-toggle';
 
-  // ============================================================================
-  // TYPES
-  // ============================================================================
 
   interface AtmosphereState {
     fogEnabled: boolean;
@@ -39,9 +36,6 @@
     grass: number;
   }
 
-  // ============================================================================
-  // PROPS
-  // ============================================================================
 
   interface Props {
     // Position & Navigation
@@ -92,9 +86,6 @@
     seed = "",
   }: Props = $props();
 
-  // ============================================================================
-  // LOCAL STATE
-  // ============================================================================
 
   let isCollapsed = $state(false);
   let activeSection = $state<string | null>(null); // For expanding detail sections
@@ -102,9 +93,6 @@
   // Toggle states are now passed directly as props (fogEnabled, waterVisible, texturesEnabled)
   // No need to derive - they're reactive from the parent
 
-  // ============================================================================
-  // BIOME PRESETS
-  // ============================================================================
 
   const BIOME_PRESETS = [
     { name: "Forest", x: 0, y: 60, z: 0, color: "#22c55e", icon: "fa-tree" },
@@ -114,9 +102,6 @@
     { name: "Ocean", x: -800, y: 60, z: -800, color: "#0ea5e9", icon: "fa-water" },
   ];
 
-  // ============================================================================
-  // HANDLERS
-  // ============================================================================
 
   function handleTeleport(preset: (typeof BIOME_PRESETS)[0]) {
     onTeleport(preset.x, preset.y, preset.z);
@@ -138,9 +123,6 @@
     activeSection = activeSection === section ? null : section;
   }
 
-  // ============================================================================
-  // FORMATTERS
-  // ============================================================================
 
   function formatCoord(val: number): string {
     return val.toFixed(1);

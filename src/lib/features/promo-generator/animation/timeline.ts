@@ -139,7 +139,6 @@ export class Timeline {
       onUpdate,
     });
 
-    // Update total duration
     const endTime = position + duration;
     if (endTime > this.totalDuration) {
       this.totalDuration = endTime;
@@ -308,9 +307,6 @@ export class Timeline {
     this.animationFrameId = requestAnimationFrame(this.tick);
   };
 
-  /**
-   * Update all segments to a specific progress
-   */
   private updateToProgress(progress: number): void {
     const currentTime = progress * this.totalDuration;
 
@@ -350,7 +346,6 @@ export class Timeline {
       return;
     }
 
-    // Calculate segment progress
     const elapsed = currentTime - startTime;
     const segmentProgress = Math.min(1, Math.max(0, elapsed / duration));
     const easedProgress = easing(segmentProgress);

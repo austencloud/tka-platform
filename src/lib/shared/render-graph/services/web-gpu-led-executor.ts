@@ -60,7 +60,6 @@ const MIN_DT = 1 / 240;
 const HDR_FORMAT: GPUTextureFormat = "rgba16float";
 const PRESENT_FORMAT: GPUTextureFormat = "bgra8unorm";
 
-// ─── Shaders ──────────────────────────────────────────────────────────────────
 
 /** One instance is one sub-step of one LED: the capsule swept between two
  *  consecutive points on that LED's path this frame. Geometry is in device
@@ -388,7 +387,6 @@ fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
 }
 `;
 
-// ─── Resources ────────────────────────────────────────────────────────────────
 
 interface GPUTextureEntry {
   texture: GPUTexture;
@@ -536,7 +534,6 @@ export class WebGPULedExecutor {
     this.initialized = false;
   }
 
-  // ── Pipeline setup ────────────────────────────────────────────────────
 
   private init(): void {
     const device = this.device;
@@ -728,7 +725,6 @@ export class WebGPULedExecutor {
     });
   }
 
-  // ── Textures ──────────────────────────────────────────────────────────
 
   private ensureTextures(w: number, h: number): void {
     if (this.depositTexture?.width === w && this.depositTexture.height === h) return;
@@ -768,7 +764,6 @@ export class WebGPULedExecutor {
     this.bloomMips = [];
   }
 
-  // ── Frame encoding ────────────────────────────────────────────────────
 
   private writeFrameUniforms(
     canvasW: number,

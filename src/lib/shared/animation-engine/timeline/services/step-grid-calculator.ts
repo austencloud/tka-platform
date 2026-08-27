@@ -12,9 +12,7 @@ import {
 } from "$lib/shared/foundation/domain/models/time-signature";
 import type { TimeSeconds } from "$lib/shared/animation-engine/domain/timeline-types";
 
-// ============================================================================
 // Types
-// ============================================================================
 
 /**
  * A marker representing a beat position on the timeline
@@ -72,9 +70,7 @@ export interface MusicalPosition {
   subdivision: number;
 }
 
-// ============================================================================
 // Core Calculations
-// ============================================================================
 
 /**
  * Calculate the duration of one beat in seconds
@@ -121,9 +117,7 @@ export function getStepsPerMeasure(timeSignature: TimeSignatureKey): number {
   return ts.numerator;
 }
 
-// ============================================================================
 // Marker Calculations
-// ============================================================================
 
 /**
  * Calculate all beat markers for a given duration
@@ -254,9 +248,7 @@ export function calculateSubdivisionMarkers(
   return markers;
 }
 
-// ============================================================================
 // Time-to-Position Conversions
-// ============================================================================
 
 /**
  * Convert a time position to musical position (measure, beat, subdivision)
@@ -329,9 +321,7 @@ export function beatPositionToTime(
   return totalSteps * beatDuration;
 }
 
-// ============================================================================
 // Snap Helpers
-// ============================================================================
 
 /**
  * Get all beat times for snap functionality

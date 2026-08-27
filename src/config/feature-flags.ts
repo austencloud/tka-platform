@@ -33,9 +33,7 @@ export interface FeatureDefinition {
   emptyClientRouteComponents?: boolean;
 }
 
-// ---------------------------------------------------------------------------
 // Feature definitions
-// ---------------------------------------------------------------------------
 
 export const FEATURES: FeatureDefinition[] = [
   // ── Core (always on) ──────────────────────────────────────────────────────
@@ -241,9 +239,7 @@ export const FEATURES: FeatureDefinition[] = [
   },
 ];
 
-// ---------------------------------------------------------------------------
 // Dev-only route patterns not tied to a specific feature
-// ---------------------------------------------------------------------------
 
 const DEV_ONLY_ROUTE_PATTERNS: string[] = [
   "src/routes/test/",
@@ -281,9 +277,7 @@ const GUARDED_DEV_ROUTE_PATTERNS: string[] = [
   "src/routes/(public)/composer/auth-lab/",
 ];
 
-// ---------------------------------------------------------------------------
 // Runtime helpers
-// ---------------------------------------------------------------------------
 
 const env = process.env;
 const isProduction = env.NODE_ENV === "production";

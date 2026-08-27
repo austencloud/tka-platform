@@ -148,7 +148,6 @@
   // visible marker (below) instead of rendering nothing, and we surface a toast.
   let initFailed = $state(false);
 
-  // Initialize all avatar instances
   try {
     centerInstances = CENTER_PLANES.map((cfg, i) =>
       createAvatarInstanceState(

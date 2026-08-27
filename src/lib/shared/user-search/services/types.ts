@@ -1,6 +1,5 @@
 
 
-// --- From IUserSearcher ---
 /**
  * IUserSearcher - Interface for searching users
  *

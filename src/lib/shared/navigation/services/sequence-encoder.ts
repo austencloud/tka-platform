@@ -139,9 +139,6 @@ PROP_TYPE_DECODE["R"] = PropType.BUUGENG;
 
 const INLINE_PREFIX = "s~";
 
-// ============================================================================
-// PRIVATE HELPERS
-// ============================================================================
 
 
 type FloatWireFormat = "token" | "numeric";

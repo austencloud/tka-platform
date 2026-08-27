@@ -8,9 +8,7 @@
 
 import type { PlaqueContent, PlaqueSize } from "./types";
 
-// ---------------------------------------------------------------------------
 // Size configuration
-// ---------------------------------------------------------------------------
 
 interface SizeConfig {
   width: number;
@@ -24,9 +22,7 @@ const SIZE_CONFIGS: Record<PlaqueSize, SizeConfig> = {
   "dev-whiteboard": { width: 2048, height: 1536, style: "whiteboard" },
 };
 
-// ---------------------------------------------------------------------------
 // Visual theme tokens
-// ---------------------------------------------------------------------------
 
 interface ThemeTokens {
   background: string;
@@ -71,9 +67,7 @@ function whiteboardTheme(scaleFactor: number): ThemeTokens {
   };
 }
 
-// ---------------------------------------------------------------------------
 // Font-size helpers - scale proportionally to canvas width
-// ---------------------------------------------------------------------------
 
 /** Reference width used to define base font sizes. */
 const REFERENCE_WIDTH = 512;
@@ -109,9 +103,7 @@ function computeFontSizes(
   };
 }
 
-// ---------------------------------------------------------------------------
 // Word-wrap utility
-// ---------------------------------------------------------------------------
 
 /**
  * Splits text on explicit \n line breaks, then word-wraps each resulting

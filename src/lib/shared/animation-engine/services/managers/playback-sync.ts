@@ -39,7 +39,6 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { TrailSettings } from "../../domain/types/trail-types";
 import { DEFAULT_CANVAS_SIZE } from "../canvas-resizer.svelte";
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Default props sentinel used when lastPropsRef is null */
 const DEFAULT_ENGINE_PROPS: AnimationEngineProps = {
@@ -102,7 +101,6 @@ export class PlaybackSync {
     private readonly deps: PlaybackSyncDeps
   ) {}
 
-  // ── Public accessors for engine façade use ───────────────────────────────────
 
   get lastPropsRef(): AnimationEngineProps | null {
     return this._lastPropsRef;
@@ -139,7 +137,6 @@ export class PlaybackSync {
     this._prevMandalaVisible = false;
   }
 
-  // ── Main per-frame orchestration ─────────────────────────────────────────────
 
   /**
    * Per-prop orchestration — the entire update() body moved verbatim from engine.
@@ -386,7 +383,6 @@ export class PlaybackSync {
     }
   }
 
-  // ── Visibility-change orchestration ─────────────────────────────────────────
 
   /**
    * Handle visibility state changes from the subscription.
@@ -569,7 +565,6 @@ export class PlaybackSync {
     setCanvasSize(newSize);
   }
 
-  // ── Trail capturer initialization ────────────────────────────────────────────
 
   private initializeTrailCapturer(props: AnimationEngineProps): void {
     const { lifecycleManager, frameSystem, getCanvasSize } = this.deps;
@@ -612,7 +607,6 @@ export class PlaybackSync {
     }
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────────────
 
   /**
    * Shallow comparison of trail settings (faster than JSON.stringify)

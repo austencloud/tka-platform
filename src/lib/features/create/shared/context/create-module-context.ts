@@ -69,10 +69,6 @@ export interface CreateModuleContext {
 
 const CONTEXT_KEY = "createModule";
 
-/**
- * Set the Create Module context
- * Call this in CreateModule component to provide context to descendants
- */
 export function setCreateModuleContext(context: CreateModuleContext): void {
   setContext(CONTEXT_KEY, context);
 }

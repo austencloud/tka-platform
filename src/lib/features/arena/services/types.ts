@@ -4,7 +4,6 @@ import type {
 } from "../domain/models/arena-models";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
-// --- From IStabilityAnalyzer ---
 /**
  * IStabilityAnalyzer
  *
@@ -23,7 +22,6 @@ export interface StabilityReport {
   averagePhi: number;
 }
 
-// --- From IMatchupSelector ---
 /**
  * IMatchupSelector
  *

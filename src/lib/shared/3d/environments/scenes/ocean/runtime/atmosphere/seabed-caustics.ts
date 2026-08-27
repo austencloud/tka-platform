@@ -5,7 +5,6 @@ import {
   type WebGLProgramParametersWithUniforms,
 } from "three";
 
-// ── Seabed caustics ──────────────────────────────────────────────────────
 // Soft animated voronoi light-dapple injected into any MeshStandardMaterial via
 // onBeforeCompile, modulating EMISSIVE radiance so it reads as self-lit light
 // landing ON the surface. Two properties keep it from ever becoming the

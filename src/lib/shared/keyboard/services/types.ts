@@ -4,7 +4,6 @@ import type {
   ShortcutRegistrationOptions,
 } from "../domain/types/keyboard-types";
 
-// --- From IShortcutCustomizer ---
 /**
  * IShortcutCustomizer Contract
  *
@@ -39,7 +38,6 @@ export interface ShortcutWithBinding {
   isDisabled: boolean;
 }
 
-// --- From IGreekKeyMapper ---
 /**
  * IGreekKeyMapper Contract
  *

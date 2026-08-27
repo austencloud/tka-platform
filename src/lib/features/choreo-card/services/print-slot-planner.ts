@@ -1,4 +1,3 @@
-// src/lib/features/choreo-card/services/print-slot-planner.ts
 import type { CardPair } from "./types";
 import { TND_ELEMENTS, type TnDElement } from "../domain/tnd-element";
 

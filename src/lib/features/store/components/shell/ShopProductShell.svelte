@@ -1,4 +1,3 @@
-<!-- src/lib/features/store/components/shell/ShopProductShell.svelte -->
 <!--
   The chrome every shop product page shares.
 
@@ -52,7 +51,6 @@
   import ShopCrossSellRail from "./ShopCrossSellRail.svelte";
 
   interface Props {
-    // ── catalog context strip ──
     /** Where "back" goes. The catalog, unless a page is a sub-variant of
      *  another product (the Deck Architect returns to the LOOP deck). */
     backHref?: string;
@@ -60,7 +58,6 @@
     /** Trailing breadcrumb: which family of the line this product belongs to. */
     family?: string;
 
-    // ── hero band ──
     eyebrow?: string;
     title: string;
     tagline?: string;
@@ -77,7 +74,6 @@
      *  place in the hero grid; it just stops drawing a box. */
     mediaFrame?: boolean;
 
-    // ── configurator + buy cluster ──
     /** Dials, volume pickers, prop pickers — whatever this product configures.
      *  Sits above the buy cluster inside the info column. */
     configurator?: Snippet;
@@ -98,7 +94,6 @@
     checkoutError?: string | null;
     assurances?: readonly ShopAssurance[];
 
-    // ── sections below the fold ──
     /** A configurator too wide for the info column, given the full band right
      *  under the hero. The Deck Architect's recipe builder is the case: eight
      *  slice cards, each carrying its own tile board, which read as a cramped
@@ -110,14 +105,11 @@
     /** Specs, contents, everything a buyer checks before committing. */
     details?: Snippet;
 
-    // ── cross-sell ──
     crossSell?: readonly CatalogEntry[];
     crossSellTitle?: string;
 
-    // ── mobile dock ──
     dock?: ShopDock | null;
 
-    // ── page states ──
     loading?: boolean;
     loadingLabel?: string;
     error?: string | null;
@@ -299,7 +291,6 @@
     gap: clamp(2.5rem, 4vw, 4.5rem);
   }
 
-  /* ---------- context strip ---------- */
   .context-strip {
     display: flex;
     align-items: center;
@@ -343,7 +334,6 @@
     white-space: nowrap;
   }
 
-  /* ---------- hero band ---------- */
   .hero {
     display: grid;
     grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
@@ -484,14 +474,12 @@
     flex: 0 0 auto;
   }
 
-  /* ---------- host sections ---------- */
   .shell-section {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
   }
 
-  /* ---------- load / failure ---------- */
   .state {
     margin: 0;
     text-align: center;

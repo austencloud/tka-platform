@@ -290,10 +290,8 @@ export class StanceSimulator {
     return result;
   }
 
-  // -----------------------------------------------------------------------
   // Stance application - turns (footX, footZ, yaw, pitch) into world joint
   // positions by transforming the rest pose.
-  // -----------------------------------------------------------------------
 
   private applyStance(stance: StancePose): void {
     const rest = this.restPose;
@@ -388,7 +386,6 @@ export class StanceSimulator {
     out.set(rx + stance.footOffsetX, py, rz + stance.footOffsetZ);
   }
 
-  // -----------------------------------------------------------------------
   // Analytic two-bone IK. Given a shoulder and a hand target, figure out
   // where the elbow goes so |shoulder→elbow| = a and |elbow→hand| = b.
   //
@@ -397,7 +394,6 @@ export class StanceSimulator {
   // radius determined by the law of cosines. We pick the point on that
   // circle using a "pole vector" that biases the elbow outward from the
   // body (matching ElbowPoleComputer in the live rig).
-  // -----------------------------------------------------------------------
 
   private solveArmIK(
     shoulder: Vector3,
@@ -502,10 +498,8 @@ export class StanceSimulator {
     return { shortfall: 0, stretch };
   }
 
-  // -----------------------------------------------------------------------
   // Face center derivation - matches the live rig's computation so the
   // simulator agrees with CollisionDetector on face-level collisions.
-  // -----------------------------------------------------------------------
 
   private computeFaceCenter(): void {
     const sk = this.skeleton;
@@ -523,11 +517,9 @@ export class StanceSimulator {
     sk.face.y += 0.05;
   }
 
-  // -----------------------------------------------------------------------
   // Collision detection - sphere + line-segment primitives, same radii as
   // the live CollisionDetector. Writes into a fresh array each call; the
   // optimizer only keeps the best result so there's no hot-path array churn.
-  // -----------------------------------------------------------------------
 
   private detectCollisions(
     blueTarget: SimPropTarget,

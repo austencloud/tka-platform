@@ -157,7 +157,6 @@
     isTimelineMode ? timelineUnitSize : gridLayout.cellSize
   );
 
-  // ===== Content-gated reveal =====
   //
   // The diagonal wave used to be pure arithmetic: every cell took
   // `band * bandDelay` off one clock started before anything had rendered.
@@ -1099,7 +1098,6 @@
 </div>
 
 <style>
-  /* ===== Scroll wrapper ===== */
   .scroll-wrapper {
     width: 100%;
     max-width: 100%;
@@ -1327,7 +1325,6 @@
     pointer-events: none;
   }
 
-  /* ===== Timeline sub-elements ===== */
   .timeline-start-column {
     width: var(--cell-size);
     flex-shrink: 0;
@@ -1397,7 +1394,6 @@
     box-shadow: 0 0 16px rgba(251, 191, 36, 0.5);
   }
 
-  /* ===== Standard mode overrides ===== */
   .grid-surface.standard :global(.step-cell) {
     transform: none;
   }
@@ -1445,12 +1441,10 @@
     transform: none;
   }
 
-  /* ===== Pictograph border suppression ===== */
   .grid-surface :global(.pictograph-renderer) {
     border: none !important;
   }
 
-  /* ===== Mandala cells ===== */
   .mandala-layout-item {
     position: relative;
     display: flex;
@@ -1580,7 +1574,6 @@
     }
   }
 
-  /* ===== Keyframes ===== */
   @keyframes fadeOutCollapse {
     from {
       opacity: 1;

@@ -5,7 +5,6 @@
 
   const { state: festivalState } = getFestivalContext();
 
-  // ─── Performance credits ────────────────────────────────────────────────────
   let newCredit = $state("");
 
   function addCredit() {
@@ -28,7 +27,6 @@
     festivalState.savePortfolio(uid, { ...portfolio, performanceCredits: credits });
   }
 
-  // ─── Social links & About - debounced auto-save ─────────────────────────────
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
   function debounceSave(updater: () => TeachingPortfolio) {
@@ -95,7 +93,6 @@
     }));
   }
 
-  // ─── Inline edit state ──────────────────────────────────────────────────────
   let editingField = $state<string | null>(null);
   let editingFieldOriginal = $state<string | number>("");
 
@@ -349,7 +346,6 @@
     color: var(--theme-text, #ffffff);
   }
 
-  /* ─── Profile layout ─────────────────────────────────────────────────────── */
 
   .profile-layout {
     display: grid;
@@ -383,7 +379,6 @@
     overflow: hidden;
   }
 
-  /* ─── Social rows ────────────────────────────────────────────────────────── */
 
   .social-row {
     display: flex;
@@ -435,7 +430,6 @@
     outline: none;
   }
 
-  /* ─── About rows ─────────────────────────────────────────────────────────── */
 
   .about-row {
     display: flex;
@@ -471,7 +465,6 @@
     font-weight: 400;
   }
 
-  /* ─── Credits ────────────────────────────────────────────────────────────── */
 
   .credits-flow {
     display: flex;

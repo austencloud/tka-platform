@@ -78,9 +78,7 @@
       : []),
   ];
 
-  // ============================================================================
   // STATE MANAGEMENT (Shared Coordination)
-  // ============================================================================
 
   // `visible` is passed by ModuleRenderer's keep-alive host (browse stays mounted
   // across module switches; the host toggles display). Browse has no render loop

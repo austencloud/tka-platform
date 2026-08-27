@@ -519,7 +519,6 @@
 		visibility: visible;
 	}
 
-	/* --- Correction editor --- */
 	.correction-editor {
 		display: flex;
 		flex-direction: column;
@@ -642,7 +641,6 @@
 		font-variant-numeric: tabular-nums;
 	}
 
-	/* --- Scorecard --- */
 	.scorecard-section {
 		display: flex;
 		flex-direction: column;

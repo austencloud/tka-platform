@@ -78,16 +78,12 @@ diagnostic here and are not persisted or transmitted, same as in the game.
   } from "$lib/features/learn/play/games/trace-paths/domain/trace-types";
   import { TRACE_HANDS } from "$lib/features/learn/play/games/trace-paths/domain/trace-types";
 
-  // ---------------------------------------------------------------------
   // The state under test
-  // ---------------------------------------------------------------------
 
   const trace = createTracePathsState();
   setTracePathsContext(trace);
 
-  // ---------------------------------------------------------------------
   // Fixture routes
-  // ---------------------------------------------------------------------
   //
   // Fixed, not random. Two people comparing an iPhone against an Android need
   // to be tracing the same shape, and a bug that only shows up on one route has
@@ -179,9 +175,7 @@ diagnostic here and are not persisted or transmitted, same as in the game.
   // would read them inside their temporal dead zone and throw on mount. It runs
   // at the end of this block instead.
 
-  // ---------------------------------------------------------------------
   // Live pointer observations
-  // ---------------------------------------------------------------------
 
   interface PointerRow {
     pointerId: number;
@@ -260,9 +254,7 @@ diagnostic here and are not persisted or transmitted, same as in the game.
     return { distance: projection.distance, progress: projection.progress };
   }
 
-  // ---------------------------------------------------------------------
   // Event log
-  // ---------------------------------------------------------------------
 
   interface LogEntry {
     id: number;
@@ -307,9 +299,7 @@ diagnostic here and are not persisted or transmitted, same as in the game.
     preflight = null;
   }
 
-  // ---------------------------------------------------------------------
   // Capture-phase observation
-  // ---------------------------------------------------------------------
 
   let probe = $state<HTMLDivElement | undefined>(undefined);
 

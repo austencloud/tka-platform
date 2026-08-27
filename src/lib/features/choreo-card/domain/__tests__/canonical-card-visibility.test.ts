@@ -1,4 +1,3 @@
-// src/lib/features/choreo-card/domain/__tests__/canonical-card-visibility.test.ts
 import { describe, it, expect } from "vitest";
 import {
   CANONICAL_DECK_CARD_PROFILE,

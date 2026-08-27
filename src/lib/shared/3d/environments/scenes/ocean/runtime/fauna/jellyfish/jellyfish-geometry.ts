@@ -103,7 +103,6 @@ const Links = {
   },
 };
 
-// ── Types ──────────────────────────────────────────────────────────────────
 
 const PI_HALF = PI * 0.5;
 
@@ -147,7 +146,6 @@ export const OCEAN_COLORS: MedusaeColors = {
   mouthSecondary: 0x3366aa,
 };
 
-// ── Medusae class ──────────────────────────────────────────────────────────
 
 // Startle decay: bell flash + contraction ease back to rest over this window.
 const STARTLE_DURATION = 1.5;

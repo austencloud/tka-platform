@@ -76,9 +76,6 @@ export interface CreateDuetInput {
   tags?: string[];
 }
 
-/**
- * Create a new DuetSequence from input
- */
 export function createDuetSequence(input: CreateDuetInput): DuetSequence {
   return {
     id: crypto.randomUUID(),

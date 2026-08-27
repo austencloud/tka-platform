@@ -274,7 +274,6 @@ export class FireRenderer3D {
       this.emitFromTip(i, tips[i]!, safeDt);
     }
 
-    // -- Advance physics + pack the GPU buffers --
     let visibleCount = 0;
 
     for (const p of this.particles) {
@@ -328,7 +327,6 @@ export class FireRenderer3D {
     (geo.getAttribute("aPropColor") as InstancedBufferAttribute).needsUpdate = true;
     this.mesh.count = visibleCount;
 
-    // -- Dynamic lights track the tips --
     if (this.lightEnabled) {
       for (let i = 0; i < this.lights.length; i++) {
         const light = this.lights[i]!;

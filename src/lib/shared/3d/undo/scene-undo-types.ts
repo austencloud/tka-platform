@@ -11,9 +11,7 @@ import type { SceneId } from "$lib/features/lab/tabs/scene-lab/domain/scene-lab-
 import type { CosmicVariant } from "$lib/features/lab/tabs/scene-lab/services/scene-lab-persistence";
 import type { PlaneMode } from "@austencloud/scene-3d";
 
-// ============================================
 // Operation Types
-// ============================================
 
 export type SceneUndoOperationType =
   // Performer
@@ -54,9 +52,7 @@ export type SceneUndoOperationType =
   | "update-scene-lab-config"
   | "change-cosmic-variant";
 
-// ============================================
 // Snapshot Domains
-// ============================================
 
 export interface ViewerDomainSnapshot {
   performers: PerformerPositionSnapshot[];
@@ -114,9 +110,7 @@ export interface SceneLabDomainSnapshot {
   configs: Record<string, unknown>;
 }
 
-// ============================================
 // Composite Snapshot
-// ============================================
 
 export interface SceneUndoSnapshot {
   viewer?: ViewerDomainSnapshot;
@@ -129,9 +123,7 @@ export interface SceneUndoSnapshot {
   sceneLab?: SceneLabDomainSnapshot;
 }
 
-// ============================================
 // Undo Entry
-// ============================================
 
 export interface SceneUndoEntry {
   id: string;

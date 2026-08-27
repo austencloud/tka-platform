@@ -139,7 +139,6 @@ const FUEL_SOURCES = [
   },
 ];
 
-// --- Seed logic ---
 
 async function seedFuelSources() {
   console.log(

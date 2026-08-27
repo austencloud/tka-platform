@@ -13,9 +13,6 @@
   // Get services from getter
   const previewController = getPreviewAnimationController();
 
-  // ============================================================================
-  // STATE
-  // ============================================================================
 
   type LabMode = "preview" | "treeLab";
   let mode: LabMode = $state("preview");
@@ -44,16 +41,12 @@
   // Stats polling
   let statsInterval: ReturnType<typeof setInterval> | null = null;
 
-  // ============================================================================
-  // PREVIEW HANDLERS
-  // ============================================================================
 
   function initializePreview() {
     if (!canvas) return;
     previewController.initialize(canvas, quality, layers);
     previewController.start();
     stats = previewController.getStats();
-    // Load available patterns
     patterns = previewController.getAvailablePatterns();
     currentPatternId = previewController.getEcologicalPatternId();
     startStatsPolling();
@@ -136,9 +129,6 @@
     previewController.handleResize();
   }
 
-  // ============================================================================
-  // TREE LAB HANDLERS
-  // ============================================================================
 
   function setMode(newMode: LabMode) {
     mode = newMode;
@@ -162,9 +152,6 @@
     }
   }
 
-  // ============================================================================
-  // LIFECYCLE
-  // ============================================================================
 
   onMount(() => {
     initializePreview();

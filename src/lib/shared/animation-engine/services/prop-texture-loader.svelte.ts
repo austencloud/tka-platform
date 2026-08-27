@@ -117,7 +117,6 @@ export class PropTextureLoader {
     this.renderer = null;
     this.svgGenerator = null;
     this.TrailCapturer = null;
-    // Reset state
     this.state.isLoaded = false;
     this.state.isLoading = false;
     this.state.error = null;

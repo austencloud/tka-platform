@@ -24,9 +24,7 @@ import { detectOverlaps } from "../services/junction-overlap-detector";
 import { mapToTopology } from "../services/pictograph-topology-mapper";
 import { enumeratePositionPairs } from "$lib/shared/multi-grid/services/topology-position-enumerator";
 
-// ---------------------------------------------------------------------------
 // Dependency contract - only the methods we actually call
-// ---------------------------------------------------------------------------
 
 export interface ConjoinedGridDeps {
   letterQueryHandler: {
@@ -37,9 +35,7 @@ export interface ConjoinedGridDeps {
   };
 }
 
-// ---------------------------------------------------------------------------
 // Public API contract
-// ---------------------------------------------------------------------------
 
 export interface ConjoinedGridState {
   // Topology
@@ -86,15 +82,11 @@ export interface ConjoinedGridState {
   readonly junctionOverlaps: JunctionOverlap[];
 }
 
-// ---------------------------------------------------------------------------
 // Factory
-// ---------------------------------------------------------------------------
 
 export function createConjoinedGridState(deps: ConjoinedGridDeps): ConjoinedGridState {
 
-  // =========================================================================
   // Topology
-  // =========================================================================
 
   let selectedPresetId = $state(TOPOLOGY_PRESETS[0]!.id);
 
@@ -113,9 +105,7 @@ export function createConjoinedGridState(deps: ConjoinedGridDeps): ConjoinedGrid
     currentPairIndex = 0;
   }
 
-  // =========================================================================
   // Mode
-  // =========================================================================
 
   let activeMode = $state<ConjoinedGridMode>("browse");
 
@@ -123,9 +113,7 @@ export function createConjoinedGridState(deps: ConjoinedGridDeps): ConjoinedGrid
     activeMode = mode;
   }
 
-  // =========================================================================
   // Browse mode
-  // =========================================================================
 
   let allPictographs = $state<PictographData[]>([]);
   let selectedPictographIndex = $state(0);
@@ -201,9 +189,7 @@ export function createConjoinedGridState(deps: ConjoinedGridDeps): ConjoinedGrid
     prepareCurrent();
   }
 
-  // =========================================================================
   // Explore mode
-  // =========================================================================
 
   let currentPairIndex = $state(0);
   let isPlaying = $state(false);
@@ -273,9 +259,7 @@ export function createConjoinedGridState(deps: ConjoinedGridDeps): ConjoinedGrid
     return () => clearInterval(interval);
   });
 
-  // =========================================================================
   // Shared derivations
-  // =========================================================================
 
   // The current placement from whichever mode is active
   const currentPlacement: PropPlacement | null = $derived.by(() => {
@@ -301,9 +285,7 @@ export function createConjoinedGridState(deps: ConjoinedGridDeps): ConjoinedGrid
     currentPlacement ? detectOverlaps(topology, currentPlacement) : [],
   );
 
-  // =========================================================================
   // Public API
-  // =========================================================================
 
   return {
     // Topology

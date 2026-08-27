@@ -30,9 +30,6 @@ export interface SequenceTag {
   readonly addedAt: Date;
 }
 
-/**
- * Create a new SequenceTag
- */
 export function createSequenceTag(
   tagId: string,
   source: "user" | "ai" | "rule-based" = "user",

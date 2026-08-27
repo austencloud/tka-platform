@@ -242,7 +242,6 @@ export interface ExportOptionsStateManager {
   getSplitOptions(): SplitExportOptions;
   getImageOptions(): ImageExportOptions;
 
-  // Reset to defaults
   resetToDefaults(): void;
 }
 
@@ -470,7 +469,6 @@ export function createExportOptionsState(): ExportOptionsStateManager {
       };
     },
 
-    // Reset to defaults
     resetToDefaults() {
       videoFps = DEFAULT_VIDEO_OPTIONS.fps;
       videoLoopCount = DEFAULT_VIDEO_OPTIONS.loopCount;

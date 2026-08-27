@@ -211,7 +211,6 @@
     overflow: hidden;
   }
 
-  /* ---- Header ---- */
 
   .queue-header {
     display: flex;
@@ -275,7 +274,6 @@
     cursor: not-allowed;
   }
 
-  /* ---- Loading / empty / error ---- */
 
   .queue-loading,
   .queue-empty,
@@ -300,7 +298,6 @@
     color: var(--semantic-error, #ef4444);
   }
 
-  /* ---- Submission list ---- */
 
   .submission-list {
     list-style: none;
@@ -399,7 +396,6 @@
     line-height: 1.5;
   }
 
-  /* ---- Action error ---- */
 
   .action-error {
     display: flex;
@@ -413,7 +409,6 @@
     font-size: var(--font-size-compact, 12px);
   }
 
-  /* ---- Action buttons ---- */
 
   .submission-actions {
     display: flex;

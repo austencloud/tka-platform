@@ -126,7 +126,6 @@
 </button>
 
 <style>
-  /* ── Base tile ─────────────────────────────────────────────────── */
   .mini-tile {
     display: flex;
     flex-direction: row;

@@ -48,7 +48,6 @@ export class SpecialPlacementDataProvider {
       return;
     }
 
-    // Start loading
     const loadPromise = (async () => {
       try {
         const manifestPath = `${placementAssetRoot(frame)}/special/placement_manifest.json`;

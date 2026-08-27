@@ -1,4 +1,3 @@
-// scripts/half-glyph-parity.mjs
 // Run: npx tsx scripts/half-glyph-parity.mjs
 //
 // Numeric parity oracle for the `_half` arrow assets: pushes each stored SVG

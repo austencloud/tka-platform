@@ -93,7 +93,6 @@
     SEMANTIC_TEMPO_PRESETS.find((preset) => preset.bpm === bpm)?.label ?? null
   );
 
-  // --- Handlers ---
 
   function adjustBpm(direction: 1 | -1) {
     const elapsed = performance.now() - holdStartTime;
@@ -453,9 +452,6 @@
     margin-top: 2px;
   }
 
-  /* ===========================
-     SEMANTIC PRESETS
-     =========================== */
 
   .presets {
     display: flex;
@@ -508,9 +504,6 @@
     outline-offset: 2px;
   }
 
-  /* ===========================
-     PRACTICE BUTTON
-     =========================== */
 
   .practice-btn {
     display: flex;
@@ -573,9 +566,6 @@
     font-size: 14px;
   }
 
-  /* ===========================
-     RESPONSIVE
-     =========================== */
 
   @media (max-width: 480px) {
     .bpm-display {
@@ -588,9 +578,6 @@
     }
   }
 
-  /* ===========================
-     ACCESSIBILITY
-     =========================== */
 
   @media (prefers-reduced-motion: reduce) {
     .adjust-btn,

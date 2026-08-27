@@ -121,7 +121,6 @@ export function registerSequenceTools(server: McpServer): void {
         };
       }
 
-      // Get or build the transition matrix
       const matrix = getTransitionMatrix(allPictographs as any, gridMode);
 
       // Analyze the word
@@ -252,7 +251,6 @@ export function registerSequenceTools(server: McpServer): void {
       let parseResult: ReturnType<typeof parseConstraints> | undefined;
 
       if (constraintPreset) {
-        // Use preset
         const presetConstraints = getPresetConstraintSet(constraintPreset);
         if (presetConstraints) {
           constraintSet = presetConstraints;

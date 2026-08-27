@@ -164,7 +164,6 @@ export class SvgAssetLoader {
     const pending = this.pendingLetters.get(letterPath);
     if (pending) return pending;
 
-    // Start loading
     const loadPromise = this.loadLetterAsset(letterPath);
     this.pendingLetters.set(letterPath, loadPromise);
 

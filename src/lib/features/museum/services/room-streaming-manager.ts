@@ -71,7 +71,6 @@ export class RoomStreamingManager {
     const toDispose: string[] = [];
     for (const id of this.loadedRooms) {
       if (!activeSet.has(id)) {
-        // Start or check hysteresis timer
         if (!this.disposeTimers.has(id)) {
           this.disposeTimers.set(id, now);
         } else if (now - this.disposeTimers.get(id)! >= this.hysteresisMs) {

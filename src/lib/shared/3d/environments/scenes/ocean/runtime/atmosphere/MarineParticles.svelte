@@ -12,7 +12,6 @@
   import vertexShader from "../../shaders/atmosphere/particle.vert?raw";
   import fragmentShader from "../../shaders/atmosphere/particle.frag?raw";
 
-  // ── Hardcoded config ──────────────────────────────────────────────────
   const AREA_WIDTH = 30;
   const AREA_HEIGHT = 10;
   const AREA_DEPTH = 30;

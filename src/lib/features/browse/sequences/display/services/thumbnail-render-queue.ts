@@ -54,7 +54,6 @@ export class ThumbnailRenderQueue {
       return existing as Promise<T>;
     }
 
-    // Create new promise for this task
     const promise = new Promise<T>((resolve, reject) => {
       const task: QueuedTask<T> = { id, execute, resolve, reject, priority };
 

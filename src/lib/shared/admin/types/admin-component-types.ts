@@ -37,9 +37,6 @@ export interface SelectableItem {
   disabled?: boolean;
 }
 
-/**
- * Filter option for AdminFilterGroup
- */
 export interface FilterOption {
   id: string;
   label: string;

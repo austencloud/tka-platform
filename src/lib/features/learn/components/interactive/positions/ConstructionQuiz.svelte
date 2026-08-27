@@ -24,9 +24,7 @@ Wrong answers receive semantic feedback explaining WHAT they built vs. WHAT was 
 
   let { experienceState }: Props = $props();
 
-  // =========================================================================
   // Haptic feedback
-  // =========================================================================
 
   let hapticService: { trigger: (type: string) => void } | null = null;
   try {
@@ -37,9 +35,7 @@ Wrong answers receive semantic feedback explaining WHAT they built vs. WHAT was 
     // Haptic not available
   }
 
-  // =========================================================================
   // Position type detection
-  // =========================================================================
 
   const OPPOSITE_PAIRS: Record<string, string> = {
     N: "S",
@@ -58,9 +54,7 @@ Wrong answers receive semantic feedback explaining WHAT they built vs. WHAT was 
     return "gamma";
   }
 
-  // =========================================================================
   // Question generation with adaptive difficulty
-  // =========================================================================
 
   interface ConstructionQuestion {
     targetType: PositionType;
@@ -111,9 +105,7 @@ Wrong answers receive semantic feedback explaining WHAT they built vs. WHAT was 
     return arr;
   }
 
-  // =========================================================================
   // Quiz state
-  // =========================================================================
 
   let currentQuestion = $state(0);
   let questions = $state<ConstructionQuestion[]>(generateQuestions());
@@ -131,17 +123,13 @@ Wrong answers receive semantic feedback explaining WHAT they built vs. WHAT was 
     currentQuestion < questions.length ? questions[currentQuestion]! : null,
   );
 
-  // =========================================================================
   // Cleanup
-  // =========================================================================
 
   onDestroy(() => {
     if (advanceTimer !== null) clearTimeout(advanceTimer);
   });
 
-  // =========================================================================
   // Handlers
-  // =========================================================================
 
   function handlePlacementComplete(left: HandPosition, right: HandPosition) {
     if (feedbackState !== "idle" || !currentQ) return;

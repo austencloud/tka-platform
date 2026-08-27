@@ -107,9 +107,6 @@ export class SequenceCanonicalizer {
     };
   }
 
-  // ============================================================================
-  // PRIVATE HELPERS
-  // ============================================================================
 
   /**
    * Find how many positions the original word needs to rotate to become canonical.

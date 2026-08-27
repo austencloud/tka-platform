@@ -179,7 +179,6 @@
 </div>
 
 <style>
-  /* ===== COLUMNS CONTAINER ===== */
   .columns-container {
     display: flex;
     gap: clamp(16px, 1cqi, 32px);
@@ -208,7 +207,6 @@
     background: var(--scrollbar-thumb-hover);
   }
 
-  /* ===== ARCHIVE/DEFER STACK ===== */
   .archive-defer-stack {
     display: flex;
     flex-direction: column;

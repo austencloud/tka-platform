@@ -125,9 +125,7 @@ import type { WindowManager } from "../../services/window-manager";
     padding: 2px;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Start button                                                        */
-  /* ------------------------------------------------------------------ */
   .start-button {
     display: flex;
     align-items: center;
@@ -167,9 +165,7 @@ import type { WindowManager } from "../../services/window-manager";
     line-height: 1;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Divider                                                             */
-  /* ------------------------------------------------------------------ */
   .taskbar-divider {
     width: 2px;
     height: 20px;
@@ -178,9 +174,7 @@ import type { WindowManager } from "../../services/window-manager";
     border-right: 1px solid var(--retro-button-highlight, #ffffff);
   }
 
-  /* ------------------------------------------------------------------ */
   /* Window buttons area                                                 */
-  /* ------------------------------------------------------------------ */
   .taskbar-windows {
     flex: 1;
     display: flex;
@@ -239,9 +233,7 @@ import type { WindowManager } from "../../services/window-manager";
     text-overflow: ellipsis;
   }
 
-  /* ------------------------------------------------------------------ */
   /* System tray / clock                                                 */
-  /* ------------------------------------------------------------------ */
   .taskbar-tray {
     position: relative;
     display: flex;
@@ -260,9 +252,7 @@ import type { WindowManager } from "../../services/window-manager";
     cursor: default;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Clock tooltip - appears above the tray on click                    */
-  /* ------------------------------------------------------------------ */
   .clock-tooltip {
     position: absolute;
     bottom: 30px;

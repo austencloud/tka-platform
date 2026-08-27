@@ -5,7 +5,6 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ModuleId, Section } from "../domain/types";
 
-// === From ISheetRouter ===
 
 export type SheetType =
   | "settings"
@@ -29,7 +28,6 @@ export interface RouteState {
   animationPanel?: AnimationPanelState;
 }
 
-// === From IDeepLinker ===
 
 export interface ModuleMapping {
   /**
@@ -53,7 +51,6 @@ export interface DeepLinkData {
   returnPath?: string;
 }
 
-// === From IURLSyncer ===
 
 export interface URLSyncOptions {
   /** Milliseconds to debounce (default: 500) */
@@ -68,7 +65,6 @@ export interface DebouncedUrlSync {
   cancel: () => void;
 }
 
-// === From ISequenceEncoder ===
 
 export interface CompressionResult {
   encoded: string;
@@ -128,7 +124,6 @@ export interface QRSizeEstimate {
   warning?: string;
 }
 
-// === From ISidebarTabToggler ===
 
 export interface TabVisibilityInfo {
   section: Section;

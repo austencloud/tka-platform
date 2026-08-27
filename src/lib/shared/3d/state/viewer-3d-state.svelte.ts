@@ -61,9 +61,7 @@ import {
   resolvePlainOpenPerformerSettings,
 } from "../domain/plain-open-policy";
 
-// ============================================
 // Popover Stack
-// ============================================
 
 export type PopoverId =
   | "formation"
@@ -78,9 +76,7 @@ export type PopoverId =
   | "effort"
   | "dev";
 
-// ============================================
 // Persistence
-// ============================================
 
 const STORAGE_KEY_MODE = "tka-viewer3d-renderMode";
 const STORAGE_KEY_CAMERA = "tka-viewer3d-camera";
@@ -246,9 +242,7 @@ function persistCamera(snapshot: CameraStateSnapshot) {
   }
 }
 
-// ============================================
 // Plane Persistence
-// ============================================
 
 function loadPersistedPlanes(): Set<Plane> | null {
   if (typeof localStorage === "undefined") return null;
@@ -409,9 +403,7 @@ function persistEffectToggles(toggles: Record<string, boolean>): void {
   }
 }
 
-// ============================================
 // Factory
-// ============================================
 
 /**
  * The module-level writers, captured so a seeded instance can shadow each name
@@ -804,9 +796,7 @@ function buildViewer3DState(
     });
   }
 
-  // ============================================
   // Default Settings — Cascade Write Methods
-  // ============================================
 
   function setDefaultProp(prop: PropType): void {
     sceneUndo.captureState("change-default-prop", `Default prop: ${prop}`);

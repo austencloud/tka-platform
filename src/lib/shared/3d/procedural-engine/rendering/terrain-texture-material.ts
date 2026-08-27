@@ -27,9 +27,6 @@ import {
   type Texture,
 } from "three";
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
 
 export interface TerrainTextureConfig {
   /** Texture repeat scale (default: 0.05 = 20m repeat) */
@@ -49,9 +46,6 @@ const DEFAULT_CONFIG: Required<TerrainTextureConfig> = {
   normalStrength: 1.0,
 };
 
-// ============================================================================
-// TEXTURE PATHS
-// ============================================================================
 
 const TEXTURE_BASE = "/textures/terrain";
 

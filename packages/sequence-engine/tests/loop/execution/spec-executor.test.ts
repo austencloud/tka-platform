@@ -26,9 +26,7 @@ import type {
   MotionData,
 } from "../../../src/core/types/sequence-engine-types.js";
 
-// ---------------------------------------------------------------------------
 // Factories
-// ---------------------------------------------------------------------------
 
 function makeMotion(overrides: Partial<MotionData> = {}): MotionData {
   return {

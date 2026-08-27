@@ -1,4 +1,3 @@
-// src/lib/shared/3d/scene-composer/types.ts
 
 import type { Intersection, Mesh, Object3D, Quaternion, Vector3 } from "three";
 import type { ObjectDefinition } from "../procedural-engine/objects/object-catalog";

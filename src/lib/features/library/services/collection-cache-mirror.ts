@@ -91,7 +91,6 @@ function writeEnvelope<T>(key: string, data: T): void {
   }
 }
 
-// --- Own collections ---------------------------------------------------------
 
 export function readOwnMirror(uid: string): LibraryCollection[] | null {
   const serialized = readEnvelope<SerializedCollection[]>(OWN_PREFIX + uid);
@@ -108,7 +107,6 @@ export function writeOwnMirror(uid: string, cols: readonly LibraryCollection[]):
   writeEnvelope(OWN_PREFIX + uid, cols.map(serializeCollection));
 }
 
-// --- Followed collections ----------------------------------------------------
 
 type SerializedFollowed = {
   collection: SerializedCollection;
@@ -144,7 +142,6 @@ export function writeFollowedMirror(
   );
 }
 
-// --- Sign-out ----------------------------------------------------------------
 
 /** Drop a user's mirrors so their list never seeds the next signed-in account. */
 export function clearMirror(uid: string): void {

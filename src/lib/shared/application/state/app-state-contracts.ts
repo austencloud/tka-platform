@@ -10,9 +10,6 @@ import type { TabId } from "../../navigation/domain/types";
 // TODO: Import IBrowseStatePersister when it's properly exported
 // import type { IBrowseStatePersister } from "../../../../features/browse/Browse/services/contracts";
 
-// ============================================================================
-// SERVICE INTERFACES
-// ============================================================================
 
 /**
  * Core application state management (UI state, transitions, etc.)

@@ -24,7 +24,6 @@ const DRAFTS = path.join(__dirname, "i18n-drafts"); // review files live OUTSIDE
 fs.mkdirSync(DRAFTS, { recursive: true });           // inlang/validate-i18n don't scan them as locales
 const OLLAMA = "http://127.0.0.1:11434/api/generate";
 
-// ---- args ----
 const locale = process.argv[2];
 if (!locale) { console.error("Usage: node scripts/i18n-localize.cjs <locale> [--limit N] [--batch 25]"); process.exit(1); }
 const arg = (name, def) => { const i = process.argv.indexOf(name); return i >= 0 ? process.argv[i + 1] : def; };
@@ -45,7 +44,6 @@ function isReleased(k) {
   return startsWithAny(k, RELEASED);
 }
 
-// ---- register per locale ----
 const REGISTER = {
   es: 'informal "tú" (quieres, inténtalo, tu)', pt: 'informal "você/tu", natural pt-BR',
   fr: '"vous" (French UI convention)', de: 'formal "Sie" (German UI convention)',
@@ -55,7 +53,6 @@ const REGISTER = {
 };
 const LANGNAME = { es:"Spanish", fr:"French", de:"German", pt:"Portuguese", it:"Italian", ja:"Japanese", ko:"Korean", zh:"Chinese (Simplified)", ar:"Arabic", ru:"Russian" };
 
-// ---- load ----
 const en = JSON.parse(fs.readFileSync(path.join(MSG, "en.json"), "utf8"));
 const loc = JSON.parse(fs.readFileSync(path.join(MSG, `${locale}.json`), "utf8"));
 const tb = JSON.parse(fs.readFileSync(path.join(__dirname, "i18n-termbase.json"), "utf8"));

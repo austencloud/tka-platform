@@ -8,9 +8,7 @@
 import type { Vector3 } from "three";
 import type { TrailPoint, PropPositionHistory, PropId } from "../types";
 
-// =============================================================================
 // Configuration
-// =============================================================================
 
 /**
  * Configuration for effect state
@@ -27,9 +25,7 @@ const DEFAULT_CONFIG: EffectStateConfig = {
   minUpdateInterval: 16,
 };
 
-// =============================================================================
 // Effect State Factory
-// =============================================================================
 
 /**
  * Create effect state for tracking prop position history
@@ -256,15 +252,11 @@ export function createEffectState(config: Partial<EffectStateConfig> = {}) {
   };
 }
 
-// =============================================================================
 // Type Export
-// =============================================================================
 
 export type EffectState = ReturnType<typeof createEffectState>;
 
-// =============================================================================
 // Singleton Instance
-// =============================================================================
 
 /**
  * Singleton effect state instance for global access
@@ -272,9 +264,6 @@ export type EffectState = ReturnType<typeof createEffectState>;
  */
 let singletonInstance: EffectState | null = null;
 
-/**
- * Get or create the singleton effect state
- */
 export function getEffectState(): EffectState {
   if (!singletonInstance) {
     singletonInstance = createEffectState();

@@ -31,7 +31,6 @@ export interface PlaybackControllerDeps {
 export function createPlaybackController(deps: PlaybackControllerDeps) {
   const { modalAnimationState } = deps;
 
-  // ── Reactive state ──
   let isPlayingLocal = $state(false);
   let currentStepLocal = $state(deps.initialStep);
   let bpmLocal = $state(deps.initialBpm);
@@ -57,7 +56,6 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
   let _practiceViewPrefs: PracticeViewPrefs | null = null;
   let _metronome: Metronome | null = null;
 
-  // ── Animation state subscription ──
   let lastStepNumber = 0;
 
   const cleanupSubscription = modalAnimationState.subscribe(
@@ -92,7 +90,6 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     }
   );
 
-  // ── Playback mode sync from visibility manager ──
   const animationVisibility = getAnimationVisibilityManager();
   let visibilityObserver: (() => void) | undefined;
 
@@ -120,18 +117,14 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     }
   }
 
-  // ── Practice training ──
   const practiceOrchestrator = new TempoPracticeOrchestrator();
   const practiceState = createTempoPracticeState();
   const screenWakeLockManager = createScreenWakeLockManager();
 
-  // ── Scrub gesture ──
   let wasPlayingBeforeScrub = false;
 
-  // ── Start-cell hold-then-play ──
   let startHoldTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // ── Handlers ──
 
   function handlePlaybackToggle() {
     // Locked during the count-in pre-roll: a tap would start the ramp before GO

@@ -230,7 +230,6 @@
     outline-offset: 2px;
   }
 
-  /* ─── Reduced motion ─── */
   @media (prefers-reduced-motion: reduce) {
     .spine-chip {
       transition: none;

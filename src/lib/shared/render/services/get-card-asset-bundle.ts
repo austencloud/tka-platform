@@ -1,4 +1,3 @@
-// src/lib/shared/render/services/get-card-asset-bundle.ts
 //
 // MAIN-THREAD entry point for building an AssetBundle before dispatching to the
 // worker pool. Warms the singleton svgCache by RENDERING each sequence once at a

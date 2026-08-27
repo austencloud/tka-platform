@@ -18,9 +18,7 @@
   import { createMockPictographData } from "../../../shared/data/mock-pictograph-data";
   import { DosSoundManager } from "../../services/dos-sound-manager";
 
-  /* ------------------------------------------------------------------ */
   /* Props                                                               */
-  /* ------------------------------------------------------------------ */
 
   interface Props {
     /** Called when Construct mode finishes and should return to menu */
@@ -29,16 +27,12 @@
 
   let { onreturn }: Props = $props();
 
-  /* ------------------------------------------------------------------ */
   /* Services                                                            */
-  /* ------------------------------------------------------------------ */
 
   const renderer = new BrailleHybridRenderer();
   const soundManager = new DosSoundManager();
 
-  /* ------------------------------------------------------------------ */
   /* Beat data model                                                     */
-  /* ------------------------------------------------------------------ */
 
   interface ConstructBeat {
     letter: string;
@@ -49,7 +43,6 @@
 
   let beats = $state<ConstructBeat[]>([]);
 
-  /* ------------------------------------------------------------------ */
   /* Sub-prompt state machine                                            */
   /*                                                                     */
   /* The construct mode uses a multi-step prompt for adding beats:       */
@@ -58,7 +51,6 @@
   /*   "motion" -> select motion type                                   */
   /*   "cw"     -> enter CW turns                                       */
   /*   "ccw"    -> enter CCW turns                                      */
-  /* ------------------------------------------------------------------ */
 
   type ConstructStep = "main" | "letter" | "motion" | "cw" | "ccw";
 
@@ -69,9 +61,7 @@
   let pendingMotion = $state("");
   let pendingCW = $state(0);
 
-  /* ------------------------------------------------------------------ */
   /* Valid letter names (A-Z plus Greek letters)                          */
-  /* ------------------------------------------------------------------ */
 
   const GREEK_LETTERS = new Set([
     "SIGMA", "PHI", "THETA", "PSI", "LAMBDA",
@@ -90,9 +80,7 @@
     return upper.charAt(0) + upper.slice(1).toLowerCase();
   }
 
-  /* ------------------------------------------------------------------ */
   /* Valid motion types                                                   */
-  /* ------------------------------------------------------------------ */
 
   const MOTION_MAP: Record<string, string> = {
     "P": "Pro",
@@ -101,9 +89,7 @@
     "D": "Dash",
   };
 
-  /* ------------------------------------------------------------------ */
   /* Turn validation                                                     */
-  /* ------------------------------------------------------------------ */
 
   function isValidTurns(input: string): boolean {
     const num = parseFloat(input);
@@ -113,9 +99,7 @@
     return num % 0.5 === 0;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Drawing helpers                                                     */
-  /* ------------------------------------------------------------------ */
 
   function drawHeader(): void {
     terminalState.writeBlank();

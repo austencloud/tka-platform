@@ -41,16 +41,13 @@
     onError,
   }: Props = $props();
 
-  // ===== State =====
   let isLoaded = $state(false);
   let hasError = $state(false);
   let previousUrl = $state<string | null>(null);
   let isTransitioning = $state(false);
 
-  // ===== Preload Cache =====
   const preloadedUrls = new Set<string>();
 
-  // ===== Image Load Handler =====
   function handleLoad() {
     isLoaded = true;
     hasError = false;
@@ -64,7 +61,6 @@
     onError?.("Failed to load image");
   }
 
-  // ===== Transition Effect =====
   $effect(() => {
     // When URL changes, trigger transition
     if (item.url !== previousUrl && previousUrl !== null) {
@@ -74,7 +70,6 @@
     previousUrl = item.url;
   });
 
-  // ===== Transform Calculation =====
   const transform = $derived.by(() => {
     const transforms: string[] = [];
 

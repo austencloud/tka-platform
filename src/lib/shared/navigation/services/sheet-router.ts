@@ -7,9 +7,6 @@ import { page } from "$app/state";
 import type { SheetType, RouteState, AnimationPanelState } from "./types";
 import { writeUrl } from "./url-state";
 
-// ============================================================================
-// PRIVATE HELPERS
-// ============================================================================
 
 function parseRouteState(): RouteState {
   if (!browser) return {};
@@ -131,9 +128,6 @@ function dispatchRouteChange(state: RouteState): void {
   window.dispatchEvent(new CustomEvent("route-change", { detail: state }));
 }
 
-// ============================================================================
-// PUBLIC API
-// ============================================================================
 
 export function openSheet(sheetType: SheetType): void {
   if (!sheetType || !browser) return;

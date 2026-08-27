@@ -33,7 +33,6 @@
 // buildWaterTraverseLayout). Only the mesh TYPE is still part of the contract.
 import type { SeabedMesh } from "./water-traverse-seabed";
 
-// ── Types ───────────────────────────────────────────────────────────────────
 
 export interface WorldRect {
   minX: number;
@@ -168,7 +167,6 @@ export interface WaterTraverseLayout {
   spawn: { x: number; y: number; z: number; yaw: number };
 }
 
-// ── Datums ──────────────────────────────────────────────────────────────────
 
 /**
  * The waterline. Everything in this file is measured from it, and it is the
@@ -244,7 +242,6 @@ export const SEA_FLOOR_Y = -m(5);
  */
 export const CAVE_FLOOR_END_Y = WATERLINE_Y - m(5.8);
 
-// ── Plan ────────────────────────────────────────────────────────────────────
 
 /**
  * Half-width of the walkable floor, per leg. Three landscapes have to be three
@@ -392,7 +389,6 @@ const CHAMBER_Z: Record<HallRegion, [number, number]> = {
   sea: [SNOW_END_Z, CAVE_START_Z],
 };
 
-// ── The cave ────────────────────────────────────────────────────────────────
 
 /**
  * Sixty-six metres inside rock, flooded to the roof for every one of them.

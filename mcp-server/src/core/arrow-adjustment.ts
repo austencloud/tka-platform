@@ -29,9 +29,6 @@ const PROJECT_ROOT = inDist
   ? join(__dirname, "../../../..")
   : join(__dirname, "../../..");
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 export interface MotionAdjustmentInput {
   letter: string;
@@ -59,9 +56,6 @@ type PlacementData = Record<
   Record<TurnsTupleKey, Record<AdjustmentKey, [number, number]>>
 >;
 
-// ============================================================================
-// ORI KEY CALCULATION
-// ============================================================================
 
 /**
  * Calculate orientation key based on motion end orientations.
@@ -81,9 +75,6 @@ export function calculateOriKey(blueEndOri: string, redEndOri: string): string {
   return "from_layer1";
 }
 
-// ============================================================================
-// SPECIAL PLACEMENT LOOKUP
-// ============================================================================
 
 /**
  * Load special placement data for a letter.

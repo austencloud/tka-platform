@@ -25,7 +25,6 @@
   import SpotlightFilmstrip from "./SpotlightFilmstrip.svelte";
   import "./spotlight-tokens.css";
 
-  // ===== Types =====
   export interface MediaItem {
     id: string;
     url: string;
@@ -69,7 +68,6 @@
     showClose = true,
   }: Props = $props();
 
-  // ===== State =====
   let dialogElement = $state<HTMLDialogElement | null>(null);
   let imageContainer = $state<HTMLElement | null>(null);
   let shouldRender = $state(false);
@@ -77,29 +75,24 @@
   let isClosing = $state(false);
   let wasOpen = $state(false);
 
-  // ===== Chrome Visibility =====
   let chromeVisible = $state(true);
   let chromeTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  // ===== Gesture State =====
   let gestureHandler: SpotlightGestureHandler | null = null;
   let gestureState = $state<GestureState | null>(null);
   let isSwiping = $state(false);
 
-  // ===== Image Loading =====
   let isLoading = $state(false);
   let loadError = $state<string | null>(null);
 
   // ===== Navigation Direction (for slide animation) =====
   let navDirection = $state<"next" | "prev" | null>(null);
 
-  // ===== Derived =====
   const currentItem = $derived(items[currentIndex] ?? null);
   const canGoNext = $derived(currentIndex < items.length - 1);
   const canGoPrev = $derived(currentIndex > 0);
   const totalCount = $derived(items.length);
 
-  // ===== Chrome Auto-Hide =====
   function showChrome() {
     chromeVisible = true;
     scheduleHideChrome();
@@ -127,7 +120,6 @@
     }
   }
 
-  // ===== Navigation =====
   function navigate(direction: "prev" | "next") {
     if (direction === "prev" && canGoPrev) {
       navDirection = "prev";
@@ -151,7 +143,6 @@
     }
   }
 
-  // ===== Gesture Callbacks =====
   function handleGestureUpdate(state: GestureState) {
     gestureState = state;
     isSwiping = state.isActive && (state.type === "swipe-horizontal" || state.type === "swipe-vertical");
@@ -171,13 +162,11 @@
     closeSpotlight("swipe");
   }
 
-  // ===== Close Handler =====
   function closeSpotlight(reason: "backdrop" | "escape" | "button" | "swipe" = "button") {
     open = false;
     onclose?.();
   }
 
-  // ===== Keyboard Navigation =====
   function handleKeydown(e: KeyboardEvent) {
     if (!open) return;
 
@@ -216,7 +205,6 @@
     }
   }
 
-  // ===== Dialog Event Handlers =====
   function handleDialogClose() {
     closeSpotlight("button");
   }
@@ -242,7 +230,6 @@
     }
   }
 
-  // ===== State Change Effect =====
   $effect(() => {
     const currentOpen = open;
     const previouslyOpen = untrack(() => wasOpen);
@@ -290,7 +277,6 @@
     }
   });
 
-  // ===== Gesture Handler Setup =====
   $effect(() => {
     if (hasEntered && imageContainer && !gestureHandler) {
       gestureHandler = new SpotlightGestureHandler({
@@ -308,7 +294,6 @@
     };
   });
 
-  // ===== Keyboard Listener =====
   $effect(() => {
     if (open && browser) {
       window.addEventListener("keydown", handleKeydown);
@@ -317,13 +302,11 @@
     return undefined;
   });
 
-  // ===== Cleanup =====
   onDestroy(() => {
     clearChromeTimeout();
     gestureHandler?.dispose();
   });
 
-  // ===== Transform Calculation =====
   const swipeTransform = $derived.by(() => {
     if (!gestureState?.isActive) return "";
 

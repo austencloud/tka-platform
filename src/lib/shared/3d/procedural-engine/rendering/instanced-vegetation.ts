@@ -41,9 +41,6 @@ import { ModelCache } from "./model-cache";
 import type { VegetationCategory } from "../vegetation/domain/vegetation-categories";
 import { SCATTER_CATEGORIES } from "../vegetation/domain/vegetation-categories";
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 /**
  * Legacy vegetation types for backward compatibility with worker
@@ -74,9 +71,6 @@ interface VegetationConfig {
   useNewModelSystem: boolean;
 }
 
-// ============================================================================
-// DEFAULT CONFIG
-// ============================================================================
 
 const DEFAULT_CONFIG: VegetationConfig = {
   maxInstancesPerCategory: 10000, // Per category (tree, rock, etc.)
@@ -97,9 +91,6 @@ const LEGACY_TO_CATEGORY: Record<LegacyVegetationType, VegetationCategory> = {
   grass: "grass",
 };
 
-// ============================================================================
-// VEGETATION MANAGER
-// ============================================================================
 
 export class VegetationManager {
   private scene: Scene;
@@ -139,7 +130,6 @@ export class VegetationManager {
 
     if (this.modelCache && this.config.useNewModelSystem) {
       try {
-        // Initialize the new registry
         await this.modelCache.initRegistry();
 
         // Preload categories we'll use for scattering
@@ -174,9 +164,7 @@ export class VegetationManager {
     }
   }
 
-  // ==========================================================================
   // CATEGORY-BASED INITIALIZATION (New System)
-  // ==========================================================================
 
   private initCategoryBatches(): void {
     const maxPerCategory = this.config.maxInstancesPerCategory;

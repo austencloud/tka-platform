@@ -19,9 +19,6 @@ import { page } from "$app/state";
 import type { SequenceData } from "../../../foundation/domain/models/sequence-data";
 import { writeUrl } from "../../../navigation/services/url-state";
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 export type ModalType = "sequence" | "spotlight" | null;
 export type SequenceViewMode = "split" | "animation" | "image";
@@ -43,9 +40,6 @@ export interface ModalUrlState {
   bpm: number;
 }
 
-// ============================================================================
-// STATE
-// ============================================================================
 
 const DEFAULT_STATE: ModalUrlState = {
   modal: null,
@@ -92,9 +86,6 @@ function saveSequenceCacheToStorage(cache: Map<string, SequenceData>): void {
 // In-memory cache backed by sessionStorage
 const sequenceCache = getSequenceCacheFromStorage();
 
-// ============================================================================
-// URL PARSING
-// ============================================================================
 
 function parseUrlParams(searchParams: URLSearchParams): ModalUrlState {
   const modal = searchParams.get("modal") as ModalType;
@@ -146,9 +137,6 @@ function buildUrlParams(state: Partial<ModalUrlState>): URLSearchParams {
   return params;
 }
 
-// ============================================================================
-// PUBLIC API
-// ============================================================================
 
 /**
  * Get current modal URL state (reactive)
@@ -293,9 +281,6 @@ export function cacheSequence(sequence: SequenceData): void {
   saveSequenceCacheToStorage(sequenceCache);
 }
 
-// ============================================================================
-// URL UPDATE
-// ============================================================================
 
 /**
  * Build a new URL with modal params applied.
@@ -312,7 +297,6 @@ function buildNewUrl(params: URLSearchParams): URL {
   newUrl.searchParams.delete("t");
   newUrl.searchParams.delete("bpm");
 
-  // Add new params
   params.forEach((value, key) => {
     newUrl.searchParams.set(key, value);
   });
@@ -352,9 +336,6 @@ function updateUrlFast(params: URLSearchParams): void {
   writeUrl(newUrl);
 }
 
-// ============================================================================
-// INITIALIZATION
-// ============================================================================
 
 let initialized = false;
 let cleanup: (() => void) | null = null;

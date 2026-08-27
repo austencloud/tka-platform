@@ -1,4 +1,3 @@
-// tests/unit/film-director/film-library.test.ts
 /**
  * Every film in the workbench's registry must resolve without rejection,
  * deterministically. A film that would reject at load time should fail here,

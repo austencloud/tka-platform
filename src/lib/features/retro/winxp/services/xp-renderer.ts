@@ -22,9 +22,6 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { EraRendererBase } from "../../shared/services/era-renderer-base";
 import type { DrawableImage } from '$lib/shared/render/services/svg-image-cache';
 
-// ============================================================================
-// CONSTANTS
-// ============================================================================
 
 /** Canvas size for the XP era - 256×256 matches a typical XP-era thumbnail */
 const XP_SIZE = 256;
@@ -62,18 +59,13 @@ const HAND_DOT_BASE_RADIUS_VB = 22;
 const LETTER_VB_X = 55;
 const LETTER_VB_Y = 855;
 
-// ============================================================================
-// XPRENDERER
-// ============================================================================
 
 export class XPRenderer extends EraRendererBase {
 	constructor(preparer: PictographPreparer) {
 		super(preparer);
 	}
 
-	// --------------------------------------------------------------------------
 	// EraRenderer - primary entry point
-	// --------------------------------------------------------------------------
 
 	async render(
 		canvas: HTMLCanvasElement,
@@ -111,9 +103,7 @@ export class XPRenderer extends EraRendererBase {
 		this.drawBeveledBorder(ctx, size);
 	}
 
-	// --------------------------------------------------------------------------
 	// Placeholder override - XP-styled "?" card
-	// --------------------------------------------------------------------------
 
 	override renderPlaceholder(canvas: HTMLCanvasElement, size: number = XP_SIZE): void {
 		canvas.width = size;

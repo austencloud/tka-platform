@@ -42,9 +42,6 @@ class MemoryProfiler {
     );
   }
 
-  /**
-   * Get current memory metrics
-   */
   private getCurrentMemory(): Omit<
     MemorySnapshot,
     "timestamp" | "label"

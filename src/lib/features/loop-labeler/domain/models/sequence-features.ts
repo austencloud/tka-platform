@@ -68,7 +68,6 @@ export interface ReversalAnalysis {
  * All analyzable features extracted from a sequence for classification.
  */
 export interface SequenceFeatures {
-  // === Basic Metadata ===
   /** Number of steps in the sequence */
   readonly stepCount: number;
 
@@ -78,33 +77,27 @@ export interface SequenceFeatures {
   /** Grid mode (diamond, box, skewed) */
   readonly gridMode: GridMode | null;
 
-  // === Circularity Analysis ===
   /** Complete circularity analysis from SequenceAnalyzer */
   readonly circularity: CircularityAnalysis;
 
   /** Detected LOOP types for completed sequences */
   readonly detectedCapTypes: readonly StrictLoopType[];
 
-  // === Reversal Analysis ===
   readonly reversals: ReversalAnalysis;
 
-  // === Position Dominance ===
   readonly positionDominance: PositionDominance;
 
-  // === Position Types Present ===
   /** Which position groups appear in the sequence */
   readonly hasAlphaPositions: boolean;
   readonly hasBetaPositions: boolean;
   readonly hasGammaPositions: boolean;
 
-  // === Turn Analysis ===
   /** True if sequence contains turns (pro or anti spin) */
   readonly hasTurns: boolean;
 
   /** Number of steps with turns (pro or anti motion) */
   readonly turnStepCount: number;
 
-  // === Motion Types Present ===
   /** Which motion types appear in the sequence */
   readonly hasProMotion: boolean;
   readonly hasAntiMotion: boolean;
@@ -113,9 +106,6 @@ export interface SequenceFeatures {
   readonly hasStaticMotion: boolean;
 }
 
-/**
- * Create default/empty SequenceFeatures
- */
 export function createDefaultSequenceFeatures(): SequenceFeatures {
   return {
     stepCount: 0,

@@ -293,7 +293,6 @@
     margin-inline: calc((100% - var(--band-width)) / 2);
   }
 
-  /* ── Lineage band ── */
   .lineage-band {
     display: grid;
     gap: 2rem clamp(3rem, 6vw, 7rem);

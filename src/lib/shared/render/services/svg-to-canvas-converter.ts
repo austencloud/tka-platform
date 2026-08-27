@@ -31,16 +31,13 @@ export class SVGToCanvasConverter {
     }
 
     return new Promise((resolve, reject) => {
-      // Create target canvas
       const targetCanvas = document.createElement("canvas");
       targetCanvas.width = options.width || 144;
       targetCanvas.height = options.height || 144;
 
-      // Parse and load SVG
       loadSVGFromString(svgString)
         .then(({ objects, options: svgOptions }) => {
           try {
-            // Create fabric canvas
             const fabricCanvas = new Canvas(targetCanvas, {
               width: targetCanvas.width,
               height: targetCanvas.height,
@@ -94,7 +91,6 @@ export class SVGToCanvasConverter {
               fabricCanvas.add(placeholder);
             }
 
-            // Render and return
             fabricCanvas.renderAll();
             resolve(fabricCanvas.getElement());
           } catch (error) {

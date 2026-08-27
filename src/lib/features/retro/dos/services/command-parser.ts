@@ -122,9 +122,7 @@ export class CommandParser {
 		}
 	}
 
-	/* ------------------------------------------------------------------ */
 	/* DIR - List files in current directory                               */
-	/* ------------------------------------------------------------------ */
 
 	private handleDir(args: string[]): void {
 		const seqFilter = args.some((a) => a === "/SEQ" || a === "/S");

@@ -28,7 +28,6 @@ export const GET: RequestHandler = async (event) => {
     const { createCanvas: _createCanvas } = await import('canvas');
     const { canvas2DDirectRenderer } = await import('$lib/shared/render/services/canvas-2d-direct-renderer');
 
-    // Load CSV data
     const csvPath = path.join(process.cwd(), 'static', 'data', 'pictographs', 'DiamondPictographDataframe.csv');
     const csvData = fs.readFileSync(csvPath, 'utf-8');
     const lines = csvData.split('\n');

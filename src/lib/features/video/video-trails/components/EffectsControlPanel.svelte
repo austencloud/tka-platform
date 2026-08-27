@@ -162,7 +162,6 @@
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  /* --- Styled range sliders --- */
 
   .slider-row {
     display: flex;
@@ -211,7 +210,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* --- Custom select dropdown --- */
 
   .select-row {
     display: flex;

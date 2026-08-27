@@ -30,9 +30,7 @@ describe("SceneUndoManager", () => {
     });
   });
 
-  // =========================================================================
   // Basic push/undo/redo
-  // =========================================================================
 
   it("starts with empty stacks", () => {
     expect(manager.canUndo).toBe(false);
@@ -108,9 +106,7 @@ describe("SceneUndoManager", () => {
     expect(manager.canRedo).toBe(false);
   });
 
-  // =========================================================================
   // Max history
-  // =========================================================================
 
   it("trims oldest entries when exceeding 100", () => {
     for (let i = 0; i < 105; i++) {

@@ -17,9 +17,6 @@ import {
 } from "./constants";
 import { addJournalEntry } from "./journalService";
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 export interface ClaimParams {
   feedbackId: string;
@@ -103,9 +100,6 @@ export type ClaimError =
   | { type: "emergency-confirmation"; message: string }
   | { type: "internal"; message: string };
 
-// ============================================================================
-// CLAIM
-// ============================================================================
 
 /**
  * Claim a feedback item
@@ -126,7 +120,6 @@ export async function claimFeedback(
 
   const db = getDb();
 
-  // Verify session exists
   const sessionRef = db.collection("agentSessions").doc(sessionId);
   const sessionDoc = await sessionRef.get();
 

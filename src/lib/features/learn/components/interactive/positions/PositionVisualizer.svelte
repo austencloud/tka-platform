@@ -34,9 +34,7 @@ Uses PictographContainer (the actual pictograph renderer) instead of custom SVG.
     showLetter?: boolean;
   } = $props();
 
-  // =========================================================================
   // Map HandPosition strings to GridLocation enum values
-  // =========================================================================
   const HAND_TO_LOCATION: Record<HandPosition, GridLocation> = {
     N: GridLocation.NORTH,
     E: GridLocation.EAST,
@@ -48,9 +46,7 @@ Uses PictographContainer (the actual pictograph renderer) instead of custom SVG.
     NW: GridLocation.NORTHWEST,
   };
 
-  // =========================================================================
   // Position type detection
-  // =========================================================================
   const OPPOSITE_PAIRS: Record<string, string> = {
     N: "S", S: "N", E: "W", W: "E",
     NE: "SW", SW: "NE", NW: "SE", SE: "NW",
@@ -69,9 +65,7 @@ Uses PictographContainer (the actual pictograph renderer) instead of custom SVG.
     gamma: Letter.GAMMA,
   };
 
-  // =========================================================================
   // Build PictographData from hand positions
-  // =========================================================================
   const pictographData: PictographData = $derived.by(() => ({
     id: "position-visualizer",
     letter: showLetter ? POSITION_LETTER[positionType] : null,

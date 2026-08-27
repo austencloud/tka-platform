@@ -32,7 +32,6 @@
   let isExporting = $state(false);
   let exportProgress = $state<{ done: number; total: number } | null>(null);
 
-  // ── Annotated-branch controls ──────────────────────────────────────────────
   // Columns is the knob that used to break annotations: it re-chunks every band,
   // so a note stored band-relative moved (or unpinned) when it changed. Notes and
   // cues now address an absolute step, so flipping this must leave them on the

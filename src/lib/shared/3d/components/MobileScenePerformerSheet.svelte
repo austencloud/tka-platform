@@ -1,4 +1,3 @@
-<!-- src/lib/shared/3d/components/MobileScenePerformerSheet.svelte -->
 <script lang="ts">
   import type { ViewerControlSink } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
   import PerformerHubDetail from "./controls/PerformerHubDetail.svelte";

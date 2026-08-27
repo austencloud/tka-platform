@@ -21,9 +21,7 @@ import type { AppSettings } from "$lib/shared/settings/domain/app-settings";
 import type { NotificationPreferences } from "$lib/shared/notifications/domain/models/notification-models";
 import { DEFAULT_NOTIFICATION_PREFERENCES } from "$lib/shared/notifications/domain/models/notification-models";
 
-// ============================================================================
 // Types
-// ============================================================================
 
 export interface PreviewUserProfile {
   uid: string;
@@ -124,9 +122,7 @@ interface UserPreviewState {
   loadedSections: Set<LazySection>;
 }
 
-// ============================================================================
 // Helpers
-// ============================================================================
 
 function formatTimestamp(
   ts: Timestamp | Date | string | null | undefined
@@ -140,9 +136,7 @@ function formatTimestamp(
   return null;
 }
 
-// ============================================================================
 // Persistence
-// ============================================================================
 
 const PREVIEW_USER_ID_KEY = "tka-admin-preview-uid";
 
@@ -173,9 +167,7 @@ function getSavedPreviewUserId(): string | null {
   }
 }
 
-// ============================================================================
 // State
-// ============================================================================
 
 const initialData: UserPreviewData = {
   profile: null,
@@ -196,9 +188,7 @@ export const userPreviewState = $state<UserPreviewState>({
   loadedSections: new Set(),
 });
 
-// ============================================================================
 // Direct Firestore Fetchers
-// ============================================================================
 
 async function fetchProfile(
   userId: string

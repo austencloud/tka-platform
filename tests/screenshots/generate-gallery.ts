@@ -37,7 +37,6 @@ const updateBaselines = args.includes("--update-baselines");
 const portableMode =
   args.includes("--portable") || process.env.SCREENSHOT_PORTABLE === "true";
 
-// ─── Update Baselines ────────────────────────────────────────────────────────
 
 if (updateBaselines) {
   if (!existsSync(CAPTURES_DIR)) {

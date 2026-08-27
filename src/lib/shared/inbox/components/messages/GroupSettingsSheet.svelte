@@ -51,7 +51,6 @@
     conversation.groupMetadata?.adminIds.includes(currentUserId) ?? false
   );
 
-  // Get group name
   const groupName = $derived(
     conversation.groupMetadata?.name || "Unnamed Group"
   );
@@ -135,7 +134,6 @@
     try {
       await conversationService.addGroupMember(conversation.id, user.uid);
       hapticService?.trigger("success");
-      // Clear search
       searchUserId = "";
       searchUserDisplay = "";
     } catch (err) {

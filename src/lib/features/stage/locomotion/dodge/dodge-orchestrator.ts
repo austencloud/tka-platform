@@ -1,4 +1,3 @@
-// src/lib/features/stage/locomotion/dodge/dodge-orchestrator.ts
 
 import { restPoseFromHeight } from "$lib/features/lab/tabs/collision-lab/services/stance-simulator";
 import type { RestPoseGeometry } from "$lib/features/lab/tabs/collision-lab/services/types";

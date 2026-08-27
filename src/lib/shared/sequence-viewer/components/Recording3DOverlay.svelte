@@ -98,7 +98,6 @@
     pointer-events: none;
   }
 
-  /* ── Countdown ── */
   .countdown-overlay {
     inset: 0;
     display: flex;
@@ -123,7 +122,6 @@
     100% { opacity: 0.3; }
   }
 
-  /* ── Recording badge ── */
   .recording-badge {
     top: 16px;
     left: 16px;
@@ -191,7 +189,6 @@
     border-radius: 1px;
   }
 
-  /* ── Export progress overlay ── */
   .export-overlay {
     inset: 0;
     display: flex;

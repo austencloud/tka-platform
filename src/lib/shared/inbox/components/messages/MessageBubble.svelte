@@ -438,7 +438,6 @@
     }
   }
 
-  /* ===== The bubble itself ===== */
   .bubble {
     position: relative;
     padding: 10px 14px;
@@ -512,7 +511,6 @@
     margin-bottom: 0.875rem;
   }
 
-  /* ===== Group message layout ===== */
   .group-message-row {
     display: flex;
     align-items: flex-start;
@@ -538,7 +536,6 @@
     margin-top: 8px;
   }
 
-  /* ===== Content ===== */
   .deleted .bubble {
     background: var(--theme-card-bg);
     font-style: italic;
@@ -641,7 +638,6 @@
     text-decoration-style: solid;
   }
 
-  /* ===== Read receipts ===== */
   .read-receipt {
     font-size: var(--font-size-compact);
     opacity: 0.7;
@@ -663,7 +659,6 @@
     font-size: var(--font-size-compact, 12px);
   }
 
-  /* ===== Reduced motion ===== */
   @media (prefers-reduced-motion: reduce) {
     .message-bubble,
     .bubble,

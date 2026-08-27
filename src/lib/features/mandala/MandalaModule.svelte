@@ -31,11 +31,9 @@
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { onMount } from "svelte";
 
-  // ── Phase management ──
   type Phase = "gallery" | "detail" | "meditate-config" | "meditate-session";
   let phase = $state<Phase>("gallery");
 
-  // ── All sources ──
   interface MandalaItem {
     id: string;
     name: string;
@@ -58,7 +56,6 @@
   // StepData[] — no lossy cast needed at the assignment or the consumers.
   type SelectedMandala = Omit<MandalaItem, "group">;
 
-  // ── Selected mandala ──
   let selectedMandala = $state<SelectedMandala | null>(null);
 
   // Publication needs the persisted entry, not the render-shaped selection —
@@ -92,7 +89,6 @@
     return [...curated, ...collected];
   });
 
-  // ── Detail panel ──
   const dateLabel = $derived(
     selectedMandala
       ? new Date(selectedMandala.createdAt).toLocaleDateString(undefined, {
@@ -134,7 +130,6 @@
     return () => ro.disconnect();
   });
 
-  // ── Delete confirmation ──
   let deleteConfirming = $state(false);
   let deleteTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -152,7 +147,6 @@
     }
   }
 
-  // ── Meditation ──
   const ANIMATE_MIN = 0;
   const ANIMATE_MAX = 250;
   const BASE_PERIOD = 5;
@@ -253,7 +247,6 @@
     }
   }
 
-  // ── Export ──
   // v1: two direct-download actions in the detail drawer (no options screen).
   // PNG exports at a fixed high-res transparent still; video at the seamless-20s
   // spec (mandala-video.ts). A resolution/background options UI is a later add.
@@ -654,7 +647,6 @@
     container-type: inline-size;
   }
 
-  /* ── Gallery ── */
   .gallery-view {
     width: 100%;
     height: 100%;
@@ -739,7 +731,6 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
   }
 
-  /* ── Empty state ── */
   .empty-state {
     display: flex;
     flex-direction: column;
@@ -766,7 +757,6 @@
 
   .loading-label { font-size: 13px; margin: 0; opacity: 0.7; }
 
-  /* ── Detail layout ── */
   .detail-layout {
     display: flex;
     height: 100%;
@@ -958,7 +948,6 @@
     transition-duration: 50ms;
   }
 
-  /* ── Meditation ── */
   .meditate-layout {
     display: flex;
     height: 100%;

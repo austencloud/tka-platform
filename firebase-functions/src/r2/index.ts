@@ -24,9 +24,7 @@ import {
   MAX_THUMBNAIL_FILE_SIZE,
 } from "./r2-client";
 
-// ============================================================================
 // Secrets
-// ============================================================================
 
 const r2AccountId = defineSecret("R2_ACCOUNT_ID");
 const r2AccessKeyId = defineSecret("R2_ACCESS_KEY_ID");
@@ -47,9 +45,7 @@ const secret = {
   publicUrl: (): string => r2PublicUrl.value().trim(),
 };
 
-// ============================================================================
 // Allowed MIME types
-// ============================================================================
 
 const ALLOWED_VIDEO_TYPES = [
   "video/mp4",
@@ -67,9 +63,7 @@ const ALLOWED_IMAGE_TYPES = [
 
 const ALLOWED_TYPES = [...ALLOWED_VIDEO_TYPES, ...ALLOWED_IMAGE_TYPES];
 
-// ============================================================================
 // Helpers
-// ============================================================================
 
 /** Build the R2 object key from structured inputs. The client never controls the key directly. */
 function buildKey(

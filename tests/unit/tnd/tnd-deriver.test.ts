@@ -25,10 +25,8 @@ import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 const { NORTH, EAST, SOUTH, WEST, NORTHEAST, SOUTHEAST, SOUTHWEST, NORTHWEST } =
   GridLocation;
 
-// ───────────────────────────────────────────────────────────────────────────
 // §2.2 ground-truth cases — real canonical-dataframe hand paths (start→end).
 // Direction is the HAND ORBITAL arc, not prop rotation.
-// ───────────────────────────────────────────────────────────────────────────
 describe("deriveTnD — §2.2 ground truth (canonical M rows)", () => {
   it("Box M @γ12 (sw→nw / se→ne) → tog-opp (Air)", () => {
     const r = deriveTnD(SOUTHWEST, NORTHWEST, SOUTHEAST, NORTHEAST);
@@ -55,9 +53,7 @@ describe("deriveTnD — §2.2 ground truth (canonical M rows)", () => {
   });
 });
 
-// ───────────────────────────────────────────────────────────────────────────
 // Same-direction families (A/G/S) from the diamond CSV — timing-invariant.
-// ───────────────────────────────────────────────────────────────────────────
 describe("deriveTnD — same-direction families", () => {
   it("A @alpha3 (w→n / e→s) → split-same (Water)", () => {
     const r = deriveTnD(WEST, NORTH, EAST, SOUTH);
@@ -78,9 +74,7 @@ describe("deriveTnD — same-direction families", () => {
   });
 });
 
-// ───────────────────────────────────────────────────────────────────────────
 // Prop rotation is irrelevant: A/B/C share hand paths → all split-same.
-// ───────────────────────────────────────────────────────────────────────────
 describe("deriveTnD — prop rotation does not affect TnD", () => {
   it("A/B/C @alpha3 all share w→n / e→s → all split-same", () => {
     // A: pro/pro, B: anti/anti, C: anti/pro — identical hand paths.
@@ -89,9 +83,7 @@ describe("deriveTnD — prop rotation does not affect TnD", () => {
   });
 });
 
-// ───────────────────────────────────────────────────────────────────────────
 // Non-shift geometry (no arc) → null.
-// ───────────────────────────────────────────────────────────────────────────
 describe("deriveTnD — non-shift → null", () => {
   it("static (start === end) → null", () => {
     const r = deriveTnD(NORTH, NORTH, EAST, EAST);
@@ -105,9 +97,7 @@ describe("deriveTnD — non-shift → null", () => {
   });
 });
 
-// ───────────────────────────────────────────────────────────────────────────
 // deriveTnDFromPictograph reads blue/red start+end, only for pro/anti shifts.
-// ───────────────────────────────────────────────────────────────────────────
 describe("deriveTnDFromPictograph", () => {
   function pictograph(
     blue: Partial<Parameters<typeof createMotionData>[0]>,
@@ -143,7 +133,6 @@ describe("deriveTnDFromPictograph", () => {
   });
 });
 
-// ───────────────────────────────────────────────────────────────────────────
 // §6.2 GOLDEN SNAPSHOT — the deriver reproduces the canonical calculateTnD table
 // for every shift+shift (Type-1) row of both dataframes, per grid mode. The table
 // is the oracle (it is being retired to this regression fixture). Target: 100%.
@@ -153,7 +142,6 @@ describe("deriveTnDFromPictograph", () => {
 // (the "box-D anomaly" called out in the design). The grid-correct truth is
 // calculateTnD(letter, BOX, startPos) = QUARTER_OPP, which the deriver reproduces
 // from the box-transformed geometry. Any residual mismatch is a real table bug.
-// ───────────────────────────────────────────────────────────────────────────
 function loadRows(file: string): Record<string, string>[] {
   const text = readFileSync(resolve(process.cwd(), file), "utf8").trim();
   const lines = text.split(/\r?\n/);

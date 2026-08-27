@@ -122,7 +122,6 @@ export interface LOOPDetectionResult {
   /** Is this a modular pattern (multiple different but recognizable transformations)? */
   isModular: boolean;
 
-  // === LAYERED PATH DETECTION ===
 
   /** Layered path analysis result (parent category) */
   layeredPath: LayeredPathResult | null;
@@ -138,12 +137,10 @@ export interface LOOPDetectionResult {
   /** Is this a polyrhythmic pattern? (subtype of layered path) */
   isPolyrhythmic: boolean;
 
-  // === COMPOUND PATTERN DETECTION ===
 
   /** Compound pattern when transformations occur at different intervals */
   compoundPattern?: CompoundPattern;
 
-  // === AXIS-ALTERNATING PATTERN DETECTION ===
 
   /** Axis-alternating pattern when related transformations follow a positional meta-pattern */
   axisAlternatingPattern?: AxisAlternatingPattern;
@@ -151,7 +148,6 @@ export interface LOOPDetectionResult {
   /** Is this an axis-alternating pattern? */
   isAxisAlternating: boolean;
 
-  // === MODULAR PATTERN DETECTION ===
 
   /** Modular pattern when different columns have different transformation behaviors */
   modularPattern?: ModularPattern;

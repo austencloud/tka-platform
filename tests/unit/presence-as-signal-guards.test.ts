@@ -372,7 +372,6 @@ function invisibleMotion(overrides: Partial<MotionData> = {}): MotionData {
   });
 }
 
-// ── navigation/sequence-hydrator.ts gridMode donor ──────────────────────────
 describe("hydrateSequence — placeholder beats cannot donate gridMode", () => {
   it("skips a leading blank beat and derives gridMode from the first VISIBLE beat", async () => {
     const blankBoxish = createStepData({
@@ -411,7 +410,6 @@ describe("hydrateSequence — placeholder beats cannot donate gridMode", () => {
   });
 });
 
-// ── browse/sequence-difficulty-calculator.ts ────────────────────────────────
 describe("analyzeDifficulty — invisible placeholders don't inflate the badge", () => {
   const calmVisible = () =>
     motion({
@@ -452,7 +450,6 @@ describe("analyzeDifficulty — invisible placeholders don't inflate the badge",
   });
 });
 
-// ── qr/compositional-utils.ts grid-position enrichment ──────────────────────
 describe("enrichStepsWithGridPositions — placeholder beats keep null positions", () => {
   it("does not fabricate GridPositions from placeholder locations", () => {
     const blank = createStepData({
@@ -475,7 +472,6 @@ describe("enrichStepsWithGridPositions — placeholder beats keep null positions
   });
 });
 
-// ── create/rotation-direction-pattern-manager.ts extract side ───────────────
 describe("extractPattern — placeholder hands extract as null (skip slot), not 'none'", () => {
   it("invisible hand yields null; visible cw hand yields 'cw'", () => {
     const step = createStepData({

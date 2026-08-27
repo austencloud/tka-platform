@@ -56,7 +56,6 @@ describe("RoomLifecycleManager", () => {
     manager = new RoomLifecycleManager(EDGES);
   });
 
-  // ── Initial state ──────────────────────────────────────────────────────────
 
   describe("initial state", () => {
     it("all rooms start as Unvisited", () => {
@@ -72,7 +71,6 @@ describe("RoomLifecycleManager", () => {
     });
   });
 
-  // ── getAllRoomIds ───────────────────────────────────────────────────────────
 
   describe("getAllRoomIds()", () => {
     it("returns all 5 rooms derived from the edges", () => {
@@ -86,7 +84,6 @@ describe("RoomLifecycleManager", () => {
     });
   });
 
-  // ── Entering lobby ─────────────────────────────────────────────────────────
 
   describe("entering lobby (first visit)", () => {
     it("activates lobby, room-a, room-b (1 hop), and room-c (2 hops)", () => {
@@ -143,7 +140,6 @@ describe("RoomLifecycleManager", () => {
     });
   });
 
-  // ── Moving from lobby to room-a ────────────────────────────────────────────
 
   describe("moving from lobby → room-a", () => {
     it("does NOT cache room-b because it's 2 hops from room-a (via lobby)", () => {
@@ -229,7 +225,6 @@ describe("RoomLifecycleManager", () => {
     });
   });
 
-  // ── Priorities ─────────────────────────────────────────────────────────────
 
   describe("priorities", () => {
     it("current room gets priority 0", () => {
@@ -254,7 +249,6 @@ describe("RoomLifecycleManager", () => {
     });
   });
 
-  // ── Descriptor cache ───────────────────────────────────────────────────────
 
   describe("descriptor cache", () => {
     it("getCachedDescriptor returns null before any descriptor is stored", () => {

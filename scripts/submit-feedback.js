@@ -122,7 +122,6 @@ function parseArgs() {
     status: "new",
   };
 
-  // Parse options
   for (let i = 2; i < args.length; i++) {
     if (args[i] === "--type" && args[i + 1]) {
       options.type = args[i + 1];
@@ -153,7 +152,6 @@ function parseArgs() {
     }
   }
 
-  // Validate type
   const validTypes = ["bug", "feature", "general"];
   if (!validTypes.includes(options.type)) {
     console.error(
@@ -162,7 +160,6 @@ function parseArgs() {
     process.exit(1);
   }
 
-  // Validate priority
   const validPriorities = ["low", "medium", "high", "critical"];
   if (!validPriorities.includes(options.priority)) {
     console.error(
@@ -228,7 +225,6 @@ async function resolveUserProfile(db, userIdentifier) {
 
 async function submitFeedback(params) {
   try {
-    // Load service account
     const serviceAccount = JSON.parse(
       await readFile(SERVICE_ACCOUNT_PATH, "utf8")
     );

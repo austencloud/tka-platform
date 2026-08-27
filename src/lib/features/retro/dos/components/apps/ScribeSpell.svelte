@@ -24,15 +24,11 @@
 
   let { onreturn }: Props = $props();
 
-  /* ------------------------------------------------------------------ */
   /* Services                                                            */
-  /* ------------------------------------------------------------------ */
 
   const renderer = new BrailleHybridRenderer();
 
-  /* ------------------------------------------------------------------ */
   /* TKA letter-name mapping                                             */
-  /* ------------------------------------------------------------------ */
 
   const TKA_NAME_MAP: Record<string, string> = {
     A: "Alpha",
@@ -63,17 +59,13 @@
     Z: "Zeta",
   };
 
-  /* ------------------------------------------------------------------ */
   /* Internal state                                                      */
-  /* ------------------------------------------------------------------ */
 
   type Phase = "prompt" | "processing" | "done";
 
   let phase = $state<Phase>("prompt");
 
-  /* ------------------------------------------------------------------ */
   /* Input handler - registered on terminalState.inputHandler            */
-  /* ------------------------------------------------------------------ */
 
   function handleInput(input: string): void {
     if (phase === "done") {
@@ -105,9 +97,7 @@
     runSpell(letters);
   }
 
-  /* ------------------------------------------------------------------ */
   /* Show header and initial prompt                                      */
-  /* ------------------------------------------------------------------ */
 
   function showHeader(): void {
     terminalState.writeBlank();
@@ -120,9 +110,7 @@
     terminalState.promptString = "Word> ";
   }
 
-  /* ------------------------------------------------------------------ */
   /* Processing pipeline                                                 */
-  /* ------------------------------------------------------------------ */
 
   async function runSpell(word: string): Promise<void> {
     phase = "processing";

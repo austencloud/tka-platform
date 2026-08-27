@@ -23,9 +23,7 @@
   let progress = $state(0);
   let messageIndex = $state(0);
 
-  /* ------------------------------------------------------------------ */
   /* Status messages - rotated during splash phase                       */
-  /* ------------------------------------------------------------------ */
 
   const statusMessages = [
     "Loading NOTATION.DLL...",
@@ -37,9 +35,7 @@
     "Defragmenting movement database...",
   ];
 
-  /* ------------------------------------------------------------------ */
   /* Progress waypoints - the bar lies                                   */
-  /* ------------------------------------------------------------------ */
 
   const progressWaypoints = [
     { target: 12, duration: 1500 },
@@ -53,9 +49,7 @@
     { target: 100, duration: 500 },
   ];
 
-  /* ------------------------------------------------------------------ */
   /* Animation state                                                     */
-  /* ------------------------------------------------------------------ */
 
   let waypointIndex = 0;
   let animationStart = 0;
@@ -66,9 +60,7 @@
   let messageIntervalId: ReturnType<typeof setInterval> | null = null;
   let waypointTimerId: ReturnType<typeof setTimeout> | null = null;
 
-  /* ------------------------------------------------------------------ */
   /* Phase orchestration                                                 */
-  /* ------------------------------------------------------------------ */
 
   $effect((): void | (() => void) => {
     if (phase === "startup") {
@@ -101,9 +93,7 @@
     }
   });
 
-  /* ------------------------------------------------------------------ */
   /* Unmount safety net - cancel any lingering timers / rAF              */
-  /* ------------------------------------------------------------------ */
 
   $effect(() => {
     return () => {
@@ -113,9 +103,7 @@
     };
   });
 
-  /* ------------------------------------------------------------------ */
   /* Progress bar animation (requestAnimationFrame)                      */
-  /* ------------------------------------------------------------------ */
 
   function startProgressAnimation() {
     waypointIndex = 0;
@@ -172,9 +160,7 @@
     }
   }
 
-  /* ------------------------------------------------------------------ */
   /* Message rotation                                                    */
-  /* ------------------------------------------------------------------ */
 
   function startMessageRotation() {
     messageIndex = 0;
@@ -190,9 +176,7 @@
     }
   }
 
-  /* ------------------------------------------------------------------ */
   /* Click to skip                                                       */
-  /* ------------------------------------------------------------------ */
 
   function handleClick() {
     if (phase === "startup" || phase === "splash") {
@@ -244,9 +228,7 @@
 </div>
 
 <style>
-  /* ------------------------------------------------------------------ */
   /* Container - fills viewport, black, above everything                 */
-  /* ------------------------------------------------------------------ */
   .boot-container {
     position: absolute;
     inset: 0;
@@ -262,9 +244,7 @@
     user-select: none;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Phase 1: Startup text with blinking cursor                          */
-  /* ------------------------------------------------------------------ */
   .startup-screen {
     display: flex;
     align-items: center;
@@ -290,9 +270,7 @@
     }
   }
 
-  /* ------------------------------------------------------------------ */
   /* Phase 2: Splash screen                                              */
-  /* ------------------------------------------------------------------ */
   .splash-screen {
     display: flex;
     flex-direction: column;
@@ -331,9 +309,7 @@
     margin-top: 8px;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Progress area                                                       */
-  /* ------------------------------------------------------------------ */
   .splash-progress {
     display: flex;
     flex-direction: column;
@@ -365,9 +341,7 @@
     min-height: 16px;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Phase 3: Interrupted message                                        */
-  /* ------------------------------------------------------------------ */
   .interrupted-screen {
     display: flex;
     flex-direction: column;

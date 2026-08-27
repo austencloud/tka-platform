@@ -47,7 +47,6 @@ const SAMPLES = 200; // per lobe
 const BODY = "#2e3191";
 const RIM = "#14163a";
 
-// ── centreline ────────────────────────────────────────────────────────────
 // s in [0,1] across the whole S. [0,0.5] = first lobe (tip -> centre), [0.5,1] =
 // second lobe (centre -> tip). Each lobe sweeps (pi + CURL); the extra CURL is
 // spent at the tip end so the points hook inward like the real prop. The lobes

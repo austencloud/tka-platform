@@ -38,9 +38,7 @@
  *      required to appear in the closed unit.
  */
 
-// ---------------------------------------------------------------------------
 // Pair fingerprints — distinct closed-unit word counts for a card pair.
-// ---------------------------------------------------------------------------
 
 export interface PairFingerprint {
   readonly cardA: string;
@@ -170,9 +168,7 @@ export const ALL_PAIR_FINGERPRINTS: readonly PairFingerprint[] = [
   ...COMPOUND_CARD_PAIR_FINGERPRINTS,
 ];
 
-// ---------------------------------------------------------------------------
 // A+G count-bucket profile — scripts/combinator-research/by-count.mjs.
-// ---------------------------------------------------------------------------
 
 /**
  * A+G's count-bucket profile, standard box. Keyed by FULL CIRCLE length —

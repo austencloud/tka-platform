@@ -14,7 +14,6 @@
 import { Vector3, Quaternion, Euler } from "three";
 import type { PerspectiveCamera } from "three";
 
-// ── Constants ──
 
 const TOP_DOWN_FOV = 50;
 const CAMERA_SMOOTHING = 0.08;
@@ -47,14 +46,12 @@ export interface CameraFlipResult {
 }
 
 export class MuseumCameraFlipController {
-  // ── Top-down camera state ──
   readonly topDown: {
     position: Vector3;
     quaternion: Quaternion;
     fov: number;
   };
 
-  // ── FPS camera state ──
   readonly fps: {
     position: Vector3;
     quaternion: Quaternion;
@@ -84,7 +81,6 @@ export class MuseumCameraFlipController {
     };
   }
 
-  // ── Sync helpers ──
 
   /**
    * Compute FPS target from the player's current position + yaw.
@@ -170,7 +166,6 @@ export class MuseumCameraFlipController {
     this.topDown.position.z = playerPos.z;
   }
 
-  // ── Initialization ──
 
   /**
    * Initialize camera on the first frame.
@@ -194,7 +189,6 @@ export class MuseumCameraFlipController {
     camera.updateProjectionMatrix();
   }
 
-  // ── Flip animation ──
 
   /**
    * Check for a new flip request and start the animation if needed.

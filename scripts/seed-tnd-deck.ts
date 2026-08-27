@@ -39,9 +39,6 @@ import { fileURLToPath } from "url";
 
 import { calculateEndOrientation } from "../packages/sequence-engine/src/core/orientation/OrientationCalculator.js";
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,9 +56,6 @@ const PERIOD_QUARTERED = "quartered";
 const PERIOD_HALVED = "halved";
 type PeriodLabel = typeof PERIOD_QUARTERED | typeof PERIOD_HALVED;
 
-// ============================================================================
-// CSV ROW MODEL
-// ============================================================================
 
 interface CsvMotion {
   motionType: string;
@@ -108,7 +102,6 @@ function loadCsv(): CsvRow[] {
   return rows;
 }
 
-// ============================================================================
 // TnD MOTION DEFINITIONS
 //
 // Each TnD motion is a 4-beat walk. Every beat is one explicit
@@ -120,7 +113,6 @@ function loadCsv(): CsvRow[] {
 //   - quartered (same-dir): the 1-letter seed walked CW 90° per beat
 //   - split-opp / quarter-opp halved: the 2-letter seed alternated, walked 180°
 // The 3 tog-opp walks use the mirror chirality (beta5→alpha3→beta1→alpha7).
-// ============================================================================
 
 interface BeatRef {
   letter: string;
@@ -379,9 +371,7 @@ const TND_MOTIONS: TnDMotionDef[] = [
   },
 ];
 
-// ============================================================================
 // TnD FAMILY DEFINITIONS (for Firestore deck metadata)
-// ============================================================================
 
 const TND_FAMILIES = [
   { id: "split-same",   label: "Split-Same",   typeCombo: "Quartered" },
@@ -392,9 +382,6 @@ const TND_FAMILIES = [
   { id: "quarter-opp",  label: "Quarter-Opp",  typeCombo: "Halved" },
 ];
 
-// ============================================================================
-// CSV ROW LOOKUP
-// ============================================================================
 
 /**
  * Resolve a single beat to a CSV row by (letter, startPos, endPos) and, when

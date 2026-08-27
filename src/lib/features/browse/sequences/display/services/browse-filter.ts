@@ -88,9 +88,7 @@ export class BrowseFilter {
     }
   }
 
-  // ============================================================================
   // Filter Methods
-  // ============================================================================
 
   private filterByStartingLetter(
     sequences: SequenceData[],
@@ -196,7 +194,6 @@ export class BrowseFilter {
       return sequences;
     }
 
-    // Convert filter value to number
     const targetLevel =
       typeof filterValue === "number"
         ? filterValue
@@ -469,9 +466,7 @@ export class BrowseFilter {
     return sequences.filter((seq) => this.getSequenceComponents(seq).includes(componentEnum));
   }
 
-  // ============================================================================
   // Helper Methods
-  // ============================================================================
 
   private getUniqueAuthors(sequences: SequenceData[]): string[] {
     const authors = new Set<string>();

@@ -35,7 +35,6 @@
       : builderState.redSteps.length) + (isComplete ? 0 : 1)
   );
 
-  // ── Instruction text ──
   const phaseInstruction = $derived(
     getBuilderPhaseInstruction(builderState.phase)
   );
@@ -169,7 +168,6 @@
 </div>
 
 <style>
-  /* === Grid overlay === */
   .builder-controls-overlay {
     position: absolute;
     inset: 0;
@@ -181,7 +179,6 @@
     justify-content: space-between;
   }
 
-  /* ── Mobile status strip ── */
   .top-status-area {
     display: none;
     flex-direction: column;
@@ -407,7 +404,6 @@
     }
   }
 
-  /* === Reduced motion === */
   @media (prefers-reduced-motion: reduce) {
     .action-row,
     .action-slot {

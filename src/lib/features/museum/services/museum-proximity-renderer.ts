@@ -19,7 +19,6 @@ import type {
 } from "./museum-geometry-builder";
 import type { MuseumGrid } from "../domain/museum-grid-types";
 
-// ── Constants ──
 
 const CELL_SIZE = 8;
 const _MOUNT_RADIUS = 30;
@@ -27,7 +26,6 @@ const _UNMOUNT_RADIUS = 40;
 
 export const PROXIMITY_MAX_MOUNTS_PER_FRAME = 2;
 
-// ── Types ──
 
 export type MountCategory =
   | "torch"

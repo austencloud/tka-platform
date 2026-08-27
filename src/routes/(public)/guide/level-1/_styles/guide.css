@@ -80,7 +80,6 @@
   font-family: "Inter", system-ui, sans-serif;
 }
 
-/* === Sidebar === */
 .guide-sidebar {
   position: fixed;
   top: 64px;
@@ -144,7 +143,6 @@
   }
 }
 
-/* === Typography === */
 .guide-content h1 {
   font-family: "Inter", system-ui, sans-serif;
   font-size: clamp(2.4rem, 1.8rem + 2vw, 4.2rem);
@@ -229,7 +227,6 @@
   font-weight: 600;
 }
 
-/* === Type Color Coding === */
 .type-dual-shift {
   color: oklch(0.72 0.15 220);
 }
@@ -256,7 +253,6 @@
   color: oklch(0.6 0.2 25);
 }
 
-/* === Sections === */
 .guide-section {
   grid-column: full;
   display: grid;
@@ -295,7 +291,6 @@
   margin-bottom: 0.35rem;
 }
 
-/* === Scroll-driven section reveals === */
 @supports (animation-timeline: view()) {
   .guide-section {
     animation: guide-reveal linear both;
@@ -314,7 +309,6 @@
   }
 }
 
-/* === Diagrams === */
 .guide-diagram {
   display: flex;
   flex-direction: column;
@@ -339,7 +333,6 @@
   text-align: center;
 }
 
-/* === Pictograph grid === */
 .guide-pictograph-grid {
   display: grid;
   gap: 0.75rem;
@@ -375,7 +368,6 @@
   display: block;
 }
 
-/* === Pictograph cell === */
 .guide-pictograph {
   display: flex;
   flex-direction: column;
@@ -423,7 +415,6 @@
   height: 17.5rem;
 }
 
-/* === Sequence player === */
 .guide-sequence-player {
   margin: 1.5rem 0;
   padding: 1rem;
@@ -515,7 +506,6 @@
   background: none;
 }
 
-/* === Navigation sidebar === */
 .guide-nav {
   padding: 0 0.75rem;
 }

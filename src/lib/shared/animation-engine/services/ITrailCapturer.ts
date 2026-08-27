@@ -63,9 +63,6 @@ export interface ITrailCapturer {
    */
   getTrailPoints(propIndex: 0 | 1, tipIndex: number, layerIndex?: number): TrailPoint[];
 
-  /**
-   * Get all trail points for rendering
-   */
   getAllTrailPoints(): {
     blue: TrailPoint[];
     red: TrailPoint[];
@@ -101,13 +98,7 @@ export interface ITrailCapturer {
    */
   updateSettings(settings: TrailSettings): void;
 
-  /**
-   * Set the animation cache service for backfill support
-   */
   setAnimationCacheService(cacheService: IAnimationCacheService | null): void;
 
-  /**
-   * Set the performance monitor for adaptive sampling
-   */
   setPerformanceMonitor(monitor: IPerformanceMonitorService | null): void;
 }

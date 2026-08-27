@@ -82,9 +82,6 @@ interface EvaluationReport {
 const REPORTS_DIR = path.resolve(process.cwd(), 'scripts/tika/reports');
 const RESOLUTIONS_FILE = path.resolve(REPORTS_DIR, 'resolutions.json');
 
-/**
- * Load all resolutions from file
- */
 function loadResolutions(): Record<string, FlaggedItem['resolution']> {
 	if (fs.existsSync(RESOLUTIONS_FILE)) {
 		return JSON.parse(fs.readFileSync(RESOLUTIONS_FILE, 'utf-8'));
@@ -92,9 +89,6 @@ function loadResolutions(): Record<string, FlaggedItem['resolution']> {
 	return {};
 }
 
-/**
- * Save resolutions to file
- */
 function saveResolutions(resolutions: Record<string, FlaggedItem['resolution']>): void {
 	fs.writeFileSync(RESOLUTIONS_FILE, JSON.stringify(resolutions, null, 2));
 }
@@ -131,7 +125,6 @@ export const GET: RequestHandler = async (event) => {
 		const reportPath = path.join(REPORTS_DIR, latestFile);
 		const report: EvaluationReport = JSON.parse(fs.readFileSync(reportPath, 'utf-8'));
 
-		// Load resolutions
 		const resolutions = loadResolutions();
 
 		// Convert failed results to flagged items

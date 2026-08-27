@@ -283,9 +283,6 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   adminContentCreated: true,
 };
 
-/**
- * Map notification type to preference key
- */
 export function getPreferenceKeyForType(
   type: NotificationType
 ): keyof NotificationPreferences | null {

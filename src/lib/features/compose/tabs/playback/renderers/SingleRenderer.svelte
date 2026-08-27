@@ -133,7 +133,6 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
         setTimeout(resolve, ANIMATION_LOAD_DELAY_MS)
       );
 
-      // Initialize playback controller
       const success = playbackController.initialize(sequence, animationState);
 
       if (!success) {

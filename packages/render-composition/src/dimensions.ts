@@ -21,7 +21,6 @@ export const FOOTER_HEIGHT_DIVISOR = 7;
  */
 export const NARROW_GRID_THRESHOLD = 3;
 
-// ── Header layout ───────────────────────────────────────────────────────
 
 /** Difficulty badge diameter as fraction of header height */
 export const BADGE_SIZE_SCALE = 0.6;
@@ -54,7 +53,6 @@ export const HEADER_WORD_FONT_MIN_SCALE = 0.35;
  */
 export const HEADER_WORD_BREATHING_GAP_SCALE = 0.08;
 
-// ── LOOP icon strip ─────────────────────────────────────────────────────
 
 /** LOOP icon size as fraction of badge size */
 export const LOOP_ICON_SIZE_SCALE = 1.0;
@@ -76,7 +74,6 @@ export const LOOP_ICON_DOT_SIZE_SCALE = 0.15;
 /** Overlay-separator dot opacity. Matches the word display's group-dot. */
 export const LOOP_ICON_DOT_OPACITY = 0.4;
 
-// ── Footer text layout ──────────────────────────────────────────────────
 
 /** Font size as fraction of footer height */
 export const FOOTER_FONT_SCALE = 0.55;
@@ -90,7 +87,6 @@ export const FOOTER_TEXT_Y_SCALE = 0.55;
 /** Minimum gap between footer items as fraction of footer height */
 export const FOOTER_GAP_SCALE = 0.2;
 
-// ── Step number layout ──────────────────────────────────────────────────
 
 /**
  * Step number font ratio relative to cell size.
@@ -107,7 +103,6 @@ export const STEP_NUMBER_OFFSET_RATIO = 50 / 950;
 /** Max step number font size in px (CSS clamp for interactive card) */
 export const STEP_NUMBER_FONT_MAX = 28;
 
-// ── Convenience functions ───────────────────────────────────────────────
 
 /**
  * header/footer heights shrink proportionally so they don't dominate.

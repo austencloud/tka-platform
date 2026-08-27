@@ -82,9 +82,7 @@ const CODE_ROOTS = [
   "messages", "mcp-server", "agent-hub", "launchers", "functions",
 ];
 
-// ---------------------------------------------------------------------------
 // args
-// ---------------------------------------------------------------------------
 
 const argv = process.argv.slice(2);
 const jsonOut = argv.includes("--json") ? argv[argv.indexOf("--json") + 1] : null;
@@ -93,9 +91,7 @@ const verdictFilter = argv.includes("--verdict")
   ? new Set(argv[argv.indexOf("--verdict") + 1].split(",").map((s) => s.trim().toUpperCase()))
   : null;
 
-// ---------------------------------------------------------------------------
 // git history: one pass, path -> commits
-// ---------------------------------------------------------------------------
 
 function buildGitIndex() {
   let raw;

@@ -63,7 +63,6 @@ export function createCameraChoreographyState() {
   }
 
   return {
-    // ── UI selection ───────────────────────────────────────────────
     get activePresetId(): CameraPresetId {
       return _activePresetId;
     },
@@ -71,7 +70,6 @@ export function createCameraChoreographyState() {
       _activePresetId = id;
     },
 
-    // ── Camera-controls registration ───────────────────────────────
     get controls(): CameraControls | null {
       return _controls;
     },
@@ -82,7 +80,6 @@ export function createCameraChoreographyState() {
       if (_controls === controls) _controls = null;
     },
 
-    // ── Driving state ──────────────────────────────────────────────
     get isDriving(): boolean {
       return _driving;
     },

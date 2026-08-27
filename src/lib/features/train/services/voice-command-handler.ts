@@ -42,7 +42,6 @@ export class VoiceCommandHandler {
     this.recognition.lang = "en-US";
     this.recognition.maxAlternatives = 1;
 
-    // Handle results
     this.recognition.onresult = (event) => {
       const lastResultIndex = event.results.length - 1;
       const result = event.results[lastResultIndex];
@@ -59,7 +58,6 @@ export class VoiceCommandHandler {
       }
     };
 
-    // Handle errors
     this.recognition.onerror = (event) => {
       console.error("[VoiceCommandHandler] Error:", event.error);
 

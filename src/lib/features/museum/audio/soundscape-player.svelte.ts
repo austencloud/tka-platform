@@ -85,12 +85,10 @@ function resolvePreferredCandidate(wingId: string, prefs: WingPrefs): AudioCandi
 }
 
 export function createSoundscapePlayer() {
-	// ── Persistent state ──
 	let prefs = $state<WingPrefs>({});
 	let masterVolume = $state(0.7);
 	let muted = $state(false);
 
-	// ── Runtime state ──
 	let currentWingId = $state<string | null>(null);
 	let activeCandidateId = $state<string | null>(null);
 	let isPlaying = $state(false);
@@ -201,7 +199,6 @@ export function createSoundscapePlayer() {
 		activeEl.volume = effectiveVolumeFor(cand);
 	}
 
-	// ── Public API ──
 
 	function setCurrentWing(wingId: string | null): void {
 		// Corridors (null wingId) let the previous wing's music keep playing

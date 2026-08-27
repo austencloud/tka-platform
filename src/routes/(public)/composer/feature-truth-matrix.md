@@ -1,7 +1,9 @@
 # Composer presentation feature truth
 
-**Updated:** 2026-08-21  
-**Scope:** Claims considered for the public Composer presentation  
+**Updated:** 2026-08-27
+
+**Scope:** Claims considered for the public Composer presentation
+
 **Rule:** A registry entry is discovery evidence. It is not shipment evidence.
 
 ## How a feature earns a status
@@ -26,7 +28,7 @@ flag, mockup, or planned spec does not change that.
 | Capability                                         | Conditions and honest public wording                                                                                                                                          | Evidence beyond registration                                                                                                                                                                        |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Construct a sequence beat by beat                  | Open to guests under Create. “Build a sequence one beat at a time.”                                                                                                           | `CreateModule.svelte` is loaded by `ModuleRenderer.svelte`; `guest-access-config.ts` grants guests the Assemble, Construct, and Generate tabs.                                                      |
-| Generate a sequence from choices                   | Open to guests in the full Create module. The unlisted presentation demo proves repeated draws from one prepared recipe, not selectable inputs.                               | `CreateModule.svelte` mounts the real Generate tab. `ComposerGenerateDemo.svelte` calls the current generation orchestrator with fixed inputs and reports no-result draws separately from failures. |
+| Generate a sequence from choices                   | Open to guests in the full Create module. The public presentation demo proves repeated draws from one prepared recipe, not selectable inputs.                                 | `CreateModule.svelte` mounts the real Generate tab. `ComposerGenerateDemo.svelte` calls the current generation orchestrator with fixed inputs and reports no-result draws separately from failures. |
 | Play a sequence with pictographs beside the motion | Available in the shared sequence viewer and the real marketing player.                                                                                                        | `SequenceViewerOrchestrator.svelte` mounts the production viewer; `SequenceHeroDemo.svelte` is the working public demonstration.                                                                    |
 | Change active prop visuals                         | The current picker includes staff, club, fan, triad, mini hoop, and buugeng. A visual change does not mean every movement transfers safely to that prop.                      | `BentoPropGrid.svelte` renders the active picker sections; `prop-type-manager.ts` prepares and starts live blue/red prop crossfades; the Canvas 2D renderer draws the selected prop assets.         |
 | Tunnel view                                        | Working as a live Composer demonstration and in the full app. Do not add mirrors, canons, or per-performer timing unless those controls are shown and verified.               | `ComposerTunnelDemo.svelte` mounts the real tunnel renderer. The Create module also has a routed Tunnel tab.                                                                                        |
@@ -51,17 +53,16 @@ flag, mockup, or planned spec does not change that.
 | Broad 3D effect set                      | The current 3D effects layer has working render paths for fire, LED, trails, bubbles, electricity, and other effects. | Effect capabilities differ. Whole-rig control and effect-specific gaps mean the page should show approved examples, not promise identical controls for all effects.       |
 | Advanced experiments in Lab              | Some labs are functional enough for operator use.                                                                     | Lab is admin-only and its module definition explicitly calls it temporary experiments and prototypes.                                                                     |
 
-## Unlisted presentation proof
+## Public presentation proof
 
-These rows describe `/composer/mockup`. They prove the compact product story but
-do not promote the route or replace the public `/composer` page.
+These rows describe the focused product story now published at `/composer`.
 
-| Proof                            | What the mockup demonstrates                                                                                                     | Evidence                                                                                                                                                                     |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Guided step-by-step construction | A visitor can watch or take over a real build as each chosen pictograph becomes the next beat and carries into every demo below. | `ConstructSection.svelte` composes the production start picker, `OptionPicker`, `StepGrid` arrival stage, and existing ghost attract act around isolated presentation state. |
-| Prepared generator draw          | Each click asks the production orchestrator for a fresh 16-beat sequence from the same disclosed recipe.                         | `ComposerGenerateDemo.svelte` fixes the inputs, distinguishes no result from load or engine failure, and carries successful output into the tunnel and 3D viewer.            |
-| Isolated live 3D controls        | Scene, performer count, and staff or club controls change a deterministic one-performer Cosmic seed without account writes.      | `composer-3d-demo-state.ts` supplies the complete seed; `composer-presentation-viewer-isolation.test.ts` proves saved 3D values remain byte-identical.                       |
-| Accessible moving demonstrations | Primary motion has 48px keyboard controls and starts paused under reduced motion; WebGL2 absence has an announced fallback.      | The route forwards canonical player controls, names every segmented group, and gates `Composer3DViewerDemo.svelte` through the shared WebGL2 and viewport capabilities.      |
+| Proof                            | What the presentation demonstrates                                                                                               | Evidence                                                                                                                                                                        |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Guided step-by-step construction | A visitor can watch or take over a real build as each chosen pictograph becomes the next beat and carries into every demo below. | `ConstructSection.svelte` composes the production start picker, `OptionPicker`, `StepGrid` arrival stage, and existing ghost attract act around isolated presentation state.    |
+| Prepared generator draw          | Each click asks the production orchestrator for a fresh 16-beat sequence from the same disclosed recipe.                         | `ComposerGenerateDemo.svelte` fixes the inputs, distinguishes no result from load or engine failure, and carries successful output into the tunnel and 3D viewer.               |
+| Isolated live 3D controls        | Scene, performer count, and staff or club controls change a deterministic one-performer Cosmic seed without account writes.      | `composer-3d-demo-state.ts` supplies the complete seed; `composer-presentation-viewer-isolation.test.ts` proves saved 3D values remain byte-identical.                          |
+| Accessible moving demonstrations | Primary motion has 48px keyboard controls and starts paused under reduced motion; WebGL2 absence has an announced fallback.      | The route forwards canonical player controls, names every segmented group, and gates `Composer3DViewerDemo.svelte` through the shared WebGL2 and viewport capabilities.         |
 | Real gallery shelf               | The carried sequence renders as a real gallery card beside public sequences loaded from the live Community Gallery.              | `ComposerGalleryShelf.svelte` composes `ChoreoCardThumbnail` (read-only) over `PublicSequencesLoader` data; nothing is written, and gallery load failure shows an inline retry. |
 
 ## Incomplete
@@ -101,6 +102,6 @@ The block cannot survive as written.
   behavior paths.
 - Installation needs a production-browser proof before the copy is approved.
 
-The focused mockup is right to remove this catalogue. Released features can
+The focused public presentation is right to remove this catalogue. Released features can
 appear when they complete the Composer story. The rest belongs on its own
 product surface, in a truthful support page, or nowhere yet.

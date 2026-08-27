@@ -282,7 +282,6 @@
     />
   </T.Group>
 
-  <!-- ===== The fuel bank ===== -->
   <!-- A bay's face is its local +Z and `yaw` points along the walk, so the run
        turns a quarter to look back across the centreline. The sign of `side`
        picks the quarter: turn it the wrong way and the run presents its back. -->

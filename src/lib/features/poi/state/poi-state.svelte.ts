@@ -41,7 +41,6 @@ const IMAGE_STORAGE_KEY = "tka-poi-image";
 const TIMELINE_STORAGE_KEY = "tka-poi-timeline";
 const SEQUENCE_STORAGE_KEY = "tka-poi-sequence-id";
 
-// ── Pattern timeline persistence ────────────────────────────────────────
 // Clips carry full StripPattern data (Uint8Array of ledCount × frameCount × 3
 // bytes). For a typical 16-LED / 180-frame clip that's ~8.6 KB of raw bytes;
 // base64-encoded it's ~11.5 KB. A dozen clips fits comfortably in localStorage.
@@ -226,7 +225,6 @@ function clearImageDataUrl(): void {
   } catch { /* ignore */ }
 }
 
-/** Convert a File to a data URL for persistence */
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -236,7 +234,6 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-/** Load an image from a data URL and return its ImageData */
 async function dataUrlToImageData(dataUrl: string): Promise<ImageData> {
   const img = new Image();
   img.src = dataUrl;
@@ -277,7 +274,6 @@ export function createPoiState(
   // stationary staff. Own-clock playback, independent of sequence beats.
   let cycleDuration = $state(saved.cycleDuration ?? 3.0);
 
-  // ── Pattern timeline ──
   // Restored from localStorage when present so a half-built sequence
   // survives Vite hot module reloads and full-page refreshes. Clips
   // are serialized by base64-encoding each frame's Uint8Array.
@@ -569,7 +565,6 @@ export function createPoiState(
     }
   }
 
-  // ── Timeline actions ──
 
   /**
    * Paint a new clip covering [startStep..endStep], snapshotting the

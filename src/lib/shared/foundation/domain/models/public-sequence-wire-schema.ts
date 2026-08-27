@@ -54,9 +54,7 @@ import type { SoloPropData } from "./solo-prop-data";
 import type { StepPairingData } from "./step-pairing-data";
 import type { CreatorIntent } from "./creator-intent";
 
-// ---------------------------------------------------------------------------
 // Schema version
-// ---------------------------------------------------------------------------
 
 /**
  * The self-contained public projection. A document carrying this version
@@ -68,9 +66,7 @@ export const PUBLIC_PROJECTION_SCHEMA_VERSION = 2;
 /** Effective version of a document written before the stamp existed. */
 export const LEGACY_PUBLIC_PROJECTION_SCHEMA_VERSION = 0;
 
-// ---------------------------------------------------------------------------
 // Timestamps: the wire value, and the ONE conversion function
-// ---------------------------------------------------------------------------
 
 /**
  * Every physical encoding of a date that a public document is known to arrive
@@ -199,9 +195,7 @@ export const wireTimestamp = z.custom<WireTimestamp>(isWireTimestamp, {
     "Expected a Firestore Timestamp, {seconds,nanoseconds}, Date, ISO string, or epoch number",
 });
 
-// ---------------------------------------------------------------------------
 // Nested payload shapes
-// ---------------------------------------------------------------------------
 
 /** Any JSON object, extra keys preserved. Rejects arrays and primitives. */
 const looseObject = () => z.object({}).passthrough();
@@ -234,9 +228,7 @@ const StepPairingWireSchema = z
   })
   .passthrough();
 
-// ---------------------------------------------------------------------------
 // The wire schema
-// ---------------------------------------------------------------------------
 
 /**
  * The `publicSequences/{id}` document as it comes off Firestore.
@@ -259,7 +251,6 @@ const StepPairingWireSchema = z
  */
 export const PublicSequenceWireSchema = z
   .object({
-    // --- identity and provenance -------------------------------------------
     id: z.string().min(1),
     /** `users/{ownerId}/sequences/{id}` — attribution, NOT a render dependency. */
     sourceRef: z.string().min(1),
@@ -267,7 +258,6 @@ export const PublicSequenceWireSchema = z
     ownerDisplayName: z.string().default(""),
     ownerAvatarUrl: z.string().optional(),
 
-    // --- presentation -------------------------------------------------------
     name: z.string().default(""),
     displayName: z.string().optional(),
     /** Searched by `browse-filter.ts:196`; never written by the syncer today. */
@@ -280,7 +270,6 @@ export const PublicSequenceWireSchema = z
     difficultyLevel: z.string().optional(),
     level: z.number().optional(),
 
-    // --- LOOP metadata ------------------------------------------------------
     isCircular: z.boolean().default(false),
     loopType: z.string().nullable().optional(),
     period: z.number().optional(),
@@ -289,13 +278,11 @@ export const PublicSequenceWireSchema = z
     componentDomains: z.record(z.string(), z.string()).optional(),
     loopSpec: looseObject().optional(),
 
-    // --- Browse filter inputs -----------------------------------------------
     /** Grid Mode filter (`browse-filter.ts:459`); never written today. */
     gridMode: z.string().optional(),
     /** Reversal filter (`browse-filter.ts:649-655`); never written today. */
     reversalPattern: z.string().optional(),
 
-    // --- categorization -----------------------------------------------------
     tags: z.array(z.string()).default([]),
 
     // --- engagement (public-owned; never rebuilt from source) ----------------
@@ -305,12 +292,10 @@ export const PublicSequenceWireSchema = z
     publicPerformanceCount: z.number().int().nonnegative().default(0),
     latestPublicPerformanceAt: wireTimestamp.optional(),
 
-    // --- fork attribution ---------------------------------------------------
     isForked: z.boolean().default(false),
     originalCreatorId: z.string().optional(),
     originalCreatorName: z.string().optional(),
 
-    // --- identity hashes ----------------------------------------------------
     contentHash: z.string().optional(),
     contentHashVersion: z.number().optional(),
     encoderHash: z.string().optional(),
@@ -326,10 +311,8 @@ export const PublicSequenceWireSchema = z
     /** Not derivable from composition; drives beat-0 avatar orientation. */
     startPosition: looseObject().optional(),
 
-    // --- creator intent -----------------------------------------------------
     creatorIntent: looseObject().nullable().optional(),
 
-    // --- media --------------------------------------------------------------
     /** Splits the Watch feed (`feed-loader.ts:105,107`); never written today. */
     animatedSequenceUrl: z.string().optional(),
     /**
@@ -356,9 +339,7 @@ export type PublicSequenceWireDocument = z.infer<
   typeof PublicSequenceWireSchema
 >;
 
-// ---------------------------------------------------------------------------
 // The application model
-// ---------------------------------------------------------------------------
 
 /**
  * The canonical application-side public projection: `Date`s, not Timestamps,
@@ -540,9 +521,7 @@ export function toPublicSequenceProjection(
   };
 }
 
-// ---------------------------------------------------------------------------
 // Parsing
-// ---------------------------------------------------------------------------
 
 export type PublicSequenceParseResult =
   | { readonly ok: true; readonly document: PublicSequenceWireDocument }

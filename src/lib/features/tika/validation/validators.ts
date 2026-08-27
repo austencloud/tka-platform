@@ -452,7 +452,6 @@ export const noInternalInstructions: TikaValidator = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Export All Validators
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const ALL_VALIDATORS: TikaValidator[] = [

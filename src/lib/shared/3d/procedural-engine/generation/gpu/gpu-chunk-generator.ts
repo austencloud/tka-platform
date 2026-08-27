@@ -70,7 +70,6 @@ export class GPUChunkGenerator {
       return false;
     }
 
-    // Initialize compute generator
     this.computeGenerator = new TerrainComputeGenerator({
       worldSeed: this.config.worldSeed,
       chunkSize: this.config.chunkSize,
@@ -141,9 +140,6 @@ export class GPUChunkGenerator {
   }
 }
 
-/**
- * Create a GPU chunk generator with common defaults
- */
 export function createGPUChunkGenerator(
   worldSeed: number,
   chunkSize = 32,

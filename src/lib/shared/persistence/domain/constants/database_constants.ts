@@ -5,9 +5,6 @@
  * database name, table names, indexes, and version information.
  */
 
-// ============================================================================
-// DATABASE CONFIGURATION
-// ============================================================================
 
 /**
  * Main database name in IndexedDB
@@ -31,9 +28,6 @@ export const DATABASE_NAME = "TKADatabase";
  */
 export const DATABASE_VERSION = 10;
 
-// ============================================================================
-// TABLE NAMES
-// ============================================================================
 
 export const TABLE_NAMES = {
   SEQUENCES: "sequences",
@@ -56,9 +50,6 @@ export const TABLE_NAMES = {
   MESSAGE_OUTBOX: "messageOutbox",
 } as const;
 
-// ============================================================================
-// INDEX CONFIGURATIONS
-// ============================================================================
 
 /**
  * Index definitions for each table
@@ -93,9 +84,6 @@ export const TABLE_INDEXES = {
     "id, userId, conversationId, [userId+conversationId], status, createdAt, updatedAt",
 } as const;
 
-// ============================================================================
-// DATA VERSIONING
-// ============================================================================
 
 /**
  * Default version for new user work data
@@ -107,9 +95,6 @@ export const DEFAULT_USER_WORK_VERSION = 1;
  */
 export const DEFAULT_USER_PROJECT_VERSION = 1;
 
-// ============================================================================
-// PERFORMANCE SETTINGS
-// ============================================================================
 
 /**
  * Maximum number of items to return in a single query

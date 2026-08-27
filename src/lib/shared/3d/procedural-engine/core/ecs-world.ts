@@ -16,9 +16,6 @@ import type { Object3D } from "three";
 import type { RigidBody, Collider } from "@dimforge/rapier3d-compat";
 import { CameraMode } from "$lib/shared/3d/camera/types";
 
-// ============================================================================
-// COMPONENT DEFINITIONS
-// ============================================================================
 
 /**
  * Transform component - position, rotation, scale in world space
@@ -145,9 +142,6 @@ export interface SpatialComponent {
   bounds: Float32Array; // [minX, minY, minZ, maxX, maxY, maxZ]
 }
 
-// ============================================================================
-// ENTITY TYPE
-// ============================================================================
 
 /**
  * Full entity type with all possible components
@@ -183,18 +177,13 @@ export interface Entity {
   needsSync?: true;
 }
 
-// ============================================================================
-// WORLD INSTANCE
-// ============================================================================
 
 /**
  * The ECS world - single source of truth for all entities
  */
 export const world = new World<Entity>();
 
-// ============================================================================
 // ARCHETYPES (pre-defined queries for common entity types)
-// ============================================================================
 
 /**
  * All entities with transform
@@ -236,9 +225,6 @@ export const dynamicBodies = world.with("physicsBody", "transform", "velocity");
  */
 export const withLOD = world.with("lod", "transform", "mesh");
 
-// ============================================================================
-// ENTITY FACTORIES
-// ============================================================================
 
 /**
  * Create a transform component with default values
@@ -282,9 +268,6 @@ export function createInput(): InputComponent {
   };
 }
 
-/**
- * Create a player entity
- */
 export function createPlayerEntity(
   playerId: string,
   isLocal: boolean,
@@ -327,9 +310,6 @@ export function createPlayerEntity(
   return world.add(entity);
 }
 
-/**
- * Create a chunk entity
- */
 export function createChunkEntity(
   chunkX: number,
   chunkY: number,
@@ -350,9 +330,6 @@ export function createChunkEntity(
   });
 }
 
-// ============================================================================
-// UTILITIES
-// ============================================================================
 
 /**
  * Clear all entities from the world

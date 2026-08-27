@@ -18,7 +18,6 @@
 
 import { countPair, letterWorlds, familyOf, gapFamilies } from "./enumerate.mjs";
 
-// ---------------------------------------------------------------- structure
 
 const GAP = { beta: 0, gamma: 2, alpha: 4 };
 
@@ -39,7 +38,6 @@ function gapDelta(wa, wb) {
 	return Math.min(d, 8 - d);
 }
 
-// ---------------------------------------------------------------- the model
 
 // FIRST MODEL, REFUTED 2026-08-05. It read the published numbers as "a base set
 // by gap separation, halved when the cards share a family", which forced base

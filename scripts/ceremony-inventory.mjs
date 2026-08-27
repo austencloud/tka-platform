@@ -4,7 +4,6 @@ import { Project } from 'ts-morph';
 
 const SRC_ROOT = resolve('src');
 
-// ── Helpers ──────────────────────────────────────────────────────────
 
 function pascalToKebab(str) {
   return str
@@ -33,7 +32,6 @@ function getModuleName(filePath) {
   return 'other';
 }
 
-// ── Walkers ──────────────────────────────────────────────────────────
 
 async function walkDir(dir, ext = '.ts') {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -50,7 +48,6 @@ async function walkDir(dir, ext = '.ts') {
   return results;
 }
 
-// ── AST Classifier ───────────────────────────────────────────────────
 
 function classifyServiceFile(filePath) {
   const rel = filePath.replace(/\\/g, '/');
@@ -139,7 +136,6 @@ function classifyServiceFile(filePath) {
   };
 }
 
-// ── Import Map ───────────────────────────────────────────────────────
 
 async function buildImportMap(files) {
   const importMap = new Map();
@@ -173,7 +169,6 @@ async function buildImportMap(files) {
   return importMap;
 }
 
-// ── Directory Inventory ──────────────────────────────────────────────
 
 async function inventoryDirectories(root) {
   const implDirs = [];
@@ -222,7 +217,6 @@ async function inventoryDirectories(root) {
   return { implDirs, contractDirs };
 }
 
-// ── Edge Case Detection ──────────────────────────────────────────────
 
 async function detectEdgeCases(allFiles) {
   const edgeCases = {
@@ -261,7 +255,6 @@ async function detectEdgeCases(allFiles) {
   return edgeCases;
 }
 
-// ── Main ─────────────────────────────────────────────────────────────
 
 async function main() {
   const t0 = Date.now();

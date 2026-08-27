@@ -129,7 +129,6 @@
   function handleInputKeydown(e: KeyboardEvent, pointIndex: number, field: "dx" | "dy") {
     switch (e.key) {
       case "Escape":
-        // Return focus to the row
         e.preventDefault();
         rowEls[pointIndex]?.focus();
         break;
@@ -447,7 +446,6 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
   }
 
-  /* --- Section header --- */
   .section-header {
     display: flex;
     align-items: center;
@@ -484,7 +482,6 @@
     outline-offset: 1px;
   }
 
-  /* --- Point list --- */
   .point-list {
     display: flex;
     flex-direction: column;
@@ -630,7 +627,6 @@
     color: var(--semantic-error, #ef4444);
   }
 
-  /* --- Action buttons --- */
   .action-buttons {
     display: flex;
     flex-wrap: wrap;
@@ -711,7 +707,6 @@
     color: var(--semantic-error, #ef4444);
   }
 
-  /* --- Status bar --- */
   .status-bar {
     display: flex;
     align-items: center;

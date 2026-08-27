@@ -54,9 +54,7 @@
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { loadRetroSettings } from "../../adapters/settings-adapter";
 
-  /* ------------------------------------------------------------------ */
   /* Props                                                               */
-  /* ------------------------------------------------------------------ */
 
   let {
     initialApp = undefined,
@@ -64,15 +62,11 @@
     initialApp?: string;
   } = $props();
 
-  /* ------------------------------------------------------------------ */
   /* Window manager instance                                             */
-  /* ------------------------------------------------------------------ */
 
   const windowManager = new WindowManager();
 
-  /* ------------------------------------------------------------------ */
   /* Desktop icons                                                       */
-  /* ------------------------------------------------------------------ */
 
   const desktopIcons: RetroDesktopIcon[] = [
     { id: "mycomputer", label: "My Computer", icon: "mycomputer", executable: "mycomputer" },
@@ -94,9 +88,7 @@
     executable: "recyclebin",
   };
 
-  /* ------------------------------------------------------------------ */
   /* Start menu items                                                    */
-  /* ------------------------------------------------------------------ */
 
   const startMenuItems: RetroStartMenuItem[] = [
     {
@@ -125,9 +117,7 @@
     { label: "Shut Down...", icon: "shutdown", action: () => showShutdownDialog() },
   ];
 
-  /* ------------------------------------------------------------------ */
   /* App launcher                                                        */
-  /* ------------------------------------------------------------------ */
 
   let windowCounter = $state(0);
   let showBSOD = $state(false);
@@ -139,9 +129,7 @@
 
   const isMobile = $derived(windowWidth < 768);
 
-  /* ------------------------------------------------------------------ */
   /* Load persisted settings on first mount                             */
-  /* ------------------------------------------------------------------ */
 
   // We run this once at startup so settings survive page refresh.
   // The effect runs synchronously before the first render, meaning
@@ -157,18 +145,14 @@
     desktopState.screensaverTimeout = saved.retroScreensaverTimeout;
   });
 
-  /* ------------------------------------------------------------------ */
   /* Sync sound manager with state                                       */
-  /* ------------------------------------------------------------------ */
 
   $effect(() => {
     retroSound.setVolume(desktopState.soundVolume / 100);
     retroSound.setMuted(desktopState.soundMuted);
   });
 
-  /* ------------------------------------------------------------------ */
   /* Start menu sound - play chime each time the menu opens             */
-  /* ------------------------------------------------------------------ */
 
   $effect(() => {
     if (desktopState.startMenuOpen) {
@@ -176,9 +160,7 @@
     }
   });
 
-  /* ------------------------------------------------------------------ */
   /* Auth: skip login dialog if user already has a Firebase session       */
-  /* ------------------------------------------------------------------ */
 
   $effect(() => {
     if (authState.user) {
@@ -193,9 +175,7 @@
     desktopState.bootComplete && !desktopState.isAuthenticated
   );
 
-  /* ------------------------------------------------------------------ */
   /* Window resize tracking                                              */
-  /* ------------------------------------------------------------------ */
 
   $effect(() => {
     function handleResize() {
@@ -206,9 +186,7 @@
     return () => window.removeEventListener("resize", handleResize);
   });
 
-  /* ------------------------------------------------------------------ */
   /* Idle detection → screensaver (60s inactivity)                       */
-  /* ------------------------------------------------------------------ */
 
   $effect(() => {
     if (!desktopState.bootComplete) return;
@@ -241,9 +219,7 @@
     };
   });
 
-  /* ------------------------------------------------------------------ */
   /* Random Clippy appearances                                           */
-  /* ------------------------------------------------------------------ */
 
   function randomBetween(min: number, max: number): number {
     return min + Math.random() * (max - min);
@@ -339,9 +315,7 @@
     openApp(iconDef.executable, iconDef.label, iconDef.icon);
   }
 
-  /* ------------------------------------------------------------------ */
   /* Sound-wrapped window management                                     */
-  /* ------------------------------------------------------------------ */
 
   function closeWindowWithSound(id: string) {
     retroSound.windowClose();
@@ -363,9 +337,7 @@
     windowManager.restoreWindow(id);
   }
 
-  /* ------------------------------------------------------------------ */
   /* Deep link handling                                                  */
-  /* ------------------------------------------------------------------ */
 
   $effect(() => {
     if (initialApp && desktopState.isBooting) {
@@ -382,9 +354,7 @@
     }
   });
 
-  /* ------------------------------------------------------------------ */
   /* Shut Down dialog                                                    */
-  /* ------------------------------------------------------------------ */
 
   function showShutdownDialog() {
     desktopState.dialogQueue = [
@@ -398,9 +368,7 @@
     ];
   }
 
-  /* ------------------------------------------------------------------ */
   /* DOOM easter egg - type "DOOM" anywhere on the desktop               */
-  /* ------------------------------------------------------------------ */
 
   let doomBuffer = "";
 
@@ -463,9 +431,7 @@
     retroSound.windowOpen();
   }
 
-  /* ------------------------------------------------------------------ */
   /* Desktop click handlers                                              */
-  /* ------------------------------------------------------------------ */
 
   function handleDesktopClick() {
     desktopState.selectedDesktopIcon = null;
@@ -477,9 +443,7 @@
     desktopState.selectedDesktopIcon = id;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Context menu helpers                                                */
-  /* ------------------------------------------------------------------ */
 
   function showDialog(title: string, message: string) {
     desktopState.dialogQueue = [
@@ -492,9 +456,7 @@
     desktopState.contextMenu = null;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Desktop right-click menu                                            */
-  /* ------------------------------------------------------------------ */
 
   function handleDesktopContextMenu(event: MouseEvent) {
     event.preventDefault();
@@ -547,9 +509,7 @@
     desktopState.contextMenu = { x, y, items: desktopMenuItems };
   }
 
-  /* ------------------------------------------------------------------ */
   /* Icon right-click menu                                               */
-  /* ------------------------------------------------------------------ */
 
   function handleIconContextMenu(event: MouseEvent, iconDef: RetroDesktopIcon) {
     desktopState.startMenuOpen = false;
@@ -834,9 +794,7 @@
 {/if}
 
 <style>
-  /* ------------------------------------------------------------------ */
   /* Layer 1: Desk - dark background filling the viewport                */
-  /* ------------------------------------------------------------------ */
   .retro-desk {
     background: #1a1410;
     width: 100vw;
@@ -849,9 +807,7 @@
     margin: 0;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Layer 2: Monitor - beige plastic CRT bezel                          */
-  /* ------------------------------------------------------------------ */
   .retro-monitor {
     position: relative;
     width: min(1100px, 92vw);
@@ -866,9 +822,7 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
 
-  /* ------------------------------------------------------------------ */
   /* Layer 3: Screen - inset glass area inside the bezel                 */
-  /* ------------------------------------------------------------------ */
   .retro-screen {
     width: 100%;
     height: 100%;
@@ -878,9 +832,7 @@
     box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.6);
   }
 
-  /* ------------------------------------------------------------------ */
   /* Brand label - centered in the bottom bezel padding                  */
-  /* ------------------------------------------------------------------ */
   .retro-monitor-label {
     position: absolute;
     bottom: 10px;
@@ -909,9 +861,7 @@
     font-weight: 600;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Shell - the OS fills the screen area                                */
-  /* ------------------------------------------------------------------ */
   .retro-shell {
     width: 100%;
     height: 100%;
@@ -926,9 +876,7 @@
     font-size: var(--retro-font-size, 11px);
   }
 
-  /* ------------------------------------------------------------------ */
   /* Desktop surface                                                     */
-  /* ------------------------------------------------------------------ */
   .desktop-surface {
     position: absolute;
     inset: 0;
@@ -943,9 +891,7 @@
     user-select: none;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Desktop icon grid - left column                                     */
-  /* ------------------------------------------------------------------ */
   .desktop-icon-grid {
     position: absolute;
     top: 8px;
@@ -956,9 +902,7 @@
     z-index: 1;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Recycle Bin - bottom-right                                          */
-  /* ------------------------------------------------------------------ */
   .recycle-bin-position {
     position: absolute;
     bottom: 8px;
@@ -966,9 +910,7 @@
     z-index: 1;
   }
 
-  /* ------------------------------------------------------------------ */
   /* Placeholder content for windows                                     */
-  /* ------------------------------------------------------------------ */
   .placeholder-content {
     display: flex;
     flex-direction: column;

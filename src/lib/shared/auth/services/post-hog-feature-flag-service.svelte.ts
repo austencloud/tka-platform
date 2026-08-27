@@ -43,9 +43,6 @@ import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { DEFAULT_FEATURE_FLAGS, getDefaultFeatureConfig } from "../domain/default-feature-flags";
 import { createPostHogFlagAdminService } from "./posthog-flag-admin-service";
 
-// ============================================================================
-// POSTHOG FLAG NAMING CONVENTIONS
-// ============================================================================
 
 /**
  * Convert FeatureId to PostHog flag key

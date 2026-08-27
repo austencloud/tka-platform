@@ -78,9 +78,7 @@ interface SeedRecipe {
 export class CandidateGenerator {
   constructor(private readonly optimizer: StanceOptimizer) {}
 
-  // ------------------------------------------------------------------
   // Public API
-  // ------------------------------------------------------------------
 
   generateDiverse(
     pose: PoseDefinition,
@@ -160,9 +158,7 @@ export class CandidateGenerator {
     };
   }
 
-  // ------------------------------------------------------------------
   // Seed recipes
-  // ------------------------------------------------------------------
 
   /**
    * Build the 6 diverse seed recipes for a fresh pose. See the class
@@ -328,9 +324,7 @@ export class CandidateGenerator {
     ];
   }
 
-  // ------------------------------------------------------------------
   // Seed execution
-  // ------------------------------------------------------------------
 
   /**
    * Run each seed through `optimizeFromSeed` and wrap the result in a
@@ -368,9 +362,7 @@ export class CandidateGenerator {
     };
   }
 
-  // ------------------------------------------------------------------
   // Dedup + backfill
-  // ------------------------------------------------------------------
 
   /**
    * Merge candidates that land on the same stance after optimization

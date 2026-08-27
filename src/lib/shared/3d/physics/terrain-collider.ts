@@ -13,9 +13,6 @@ import type {
 	TerrainCollider,
 } from "./types";
 
-// ============================================================================
-// TERRAIN PHYSICS MANAGER
-// ============================================================================
 
 /**
  * Terrain physics manager - handles all chunk colliders

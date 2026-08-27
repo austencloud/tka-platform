@@ -35,7 +35,6 @@
         // === FULL-BLEED PHOTO (no shift) ===
         ctx.drawImage(artistImg, 0, 0, width, height);
 
-        // === STRONGER TOP OVERLAY FOR TEXT READABILITY ===
         const topGradient = ctx.createLinearGradient(0, 0, 0, height * 0.25);
         topGradient.addColorStop(0, 'rgba(0, 0, 0, 0.85)');
         topGradient.addColorStop(0.6, 'rgba(0, 0, 0, 0.5)');
@@ -50,7 +49,6 @@
         ctx.fillStyle = bottomGradient;
         ctx.fillRect(0, height * 0.75, width, height * 0.25);
 
-        // === TITLE - TOP CENTER ===
         const centerX = width / 2;
 
         ctx.save();

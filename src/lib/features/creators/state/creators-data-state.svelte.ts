@@ -523,9 +523,6 @@ let creatorsDataStateInstance: ReturnType<
   typeof createCreatorsDataState
 > | null = null;
 
-/**
- * Get the creators data state singleton
- */
 function getCreatorsDataState() {
   if (!creatorsDataStateInstance) {
     creatorsDataStateInstance = createCreatorsDataState();
@@ -583,7 +580,6 @@ export const creatorsDataState = {
     return getCreatorsDataState().pageSize;
   },
 
-  // Sort state
   get sortBy() {
     return getCreatorsDataState().sortBy;
   },

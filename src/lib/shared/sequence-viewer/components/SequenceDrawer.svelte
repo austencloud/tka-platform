@@ -177,7 +177,6 @@
     onToggleRed?: () => void;
   } = $props();
 
-  // Set animation export context synchronously for edit mode
   // IMPORTANT: setContext must be called during component initialization, not in effects.
   // Child components (AnimationPlayer) read context on mount, so it must exist immediately.
   // Using getters allows the context to return current reactive prop values when accessed.

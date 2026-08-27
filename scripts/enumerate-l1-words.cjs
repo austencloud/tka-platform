@@ -11,7 +11,6 @@
 const fs = require('fs');
 const path = require('path');
 
-// Parse CSV
 const csvPath = path.join(__dirname, '..', 'static', 'data', 'pictographs', 'DiamondPictographDataframe.csv');
 const raw = fs.readFileSync(csvPath, 'utf-8');
 const lines = raw.split('\n').filter(l => l.trim() && l.indexOf('letter,') !== 0);

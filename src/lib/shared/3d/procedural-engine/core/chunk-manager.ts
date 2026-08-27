@@ -68,9 +68,6 @@ export class ChunkManager {
     });
   }
 
-  // ==========================================================================
-  // WORKER POOL
-  // ==========================================================================
 
   private initWorkers(): void {
     const workerCount = Math.min(
@@ -123,9 +120,6 @@ export class ChunkManager {
     this.processQueue();
   }
 
-  // ==========================================================================
-  // CHUNK LOADING
-  // ==========================================================================
 
   private cameraDirection: { x: number; z: number } | null = null;
 
@@ -362,9 +356,6 @@ export class ChunkManager {
     this.onChunkUnloaded?.(key);
   }
 
-  // ==========================================================================
-  // MEMORY MANAGEMENT
-  // ==========================================================================
 
   protected calculateChunkMemory(meshData: ChunkMeshData): number {
     let bytes = 0;
@@ -398,9 +389,6 @@ export class ChunkManager {
     }
   }
 
-  // ==========================================================================
-  // UTILITIES
-  // ==========================================================================
 
   private chunkKey(x: number, y: number, z: number): ChunkKey {
     return `${x},${y},${z}`;

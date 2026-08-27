@@ -16,10 +16,8 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { vi } from "vitest";
 
-// ---------------------------------------------------------------------------
 // Locate static/sw.js from the repo root (cwd when vitest runs; walk up as a
 // safety net in case a runner changes cwd).
-// ---------------------------------------------------------------------------
 function resolveSwPath(): string {
   let dir = process.cwd();
   for (let i = 0; i < 6; i++) {

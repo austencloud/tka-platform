@@ -79,14 +79,12 @@ function getCharcoalParamsFromConfig(
 }
 
 export class EffectSystem {
-  // ── Owned subsystems ────────────────────────────────────────────────────────
   private readonly _rendererManager = new EffectRendererManager();
   private readonly _controller = new EffectController(this._rendererManager);
 
   // ── effectsConfigState (owned here; engine reads via getter) ────────────────
   private _effectsConfigState: EffectsConfigState | null = null;
 
-  // ── Effect-specific change-detection prev-fields ────────────────────────────
   private _prevColorBlend: number = 0.5;
   private _prevFireIntensity: number = 0.7;
   private _prevFireBrightness: number = 0.5;
@@ -101,7 +99,6 @@ export class EffectSystem {
     private readonly _deps: { lifecycleManager: CanvasLifecycleManager }
   ) {}
 
-  // ── Subsystem accessors ─────────────────────────────────────────────────────
 
   get rendererManager(): EffectRendererManager {
     return this._rendererManager;
@@ -111,7 +108,6 @@ export class EffectSystem {
     return this._controller;
   }
 
-  // ── effectsConfigState ──────────────────────────────────────────────────────
 
   get effectsConfigState(): EffectsConfigState | null {
     return this._effectsConfigState;
@@ -204,7 +200,6 @@ export class EffectSystem {
     erm.fireConfig.colorCurve = ecs?.fire.colorCurve ?? BASE_COLOR_CURVE;
     erm.fireConfig.charcoalParams = getCharcoalParamsFromConfig(ecs);
 
-    // Initialize LED state from EffectsConfigState
     erm.initLedConfigFromEffectsState(ecs);
   }
 

@@ -50,7 +50,6 @@ Follows Svelte 5 runes + microservices architecture.
     onSectionToggle(section.id);
   }
 
-  // Handle navigation item click
   function handleItemClick(
     section: BrowseNavigationConfig,
     item: BrowseNavigationItem

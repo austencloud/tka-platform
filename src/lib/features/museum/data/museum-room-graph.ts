@@ -16,7 +16,6 @@ import type { WallDefinition } from "../domain/wall-segment-types";
 
 const EMPTY_WALL: WallDefinition = { segments: [], minMargin: 2 };
 
-// ── Room Definitions ──
 
 export const MUSEUM_ROOMS: RoomNode[] = [
   {
@@ -988,7 +987,6 @@ export const MUSEUM_ROOMS: RoomNode[] = [
   },
 ];
 
-// ── Edge Definitions ──
 
 export const MUSEUM_EDGES: RoomEdge[] = [
   {
@@ -1116,7 +1114,6 @@ export const MUSEUM_EDGES: RoomEdge[] = [
   },
 ];
 
-// ── Grid Configuration ──
 
 export const GRID_CONFIG: GridConfig = {
   cellWidth: 40,

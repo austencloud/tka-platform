@@ -120,9 +120,6 @@ export function createSequenceState(services: SequenceStateServices) {
     onSave: saveSequenceDataOnly,
   });
 
-  // ============================================================================
-  // PERSISTENCE INTEGRATION
-  // ============================================================================
 
   async function initializeWithPersistence(): Promise<void> {
     // Check if there's a pending deep link OR pending edit - if so, skip persistence restoration
@@ -256,9 +253,6 @@ export function createSequenceState(services: SequenceStateServices) {
     return true;
   }
 
-  // ============================================================================
-  // SEQUENCE SERVICE INTEGRATION
-  // ============================================================================
 
   async function loadSequences(): Promise<void> {
     if (!sequenceService) return;
@@ -395,9 +389,6 @@ export function createSequenceState(services: SequenceStateServices) {
     }
   }
 
-  // ============================================================================
-  // ENHANCED SEQUENCE OPERATIONS
-  // ============================================================================
 
   function setCurrentSequence(sequence: SequenceData | null): void {
     // Normalize step numbers for imported sequences (e.g., from Browse gallery).
@@ -625,9 +616,7 @@ export function createSequenceState(services: SequenceStateServices) {
     animationState.reset();
   }
 
-  // ============================================================================
   // PUBLIC API - Unified interface matching original
-  // ============================================================================
 
   return {
     // State getters - delegate to sub-states
@@ -780,7 +769,6 @@ export function createSequenceState(services: SequenceStateServices) {
     // Animation state - expose for undo operations
     animationState,
 
-    // Reset
     resetSequenceState,
     beginTutorialWorkspace,
     restoreTutorialWorkspace,

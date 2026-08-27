@@ -15,7 +15,6 @@ export class RetroSoundManager {
 	private volume = 0.3;
 	private muted = false;
 
-	// ---------- public API ----------
 
 	click(): void {
 		this.playTone({
@@ -373,7 +372,6 @@ export class RetroSoundManager {
 		return this.muted;
 	}
 
-	// ---------- internals ----------
 
 	/**
 	 * Lazy-create the AudioContext. Returns null when running
@@ -484,6 +482,5 @@ export class RetroSoundManager {
 	}
 }
 
-// ---------- internal types ----------
 
 type NoteEnvelope = "sharp" | "decay" | "smooth";

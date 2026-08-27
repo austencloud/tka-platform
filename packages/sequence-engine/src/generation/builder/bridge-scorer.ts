@@ -159,7 +159,6 @@ export function scoreBridgeOptions(
   const perHandConstraints = checkForPerHandDashConstraints(constraintSet);
   const hasPerHandConstraints = perHandConstraints.blue !== null || perHandConstraints.red !== null;
 
-  // Check for global dash-preference or dash-avoidance constraints
   const hasDashPreference = !hasPerHandConstraints && checkForDashPreference(constraintSet);
   const hasDashAvoidance = !hasPerHandConstraints && checkForDashAvoidance(constraintSet);
 

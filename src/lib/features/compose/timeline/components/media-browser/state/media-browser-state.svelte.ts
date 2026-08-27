@@ -38,10 +38,8 @@ export function createMediaBrowserState() {
   // Pagination
   let displayedCount = $state(BATCH_SIZE);
 
-  // Filter state
   let currentFilter = $state<MediaFilter>({ type: "all", value: null });
 
-  // Sort state
   let currentSortMethod = $state<BrowseSortMethod>(
     BrowseSortMethod.ALPHABETICAL
   );
@@ -105,7 +103,6 @@ export function createMediaBrowserState() {
   );
   const hasMore = $derived(displayedCount < allFilteredSequences.length);
 
-  // Initialize services
   function initializeServices(): boolean {
     try {
       loaderService = getBrowseLoader();
@@ -157,7 +154,6 @@ export function createMediaBrowserState() {
     }
   }
 
-  // Get thumbnail URL
   function getThumbnailUrl(sequence: SequenceData): string | undefined {
     if (!thumbnailService) return undefined;
     const first = sequence.thumbnails?.[0];

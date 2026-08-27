@@ -1,4 +1,3 @@
-// --- From ArrowPlacer ---
 /**
  * Arrow Placement Service Contracts
  *

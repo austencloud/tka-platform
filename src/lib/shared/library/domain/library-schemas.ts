@@ -16,7 +16,6 @@ import {
   firestoreDateLenient,
 } from "$lib/shared/firestore/firestore-date";
 
-// --- Nested objects ---
 
 const ForkAttributionSchema = z
   .object({

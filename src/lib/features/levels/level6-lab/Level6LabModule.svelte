@@ -29,18 +29,12 @@
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
-  // ============================================================================
-  // STATE
-  // ============================================================================
 
   let selectedGroup = $state<"all" | "alpha" | "beta" | "gamma">("all");
   let gravityMode = $state(false);
   let blueOrientation = $state<Orientation>(Orientation.CLOCK_IN);
   let redOrientation = $state<Orientation>(Orientation.CLOCK_IN);
 
-  // ============================================================================
-  // ORIENTATION OPTIONS
-  // ============================================================================
 
   const RADIAL_ORIENTATIONS = [
     { value: Orientation.IN, label: "In", icon: "fa-compress-arrows-alt" },
@@ -58,9 +52,6 @@
 
   const ALL_ORIENTATIONS = [...RADIAL_ORIENTATIONS, ...INTERRADIAL_ORIENTATIONS];
 
-  // ============================================================================
-  // GRAVITY MAP
-  // ============================================================================
 
   /** Physically correct resting orientation per grid location (poi gravity) */
   const GRAVITY_MAP: Partial<Record<GridLocation, Orientation>> = {
@@ -74,9 +65,7 @@
     [GridLocation.NORTHWEST]: Orientation.COUNTER_IN,
   };
 
-  // ============================================================================
   // POSITION DATA (Box mode = intercardinal locations)
-  // ============================================================================
 
   /**
    * Box mode positions with intercardinal locations: [blueLocation, redLocation]
@@ -111,9 +100,6 @@
     GridPosition.GAMMA10, GridPosition.GAMMA12, GridPosition.GAMMA14, GridPosition.GAMMA16,
   ];
 
-  // ============================================================================
-  // PROP TYPES FROM SETTINGS
-  // ============================================================================
 
   const bluePropType = $derived.by(() => {
     const settings = getSettings();
@@ -125,9 +111,6 @@
     return (settings.redPropType ?? settings.propType ?? PropType.STAFF) as PropType;
   });
 
-  // ============================================================================
-  // DISPLAY SECTIONS
-  // ============================================================================
 
   interface PositionSection {
     label: string;
@@ -148,9 +131,6 @@
     return sections;
   });
 
-  // ============================================================================
-  // PICTOGRAPH CREATION
-  // ============================================================================
 
   function getOrientation(location: GridLocation, manualOri: Orientation): Orientation {
     if (gravityMode) {

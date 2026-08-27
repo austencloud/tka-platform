@@ -64,32 +64,20 @@ export function closeReportModal(): void {
 	};
 }
 
-/**
- * Set the selected category.
- */
 export function setCategory(category: ReportCategory): void {
 	_state.selectedCategory = category;
 	_state.error = null;
 }
 
-/**
- * Set the description text.
- */
 export function setDescription(text: string): void {
 	_state.description = text;
 	_state.error = null;
 }
 
-/**
- * Set submitting state.
- */
 export function setSubmitting(isSubmitting: boolean): void {
 	_state.isSubmitting = isSubmitting;
 }
 
-/**
- * Set error message.
- */
 export function setError(error: string | null): void {
 	_state.error = error;
 }

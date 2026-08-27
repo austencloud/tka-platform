@@ -87,7 +87,6 @@
     return Math.max(6, Math.round(Math.pow(step / 2, 3) * 4 * loopFactor(lt)));
   }
 
-  // ---- state ------------------------------------------------------------------
   let word = $state("");
   let wordEditing = $state(false);
   let deckSize = $state(52);
@@ -143,7 +142,6 @@
   let showProp = $state(false);
   const propLabel = $derived(propType.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()));
 
-  // ---- derived ----------------------------------------------------------------
   const wordMode = $derived(word.trim().length > 0);
   // Generation fans each base seed across the variation axes → the real card space is deep.
   const turnAllowed = $derived(level >= 3 ? [0, 0.5, 1, 1.5, 2, 2.5, 3] : [0, 1, 2, 3]);

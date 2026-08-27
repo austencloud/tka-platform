@@ -81,7 +81,6 @@
     align-items: center;
   }
 
-  /* --- Step --- */
 
   .step {
     display: flex;
@@ -94,7 +93,6 @@
     gap: 6px;
   }
 
-  /* --- Dot --- */
 
   .dot {
     width: 24px;
@@ -148,13 +146,11 @@
     }
   }
 
-  /* --- Step number --- */
 
   .step-number {
     font-variant-numeric: tabular-nums;
   }
 
-  /* --- Label --- */
 
   .step-label {
     font-size: var(--font-size-compact, 12px);
@@ -173,7 +169,6 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
   }
 
-  /* --- Connector --- */
 
   .connector {
     width: 2px;
@@ -193,7 +188,6 @@
     margin-left: 0;
   }
 
-  /* --- Reduced motion --- */
 
   @media (prefers-reduced-motion: reduce) {
     .pulse-ring {

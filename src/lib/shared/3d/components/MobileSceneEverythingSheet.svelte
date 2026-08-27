@@ -1,4 +1,3 @@
-<!-- src/lib/shared/3d/components/MobileSceneEverythingSheet.svelte -->
 <script lang="ts">
   /**
    * The compact scene drill-down. It reuses the same control bodies as the

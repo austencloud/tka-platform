@@ -58,9 +58,6 @@ function fromFirestore(data: unknown, id: string): Announcement {
   };
 }
 
-/**
- * Create a new announcement
- */
 export async function createAnnouncement(
   announcement: Omit<Announcement, "id" | "createdAt">
 ): Promise<string> {
@@ -109,9 +106,6 @@ export async function createAnnouncement(
   }
 }
 
-/**
- * Update an existing announcement
- */
 export async function updateAnnouncement(
   id: string,
   updates: Partial<Announcement>
@@ -155,9 +149,6 @@ export async function updateAnnouncement(
   }
 }
 
-/**
- * Delete an announcement
- */
 export async function deleteAnnouncement(id: string): Promise<void> {
   try {
     const firestore = await getFirestoreInstance();

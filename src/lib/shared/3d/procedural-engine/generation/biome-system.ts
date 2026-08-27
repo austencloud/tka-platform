@@ -13,9 +13,6 @@
 
 import type { SeededNoise } from "./seed-generator";
 
-// ============================================================================
-// BIOME TYPES
-// ============================================================================
 
 /**
  * All biome types in the world
@@ -50,9 +47,6 @@ export enum BiomeType {
   AlpineMeadow = "alpine_meadow",
 }
 
-// ============================================================================
-// BIOME CONFIGURATION
-// ============================================================================
 
 export interface BiomeSystemConfig {
   /** Noise scale for temperature (lower = larger regions) */
@@ -84,9 +78,6 @@ export const DEFAULT_BIOME_CONFIG: BiomeSystemConfig = {
   worldScale: 0.0005, // Latitude effect scale
 };
 
-// ============================================================================
-// BIOME CHARACTERISTICS
-// ============================================================================
 
 /**
  * Characteristics that define how each biome looks and behaves
@@ -229,9 +220,6 @@ export const BIOME_CHARACTERISTICS: Record<BiomeType, BiomeCharacteristics> = {
   },
 };
 
-// ============================================================================
-// BIOME CALCULATION
-// ============================================================================
 
 /**
  * Calculate temperature at a world position
@@ -444,9 +432,6 @@ function calculateLocalSteepness(
   return Math.min(1, maxDiff / 10);
 }
 
-// ============================================================================
-// BIOME BLENDING
-// ============================================================================
 
 /**
  * Get blend weights for a position, smoothly transitioning between biomes
@@ -492,30 +477,18 @@ export function getBlendedBiomeWeights(
   return weights;
 }
 
-/**
- * Get vegetation density for a biome
- */
 export function getBiomeVegetationDensity(biome: BiomeType): number {
   return BIOME_CHARACTERISTICS[biome].vegetationDensity;
 }
 
-/**
- * Get allowed vegetation types for a biome
- */
 export function getBiomeVegetationTypes(biome: BiomeType): VegetationType[] {
   return BIOME_CHARACTERISTICS[biome].vegetationTypes;
 }
 
-/**
- * Get the color tint for a biome
- */
 export function getBiomeColorTint(biome: BiomeType): { r: number; g: number; b: number } {
   return BIOME_CHARACTERISTICS[biome].colorTint;
 }
 
-// ============================================================================
-// LEGACY COMPATIBILITY
-// ============================================================================
 
 /**
  * Convert new BiomeType to legacy biome string for backward compatibility
@@ -549,9 +522,6 @@ export function biomeTypeToLegacy(biome: BiomeType): "ocean" | "plains" | "fores
   }
 }
 
-// ============================================================================
-// BIOME COLOR HELPERS
-// ============================================================================
 
 export function getBiomeColor(biome: string, height: number): { r: number; g: number; b: number } {
   const heightFactor = Math.min(1, Math.max(0, height / 50));

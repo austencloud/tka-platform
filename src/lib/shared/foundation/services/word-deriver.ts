@@ -41,9 +41,7 @@ export function getSequenceDisplayName(sequence: SequenceData): string {
   return deriveWord(sequence) || sequence.name || sequence.id;
 }
 
-// ---------------------------------------------------------------------------
 // Strict derivation — the persistence gate
-// ---------------------------------------------------------------------------
 //
 // deriveWord() above is a *display* helper: it drops unlettered steps and falls
 // back to name, which is right for a label and catastrophic for storage. A

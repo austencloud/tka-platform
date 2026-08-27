@@ -12,9 +12,6 @@ import type {
   WordCardPaperSize,
 } from "../types/PageLayoutTypes";
 
-// ============================================================================
-// CORE PAGE LAYOUT INTERFACES
-// ============================================================================
 
 export interface PageDimensions {
   width: number;
@@ -53,9 +50,6 @@ export interface Page {
   margins: PageMargins;
 }
 
-// ============================================================================
-// PAPER SPECIFICATIONS
-// ============================================================================
 
 export interface PaperSpecification {
   name: WordCardPaperSize;
@@ -76,9 +70,6 @@ export interface PrintConfig {
   barterText?: string;
 }
 
-// ============================================================================
-// LAYOUT CALCULATION INTERFACES
-// ============================================================================
 
 export interface LayoutCalculationRequest {
   paperSize: WordCardPaperSize;
@@ -105,9 +96,6 @@ export interface GridCalculationOptions {
   allowPartialLastPage: boolean;
 }
 
-// ============================================================================
-// PAGE LAYOUT CONFIGURATION
-// ============================================================================
 
 export interface PageLayoutConfig {
   printConfig: PrintConfig;
@@ -124,9 +112,6 @@ export interface PageCreationOptions {
   emptyPageMessage?: string;
 }
 
-// ============================================================================
-// MEASUREMENT AND CONVERSION INTERFACES
-// ============================================================================
 
 export interface DPIConfig {
   screenDPI: number;
@@ -142,9 +127,6 @@ export interface MeasurementUnit {
   displayName: string;
 }
 
-// ============================================================================
-// VALIDATION INTERFACES
-// ============================================================================
 
 export interface LayoutValidationError {
   code: string;
@@ -166,9 +148,6 @@ export interface LayoutValidationResult {
   warnings: string[];
 }
 
-// ============================================================================
-// OPTIMIZATION INTERFACES
-// ============================================================================
 
 export interface LayoutOptimizationRequest {
   goal: OptimizationGoal;
@@ -184,9 +163,6 @@ export interface LayoutOptimizationRequest {
   };
 }
 
-// ============================================================================
-// GRID LAYOUT INTERFACES
-// ============================================================================
 
 export interface GridLayout {
   columns: number;

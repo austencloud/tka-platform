@@ -1,4 +1,3 @@
-// src/lib/shared/render/services/card-asset-bundle.ts
 //
 // AssetBundle: a transferable snapshot of every decoded SVG the worker pool
 // needs. Built on the MAIN THREAD after a prepare-pass populates the caches;

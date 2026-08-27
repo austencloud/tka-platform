@@ -33,9 +33,7 @@ function initFirebase() {
   }
 }
 
-// ============================================================================
 // LOOP Detection Logic (Ported from LOOPDetectionService)
-// ============================================================================
 
 /**
  * Check if sequence is circular (end position matches start)

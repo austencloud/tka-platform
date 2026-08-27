@@ -12,9 +12,6 @@ import type { MotionType } from "@tka/tka-types";
 import type { RotationDirection, Orientation, HandPath, SkewDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
-// ============================================================================
-// MOTION SIGNATURES
-// ============================================================================
 
 /**
  * Rotation-invariant signature for a single motion.
@@ -83,9 +80,6 @@ export interface LocationDelta {
   readonly direction: HandPath;
 }
 
-// ============================================================================
-// BEAT SIGNATURES
-// ============================================================================
 
 /**
  * Rotation-invariant signature for a complete beat (both hands).
@@ -124,9 +118,6 @@ export interface StepSignature {
   readonly hash: string;
 }
 
-// ============================================================================
-// SEQUENCE SIGNATURES
-// ============================================================================
 
 /**
  * Rotation-invariant signature for a complete sequence.
@@ -148,9 +139,6 @@ export interface SequenceSignature {
   readonly hash: string;
 }
 
-// ============================================================================
-// COMPARISON RESULTS
-// ============================================================================
 
 /**
  * Result of comparing two motion signatures.
@@ -195,9 +183,6 @@ export interface StepComparisonBreakdown {
   readonly handAngleMatch: boolean;
 }
 
-// ============================================================================
-// SPATIAL TRANSFORMS
-// ============================================================================
 
 /**
  * A spatial transform that can be applied to rotate a sequence around the grid.

@@ -55,7 +55,6 @@
             : "var(--semantic-error)"
   );
 
-  // Handle Escape key to exit
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === "Escape" && onExit) {
       event.preventDefault();

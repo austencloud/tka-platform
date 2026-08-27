@@ -1,4 +1,3 @@
-// src/lib/shared/gamification/state/prop-celebration-state.svelte.ts
 /**
  * Open/close state for the prop-unlock celebration modal. The manager opens it
  * automatically on the first milestone; the redemption badge opens it on demand.

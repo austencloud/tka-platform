@@ -44,9 +44,6 @@ export function restoreFromSnapshot(snapshot: EditSnapshot): EditableFields {
   };
 }
 
-/**
- * Validate editable fields
- */
 export function validateFields(fields: EditableFields): ValidationResult {
   const errors: Record<string, string> = {};
 

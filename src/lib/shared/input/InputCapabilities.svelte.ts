@@ -29,9 +29,6 @@ export interface InputCapabilities {
 	pointerTypeChangedAt: number;
 }
 
-/**
- * Create reactive input capabilities state
- */
 export function createInputCapabilities() {
 	let caps = $state<InputCapabilities>({
 		hasPointerLock: typeof document !== "undefined" && "pointerLockElement" in document,
@@ -52,9 +49,6 @@ export function createInputCapabilities() {
 		}
 	}
 
-	/**
-	 * Update pointer type from a pointer event
-	 */
 	function handlePointerEvent(e: PointerEvent) {
 		const newType = e.pointerType as PointerType;
 

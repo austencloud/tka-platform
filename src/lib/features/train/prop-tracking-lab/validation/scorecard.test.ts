@@ -4,7 +4,6 @@ import type { BeatNotation } from '../services/notation-pipeline';
 import type { GroundTruthMotion, GroundTruthSequence } from './ground-truth';
 import { scoreNotation, mirrorBeatNotation } from './scorecard';
 
-// --- Fixtures --------------------------------------------------------------
 
 function staff(over: Partial<StaffMotionNotation> = {}, color: StaffColor = 'blue'): StaffMotionNotation {
   return {
@@ -67,7 +66,6 @@ function weirdBeat(): BeatNotation {
   return beat(over, over);
 }
 
-// --- Perfect and near-perfect matches -------------------------------------
 
 describe('scoreNotation', () => {
   it('scores a perfect match at accuracy 1 with per-beat scores of 1', () => {
@@ -110,7 +108,6 @@ describe('scoreNotation', () => {
   });
 });
 
-// --- Alignment -------------------------------------------------------------
 
 describe('scoreNotation alignment', () => {
   const a = beat();
@@ -163,7 +160,6 @@ describe('scoreNotation alignment', () => {
   });
 });
 
-// --- Field semantics ---------------------------------------------------------
 
 describe('scoreNotation field semantics', () => {
   it("matches ground-truth 'fl' turns against a detected float, and only a float", () => {
@@ -218,7 +214,6 @@ describe('scoreNotation field semantics', () => {
   });
 });
 
-// --- Mirror hypothesis ----------------------------------------------------------
 
 describe('mirrorBeatNotation', () => {
   it('flips east/west locations, clock/counter, and cw/ccw — nothing else', () => {

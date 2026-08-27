@@ -74,7 +74,6 @@ import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   // Legacy name for backwards compatibility with parent layout notification
   const isInputMode = $derived(shouldCollapseLayout);
 
-  // Get context
   const createModuleContext = tryGetCreateModuleContext();
 
   // Notify parent layout when input mode changes
@@ -100,7 +99,6 @@ import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
     return randomGenerator;
   }
 
-  // Load persisted state on mount
   onMount(() => {
     hasTouchCapability = deviceDetector.isTouchDevice();
 
@@ -157,9 +155,6 @@ import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   // Derived
   const canGenerate = $derived(spellState.inputWord.trim().length > 0 && !spellState.isGenerating);
 
-  // ============================================================================
-  // HELPERS
-  // ============================================================================
 
   function deriveStartPosition(sequence: SequenceData): SequenceData {
     if (sequence.startPosition || !sequence.steps?.length) {
@@ -181,9 +176,6 @@ import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
     }
   }
 
-  // ============================================================================
-  // HANDLERS
-  // ============================================================================
 
   function handleWordChange(value: string) {
     spellState.setInputWord(value);
@@ -228,7 +220,6 @@ import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
         spellState.setLetterSources(parseResult.letterSources);
       }
 
-      // Build constraints from preferences
       const constraintBuilder = await spellServiceLoaderModule.getVariationConstraintBuilder();
       const constraints = constraintBuilder.buildConstraints(
         spellState.preferences,

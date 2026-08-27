@@ -289,9 +289,6 @@
       inset 0 1px 0 var(--theme-stroke);
   }
 
-  /* ===========================
-     ENDS SELECTOR
-     =========================== */
 
   .ends-selector {
     display: flex;
@@ -369,9 +366,6 @@
         );
   }
 
-  /* ===========================
-     ACCESSIBILITY
-     =========================== */
 
   @media (prefers-reduced-motion: reduce) {
     .preset-btn,

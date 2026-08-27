@@ -187,9 +187,6 @@ export class LOOPLabelsFirebaseRepository {
     return labels;
   }
 
-  /**
-   * Get current sync status
-   */
   getSyncStatus(): "synced" | "syncing" | "error" {
     return this.syncStatus;
   }

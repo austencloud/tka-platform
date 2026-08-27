@@ -24,7 +24,6 @@
 		return (settings.redPropType ?? settings.propType ?? PropType.STAFF) as PropType;
 	});
 
-	// ─── Example pictographs from chain data ───
 	const examples = $derived.by(() => {
 		const ss = getModeChains("SS");
 		const ts = getModeChains("TS");
@@ -39,7 +38,6 @@
 		};
 	});
 
-	// ─── Concept card definitions ───
 	interface ConceptDef {
 		vtg: string;
 		tka: string;
@@ -372,7 +370,6 @@
 </div>
 
 <style>
-	/* ─── Layout ─── */
 	.rosetta-panel {
 		display: flex;
 		flex-direction: column;
@@ -382,7 +379,6 @@
 		padding-bottom: 1.5rem;
 	}
 
-	/* ─── Section Headers ─── */
 	.concept-section {
 		display: flex;
 		flex-direction: column;
@@ -419,7 +415,6 @@
 		);
 	}
 
-	/* ─── Reference Frame Cards ─── */
 	.frame-cards {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
@@ -472,7 +467,6 @@
 		font-weight: 600;
 	}
 
-	/* ─── Concept Cards with Pictographs ─── */
 	.concept-grid {
 		display: grid;
 		gap: 0.75rem;
@@ -578,7 +572,6 @@
 		line-height: 1.4;
 	}
 
-	/* ─── Formula Cards ─── */
 	.formula-row {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
@@ -611,7 +604,6 @@
 		font-family: "JetBrains Mono", "Fira Code", monospace;
 	}
 
-	/* ─── Ratio Cards ─── */
 	.ratio-cards {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -737,7 +729,6 @@
 		transform: translateX(3px);
 	}
 
-	/* ─── Document Grid Cards ─── */
 	.doc-group-label {
 		font-size: var(--font-size-compact, 12px);
 		font-weight: 600;
@@ -816,7 +807,6 @@
 		opacity: 0.7;
 	}
 
-	/* ─── Responsive ─── */
 	@media (max-width: 700px) {
 		.frame-cards {
 			grid-template-columns: 1fr;

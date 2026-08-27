@@ -1,4 +1,3 @@
-// --- From GestureHandler ---
 /**
  * Gesture Service Contract
  *
@@ -50,7 +49,6 @@ export interface SwipeGestureHandler {
   handleTouchEnd: () => void;
 }
 
-// --- From PlatformDetector ---
 /**
  * Platform Detection Service Contract
  *
@@ -90,7 +88,6 @@ export interface PlatformInfo {
   isStandalone: boolean; // Already installed as PWA
 }
 
-// --- From PWAEngagementTracker ---
 /**
  * PWA Engagement Tracking Service Contract
  *
@@ -118,7 +115,6 @@ export interface PWAEngagementMetrics {
   lastVisit: number;
 }
 
-// --- From PWAInstallDismissalManager ---
 export interface PWADismissalState {
   dismissCount: number;
   lastDismissed: number | null;

@@ -59,8 +59,6 @@ export class BetaDetector {
   }
 }
 
-// ============================================================================
 // DIRECT EXPORT - Use this instead of betaDetector
 // This avoids DI container rebuilds when this file changes
-// ============================================================================
 export const betaDetector = new BetaDetector();

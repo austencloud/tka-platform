@@ -1,4 +1,3 @@
-// src/lib/features/stage/locomotion/motion-matching/mm-locomotion-controller.ts
 
 import { Quaternion } from "three";
 import type { Bone } from "three";

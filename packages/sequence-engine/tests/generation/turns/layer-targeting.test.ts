@@ -37,9 +37,7 @@ import {
 } from "../../../src/core/orientation/OrientationPropagator.js";
 import type { SequenceStep, Motion } from "../../../src/core/types/sequence-engine-types.js";
 
-// ---------------------------------------------------------------------------
 // Fixtures
-// ---------------------------------------------------------------------------
 
 /**
  * Hand paths that actually travel around the circle, so a float on one of them

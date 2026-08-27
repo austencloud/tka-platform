@@ -6,9 +6,7 @@
 
 import type { Vector3 } from "three";
 
-// =============================================================================
 // Trail Point & History
-// =============================================================================
 
 /**
  * A single point in the position history trail
@@ -32,9 +30,7 @@ export interface PropPositionHistory {
   currentVelocity: number;
 }
 
-// =============================================================================
 // Trail Geometry Enums (used by 2D + 3D)
-// =============================================================================
 
 /**
  * Which prop end(s) to track for trails
@@ -53,18 +49,14 @@ export enum TrailStyle {
   TUBE = "tube", // Simple tube geometry (legacy)
 }
 
-// =============================================================================
 // Prop Identifier
-// =============================================================================
 
 /**
  * Prop identifier for effects
  */
 export type PropId = "blue" | "red";
 
-// =============================================================================
 // Tip Position Data (used by TipPositionBridge3D)
-// =============================================================================
 
 /**
  * World-space position, velocity, and jerk for a single prop tip.
@@ -94,9 +86,7 @@ export interface PropTipPositions3D {
   propIndex: number;
 }
 
-// =============================================================================
 // Quality Tier System
-// =============================================================================
 
 /**
  * Device capability tiers that determine particle budgets, dynamic light

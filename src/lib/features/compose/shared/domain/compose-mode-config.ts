@@ -55,23 +55,14 @@ export const COMPOSE_MODE_CONFIG: Record<AnimationMode, ComposeModeConfig> = {
   },
 };
 
-/**
- * Get mode config by mode key
- */
 export function getModeConfig(mode: AnimationMode): ComposeModeConfig {
   return COMPOSE_MODE_CONFIG[mode];
 }
 
-/**
- * Get mode label by mode key
- */
 export function getModeLabel(mode: AnimationMode): string {
   return COMPOSE_MODE_CONFIG[mode].label;
 }
 
-/**
- * Get mode icon by mode key
- */
 export function getModeIcon(mode: AnimationMode): string {
   return COMPOSE_MODE_CONFIG[mode].icon;
 }

@@ -1,4 +1,3 @@
-// --- From ArrowSvgLoader ---
 /**
  * SVG Loader Interface
  */

@@ -15,7 +15,6 @@ interface Env {
 	FIREBASE_SERVICE_ACCOUNT_JSON: string;
 }
 
-// ── Constants ────────────────────────────────────────────────────────
 
 const FIRESTORE_PROJECT = "the-kinetic-alphabet";
 const COLLECTION = "feedback";
@@ -54,7 +53,6 @@ function checkRateLimit(ip: string): { allowed: boolean; retryAfter: number } {
 	return { allowed: true, retryAfter: 0 };
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────
 
 function sanitize(input: string, maxLength: number): string {
 	return input.replace(/<[^>]*>/g, "").trim().slice(0, maxLength);

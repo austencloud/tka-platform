@@ -44,7 +44,6 @@ export interface RawSequence {
 	steps: RawStep[];
 }
 
-// ── Conversion ──
 
 function toMotionData(raw: RawMotion, gridMode: GridMode): MotionData {
 	return {

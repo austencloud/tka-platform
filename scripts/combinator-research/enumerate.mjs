@@ -17,7 +17,6 @@ const ri = (l) => RING.indexOf(l);
 export const rotL = (l, s) => (ri(l) < 0 ? l : RING[(ri(l) + s + 8) % 8]);
 const mirL = (l) => (ri(l) < 0 ? l : RING[(8 - ri(l)) % 8]);
 
-// ---------------------------------------------------------------- data
 
 function parse(file) {
 	const rows = [];

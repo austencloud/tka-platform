@@ -318,10 +318,8 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       this.leadingEdge + RING_BUFFER_HEADROOM,
     );
 
-    // ---------------------------------------------------------------
     // 1. Capture current prop tip positions into ring buffers
     //    (fire-renderer pattern: always read from PropState directly)
-    // ---------------------------------------------------------------
     // Clear ring buffers when tracking mode changes so stale points
     // don't create artifact lines. The overlay's painted pixels fade
     // naturally via destination-out.
@@ -731,9 +729,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.redLayerRings = [];
   }
 
-  // -------------------------------------------------------------------
   // Internal helpers
-  // -------------------------------------------------------------------
 
   /**
    * Capture tip positions for a single prop into the appropriate ring

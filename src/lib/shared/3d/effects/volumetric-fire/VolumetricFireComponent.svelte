@@ -38,7 +38,6 @@
 
   const { camera } = useThrelte();
 
-  // Load textures
   const noiseTexture = useTexture("/textures/fire/nzw.png");
   const profileTexture = useTexture("/textures/fire/firetex.png");
 

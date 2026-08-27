@@ -39,9 +39,6 @@ export interface CompositionStats {
   totalCells: number;
 }
 
-// ============================================================================
-// CRUD OPERATIONS
-// ============================================================================
 
 export async function saveComposition(composition: Composition): Promise<Composition> {
   try {

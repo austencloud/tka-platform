@@ -38,9 +38,7 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { getTurnPool, type TurnLanes } from "@tka/sequence-engine/generation";
 
-// ---------------------------------------------------------------------------
 // Catalogs
-// ---------------------------------------------------------------------------
 
 /** Spoken location names, and the grid codes they stand for. */
 export const DIRECTOR_LOCATION_NAMES = {
@@ -96,9 +94,7 @@ const DIFFICULTY_BY_LEVEL: Record<DirectorSequenceLevel, DifficultyLevel> = {
   3: DifficultyLevel.ADVANCED,
 };
 
-// ---------------------------------------------------------------------------
 // Types
-// ---------------------------------------------------------------------------
 
 export type DirectorPositionRef =
   | string

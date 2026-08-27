@@ -52,7 +52,6 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   // Only tabs with beat sequences support individual beat editing
   const SUPPORTED_TABS = new Set(["construct", "assemble", "generate", "spell"]);
 
-  // Get context
   const ctx = getCreateModuleContext();
   const { CreateModuleState, panelState, layout } = ctx;
   const isSideBySideLayout = $derived(layout.shouldUseSideBySideLayout);
@@ -154,7 +153,6 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
     activeSequenceState.getRemovingStepIndices()
   );
 
-  // ---- Multi-select batch editing ----
   const isMultiSelect = $derived(
     activeSequenceState.isMultiSelectMode &&
       activeSequenceState.selectedStepNumbers.size > 1

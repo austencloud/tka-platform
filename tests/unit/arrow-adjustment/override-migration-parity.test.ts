@@ -78,13 +78,11 @@ describe("enumerateVariationArrows", () => {
   });
 });
 
-// ===========================================================================
 // Migration engine — parity-by-construction Global → Special.
 //
 // Uses vi.doMock + a fresh dynamic import so this block's dependency mocks are
 // scoped to it and do NOT collide with the enumerator-portion tests above
 // (which import the REAL enumerator).
-// ===========================================================================
 
 import { Point } from "fabric";
 import type { MigrationReport } from "../../../src/lib/features/admin/override-migration/services/override-migration";

@@ -41,7 +41,6 @@ import type {
 	MandalaTipOverrides,
 } from "./types";
 
-// ─── Internal types ─────────────────────────────────────────────────────────
 
 type TipOffset = MandalaTipOffset;
 
@@ -60,7 +59,6 @@ interface InterpolatedPosition {
 	staffAngle: number;
 }
 
-// ─── Location angle lookup ──────────────────────────────────────────────────
 
 // The LOCATION_ANGLES map from math-constants uses GridLocation enum keys.
 // Firestore data uses lowercase strings ("n", "e", "s", etc.).
@@ -90,7 +88,6 @@ function resolveLocationAngle(loc: string): number {
 	return 0;
 }
 
-// ─── Orientation string to enum mapping ─────────────────────────────────────
 
 // The existing mapOrientationToAngle expects Orientation values. Firestore
 // stores those values as strings, including the four interradial orientations.
@@ -105,7 +102,6 @@ function resolveOrientationAngle(
 	return mapOrientationToAngle(enumValue, centerAngle);
 }
 
-// ─── Rotation direction parsing ─────────────────────────────────────────────
 
 function parseDirection(rotDir: string): number {
 	if (rotDir === "ccw" || rotDir === "counter_clockwise") return -1;
@@ -142,7 +138,6 @@ function resolveCenterRotationDelta(
 	return normalizeAngleSigned(targetCenterAngle - startCenterAngle);
 }
 
-// ─── Endpoint calculation ───────────────────────────────────────────────────
 
 // Replicates EndpointCalculator.ts logic per motion type.
 // PRO: staffDelta = centerMovement + (dir * turns * PI)
@@ -234,7 +229,6 @@ function calculateMotionEndpoints(motion: {
 	};
 }
 
-// ─── Path shape resolution ──────────────────────────────────────────────────
 
 type PathShape = "arc" | "linear" | "concave";
 
@@ -252,7 +246,6 @@ function resolvePathShape(
 	return options?.pathShape ?? "arc";
 }
 
-// ─── Interpolation ──────────────────────────────────────────────────────────
 
 function interpolateLinear(
 	startAngle: number,
@@ -345,7 +338,6 @@ function interpolate(
 	}
 }
 
-// ─── Tip position transform ─────────────────────────────────────────────────
 
 function computeTipPosition(
 	handPos: InterpolatedPosition,
@@ -401,7 +393,6 @@ function pointSetsToPaths(sets: MandalaPoint[][]): SVGPathData[] {
 	return out;
 }
 
-// ─── Catmull-Rom to Bezier SVG path conversion ─────────────────────────────
 
 export function pointsToSVGPath(points: MandalaPoint[]): string {
 	if (points.length < 2) return "";

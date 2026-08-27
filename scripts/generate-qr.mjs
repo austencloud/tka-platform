@@ -28,9 +28,7 @@ import { simplifyRepeatedWord } from "../src/lib/shared/foundation/utils/word-si
 
 const require = createRequire(import.meta.url);
 
-// ---------------------------------------------------------------------------
 // Args
-// ---------------------------------------------------------------------------
 
 const argv = process.argv.slice(2);
 const flags = { url: null, out: null, open: true, dark: false };
@@ -54,9 +52,7 @@ if (!flags.url && positional.length === 0) {
 
 const input = positional.join(" ").trim();
 
-// ---------------------------------------------------------------------------
 // Resolve input → https://tka.run/{CODE} (unless --url given)
-// ---------------------------------------------------------------------------
 
 const CODE_RE = /^[0-9A-Z]{4,6}$/;
 
@@ -172,9 +168,7 @@ async function resolveToUrl() {
   return { url: `https://tka.run/${code}`, label: `${word} (${code})` };
 }
 
-// ---------------------------------------------------------------------------
 // Render — mirrors createQROptions() in qr-code-generator.ts ("modern" preset)
-// ---------------------------------------------------------------------------
 
 /**
  * Center play badge, same geometry as playIconDataUrl() in qr-code-generator.ts.

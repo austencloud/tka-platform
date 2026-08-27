@@ -76,7 +76,6 @@ export class PromoAnimationController {
     this.setDeviceState(preset.defaultDevice);
     this.setCameraState(preset.defaultCamera);
 
-    // Build the timeline
     this.buildTimeline(preset);
   }
 

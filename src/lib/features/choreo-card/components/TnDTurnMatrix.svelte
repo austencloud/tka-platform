@@ -160,7 +160,6 @@
     justify-content: center;
   }
 
-  /* ── Cells ── */
   .cell {
     aspect-ratio: 1;
     display: flex;
@@ -231,7 +230,6 @@
     cursor: default;
   }
 
-  /* ── Cell content ── */
   .turn-pair {
     display: flex;
     align-items: baseline;
@@ -254,7 +252,6 @@
     line-height: 1;
   }
 
-  /* ── Responsive ── */
   @media (max-width: 640px) {
     .cell-count { display: none; }
   }

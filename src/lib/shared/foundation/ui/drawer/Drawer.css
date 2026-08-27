@@ -587,11 +587,6 @@ dialog.drawer-content {
   }
 }
 
-/* ============================================
-   * Spring Animation
-   * Simulates spring physics with CSS keyframes
-   * Creates an iOS-like "bounce" effect on open
-   * ============================================ */
 
 /* Spring timing function - approximates spring physics */
 .drawer-content.spring-animation {

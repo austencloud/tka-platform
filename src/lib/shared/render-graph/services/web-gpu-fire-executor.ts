@@ -55,7 +55,6 @@ const DEFAULT_CORE: [number, number, number] = [1.0, 0.95, 0.85];
 const DISPLAY_UNIFORM_FLOATS = 160;
 const DISPLAY_UNIFORM_BYTES = DISPLAY_UNIFORM_FLOATS * 4;
 
-// ── WGSL Shaders ───────────────────────────────────────────────────
 
 const FULLSCREEN_VERT_WGSL = /* wgsl */ `
 struct VertexOutput {

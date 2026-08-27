@@ -326,7 +326,6 @@ function buildChoreoSheetState(deps: ChoreoSheetStateDeps) {
       : []
   );
 
-  // ── Reading view ────────────────────────────────────────────────────────────
   // The phone view re-chunks at its OWN column count — 4 across is an 83px cell
   // at 375px, which is legible, and 4/8/16-step sequences chunk without a ragged
   // last row. Re-chunking is only safe because cues and notes address an

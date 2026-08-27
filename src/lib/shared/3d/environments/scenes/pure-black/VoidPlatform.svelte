@@ -95,7 +95,6 @@
     return () => mat.dispose();
   });
 
-  // --- Vertical wireframe columns ---
   const COLUMN_COUNT = 8;
   let columnGeometry = $state<CylinderGeometry | undefined>(undefined);
   let columnMaterial = $state<MeshStandardMaterial | undefined>(undefined);

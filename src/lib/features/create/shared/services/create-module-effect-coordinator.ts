@@ -196,9 +196,7 @@ export function setupEffects(config: CreateModuleEffectConfig): () => void {
   };
 }
 
-// ============================================================================
 // SINGLETON EXPORT (satisfies CreateModuleEffectCoordinator interface)
-// ============================================================================
 export const createModuleEffectCoordinator: CreateModuleEffectCoordinator = {
   setupEffects,
 };

@@ -1,9 +1,7 @@
 /* eslint-disable no-undef */
 import * as THREE from "three";
 
-// ==========================================
 // 1. Shaders
-// ==========================================
 const vs = `
     attribute vec3 position;
     attribute vec3 tex;
@@ -81,9 +79,7 @@ const fs = `
     }
 `;
 
-// ==========================================
 // 2. Helper Classes
-// ==========================================
 class PriorityQueue {
   constructor() {
     this.contents = [];
@@ -107,9 +103,7 @@ class PriorityQueue {
   }
 }
 
-// ==========================================
 // 3. Main Class
-// ==========================================
 export class VolumetricFire extends THREE.Mesh {
   /**
    * @param {Object} options

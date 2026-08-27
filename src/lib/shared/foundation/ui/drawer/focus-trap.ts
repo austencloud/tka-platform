@@ -120,7 +120,6 @@ export class FocusTrap {
       this.handleKeydownBound = null;
     }
 
-    // Remove inert from siblings
     if (this.options.setInertOnSiblings) {
       this.setInertOnSiblings(false);
     }
@@ -145,9 +144,6 @@ export class FocusTrap {
     this.previouslyFocused = null;
   }
 
-  /**
-   * Update options dynamically
-   */
   updateOptions(options: Partial<FocusTrapOptions>) {
     this.options = { ...this.options, ...options };
   }
@@ -159,9 +155,6 @@ export class FocusTrap {
     return this.isActive;
   }
 
-  /**
-   * Get all focusable elements within the container
-   */
   private getFocusableElements(): HTMLElement[] {
     if (!this.container) return [];
 

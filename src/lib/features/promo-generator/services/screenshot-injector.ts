@@ -56,7 +56,6 @@ export class ScreenshotInjector {
       })
     );
 
-    // Apply the first screenshot
     if (screenshots.length > 0 && screenshots[0]) {
       const firstTexture = this.textureCache.get(screenshots[0].source);
       if (firstTexture) {
@@ -100,7 +99,6 @@ export class ScreenshotInjector {
     texture.flipY = true; // Most screen images need Y flip
     texture.needsUpdate = true;
 
-    // Create or update material
     const material = this.screenMesh.material as MeshBasicMaterial;
     if (material instanceof MeshBasicMaterial) {
       material.map = texture;

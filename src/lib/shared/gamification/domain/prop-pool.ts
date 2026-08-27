@@ -1,4 +1,3 @@
-// src/lib/shared/gamification/domain/prop-pool.ts
 /**
  * Prop unlock pool + milestone math.
  *

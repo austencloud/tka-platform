@@ -14,11 +14,9 @@ import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { BrowseViewMode } from "$lib/shared/browse/domain/browse-view-mode";
 
-// ============================================================================
 // GLOBAL CELL URL CACHE
 // Survives component remounts so drag-to-move doesn't re-render all cells.
 // Keyed by sequence content + render options hash. Capped at 30 entries (LRU).
-// ============================================================================
 
 export interface CachedPreview {
   cells: {

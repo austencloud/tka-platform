@@ -16,15 +16,11 @@ import { getFirestore } from "firebase-admin/firestore";
 import * as path from "path";
 import * as fs from "fs";
 
-// ============================================================================
-// ADJUSTMENT ENTRIES
-// ============================================================================
 // Each entry maps a physical scenario (prop type + orientations + position)
 // to a base pixel adjustment. The adjustment goes through directional tuple
 // rotation in the pipeline, so one entry covers all four quadrants.
 //
 // Key: gridMode|propType|otherPropType|positionType|endOri|otherEndOri|motionType|turns|arrowColor
-// ============================================================================
 
 interface AdjustmentEntry {
   gridMode: string;
@@ -42,9 +38,7 @@ interface AdjustmentEntry {
 }
 
 const ADJUSTMENTS: AdjustmentEntry[] = [
-  // ============================================================================
   // TRIAD + TRIAD at BETA — Diamond Grid
-  // ============================================================================
   // Scenario: Blue pro 1-turn arrow ending "out" at beta, red ending "in"
   // The triad's arms extend outward when in "out" orientation, pushing into
   // the arrow's default position. Nudge arrow away from the triad body.
@@ -65,9 +59,6 @@ const ADJUSTMENTS: AdjustmentEntry[] = [
   },
 ];
 
-// ============================================================================
-// FIRESTORE WRITE LOGIC
-// ============================================================================
 
 function generateKey(entry: AdjustmentEntry): string {
   return [

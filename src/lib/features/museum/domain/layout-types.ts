@@ -102,7 +102,6 @@ export interface RoomEdge {
   corridorWidth?: number;
 }
 
-// ── Grid Configuration ──
 
 export interface GridConfig {
   /** Tiles per grid cell horizontally */

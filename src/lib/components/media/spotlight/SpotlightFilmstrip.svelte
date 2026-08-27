@@ -31,11 +31,9 @@
     onSelect,
   }: Props = $props();
 
-  // ===== Refs =====
   let containerRef = $state<HTMLElement | null>(null);
   let thumbnailRefs = $state<(HTMLButtonElement | null)[]>([]);
 
-  // ===== Auto-Scroll Effect =====
   $effect(() => {
     if (!containerRef) return;
 
@@ -54,7 +52,6 @@
     }
   });
 
-  // ===== Keyboard Navigation =====
   function handleKeydown(e: KeyboardEvent, index: number) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();

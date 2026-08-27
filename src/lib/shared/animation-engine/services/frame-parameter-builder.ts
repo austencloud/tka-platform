@@ -76,7 +76,6 @@ import type { AnimatorState } from "../state/animator-state.svelte";
 import type { EffectRendererManager } from "./effect-renderer-manager";
 
 export class FrameParameterBuilder {
-  // ── Effect intent caches ────────────────────────────────────────────
   private zapConfig: Zap2DParams = resolveZap2D(DEFAULT_EFFECTS_CONFIG.zap);
   private sparklesConfig: Sparkles2DParams = resolveSparkles2D(DEFAULT_EFFECTS_CONFIG.sparkles);
   private prevSparklesIntentRef: SparklesIntent | null = null;
@@ -104,11 +103,9 @@ export class FrameParameterBuilder {
   private prevPulseIntentRef: PulseIntent | null = null;
   private prevZapIntentJson: string = JSON.stringify(DEFAULT_EFFECTS_CONFIG.zap);
 
-  // ── Loopability cache ───────────────────────────────────────────────
   private cachedIsSeamlesslyLoopable: boolean = false;
   private loopabilityCacheHash: string | null = null;
 
-  // ── Hand presence cache ─────────────────────────────────────────────
   sequenceHasBlueMotion: boolean = true;
   sequenceHasRedMotion: boolean = true;
   private handPresenceCacheKey: string | null = null;
@@ -116,7 +113,6 @@ export class FrameParameterBuilder {
   // Sequence content hash for detecting beat duration changes
   lastSequenceContentHash: string | null = null;
 
-  // ── Tunnel-layer fire colors cache ──────────────────────────────────
   // Extended propColors array (base pair + one spectrum color per layer end)
   // for colored flames on overlaid kaleidoscope copies. Rebuilt only when the
   // layer count or the base blue/red colors change, then reused each frame.

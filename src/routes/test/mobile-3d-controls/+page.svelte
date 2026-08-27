@@ -1,4 +1,3 @@
-<!-- src/routes/test/mobile-3d-controls/+page.svelte -->
 <script lang="ts">
   /**
    * Mobile 3D Controls — on-device validation harness.

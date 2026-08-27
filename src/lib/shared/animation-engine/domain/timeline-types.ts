@@ -16,9 +16,7 @@ import {
   DEFAULT_TIME_SIGNATURE,
 } from "$lib/shared/foundation/domain/models/time-signature";
 
-// ============================================================================
 // Time Units
-// ============================================================================
 
 /**
  * All time values in the timeline are in seconds (floating point).
@@ -31,9 +29,7 @@ export type TimeSeconds = number;
  */
 export type FrameRate = 24 | 30 | 60;
 
-// ============================================================================
 // Timeline Clip
-// ============================================================================
 
 /**
  * A clip is an animation sequence placed on the timeline.
@@ -52,7 +48,6 @@ export interface TimelineClip {
   /** Track this clip belongs to */
   trackId: string;
 
-  // === Timeline Position ===
 
   /** Where the clip starts on the timeline (seconds) */
   startTime: TimeSeconds;
@@ -76,7 +71,6 @@ export interface TimelineClip {
    */
   outPoint: number;
 
-  // === Playback Modifiers ===
 
   /** Playback speed multiplier (1 = normal, 0.5 = half speed, 2 = double) */
   playbackRate: number;
@@ -87,7 +81,6 @@ export interface TimelineClip {
   /** Number of times to loop (0 = infinite within duration) */
   loopCount: number;
 
-  // === Visual Settings ===
 
   /** Trail effect settings for this clip's animation */
   trailSettings: TrailSettings;
@@ -98,7 +91,6 @@ export interface TimelineClip {
   /** Opacity (0-1) for compositing */
   opacity: number;
 
-  // === Metadata ===
 
   /** User-provided label (optional) */
   label?: string;
@@ -113,9 +105,7 @@ export interface TimelineClip {
   muted: boolean;
 }
 
-// ============================================================================
 // Timeline Track
-// ============================================================================
 
 /**
  * A track is a horizontal lane that holds clips.
@@ -137,7 +127,6 @@ export interface TimelineTrack {
   /** Clips on this track (ordered by startTime) */
   clips: TimelineClip[];
 
-  // === Track Controls ===
 
   /** Mute all clips on this track */
   muted: boolean;
@@ -170,9 +159,7 @@ export type TrackType =
   | "formation" // Formation cue markers - trigger formation changes
   | "camera"; // Camera keyframe track - choreographed camera moves
 
-// ============================================================================
 // Audio Reference
-// ============================================================================
 
 /**
  * Reference to the audio track for sync.
@@ -192,9 +179,7 @@ export interface TimelineAudioRef {
   bpm: number | null;
 }
 
-// ============================================================================
 // Timeline Project
-// ============================================================================
 
 /**
  * The complete timeline project.
@@ -213,7 +198,6 @@ export interface TimelineProject {
   /** Audio reference (actual audio state lives elsewhere) */
   audio: TimelineAudioRef;
 
-  // === Timeline Settings ===
 
   /** Total project duration (auto-calculated or manual) */
   duration: TimeSeconds;
@@ -230,7 +214,6 @@ export interface TimelineProject {
   /** Frame rate for export */
   frameRate: FrameRate;
 
-  // === Metadata ===
 
   /** Creation timestamp */
   createdAt: Date;
@@ -245,9 +228,7 @@ export interface TimelineProject {
   isFavorite: boolean;
 }
 
-// ============================================================================
 // Snap Settings
-// ============================================================================
 
 /**
  * Snapping configuration for clip placement
@@ -272,9 +253,7 @@ export interface SnapSettings {
   gridInterval: TimeSeconds;
 }
 
-// ============================================================================
 // Playhead & Selection State (UI State, not persisted)
-// ============================================================================
 
 /**
  * Current playhead position and playback state.
@@ -321,9 +300,7 @@ export interface SelectionRect {
   endY: number;
 }
 
-// ============================================================================
 // Zoom & Scroll State (UI State)
-// ============================================================================
 
 /**
  * Timeline viewport state for zoom and scroll
@@ -343,9 +320,7 @@ export interface ViewportState {
   visibleEnd: TimeSeconds;
 }
 
-// ============================================================================
 // Speed Curves (Stretch Goal)
-// ============================================================================
 
 /**
  * Control point for speed curve bezier
@@ -387,9 +362,7 @@ export type SpeedCurvePreset =
   | "bounce"
   | "elastic";
 
-// ============================================================================
 // Factory Functions
-// ============================================================================
 
 let clipIdCounter = 0;
 let trackIdCounter = 0;

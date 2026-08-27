@@ -43,13 +43,9 @@ export interface PlaybackOptions {
   persistenceKey?: string;
 }
 
-/**
- * Create playback state for animation timing
- */
 export function createPlaybackState(options: PlaybackOptions = {}) {
   const storageKey = options.persistenceKey ?? DEFAULT_STORAGE_KEY;
 
-  // Load persisted state
   const persisted = loadPersistedState(storageKey);
 
   let isPlaying = $state(persisted?.isPlaying ?? false);

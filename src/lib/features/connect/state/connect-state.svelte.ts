@@ -49,7 +49,6 @@ class ConnectState {
 	private _errorClearTimer: ReturnType<typeof setTimeout> | null = null;
 	private _loadingTimer: ReturnType<typeof setTimeout> | null = null;
 
-	// ==================== Getters ====================
 
 	/** Whether in a sync session */
 	get isInSession(): boolean {
@@ -136,7 +135,6 @@ class ConnectState {
 		return this._currentUserId;
 	}
 
-	// ==================== Initialization ====================
 
 	/**
 	 * Initialize with orchestrator instance.

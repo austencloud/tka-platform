@@ -389,9 +389,7 @@ describe("shared-grid preflight", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // Regressions
-// ---------------------------------------------------------------------------
 
 describe("regression: the physical touch floor bounds the checkpoint shrink", () => {
   /**

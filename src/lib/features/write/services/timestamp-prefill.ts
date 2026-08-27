@@ -1,4 +1,3 @@
-// src/lib/features/write/services/timestamp-prefill.ts
 /**
  * Pure BPM → timestamp helpers for the annotated sheet's cue rail. A band's
  * timestamp is prefilled from its first step's beat index (1 step = 1 beat) at

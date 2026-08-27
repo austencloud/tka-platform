@@ -21,9 +21,7 @@ export class TimelineSnapper {
 
   constructor() {}
 
-  // =========================================================================
   // State Getters
-  // =========================================================================
 
   get activeSnapResult(): SnapResult | null {
     return this._activeSnapResult;
@@ -49,9 +47,7 @@ export class TimelineSnapper {
     return getTimelineState().project.snap.enabled;
   }
 
-  // =========================================================================
   // Snap Calculations
-  // =========================================================================
 
   snapTime(time: TimeSeconds, excludeClipIds: string[] = []): TimeSeconds {
     const context = this.buildContext(excludeClipIds);
@@ -74,9 +70,7 @@ export class TimelineSnapper {
     return calculateSnapPoints(context);
   }
 
-  // =========================================================================
   // Drag State Management
-  // =========================================================================
 
   startDrag(clipIds: string[]): void {
     this._draggingClipIds = clipIds;
@@ -92,18 +86,14 @@ export class TimelineSnapper {
     this._activeSnapResult = null;
   }
 
-  // =========================================================================
   // Settings
-  // =========================================================================
 
   toggleSnap(): void {
     const state = getTimelineState();
     state.updateSnapSettings({ enabled: !state.project.snap.enabled });
   }
 
-  // =========================================================================
   // Private Methods
-  // =========================================================================
 
   private buildContext(excludeClipIds: string[] = []): SnapContext {
     const state = getTimelineState();
@@ -118,9 +108,7 @@ export class TimelineSnapper {
   }
 }
 
-// ============================================================================
 // Singleton Instance
-// ============================================================================
 
 let serviceInstance: TimelineSnapper | null = null;
 

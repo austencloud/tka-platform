@@ -15,7 +15,6 @@ import { initFirestore } from "./lib/firestore-provider.js";
 
 const COLLECTION = "errorTelemetry";
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
 
 function timeAgo(date) {
   if (!date) return "unknown";

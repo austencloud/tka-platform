@@ -90,7 +90,6 @@
 
   const { renderer, camera } = useThrelte();
 
-  // ── Renderer/camera accessors ───────────────────────────────────────────
   //
   // Threlte's context types are honest about the difference: `renderer` is the
   // renderer itself, while `camera` is a CurrentWritable whose value lives on
@@ -134,7 +133,6 @@
     mouseOnCanvas = false;
   }
 
-  // ── Per-frame raycast + pulse — NO per-frame allocation ─────────────────
 
   const raycaster = new Raycaster();
   const ndc = new Vector2();

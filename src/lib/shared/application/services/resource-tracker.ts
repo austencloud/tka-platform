@@ -88,9 +88,6 @@ export class ResourceTracker {
     return [...this.usageHistory];
   }
 
-  /**
-   * Get memory usage estimate
-   */
   private getMemoryUsage(): number {
     // Estimate memory usage based on tracked resources
     let estimate = 0;

@@ -7,9 +7,6 @@
  * All durations are in milliseconds.
  */
 
-// ============================================================================
-// STALE THRESHOLDS
-// ============================================================================
 
 /**
  * Stale thresholds for claim management.
@@ -53,9 +50,6 @@ export const STALE_THRESHOLDS = {
  */
 export const STALE_CLAIM_MS = STALE_THRESHOLDS.ACTIVITY_TIMEOUT_MS;
 
-// ============================================================================
-// AGENT SESSION CONFIGURATION
-// ============================================================================
 
 /**
  * Agent session configuration for the identity system.
@@ -75,9 +69,6 @@ export const AGENT_SESSION_CONFIG = {
 
 export type AgentType = (typeof AGENT_SESSION_CONFIG.VALID_AGENT_TYPES)[number];
 
-// ============================================================================
-// EMERGENCY OVERRIDE CONFIGURATION
-// ============================================================================
 
 /**
  * Emergency override configuration for claim takeovers.
@@ -95,9 +86,6 @@ export const EMERGENCY_CONFIG = {
   REQUIRE_CONFIRMATION: true,
 } as const;
 
-// ============================================================================
-// WIP LIMITS
-// ============================================================================
 
 /**
  * Work-in-progress limits per status.
@@ -114,9 +102,6 @@ export const WIP_LIMITS = {
   completed: 0,
 } as const;
 
-// ============================================================================
-// CLAIM HEALTH TYPES
-// ============================================================================
 
 /**
  * Possible states of a claim's health
@@ -135,9 +120,6 @@ export type StaleReason =
   | 'exceeded-max-time' // Total claim time > 8 hours
   | 'no-activity'       // No heartbeat for > 45 minutes
 
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
 
 /**
  * Check if a claim is stale (abandonable by another agent)

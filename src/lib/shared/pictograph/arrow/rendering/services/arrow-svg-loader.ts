@@ -26,16 +26,12 @@ import { getArrowPath } from "./arrow-path-resolver";
 import { parseArrowSvg, extractSvgContent } from "./arrow-svg-parser";
 import { applyColorToSvg } from "./arrow-svg-color-transformer";
 
-// ============================================================================
-// HMR-AWARE MODULE-LEVEL CACHE STORAGE
-// ============================================================================
 // These module-level caches persist across HMR to prevent mass network requests
 // when code changes trigger module reloads. The ArrowSvgLoader singleton
 // uses these shared caches instead of instance properties.
 //
 // Without HMR persistence, every arrow on screen would refetch its SVG
 // after any file change, causing 1000+ network requests and 20+ second delays.
-// ============================================================================
 
 const hmrRawSvgCache: Map<string, string> =
   import.meta.hot?.data?.rawSvgCache ?? new Map();
@@ -125,7 +121,6 @@ export class ArrowSvgLoader {
     // Use explicit theme mode if provided, otherwise fall back to global state
     const themeMode = options?.themeMode ?? this.getCurrentThemeMode();
 
-    // Create cache key including color AND theme mode for transformed SVG cache
     const transformedCacheKey = `${path}:${motionData.color}:${themeMode}`;
 
     // 🚀 OPTIMIZATION: Check transformed cache first (fastest path)

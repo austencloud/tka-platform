@@ -16,9 +16,6 @@ import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUti
 import { ModelRegistry } from "../vegetation/services/model-registry";
 import type { VegetationCategory, ManifestBiome } from "../vegetation/domain/vegetation-categories";
 
-// ============================================================================
-// TYPES
-// ============================================================================
 
 export interface CachedModel {
   geometry: BufferGeometry;
@@ -31,9 +28,7 @@ export interface ModelDefinition {
   yOffset?: number;
 }
 
-// ============================================================================
 // LEGACY MODEL DEFINITIONS (for backward compatibility)
-// ============================================================================
 
 import { R2_CDN } from "../../constants/r2-cdn";
 

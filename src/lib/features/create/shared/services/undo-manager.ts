@@ -140,9 +140,6 @@ export class UndoManager {
     void this.loadHistory();
   }
 
-  // ============================================================================
-  // EVENT SYSTEM FOR REACTIVITY
-  // ============================================================================
 
   /**
    * Subscribe to changes in undo/redo state
@@ -160,9 +157,6 @@ export class UndoManager {
     this._changeCallbacks.forEach((callback) => callback());
   }
 
-  // ============================================================================
-  // PUBLIC GETTERS
-  // ============================================================================
 
   get maxHistorySize(): number {
     return this._maxHistorySize;
@@ -184,9 +178,6 @@ export class UndoManager {
     return this._redoHistory;
   }
 
-  // ============================================================================
-  // PUBLIC METHODS
-  // ============================================================================
 
   /**
    * Push a new action to the undo history
@@ -199,7 +190,6 @@ export class UndoManager {
     // Generate unique ID for this action
     const id = this.generateActionId();
 
-    // Create history entry
     const entry: UndoHistoryEntry = {
       id,
       type,
@@ -208,7 +198,6 @@ export class UndoManager {
       metadata: metadata ?? { description: "" },
     };
 
-    // Add to undo history
     this._undoHistory.push(entry);
 
     // Trim history if it exceeds max size
@@ -468,9 +457,6 @@ export class UndoManager {
     return OPERATION_DESCRIPTIONS[lastEntry.type] || "Last Action";
   }
 
-  /**
-   * Get description of last redoable action
-   */
   getLastRedoDescription(activeSection?: string | null): string | null {
     const lastEntry = this.getLastRedoEntry(activeSection);
     if (!lastEntry) {
@@ -496,13 +482,11 @@ export class UndoManager {
     }
 
     try {
-      // Load undo history
       const undoData = localStorage.getItem(UNDO_HISTORY_STORAGE_KEY);
       if (undoData) {
         this._undoHistory = JSON.parse(undoData);
       }
 
-      // Load redo history
       const redoData = localStorage.getItem(REDO_HISTORY_STORAGE_KEY);
       if (redoData) {
         this._redoHistory = JSON.parse(redoData);
@@ -572,9 +556,6 @@ export class UndoManager {
     return entry ? entry.afterState || null : null;
   }
 
-  // ============================================================================
-  // PRIVATE METHODS
-  // ============================================================================
 
   /**
    * Generate a unique action ID

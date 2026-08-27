@@ -51,7 +51,6 @@ export const myFeedbackDetailState = {
     return selectedItem !== null;
   },
 
-  // Get the persisted feedback ID from URL
   getPersistedFeedbackId(): string | null {
     return getURLParam();
   },

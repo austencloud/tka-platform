@@ -19,7 +19,6 @@ import velocityShaderSource from '../../../shaders/fish/boid-velocity.glsl?raw';
 import positionShaderSource from '../../../shaders/fish/boid-position.glsl?raw';
 import stateShaderSource from '../../../shaders/fish/boid-state.glsl?raw';
 
-// ── Public interfaces ──────────────────────────────────────────────────
 
 export interface FishFrameUniforms {
 	delta: number;
@@ -79,7 +78,6 @@ export interface FishComputeInitConfig {
 	groundY: number;
 }
 
-// ── Compute system creation ────────────────────────────────────────────
 
 export function createFishComputeSystem(
 	renderer: WebGLRenderer,
@@ -118,7 +116,6 @@ export function createFishComputeSystem(
 	const [hMin, hMax] = swimHeight;
 	const [sMin, sMax] = speed;
 
-	// ── Cluster centers per species ──
 	const clusterCenters: { x: number; y: number; z: number; angle: number }[] = [];
 	for (let s = 0; s < loadedSpecies.length; s++) {
 		const cAngle = (s / loadedSpecies.length) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
@@ -131,7 +128,6 @@ export function createFishComputeSystem(
 		});
 	}
 
-	// ── Fill position/velocity textures ──
 	let spawnOffset = 0;
 	for (let s = 0; s < loadedSpecies.length; s++) {
 		const { species: sp } = loadedSpecies[s]!;
@@ -171,7 +167,6 @@ export function createFishComputeSystem(
 		posArr[idx + 3] = 0;
 	}
 
-	// ── Traits texture ──
 	const traitsData = new Float32Array(texSize * texSize * 4);
 	let tOffset = 0;
 	for (let s = 0; s < loadedSpecies.length; s++) {
@@ -188,10 +183,8 @@ export function createFishComputeSystem(
 	const traitsTex = new DataTexture(traitsData, texSize, texSize, RGBAFormat, FloatType);
 	traitsTex.needsUpdate = true;
 
-	// ── Event system ──
 	const eventSystem = new FishEventSystem(spawnOffset, traitsData);
 
-	// ── GPU compute variables ──
 	const localPosVar = gpu.addVariable('texturePosition', positionShaderSource, posTex);
 	const localVelVar = gpu.addVariable('textureVelocity', velocityShaderSource, velTex);
 
@@ -209,7 +202,6 @@ export function createFishComputeSystem(
 	gpu.setVariableDependencies(localVelVar, [localPosVar, localVelVar, localStateVar]);
 	gpu.setVariableDependencies(localStateVar, [localStateVar, localPosVar, localVelVar]);
 
-	// ── Velocity uniforms ──
 	const schoolCenterVecs = clusterCenters.map((c) => new Vector3(c.x, c.y, c.z));
 	while (schoolCenterVecs.length < 50) schoolCenterVecs.push(new Vector3(0, 0, 0));
 
@@ -254,7 +246,6 @@ export function createFishComputeSystem(
 	velU.uSpawnStartIdx = { value: 0 };
 	velU.uSpawnVelocities = { value: new Float32Array(64 * 4) };
 
-	// ── Position uniforms ──
 	const posU = localPosVar.material.uniforms;
 	posU.uDelta = { value: 0 };
 	posU.uSpawnCount = { value: 0 };
@@ -269,7 +260,6 @@ export function createFishComputeSystem(
 	// air. Headroom above the band, then a hard stop.
 	posU.uCeilingY = { value: gy + hMax + 1.5 };
 
-	// ── State uniforms ──
 	const trophicRoles = new Int32Array(50);
 	for (let s = 0; s < loadedSpecies.length; s++) {
 		trophicRoles[s] = loadedSpecies[s]!.species.trophicRole;
@@ -294,7 +284,6 @@ export function createFishComputeSystem(
 	stU.uCameraRight = { value: new Vector3(1, 0, 0) };
 	stU.textureTraits = { value: traitsTex };
 
-	// ── Init ──
 	const err = gpu.init();
 	if (err !== null) {
 		console.error('[FishComputeSystem] GPUComputationRenderer init failed:', err);

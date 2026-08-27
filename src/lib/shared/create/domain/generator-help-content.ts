@@ -226,9 +226,6 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
   },
 ];
 
-/**
- * Get help content for a specific generator control
- */
 export function getGeneratorHelpContent(
   id: GeneratorHelpId
 ): GeneratorHelpItem | undefined {

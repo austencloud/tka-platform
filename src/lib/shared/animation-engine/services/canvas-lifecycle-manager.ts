@@ -103,7 +103,6 @@ export class CanvasLifecycleManager {
   private _containerElement: HTMLDivElement | null = null;
   private _initialCanvasSize = 0;
 
-  // ── Services loaded during init that the engine also reads post-init ────────
   private _animationRenderer: AnimationRenderer | null = null;
   private _svgGenerator: SVGGenerator | null = null;
   private _settingsService: SettingsState | null = null;
@@ -190,7 +189,6 @@ export class CanvasLifecycleManager {
     this._trailSettingsSyncService = new TrailSettingsSync();
     this._propTypeChangeService = new PropTypeChangerImpl();
 
-    // ── Provide private init closures ─────────────────────────────────────────
     // These are the bodies of the engine's former initialize*Service methods,
     // now as private manager methods called via the InitializerDependencies
     // contract that AnimatorCanvasInitializer expects.
@@ -419,7 +417,6 @@ export class CanvasLifecycleManager {
     erm.syncEffectLayers();
   }
 
-  // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   pauseResize(): void {
     this._resizer?.pauseObservation();

@@ -84,7 +84,6 @@ export function createCreateModuleState(
   const generatorFallbackState = createTabFallbackState();
   const assembleFallbackState = createTabFallbackState();
 
-  // Create option history manager
   const optionHistoryManager = createOptionHistoryManager({
     getSequence: () => sequenceState.currentSequence,
   });
@@ -165,9 +164,6 @@ export function createCreateModuleState(
     await persistenceController.initialize();
   }
 
-  /**
-   * Add option to history
-   */
   function addOptionToHistory(stepIndex: number, stepData: StepData) {
     optionHistoryManager.add(stepIndex, stepData);
   }
@@ -192,9 +188,6 @@ export function createCreateModuleState(
     return !hasStep && !hasStartPosition;
   }
 
-  /**
-   * Get current beat count
-   */
   function getCurrentBeatCount(): number {
     const activeSequenceState = getActiveTabSequenceState();
     return activeSequenceState.stepCount();

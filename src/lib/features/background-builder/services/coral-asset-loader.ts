@@ -15,9 +15,7 @@ import type {
 } from "../domain/coral-types";
 import { DEFAULT_CORAL_TINT_PALETTE } from "../domain/coral-types";
 
-// --------------------------------------------------------------------------
 // Static manifest - runtime can't list directories
-// --------------------------------------------------------------------------
 
 const CORAL_FILENAMES: string[] = [
   // fans (28)
@@ -39,9 +37,7 @@ const CORAL_FILENAMES: string[] = [
 
 const BASE_PATH = "/images/coral/curated";
 
-// --------------------------------------------------------------------------
 // Helpers
-// --------------------------------------------------------------------------
 
 function categoryFromFilename(filename: string): CoralCategory {
   if (filename.startsWith("fan_")) return "fan";

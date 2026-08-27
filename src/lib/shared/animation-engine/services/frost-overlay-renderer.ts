@@ -22,7 +22,6 @@ export class FrostOverlayRenderer extends EffectRenderer {
   }
 }
 
-// ── EffectPlugin descriptor ──────────────────────────────────────────────────
 import type { EffectPlugin } from "./effects/effect-plugin";
 import type { FrostIntent } from "$lib/shared/effects/domain/effects-config";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
