@@ -5,8 +5,9 @@ import type { EffectsConfig } from "$lib/shared/effects/domain/effects-config";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
 import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+import type { TunnelPresetRecipe } from "./tunnel-preset-recipe";
 
-export const SNAPSHOT_VERSION = 1;
+export const SNAPSHOT_VERSION = 2;
 
 type TunnelSection = TunnelViewState["section"];
 type PathShape = "arc" | "linear" | "concave";
@@ -20,6 +21,9 @@ export interface TunnelSnapshot {
     gridVisible: boolean;
     spectrum: boolean;
     section: TunnelSection;
+    /** Preserves which recipe the author started from without treating generated
+     * copies as authored choreography. Null is honest for old/custom work. */
+    presetRecipe: TunnelPresetRecipe | null;
   };
   effects: EffectsConfig;
   effort: EffortId;
@@ -57,6 +61,7 @@ export const TunnelSnapshotSchema = z.object({
       "effort",
       "playback",
     ]),
+    presetRecipe: z.any().optional(),
   }),
   effects: z.any(),
   effort: z.string(),
@@ -136,6 +141,7 @@ export function captureTunnelSnapshot(deps: SnapshotDeps): TunnelSnapshot {
       gridVisible: controller.gridVisible,
       spectrum: controller.spectrum,
       section: controller.section,
+      presetRecipe: controller.presetRecipe,
     },
     effects: clone(effects.config),
     effort: visibility.getEffortPreset(),
@@ -171,7 +177,7 @@ export function applyTunnelSnapshot(
 
   // Tunnel topology + chrome (applyConfig clamps to the live budget; grid/spectrum/
   // section are public $state fields on the controller).
-  controller.applyConfig(snap.tunnel.config);
+  controller.applyConfig(snap.tunnel.config, snap.tunnel.presetRecipe ?? null);
   controller.gridVisible = snap.tunnel.gridVisible;
   controller.spectrum = snap.tunnel.spectrum;
   controller.section = snap.tunnel.section;
@@ -204,4 +210,20 @@ export function applyTunnelSnapshot(
       ? { redBuugengFlipped: snap.props.redBuugengFlipped }
       : {}),
   });
+}
+
+/** Converts the one earlier snapshot shape without claiming it had a preset
+ * recipe. The performed configuration is copied verbatim. */
+export function migrateTunnelSnapshot(snapshot: TunnelSnapshot): TunnelSnapshot {
+  if (snapshot.version >= SNAPSHOT_VERSION && "presetRecipe" in snapshot.tunnel) {
+    return snapshot;
+  }
+  return {
+    ...snapshot,
+    version: SNAPSHOT_VERSION,
+    tunnel: {
+      ...snapshot.tunnel,
+      presetRecipe: null,
+    },
+  };
 }

@@ -13,6 +13,7 @@
     performer,
     displaySequence = null,
     stageTransformLabel = null,
+    formationCopy = false,
     label,
     linked = false,
     disabled = false,
@@ -29,6 +30,9 @@
     performer: TunnelPerformer | null;
     displaySequence?: SequenceData | null;
     stageTransformLabel?: string | null;
+    /** A reconstructed legacy arm: visible for performed-result inspection,
+     * but absent from the authored composition until the user edits it. */
+    formationCopy?: boolean;
     label: string;
     linked?: boolean;
     disabled?: boolean;
@@ -93,6 +97,9 @@
             {/if}{#if linked && stageTransformLabel}
               · On stage: {stageTransformLabel}
             {/if}
+            {#if formationCopy}
+              · Formation copy (not authored)
+            {/if}
           {:else if linked}
             Follows the Performer 1 sequence
           {:else}
@@ -106,10 +113,10 @@
       <PanelButton
         variant="secondary"
         onclick={onEditPairing}
-        ariaLabel={`Edit pairing: ${sourceLabel}`}
+        ariaLabel={`${formationCopy ? "Author" : "Edit"} pairing: ${sourceLabel}`}
       >
         <i class="fas fa-link" aria-hidden="true"></i>
-        Edit pairing
+        {formationCopy ? "Author pairing" : "Edit pairing"}
         <i class="fas fa-pen-to-square" aria-hidden="true"></i>
       </PanelButton>
     {:else if !linked && ownSequence}

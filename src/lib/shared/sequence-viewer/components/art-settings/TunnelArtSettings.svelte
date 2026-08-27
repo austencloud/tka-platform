@@ -193,6 +193,8 @@
       {onSaveTunnel}
       {saveTunnelLabel}
       {onArtSettingChange}
+      {bpm}
+      {playbackMode}
     />
   {:else if id === "props"}
     <!-- Prop selection — the same BentoPropGrid the 2D Download panel uses. The

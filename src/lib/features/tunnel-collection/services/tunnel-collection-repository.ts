@@ -1,4 +1,4 @@
-import { doc, serverTimestamp, writeBatch } from "firebase/firestore";
+import { doc, serverTimestamp, updateDoc, writeBatch } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { stripUndefined } from "$lib/shared/firestore/firestore-helpers";
 import {
@@ -13,6 +13,7 @@ import {
   createTunnelRevision,
   prepareTunnelRevision,
 } from "../domain/tunnel-revision";
+import { migrateTunnelArtifact } from "../domain/tunnel-artifact-migration";
 
 const TUNNEL_COLLECTION = "tunnel-collection";
 
@@ -35,8 +36,20 @@ export function createTunnelCollectionRepository(): FirebaseCollectionRepository
     async load(userId) {
       const loaded = await base.load(userId);
       return Promise.all(
-        loaded.map(async (tunnel) => {
+        loaded.map(async (loadedTunnel) => {
+          const migration = migrateTunnelArtifact(loadedTunnel);
+          const tunnel = migration.tunnel;
           if (tunnel.currentRevisionId && tunnel.currentContentDigest) {
+            // Envelope migration changes only representation metadata. The
+            // immutable revision stays untouched, and a failed metadata write
+            // never prevents a truthful old record from opening.
+            if (migration.changed) {
+              try {
+                await repository.savePresentation!(userId, tunnel);
+              } catch {
+                // The in-memory migrated record is still safe to read.
+              }
+            }
             return tunnel;
           }
           const baselined = await prepareTunnelRevision(tunnel);
@@ -46,7 +59,7 @@ export function createTunnelCollectionRepository(): FirebaseCollectionRepository
       );
     },
 
-    async save(userId, entry) {
+      async save(userId, entry) {
       const prepared =
         entry.currentRevisionId && entry.currentContentDigest
           ? entry
@@ -75,10 +88,23 @@ export function createTunnelCollectionRepository(): FirebaseCollectionRepository
         stripUndefined({ ...work, updatedAt: serverTimestamp() })
       );
       batch.set(revisionRef, stripUndefined({ ...revision }));
-      await batch.commit();
-    },
+        await batch.commit();
+      },
 
-    remove: base.remove,
+      async savePresentation(userId, entry) {
+        const firestore = await getFirestoreInstance();
+        await updateDoc(
+          doc(firestore, tunnelPath(userId, entry.id)),
+          stripUndefined({
+            artifactSchemaVersion: entry.artifactSchemaVersion,
+            poster: entry.poster,
+            posterRenderVersion: entry.posterRenderVersion,
+            updatedAt: serverTimestamp(),
+          })
+        );
+      },
+
+      remove: base.remove,
   };
 
   return repository;

@@ -5,6 +5,10 @@ import {
   resolveSpeedOverrides,
   type TunnelConfig,
 } from "./tunnel-config";
+import {
+  cloneTunnelPresetRecipe,
+  type TunnelPresetRecipe,
+} from "./tunnel-preset-recipe";
 
 /**
  * Persisted tunnel-view config + chrome (the state the user last left the
@@ -19,6 +23,7 @@ export interface TunnelViewState {
   spectrum: boolean;
   /** Active rail section in the Art settings panel. */
   section: "tunnel" | "props" | "speed" | "effects" | "effort" | "playback";
+  presetRecipe: TunnelPresetRecipe | null;
 }
 
 const STORAGE_KEY = "tka_tunnel_view_state";
@@ -28,6 +33,7 @@ const DEFAULTS: TunnelViewState = {
   gridVisible: false,
   spectrum: true,
   section: "tunnel",
+  presetRecipe: null,
 };
 
 const bool = (v: unknown, fallback: boolean): boolean =>
@@ -120,10 +126,33 @@ export function loadTunnelViewState(): TunnelViewState {
       gridVisible: bool(p.gridVisible, DEFAULTS.gridVisible),
       spectrum: bool(p.spectrum, DEFAULTS.spectrum),
       section,
+      // Older view state only had the live config. Preserve that uncertainty;
+      // a matching built-in value is not evidence that it came from that recipe.
+      presetRecipe: parsePresetRecipe(p.presetRecipe),
     };
   } catch {
     return { ...DEFAULTS, config: { ...DEFAULT_CONFIG } };
   }
+}
+
+function parsePresetRecipe(value: unknown): TunnelPresetRecipe | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Partial<TunnelPresetRecipe>;
+  if (
+    (candidate.kind !== "built-in" && candidate.kind !== "saved") ||
+    typeof candidate.id !== "string" ||
+    typeof candidate.name !== "string" ||
+    !candidate.config
+  ) {
+    return null;
+  }
+  const config = resolveConfig({ config: candidate.config });
+  return cloneTunnelPresetRecipe({
+    kind: candidate.kind,
+    id: candidate.id,
+    name: candidate.name,
+    config,
+  });
 }
 
 export function saveTunnelViewState(state: TunnelViewState): void {

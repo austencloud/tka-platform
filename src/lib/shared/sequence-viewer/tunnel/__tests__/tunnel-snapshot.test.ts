@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { TunnelSnapshotSchema, SNAPSHOT_VERSION } from "../tunnel-snapshot";
+import { TunnelSnapshotSchema, SNAPSHOT_VERSION, migrateTunnelSnapshot } from "../tunnel-snapshot";
 import {
   captureTunnelSnapshot,
   applyTunnelSnapshot,
@@ -15,6 +15,7 @@ const validSnapshot = {
     gridVisible: false,
     spectrum: true,
     section: "tunnel",
+    presetRecipe: null,
   },
   effects: { activeEffect: "none" },
   effort: "linear",
@@ -53,6 +54,7 @@ function fakeDeps(): SnapshotDeps {
       gridVisible: true,
       spectrum: false,
       section: "effects",
+      presetRecipe: null,
       applyConfig() {},
     } as unknown as SnapshotDeps["controller"],
     effects: {
@@ -112,6 +114,7 @@ describe("captureTunnelSnapshot", () => {
       gridVisible: true,
       spectrum: false,
       section: "effects",
+      presetRecipe: null,
     });
     expect(snap.effort).toBe("punch");
     expect(snap.paths).toEqual({
@@ -152,6 +155,7 @@ describe("applyTunnelSnapshot", () => {
       gridVisible: false,
       spectrum: true,
       section: "tunnel",
+      presetRecipe: null,
       effort: "linear",
       pathShape: "arc",
       motionAware: false,
@@ -188,6 +192,12 @@ describe("applyTunnelSnapshot", () => {
         },
         set section(v) {
           store.section = v;
+        },
+        get presetRecipe() {
+          return store.presetRecipe;
+        },
+        set presetRecipe(v) {
+          store.presetRecipe = v;
         },
         applyConfig: vi.fn((c) => {
           store.config = c;
@@ -267,6 +277,7 @@ describe("applyTunnelSnapshot", () => {
         gridVisible: true,
         spectrum: false,
         section: "effort",
+        presetRecipe: null,
       },
       effects: { activeEffect: "fire" } as never,
       effort: "punch",
@@ -289,10 +300,25 @@ describe("applyTunnelSnapshot", () => {
     applyTunnelSnapshot(deps, target);
 
     expect(captureTunnelSnapshot(deps)).toEqual(target);
-    expect(deps.controller.applyConfig).toHaveBeenCalledWith(
-      target.tunnel.config
-    );
+    expect(deps.controller.applyConfig).toHaveBeenCalledWith(target.tunnel.config, null);
     expect(deps.effects.replace).toHaveBeenCalledWith(target.effects);
     expect(deps.playback.handleBpmChange).toHaveBeenCalledWith(120);
+  });
+});
+
+describe("migrateTunnelSnapshot", () => {
+  it("keeps a legacy performed config intact and records unknown recipe provenance", () => {
+    const legacy = {
+      ...validSnapshot,
+      version: 1,
+      tunnel: { ...validSnapshot.tunnel },
+    } as unknown as TunnelSnapshot;
+    delete (legacy.tunnel as { presetRecipe?: unknown }).presetRecipe;
+
+    const migrated = migrateTunnelSnapshot(legacy);
+
+    expect(migrated.version).toBe(SNAPSHOT_VERSION);
+    expect(migrated.tunnel.config).toEqual(legacy.tunnel.config);
+    expect(migrated.tunnel.presetRecipe).toBeNull();
   });
 });

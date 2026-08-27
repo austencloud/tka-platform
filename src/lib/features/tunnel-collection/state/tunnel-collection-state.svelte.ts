@@ -6,6 +6,7 @@ import {
 } from "../domain/tunnel-collection-types";
 import type { CollectedTunnel } from "../domain/tunnel-collection-types";
 import { prepareTunnelRevision } from "../domain/tunnel-revision";
+import { migrateTunnelArtifact } from "../domain/tunnel-artifact-migration";
 import { createTunnelCollectionRepository } from "../services/tunnel-collection-repository";
 
 export const tunnelCollectionState = new CollectionState<CollectedTunnel>(
@@ -15,7 +16,8 @@ export const tunnelCollectionState = new CollectionState<CollectedTunnel>(
     TUNNEL_COLLECTION_SCHEMA_VERSION
   ),
   {
-    prepareAdd: (entry) => prepareTunnelRevision(entry),
-    prepareUpdate: (previous, next) => prepareTunnelRevision(next, previous),
+    prepareAdd: (entry) => prepareTunnelRevision(migrateTunnelArtifact(entry).tunnel),
+    prepareUpdate: (previous, next) =>
+      prepareTunnelRevision(migrateTunnelArtifact(next).tunnel, previous),
   }
 );

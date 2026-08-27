@@ -393,6 +393,7 @@
         bind:this={performerTwoCard}
         performer={creator.partner}
         displaySequence={performerTwoDisplaySequence}
+        formationCopy={creator.partnerIsFormationCopy}
         stageTransformLabel={creator.mode === "linked"
           ? performerTwoStageTransform
           : null}

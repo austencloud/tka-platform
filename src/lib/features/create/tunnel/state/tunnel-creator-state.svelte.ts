@@ -510,6 +510,12 @@ export function createTunnelCreatorState(
     get partner() {
       return currentPartner();
     },
+    /** The visible linked partner reconstructs a legacy formation arm. It is
+     * useful for inspecting the performed result, but remains un-authored
+     * until pairing or timing is deliberately changed. */
+    get partnerIsFormationCopy() {
+      return linkedPartnerIsSynthetic;
+    },
     get leadSequence() {
       const lead = currentLead();
       return lead?.source.kind === "independent" ? lead.source.sequence : null;

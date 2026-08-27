@@ -54,6 +54,11 @@
     type TunnelEditEntry,
   } from "$lib/shared/analytics/browse-events";
   import { currentTunnelRevisionRef } from "./domain/tunnel-revision";
+  import { needsTunnelPosterRefresh } from "./domain/tunnel-artifact-migration";
+  import {
+    refreshTunnelPoster,
+    type TunnelPosterRefreshResult,
+  } from "./services/tunnel-poster-refresh";
 
   type Phase = "gallery" | "detail";
   let phase = $state<Phase>("gallery");
@@ -68,6 +73,9 @@
   let backBtnEl = $state<HTMLButtonElement | null>(null);
   let lastCardId: string | null = null;
   let announce = $state("");
+  let posterRefresh = $state<"idle" | "refreshing" | "unavailable" | "failed">(
+    "idle"
+  );
 
   // ── Delete confirmation (two-tap, auto-reset like MandalaModule) ──
   let confirmingDelete = $state<string | null>(null);
@@ -142,9 +150,28 @@
     renamingId = null;
     phase = "detail";
     void loadVideos(t);
+    if (needsTunnelPosterRefresh(t)) void refreshPoster(t, false);
     announce = `Opened ${t.name}`;
     await tick();
     backBtnEl?.focus();
+  }
+
+  async function refreshPoster(
+    tunnel: CollectedTunnel,
+    announceFailure: boolean
+  ): Promise<void> {
+    if (posterRefresh === "refreshing") return;
+    posterRefresh = "refreshing";
+    const result: TunnelPosterRefreshResult = await refreshTunnelPoster(tunnel);
+    const latest = items.find((item) => item.id === tunnel.id);
+    if (latest && selected?.id === tunnel.id) selected = latest;
+    posterRefresh =
+      result === "refreshed" || result === "already-current"
+        ? "idle"
+        : result;
+    if (announceFailure && (result === "failed" || result === "unavailable")) {
+      toast.error("Couldn’t refresh the tunnel poster. Your choreography is safe.");
+    }
   }
 
   async function back() {
@@ -155,6 +182,7 @@
     uploadOpen = false;
     tunnelVideos = [];
     videosError = "";
+    posterRefresh = "idle";
     videoRequest += 1;
     clearTimeout(deleteTimer);
     announce = "Back to tunnel gallery";
@@ -473,6 +501,28 @@
               {/if}
             </div>
             <span class="detail-date">{dateLabel}</span>
+            {#if needsTunnelPosterRefresh(selected)}
+              <div class="poster-status" aria-live="polite">
+                {#if posterRefresh === "refreshing"}
+                  <PanelSpinner size={7} />
+                  <span>Refreshing poster…</span>
+                {:else}
+                  <span>
+                    {posterRefresh === "unavailable"
+                      ? "Poster refresh is unavailable."
+                      : posterRefresh === "failed"
+                        ? "Poster refresh failed."
+                        : "Poster needs a current render."}
+                  </span>
+                  {#if !tunnelCollectionState.isReadOnlyPreview}
+                    <button
+                      type="button"
+                      onclick={() => void refreshPoster(selected!, true)}
+                    >Refresh</button>
+                  {/if}
+                {/if}
+              </div>
+            {/if}
           </div>
 
           <div class="meta-chips">
@@ -677,6 +727,24 @@
     height: 100%;
     overflow-y: auto;
     padding: 32px;
+  }
+
+  .poster-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: var(--min-touch-target, 44px);
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+  }
+  .poster-status button {
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.25rem 0.65rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.16));
+    border-radius: 0.5rem;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    color: var(--theme-text, #fff);
+    cursor: pointer;
   }
 
   .gallery-head {

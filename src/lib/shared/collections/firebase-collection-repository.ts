@@ -13,6 +13,10 @@ export interface FirebaseCollectionRepository<T extends CollectionEntry> {
   load(userId: string): Promise<T[]>;
   save(userId: string, entry: T): Promise<void>;
   remove(userId: string, entryId: string): Promise<void>;
+  /** Persist regenerated presentation material without changing the artifact's
+   * authored-content lifecycle. Only repositories that can enforce this may
+   * implement it. */
+  savePresentation?(userId: string, entry: T): Promise<void>;
 }
 
 /**

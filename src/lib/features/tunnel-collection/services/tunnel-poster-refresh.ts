@@ -1,6 +1,13 @@
 import { tunnelCollectionState } from "../state/tunnel-collection-state.svelte";
 import { renderTunnelPoster } from "./tunnel-discovery-poster";
 import type { CollectedTunnel } from "../domain/tunnel-collection-types";
+import { needsTunnelPosterRefresh } from "../domain/tunnel-artifact-migration";
+
+export type TunnelPosterRefreshResult =
+  | "refreshed"
+  | "already-current"
+  | "unavailable"
+  | "failed";
 
 /**
  * Replace a saved tunnel's thumbnail with the canonical poster.
@@ -12,21 +19,24 @@ import type { CollectedTunnel } from "../domain/tunnel-collection-types";
  * after it, off the critical path: the record lands immediately, and the
  * picture in the collection grid corrects itself a few seconds later.
  *
- * Deliberately quiet. A failed refresh leaves the fast frame in place, which is
- * exactly what the collection had before this existed; there is nothing for the
- * person who pressed Save to do about it, so there is nothing to tell them.
+ * The write uses the collection's presentation path, never its normal update
+ * path. A poster is regenerated material, so it must not mint or replace an
+ * immutable choreography revision.
  */
 export async function refreshTunnelPoster(
   tunnel: CollectedTunnel
-): Promise<void> {
+): Promise<TunnelPosterRefreshResult> {
+  if (!needsTunnelPosterRefresh(tunnel)) return "already-current";
   try {
     const poster = await renderTunnelPoster(tunnel);
     // An empty render means the offscreen stage never drew — keep what we have.
-    // An identical one means the fast frame was already canonical; writing it
-    // back would mint a revision that changes nothing.
-    if (!poster || poster === tunnel.poster) return;
-    await tunnelCollectionState.update(tunnel.id, { poster });
+    if (!poster) return "unavailable";
+    const saved = await tunnelCollectionState.updatePresentation(tunnel.id, {
+      poster,
+      posterRenderVersion: 1,
+    });
+    return saved ? "refreshed" : "failed";
   } catch {
-    // Left as-is on purpose: see above.
+    return "failed";
   }
 }

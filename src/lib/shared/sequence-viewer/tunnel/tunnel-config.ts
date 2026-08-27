@@ -286,6 +286,12 @@ export function configsEqual(a: TunnelConfig, b: TunnelConfig): boolean {
   );
 }
 
+/** Copy a config at a persistence boundary so later controller edits cannot
+ * mutate the recipe a saved tunnel says it began from. */
+export function cloneTunnelConfig(config: TunnelConfig): TunnelConfig {
+  return { ...config, speedOverrides: { ...config.speedOverrides } };
+}
+
 /** Coerce a persisted value into a valid per-arm override map (arm 0 = base "you",
  *  1..n = copies → ladder rates only). Always returns a fresh object. */
 export function coerceSpeedOverrides(v: unknown): Record<number, number> {

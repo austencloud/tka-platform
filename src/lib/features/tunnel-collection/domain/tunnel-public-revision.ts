@@ -70,6 +70,20 @@ export interface TunnelPublicRevision extends ArtifactRevisionRef {
 }
 
 /**
+ * A saved personal preset is private library provenance, not public artifact
+ * provenance. The rendered configuration is already fully captured in
+ * `tunnel.config`; retain built-in recipe names but remove saved-recipe IDs and
+ * names at the public boundary.
+ */
+function sanitizeTunnelSnapshot(snapshot: CollectedTunnel["snapshot"]) {
+  if (snapshot.tunnel.presetRecipe?.kind !== "saved") return snapshot;
+  return {
+    ...snapshot,
+    tunnel: { ...snapshot.tunnel, presetRecipe: null },
+  };
+}
+
+/**
  * Rebuilds the composition field-by-field so nothing rides along that the
  * whitelist did not name. Independent sources keep only the choreography
  * (name, word, steps) under a positional `src-<n>` placeholder; derived
@@ -121,7 +135,7 @@ export function tunnelPublicPayload(
 ): TunnelPublicPayload {
   return {
     steps: tunnel.steps,
-    snapshot: tunnel.snapshot,
+    snapshot: sanitizeTunnelSnapshot(tunnel.snapshot),
     poster: tunnel.poster,
     ...(tunnel.sourceWord !== undefined && { sourceWord: tunnel.sourceWord }),
     ...(tunnel.composition !== undefined && {
