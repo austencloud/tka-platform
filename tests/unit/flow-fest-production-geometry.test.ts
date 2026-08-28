@@ -125,12 +125,13 @@ describe("Flow Fest production dressing", () => {
     expect(first.counts.interpretedTrees).toBeGreaterThan(250);
     expect(first.counts.interpretedTrees).toBeLessThan(2500);
     expect(first.counts.routeLanterns).toBeGreaterThan(20);
-    expect(first.counts.sitePathSurfaces).toBe(7);
+    expect(first.counts.sitePathSurfaces).toBe(8);
     expect(first.counts.wayfindingMarkers).toBe(3);
     expect(first.counts.entranceLandmarks).toBe(13);
     expect(first.orientationAudit).toEqual({
       publicRoadSurfaceCount: 1,
-      internalDriveSurfaceCount: 4,
+      internalDriveSurfaceCount: 5,
+      lowerCampgroundLoopSurfaceCount: 1,
       tracedConnectorSurfaceCount: 2,
       landmarkMarkerCount: 3,
       officialRoadFeatureObjectId: 3019609,
@@ -148,6 +149,9 @@ describe("Flow Fest production dressing", () => {
     expect(first.spatialAudit.minimumTentCenterDistance).toBeGreaterThanOrEqual(
       3.1
     );
+    expect(first.spatialAudit.lowerTentPerimeterCount).toBe(8);
+    expect(first.spatialAudit.lowerTentMinimumLoopDistance).toBeGreaterThan(6);
+    expect(first.spatialAudit.lowerTentMaximumLoopDistance).toBeLessThan(8);
     expect(
       first.spatialAudit.minimumVehicleCenterDistance
     ).toBeGreaterThanOrEqual(5.2);
@@ -201,6 +205,21 @@ describe("Flow Fest production dressing", () => {
     expect(
       first.root.getObjectByName("FFS_CanonicalSitePaths_PlanAligned")
     ).toBeTruthy();
+    const lowerLoop = first.root.getObjectByName(
+      "FFS_PrivateDrive_lower-campground-loop_OrthophotoInterpreted"
+    ) as Mesh;
+    expect(lowerLoop.userData).toMatchObject({
+      evidence: "public-orthophoto",
+    });
+    expect(lowerLoop.geometry.getAttribute("position").count).toBeGreaterThan(
+      4_000
+    );
+    expect(first.groundSurface.audit).toMatchObject({
+      sourceRouteCount: 8,
+    });
+    expect(first.groundSurface.audit.lowerLoopPaintedPixels).toBeGreaterThan(
+      300
+    );
     const publicRoad = first.root.getObjectByName(
       "FFS_PublicRoad_odot-camden-college-corner-road_ODOT"
     ) as Mesh;

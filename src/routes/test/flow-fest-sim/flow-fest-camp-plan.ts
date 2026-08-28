@@ -25,10 +25,7 @@ export type FlowFestCampPlanLandmarkKind =
   | "camp";
 
 export type FlowFestCampPlanRegionKind =
-  | "clearing"
-  | "parking-field"
-  | "crop-field"
-  | "woodland";
+  "clearing" | "parking-field" | "crop-field" | "woodland";
 
 export interface FlowFestCampPlanLine {
   id: string;
@@ -93,6 +90,47 @@ export interface FlowFestCampPlan {
   selectedCampZoneId: string;
 }
 
+export function allFlowFestCampPlanLines(
+  plan: FlowFestCampPlan
+): FlowFestCampPlanLine[] {
+  return [...plan.publicRoads, ...plan.internalDrives, ...plan.footConnectors];
+}
+
+export function flowFestCampPlanLineToRuntimeSegment(
+  line: FlowFestCampPlanLine
+): FlowFestRuntimeSegment {
+  return {
+    id: line.id,
+    mode: line.kind === "foot-connector" ? "person" : "vehicle",
+    widthMeters: line.widthMeters,
+    lengthMeters: line.points.reduce((length, point, index) => {
+      const previous = line.points[index - 1];
+      return previous
+        ? length + Math.hypot(point.x - previous.x, point.z - previous.z)
+        : length;
+    }, 0),
+    sourceClasses: [line.evidence],
+    pathClass: line.kind,
+    points: line.points.map((point) => ({
+      x: point.x,
+      z: point.z,
+      sourceTerrainY: 0,
+      reviewTerrainY: 0,
+    })),
+  };
+}
+
+export const FLOW_FEST_GROUND_COORDINATE_FRAME = Object.freeze({
+  width: 2048,
+  height: 2048,
+  pixelSizeMeters: 0.5,
+  worldMinX: -512,
+  worldMinZ: -512,
+  sourcePath: "static/data/flow-fest-sim/ortho.webp",
+  sourceSha256:
+    "abbf63d78d4d4cc29f3df591e2c19687cba8ce63811748008a8bc6235e18fd2f",
+});
+
 export const FLOW_FEST_PUBLIC_ROAD_SOURCE = Object.freeze({
   agency: "Ohio Department of Transportation",
   dataset: "TIMS Road Inventory",
@@ -116,7 +154,61 @@ export const FLOW_FEST_ORTHOPHOTO_SOURCE = Object.freeze({
   serviceUrl:
     "https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPPlus/ImageServer",
   rights: "USGS and USDA NAIP; public domain",
+  runtimeRaster: FLOW_FEST_GROUND_COORDINATE_FRAME,
 });
+
+/**
+ * The lower campground road is one continuous loop in the registered NAIP
+ * image. These centerline samples follow the visible pale vehicle track; they
+ * are an imagery interpretation, not a survey of either road edge.
+ */
+export const FLOW_FEST_LOWER_CAMPGROUND_LOOP_NAIP_PIXELS = Object.freeze([
+  { x: 1647, y: 820 },
+  { x: 1655, y: 790 },
+  { x: 1664, y: 750 },
+  { x: 1665, y: 730 },
+  { x: 1655, y: 710 },
+  { x: 1640, y: 695 },
+  { x: 1618, y: 680 },
+  { x: 1585, y: 670 },
+  { x: 1550, y: 662 },
+  { x: 1535, y: 665 },
+  { x: 1515, y: 695 },
+  { x: 1505, y: 730 },
+  { x: 1493, y: 770 },
+  { x: 1485, y: 805 },
+  { x: 1490, y: 835 },
+  { x: 1525, y: 845 },
+  { x: 1570, y: 854 },
+  { x: 1607, y: 860 },
+  { x: 1625, y: 855 },
+  { x: 1638, y: 842 },
+  { x: 1647, y: 820 },
+]);
+
+export const FLOW_FEST_LOWER_CAMPGROUND_LOOP = Object.freeze(
+  FLOW_FEST_LOWER_CAMPGROUND_LOOP_NAIP_PIXELS.map(flowFestNaipPixelToWorld)
+);
+
+export function flowFestNaipPixelToWorld(point: {
+  x: number;
+  y: number;
+}): Pick<FlowFestRuntimePoint, "x" | "z"> {
+  return {
+    x: Number(
+      (
+        FLOW_FEST_GROUND_COORDINATE_FRAME.worldMinX +
+        point.x * FLOW_FEST_GROUND_COORDINATE_FRAME.pixelSizeMeters
+      ).toFixed(1)
+    ),
+    z: Number(
+      (
+        FLOW_FEST_GROUND_COORDINATE_FRAME.worldMinZ +
+        point.y * FLOW_FEST_GROUND_COORDINATE_FRAME.pixelSizeMeters
+      ).toFixed(1)
+    ),
+  };
+}
 
 /**
  * The official ODOT centerline clipped to the registered terrain frame.
@@ -231,7 +323,7 @@ function toZone(zone: FlowFestRuntimeZone): FlowFestCampPlanZone {
 function buildInternalDrives(
   contract: FlowFestRuntimeContract
 ): FlowFestCampPlanLine[] {
-  const lowerAccess = requiredSegment(contract, "lower-tent-unload");
+  requiredSegment(contract, "lower-tent-unload");
   return [
     {
       id: "camp-road-entrance-to-check-in",
@@ -253,9 +345,23 @@ function buildInternalDrives(
       evidence: "imagery-interpreted",
       kind: "internal-drive",
       widthMeters: 3.6,
-      points: lowerAccess.points,
+      points: [
+        FLOW_FEST_LOWER_CHECK_IN,
+        { x: 306, z: -106 },
+        FLOW_FEST_LOWER_CAMPGROUND_LOOP[0]!,
+      ],
       sourceNote:
-        "Registered from the public-domain orthophoto; surface width and gate hardware remain field-unverified.",
+        "The short check-in connector is registered to the visible lower-loop junction in the 2023 public-domain orthophoto; surface width and gate hardware remain field-unverified.",
+    },
+    {
+      id: "lower-campground-loop",
+      label: "Lower campground loop",
+      evidence: "public-orthophoto",
+      kind: "internal-drive",
+      widthMeters: 3.8,
+      points: [...FLOW_FEST_LOWER_CAMPGROUND_LOOP],
+      sourceNote:
+        "Centerline sampled from the continuous pale vehicle loop visible in the registered 2023 public-domain NAIP orthophoto. The exact road edges and surface condition remain field-unverified.",
     },
     {
       id: "west-road-to-upper-clearing",

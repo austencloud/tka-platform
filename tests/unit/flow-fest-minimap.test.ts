@@ -159,12 +159,15 @@ describe("Flow Fest minimap", () => {
 
     expect(plan.publicRoads).toHaveLength(1);
     expect(plan.publicRoads[0]?.evidence).toBe("official-road-inventory");
-    expect(plan.internalDrives).toHaveLength(4);
+    expect(plan.internalDrives).toHaveLength(5);
     expect(
       plan.internalDrives.every(
-        (line) => line.evidence === "imagery-interpreted"
+        (line) => line.evidence !== "official-road-inventory"
       )
     ).toBe(true);
+    expect(
+      plan.internalDrives.find((line) => line.id === "lower-campground-loop")
+    ).toMatchObject({ evidence: "public-orthophoto" });
     expect(
       plan.footConnectors.every((line) => line.evidence === "austen-traced")
     ).toBe(true);

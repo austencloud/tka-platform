@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { useThrelte } from "@threlte/core";
+  import { useTask, useThrelte } from "@threlte/core";
   import { onMount } from "svelte";
   import {
     RepeatWrapping,
     NoColorSpace,
     SRGBColorSpace,
     TextureLoader,
+    Vector2,
     type Mesh,
     type MeshStandardMaterial,
     type Object3D,
@@ -25,6 +26,22 @@
     strength?: number;
     normalResponse?: number;
     roughnessFloor?: number;
+    absoluteColorStrength?: number;
+    primaryScale?: number;
+    secondaryScale?: number;
+    familyMaskTexture?: Texture | null;
+    familyMaskPath?: string | null;
+    maskOrigin?: readonly [number, number];
+    maskSize?: readonly [number, number];
+    worldAxisSign?: readonly [number, number];
+    targetObjectNamePrefixes?: readonly string[];
+    materialFamilyOverride?: ForestGroundDetailFamily | null;
+    watchSceneGraph?: boolean;
+    includeAncestorScene?: boolean;
+    onApplied?: (details: {
+      patchedMaterials: number;
+      objectNames: string[];
+    }) => void;
   }
 
   let {
@@ -32,12 +49,56 @@
     strength = 0.9,
     normalResponse = 0.3,
     roughnessFloor = 0.98,
+    absoluteColorStrength = 0,
+    primaryScale = 2.8,
+    secondaryScale = 7.4,
+    familyMaskTexture = null,
+    familyMaskPath = "/textures/forest-floor/forest-floor-family-mask.png",
+    maskOrigin = [-200, -200],
+    maskSize = [400, 400],
+    worldAxisSign = [1, -1],
+    targetObjectNamePrefixes = [],
+    materialFamilyOverride = null,
+    watchSceneGraph = false,
+    includeAncestorScene = false,
+    onApplied,
   }: Props = $props();
-  const { renderer } = useThrelte();
+  const { renderer, scene: threlteScene } = useThrelte();
   let detailMaps = $state<Partial<Record<ForestGroundDetailFamily, Texture>>>(
     {}
   );
-  let familyMask = $state<Texture | null>(null);
+  let loadedFamilyMask = $state<Texture | null>(null);
+  let sceneGraphRevision = $state(0);
+  let observedTargetCount = -1;
+
+  function resolveSceneScope(): Object3D | null {
+    let resolved = scene ?? threlteScene.current;
+    if (!includeAncestorScene) return resolved;
+    while (resolved?.parent) resolved = resolved.parent;
+    return resolved;
+  }
+
+  useTask(() => {
+    if (!watchSceneGraph) return;
+    const activeScene = resolveSceneScope();
+    if (!activeScene) return;
+    const targetPrefixes = targetObjectNamePrefixes;
+    let targetCount = 0;
+    activeScene.traverse((child) => {
+      const mesh = child as Mesh;
+      if (!mesh.isMesh) return;
+      if (
+        targetPrefixes.length > 0 &&
+        !targetPrefixes.some((prefix) => mesh.name.startsWith(prefix))
+      ) {
+        return;
+      }
+      targetCount += 1;
+    });
+    if (targetCount === observedTargetCount) return;
+    observedTargetCount = targetCount;
+    sceneGraphRevision += 1;
+  });
 
   onMount(() => {
     let cancelled = false;
@@ -74,64 +135,109 @@
         }
       );
     }
-    loader.load(
-      "/textures/forest-floor/forest-floor-family-mask.png",
-      (texture) => {
-        if (cancelled) {
-          texture.dispose();
-          return;
+    if (familyMaskPath) {
+      loader.load(
+        familyMaskPath,
+        (texture) => {
+          if (cancelled) {
+            texture.dispose();
+            return;
+          }
+          texture.colorSpace = NoColorSpace;
+          texture.needsUpdate = true;
+          loadedFamilyMask = texture;
+        },
+        undefined,
+        (error) => {
+          console.warn(
+            "[ForestGroundDetail] family mask failed to load",
+            error
+          );
         }
-        texture.colorSpace = NoColorSpace;
-        texture.needsUpdate = true;
-        familyMask = texture;
-      },
-      undefined,
-      (error) => {
-        console.warn("[ForestGroundDetail] family mask failed to load", error);
-      }
-    );
+      );
+    }
 
     return () => {
       cancelled = true;
       for (const texture of Object.values(loadedTextures)) texture?.dispose();
-      familyMask?.dispose();
+      loadedFamilyMask?.dispose();
       detailMaps = {};
-      familyMask = null;
+      loadedFamilyMask = null;
     };
   });
 
   $effect(() => {
-    const loadedScene = scene;
+    sceneGraphRevision;
+    const loadedScene = resolveSceneScope();
     const textures = detailMaps;
-    const mask = familyMask;
-    if (!loadedScene || !mask || Object.keys(textures).length < 4) return;
+    const mask = familyMaskTexture ?? loadedFamilyMask;
+    const targetPrefixes = targetObjectNamePrefixes;
+    const origin = new Vector2(maskOrigin[0], maskOrigin[1]);
+    const size = new Vector2(maskSize[0], maskSize[1]);
+    const axisSign = new Vector2(worldAxisSign[0], worldAxisSign[1]);
+    const firstAvailableTexture =
+      textures.neutral ??
+      textures.meadow ??
+      textures.litter ??
+      textures.damp ??
+      null;
+    if (!loadedScene || !mask || !firstAvailableTexture) return;
+    const progressiveTextures: Record<ForestGroundDetailFamily, Texture> = {
+      neutral: textures.neutral ?? firstAvailableTexture,
+      meadow: textures.meadow ?? firstAvailableTexture,
+      litter: textures.litter ?? firstAvailableTexture,
+      damp: textures.damp ?? firstAvailableTexture,
+    };
 
     const patches = new Set<ForestGroundDetailPatch>();
+    const objectNames = new Set<string>();
     loadedScene.traverse((child) => {
       const mesh = child as Mesh;
       if (!mesh.isMesh) return;
+      if (
+        targetPrefixes.length > 0 &&
+        !targetPrefixes.some((prefix) => mesh.name.startsWith(prefix))
+      ) {
+        return;
+      }
       const materials = Array.isArray(mesh.material)
         ? mesh.material
         : [mesh.material];
       for (const candidate of materials) {
         const material = candidate as MeshStandardMaterial;
         if (!material.isMeshStandardMaterial) continue;
-        if (!isForestGroundMaterial(material)) continue;
-        if (!getForestGroundDetailFamily(material)) continue;
+        if (
+          !materialFamilyOverride &&
+          (!isForestGroundMaterial(material) ||
+            !getForestGroundDetailFamily(material))
+        ) {
+          continue;
+        }
         patches.add(
           patchForestGroundDetailMaterial(
             material,
-            textures as Record<ForestGroundDetailFamily, Texture>,
+            progressiveTextures,
             mask,
             strength,
             {
               preserveColor: material.color,
               normalResponse,
               roughnessFloor,
+              absoluteColorStrength,
+              primaryScale,
+              secondaryScale,
+              maskOrigin: origin,
+              maskSize: size,
+              worldAxisSign: axisSign,
             }
           )
         );
+        objectNames.add(mesh.name);
       }
+    });
+    onApplied?.({
+      patchedMaterials: patches.size,
+      objectNames: [...objectNames],
     });
     return () => {
       for (const patch of patches) patch.dispose();
