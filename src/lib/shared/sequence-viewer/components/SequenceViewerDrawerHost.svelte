@@ -4,7 +4,7 @@
   App host for the sequence viewer: a full-height bottom Drawer bound to the
   sequence-overlay state, with ?v= short-code bootstrap. ALL viewer chrome
   (header, rail, split pane, export panels, practice workstation) lives in
-  SequenceViewerShell — shared verbatim with the /q scan route so the two
+  SequenceViewerShell — shared verbatim with the /sequence route so the two
   surfaces are identical by construction. Host-only concerns here: the Drawer
   shell, overlay open/close/dismiss routing, and URL bootstrap.
 -->

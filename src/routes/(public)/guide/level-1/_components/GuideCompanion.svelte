@@ -22,9 +22,8 @@
    *     functions binding the shared motionQueryHandler singleton)
    *   - rotateSequenceGeometry from sequence-derived-fields.ts (pure geometry
    *     rotation; `steps` is in 45° increments, so 90° = 2)
-   * Remix copies the /q scan host's composer-handoff mechanism exactly
-   * (QScanPage.svelte `openInComposer`): stash the SequenceData under the
-   * `tka-pending-edit-sequence` localStorage key that
+   * Remix uses the established composer-handoff contract: stash the
+   * SequenceData under the `tka-pending-edit-sequence` localStorage key that
    * deep-link-sequence-handler.ts already reads on construct-tab mount, then
    * navigate. No sequence-viewer chrome imported - just the handoff data path.
    *
@@ -243,8 +242,7 @@
     }
   }
 
-  /** Composer handoff - identical mechanism to QScanPage.svelte's
-   *  `openInComposer`: stash the SequenceData under the well-known pending-edit
+  /** Composer handoff: stash the SequenceData under the well-known pending-edit
    *  key (deep-link-sequence-handler.ts reads it on construct-tab mount), then
    *  navigate. No sequence-viewer chrome imported. */
   function handleRemix() {

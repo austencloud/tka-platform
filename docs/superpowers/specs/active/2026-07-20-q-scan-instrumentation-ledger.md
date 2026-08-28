@@ -10,6 +10,13 @@ last_triaged: 2026-07-25
 ---
 # /q Scan Page — Analytics Instrumentation Ledger
 
+> **ROUTING UPDATE — 2026-08-28.** `/q` now owns resolution and the one
+> physical-scan write, then replaces itself with `/sequence`. Viewer-control,
+> practice, export, and exit instrumentation lives in the shared shell and the
+> scan-origin `/sequence` host. The historical line references below describe
+> the pre-consolidation inventory and must be re-audited against those owners
+> before implementing any remaining item.
+
 Generated 2026-07-20 from the qr-scan-telemetry-remediation workflow inventory pass.
 Source incident: card SJJ6 scanned 2026-07-20 19:40 UTC, Fort Smith/Austin geo, iPhone.
 

@@ -30,7 +30,9 @@
         : `"${displayWord}"${data.meta?.creator ? `, submitted by ${data.meta.creator}` : ""}${data.meta?.deckName ? ` from the ${data.meta.deckName} deck` : ""}. Watch, practice, and remix this flow arts choreography sequence.`
       : "Watch and practice a flow arts choreography sequence."
   );
-  const canonical = $derived(`https://tkaflowarts.com/q/${page.params.code}`);
+  const canonical = $derived(
+    `https://tkaflowarts.com/sequence/${encodeURIComponent(page.params.code)}`
+  );
 
   let QScanPageComponent: typeof import("./QScanPage.svelte").default | null =
     $state(null);

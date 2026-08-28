@@ -331,7 +331,7 @@ export function refreshScanSessionAttribution(): void {
   registerSuperProperties();
 }
 
-/** Is this page load a scan visit? False everywhere except /q. */
+/** Is this page part of the active /q-origin scan visit? */
 export function isScanVisit(): boolean {
   return browser && visit !== null;
 }

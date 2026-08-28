@@ -347,7 +347,7 @@
   const effShowQRCode = $derived(effectiveInfoCell.showQRCode);
   const effShowMandala = $derived(effectiveInfoCell.showMandala);
 
-  // True only under the /q scan route — makes cells download from the cloud.
+  // True only under a scan-origin /sequence route — cells use the cloud cache.
   const cloudProbeEnabled = getScanCardCloudProbe();
 
   const qrState = createChoreoCardQrState(
@@ -531,7 +531,7 @@
       // every cached blob through canvas made a warm phone pay a full
       // decode→draw→encode cycle per cell before it could paint.
       showStepNumbers: cloudProbeEnabled ? false : showStepNumbers,
-      // Cloud tier: only the /q scan route sets this (via scan-card-cloud
+      // Cloud tier: only the scan-origin /sequence host sets this (via scan-card-cloud
       // context), so a cold scanner downloads pre-rendered cells instead of
       // rasterizing. Unset everywhere else => local render path, no extra latency.
       probeCloud: cloudProbeEnabled,

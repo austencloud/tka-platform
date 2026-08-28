@@ -8,16 +8,16 @@
   QR code scan ... a miniature phone simulating what the phone will experience."
 
   So this screen is an iframe of the real `/q/<code>` for the card on the stack
-  beside it — the same route the printed QR opens, the same component, the same
-  loading beats. Nothing here is a mock of the viewer, and nothing here forks
-  its chrome.
+  beside it. The ingress performs the same handoff to the canonical /sequence
+  viewer as a printed scan. Nothing here is a mock, and nothing here forks its
+  chrome.
 
   THREE THINGS MAKE THAT SAFE:
 
   1. `?demo=1`. A page that shows the scan route must not be counted as
-     scanning. The /q host reads the flag and skips PostHog init, the scan
-     visit, and the physical-card ledger write, which silences every
-     downstream captureScan* by construction. See QScanPage.svelte.
+     scanning. The /q ingress and /sequence host read the flag and skip the scan
+     visit and physical-card ledger write, which silences every downstream
+     captureScan* call by construction.
   2. The code is LOOKED UP, never minted. `findExistingCodeForSequence` is a
      pure Firestore read; a public marketing page must never write short codes
      (one-code-per-hash). No code, no phone — the composition just holds the
