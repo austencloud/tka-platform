@@ -6,6 +6,7 @@
     CameraMode,
     getNextCameraMode,
     isGameMode,
+    resolveAllowedCameraMode,
     type PhysicsProvider,
     type AvatarState,
   } from "../types";
@@ -17,6 +18,7 @@
   import { normalizeCameraFrameDelta } from "../frame-delta";
   import { createInputCapabilities } from "../input-capabilities";
   import { collectCameraColliders } from "../camera-collider-index";
+  import { resolveThrelteContextValue } from "../threlte-context-value";
   import {
     CLEAN_FLY_INTERACTION,
     flushFlyInteraction,
@@ -35,6 +37,11 @@
     sprintMultiplier?: number;
     jumpForce?: number;
     gravity?: number;
+    /**
+     * Bounded simulation catch-up for consumers whose movement owner performs
+     * fixed substeps. Ordinary walking keeps the conservative 100 ms default.
+     */
+    maximumFrameDeltaSeconds?: number;
     /** Camera height above the physics body's centre in first person. */
     firstPersonCameraOffset?: number;
     /** Review harnesses can lock locomotion to one measured walking speed. */
@@ -76,6 +83,11 @@
      * per gesture instead of one per frame.
      */
     onInteractionEnd?: (kind: FlyInteractionKind) => void;
+    onInputStateChange?: (input: {
+      activeCodes: string[];
+      mode: CameraMode;
+    }) => void;
+    onControlReadinessChange?: (ready: boolean) => void;
   }
 
   const props: Props = $props();
@@ -110,11 +122,17 @@
   const { renderer, camera, scene } = useThrelte();
 
   const _initMode = $derived(
-    cameraPreferences.getModeForDestination(destinationId)
+    resolveAllowedCameraMode(
+      cameraPreferences.getModeForDestination(destinationId),
+      allowedModes
+    )
   );
   let mode = $state<CameraMode>(CameraMode.ORBIT);
   $effect.pre(() => {
     mode = _initMode;
+  });
+  $effect(() => {
+    props.onModeChange?.(mode);
   });
 
   // `initial*` means initial. These used to be assigned from an $effect.pre,
@@ -140,6 +158,8 @@
     "KeyS",
     "KeyD",
     "KeyC",
+    "ControlLeft",
+    "ControlRight",
     "Space",
     "ShiftLeft",
     "ShiftRight",
@@ -259,7 +279,6 @@
       mode = cameraPreferences.cycleMode(destinationId);
       attempts++;
     } while (allowedModes && !allowedModes.includes(mode) && attempts < 3);
-    props.onModeChange?.(mode);
     if (mode === CameraMode.ORBIT && isPointerLocked) {
       document.exitPointerLock();
     }
@@ -269,7 +288,6 @@
     if (mode !== CameraMode.ORBIT) {
       cameraPreferences.setModeForDestination(destinationId, CameraMode.ORBIT);
       mode = CameraMode.ORBIT;
-      props.onModeChange?.(mode);
     }
   }
 
@@ -310,6 +328,7 @@
       const isMovementKey = MOVEMENT_KEYS.has(e.code);
       if (isMovementKey && !e.repeat) markFlyInteraction("keyboard");
       keys.add(e.code);
+      props.onInputStateChange?.({ activeCodes: [...keys], mode });
       if (isMovementKey) {
         e.preventDefault();
       }
@@ -318,6 +337,7 @@
 
   function handleKeyUp(e: KeyboardEvent) {
     keys.delete(e.code);
+    props.onInputStateChange?.({ activeCodes: [...keys], mode });
   }
 
   function handleMouseMove(e: MouseEvent) {
@@ -398,7 +418,8 @@
   }
 
   function handlePointerLockChange() {
-    const canvas = cachedCanvas ?? renderer.current?.domElement;
+    const canvas =
+      cachedCanvas ?? resolveThrelteContextValue(renderer)?.domElement;
     if (!canvas) return;
     const wasLocked = isPointerLocked;
     isPointerLocked = document.pointerLockElement === canvas;
@@ -431,9 +452,9 @@
       );
       mode = CameraMode.THIRD_PERSON;
     }
-    props.onModeChange?.(mode);
     if (isGameMode(mode) && inputCaps.canUsePointerLock()) {
-      const canvas = cachedCanvas ?? renderer.current?.domElement;
+      const canvas =
+        cachedCanvas ?? resolveThrelteContextValue(renderer)?.domElement;
       if (canvas?.isConnected) {
         requestPointerLockSafely(canvas);
       }
@@ -443,13 +464,18 @@
   function handleBlur() {
     flushCompletedInteraction();
     keys.clear();
+    props.onInputStateChange?.({ activeCodes: [], mode });
   }
 
   let attached = false;
+  let controllerDestroyed = false;
+  let reportedControlReady: boolean | null = null;
 
   function findCanvas(): HTMLCanvasElement | null {
     return (
-      (renderer.current?.domElement as HTMLCanvasElement | undefined) ??
+      (resolveThrelteContextValue(renderer)?.domElement as
+        | HTMLCanvasElement
+        | undefined) ??
       document.querySelector<HTMLCanvasElement>("canvas[data-engine]") ??
       null
     );
@@ -483,7 +509,7 @@
   $effect(() => {
     if (enabled && !attached) {
       queueMicrotask(() => {
-        if (!enabled || attached) return;
+        if (controllerDestroyed || !enabled || attached) return;
         const canvas = findCanvas();
         if (canvas) {
           attachToCanvas(canvas);
@@ -491,6 +517,7 @@
         } else {
           let attempts = 0;
           function tryAttach() {
+            if (controllerDestroyed) return;
             const c = findCanvas();
             if (c) {
               attachToCanvas(c);
@@ -508,6 +535,7 @@
   });
 
   function attachToCanvas(canvas: HTMLCanvasElement) {
+    if (controllerDestroyed) return;
     cachedCanvas = canvas;
     isPointerLocked = document.pointerLockElement === canvas;
     inputCaps.init();
@@ -526,6 +554,7 @@
   }
 
   onDestroy(() => {
+    controllerDestroyed = true;
     detachFromCanvas();
   });
 
@@ -550,13 +579,22 @@
   });
 
   useTask((delta) => {
-    if (!enabled || !camera.current) return;
+    const activeCamera = resolveThrelteContextValue(camera);
+    const controlReady = enabled && activeCamera !== null;
+    if (controlReady !== reportedControlReady) {
+      reportedControlReady = controlReady;
+      props.onControlReadinessChange?.(controlReady);
+    }
+    if (!controlReady || !activeCamera) return;
 
     // Background tabs, debugger pauses, and renderer handoffs can produce a
     // negative or abnormally large task delta. A negative limit makes the
     // zero-input movement clamp divide by zero and poisons the camera with
     // NaN coordinates. Normalize once at the frame boundary.
-    const frameDelta = normalizeCameraFrameDelta(delta);
+    const frameDelta = normalizeCameraFrameDelta(
+      delta,
+      props.maximumFrameDeltaSeconds
+    );
 
     if (mode === CameraMode.ORBIT) {
       avatarState.setMoveInput({ x: 0, z: 0 });
@@ -578,10 +616,10 @@
       targetZ = avatarState.position.z;
     }
 
-    if (camera.current instanceof PerspectiveCamera) {
-      if (camera.current.far < 10000) {
-        camera.current.far = 10000;
-        camera.current.updateProjectionMatrix();
+    if (activeCamera instanceof PerspectiveCamera) {
+      if (activeCamera.far < 10000) {
+        activeCamera.far = 10000;
+        activeCamera.updateProjectionMatrix();
       }
     }
 
@@ -608,10 +646,12 @@
     const isSprinting =
       enableSprint && (keys.has("ShiftLeft") || keys.has("ShiftRight"));
     const isJumping = enableJump && keys.has("Space");
-    const isCrouching = enableCrouch && keys.has("KeyC");
+    const isCrouching =
+      enableCrouch &&
+      (keys.has("KeyC") || keys.has("ControlLeft") || keys.has("ControlRight"));
     const hasMovementInput = forwardInput !== 0 || strafeInput !== 0;
 
-    const cam = camera.current;
+    const cam = activeCamera;
     const _forward = new Vector3();
     const _right = new Vector3();
     const _forward3D = new Vector3();
@@ -769,18 +809,19 @@
       const camX = targetX + Math.sin(yaw) * cfg.forwardOffset;
       const camY = targetY + cfg.height - crouchHeightOffset;
       const camZ = targetZ + Math.cos(yaw) * cfg.forwardOffset;
-      camera.current.position.set(camX, camY, camZ);
+      activeCamera.position.set(camX, camY, camZ);
       const lookDistance = 100;
       const lookX = camX + Math.sin(yaw) * lookDistance * Math.cos(pitch);
       const lookY = camY - Math.sin(pitch) * lookDistance;
       const lookZ = camZ + Math.cos(yaw) * lookDistance * Math.cos(pitch);
-      camera.current.lookAt(lookX, lookY, lookZ);
+      activeCamera.lookAt(lookX, lookY, lookZ);
     } else {
       const cfg = SETTINGS.thirdPerson;
       const cosPitch = Math.cos(pitch);
       let targetDistance = desiredDistance;
 
-      const sceneToCast = (scene as any)?.current ?? scene;
+      const sceneToCast = resolveThrelteContextValue(scene);
+      if (!sceneToCast) return;
       if (sceneToCast?.children) {
         rayOrigin.set(targetX, targetY + cfg.lookAtHeight, targetZ);
         const dCamX = targetX - Math.sin(yaw) * desiredDistance * cosPitch;
@@ -849,8 +890,8 @@
         smoothedLookZ += (lookTargetZ - smoothedLookZ) * dampFactor;
       }
 
-      camera.current.position.set(smoothedCamX, smoothedCamY, smoothedCamZ);
-      camera.current.lookAt(smoothedLookX, smoothedLookY, smoothedLookZ);
+      activeCamera.position.set(smoothedCamX, smoothedCamY, smoothedCamZ);
+      activeCamera.lookAt(smoothedLookX, smoothedLookY, smoothedLookZ);
     }
   });
 
