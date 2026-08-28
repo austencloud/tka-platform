@@ -697,8 +697,12 @@
   .open-region {
     color: var(--theme-button-text, #fff);
     text-decoration: none;
-    background: var(--atlas-region-accent);
-    border: 1px solid color-mix(in oklch, var(--atlas-region-accent) 75%, white);
+    background: color-mix(
+      in oklch,
+      var(--atlas-region-accent) 52%,
+      oklch(0.24 0.035 275)
+    );
+    border: 1px solid color-mix(in oklch, var(--atlas-region-accent) 70%, white);
     box-shadow: 0 10px 28px
       color-mix(in oklch, var(--atlas-region-accent) 28%, transparent);
   }
