@@ -1,6 +1,7 @@
 <script lang="ts">
   import "$lib/shared/landing/styles/public-editorial.css";
   import { onMount, tick } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import GlossaryNav from "./_components/GlossaryNav.svelte";
@@ -25,6 +26,7 @@
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   let { data } = $props();
+  const desktopQuery = new MediaQuery("(min-width: 1024px)");
 
   // Position-term slugs (from @tka/domain's GLOSSARY keys, see +page.server.ts)
   // that get a pictograph thumbnail in their detail view. Fixed-size PNGs,
@@ -261,9 +263,7 @@
       : landingGroups
   );
 
-  const isDesktop = () =>
-    typeof window !== "undefined" &&
-    window.matchMedia("(min-width: 1024px)").matches;
+  const isDesktop = () => desktopQuery.current;
 
   function firstSlugOf(key: string): string {
     return data.groups.find((g) => g.key === key)?.terms[0]?.slug ?? "";
@@ -747,6 +747,8 @@
                           entry={t}
                           thumb={POSITION_THUMBS[t.slug] ?? null}
                           showTitle={false}
+                          showLetterPictographs={selected === t.slug &&
+                            !desktopQuery.current}
                           onrelated={(s, e) => reveal(s, e)}
                         />
                       </div>
@@ -781,6 +783,7 @@
               <GlossaryTermDetail
                 entry={selectedEntry}
                 thumb={POSITION_THUMBS[selectedEntry.slug] ?? null}
+                showLetterPictographs={desktopQuery.current}
                 onrelated={(s, e) => reveal(s, e)}
               />
             {:else}
