@@ -106,6 +106,14 @@ describe("buugeng chirality is owned by the prop picker", () => {
     expect(sheet).toContain("autoClose && !needsChiralityChoice");
   });
 
+  it("puts chirality before the prop catalogue in compact drawers", () => {
+    const grid = read(GRID_PATH);
+    expect(grid).toContain("class:flat");
+    expect(grid).toMatch(
+      /\.prop-grid-root\.flat \.chirality-dock\s*\{\s*order: -1;/
+    );
+  });
+
   it("no seam ever writes one hand's chirality onto the other", () => {
     const seam = read(SEAM_PATH);
     expect(seam).toContain("createGlobalChiralitySeam");
