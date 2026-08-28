@@ -29,6 +29,10 @@ Navigation via bottom tabs (mobile-first UX pattern)
     isConceptPath,
   } from "./domain/concept-routes";
   import {
+    readConceptPlaceId,
+    writeConceptPlaceId,
+  } from "./domain/concept-place-routes";
+  import {
     getActiveConceptId,
     setActiveConceptId,
     clearActiveConceptId,
@@ -70,6 +74,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
   // Concept detail view state
   let selectedConcept = $state<LearnConcept | null>(null);
   let conceptOpenCount = $state(0); // Increments each open to force remount
+  let returnPlaceId = $state<string | null>(null);
 
   // Sync with navigation state (bottom nav controls this)
   $effect(() => {
@@ -113,6 +118,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
     if (mode !== prev && prev !== null) {
       untrack(() => {
         selectedConcept = null;
+        returnPlaceId = null;
         if (prev === "concepts") clearActiveConceptId();
       });
     }
@@ -143,12 +149,14 @@ Navigation via bottom tabs (mobile-first UX pattern)
 
   function writeConceptUrl(
     conceptId: string | undefined,
-    mode: "push" | "replace"
+    mode: "push" | "replace",
+    conceptPlaceId: string | null = returnPlaceId
   ) {
     mutateCurrentUrl(
       (url) => {
         url.pathname = buildConceptPath(conceptId);
         url.search = "";
+        writeConceptPlaceId(url, conceptPlaceId);
         url.hash = "";
       },
       { mode }
@@ -157,15 +165,18 @@ Navigation via bottom tabs (mobile-first UX pattern)
 
   function openConcept(
     concept: LearnConcept,
-    routeMode: "push" | "replace" | "none"
+    routeMode: "push" | "replace" | "none",
+    conceptPlaceId: string | null = null
   ) {
     if (!isConceptExperienceAvailable(concept.id)) return;
 
     if (selectedConcept?.id !== concept.id) conceptOpenCount++;
     selectedConcept = concept;
+    returnPlaceId = conceptPlaceId;
     setActiveConceptId(concept.id);
 
-    if (routeMode !== "none") writeConceptUrl(concept.id, routeMode);
+    if (routeMode !== "none")
+      writeConceptUrl(concept.id, routeMode, conceptPlaceId);
   }
 
   function syncConceptFromUrl(restoreSavedConcept: boolean) {
@@ -174,12 +185,15 @@ Navigation via bottom tabs (mobile-first UX pattern)
     if (!isConceptPath(pathname)) return;
 
     const routeConceptId = conceptIdFromPathname(pathname);
+    const routePlaceId = readConceptPlaceId(
+      new URLSearchParams(window.location.search)
+    );
     const routeConcept = routeConceptId
       ? getConceptById(routeConceptId)
       : undefined;
 
     if (routeConcept && isConceptExperienceAvailable(routeConcept.id)) {
-      openConcept(routeConcept, "none");
+      openConcept(routeConcept, "none", routePlaceId);
       return;
     }
 
@@ -189,12 +203,13 @@ Navigation via bottom tabs (mobile-first UX pattern)
         ? getConceptById(savedConceptId)
         : undefined;
       if (savedConcept && isConceptExperienceAvailable(savedConcept.id)) {
-        openConcept(savedConcept, "replace");
+        openConcept(savedConcept, "replace", routePlaceId);
         return;
       }
     }
 
     selectedConcept = null;
+    returnPlaceId = routePlaceId;
     clearActiveConceptId();
     if (routeConceptId) writeConceptUrl(undefined, "replace");
   }
@@ -218,15 +233,15 @@ Navigation via bottom tabs (mobile-first UX pattern)
   });
 
   // Handle concept selection
-  function handleConceptClick(concept: LearnConcept) {
-    openConcept(concept, "push");
+  function handleConceptClick(concept: LearnConcept, conceptPlaceId?: string) {
+    openConcept(concept, "push", conceptPlaceId ?? null);
   }
 
   // Handle back from detail view
   function handleBackToPath() {
     selectedConcept = null;
     clearActiveConceptId();
-    writeConceptUrl(undefined, "replace");
+    writeConceptUrl(undefined, "replace", returnPlaceId);
   }
 
   // Check if mode is active

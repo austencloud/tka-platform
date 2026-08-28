@@ -12,6 +12,11 @@ Shows:
   import { slide } from "svelte/transition";
   import { getConceptProgressTracker } from "$lib/features/learn/get-concept-progress-tracker";
   import { getConceptsByCategory } from "../domain/concepts";
+  import { getConceptPlace } from "../domain/concept-place-registry";
+  import {
+    readConceptPlaceId,
+    writeConceptPlaceId,
+  } from "../domain/concept-place-routes";
   import { getAvailableConcepts } from "../domain/concept-experience-registry";
   import type {
     LearnConcept,
@@ -20,21 +25,26 @@ Shows:
   } from "../domain/types";
   import { CAPABILITY_NUDGES } from "$lib/shared/subscription/domain/capability-nudges";
   import PremiumNudge from "$lib/shared/subscription/components/PremiumNudge.svelte";
-  import ProgressMiniMap from "./ProgressMiniMap.svelte";
   import HeroConceptCard from "./HeroConceptCard.svelte";
   import ConceptContext from "./ConceptContext.svelte";
   import ConceptCard from "./ConceptCard.svelte";
   import CategoryHeader from "./CategoryHeader.svelte";
+  import ConceptLevelMap from "./ConceptLevelMap.svelte";
+  import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
 
-  let { onConceptClick }: { onConceptClick?: (concept: LearnConcept) => void } =
-    $props();
+  let {
+    onConceptClick,
+  }: {
+    onConceptClick?: (concept: LearnConcept, conceptPlaceId?: string) => void;
+  } = $props();
 
   // Resolve service via DI
   const conceptProgressService = getConceptProgressTracker();
 
   // Progress state
   let progress = $state(conceptProgressService.getProgress());
-  let showAllConcepts = $state(true); // Auto-expanded by default
+  let showAllConcepts = $state(false);
+  let selectedPlaceId = $state("1.1");
   const availableConcepts = getAvailableConcepts();
   const availableConceptIds = new Set(
     availableConcepts.map((concept) => concept.id)
@@ -52,7 +62,21 @@ Shows:
         progress = newProgress;
       }
     );
-    return unsubscribe;
+
+    const syncPlaceFromUrl = () => {
+      const placeId = readConceptPlaceId(
+        new URLSearchParams(window.location.search)
+      );
+      const place = placeId ? getConceptPlace(placeId) : undefined;
+      if (place?.tkaLevel === 1) selectedPlaceId = place.id;
+    };
+    syncPlaceFromUrl();
+    window.addEventListener("popstate", syncPlaceFromUrl);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener("popstate", syncPlaceFromUrl);
+    };
   });
 
   // Find the current concept (first non-completed, non-locked)
@@ -128,6 +152,7 @@ Shows:
     CAPABILITY_NUDGES["capability:learn:full-curriculum"]!;
   let premiumNudgeVisible = $state(false);
   let pendingPremiumConcept = $state<LearnConcept | null>(null);
+  let pendingPremiumPlaceId = $state<string | undefined>();
 
   // Pre-launch: premium isn't shippable yet, so nothing is premium-gated when
   // the flag is off — non-foundation categories open freely with no Scribe
@@ -139,14 +164,15 @@ Shows:
     return premiumEnabled && category !== "foundation";
   }
 
-  function handleConceptStart(concept: LearnConcept) {
+  function handleConceptStart(concept: LearnConcept, conceptPlaceId?: string) {
     if (isPremiumGatedCategory(concept.category) && !premiumNudgeVisible) {
       // Show preview nudge, then proceed
       premiumNudgeVisible = true;
       pendingPremiumConcept = concept;
+      pendingPremiumPlaceId = conceptPlaceId;
       return;
     }
-    onConceptClick?.(concept);
+    onConceptClick?.(concept, conceptPlaceId);
   }
 
   function handleNudgeDismiss() {
@@ -154,9 +180,18 @@ Shows:
     // In preview mode, proceed to the concept after dismissal
     if (pendingPremiumConcept) {
       const concept = pendingPremiumConcept;
+      const conceptPlaceId = pendingPremiumPlaceId;
       pendingPremiumConcept = null;
-      onConceptClick?.(concept);
+      pendingPremiumPlaceId = undefined;
+      onConceptClick?.(concept, conceptPlaceId);
     }
+  }
+
+  function handlePlaceSelect(conceptPlaceId: string) {
+    selectedPlaceId = conceptPlaceId;
+    mutateCurrentUrl((url) => writeConceptPlaceId(url, conceptPlaceId), {
+      mode: "push",
+    });
   }
 
   function toggleShowAll() {
@@ -217,13 +252,21 @@ Shows:
     {/if}
   </div>
 
-  <div class="progress-overview">
-    <ProgressMiniMap {progress} />
+  <div class="level-map-slot">
+    <ConceptLevelMap
+      selectedId={selectedPlaceId}
+      onSelect={handlePlaceSelect}
+      onLessonStart={handleConceptStart}
+    />
   </div>
 
   <!-- View All Toggle -->
   <button class="view-all-toggle" onclick={toggleShowAll}>
-    <span>{showAllConcepts ? "Hide learning path" : "View learning path"}</span>
+    <span
+      >{showAllConcepts
+        ? "Hide available lessons"
+        : "Browse available lessons"}</span
+    >
     <i
       class="fa-solid {showAllConcepts ? 'fa-chevron-up' : 'fa-chevron-down'}"
       aria-hidden="true"
@@ -382,12 +425,6 @@ Shows:
     max-width: 600px;
     margin: 0 auto;
     width: 100%;
-  }
-
-  .progress-overview {
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 
   /* Completion celebration */
@@ -554,7 +591,7 @@ Shows:
       grid-template-columns: minmax(0, 1.25fr) minmax(22rem, 0.75fr);
       grid-template-areas:
         "intro intro"
-        "lesson progress"
+        "lesson map"
         "toggle toggle"
         "concepts concepts";
       align-content: start;
@@ -573,9 +610,9 @@ Shows:
       justify-content: center;
     }
 
-    .progress-overview {
-      grid-area: progress;
-      align-self: center;
+    .level-map-slot {
+      grid-area: map;
+      align-self: start;
     }
 
     .view-all-toggle {

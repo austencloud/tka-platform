@@ -42,7 +42,7 @@ Pointer discipline
   import TraceRouteLayer from "./TraceRouteLayer.svelte";
 
   interface Props {
-    /** Whether the level wants the route rail kept up while tracing. */
+    /** Whether the challenge wants the route rail kept up while tracing. */
     showRoute: boolean;
     /** Leaving the run entirely. Stays reachable for the whole round. */
     onExit: () => void;
@@ -217,7 +217,11 @@ Pointer discipline
     const points = raw.length > 0 ? raw : [event];
 
     for (const point of points) {
-      const normalized = normalizeStagePoint(point.clientX, point.clientY, rect);
+      const normalized = normalizeStagePoint(
+        point.clientX,
+        point.clientY,
+        rect
+      );
       buffer.push({ x: normalized.x, y: normalized.y, t: point.timeStamp });
     }
 

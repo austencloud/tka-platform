@@ -13,7 +13,7 @@ import type {
   ArcadeRoundEvent,
   ArcadeSessionResult,
   GameDefinition,
-  LevelDefinition,
+  ChallengeDefinition,
   RoundRecord,
 } from "../domain/arcade-types";
 import { roundIsCorrect } from "../domain/arcade-types";
@@ -22,12 +22,12 @@ import { computeStars } from "../domain/progression";
 
 export type ArcadePhase =
   | { name: "hub" }
-  | { name: "level-select"; game: GameDefinition }
-  | { name: "playing"; game: GameDefinition; level: LevelDefinition }
+  | { name: "challenge-select"; game: GameDefinition }
+  | { name: "playing"; game: GameDefinition; challenge: ChallengeDefinition }
   | {
       name: "results";
       game: GameDefinition;
-      level: LevelDefinition;
+      challenge: ChallengeDefinition;
       result: ArcadeSessionResult;
     };
 
@@ -95,10 +95,13 @@ export function createArcadeSession() {
   }
 
   function selectGame(game: GameDefinition) {
-    phase = { name: "level-select", game };
+    phase = { name: "challenge-select", game };
   }
 
-  function startLevel(game: GameDefinition, level: LevelDefinition) {
+  function startChallenge(
+    game: GameDefinition,
+    challenge: ChallengeDefinition
+  ) {
     stopClock();
     score = 0;
     streak = 0;
@@ -111,9 +114,9 @@ export function createArcadeSession() {
     questionShownAt = 0;
     timeRemaining = 0;
     startedAt = Date.now();
-    phase = { name: "playing", game, level };
-    if (level.mode.kind === "countdown") {
-      startClock(level.mode.seconds);
+    phase = { name: "playing", game, challenge };
+    if (challenge.mode.kind === "countdown") {
+      startClock(challenge.mode.seconds);
     }
   }
 
@@ -148,7 +151,7 @@ export function createArcadeSession() {
    */
   function submitRound<TMetrics>(event: ArcadeRoundEvent<TMetrics>) {
     if (phase.name !== "playing") return;
-    const { game, level } = phase;
+    const { game, challenge } = phase;
 
     const isCorrect = roundIsCorrect(event);
     const answerTimeMs =
@@ -184,7 +187,7 @@ export function createArcadeSession() {
     score += points;
     questionIndex += 1;
 
-    const mode = level.mode;
+    const mode = challenge.mode;
     if (
       mode.kind === "fixed" &&
       rounds.length >= mode.questionCount &&
@@ -204,7 +207,7 @@ export function createArcadeSession() {
   function complete() {
     if (phase.name !== "playing") return;
     stopClock();
-    const { game, level } = phase;
+    const { game, challenge } = phase;
 
     const correctCount = rounds.filter((r) => r.isCorrect).length;
     const totalCount = rounds.length;
@@ -213,12 +216,12 @@ export function createArcadeSession() {
     // rounded to 2 decimals — not the 0-1 fraction computeGrade expects.
     const accuracyPercentage = Math.round(accuracyFraction * 100 * 100) / 100;
     const grade = computeGrade(accuracyFraction);
-    const starsEarned = computeStars(score, level.stars);
+    const starsEarned = computeStars(score, challenge.stars);
     const durationSeconds = (Date.now() - startedAt) / 1000;
 
     const result: ArcadeSessionResult = {
       gameId: game.id,
-      levelNumber: level.levelNumber,
+      challengeNumber: challenge.challengeNumber,
       score,
       correctCount,
       totalCount,
@@ -236,7 +239,7 @@ export function createArcadeSession() {
       completedAt: new Date(),
     };
 
-    phase = { name: "results", game, level, result };
+    phase = { name: "results", game, challenge, result };
   }
 
   function quitToHub() {
@@ -244,11 +247,11 @@ export function createArcadeSession() {
     phase = { name: "hub" };
   }
 
-  function backToLevels() {
+  function backToChallenges() {
     if (phase.name === "hub") return;
     const { game } = phase;
     stopClock();
-    phase = { name: "level-select", game };
+    phase = { name: "challenge-select", game };
   }
 
   function destroy() {
@@ -292,13 +295,13 @@ export function createArcadeSession() {
       return computeAccuracy();
     },
     selectGame,
-    startLevel,
+    startChallenge,
     markQuestionShown,
     submitAnswer,
     submitRound,
     complete,
     quitToHub,
-    backToLevels,
+    backToChallenges,
     destroy,
   };
 }

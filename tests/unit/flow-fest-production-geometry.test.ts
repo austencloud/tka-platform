@@ -118,8 +118,8 @@ describe("Flow Fest production dressing", () => {
 
     expect(first.counts).toEqual(second.counts);
     expect(first.counts).toMatchObject({
-      tents: 38,
-      vehicles: 9,
+      tents: 47,
+      vehicles: 32,
       festivalPeople: 26,
     });
     expect(first.counts.interpretedTrees).toBeGreaterThan(250);
@@ -131,6 +131,7 @@ describe("Flow Fest production dressing", () => {
     expect(first.orientationAudit).toEqual({
       publicRoadSurfaceCount: 1,
       internalDriveSurfaceCount: 4,
+      lowerCampgroundLoopSurfaceCount: 1,
       tracedConnectorSurfaceCount: 2,
       landmarkMarkerCount: 3,
       officialRoadFeatureObjectId: 3019609,
@@ -148,12 +149,26 @@ describe("Flow Fest production dressing", () => {
     expect(first.spatialAudit.minimumTentCenterDistance).toBeGreaterThanOrEqual(
       3.1
     );
+    expect(first.spatialAudit.lowerTentPerimeterCount).toBe(22);
+    expect(first.spatialAudit.lowerTentMinimumLoopDistance).toBeGreaterThan(
+      5.9
+    );
+    expect(first.spatialAudit.lowerTentMaximumLoopDistance).toBeLessThan(8);
+    expect(first.spatialAudit).toMatchObject({
+      lowerCenterVehicleCount: 32,
+      lowerCenterTentCount: 4,
+      lowerInnerRoadsideTentCount: 8,
+      lowerOuterTreeLineTentCount: 14,
+      lowerCenterVehicleOutsideLoopCount: 0,
+      lowerInnerRoadsideTentOutsideLoopCount: 0,
+      lowerOuterTreeLineTentInsideLoopCount: 0,
+    });
     expect(
       first.spatialAudit.minimumVehicleCenterDistance
-    ).toBeGreaterThanOrEqual(5.2);
+    ).toBeGreaterThanOrEqual(4.05);
     expect(
       first.spatialAudit.minimumTentVehicleDistance
-    ).toBeGreaterThanOrEqual(4.1);
+    ).toBeGreaterThanOrEqual(3.2);
     expect(first.collision.visibleSolidCounts).toEqual({
       treeTrunks: first.counts.interpretedTrees,
       tents: first.counts.tents,
@@ -201,6 +216,21 @@ describe("Flow Fest production dressing", () => {
     expect(
       first.root.getObjectByName("FFS_CanonicalSitePaths_PlanAligned")
     ).toBeTruthy();
+    const lowerLoop = first.root.getObjectByName(
+      "FFS_PrivateDrive_lower-campground-loop_OrthophotoInterpreted"
+    ) as Mesh;
+    expect(lowerLoop.userData).toMatchObject({
+      evidence: "public-orthophoto",
+    });
+    expect(lowerLoop.geometry.getAttribute("position").count).toBeGreaterThan(
+      4_000
+    );
+    expect(first.groundSurface.audit).toMatchObject({
+      sourceRouteCount: 7,
+    });
+    expect(first.groundSurface.audit.lowerLoopPaintedPixels).toBeGreaterThan(
+      300
+    );
     const publicRoad = first.root.getObjectByName(
       "FFS_PublicRoad_odot-camden-college-corner-road_ODOT"
     ) as Mesh;
@@ -315,8 +345,8 @@ describe("Flow Fest production dressing", () => {
       );
 
       expect(dressing.counts).toMatchObject({
-        tents: 38,
-        vehicles: 9,
+        tents: 47,
+        vehicles: 32,
         festivalPeople: 26,
         routeLanterns,
       });
@@ -327,7 +357,7 @@ describe("Flow Fest production dressing", () => {
         dressing.spatialAudit.minimumCanopyPeakDistance
       ).toBeGreaterThanOrEqual(7.5);
       expect(dressing.collision.staticMesh.visibleObjectCount).toBe(
-        dressing.counts.interpretedTrees + 50
+        dressing.counts.interpretedTrees + 82
       );
       expect(dressing.collision.campEstablishedMesh.visibleObjectCount).toBe(1);
       expect(dressing.collision.festivalActiveMesh.visibleObjectCount).toBe(5);

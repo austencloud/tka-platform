@@ -4,6 +4,7 @@ import type { FlowFestRuntimeContract } from "../../src/routes/test/flow-fest-gr
 import {
   createFlowFestCampPlan,
   FLOW_FEST_CAMDEN_COLLEGE_CORNER_ROAD,
+  FLOW_FEST_LOWER_CAMPGROUND_LOOP,
   FLOW_FEST_ORTHOPHOTO_SOURCE,
   FLOW_FEST_PUBLIC_ROAD_SOURCE,
   identifyFlowFestPlanLocation,
@@ -162,9 +163,20 @@ describe("Flow Fest minimap", () => {
     expect(plan.internalDrives).toHaveLength(4);
     expect(
       plan.internalDrives.every(
-        (line) => line.evidence === "imagery-interpreted"
+        (line) => line.evidence !== "official-road-inventory"
       )
     ).toBe(true);
+    expect(
+      plan.internalDrives.find((line) => line.id === "lower-campground-loop")
+    ).toMatchObject({ evidence: "public-orthophoto" });
+    expect(
+      plan.internalDrives.some((line) => line.id === "check-in-to-lower-level")
+    ).toBe(false);
+    expect(
+      plan.internalDrives
+        .find((line) => line.id === "camp-road-entrance-to-check-in")
+        ?.points.at(-1)
+    ).toEqual(FLOW_FEST_LOWER_CAMPGROUND_LOOP[0]);
     expect(
       plan.footConnectors.every((line) => line.evidence === "austen-traced")
     ).toBe(true);

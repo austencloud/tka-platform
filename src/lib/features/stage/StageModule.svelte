@@ -125,6 +125,14 @@
     starterVisible ? "hidden" : timelineExpanded ? "editor" : "dock"
   );
 
+  const timelineContentSize = $derived.by(() => {
+    const lanes = Array.from(
+      { length: choreography.performers.length + 1 },
+      () => "var(--stage-timeline-lane-size)"
+    );
+    return `calc(1px + var(--stage-timeline-toolbar-size) + var(--stage-timeline-ruler-size) + ${lanes.join(" + ")})`;
+  });
+
   const sequenceIds = $derived.by(() => {
     const ids = new Set<string>([sharedSequenceId]);
     for (const performer of choreography.performers) {
@@ -357,8 +365,12 @@
           timelineDisclosure === "dock"
             ? "var(--stage-timeline-dock-size)"
             : compactTimelineWorkspace.current
-              ? "var(--stage-timeline-sheet-size)"
+              ? "min(var(--stage-timeline-content-size), var(--stage-timeline-sheet-size))"
               : undefined,
+        preferredSize:
+          timelineDisclosure === "editor" && !compactTimelineWorkspace.current
+            ? "min(var(--stage-timeline-content-size), var(--stage-timeline-editor-max-size))"
+            : undefined,
         id: "timeline",
       },
     ];
@@ -627,6 +639,7 @@
   role="main"
   aria-label="Stage"
   data-edit-history-shortcut-scope
+  style:--stage-timeline-content-size={timelineContentSize}
 >
   <EditHistoryShortcutBridge
     onUndo={stageState.undo}
@@ -662,6 +675,10 @@
   .stage-module {
     --stage-timeline-dock-size: 4.25rem;
     --stage-timeline-sheet-size: min(66cqh, 26rem);
+    --stage-timeline-editor-max-size: 22.5rem;
+    --stage-timeline-toolbar-size: 4.25rem;
+    --stage-timeline-ruler-size: 2.25rem;
+    --stage-timeline-lane-size: 3.5rem;
     display: flex;
     width: 100%;
     height: 100%;

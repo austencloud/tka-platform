@@ -12,7 +12,10 @@
   import { onDestroy, onMount } from "svelte";
   import { generateSequenceMatchQuestion } from "../../quiz/services/sequence-question-generator";
   import { QuizType } from "../../quiz/domain/enums/quiz-enums";
-  import type { QuizAnswerOption, QuizQuestionData } from "../../quiz/domain/models/quiz-models";
+  import type {
+    QuizAnswerOption,
+    QuizQuestionData,
+  } from "../../quiz/domain/models/quiz-models";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
@@ -57,8 +60,10 @@
   let error = $state<string | null>(null);
   let showScorePop = $state(false);
 
-  const levelNumber = $derived(
-    session.phase.name === "playing" ? session.phase.level.levelNumber : 1
+  const challengeNumber = $derived(
+    session.phase.name === "playing"
+      ? session.phase.challenge.challengeNumber
+      : 1
   );
 
   let currentSequence = $derived(
@@ -85,7 +90,7 @@
       questionData = await generateSequenceMatchQuestion(generateQuestionId(), {
         optionCount: constraints.optionCount,
         stepCount: constraints.stepCount,
-        similarDistractors: levelNumber === 3,
+        similarDistractors: challengeNumber === 3,
         lessonType: QuizType.MOTION_TO_MANDALA,
       });
       session.markQuestionShown();
@@ -158,7 +163,10 @@
     <div class="quiz-content">
       <div class="stage-column">
         <div class="performer-stage">
-          <QuizPerformerStage sequence={currentSequence} backgroundType={quizScene} />
+          <QuizPerformerStage
+            sequence={currentSequence}
+            backgroundType={quizScene}
+          />
         </div>
         <ScorePopAnimation
           visible={showScorePop}

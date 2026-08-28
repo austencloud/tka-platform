@@ -29,6 +29,7 @@
   } from "./flow-fest-production-geometry";
   import FlowFestFestivalCommunity from "./FlowFestFestivalCommunity.svelte";
   import FlowFestForestEcology from "./FlowFestForestEcology.svelte";
+  import FlowFestGroundSurface from "./FlowFestGroundSurface.svelte";
   import FlowFestHeroFire from "./FlowFestHeroFire.svelte";
   import { getFlowFestVisualProfile } from "./flow-fest-visual-system";
   import { buildFlowFestEntranceGradedTerrain } from "./flow-fest-entrance-terrain";
@@ -227,6 +228,7 @@
         grassAssetsReady: 0,
         groundLifeAssetsReady: 0,
       },
+      groundSurface: next.groundSurface.audit,
     };
     (globalThis as Record<string, unknown>).__flowFestProduction = proof;
     props.onReady?.({
@@ -244,8 +246,7 @@
   ): void {
     const proof = (globalThis as Record<string, unknown>)
       .__flowFestProduction as
-      | { festivalCommunity?: Record<string, unknown> }
-      | undefined;
+      { festivalCommunity?: Record<string, unknown> } | undefined;
     if (!proof?.festivalCommunity) return;
     proof.festivalCommunity.rotationOrdinal = frame.rotationOrdinal;
     proof.festivalCommunity.activeFirePerformerIds =
@@ -259,8 +260,7 @@
     readyCommunityAvatarIds = [...readyCommunityAvatarIds, id];
     const proof = (globalThis as Record<string, unknown>)
       .__flowFestProduction as
-      | { festivalCommunity?: Record<string, unknown> }
-      | undefined;
+      { festivalCommunity?: Record<string, unknown> } | undefined;
     if (proof?.festivalCommunity) {
       proof.festivalCommunity.avatarsReady = readyCommunityAvatarIds.length;
     }
@@ -279,8 +279,7 @@
   }): void {
     const proof = (globalThis as Record<string, unknown>)
       .__flowFestProduction as
-      | { forestEcology?: Record<string, unknown> }
-      | undefined;
+      { forestEcology?: Record<string, unknown> } | undefined;
     if (!proof?.forestEcology) return;
     proof.forestEcology.treeAssetsReady = details.treeInstances;
     proof.forestEcology.grassAssetsReady = details.grassInstances;
@@ -301,8 +300,7 @@
     props.onForestCullingSample?.({ ...details });
     const proof = (globalThis as Record<string, unknown>)
       .__flowFestProduction as
-      | { forestEcology?: Record<string, unknown> }
-      | undefined;
+      { forestEcology?: Record<string, unknown> } | undefined;
     if (!proof?.forestEcology) return;
     proof.forestEcology.treeCullingBatchInstances = details.instances;
     proof.forestEcology.treeVisibleBatchInstances = details.visibleInstances;
@@ -399,9 +397,10 @@
     const reviewOverlay = activeScene.getObjectByName("FFS_ReviewOverlay");
     if (reviewOverlay) reviewOverlay.visible = false;
 
-    const terrainMesh = activeScene.getObjectByName(
+    const terrainMesh = (activeScene.getObjectByName(
       "FFS_Terrain_ChunkedRenderBatch"
-    ) as Mesh | undefined;
+    ) ?? activeScene.getObjectByName("FFS_Terrain_Bounded")) as
+      Mesh | undefined;
     if (terrainMesh) {
       const material = terrainMesh.material as MeshStandardMaterial;
       // The grade is a restrained multiplicative color, so the orthophoto still
@@ -462,6 +461,10 @@
 
 {#if dressing}
   <T is={dressing.root} />
+  <FlowFestGroundSurface
+    surface={dressing.groundSurface}
+    scene={dressing.root}
+  />
   <FlowFestForestEcology
     layout={dressing.forestEcology}
     foliageTint={atmosphere.grade.foliageTint}

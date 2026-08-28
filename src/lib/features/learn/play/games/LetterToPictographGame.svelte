@@ -54,7 +54,7 @@ depends on.
 
   // Fixed answer slots - using indices as keys keeps components persistent
   // so arrows/props animate smoothly when pictograph data changes. Slot count
-  // follows the level's optionCount constraint.
+  // follows the challenge's optionCount constraint.
   const answerSlots = Array.from(
     { length: constraints.optionCount ?? 4 },
     (_, i) => i
@@ -98,7 +98,9 @@ depends on.
     // Detect misconception gap on wrong answers
     currentGap = null;
     if (!isCorrect && questionData) {
-      const selectedOption = questionData.answerOptions.find((o) => o.id === optionId);
+      const selectedOption = questionData.answerOptions.find(
+        (o) => o.id === optionId
+      );
       const correctOption = questionData.answerOptions.find((o) => o.isCorrect);
       const gap = detectSingleError({
         isCorrect: false,
@@ -119,7 +121,9 @@ depends on.
     }, 100);
 
     if (questionData) {
-      const selectedOption = questionData.answerOptions.find((o) => o.id === optionId);
+      const selectedOption = questionData.answerOptions.find(
+        (o) => o.id === optionId
+      );
       const correctOption = questionData.answerOptions.find((o) => o.isCorrect);
       session.submitAnswer({
         isCorrect,

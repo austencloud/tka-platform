@@ -12,9 +12,10 @@ import {
   uniqueFlowFestSurfaceSegments,
   type FlowFestCanopyEvidence,
 } from "./flow-fest-site-fidelity";
-import type {
-  FlowFestCampPlan,
-  FlowFestCampPlanLine,
+import {
+  allFlowFestCampPlanLines,
+  flowFestCampPlanLineToRuntimeSegment,
+  type FlowFestCampPlan,
 } from "./flow-fest-camp-plan";
 
 export const FLOW_FEST_FOREST_TREE_ASSETS = {
@@ -46,10 +47,8 @@ export const FLOW_FEST_FOREST_GRASS_ASSET =
   "/models/flow-fest-sim/ecology/forest-grass-prototypes.glb";
 
 export const FLOW_FEST_FOREST_GROUND_LIFE_ASSETS = {
-  "damp-sedge-tussock":
-    "/models/forest/ground-life/damp-sedge-tussock.glb",
-  "woodland-hazel-shrub":
-    "/models/forest/ground-life/woodland-hazel-shrub.glb",
+  "damp-sedge-tussock": "/models/forest/ground-life/damp-sedge-tussock.glb",
+  "woodland-hazel-shrub": "/models/forest/ground-life/woodland-hazel-shrub.glb",
 } as const;
 
 export type FlowFestForestTreeFamilyId =
@@ -66,8 +65,7 @@ export const FLOW_FEST_PLANTFACTORY_TREE_FAMILIES = [
 export type FlowFestForestGrassTier = "base" | "medium" | "high";
 export type FlowFestForestGrassSpecies = "summer-sward" | "woodland-grass";
 export type FlowFestForestGroundLifeSpecies =
-  | "damp-sedge-tussock"
-  | "woodland-hazel-shrub";
+  "damp-sedge-tussock" | "woodland-hazel-shrub";
 
 export interface FlowFestForestTreePlacement {
   x: number;
@@ -305,39 +303,11 @@ function mergeEcologyRoutes(
 ): FlowFestRuntimeSegment[] {
   const routes = uniqueFlowFestSurfaceSegments(contract);
   if (!campPlan) return routes;
-  const planLines = [
-    ...campPlan.publicRoads,
-    ...campPlan.internalDrives,
-    ...campPlan.footConnectors,
-  ];
+  const planLines = allFlowFestCampPlanLines(campPlan);
   const byId = new Map(routes.map((route) => [route.id, route]));
   for (const line of planLines)
-    byId.set(line.id, planLineToRuntimeSegment(line));
+    byId.set(line.id, flowFestCampPlanLineToRuntimeSegment(line));
   return [...byId.values()];
-}
-
-function planLineToRuntimeSegment(
-  line: FlowFestCampPlanLine
-): FlowFestRuntimeSegment {
-  return {
-    id: line.id,
-    mode: line.kind === "foot-connector" ? "person" : "vehicle",
-    widthMeters: line.widthMeters,
-    lengthMeters: line.points.reduce((length, point, index) => {
-      const previous = line.points[index - 1];
-      return previous
-        ? length + Math.hypot(point.x - previous.x, point.z - previous.z)
-        : length;
-    }, 0),
-    sourceClasses: [line.evidence],
-    pathClass: line.kind,
-    points: line.points.map((point) => ({
-      x: point.x,
-      z: point.z,
-      sourceTerrainY: 0,
-      reviewTerrainY: 0,
-    })),
-  };
 }
 
 function appendRegisteredZoneGrass(
