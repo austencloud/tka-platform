@@ -2,7 +2,11 @@
   import { onDestroy, onMount } from "svelte";
   import { T, useTask, useThrelte } from "@threlte/core";
   import { CameraMode, UnifiedCameraController } from "@austencloud/camera-3d";
-  import type { AvatarState, PhysicsProvider } from "@austencloud/camera-3d";
+  import type {
+    AvatarState,
+    CameraCollisionProbe,
+    PhysicsProvider,
+  } from "@austencloud/camera-3d";
   import type { FlowFestProductionCollisionSet } from "$lib/features/flow-fest-sim/domain/flow-fest-simulation-contract";
   import {
     FLOW_FEST_EUC_CONFIG,
@@ -141,6 +145,22 @@
   let terrain: Awaited<ReturnType<typeof loadGeospatialTerrain>> | null = null;
   let initialized = $state(false);
   let disposed = false;
+  const probeThirdPersonCameraCollision: CameraCollisionProbe = (
+    origin,
+    direction,
+    maxDistance
+  ) => {
+    if (!physicsState?.world || !playerState) return null;
+    return (
+      castRay(
+        physicsState,
+        origin,
+        direction,
+        maxDistance,
+        playerState.collider
+      )?.distance ?? null
+    );
+  };
   let appliedResetToken = props.resetToken;
   let appliedCameraToken = props.cameraToken;
   let appliedStageToken = props.stageToken ?? 0;
@@ -1045,9 +1065,6 @@
         props.hostMode,
         texture
       );
-      terrainHost.root.traverse((object) => {
-        if (object instanceof Mesh) object.userData.cameraCollider = true;
-      });
       overlay = buildFlowFestReviewOverlay(
         loadedContract,
         loadedTerrain,
@@ -1209,6 +1226,7 @@
             props.hostMode === "chunked"
               ? "one full-resolution render batch with 32 m collision chunks"
               : "one full-resolution visible/collider mesh",
+          cameraCollisionStrategy: "rapier-active-chunk-broadphase",
           candidateColliderMeshes: terrainHost.metrics.colliderMeshes,
           activeColliderMeshes: activeTerrainBodies.size,
           colliderBufferMeters:
@@ -1541,6 +1559,7 @@
       preferencesKey="flow-fest-gate2-camera"
       {avatarState}
       {physicsProvider}
+      cameraCollisionProbe={probeThirdPersonCameraCollision}
       enabled={true}
       initialYaw={playerYaw}
       {initialPitch}

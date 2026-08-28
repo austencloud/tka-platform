@@ -14,6 +14,7 @@ export type {
   CameraConfig,
   PhysicsProvider,
   AvatarState,
+  CameraCollisionProbe,
   UnifiedCameraConfig,
   CameraPreset,
 } from "./lib/types";
