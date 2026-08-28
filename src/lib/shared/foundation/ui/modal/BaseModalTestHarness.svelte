@@ -5,9 +5,11 @@
   let {
     cancelBeforeOpen = false,
     allowExternalOverlays = false,
+    shortContent = false,
   }: {
     cancelBeforeOpen?: boolean;
     allowExternalOverlays?: boolean;
+    shortContent?: boolean;
   } = $props();
 
   let isOpen = $state(true);
@@ -37,7 +39,11 @@
   onopened={handleOpened}
 >
   <h2 id="base-modal-test-title">Scrollable modal</h2>
-  <div class="tall-content" aria-hidden="true"></div>
+  <div
+    class:short-content={shortContent}
+    class:tall-content={!shortContent}
+    aria-hidden="true"
+  ></div>
   <button type="button">End of modal</button>
 </BaseModal>
 
@@ -52,5 +58,9 @@
 
   .tall-content {
     height: 1200px;
+  }
+
+  .short-content {
+    height: 32px;
   }
 </style>

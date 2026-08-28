@@ -13,10 +13,27 @@ import CrossfadeTestHarness from "./CrossfadeTestHarness.svelte";
 const settle = () => new Promise((resolve) => setTimeout(resolve, 400));
 
 function layers(container: HTMLElement): HTMLElement[] {
-  return [...container.querySelectorAll<HTMLElement>(".crossfade > .layer")];
+  return [
+    ...container.querySelectorAll<HTMLElement>(
+      '[data-testid="stage"] .crossfade > .layer'
+    ),
+  ];
 }
 
 describe("Crossfade interruption", () => {
+  it("measures layout height without inheriting an ancestor's visual scale", async () => {
+    const { container } = render(CrossfadeTestHarness);
+    await settle();
+    const scaledBox = container.querySelector<HTMLElement>(
+      '[data-testid="scaled-stage"] .crossfade'
+    );
+
+    expect(Number.parseFloat(scaledBox?.style.height ?? "0")).toBeCloseTo(
+      125,
+      0
+    );
+  });
+
   it("settles to exactly one layer with the final content after rapid key changes", async () => {
     const { container } = render(CrossfadeTestHarness);
 
