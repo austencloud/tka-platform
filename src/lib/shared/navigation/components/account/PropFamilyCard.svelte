@@ -58,8 +58,6 @@
     <strong>{family.label}</strong>
     {#if selected && hasChoices}
       <small>{selectionSummary}</small>
-    {:else if family.description}
-      <small>{family.description}</small>
     {/if}
   </span>
   {#if hasChoices}
@@ -75,7 +73,7 @@
     display: grid;
     grid-template-columns: 2.5rem minmax(0, 1fr) auto;
     min-width: 0;
-    min-height: 4.5rem;
+    min-height: 4rem;
     align-items: center;
     gap: 0.55rem;
     padding: 0.55rem 0.65rem;
@@ -181,28 +179,6 @@
   .detail-cue {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: 0.75rem;
-  }
-
-  @container (min-width: 120rem) {
-    .family-card {
-      grid-template-columns: 4rem minmax(0, 1fr) auto;
-      min-height: 6rem;
-      gap: 0.85rem;
-      padding: 0.85rem;
-    }
-
-    .art-stage {
-      width: 4rem;
-      height: 4rem;
-    }
-
-    .card-copy strong {
-      font-size: 1.5rem;
-    }
-
-    .card-copy small {
-      font-size: 1.125rem;
-    }
   }
 
   @media (max-width: 520px) {

@@ -23,7 +23,6 @@
 >
   <header class="variant-heading">
     <strong id="active-family-title">{family.label} size</strong>
-    <span>Choose one or both</span>
   </header>
 
   <div class="variant-grid" role="group" aria-labelledby="active-family-title">
@@ -72,11 +71,6 @@
     margin-bottom: 0.5rem;
     color: var(--theme-text, white);
     font-size: max(0.875rem, var(--font-size-min, 0.875rem));
-  }
-
-  .variant-heading span {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-    font-size: max(0.75rem, var(--font-size-compact, 0.75rem));
   }
 
   .variant-grid {
@@ -156,31 +150,6 @@
     border: 1px solid color-mix(in srgb, var(--theme-accent) 70%, white);
     border-radius: 50%;
     font-size: 0.75rem;
-  }
-
-  @container (min-width: 120rem) {
-    .variant-picker {
-      padding: 1rem;
-    }
-
-    .variant-heading,
-    .choice-label {
-      font-size: 1.125rem;
-    }
-
-    .variant-heading span {
-      font-size: 1rem;
-    }
-
-    .size-choice {
-      min-height: 6rem;
-      padding: 0.75rem 3rem 0.75rem 0.85rem;
-    }
-
-    .choice-art {
-      width: 4.5rem;
-      height: 4.5rem;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {

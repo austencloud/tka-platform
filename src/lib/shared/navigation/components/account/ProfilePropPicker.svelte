@@ -62,15 +62,15 @@
     <span class="no-preference-icon" aria-hidden="true">
       <i class="fas fa-layer-group"></i>
     </span>
-    <span class="profile-prop-label">No preference</span>
-    <span class="profile-prop-note">Show full list</span>
+    <span class="profile-prop-label">No featured skill</span>
   </button>
 </div>
 
 <style>
   .profile-prop-picker {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(7.5rem, 9rem));
+    justify-content: center;
     gap: 0.625rem;
     padding: 0.5rem;
   }
@@ -152,38 +152,6 @@
     font-size: var(--font-size-sm, 0.875rem);
     font-weight: 700;
     text-align: center;
-  }
-
-  .profile-prop-note {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
-    line-height: 1.3;
-    text-align: center;
-  }
-
-  @container (min-width: 90rem) {
-    .profile-prop-picker {
-      gap: 1rem;
-      padding: 1rem;
-    }
-
-    .profile-prop-card {
-      min-height: 11rem;
-    }
-
-    .profile-prop-image,
-    .no-preference-icon {
-      width: 5rem;
-      height: 5rem;
-    }
-
-    .profile-prop-label {
-      font-size: 1.125rem;
-    }
-
-    .profile-prop-note {
-      font-size: 0.95rem;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {
