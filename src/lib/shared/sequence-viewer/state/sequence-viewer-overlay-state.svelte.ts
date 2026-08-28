@@ -6,6 +6,7 @@ import type {
   TunnelComposition,
   TunnelSaveTarget,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
+import type { TunnelSavedCallback } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
 import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { getErrorHandler } from "$lib/shared/application/get-error-handler";
@@ -28,6 +29,7 @@ let _initialViewMode = $state<ViewMode | undefined>();
 let _initialViewerMode = $state<ViewerMode | undefined>();
 let _tunnelComposition = $state<TunnelComposition | null>(null);
 let _tunnelSaveTarget = $state<TunnelSaveTarget | null>(null);
+let _onTunnelSaved = $state<TunnelSavedCallback | null>(null);
 let _dismissPath = $state<string | null>(null);
 let _handPathMode = $state(false);
 let _playOnOpen = $state(false);
@@ -56,6 +58,7 @@ export function openSequenceOverlay(
     shortCode?: string;
     tunnelComposition?: TunnelComposition;
     tunnelSaveTarget?: TunnelSaveTarget;
+    onTunnelSaved?: TunnelSavedCallback;
   }
 ): void {
   _sequence = sequence;
@@ -70,6 +73,7 @@ export function openSequenceOverlay(
   _initialViewerMode = options?.initialViewerMode;
   _tunnelComposition = options?.tunnelComposition ?? null;
   _tunnelSaveTarget = options?.tunnelSaveTarget ?? null;
+  _onTunnelSaved = options?.onTunnelSaved ?? null;
   _dismissPath = options?.dismissPath || null;
   _handPathMode = options?.handPathMode ?? false;
   _playOnOpen = options?.playOnOpen ?? false;
@@ -184,6 +188,7 @@ export function closeSequenceOverlay(): void {
   _initialViewerMode = undefined;
   _tunnelComposition = null;
   _tunnelSaveTarget = null;
+  _onTunnelSaved = null;
   _dismissPath = null;
   _handPathMode = false;
   _playOnOpen = false;
@@ -241,6 +246,9 @@ export function getSequenceOverlayState() {
     },
     get tunnelSaveTarget() {
       return _tunnelSaveTarget;
+    },
+    get onTunnelSaved() {
+      return _onTunnelSaved;
     },
     get dismissPath() {
       return _dismissPath;

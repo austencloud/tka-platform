@@ -148,6 +148,7 @@
     navigation?: { label: string };
     tunnelComposition?: TunnelComposition | null;
     tunnelSaveTarget?: TunnelSaveTarget | null;
+    onTunnelSaved?: import("../tunnel/tunnel-snapshot").TunnelSavedCallback;
     /** Route-owned context placed between the canonical header and viewer body. */
     contextContent?: Snippet;
     /** The full-page sequence route keeps its immersive transport overlay. */
@@ -175,6 +176,7 @@
     shareOnOpen = false,
     tunnelComposition = null,
     tunnelSaveTarget = null,
+    onTunnelSaved,
   }: Props = $props();
 
   const scanInstrumentationEnabled = isScanVisit();
@@ -610,6 +612,7 @@
               sequence={ctx.effectiveSequence}
               {tunnelComposition}
               {tunnelSaveTarget}
+              {onTunnelSaved}
               renderMode={ctx.renderMode}
               isExporting={interactions.videoBusy}
               bpm={ctx.bpmLocal}
@@ -1168,10 +1171,10 @@
      gap) so the two never stack. Compact workspaces replace the rail with
      the bottom bar and keep the pill's default inset. */
   :global(
-      .viewer-and-export.record-scene-active:has(
+    .viewer-and-export.record-scene-active:has(
         [data-scene-control-workspace]:not([data-presentation="compact"])
       )
-    ) {
+  ) {
     --record-scene-right: calc(1.5rem + 48px);
     /* Shifting the pill left of the rail parks it over the inspector column
        instead, where it covers the performer hub's bottom-anchored tab bar.
@@ -1186,10 +1189,10 @@
      + 12px gap) instead of shifting it sideways — the bar is centered, so
      no horizontal inset can guarantee clearance. */
   :global(
-      .viewer-and-export.record-scene-active:has(
+    .viewer-and-export.record-scene-active:has(
         [data-scene-control-workspace][data-presentation="compact"]
       )
-    ) {
+  ) {
     --record-scene-bottom: calc(80px + 57px + 12px);
   }
 
