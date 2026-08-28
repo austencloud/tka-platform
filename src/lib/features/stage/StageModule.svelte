@@ -19,12 +19,17 @@
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { createFullscreenController } from "$lib/shared/fullscreen/state/fullscreen-controller.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import { sceneEnvironmentIdForBackground } from "$lib/shared/3d/environments/domain/scene-environment";
+  import {
+    SceneEnvironmentId,
+    sceneEnvironmentIdForBackground,
+  } from "$lib/shared/3d/environments/domain/scene-environment";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { FILM_DIRECTOR_ROUTE } from "$lib/features/film-director/domain/film-director-link";
   import { consumeSceneStudioHandoff } from "$lib/features/scene-3d-collection/services/open-3d-scene";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import { flyFade, motionDuration } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { FormationPresetId } from "./domain/stage-types";
 
@@ -99,6 +104,10 @@
 
   let chartRaised = $state(false);
   let starterVisible = $state(!handoff);
+  let starterSceneBlank = $state(false);
+  let starterCurtainVisible = $state(false);
+  let starterEnvironmentPreview = $state(false);
+  let starterTransitionId = 0;
   let timelineExpanded = $state(false);
   let timelineLens = $state<"hands" | "floor" | "motion">("hands");
   let workspaceSizes = $state<number[]>([]);
@@ -302,6 +311,7 @@
   let syncedEnvironmentId = stageState.choreography.environmentId;
   $effect(() => {
     const next = viewer.environmentId;
+    if (starterEnvironmentPreview) return;
     if (next === syncedEnvironmentId) return;
     syncedEnvironmentId = next;
     stageState.setEnvironmentId(next);
@@ -380,16 +390,60 @@
     stageState.setSharedSequence(next);
   }
 
-  async function applyStudioStarter(starter: StudioStarter): Promise<void> {
-    stageState.applyStudioStarter(starter);
-    // Stage owns cast, formation and world; the shared performer manager owns
-    // the prop look. Waiting one render lets the canonical cast adapter create
-    // exactly the rigs the fresh Stage document called for.
-    viewer.setEnvironmentId(starter.environmentId);
+  function transitionDelay(duration: number): Promise<void> {
+    return new Promise((resolve) => window.setTimeout(resolve, duration));
+  }
+
+  async function transitionStarterScene(
+    change: () => Promise<void> | void
+  ): Promise<void> {
+    const transitionId = ++starterTransitionId;
+    starterCurtainVisible = true;
     await tick();
-    for (const performer of viewer.performerManager.performers) {
-      performer.setProp(starter.prop, { equipBuild: false });
-    }
+
+    const duration = motionDuration(DURATION.normal);
+    if (duration > 0) await transitionDelay(duration);
+    if (transitionId !== starterTransitionId) return;
+
+    await change();
+    await tick();
+    if (transitionId === starterTransitionId) starterCurtainVisible = false;
+  }
+
+  function startEmptyStage(): void {
+    chartRaised = false;
+    if (stageState.isPlaying) stageState.togglePlay();
+    void transitionStarterScene(() => {
+      // The blank setup is a view over the seeded example, not a second Stage
+      // document. The real document stays untouched until the final action.
+      starterEnvironmentPreview = true;
+      viewer.setEnvironmentId(SceneEnvironmentId.VOID);
+      starterSceneBlank = true;
+    });
+  }
+
+  function returnToStarterExample(): void {
+    void transitionStarterScene(() => {
+      viewer.setEnvironmentId(choreography.environmentId);
+      starterSceneBlank = false;
+      starterEnvironmentPreview = false;
+    });
+  }
+
+  async function applyStudioStarter(starter: StudioStarter): Promise<void> {
+    await transitionStarterScene(async () => {
+      stageState.applyStudioStarter(starter);
+      // Stage owns cast, formation and world; the shared performer manager owns
+      // the prop look. Waiting one render lets the canonical cast adapter create
+      // exactly the rigs the fresh Stage document called for.
+      viewer.setEnvironmentId(starter.environmentId);
+      starterSceneBlank = false;
+      await tick();
+      for (const performer of viewer.performerManager.performers) {
+        performer.setProp(starter.prop, { equipBuild: false });
+      }
+      starterEnvironmentPreview = false;
+    });
   }
 
   /** One count, and the eight counts a drill is written in. */
@@ -520,6 +574,14 @@
     </div>
   {/if}
 
+  {#if starterCurtainVisible}
+    <div
+      class="starter-scene-curtain"
+      aria-hidden="true"
+      transition:flyFade={{ duration: DURATION.normal, x: 0, y: 0 }}
+    ></div>
+  {/if}
+
   {#if sequenceLoadState === "loading"}
     <div class="load-notice" role="status" aria-live="polite">
       <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
@@ -544,6 +606,8 @@
       onChooseSequence={() => (pickerOpen = true)}
       onOpenChoreography={() => openChoreography(true)}
       onVisibilityChange={(visible) => (starterVisible = visible)}
+      onStartEmptyStage={startEmptyStage}
+      onReturnToExample={returnToStarterExample}
     />
   {/if}
 {/snippet}
@@ -577,13 +641,15 @@
         immersive={fullscreen.immersive}
         onToggleImmersive={(host) => fullscreen.toggleImmersive(host)}
         {performerSteps}
-        worldChildren={floorPaths}
+        worldChildren={starterSceneBlank ? undefined : floorPaths}
         hudActions={stageHudActions}
         overlayChildren={stageOverlay}
         hideCanvasOverlays
         sceneControlsBottomOffset="0.75rem"
         allowSaveScene={false}
         renderEmptyScene
+        visiblePerformerCount={starterSceneBlank ? 0 : undefined}
+        showSceneChrome={!starterSceneBlank}
         contained
       />
     {:else}
@@ -715,6 +781,20 @@
     min-width: 0;
     flex: none;
     overflow-y: auto;
+  }
+
+  .starter-scene-curtain {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    background:
+      radial-gradient(
+        circle at 42% 46%,
+        color-mix(in srgb, var(--theme-accent) 7%, transparent),
+        transparent 34%
+      ),
+      color-mix(in srgb, var(--theme-panel-bg, #0c0e16) 96%, #000);
+    pointer-events: none;
   }
 
   .load-notice {
