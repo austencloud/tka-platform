@@ -38,6 +38,8 @@ const HOSTS: Record<string, string> = {
     "src/lib/features/create/shared/components/coordinators/StepEditorCoordinator.svelte",
   "settings prop type tab":
     "src/lib/shared/settings/components/tabs/PropTypeTab.svelte",
+  "sequence viewer props panel":
+    "src/lib/shared/sequence-viewer/components/SequenceViewerShell.svelte",
   "tunnel settings panel":
     "src/lib/features/create/tunnel/components/TunnelLayout.svelte",
   "viewer tunnel art settings":
