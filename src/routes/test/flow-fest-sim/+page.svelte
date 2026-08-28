@@ -199,6 +199,9 @@
   const fixedReviewEnabled = $derived(
     gate3Review.enabled || entranceReferenceReview.enabled
   );
+  const preserveReviewFrame = $derived(
+    gate5Capture || gate6Capture || fixedReviewEnabled
+  );
 
   const objective = $derived(progress ? getFlowFestObjective(progress) : null);
   const selectedBranch = $derived<FlowFestBranchId>(
@@ -1090,7 +1093,7 @@
         new WebGLRenderer({
           canvas,
           antialias: true,
-          preserveDrawingBuffer: true,
+          preserveDrawingBuffer: preserveReviewFrame,
         })}
     >
       {#key sceneKey}

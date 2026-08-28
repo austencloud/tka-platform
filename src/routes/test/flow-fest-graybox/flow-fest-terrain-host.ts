@@ -48,6 +48,17 @@ export interface FlowFestChunkSeamTraversal {
 
 const CHUNK_SEGMENTS = 32;
 
+export function flowFestColliderWindowKey(
+  x: number,
+  z: number,
+  worldBounds: { minX: number; minZ: number },
+  chunkSizeMeters = CHUNK_SEGMENTS
+): string {
+  const column = Math.floor((x - worldBounds.minX) / chunkSizeMeters);
+  const row = Math.floor((z - worldBounds.minZ) / chunkSizeMeters);
+  return `${column}:${row}`;
+}
+
 /**
  * Register each chunk-grid crossing and probe five centimetres before, on,
  * and after it. This is the deterministic traversal set used by the live
