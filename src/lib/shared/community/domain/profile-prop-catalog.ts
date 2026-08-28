@@ -61,13 +61,13 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.FAN,
     label: "Fan",
-    description: "All fan styles",
+    description: "",
     choices: [skill(PropType.FAN, "Fan", [PropType.FAN, PropType.BIGFAN])],
   },
   {
     representative: PropType.BUUGENG,
     label: "Buugeng",
-    description: "All buugeng styles",
+    description: "",
     choices: [
       skill(PropType.BUUGENG, "Buugeng", [
         PropType.BUUGENG,
@@ -78,7 +78,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.MINIHOOP,
     label: "Hoop",
-    description: "Choose mini, big, or both",
+    description: "Mini or big",
     choices: [
       skill(PropType.MINIHOOP, "Mini Hoop", [PropType.MINIHOOP]),
       skill(PropType.BIGHOOP, "Big Hoop", [PropType.BIGHOOP]),
@@ -99,7 +99,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.TRIQUETRA,
     label: "Triquetra",
-    description: "All triquetra styles",
+    description: "",
     choices: [
       skill(PropType.TRIQUETRA, "Triquetra", [
         PropType.TRIQUETRA,
@@ -118,7 +118,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.DOUBLESTAR,
     label: "Double Star",
-    description: "All double star styles",
+    description: "",
     choices: [
       skill(PropType.DOUBLESTAR, "Double Star", [
         PropType.DOUBLESTAR,
@@ -129,7 +129,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.EIGHTRINGS,
     label: "Eight Rings",
-    description: "All eight-ring styles",
+    description: "",
     choices: [
       skill(PropType.EIGHTRINGS, "Eight Rings", [
         PropType.EIGHTRINGS,

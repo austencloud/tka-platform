@@ -45,7 +45,7 @@
             useSavedOverrides={false}
           />
         </span>
-        <span class="choice-label">{choice.label}</span>
+        <span class="choice-label">{choice.label.replace(" Hoop", "")}</span>
         {#if selected}
           <span class="selected-mark" aria-hidden="true">
             <i class="fas fa-check"></i>

@@ -56,9 +56,11 @@
   </span>
   <span class="card-copy">
     <strong>{family.label}</strong>
-    <small
-      >{selected && hasChoices ? selectionSummary : family.description}</small
-    >
+    {#if selected && hasChoices}
+      <small>{selectionSummary}</small>
+    {:else if family.description}
+      <small>{family.description}</small>
+    {/if}
   </span>
   {#if hasChoices}
     <span class="detail-cue" aria-hidden="true">
