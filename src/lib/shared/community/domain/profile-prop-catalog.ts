@@ -11,7 +11,6 @@ export interface ProfilePropSkillChoice {
 export interface ProfilePropFamily {
   representative: PropType;
   label: string;
-  description: string;
   choices: readonly ProfilePropSkillChoice[];
 }
 
@@ -32,7 +31,6 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.STAFF,
     label: "Staff",
-    description: "Includes batons",
     choices: [
       skill(PropType.STAFF, "Staff", [
         PropType.STAFF,
@@ -48,7 +46,6 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.CLUB,
     label: "Club",
-    description: "Includes torches",
     choices: [
       skill(PropType.CLUB, "Club", [
         PropType.CLUB,
@@ -61,13 +58,11 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.FAN,
     label: "Fan",
-    description: "",
     choices: [skill(PropType.FAN, "Fan", [PropType.FAN, PropType.BIGFAN])],
   },
   {
     representative: PropType.BUUGENG,
     label: "Buugeng",
-    description: "",
     choices: [
       skill(PropType.BUUGENG, "Buugeng", [
         PropType.BUUGENG,
@@ -78,7 +73,6 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.MINIHOOP,
     label: "Hoop",
-    description: "Mini or big",
     choices: [
       skill(PropType.MINIHOOP, "Mini Hoop", [PropType.MINIHOOP]),
       skill(PropType.BIGHOOP, "Big Hoop", [PropType.BIGHOOP]),
@@ -87,7 +81,6 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.TRIAD,
     label: "Triad",
-    description: "Includes trigengs",
     choices: [
       skill(PropType.TRIAD, "Triad", [
         PropType.TRIAD,
@@ -99,7 +92,6 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.TRIQUETRA,
     label: "Triquetra",
-    description: "",
     choices: [
       skill(PropType.TRIQUETRA, "Triquetra", [
         PropType.TRIQUETRA,
@@ -110,7 +102,6 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.SWORD,
     label: "Sword",
-    description: "Includes lightsabers",
     choices: [
       skill(PropType.SWORD, "Sword", [PropType.SWORD, PropType.ENERGY_SABER]),
     ],
@@ -118,7 +109,6 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.DOUBLESTAR,
     label: "Double Star",
-    description: "",
     choices: [
       skill(PropType.DOUBLESTAR, "Double Star", [
         PropType.DOUBLESTAR,
@@ -129,7 +119,6 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.EIGHTRINGS,
     label: "Eight Rings",
-    description: "",
     choices: [
       skill(PropType.EIGHTRINGS, "Eight Rings", [
         PropType.EIGHTRINGS,

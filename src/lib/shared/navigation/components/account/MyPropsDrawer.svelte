@@ -209,8 +209,8 @@
       </h2>
       <p class="modal-description">
         {step === "props"
-          ? "Shown on your profile and used in prop search."
-          : "Shown beside your name on creator cards. Your full list stays the same."}
+          ? "On your profile and in prop search."
+          : "Beside your name on creator cards."}
       </p>
       <button
         type="button"
@@ -475,46 +475,4 @@
     height: 100%;
   }
 
-  @media (min-width: 1680px) {
-    :global(.my-props-modal) {
-      width: min(86vw, 96rem) !important;
-    }
-  }
-
-  @media (min-width: 2300px) and (min-height: 45rem) {
-    :global(.my-props-modal) {
-      width: 78vw !important;
-    }
-
-    .modal-header {
-      gap: 0.5rem;
-      padding: 2rem 6rem 1rem 2rem;
-    }
-
-    .step-label {
-      font-size: 1.125rem;
-    }
-
-    .modal-title {
-      font-size: 2.25rem;
-    }
-
-    .modal-description,
-    .prop-error,
-    .legacy-props strong {
-      font-size: 1.375rem;
-    }
-
-    .legacy-chip {
-      font-size: 1.125rem;
-    }
-
-    .close-button {
-      top: 1.75rem;
-      right: 2rem;
-      width: 4rem;
-      height: 4rem;
-      font-size: 1.5rem;
-    }
-  }
 </style>
