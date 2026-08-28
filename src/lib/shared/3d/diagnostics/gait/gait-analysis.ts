@@ -150,6 +150,13 @@ export interface GaitReport {
   /** How far the worst one moved in a single frame, metres. */
   peakJoltStep: number;
 
+  /** Seconds the feet reversed the left/right ordering of the thighs. */
+  legCrossingSeconds: number;
+  /** Share of measured time spent in a self-crossing pose. */
+  legCrossingFraction: number;
+  /** Worst signed lateral clearance. Negative means the feet crossed. */
+  minimumLegOrderMargin: number;
+
   /** Seconds the feet kept cycling while the root was not going anywhere. */
   inPlaceCyclingSeconds: number;
   inPlaceCyclingFraction: number;
@@ -598,6 +605,25 @@ function rightOf(facing: number): [number, number] {
 }
 
 /**
+ * Lateral foot ordering compared with the avatar's own thighs.
+ *
+ * This is the runtime version of Unreal's Crashing Legs test: world axes and
+ * left/right naming conventions do not matter, because the thigh ordering is
+ * the reference. A negative result means the feet have swapped sides under
+ * the body, which is the pose that makes a sidestep pass through itself.
+ */
+export function legOrderMargin(frame: GaitFrame): number {
+  const [rx, rz] = rightOf(frame.facing);
+  const thighOrder =
+    (frame.right.hip.x - frame.left.hip.x) * rx +
+    (frame.right.hip.z - frame.left.hip.z) * rz;
+  const footOrder =
+    (frame.right.ankle.x - frame.left.ankle.x) * rx +
+    (frame.right.ankle.z - frame.left.ankle.z) * rz;
+  return footOrder * (thighOrder < 0 ? -1 : 1);
+}
+
+/**
  * Signed lateral offset of the pelvis from the foot carrying it.
  *
  * Positive is the character's right. Walking transfers the body over each foot
@@ -656,6 +682,9 @@ function emptyReport(frameCount: number): GaitReport {
     peakJolt: 0,
     peakJoltJoint: null,
     peakJoltStep: 0,
+    legCrossingSeconds: 0,
+    legCrossingFraction: 0,
+    minimumLegOrderMargin: 0,
     inPlaceCyclingSeconds: 0,
     inPlaceCyclingFraction: 0,
     weightShiftAmplitude: 0,
@@ -749,6 +778,15 @@ export function analyzeGait(
 
   const { twitches, jerkRms } = findTwitches(frames, thresholds);
   const jolt = findJolts(frames, thresholds);
+  let legCrossingSeconds = 0;
+  let minimumLegOrderMargin = Infinity;
+  for (const frame of frames) {
+    const margin = legOrderMargin(frame);
+    minimumLegOrderMargin = Math.min(minimumLegOrderMargin, margin);
+    // A centimetre of numerical/skin-width overlap at a foot-to-foot closure
+    // is not one leg travelling through the other. Beyond that, it is.
+    if (margin < -0.01) legCrossingSeconds += Math.max(0, frame.dt);
+  }
 
   // Balancing on a leg means bringing the body over it, so the pelvis must sit
   // LEFT of the travel line while the left foot carries it and right of the
@@ -790,6 +828,12 @@ export function analyzeGait(
     peakJolt: jolt.peak,
     peakJoltJoint: jolt.peakJoint,
     peakJoltStep: jolt.peakStep,
+    legCrossingSeconds,
+    legCrossingFraction:
+      duration > 0 ? legCrossingSeconds / duration : 0,
+    minimumLegOrderMargin: Number.isFinite(minimumLegOrderMargin)
+      ? minimumLegOrderMargin
+      : 0,
     inPlaceCyclingSeconds: inPlace,
     inPlaceCyclingFraction: duration > 0 ? inPlace / duration : 0,
     weightShiftAmplitude,

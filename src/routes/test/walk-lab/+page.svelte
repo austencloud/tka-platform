@@ -32,6 +32,7 @@
     userProportionsState,
     type AvatarId,
     type LocomotionGaitClock,
+    type TerminalStepPlan,
   } from "@austencloud/scene-3d";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
@@ -46,7 +47,10 @@
     WALK_PATTERNS,
     walkPattern,
   } from "$lib/shared/3d/diagnostics/gait/walk-patterns";
-  import { createDestinationWalkPlan } from "$lib/shared/3d/locomotion/destination-walk-plan";
+  import {
+    createDestinationWalkPlan,
+    createTerminalStepPlan,
+  } from "$lib/shared/3d/locomotion/destination-walk-plan";
   import WalkDriver from "./WalkDriver.svelte";
   import type { ManualInput, WalkState } from "./walk-command";
 
@@ -191,6 +195,13 @@
     walkPattern(isExactMark ? WALK_PATTERNS[0]!.id : patternId)
   );
   const isManual = $derived(patternId === MANUAL);
+  const gaitManeuver = $derived(
+    patternId === "pivot"
+      ? "turn-in-place"
+      : patternId === "sidestep"
+        ? "lateral"
+        : "walk"
+  );
   const destinationPlan = $derived(
     isExactMark
       ? createDestinationWalkPlan({
@@ -214,8 +225,20 @@
     direction: { x: 0, z: 1 },
     phase: "standing",
     travelled: 0,
+    turnRequest: null,
   });
   let gaitClock = $state<LocomotionGaitClock | null>(null);
+  let departureGaitStep = $state<number | null>(null);
+  const terminalStepPlan = $derived<TerminalStepPlan | null>(
+    destinationPlan && departureGaitStep !== null
+      ? createTerminalStepPlan(
+          destinationPlan,
+          departureGaitStep,
+          `walk-lab-${resetNonce}`,
+          Math.atan2(destinationPlan.direction.x, destinationPlan.direction.z)
+        )
+      : null
+  );
   const exactMarkArrived = $derived(
     isExactMark && walk.completedSteps === markSteps
   );
@@ -559,6 +582,8 @@
             isMoving={walk.isMoving}
             moveSpeed={walk.speed}
             moveDirection={walk.direction}
+            turnRequestOverride={walk.turnRequest ?? null}
+            {terminalStepPlan}
             onGaitClock={(clock) => (gaitClock = clock)}
           />
         {/key}
@@ -572,6 +597,7 @@
         {destinationPlan}
         {gaitClock}
         {resetNonce}
+        onDepartureStep={(step) => (departureGaitStep = step)}
         onState={(state) => {
           walk = state;
           // Straight to the controls rather than through a reactive `target`
@@ -641,7 +667,11 @@
     </div>
 
     {#key compactProbe}
-      <GaitOverlay collapsed={compactProbe} showArrival={isExactMark} />
+      <GaitOverlay
+        collapsed={compactProbe}
+        showArrival={isExactMark}
+        maneuver={gaitManeuver}
+      />
     {/key}
   </div>
 

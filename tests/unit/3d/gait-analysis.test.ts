@@ -9,6 +9,7 @@ import {
   findTwitches,
   latestArrivalFrames,
   latestTravelFrames,
+  legOrderMargin,
   lateralOffsetOverSupport,
   resolveGroundY,
   supportOf,
@@ -430,6 +431,32 @@ describe("gait analysis", () => {
     expect(lateralOffsetOverSupport(f, "left")).toBeCloseTo(0.1, 5);
     expect(lateralOffsetOverSupport(f, "both")).toBeNull();
     expect(lateralOffsetOverSupport(f, "flight")).toBeNull();
+  });
+
+  it("detects feet crossing sides under the thighs", () => {
+    const clear = frame(
+      0,
+      { x: 0, z: 0 },
+      { x: 0.1, y: 0, z: 0 },
+      { x: -0.1, y: 0, z: 0 }
+    );
+    const crossed = {
+      ...clear,
+      left: { ...clear.left, ankle: { ...clear.left.ankle, x: -0.08 } },
+      right: { ...clear.right, ankle: { ...clear.right.ankle, x: 0.08 } },
+    };
+
+    expect(legOrderMargin(clear)).toBeGreaterThan(0);
+    expect(legOrderMargin(crossed)).toBeLessThan(0);
+
+    const frames = Array.from({ length: 20 }, (_, index) => ({
+      ...(index < 10 ? clear : crossed),
+      t: index * DT,
+    }));
+    const report = analyzeGait(frames);
+    expect(report.legCrossingSeconds).toBeGreaterThan(0);
+    expect(report.legCrossingFraction).toBeGreaterThan(0.4);
+    expect(report.minimumLegOrderMargin).toBeLessThan(0);
   });
 
   it("throws away stance runs too short to be a step", () => {

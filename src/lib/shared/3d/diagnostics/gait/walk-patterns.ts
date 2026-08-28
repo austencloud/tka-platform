@@ -21,6 +21,8 @@
  * animator was told about, which is the whole basis of the stride it plays.
  */
 
+import type { TurnRequest } from "@austencloud/scene-3d";
+
 /** What the character is being asked to do this frame. */
 export interface WalkTick {
   /** Absolute facing in radians. 0 faces +Z. */
@@ -36,6 +38,8 @@ export interface WalkTick {
   direction: { x: number; z: number };
   /** What this moment is, named for the readout. */
   phase: string;
+  /** Authored in-place turn pose and root motion, when this tick is a pivot. */
+  turnRequest?: TurnRequest;
 }
 
 export interface WalkPattern {
@@ -400,18 +404,55 @@ const ramp: WalkPattern = {
   },
 };
 
-/** Standing, turning on the spot. */
+const PIVOT_SEGMENT_SECONDS = 3;
+const PIVOT_SETTLE_SECONDS = 0.8;
+const PIVOT_CLIP_SECONDS = 1;
+const PIVOT_RELEASE_SECONDS = 0.25;
+const PIVOT_ENTRY_SECONDS = 0.18;
+const PIVOT_HEADINGS = [0, Math.PI / 2, 0, -Math.PI / 2, 0] as const;
+
+/** Standing, turning on the spot with the authored quarter-turn clips. */
 const pivot: WalkPattern = {
   id: "pivot",
   label: "Turn on the spot",
-  hunts: "yaw with both feet planted and no clip asking them to move",
-  period: () => 12,
+  hunts: "authored left and right foot placements during quarter turns",
+  period: () => PIVOT_SEGMENT_SECONDS * (PIVOT_HEADINGS.length - 1),
   tick: (t) => {
-    const u = (t % 12) / 12;
-    // Two half-turns a lap, each with a settled stand either side of it.
-    const sweep = u < 0.5 ? smooth((u - 0.1) / 0.3) : smooth((u - 0.6) / 0.3);
-    const base = u < 0.5 ? 0 : Math.PI;
-    return stand(base + Math.PI * sweep, "pivoting");
+    const period = PIVOT_SEGMENT_SECONDS * (PIVOT_HEADINGS.length - 1);
+    const wrapped = ((t % period) + period) % period;
+    const segment = Math.min(
+      PIVOT_HEADINGS.length - 2,
+      Math.floor(wrapped / PIVOT_SEGMENT_SECONDS)
+    );
+    const local = wrapped - segment * PIVOT_SEGMENT_SECONDS;
+    const fromHeading = PIVOT_HEADINGS[segment]!;
+    const toHeading = PIVOT_HEADINGS[segment + 1]!;
+
+    if (local < PIVOT_SETTLE_SECONDS) {
+      return stand(fromHeading, "settled before turn");
+    }
+
+    const turnElapsed = local - PIVOT_SETTLE_SECONDS;
+    const phase = Math.min(1, turnElapsed / PIVOT_CLIP_SECONDS);
+    if (turnElapsed < PIVOT_CLIP_SECONDS + PIVOT_RELEASE_SECONDS) {
+      const direction = toHeading > fromHeading ? "left" : "right";
+      const poseWeight =
+        turnElapsed <= PIVOT_CLIP_SECONDS
+          ? smooth(turnElapsed / PIVOT_ENTRY_SECONDS)
+          : 1 -
+            smooth(
+              (turnElapsed - PIVOT_CLIP_SECONDS) / PIVOT_RELEASE_SECONDS
+            );
+      return {
+        ...stand(
+          fromHeading + (toHeading - fromHeading) * phase,
+          `turning ${direction}`
+        ),
+        turnRequest: { fromHeading, toHeading, phase, poseWeight },
+      };
+    }
+
+    return stand(toHeading, "settled after turn");
   },
 };
 

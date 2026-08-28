@@ -13,18 +13,14 @@ import math
 import os
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
+source_dir = os.path.normpath(os.path.join(script_dir, "..", "locomotion-pack"))
 
 # Map FBX source -> clip name (matches the GLB clip names)
 clips = {
-    "turn-left-90.fbx": "turn-left-90",
-    "turn-right-90.fbx": "turn-right-90",
-    "turn-left-180.fbx": "turn-left-180",
-    "turn-right-180.fbx": "turn-right-180",
+    "left turn 90.fbx": "turn-left-90",
+    "right turn 90.fbx": "turn-right-90",
 }
 
-# Thresholds (tuned for Mixamo humanoid at default scale)
-HEIGHT_THRESHOLD = 5.0    # cm — foot bone below this = potentially planted
-VELOCITY_THRESHOLD = 8.0  # cm/frame — foot moving slower than this = planted
 BLEND_FRAMES = 2          # frames to ramp contact weight in/out
 
 # Mixamo bone names to search for
@@ -95,12 +91,58 @@ def bake_contact_curve(fbx_path, clip_name):
         left_positions.append(left_pos)
         right_positions.append(right_pos)
 
+    # Mixamo FBXs do not all arrive with the same Blender up axis or unit
+    # scale. The feet move least along the vertical axis, so use their sampled
+    # range to find up, then derive contact tolerances from the rig's height.
+    all_foot_positions = left_positions + right_positions
+    axis_ranges = [
+        max(position[axis] for position in all_foot_positions)
+        - min(position[axis] for position in all_foot_positions)
+        for axis in range(3)
+    ]
+    up_axis = min(range(3), key=lambda axis: axis_ranges[axis])
+    ground = min(position[up_axis] for position in all_foot_positions)
+
+    bpy.context.scene.frame_set(frame_start)
+    bpy.context.view_layer.update()
+    bone_positions = [
+        (armature.matrix_world @ bone.matrix).to_translation()
+        for bone in armature.pose.bones
+    ]
+    body_height = max(position[up_axis] for position in bone_positions) - ground
+    height_threshold = ground + 0.035 * body_height
+    # A turn may keep a foot low while rolling around the heel or forefoot.
+    # Height alone calls that whole pivot "planted" and a loose velocity gate
+    # pins the moving toe to the floor. Only declare a toe-owned anchor while
+    # that toe is genuinely stationary; moving low frames stay authored and
+    # are not fought by the late IK pass.
+    velocity_threshold = 0.006 * body_height
+    print(
+        f"  Up axis: {'XYZ'[up_axis]}, body height: {body_height:.4f}, "
+        f"height threshold: {height_threshold:.4f}, "
+        f"velocity threshold: {velocity_threshold:.4f}"
+    )
+
+    for label, positions in (("left", left_positions), ("right", right_positions)):
+        velocities = [
+            (positions[index] - positions[index - 1]).length / body_height
+            for index in range(1, len(positions))
+        ]
+        velocities.sort()
+        print(
+            f"  {label} normalized velocity/frame: "
+            f"p25={velocities[len(velocities) // 4]:.4f}, "
+            f"p50={velocities[len(velocities) // 2]:.4f}, "
+            f"p75={velocities[(len(velocities) * 3) // 4]:.4f}, "
+            f"max={velocities[-1]:.4f}"
+        )
+
     # Compute per-frame: height (Y in Blender = up) and velocity
     def compute_raw_contact(positions):
         """Returns per-frame raw contact state: 1 = planted, 0 = airborne."""
         raw = []
         for i, pos in enumerate(positions):
-            height = pos.y  # Blender Y = up
+            height = pos[up_axis]
             if i == 0:
                 velocity = 0
             else:
@@ -110,8 +152,8 @@ def bake_contact_curve(fbx_path, clip_name):
                 dz = pos.z - prev.z
                 velocity = math.sqrt(dx*dx + dy*dy + dz*dz)
 
-            is_low = height < HEIGHT_THRESHOLD
-            is_slow = velocity < VELOCITY_THRESHOLD
+            is_low = height <= height_threshold
+            is_slow = velocity <= velocity_threshold
             raw.append(1.0 if (is_low and is_slow) else 0.0)
         return raw
 
@@ -153,7 +195,7 @@ def bake_contact_curve(fbx_path, clip_name):
 
 # Process each clip
 for fbx_name, clip_name in clips.items():
-    fbx_path = os.path.join(script_dir, fbx_name)
+    fbx_path = os.path.join(source_dir, fbx_name)
     json_path = os.path.join(script_dir, f"{clip_name}.contact.json")
 
     if not os.path.exists(fbx_path):

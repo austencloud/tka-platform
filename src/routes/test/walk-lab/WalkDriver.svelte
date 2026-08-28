@@ -40,6 +40,7 @@
     /** Change it to put the character back at the origin. */
     resetNonce: number;
     onState: (state: WalkState) => void;
+    onDepartureStep?: (step: number | null) => void;
   }
 
   let {
@@ -51,6 +52,7 @@
     gaitClock = null,
     resetNonce,
     onState,
+    onDepartureStep,
   }: Props = $props();
 
   /** Radians a second the hand-driven mode turns at. */
@@ -62,6 +64,7 @@
   let facing = 0;
   let travelled = 0;
   let departureStep: number | null = null;
+  let departureDistanceStep: number | null = null;
 
   $effect(() => {
     // Read so the reset re-runs, then clear everything the path accumulated.
@@ -72,6 +75,8 @@
     facing = 0;
     travelled = 0;
     departureStep = null;
+    departureDistanceStep = null;
+    onDepartureStep?.(null);
   });
 
   function driveDestination(plan: DestinationWalkPlan, dt: number): void {
@@ -80,12 +85,23 @@
     // Capture the animator where it is rather than inventing a second phase
     // origin. The first command starts movement; the callback then advances
     // this same clock on the next frame.
-    if (departureStep === null && gaitClock) departureStep = gaitClock.step;
+    if (departureStep === null && gaitClock) {
+      departureStep = gaitClock.step;
+      departureDistanceStep = gaitClock.distanceStep ?? gaitClock.step;
+      onDepartureStep?.(departureStep);
+    }
     const authoredStep =
       departureStep === null || !gaitClock
         ? 0
         : Math.max(0, gaitClock.step - departureStep);
-    const sample = sampleDestinationWalkPlan(plan, authoredStep);
+    const distanceStep =
+      departureDistanceStep === null || !gaitClock
+        ? authoredStep
+        : Math.max(
+            0,
+            (gaitClock.distanceStep ?? gaitClock.step) - departureDistanceStep
+          );
+    const sample = sampleDestinationWalkPlan(plan, authoredStep, distanceStep);
 
     x = sample.position.x;
     z = sample.position.z;
@@ -99,10 +115,10 @@
       z,
       facing,
       isMoving: moving,
-      // The gait clock controls progress. This speed remains the animation's
-      // matching intent until explicit step-length/cadence inputs reach the
-      // rig contract.
-      speed: moving ? plan.stepLength * plan.cadence : 0,
+      // Each braking placement has its own distance. Feeding that distance's
+      // speed keeps stride warping matched to the root plan instead of asking
+      // the feet to keep a steady-loop stride while the body decelerates.
+      speed: moving ? sample.speed : 0,
       direction: { x: 0, z: 1 },
       phase: sample.arrived
         ? `arrived on step ${plan.steps}`
@@ -111,6 +127,7 @@
       plannedSteps: plan.steps,
       completedSteps: sample.step,
       endpointError: plan.distance - travelled,
+      turnRequest: null,
     });
   }
 
@@ -164,6 +181,7 @@
           : { x: 0, z: 1 },
       phase: tick.phase,
       travelled,
+      turnRequest: tick.turnRequest ?? null,
     });
   });
 </script>

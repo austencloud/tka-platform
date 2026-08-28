@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   createDestinationWalkPlan,
+  createTerminalStepPlan,
   sampleDestinationWalkPlan,
 } from "$lib/shared/3d/locomotion/destination-walk-plan";
 
 describe("destination walk plan", () => {
-  it("puts every requested footfall at an evenly spaced mark", () => {
+  it("reserves two shorter placements for a real braking window", () => {
     const plan = createDestinationWalkPlan({
       from: { x: -1, z: 2 },
       to: { x: 3, z: 5 },
@@ -18,11 +19,42 @@ describe("destination walk plan", () => {
     expect(plan.stepLength).toBeCloseTo(1, 10);
     expect(plan.duration).toBeCloseTo(2.5, 10);
 
+    expect(plan.stepDistances.slice(0, 3)).toEqual([
+      3.5 / 3,
+      3.5 / 3,
+      3.5 / 3,
+    ]);
+    expect(plan.stepDistances[3]).toBeCloseTo(0.95, 10);
+    expect(plan.stepDistances[4]).toBeCloseTo(0.55, 10);
+    expect(plan.terminalStartStep).toBe(3);
+    expect(plan.terminalDistance).toBeCloseTo(1.5, 10);
+
     for (let step = 0; step <= plan.steps; step++) {
       const sample = sampleDestinationWalkPlan(plan, step);
-      expect(sample.position.x).toBeCloseTo(-1 + (4 * step) / 5, 10);
-      expect(sample.position.z).toBeCloseTo(2 + (3 * step) / 5, 10);
+      const distance = plan.stepBoundaries[step]!;
+      expect(sample.position.x).toBeCloseTo(-1 + 0.8 * distance, 10);
+      expect(sample.position.z).toBeCloseTo(2 + 0.6 * distance, 10);
     }
+  });
+
+  it("arms the matching terminal foot exactly two steps before arrival", () => {
+    const plan = createDestinationWalkPlan({
+      from: { x: 0, z: 0 },
+      to: { x: 0, z: 8 },
+      steps: 12,
+    });
+    const terminal = createTerminalStepPlan(plan, 4, "walk-17", 0);
+
+    expect(terminal).toMatchObject({
+      id: "walk-17",
+      startAtGaitStep: 14,
+      landAtGaitStep: 16,
+      terminalFoot: "left",
+      cadence: plan.cadence,
+      targetFacing: 0,
+    });
+    expect(terminal.stepDistances).toEqual(plan.stepDistances.slice(-2));
+    expect(terminal.remainingDistance).toBeCloseTo(plan.terminalDistance, 10);
   });
 
   it("reaches the destination exactly without an overshoot correction", () => {
@@ -55,6 +87,25 @@ describe("destination walk plan", () => {
       .at(-1)!;
 
     expect(manyFrames).toEqual(oneFrame);
+  });
+
+  it("follows authored root distance without changing the footfall count", () => {
+    const plan = createDestinationWalkPlan({
+      from: { x: 0, z: 0 },
+      to: { x: 0, z: 6 },
+      steps: 6,
+    });
+
+    // Halfway through the second footfall in clip time, the captured root has
+    // completed only a quarter of that step's travel.
+    const sample = sampleDestinationWalkPlan(plan, 1.5, 1.25);
+
+    expect(sample.step).toBe(1.5);
+    expect(sample.position.z).toBeCloseTo(
+      plan.stepBoundaries[1]! + plan.stepDistances[1]! * 0.25,
+      10
+    );
+    expect(sample.remainingSteps).toBe(4.5);
   });
 
   it("clamps observations before departure without walking backwards", () => {
@@ -98,5 +149,12 @@ describe("destination walk plan", () => {
     expect(() =>
       sampleDestinationWalkPlan(createDestinationWalkPlan(base), NaN)
     ).toThrow("step must be finite");
+    expect(() =>
+      sampleDestinationWalkPlan(
+        createDestinationWalkPlan(base),
+        1,
+        Number.POSITIVE_INFINITY
+      )
+    ).toThrow("distanceStep must be finite");
   });
 });

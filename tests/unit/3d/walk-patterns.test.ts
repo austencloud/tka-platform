@@ -153,4 +153,34 @@ describe("walk patterns", () => {
     );
     expect(step).toEqual({ dx: 0, dz: 0, distance: 0 });
   });
+
+  it("drives stationary pivots through authored quarter-turn requests", () => {
+    const pivot = walkPattern("pivot");
+
+    expect(pivot.tick(0.4, 1).turnRequest).toBeUndefined();
+
+    const left = pivot.tick(1.3, 1);
+    expect(left.turnRequest?.fromHeading).toBe(0);
+    expect(left.turnRequest?.toHeading).toBe(Math.PI / 2);
+    expect(left.turnRequest?.phase).toBeCloseTo(0.5, 8);
+    expect(left.turnRequest?.poseWeight).toBe(1);
+    expect(left.facing).toBeCloseTo(Math.PI / 4, 8);
+    expect(left.isMoving).toBe(false);
+
+    const right = pivot.tick(4.3, 1);
+    expect(right.turnRequest?.fromHeading).toBe(Math.PI / 2);
+    expect(right.turnRequest?.toHeading).toBe(0);
+    expect(right.turnRequest?.phase).toBeCloseTo(0.5, 8);
+    expect(right.turnRequest?.poseWeight).toBe(1);
+    expect(right.facing).toBeCloseTo(Math.PI / 4, 8);
+
+    const release = pivot.tick(2.1, 1);
+    expect(release.turnRequest).toBeUndefined();
+    expect(release.facing).toBeCloseTo(Math.PI / 2, 8);
+
+    const blendingOut = pivot.tick(1.9, 1);
+    expect(blendingOut.turnRequest?.phase).toBe(1);
+    expect(blendingOut.turnRequest?.poseWeight).toBeGreaterThan(0);
+    expect(blendingOut.turnRequest?.poseWeight).toBeLessThan(1);
+  });
 });

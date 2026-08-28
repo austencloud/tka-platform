@@ -10,7 +10,10 @@
    * this free for every surface that carries it and never turns it on.
    */
 
-  import { countFailing } from "./gait-verdicts";
+  import {
+    countFailing,
+    type GaitManeuverProfile,
+  } from "./gait-verdicts";
   import GaitReadout from "./GaitReadout.svelte";
   import { gaitProbeState } from "./gait-probe-state.svelte";
 
@@ -19,9 +22,15 @@
     collapsed?: boolean;
     /** Offer the boundary window separately from steady travel. */
     showArrival?: boolean;
+    /** Reference family used to choose meaningful diagnostic rows. */
+    maneuver?: GaitManeuverProfile;
   }
 
-  let { collapsed = false, showArrival = false }: Props = $props();
+  let {
+    collapsed = false,
+    showArrival = false,
+    maneuver = "walk",
+  }: Props = $props();
 
   let open = $state(!collapsed);
   let selected = $state<string | null>(null);
@@ -41,7 +50,7 @@
   function failCount(id: string): number {
     const report = activeReports.get(id);
     if (!report || report.stances.length === 0) return -1;
-    return countFailing(report, scope);
+    return countFailing(report, scope, maneuver);
   }
 </script>
 
@@ -109,10 +118,19 @@
 
         {#if active}
           <GaitReadout
-            label={`${active} · ${scope === "gait" ? "walking" : "arrival"}`}
+            label={`${active} · ${
+              scope === "arrival"
+                ? "arrival"
+                : maneuver === "turn-in-place"
+                  ? "turning"
+                  : maneuver === "lateral"
+                    ? "sidestepping"
+                    : "walking"
+            }`}
             report={activeReports.get(active) ?? null}
             trail={gaitProbeState.trail(active)}
             {scope}
+            {maneuver}
           />
         {:else}
           <p class="empty">No rigged avatars found in this scene yet.</p>
