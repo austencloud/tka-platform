@@ -231,4 +231,27 @@ describe("Flow Fest minimap", () => {
       label: "Lower level",
     });
   });
+
+  it("stops the woodland connector at the lower loop instead of crossing car camping", () => {
+    const contract = JSON.parse(
+      readFileSync(
+        "static/data/flow-fest-sim/gate2-runtime-contract.json",
+        "utf8"
+      )
+    ) as FlowFestRuntimeContract;
+    const sourcePoints =
+      contract.connectorTraces.middleEarthToLowerClearing.vertices;
+    const connector = createFlowFestCampPlan(
+      contract,
+      "car-camp"
+    ).footConnectors.find((line) => line.id === "middle-to-lower")!;
+    const terminal = connector.points.at(-1)!;
+
+    expect(connector.label).toBe("Middle Earth to lower loop");
+    expect(connector.points[0]).toEqual(sourcePoints[0]);
+    expect(connector.points).toHaveLength(8);
+    expect(sourcePoints).toHaveLength(14);
+    expect(terminal.x).toBeCloseTo(237.152_347, 6);
+    expect(terminal.z).toBeCloseTo(-93.313_615, 6);
+  });
 });
