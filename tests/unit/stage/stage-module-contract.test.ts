@@ -91,6 +91,29 @@ describe("One Stage ownership", () => {
     expect(stage).not.toContain("StageFirstRun");
   });
 
+  it("keeps choreography hidden until the user asks for precision tools", () => {
+    const stage = read(STAGE);
+    const starter = read(
+      "src/lib/features/stage/components/StageStarter.svelte"
+    );
+    const timeline = read(
+      "src/lib/features/stage/components/StageTimeline.svelte"
+    );
+
+    expect(stage).toContain(
+      'type TimelineDisclosure = "hidden" | "dock" | "editor"'
+    );
+    expect(stage).toContain('timelineDisclosure === "hidden"');
+    expect(stage).toContain('timelineDisclosure === "dock"');
+    expect(stage).toContain('mode="dock"');
+    expect(stage).toContain('mode="editor"');
+    expect(starter).toContain("onVisibilityChange(!dismissed)");
+    expect(starter).toContain("Choreograph the performance");
+    expect(timeline).toContain('{#if mode === "editor"}');
+    expect(timeline).toContain("grid-auto-rows: 3.5rem");
+    expect(timeline).not.toContain("grid-auto-rows: minmax(3.5rem, 1fr)");
+  });
+
   it("says nothing about phrases", () => {
     const stage = read(STAGE);
     const state = read(
