@@ -36,6 +36,63 @@ const CATEGORY_ORDER: { key: GlossaryCategory; label: string }[] = [
   { key: "execution", label: "Execution & Technique" },
 ];
 
+const ATLAS_REGION_DEFINITIONS = [
+  {
+    key: "space",
+    label: "Space",
+    summary: "Grids, points, and positions",
+    description:
+      "Explore grids, points, and named positions in one spatial reference.",
+    groupKeys: ["position", "grid"],
+    includesCodex: false,
+  },
+  {
+    key: "motion",
+    label: "Motion",
+    summary: "Hand paths and prop rotations",
+    description:
+      "Compare hand paths and prop rotations, then follow them into the letter families they produce.",
+    groupKeys: ["motion", "rotation"],
+    includesCodex: false,
+  },
+  {
+    key: "letters",
+    label: "Letters",
+    summary: "Types, variants, and use",
+    description:
+      "See the 47 canonical letters by motion type, then inspect their pictographs, variants, and learning contexts.",
+    groupKeys: ["letterType"],
+    includesCodex: true,
+  },
+  {
+    key: "notation",
+    label: "Notation",
+    summary: "Glyphs, timing, and direction",
+    description:
+      "Inspect glyphs, timing, direction, and the notation models that connect them.",
+    groupKeys: ["notation"],
+    includesCodex: false,
+  },
+  {
+    key: "patterns",
+    label: "Patterns",
+    summary: "Words, LOOPs, and transformations",
+    description:
+      "Explore words, sequences, LOOPs, constraints, and transformations without losing the underlying steps.",
+    groupKeys: ["sequence"],
+    includesCodex: false,
+  },
+  {
+    key: "foundation",
+    label: "Foundation",
+    summary: "Core concepts, props, and execution",
+    description:
+      "Trace the core concepts, prop references, and execution terms that support the rest of the system.",
+    groupKeys: ["general", "execution"],
+    includesCodex: false,
+  },
+] as const;
+
 // GLOSSARY keys are lowercase kebab slugs — that's the data/MCP lookup layer.
 // Humans read Title Case with spaces, so the page displays humanized names.
 // Overrides cover acronyms and special casing; hyphens that carry meaning
@@ -159,9 +216,63 @@ export const load: PageServerLoad = () => {
     );
   }
 
+  const groupByKey = new Map(groups.map((group) => [group.key, group]));
+  const atlasRegions = ATLAS_REGION_DEFINITIONS.map((region) => {
+    const categories = region.groupKeys.map((key) => {
+      const group = groupByKey.get(key);
+      if (!group) {
+        throw new Error(`[glossary] Missing Atlas category ${key}`);
+      }
+      return {
+        key: group.key,
+        label: group.label,
+        sectionSlug: group.sectionSlug,
+        countLabel: `${group.terms.length} terms`,
+      };
+    });
+    const termCount = region.groupKeys.reduce(
+      (count, key) => count + (groupByKey.get(key)?.terms.length ?? 0),
+      0
+    );
+
+    return {
+      ...region,
+      groupKeys: [...region.groupKeys],
+      sectionSlug: region.includesCodex ? "cat-letter" : `atlas-${region.key}`,
+      countLabel: region.includesCodex
+        ? `${BASE_ALPHABET_LETTERS.length} letters · ${LETTER_TYPE_KEYS.length} families`
+        : `${termCount} entries`,
+      categories: region.includesCodex
+        ? [
+            {
+              key: "letter",
+              label: "Letter Atlas",
+              sectionSlug: "cat-letter",
+              countLabel: `${BASE_ALPHABET_LETTERS.length} letters`,
+            },
+            ...categories,
+          ]
+        : categories,
+    };
+  });
+
+  const letterTypes = LETTER_TYPE_NUMBERS.map((number) => {
+    const letterType = LETTER_TYPES[number];
+    if (!letterType) {
+      throw new Error(`[glossary] Missing canonical Type ${number}`);
+    }
+    return {
+      number,
+      label: `Type ${number}: ${letterType.name}`,
+      countLabel: `${letterType.letters.length} letters`,
+    };
+  });
+
   return {
     groups,
     total: placed,
+    atlasRegions,
+    letterTypes,
     codex: {
       key: "letter",
       label: "Letter Codex",

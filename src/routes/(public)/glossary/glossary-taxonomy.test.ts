@@ -13,6 +13,19 @@ interface GlossaryData {
     }>;
   }>;
   total: number;
+  atlasRegions: Array<{
+    key: string;
+    label: string;
+    sectionSlug: string;
+    countLabel: string;
+    groupKeys: string[];
+    includesCodex: boolean;
+  }>;
+  letterTypes: Array<{
+    number: string;
+    label: string;
+    countLabel: string;
+  }>;
   codex: {
     key: string;
     label: string;
@@ -26,6 +39,47 @@ async function getGlossaryData(): Promise<GlossaryData> {
 }
 
 describe("public glossary taxonomy", () => {
+  it("maps every glossary category into one stable Atlas region", async () => {
+    const { atlasRegions, groups } = await getGlossaryData();
+
+    expect(atlasRegions.map(({ label }) => label)).toEqual([
+      "Space",
+      "Motion",
+      "Letters",
+      "Notation",
+      "Patterns",
+      "Foundation",
+    ]);
+    expect(atlasRegions.flatMap(({ groupKeys }) => groupKeys).sort()).toEqual(
+      groups.map(({ key }) => key).sort()
+    );
+    expect(
+      new Set(atlasRegions.flatMap(({ groupKeys }) => groupKeys)).size
+    ).toBe(groups.length);
+    expect(atlasRegions.find(({ key }) => key === "space")?.sectionSlug).toBe(
+      "atlas-space"
+    );
+    expect(atlasRegions.find(({ key }) => key === "letters")?.sectionSlug).toBe(
+      "cat-letter"
+    );
+  });
+
+  it("derives the Atlas letter-family summary from canonical type data", async () => {
+    const { letterTypes, atlasRegions } = await getGlossaryData();
+
+    expect(letterTypes).toEqual([
+      { number: "1", label: "Type 1: Dual-Shift", countLabel: "22 letters" },
+      { number: "2", label: "Type 2: Shift", countLabel: "8 letters" },
+      { number: "3", label: "Type 3: Cross-Shift", countLabel: "8 letters" },
+      { number: "4", label: "Type 4: Dash", countLabel: "3 letters" },
+      { number: "5", label: "Type 5: Dual-Dash", countLabel: "3 letters" },
+      { number: "6", label: "Type 6: Static", countLabel: "3 letters" },
+    ]);
+    expect(atlasRegions.find(({ key }) => key === "letters")?.countLabel).toBe(
+      "47 letters · 6 families"
+    );
+  });
+
   it("presents exactly the six canonical numbered letter types", async () => {
     const { groups } = await getGlossaryData();
     const letterTypes = groups.find((group) => group.key === "letterType");

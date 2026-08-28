@@ -6,6 +6,7 @@
   import { DURATION } from "$lib/shared/transitions/transitions";
   import GlossaryNav from "./_components/GlossaryNav.svelte";
   import GlossaryTermDetail from "./_components/GlossaryTermDetail.svelte";
+  import KineticAtlasOverview from "./_components/KineticAtlasOverview.svelte";
   import LetterCodex from "./_components/LetterCodex.svelte";
   import CodexBoardSwitcher from "./_components/codex-boards/CodexBoardSwitcher.svelte";
   import {
@@ -47,10 +48,9 @@
   };
 
   const GLOSSARY_NAME = "The Kinetic Alphabet Glossary";
-  const SCOPE_STATEMENT =
-    "An evolving glossary for The Kinetic Alphabet concepts, including terms used elsewhere in Flow Arts. It is not a complete glossary of all Flow Arts vocabulary.";
-  const TITLE = "Flow Arts Glossary | The Kinetic Alphabet";
-  const DESCRIPTION = SCOPE_STATEMENT;
+  const TITLE = "The Kinetic Atlas | The Kinetic Alphabet";
+  const DESCRIPTION =
+    "A visual atlas of The Kinetic Alphabet: space, motion, letters, notation, patterns, and technique, backed by a searchable reference.";
   const URL = "https://tkaflowarts.com/glossary";
   const LEXICON_ID = `${URL}#lexicon`;
 
@@ -102,7 +102,12 @@
             name: "Home",
             item: "https://tkaflowarts.com/",
           },
-          { "@type": "ListItem", position: 2, name: "Glossary", item: URL },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "The Kinetic Atlas",
+            item: URL,
+          },
         ],
       },
     ],
@@ -110,7 +115,8 @@
   }).replace(/</g, "\\u003c");
 
   // ── navigation state ──────────────────────────────────────────────────
-  // Drill-down views: "landing" (category cards) → one category → or "all".
+  // Drill-down views: "landing" (Atlas overview) → one region/category → or
+  // "all".
   // Inside a view the layout is master-detail: a term list (master) and, on
   // desktop, a sticky detail panel showing the selected term; on mobile the
   // selected row expands in place. EVERY term row and its full body stay in
@@ -154,6 +160,12 @@
   }
 
   const landingGroups = insertCodexGroup(data.groups);
+  const atlasRegionViewKey = (regionKey: string) => `atlas-${regionKey}`;
+  const activeAtlasRegion = $derived(
+    data.atlasRegions.find(
+      (region) => atlasRegionViewKey(region.key) === view
+    ) ?? null
+  );
 
   // Static lookups (the lexicon never changes at runtime).
   const slugToCat = new Map<string, string>(
@@ -165,6 +177,13 @@
   const sectionSlugToKey = new Map<string, string>([
     ...data.groups.map((g) => [g.sectionSlug, g.key] as const),
     [data.codex.sectionSlug, data.codex.key] as const,
+    ...data.atlasRegions
+      .filter((region) => !region.includesCodex)
+      .map(
+        (region) =>
+          [region.sectionSlug, atlasRegionViewKey(region.key)] as const
+      ),
+    ["all-terms", "all"],
   ]);
 
   const normalizedQuery = $derived(normalizeGlossarySearchText(query));
@@ -235,20 +254,27 @@
       ? data.codex.label
       : view === "all"
         ? "All terms"
-        : (data.groups.find((g) => g.key === view)?.label ?? "")
+        : activeAtlasRegion
+          ? `${activeAtlasRegion.label} Atlas`
+          : (data.groups.find((g) => g.key === view)?.label ?? "")
   );
   const viewCountLabel = $derived(
     view === data.codex.key
       ? `${data.codex.letters.length} pictographs`
-      : `${
-          view === "all"
-            ? data.total
-            : (data.groups.find((g) => g.key === view)?.terms.length ?? 0)
-        } terms`
+      : activeAtlasRegion
+        ? activeAtlasRegion.countLabel
+        : `${
+            view === "all"
+              ? data.total
+              : (data.groups.find((g) => g.key === view)?.terms.length ?? 0)
+          } terms`
   );
 
   function sectionShown(key: string): boolean {
     if (filtering) return matchedSections?.has(key) ?? false;
+    if (activeAtlasRegion) {
+      return activeAtlasRegion.groupKeys.some((groupKey) => groupKey === key);
+    }
     return view === "all" || view === key;
   }
 
@@ -260,7 +286,11 @@
       ? codexSearchLetter
         ? insertCodexGroup(searchGroups)
         : searchGroups
-      : landingGroups
+      : activeAtlasRegion
+        ? data.groups.filter((group) =>
+            activeAtlasRegion.groupKeys.includes(group.key)
+          )
+        : landingGroups
   );
 
   const isDesktop = () => desktopQuery.current;
@@ -296,13 +326,40 @@
     );
   }
 
-  function returnToCategories(): void {
+  function returnToAtlas(): void {
     view = "landing";
     selected = "";
     mutateCurrentUrl(
       (url) => {
         writeLetterExplorerRoute(url, null);
         url.hash = "";
+      },
+      { mode: "push" }
+    );
+  }
+
+  function enterAtlasRegion(regionKey: string, writeUrl = true): void {
+    const region = data.atlasRegions.find(
+      (candidate) => candidate.key === regionKey
+    );
+    if (!region) return;
+    if (region.includesCodex) {
+      enterCodex(undefined, writeUrl);
+      return;
+    }
+
+    query = "";
+    view = atlasRegionViewKey(region.key);
+    const firstGroup = data.groups.find((group) =>
+      region.groupKeys.includes(group.key)
+    );
+    selected = isDesktop() ? (firstGroup?.terms[0]?.slug ?? "") : "";
+
+    if (!writeUrl) return;
+    mutateCurrentUrl(
+      (url) => {
+        writeLetterExplorerRoute(url, null);
+        url.hash = region.sectionSlug;
       },
       { mode: "push" }
     );
@@ -321,6 +378,18 @@
         ? (data.groups[0]?.terms[0]?.slug ?? "")
         : firstSlugOf(v)
       : "";
+
+    if (!writeUrl) return;
+    mutateCurrentUrl(
+      (url) => {
+        writeLetterExplorerRoute(url, null);
+        url.hash =
+          v === "all"
+            ? "all-terms"
+            : (data.groups.find((group) => group.key === v)?.sectionSlug ?? "");
+      },
+      { mode: "push" }
+    );
   }
 
   /** Row click: select on desktop (re-click keeps it), toggle on mobile. */
@@ -411,10 +480,19 @@
         const requestedLetter = searchParams.get("letter");
         const letter =
           requestedLetter !== null &&
-          data.codex.letters.includes(requestedLetter)
+          data.codex.letters.some(
+            (candidateLetter) => candidateLetter === requestedLetter
+          )
             ? requestedLetter
             : undefined;
         enterCodex(letter, false);
+        return;
+      }
+      const atlasRegion = data.atlasRegions.find(
+        (region) => atlasRegionViewKey(region.key) === catKey
+      );
+      if (atlasRegion) {
+        enterAtlasRegion(atlasRegion.key, false);
         return;
       }
       if (catKey) {
@@ -512,9 +590,8 @@
   class:codex-view={codexView}
 >
   <!-- ── desktop sidebar: search + category nav (terms render once, in the
-       master list — the rail never repeats them). Hidden on the landing view
-       (no drill-down destination yet), where the hub's own centered search
-       stands in for it. ── -->
+       master list — the rail never repeats them). Hidden on the Atlas overview,
+       which owns its search and region navigation. ── -->
   <aside class="glossary-sidebar" aria-label="Glossary navigation">
     <GlossaryNav
       groups={sidebarGroups}
@@ -527,13 +604,9 @@
     />
   </aside>
 
-  <div
-    class="editorial"
-    class:compact={!landingShown}
-    class:drilled={!landingView}
-  >
+  <div class="editorial" class:drilled={!landingView}>
     <!-- ── mobile: sticky filter bar + Contents drawer trigger ── -->
-    <div class="mobile-bar">
+    <div class="mobile-bar" class:landing={landingView}>
       <div class="mb-search">
         <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
         <input
@@ -567,47 +640,17 @@
       </button>
     </div>
 
-    <a class="back-link" href="/notation">← Flow Arts Notation</a>
-
-    <header
-      class="editorial-header"
-      style:view-transition-name="launchpad-glossary"
-    >
-      <h1 class="page-title">Flow Arts Glossary</h1>
-      <p class="page-subtitle">{GLOSSARY_NAME}</p>
-    </header>
-
-    <div class="lede">
-      <p>{SCOPE_STATEMENT} Pick a category or search.</p>
-    </div>
-
-    <!-- Landing hub search (desktop): stands in for the hidden sidebar search
-         while no category is drilled. Bound to the same query, keyed to the
-         landing view so it stays mounted (and keeps focus) as you type. On
-         mobile the sticky .mobile-bar owns search, so this is desktop-only. -->
     {#if landingView}
-      <div class="hub-search">
-        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-        <input
-          data-glossary-search
-          name="glossary-search"
-          type="search"
-          placeholder="Filter terms"
-          aria-label="Filter glossary terms"
-          autocomplete="off"
-          bind:value={query}
-        />
-        {#if filtering}
-          <button
-            type="button"
-            class="hub-clear"
-            aria-label="Clear filter"
-            onclick={() => (query = "")}
-          >
-            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-          </button>
-        {/if}
-      </div>
+      <KineticAtlasOverview
+        regions={data.atlasRegions}
+        letterTypes={data.letterTypes}
+        totalTerms={data.total}
+        bind:query
+        showRegions={!filtering}
+        onOpenRegion={enterAtlasRegion}
+        onOpenCategory={enterView}
+        onBrowseAll={() => enterView("all")}
+      />
     {/if}
 
     {#if filtering}
@@ -616,10 +659,16 @@
           Letter Codex also matches {codexSearchLetter}.{/if}
       </p>
     {:else if view !== "landing"}
-      <div class="view-head">
-        <button type="button" class="back-btn" onclick={returnToCategories}>
+      <div
+        class="view-head"
+        id={view === "all"
+          ? "all-terms"
+          : (activeAtlasRegion?.sectionSlug ??
+            (codexView ? data.codex.sectionSlug : undefined))}
+      >
+        <button type="button" class="back-btn" onclick={returnToAtlas}>
           <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-          Categories
+          Atlas
         </button>
         <h2 class="view-title">{viewTitle}</h2>
         <span class="view-count">{viewCountLabel}</span>
@@ -630,47 +679,6 @@
             <CodexBoardSwitcher board={codexBoard} onchange={setCodexBoard} />
           </div>
         {/if}
-      </div>
-    {/if}
-
-    {#if landingShown}
-      <nav class="cat-cards" aria-label="Browse by category">
-        {#each landingGroups as g (g.key)}
-          <button
-            type="button"
-            class="cat-card"
-            onclick={() => enterView(g.key)}
-          >
-            <span class="cc-top">
-              <span class="cc-label">{g.label}</span>
-              <span class="cc-count">{g.countLabel ?? g.terms.length}</span>
-            </span>
-            <!-- Sample terms, clamped by CSS — one line on mobile, two on
-                 desktop. Fed generously (14) rather than trimmed to a count:
-                 the desktop card reserves two lines, and a 6-term sample
-                 measured 393px inside a 411px box at 4K, i.e. it never wrapped
-                 and left the reserved second line empty in every card. Let the
-                 clamp do the trimming so the space carries terms instead. -->
-            <span class="cc-sample">
-              {g.key === data.codex.key
-                ? "Pictographs · variations · six letter types"
-                : g.terms
-                    .slice(0, 14)
-                    .map((t) => t.term)
-                    .join(" · ")}
-            </span>
-            <i class="fa-solid fa-arrow-right cc-arrow" aria-hidden="true"></i>
-          </button>
-        {/each}
-      </nav>
-      <div class="landing-all">
-        <button
-          type="button"
-          class="browse-all"
-          onclick={() => enterView("all")}
-        >
-          Browse all {data.total} terms
-        </button>
       </div>
     {/if}
 
@@ -713,7 +721,7 @@
               class:sec-hidden={!sectionShown(g.key)}
               id={g.sectionSlug}
             >
-              {#if view === "all" || filtering}
+              {#if view === "all" || filtering || activeAtlasRegion}
                 <span class="section-kicker">{g.label}</span>
               {/if}
               <ul class="term-rows">
@@ -959,33 +967,9 @@
     }
   }
 
-  /* Drilled views compact the hero: the reader came to look something up,
-     so the reference surface starts near the top instead of below a full
-     editorial masthead. */
-  .editorial.compact .editorial-header {
-    margin: 1.4rem 0 1.6rem;
-  }
-  .editorial.compact .page-title {
-    font-size: clamp(1.9rem, 1.5rem + 1.3vw, 2.7rem);
-  }
-  .editorial.compact .lede {
-    display: none;
-  }
-
   /* ── drilled into a category: give the vertical back to the content ──
-     The landing needs the site's own title block. A category view does not: by
-     then you have the SiteHeader, a "Flow Arts Notation" back link, an h1, a
-     subtitle, a "Categories / <title> / <count>" row and whatever toolbar the
-     category itself renders - six stacked full-width rows, none of which needs
-     a row to itself, before a single pictograph. Together they cost about 200px
-     at 1920, which is a row and a half of Letter Codex cells. The back action
-     already exists twice over (SiteHeader's Back, and Categories here), so the
-     link and the title block come out, .view-head carries the identity, and the
-     category's own controls ride in that same row. */
-  .editorial.drilled .back-link,
-  .editorial.drilled .editorial-header {
-    display: none;
-  }
+     The Atlas overview owns the editorial identity. Once a region opens,
+     .view-head carries the local identity and controls in one compact row. */
   .editorial.drilled .view-head {
     margin: 0 0 0.6rem;
   }
@@ -997,11 +981,6 @@
     padding-top: 74px;
     padding-bottom: 2.5rem;
   }
-  .page-title,
-  .lede p {
-    text-wrap: balance;
-  }
-
   /* ── mobile sticky bar: filter + Contents ── */
   .mobile-bar {
     position: sticky;
@@ -1015,6 +994,9 @@
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border-bottom: 1px solid oklch(0.45 0.04 270 / 0.15);
+  }
+  .mobile-bar.landing {
+    display: none;
   }
   @media (min-width: 1024px) {
     .mobile-bar {
@@ -1087,254 +1069,6 @@
     cursor: pointer;
   }
   .mb-contents:focus-visible {
-    outline: 2px solid oklch(0.65 0.13 275);
-    outline-offset: 2px;
-  }
-
-  /* ── landing hub search (desktop only; mobile uses the sticky .mobile-bar) ── */
-  .hub-search {
-    display: none;
-  }
-  @media (min-width: 1024px) {
-    .hub-search {
-      position: relative;
-      display: flex;
-      align-items: center;
-      max-width: 30rem;
-      margin: 0 auto 2.2rem;
-    }
-    .hub-search > i {
-      position: absolute;
-      left: 1.1rem;
-      font-size: 0.85rem;
-      color: oklch(0.55 0.02 270);
-      pointer-events: none;
-    }
-    .hub-search input {
-      width: 100%;
-      min-height: 48px;
-      padding: 0.6rem 2.8rem;
-      font: inherit;
-      font-size: 1rem;
-      color: oklch(0.94 0.01 270);
-      background: oklch(0.18 0.02 270 / 0.55);
-      border: 1px solid oklch(0.45 0.04 270 / 0.25);
-      border-radius: 999px;
-      outline: none;
-      transition:
-        border-color 160ms ease,
-        background 160ms ease;
-    }
-    .hub-search input::placeholder {
-      color: oklch(0.55 0.02 270);
-    }
-    .hub-search input:focus-visible {
-      border-color: oklch(0.65 0.13 275 / 0.7);
-      background: oklch(0.2 0.025 272 / 0.6);
-    }
-    .hub-search input::-webkit-search-cancel-button {
-      -webkit-appearance: none;
-      appearance: none;
-    }
-    .hub-clear {
-      all: unset;
-      box-sizing: border-box;
-      position: absolute;
-      right: 2px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 44px;
-      min-height: 44px;
-      border-radius: 999px;
-      color: oklch(0.65 0.02 270);
-      cursor: pointer;
-    }
-    .hub-clear:hover {
-      color: oklch(0.9 0.02 270);
-    }
-    .hub-clear:focus-visible {
-      outline: 2px solid oklch(0.65 0.13 275);
-      outline-offset: -4px;
-    }
-  }
-  @media (min-width: 1680px) {
-    .hub-search {
-      max-width: 38rem;
-    }
-    .hub-search input {
-      min-height: 54px;
-      font-size: 1.1rem;
-    }
-  }
-
-  /* ── landing: category cards ──
-     Column count is deliberate on wide screens. The ten categories form two
-     balanced rows instead of leaving an orphan card at the bottom. */
-  .cat-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 0.9rem;
-    margin: 0 0 1.5rem;
-  }
-  @media (min-width: 720px) {
-    .cat-cards {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 1rem;
-      /* Every row the height of the tallest. The reserved 2-line sample keeps
-         cards even until the lockstep ramp grows the label enough to wrap
-         ("Words & Sequences", "Execution & Technique" at the 24px root) — then
-         that row alone got taller and the grid read ragged. 1fr rows re-lock
-         them. */
-      grid-auto-rows: 1fr;
-    }
-  }
-  @media (min-width: 1680px) {
-    .cat-cards {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 1.25rem;
-      margin-bottom: 2rem;
-    }
-  }
-  .cat-card {
-    all: unset;
-    box-sizing: border-box;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 0.45rem;
-    min-height: 44px;
-    padding: 1.1rem 3rem 1.1rem 1.2rem;
-    background: oklch(0.16 0.018 270 / 0.45);
-    border: 1px solid oklch(0.4 0.04 270 / 0.14);
-    border-radius: 16px;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    cursor: pointer;
-    transition:
-      border-color 160ms ease,
-      background 160ms ease,
-      transform 160ms ease;
-  }
-  .cat-card:hover {
-    background: oklch(0.19 0.025 272 / 0.55);
-    border-color: oklch(0.6 0.11 275 / 0.45);
-    transform: translateY(-2px);
-  }
-  .cat-card:focus-visible {
-    outline: 2px solid oklch(0.65 0.13 275);
-    outline-offset: 2px;
-  }
-  .cc-top {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.6rem;
-  }
-  .cc-label {
-    font-size: 1.05rem;
-    font-weight: 660;
-    letter-spacing: -0.01em;
-    text-wrap: balance;
-    color: oklch(0.96 0.01 270);
-  }
-  .cc-count {
-    font-size: 0.78rem;
-    font-weight: 550;
-    font-variant-numeric: tabular-nums;
-    color: oklch(0.72 0.08 274);
-    background: oklch(0.3 0.06 274 / 0.35);
-    border-radius: 999px;
-    padding: 0.1rem 0.55rem;
-  }
-  .cc-sample {
-    /* One line, clean end-ellipsis: keeps every card the same height (no
-       ragged wrapping) so the landing grid reads as a calm, even surface. */
-    display: block;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-    font-size: 0.85rem;
-    line-height: 1.5;
-    color: oklch(0.65 0.015 270);
-  }
-  @media (min-width: 1024px) {
-    /* Two lines on desktop cards, with both lines RESERVED (min-height: 3em
-       at line-height 1.5) — a category whose sample runs short can't shrink
-       its card and stagger the row. */
-    .cc-sample {
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
-      line-clamp: 2;
-      white-space: normal;
-      min-height: 3em;
-    }
-  }
-  .cc-arrow {
-    position: absolute;
-    right: 1.1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.85rem;
-    color: oklch(0.55 0.06 274);
-    transition:
-      transform 160ms ease,
-      color 160ms ease;
-  }
-  .cat-card:hover .cc-arrow {
-    color: oklch(0.8 0.12 275);
-    transform: translateY(-50%) translateX(3px);
-  }
-  /* Big screens carry a display-scale label and a larger tap surface. */
-  @media (min-width: 1680px) {
-    .cat-card {
-      gap: 0.6rem;
-      padding: 1.5rem 3.6rem 1.5rem 1.6rem;
-      border-radius: 20px;
-    }
-    .cc-label {
-      font-size: 1.25rem;
-    }
-    .cc-count {
-      font-size: 0.85rem;
-      padding: 0.15rem 0.7rem;
-    }
-    .cc-sample {
-      font-size: 0.95rem;
-    }
-    .cc-arrow {
-      right: 1.5rem;
-      font-size: 1rem;
-    }
-  }
-  .landing-all {
-    text-align: center;
-    margin: 0 0 3rem;
-  }
-  .browse-all {
-    all: unset;
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0 1.4rem;
-    font-size: 0.92rem;
-    font-weight: 550;
-    color: oklch(0.78 0.05 273);
-    border: 1px solid oklch(0.5 0.07 273 / 0.35);
-    border-radius: 999px;
-    cursor: pointer;
-    transition:
-      border-color 160ms ease,
-      color 160ms ease;
-  }
-  .browse-all:hover {
-    color: oklch(0.92 0.04 274);
-    border-color: oklch(0.6 0.11 274 / 0.6);
-  }
-  .browse-all:focus-visible {
     outline: 2px solid oklch(0.65 0.13 275);
     outline-offset: 2px;
   }
@@ -1515,8 +1249,8 @@
     min-height: 48px;
     padding: 0.55rem 0.85rem;
     cursor: pointer;
-    border-left: 2px solid transparent;
-    border-radius: 0 10px 10px 0;
+    border: 1px solid transparent;
+    border-radius: 10px;
     transition:
       background 140ms ease,
       border-color 140ms ease;
@@ -1528,11 +1262,12 @@
     outline: 2px solid oklch(0.65 0.13 275);
     outline-offset: -2px;
   }
-  /* Selected = accent spine + tinted surface + accent name. Color only, no
-     weight change, so the row's text metrics never shift (no layout shift). */
+  /* Selection marks the full row. Weight stays fixed, so choosing another
+     term changes the surface without moving the text. */
   .term-row.selected {
     background: oklch(0.28 0.05 275 / 0.35);
-    border-left-color: oklch(0.72 0.14 275);
+    border-color: oklch(0.72 0.14 275);
+    box-shadow: 0 0 0 1px oklch(0.72 0.14 275 / 0.28);
   }
   .row-name {
     font-size: 0.95rem;
@@ -1749,7 +1484,6 @@
 
   /* ── entry motion: one orchestrated fade-up when a view mounts ── */
   @media (prefers-reduced-motion: no-preference) {
-    .cat-cards,
     .view-head,
     .split {
       animation: gl-fadeup 260ms cubic-bezier(0.22, 0.7, 0.35, 1) both;
@@ -1778,9 +1512,6 @@
     .mb-contents {
       padding: 0 0.8rem;
     }
-    .cat-card {
-      padding: 0.95rem 2.6rem 0.95rem 1rem;
-    }
     .view-head {
       gap: 0.7rem;
       flex-wrap: wrap;
@@ -1796,23 +1527,15 @@
 
   @media (prefers-reduced-motion: reduce) {
     .back-top,
-    .cat-card,
-    .cc-arrow,
     .back-btn,
-    .browse-all,
     .codex-search-result,
     .term-row,
     .row-chev,
-    .row-body,
-    .hub-search input {
+    .row-body {
       transition: none;
     }
-    .back-top:hover,
-    .cat-card:hover {
+    .back-top:hover {
       transform: none;
-    }
-    .cat-card:hover .cc-arrow {
-      transform: translateY(-50%);
     }
   }
 </style>
