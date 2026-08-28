@@ -39,6 +39,8 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
+  import { flexPresence, growFade } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import ResizeHandle from "./ResizeHandle.svelte";
 
   interface Props {
@@ -192,7 +194,9 @@
   // Get flex style for a panel
   function getFlexStyle(index: number): string {
     const fixedSize = panels[index]?.fixedSize;
-    return fixedSize ? `flex: 0 0 ${fixedSize}` : `flex: ${sizes[index] ?? 1}`;
+    return fixedSize
+      ? `flex-grow: 0; flex-shrink: 0; flex-basis: ${fixedSize}`
+      : `flex-grow: ${sizes[index] ?? 1}; flex-shrink: 1; flex-basis: 0px`;
   }
 </script>
 
@@ -212,22 +216,36 @@
       style={getFlexStyle(i)}
       data-min-size={panel.minSize}
       data-max-size={panel.maxSize}
+      transition:flexPresence={{
+        duration: DURATION.emphasis,
+        axis: direction === "horizontal" ? "x" : "y",
+      }}
     >
       {@render panel.content()}
     </div>
 
     <!-- Resize handle between panels -->
     {#if !flattened && i < panels.length - 1 && panel.resizable !== false}
-      <ResizeHandle
-        direction={direction === "horizontal" ? "horizontal" : "vertical"}
-        size={gap}
-        onDragStart={() => handleDragStart(i)}
-        onDrag={(delta) => handleDrag(i, delta)}
-        onDragEnd={handleDragEnd}
-        onKeydown={(event) => handleKeydown(i, event)}
-        ariaLabel={`Resize ${panel.id ?? `panel ${i + 1}`} and ${panels[i + 1]?.id ?? `panel ${i + 2}`}`}
-        ariaValueNow={handleValue(i)}
-      />
+      <div
+        class="resize-handle-slot"
+        class:horizontal={direction === "horizontal"}
+        class:vertical={direction === "vertical"}
+        transition:growFade={{
+          duration: DURATION.fast,
+          axis: direction === "horizontal" ? "x" : "y",
+        }}
+      >
+        <ResizeHandle
+          direction={direction === "horizontal" ? "horizontal" : "vertical"}
+          size={gap}
+          onDragStart={() => handleDragStart(i)}
+          onDrag={(delta) => handleDrag(i, delta)}
+          onDragEnd={handleDragEnd}
+          onKeydown={(event) => handleKeydown(i, event)}
+          ariaLabel={`Resize ${panel.id ?? `panel ${i + 1}`} and ${panels[i + 1]?.id ?? `panel ${i + 2}`}`}
+          ariaValueNow={handleValue(i)}
+        />
+      </div>
     {/if}
   {/each}
 </div>
@@ -260,12 +278,36 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    transition:
+      flex-grow var(--transition-emphasis),
+      flex-basis var(--transition-emphasis);
   }
 
   .panel-wrapper > :global(*) {
     flex: 1;
     min-width: 0;
     min-height: 0;
+  }
+
+  .resize-handle-slot {
+    display: flex;
+    flex: none;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .resize-handle-slot.horizontal {
+    width: var(--panel-gap);
+    height: 100%;
+  }
+
+  .resize-handle-slot.vertical {
+    width: 100%;
+    height: var(--panel-gap);
+  }
+
+  .resize-handle-slot > :global(*) {
+    flex: 1;
   }
 
   /* During drag, prevent interactions with panel content */
@@ -275,5 +317,12 @@
 
   .panel-group.dragging .panel-wrapper {
     pointer-events: none;
+    transition: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel-wrapper {
+      transition: none;
+    }
   }
 </style>

@@ -80,6 +80,34 @@ Phrases that mean you're punting and must be removed:
 
 Report the actual result, not the instruction to produce one.
 
+## Motion Communicates Change
+
+Instant structural UI changes are unacceptable. When a panel opens, an item is
+inserted or removed, a workspace changes mode, or responsive content moves, the
+transition is part of the information architecture: it shows what changed and
+where it went, reducing the mental work required to follow the interface.
+
+Classify every dynamic geometry change before implementation:
+
+- accidental movement gets prevented by reserving stable geometry;
+- intentional movement gets animated through the canonical motion system.
+
+Use `Crossfade`, the reduced-motion-aware helpers in
+`src/lib/shared/transitions/motion.ts`, `PanelGroup` for structural workspaces,
+`animate:flip` with `flipDuration()` for keyed lists, and
+`createLayoutMotion()` for multi-element recomposition. Use `DURATION` and the
+global `--transition-*` tokens. Do not create feature-local durations, easing
+curves, FLIP utilities, or `transition: all` rules.
+
+Pointer-driven dragging follows the pointer without easing. Reduced-motion
+preferences collapse transitions to their accessible final state. Those are
+exceptions to animation, not permission for ordinary disclosure to pop.
+
+The enforced routing matrix, implementation rules, and verification checklist
+live in `.claude/rules/no-layout-shift.md`. Read it before any UI change that
+adds/removes content, changes size/position/structure, or alters a dynamic
+label/icon.
+
 ## Answer Your Own Questions
 
 When you catch yourself about to say "want me to research X" / "should I look into Y" / "can I investigate Z" — STOP. Just go do it. You have the codebase, grep, glob, read, web search, and subagents. Use them.

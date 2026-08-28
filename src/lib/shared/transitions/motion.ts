@@ -1,4 +1,4 @@
-import { cubicOut } from "svelte/easing";
+import { cubicInOut, cubicOut } from "svelte/easing";
 import type { TransitionConfig } from "svelte/transition";
 import { DURATION } from "./transitions";
 
@@ -63,6 +63,51 @@ interface GrowFadeParams {
   axis?: "x" | "y";
   /** Extra drift-in offset in px along the cross feel (translateX). */
   x?: number;
+}
+
+interface FlexPresenceParams {
+  duration?: number;
+  delay?: number;
+  /** The PanelGroup direction. Used when flex-basis resolves to `auto`. */
+  axis?: "x" | "y";
+}
+
+/**
+ * Flex allocation + fade for a structural panel entering or leaving a shared
+ * flex workspace. Unlike `growFade`, this animates the flex track itself, so
+ * the neighbouring panel travels into the released space instead of parking
+ * at its new size before the outgoing content disappears.
+ *
+ * PanelGroup is the canonical consumer. Other flex workspaces should normally
+ * compose PanelGroup; use this directly only when the element itself owns a
+ * meaningful flex allocation.
+ */
+export function flexPresence(
+  node: HTMLElement,
+  {
+    duration = DURATION.emphasis,
+    delay = 0,
+    axis = "y",
+  }: FlexPresenceParams = {}
+): TransitionConfig {
+  const style = getComputedStyle(node);
+  const rect = node.getBoundingClientRect();
+  const flexGrow = Number.parseFloat(style.flexGrow) || 0;
+  const parsedBasis = Number.parseFloat(style.flexBasis);
+  const flexBasis = Number.isFinite(parsedBasis)
+    ? parsedBasis
+    : axis === "y"
+      ? rect.height
+      : rect.width;
+
+  return {
+    duration: motionDuration(duration),
+    delay,
+    easing: cubicInOut,
+    css: (t) =>
+      `flex-grow: ${t * flexGrow}; flex-basis: ${t * flexBasis}px;` +
+      ` opacity: ${Math.min(1, t * 1.35)}; overflow: hidden;`,
+  };
 }
 
 /**

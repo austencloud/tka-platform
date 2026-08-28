@@ -42,9 +42,9 @@
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { motionDuration } from "$lib/shared/transitions/motion";
   import {
-    createLayoutFlip,
-    GRID_LAYOUT_TRANSITION_EASING,
-    GRID_LAYOUT_TRANSITION_MS,
+    createLayoutMotion,
+    LAYOUT_MOTION_DURATION_MS,
+    LAYOUT_MOTION_EASING,
   } from "$lib/shared/transitions/layout-flip";
   import { computeGridLayoutSignature } from "../domain/grid-layout-signature";
   import type {
@@ -463,7 +463,7 @@
   // arrival landing — is the same gesture: cells leave one arrangement and
   // arrive at another. One owner runs all of them, so nothing can apply a
   // second transform on top of a first and make the motion wobble.
-  const layoutFlip = createLayoutFlip({
+  const layoutMotion = createLayoutMotion({
     getRoot: () => gridSurfaceRef,
     groups: [
       { selector: "[data-history-step-identity]", datasetKey: "historyStepIdentity" },
@@ -475,8 +475,8 @@
     // only the inside would park a black square at the destination and have the
     // pictograph slide over to cover it.
     cancelSelectors: [".history-layout-shell", ".step-cell"],
-    getDuration: () => motionDuration(GRID_LAYOUT_TRANSITION_MS),
-    easing: GRID_LAYOUT_TRANSITION_EASING,
+    getDuration: () => motionDuration(LAYOUT_MOTION_DURATION_MS),
+    easing: LAYOUT_MOTION_EASING,
   });
 
   /** What the grid looks like, reduced to a string. Changes here mean cells
@@ -598,7 +598,7 @@
     // would otherwise leave the automatic capture standing aside forever.
     if (arrivalCapturePending && !arrivalRequest) {
       arrivalCapturePending = false;
-      layoutFlip.discard();
+      layoutMotion.discard();
     }
 
     const layoutChanged =
@@ -611,12 +611,12 @@
     gridHistoryAnimation = null;
 
     const captured =
-      layoutChanged && !arrivalCapturePending && layoutFlip.capture();
+      layoutChanged && !arrivalCapturePending && layoutMotion.capture();
     const token = ++layoutTransitionToken;
 
     void tick().then(() => {
       if (token !== layoutTransitionToken) return;
-      if (captured) layoutFlip.play();
+      if (captured) layoutMotion.play();
       if (historyChanged && plan === historyTransition) {
         playHistoryFlourishes(plan);
       }
@@ -624,12 +624,12 @@
   });
 
   export function captureArrivalLayout(): void {
-    arrivalCapturePending = layoutFlip.capture();
+    arrivalCapturePending = layoutMotion.capture();
   }
 
   export function playArrivalLayout(): void {
     arrivalCapturePending = false;
-    layoutFlip.play();
+    layoutMotion.play();
   }
 
   const timelineStartMandalas = $derived.by(() => {

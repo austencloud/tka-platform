@@ -26,6 +26,8 @@
   import { consumeSceneStudioHandoff } from "$lib/features/scene-3d-collection/services/open-3d-scene";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { flyFade, growFade } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import type { FormationPresetId } from "./domain/stage-types";
 
   import FormationOverlay from "./components/FormationOverlay.svelte";
@@ -347,10 +349,7 @@
     return [
       stage,
       {
-        content:
-          timelineDisclosure === "editor"
-            ? timelineEditorPanel
-            : timelineDockPanel,
+        content: timelinePanel,
         defaultSize: 1.2,
         minSize: 200,
         maxSize: 360,
@@ -507,12 +506,22 @@
 
 {#snippet stageOverlay()}
   {#if chartRaised}
-    <div class="drill-layer" aria-label="Drill chart">
+    <div
+      class="drill-layer"
+      aria-label="Drill chart"
+      transition:flyFade={{ duration: DURATION.emphasis, y: 12 }}
+    >
       <div class="drill-chart">
         <FormationOverlay {editMode} />
       </div>
       {#if activeSet}
-        <div class="drill-inspector">
+        <div
+          class="drill-inspector"
+          transition:growFade={{
+            duration: DURATION.emphasis,
+            axis: "x",
+          }}
+        >
           <SetProperties {editMode} />
         </div>
       {/if}
@@ -520,13 +529,22 @@
   {/if}
 
   {#if sequenceLoadState === "loading"}
-    <div class="load-notice" role="status" aria-live="polite">
+    <div
+      class="load-notice"
+      role="status"
+      aria-live="polite"
+      transition:flyFade={{ duration: DURATION.normal }}
+    >
       <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
       <strong>Preparing the performance</strong>
       <span>Loading the sequence and performer rigs</span>
     </div>
   {:else if sequenceLoadState === "error"}
-    <div class="load-notice error" role="alert">
+    <div
+      class="load-notice error"
+      role="alert"
+      transition:flyFade={{ duration: DURATION.normal }}
+    >
       <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
       <strong>Sequence failed to load</strong>
       <span>{sequenceLoadError ?? "The catalog entry is unavailable."}</span>
@@ -595,12 +613,13 @@
   </div>
 {/snippet}
 
-{#snippet timelineDockPanel()}
-  <StageTimeline {editMode} mode="dock" onExpand={() => openChoreography()} />
-{/snippet}
-
-{#snippet timelineEditorPanel()}
-  <StageTimeline {editMode} mode="editor" onCollapse={collapseChoreography} />
+{#snippet timelinePanel()}
+  <StageTimeline
+    {editMode}
+    mode={timelineDisclosure === "editor" ? "editor" : "dock"}
+    onExpand={() => openChoreography()}
+    onCollapse={collapseChoreography}
+  />
 {/snippet}
 
 <div
