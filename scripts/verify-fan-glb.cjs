@@ -202,6 +202,7 @@ const materialByName = new Map(
 const requiredNodes = [
   "TKA_Fan",
   "Fan_Fire",
+  "Fan_Lotus",
   "Fan_Day",
   "Fan_Cover",
   "Fan_Fire_GripRing",
@@ -212,6 +213,11 @@ const requiredNodes = [
   "Fan_Fire_WickHorizon",
   "Fan_Fire_UpperLeftStar",
   "Fan_Fire_UpperRightStar",
+  "Fan_Lotus_GripRing",
+  "Fan_Lotus_FingerRing",
+  "Fan_Lotus_LowerCradle",
+  "Fan_Lotus_CenterPetal_Left",
+  "Fan_Lotus_CenterPetal_Right",
   "Fan_Day_DoodleGripPlate",
   "Fan_Cover_SolidFace",
   "Fan_Cover_StripedFace",
@@ -232,6 +238,7 @@ for (const obsoleteName of [
 }
 const dayPlate = nodes[nodeIndexByName.get("Fan_Day_DoodleGripPlate")];
 const fireGroup = nodes[nodeIndexByName.get("Fan_Fire")];
+const lotusGroup = nodes[nodeIndexByName.get("Fan_Lotus")];
 invariant(
   fireGroup.extras?.tka_build ===
     "Forged Creations five-wick DoodleGrip fire fan",
@@ -272,6 +279,47 @@ invariant(
   "Fire fan inside spines are no longer 1/8-inch stock"
 );
 invariant(
+  lotusGroup.extras?.tka_build ===
+    "Home of Poi Medium Lotus five-wick fire fan",
+  "Lotus fan is not identified as the measured medium five-wick build"
+);
+invariant(
+  JSON.stringify(lotusGroup.extras?.tka_reference_bbox_px) ===
+    JSON.stringify([45, 310, 1769, 1503]),
+  "Lotus fan reference crop no longer matches the isolated product photograph"
+);
+invariant(
+  JSON.stringify(lotusGroup.extras?.tka_reference_pivot_px) ===
+    JSON.stringify([900, 1235]),
+  "Lotus fan pivot moved away from the Russian grip centre"
+);
+invariant(
+  Math.abs(lotusGroup.extras?.tka_spinning_ring_id_m - 0.092075) < 1e-7,
+  "Lotus fan spinning ring is no longer the published 3 5/8-inch ID"
+);
+invariant(
+  Math.abs(lotusGroup.extras?.tka_finger_ring_id_m - 0.025) < 1e-7,
+  "Lotus fan finger ring no longer matches the photographed 25mm opening"
+);
+invariant(
+  Math.abs(lotusGroup.extras?.tka_wick_length_m - 0.05) < 1e-7,
+  "Lotus fan no longer uses the published 50mm wicks"
+);
+invariant(
+  Math.abs(lotusGroup.extras?.tka_frame_stock_diameter_m - 0.004) < 1e-7 &&
+    Math.abs(lotusGroup.extras?.tka_grip_stock_diameter_m - 0.007) < 1e-7,
+  "Lotus fan no longer uses the published 4mm / 7mm welded steel stock"
+);
+invariant(
+  lotusGroup.extras?.tka_lower_cradle_geometry === "constant-radius circle",
+  "Lotus lower Russian-grip cradle is no longer a circular arc"
+);
+invariant(
+  lotusGroup.extras?.tka_petal_count === 5 &&
+    lotusGroup.extras?.tka_frame_path_count === 10,
+  "Lotus fan no longer carries five complete two-sided petals"
+);
+invariant(
   dayPlate.extras?.tka_trace_contours === 18,
   "Day fan is not the 18-contour product-image trace"
 );
@@ -288,7 +336,8 @@ invariant(
   "Day fan no longer uses the selected 1.75-inch / 44mm ring"
 );
 invariant(
-  Math.abs(dayPlate.extras?.tka_finished_ring_control_diameter_m - 0.044) < 1e-6,
+  Math.abs(dayPlate.extras?.tka_finished_ring_control_diameter_m - 0.044) <
+    1e-6,
   "Finished Day fan grip control boundary is no longer 44mm"
 );
 invariant(
@@ -323,10 +372,16 @@ for (let index = 1; index <= 5; index += 1) {
     nodeIndexByName.has(`Fan_Fire_Wick_${index}`),
     `Fire fan wick ${index} is missing`
   );
+  invariant(
+    nodeIndexByName.has(`Fan_Lotus_Wick_${index}`),
+    `Lotus fan wick ${index} is missing`
+  );
 }
 
 const requiredMaterials = [
   "TKA_Fan_Fire_Steel",
+  "TKA_Fan_Lotus_Powdercoat",
+  "TKA_Fan_Lotus_Wick",
   "TKA_Fan_Wick",
   "TKA_Fan_Wick_Wrap",
   "TKA_Fan_Day_Frame",
@@ -356,14 +411,50 @@ invariant(
   fireMaterial.pbrMetallicRoughness?.roughnessFactor >= 0.44,
   "Fire fan frame is glossier than an oil-rubbed finish"
 );
+const lotusMaterial = materialByName.get("TKA_Fan_Lotus_Powdercoat");
+invariant(
+  lotusMaterial.pbrMetallicRoughness?.metallicFactor === 0,
+  "Lotus powder coat must remain a dielectric black finish"
+);
+invariant(
+  lotusMaterial.pbrMetallicRoughness?.roughnessFactor >= 0.46,
+  "Lotus powder coat is reading glossier than the product photograph"
+);
+const lotusWickMaterial = materialByName.get("TKA_Fan_Lotus_Wick");
+invariant(
+  Number.isInteger(
+    lotusWickMaterial.pbrMetallicRoughness?.baseColorTexture?.index
+  ),
+  "Lotus Kevlar is missing its embedded crossed-thread color texture"
+);
+invariant(
+  Number.isInteger(lotusWickMaterial.normalTexture?.index) &&
+    lotusWickMaterial.normalTexture.scale > 0,
+  "Lotus Kevlar is missing its embedded woven normal texture"
+);
+const lotusTextureImages = (document.images ?? []).filter((image) =>
+  image.name?.startsWith("lotus-wick-")
+);
+invariant(
+  lotusTextureImages.length === 2 &&
+    lotusTextureImages.every(
+      (image) =>
+        image.mimeType === "image/png" && Number.isInteger(image.bufferView)
+    ),
+  "Lotus wick textures must remain two PNGs embedded inside the GLB"
+);
+console.log("FAN_LOTUS_WICK_TEXTURES=verified-color-normal-embedded");
 
-for (const groupName of ["Fan_Fire", "Fan_Day", "Fan_Cover"]) {
+for (const groupName of ["Fan_Fire", "Fan_Lotus", "Fan_Day", "Fan_Cover"]) {
   const groupIndex = nodeIndexByName.get(groupName);
   const meshCount = stats.meshNodes.filter((nodeIndex) =>
     isDescendant(nodeIndex, groupIndex, stats.nodeParent)
   ).length;
   const minimumMeshCount = groupName === "Fan_Day" ? 1 : 2;
-  invariant(meshCount >= minimumMeshCount, `${groupName} has no usable mesh layer`);
+  invariant(
+    meshCount >= minimumMeshCount,
+    `${groupName} has no usable mesh layer`
+  );
 }
 const dayDimensions = descendantDimensions(
   nodeIndexByName.get("Fan_Day"),
@@ -371,6 +462,10 @@ const dayDimensions = descendantDimensions(
 );
 const fireDimensions = descendantDimensions(
   nodeIndexByName.get("Fan_Fire"),
+  stats
+);
+const lotusDimensions = descendantDimensions(
+  nodeIndexByName.get("Fan_Lotus"),
   stats
 );
 invariant(
@@ -393,6 +488,14 @@ invariant(
   Math.abs(fireDimensions.y - 0.3302) <= 0.00001,
   `DoodleGrip Fire height drifted: ${fireDimensions.y.toFixed(6)}m`
 );
+invariant(
+  Math.abs(lotusDimensions.x - 0.48) <= 0.001,
+  `Lotus fan width drifted: ${lotusDimensions.x.toFixed(6)}m`
+);
+invariant(
+  Math.abs(lotusDimensions.y - 0.35) <= 0.001,
+  `Lotus fan height drifted: ${lotusDimensions.y.toFixed(6)}m`
+);
 
 const root = nodes[nodeIndexByName.get("TKA_Fan")];
 const rootTranslation = new Vector3().fromArray(root.translation ?? [0, 0, 0]);
@@ -401,48 +504,85 @@ invariant(
   `Hand pivot moved away from the origin: ${rootTranslation.toArray()}`
 );
 
-if (root.extras?.tka_wick_centers_m) {
+function verifyWickCentres(extraName, constantName, nodePrefix, label) {
+  if (!root.extras?.[extraName]) {
+    console.log(`${label.toUpperCase()}_WICK_CENTERS=missing-extras`);
+    return;
+  }
   const source = fs.readFileSync(tipGeometryPath, "utf8");
   const constantBody = source.match(
-    /FAN_FIRE_WICK_CENTERS_M\s*=\s*\[([\s\S]*?)\]\s*as const/
+    new RegExp(`${constantName}\\s*=\\s*\\[([\\s\\S]*?)\\]\\s*as const`)
   );
-  invariant(constantBody, "TypeScript fire-wick constants are missing");
-  const typeScriptCenters = [...constantBody[1].matchAll(
-    /\{\s*x:\s*(-?[\d.]+),\s*y:\s*(-?[\d.]+),\s*z:\s*(-?[\d.]+)\s*\}/g
-  )].map((match) => match.slice(1).map(Number));
-  const bakedCenters = root.extras.tka_wick_centers_m;
-  invariant(typeScriptCenters.length === 5, "TypeScript must define five fire wicks");
-  invariant(bakedCenters.length === 5, "GLB extras must define five fire wicks");
+  invariant(constantBody, `TypeScript ${label} wick constants are missing`);
+  const typeScriptCenters = [
+    ...constantBody[1].matchAll(
+      /\{\s*x:\s*(-?[\d.]+),\s*y:\s*(-?[\d.]+),\s*z:\s*(-?[\d.]+)\s*\}/g
+    ),
+  ].map((match) => match.slice(1).map(Number));
+  const bakedCenters = root.extras[extraName];
+  invariant(
+    typeScriptCenters.length === 5,
+    `TypeScript must define five ${label} wicks`
+  );
+  invariant(
+    bakedCenters.length === 5,
+    `GLB extras must define five ${label} wicks`
+  );
   for (let index = 0; index < 5; index += 1) {
-    const nodeIndex = nodeIndexByName.get(`Fan_Fire_Wick_${index + 1}`);
+    const nodeIndex = nodeIndexByName.get(`${nodePrefix}_${index + 1}`);
     const nodeCenter = new Vector3().setFromMatrixPosition(
       stats.nodeWorldMatrices.get(nodeIndex)
     );
     for (let axis = 0; axis < 3; axis += 1) {
       invariant(
-        Math.abs(typeScriptCenters[index][axis] - bakedCenters[index][axis]) < 1e-7,
-        `TypeScript wick ${index + 1} does not match the baked GLB extras`
+        Math.abs(typeScriptCenters[index][axis] - bakedCenters[index][axis]) <
+          1e-7,
+        `TypeScript ${label} wick ${index + 1} does not match the baked GLB extras`
       );
       invariant(
-        Math.abs(typeScriptCenters[index][axis] - nodeCenter.getComponent(axis)) < 1e-7,
-        `TypeScript wick ${index + 1} does not match its GLB world position`
+        Math.abs(
+          typeScriptCenters[index][axis] - nodeCenter.getComponent(axis)
+        ) < 1e-7,
+        `TypeScript ${label} wick ${index + 1} does not match its GLB world position`
       );
     }
   }
-  console.log("FAN_WICK_CENTERS=verified-typescript-extras-nodes");
-} else {
-  console.log("FAN_WICK_CENTERS=skipped-current-glb-has-no-tka_wick_centers_m-extras");
+  console.log(
+    `${label.toUpperCase()}_WICK_CENTERS=verified-typescript-extras-nodes`
+  );
 }
 
-invariant(bytes.length >= 40_000, `fan.glb is suspiciously small: ${bytes.length}`);
+verifyWickCentres(
+  "tka_wick_centers_m",
+  "FAN_FIRE_WICK_CENTERS_M",
+  "Fan_Fire_Wick",
+  "fan-fire"
+);
+verifyWickCentres(
+  "tka_lotus_wick_centers_m",
+  "FAN_LOTUS_WICK_CENTERS_M",
+  "Fan_Lotus_Wick",
+  "fan-lotus"
+);
+
+invariant(
+  bytes.length >= 40_000,
+  `fan.glb is suspiciously small: ${bytes.length}`
+);
 invariant(bytes.length <= 2_000_000, `fan.glb is too large: ${bytes.length}`);
-invariant(stats.triangleCount >= 2_000, "Fan detail collapsed below the art target");
-invariant(stats.triangleCount <= 80_000, "Fan exceeds the mobile triangle budget");
+invariant(
+  stats.triangleCount >= 2_000,
+  "Fan detail collapsed below the art target"
+);
+invariant(
+  stats.triangleCount <= 80_000,
+  "Fan exceeds the mobile triangle budget"
+);
 console.log(
   `FAN_DIMENSIONS_M=${stats.dimensions.x.toFixed(4)},${stats.dimensions.y.toFixed(4)},${stats.dimensions.z.toFixed(4)}`
 );
 invariant(
-  stats.dimensions.x >= 0.50 && stats.dimensions.x <= 0.54,
+  stats.dimensions.x >= 0.5 && stats.dimensions.x <= 0.54,
   `Fan width is outside the 20-inch class: ${stats.dimensions.x.toFixed(4)}m`
 );
 invariant(
@@ -466,4 +606,9 @@ console.log(
 console.log(
   `FAN_FIRE_DIMENSIONS_M=${fireDimensions.x.toFixed(6)},${fireDimensions.y.toFixed(6)},${fireDimensions.z.toFixed(6)}`
 );
-console.log("FAN_VARIANTS=fire,day-black,day-white,bare,covered-solid,covered-striped");
+console.log(
+  `FAN_LOTUS_DIMENSIONS_M=${lotusDimensions.x.toFixed(6)},${lotusDimensions.y.toFixed(6)},${lotusDimensions.z.toFixed(6)}`
+);
+console.log(
+  "FAN_VARIANTS=fire,lotus,day-black,day-white,bare,covered-solid,covered-striped"
+);

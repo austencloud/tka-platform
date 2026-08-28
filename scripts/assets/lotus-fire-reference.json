@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "product": "Home of Poi Medium Lotus Fire Fan",
+  "source": "https://www.homeofpoi.com/en/shop/listItems/Medium-Lotus-Fire-Fans",
+  "source_image": "https://www.threeworlds.com.au/cdn/shop/products/lotus_fire_fans2.png?v=1654825026&width=1800",
+  "source_image_px": [1800, 1800],
+  "fan_bbox_px": {
+    "left": 45,
+    "top": 310,
+    "right": 1769,
+    "bottom": 1503
+  },
+  "pivot_px": [900, 1235],
+  "published_dimensions_m": [0.48, 0.35],
+  "pixel_scale_m": [0.0002784222737819026, 0.0002933780385582565],
+  "published_construction": {
+    "spinning_ring_inside_diameter_m": 0.092075,
+    "wick_length_m": 0.05,
+    "frame_stock_diameter_m": 0.004,
+    "grip_stock_diameter_m": 0.007,
+    "weight_kg": 0.4
+  },
+  "geometry_m": {
+    "finger_ring_inside_diameter_m": 0.025,
+    "finger_ring_center_y": 0.0715,
+    "cradle_join": [-0.0557, 0.0103],
+    "cradle_bottom_y": -0.076,
+    "outer_wick_center": [0.215, 0.098],
+    "outer_wick_direction": [0.523, 0.852],
+    "diagonal_wick_center": [0.168, 0.227],
+    "center_wick_center_y": 0.246,
+    "left_frame_paths": {
+      "center_petal": [
+        [-0.03, 0.041],
+        [-0.057, 0.108],
+        [-0.049, 0.177],
+        [-0.019, 0.226],
+        [-0.004, 0.256]
+      ],
+      "upper_outer_petal": [
+        [-0.0557, 0.0103],
+        [-0.105, 0.056],
+        [-0.151, 0.116],
+        [-0.168, 0.181],
+        [-0.172, 0.237]
+      ],
+      "upper_inner_petal": [
+        [-0.022, 0.048],
+        [-0.063, 0.1],
+        [-0.112, 0.153],
+        [-0.151, 0.188],
+        [-0.164, 0.237]
+      ],
+      "lower_outer_petal": [
+        [-0.0557, 0.0103],
+        [-0.105, -0.002],
+        [-0.165, 0.012],
+        [-0.201, 0.06],
+        [-0.2226, 0.1044]
+      ],
+      "lower_inner_petal": [
+        [-0.022, 0.048],
+        [-0.071, 0.095],
+        [-0.132, 0.105],
+        [-0.185, 0.102],
+        [-0.2158, 0.1086]
+      ]
+    }
+  },
+  "calibration": {
+    "method": "front-on 1800 px product photograph; horizontal and vertical axes calibrated independently to the published 480 x 350 mm envelope",
+    "symmetry": "right side mirrored from the traced left-side frame paths",
+    "finger_ring": "25 mm inside diameter measured from the calibrated product photograph",
+    "wick_diameter_m": 0.028
+  }
+}

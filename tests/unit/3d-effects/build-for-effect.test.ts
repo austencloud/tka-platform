@@ -11,7 +11,11 @@ const DEFAULT_BUILD: PropBuild = {
   fanCover: "bare",
 };
 
-const DAY_BUILD: PropBuild = { ...DEFAULT_BUILD, finish: "day", fanBuild: "day" };
+const DAY_BUILD: PropBuild = {
+  ...DEFAULT_BUILD,
+  finish: "day",
+  fanBuild: "day",
+};
 
 describe("buildForEffect — fire equips a burnable build", () => {
   it("puts a pictograph fan on the fire build", () => {
@@ -22,8 +26,28 @@ describe("buildForEffect — fire equips a burnable build", () => {
 
   it("takes the cover off a covered day fan and lights the wicks", () => {
     expect(
-      buildForEffect(PropType.FAN, "fire", { ...DAY_BUILD, fanCover: "covered" })
+      buildForEffect(PropType.FAN, "fire", {
+        ...DAY_BUILD,
+        fanCover: "covered",
+      })
     ).toEqual({ propBuild: { fanBuild: "fire", fanCover: "bare" } });
+  });
+
+  it("keeps the selected Lotus frame when fire uncovers its wicks", () => {
+    const lotusFan: PropBuild = {
+      ...DEFAULT_BUILD,
+      fanBuild: "lotus",
+      fanCover: "covered",
+    };
+    expect(buildForEffect(PropType.FAN, "fire", lotusFan)).toEqual({
+      propBuild: { fanCover: "bare" },
+    });
+    expect(
+      buildForEffect(PropType.FAN, "fire", {
+        ...lotusFan,
+        fanCover: "bare",
+      })
+    ).toBeNull();
   });
 
   it("treats the big fan the same as the fan", () => {
