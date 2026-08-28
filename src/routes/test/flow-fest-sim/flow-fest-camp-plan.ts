@@ -190,6 +190,24 @@ export const FLOW_FEST_LOWER_CAMPGROUND_LOOP = Object.freeze(
   FLOW_FEST_LOWER_CAMPGROUND_LOOP_NAIP_PIXELS.map(flowFestNaipPixelToWorld)
 );
 
+/**
+ * Austen's lower-level occupancy correction is topological rather than a
+ * claim about any one festival weekend's exact pitch locations. The loop is
+ * the circulation boundary: car camping occupies its middle, a smaller tent
+ * population sits inside the road edge, and the main tent population lives
+ * across the road beside the tree line.
+ */
+export const FLOW_FEST_LOWER_CAMPGROUND_OCCUPANCY = Object.freeze({
+  evidence: "austen-observed-topology" as const,
+  circulationRoadId: "lower-campground-loop",
+  centerVehicleCount: 32,
+  centerTentCount: 4,
+  innerRoadsideTentCount: 8,
+  outerTreeLineTentCount: 14,
+  sourceNote:
+    "Austen's 2026-08-28 correction: the loop is the lower-level vehicle road; cars concentrate in its open middle, only a few tents mix with cars, more tents sit near the inside edge, and the main tent population occupies the tree-line side outside the road.",
+});
+
 export function flowFestNaipPixelToWorld(point: {
   x: number;
   y: number;
@@ -327,7 +345,7 @@ function buildInternalDrives(
   return [
     {
       id: "camp-road-entrance-to-check-in",
-      label: "Camp entrance to check-in",
+      label: "Camp entrance to lower loop",
       evidence: "imagery-interpreted",
       kind: "internal-drive",
       widthMeters: 3.6,
@@ -335,23 +353,10 @@ function buildInternalDrives(
         FLOW_FEST_CAMP_ROAD_ENTRANCE,
         FLOW_FEST_ENTRANCE_APRON_JOIN,
         FLOW_FEST_LOWER_CHECK_IN,
-      ],
-      sourceNote:
-        "West-side junction registered from exact August 2024 Street View panorama metadata to ODOT road feature 3019609, then corroborated by the identifiable junction in the 2023 public-domain NAIP orthophoto. The check-in gameplay marker is placed on the driveway center beside the observed gatehouse and remains Austen-correctable.",
-    },
-    {
-      id: "check-in-to-lower-level",
-      label: "Lower-level access",
-      evidence: "imagery-interpreted",
-      kind: "internal-drive",
-      widthMeters: 3.6,
-      points: [
-        FLOW_FEST_LOWER_CHECK_IN,
-        { x: 306, z: -106 },
         FLOW_FEST_LOWER_CAMPGROUND_LOOP[0]!,
       ],
       sourceNote:
-        "The short check-in connector is registered to the visible lower-loop junction in the 2023 public-domain orthophoto; surface width and gate hardware remain field-unverified.",
+        "West-side junction registered from exact August 2024 Street View panorama metadata to ODOT road feature 3019609, then joined to the visible lower-loop entrance in the 2023 public-domain NAIP orthophoto. Austen's lower-level correction removes the former separate center-cut access line: this perimeter connection is the only represented approach to the loop.",
     },
     {
       id: "lower-campground-loop",

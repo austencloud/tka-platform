@@ -35,7 +35,6 @@ import {
 } from "$lib/features/flow-fest-sim/domain/flow-fest-living-fire-jam";
 import type { ImportedTerrainDataV2 } from "$lib/shared/3d/procedural-engine/generation/real-terrain-zone";
 import {
-  allFlowFestSegments,
   type FlowFestBranchId,
   type FlowFestRuntimeContract,
   type FlowFestRuntimePoint,
@@ -57,6 +56,7 @@ import {
   buildFlowFestGroundFamilyMask,
   type FlowFestGroundFamilyMask,
 } from "./flow-fest-ground-surface";
+import { deriveFlowFestLowerCampOccupancy } from "./flow-fest-lower-camp-occupancy";
 import {
   deriveFlowFestForestEcology,
   type FlowFestForestEcologyLayout,
@@ -101,6 +101,13 @@ export interface FlowFestProductionDressing {
     lowerTentPerimeterCount: number;
     lowerTentMinimumLoopDistance: number;
     lowerTentMaximumLoopDistance: number;
+    lowerCenterVehicleCount: number;
+    lowerCenterTentCount: number;
+    lowerInnerRoadsideTentCount: number;
+    lowerOuterTreeLineTentCount: number;
+    lowerCenterVehicleOutsideLoopCount: number;
+    lowerInnerRoadsideTentOutsideLoopCount: number;
+    lowerOuterTreeLineTentInsideLoopCount: number;
     minimumCanopyPeakDistance: number;
     tracedConnectorSurfaceCount: number;
     forestTreeRouteIntrusions: number;
@@ -643,6 +650,13 @@ function buildCampClusters(
     | "lowerTentPerimeterCount"
     | "lowerTentMinimumLoopDistance"
     | "lowerTentMaximumLoopDistance"
+    | "lowerCenterVehicleCount"
+    | "lowerCenterTentCount"
+    | "lowerInnerRoadsideTentCount"
+    | "lowerOuterTreeLineTentCount"
+    | "lowerCenterVehicleOutsideLoopCount"
+    | "lowerInnerRoadsideTentOutsideLoopCount"
+    | "lowerOuterTreeLineTentInsideLoopCount"
   >;
   setEstablished(visible: boolean): void;
   setDressingVisible(visible: boolean): void;
@@ -651,15 +665,13 @@ function buildCampClusters(
   group.name = "FFS_AuthoredFestivalCamps";
   const tentPlacements: Placement[] = [];
   const occupiedTentPlacements: Placement[] = [];
-  const lowerTentPlacements: Placement[] = [];
+  const lowerInnerRoadsideTentPlacements: Placement[] = [];
+  const lowerOuterTreeLineTentPlacements: Placement[] = [];
+  const lowerCenterTentPlacements: Placement[] = [];
   const vehiclePlacements: Placement[] = [];
-  const routesById = new Map(
-    allFlowFestSegments(contract).map((route) => [route.id, route])
+  const routes = allFlowFestCampPlanLines(campPlan).map(
+    flowFestCampPlanLineToRuntimeSegment
   );
-  for (const line of allFlowFestCampPlanLines(campPlan)) {
-    routesById.set(line.id, flowFestCampPlanLineToRuntimeSegment(line));
-  }
-  const routes = [...routesById.values()];
   const lowerLoop = campPlan.internalDrives.find(
     (drive) => drive.id === "lower-campground-loop"
   );
@@ -667,94 +679,107 @@ function buildCampClusters(
     throw new Error("The shared camp plan is missing the lower road loop");
   }
   let playerTentPlacement: Placement | null = null;
-  const clusterSpecs: Array<{
-    zoneId: string;
-    branch: FlowFestBranchId;
-    tents: number;
-    vehicles: number;
-  }> = [
-    { zoneId: "lower-tent-zone", branch: "lower-tent", tents: 8, vehicles: 0 },
-    { zoneId: "upper-tent-zone", branch: "upper-tent", tents: 21, vehicles: 0 },
-    { zoneId: "car-camp-zone", branch: "car-camp", tents: 9, vehicles: 9 },
-  ];
+  const registerTent = (
+    placement: Placement,
+    branch: FlowFestBranchId,
+    rng: () => number,
+    playerCandidate: boolean
+  ): Placement => {
+    const tentPlacement: Placement = {
+      ...placement,
+      rotation: placement.rotation + Math.PI + (rng() - 0.5) * 0.4,
+      scale: 0.86 + rng() * 0.26,
+      colorIndex: Math.floor(rng() * TENT_COLORS.length),
+    };
+    occupiedTentPlacements.push(tentPlacement);
+    if (
+      playerCandidate &&
+      branch === selectedBranch &&
+      playerTentPlacement === null
+    ) {
+      playerTentPlacement = { ...tentPlacement, scale: 1.25 };
+    } else {
+      tentPlacements.push(tentPlacement);
+    }
+    return tentPlacement;
+  };
 
-  for (const spec of clusterSpecs) {
-    const zone = contract.zones.find(
-      (candidate) => candidate.id === spec.zoneId
+  const lowerRng = makeRng(
+    childSeed(FLOW_FEST_MASTER_SEED, "lower-campground-occupancy")
+  );
+  const lowerOccupancy = deriveFlowFestLowerCampOccupancy({
+    rng: lowerRng,
+    loop: lowerLoop,
+    routes,
+  });
+  for (const [
+    index,
+    placement,
+  ] of lowerOccupancy.outerTreeLineTents.entries()) {
+    const groundedPlacement = groundTentPlacement(placement, terrain);
+    lowerOuterTreeLineTentPlacements.push(
+      registerTent(groundedPlacement, "lower-tent", lowerRng, index === 0)
     );
-    if (!zone) continue;
-    const radiusX = zone.radiusMeters ?? zone.searchRadiusXMeters ?? 12;
-    const radiusZ = zone.radiusMeters ?? zone.searchRadiusZMeters ?? 12;
-    const rng = makeRng(childSeed(FLOW_FEST_MASTER_SEED, spec.zoneId));
+  }
+  for (const placement of lowerOccupancy.innerRoadsideTents) {
+    lowerInnerRoadsideTentPlacements.push(
+      registerTent(
+        groundTentPlacement(placement, terrain),
+        "lower-tent",
+        lowerRng,
+        false
+      )
+    );
+  }
+  for (const [index, placement] of lowerOccupancy.centerTents.entries()) {
+    lowerCenterTentPlacements.push(
+      registerTent(
+        groundTentPlacement(placement, terrain),
+        "car-camp",
+        lowerRng,
+        index === 0
+      )
+    );
+  }
 
-    for (let index = 0; index < spec.vehicles; index += 1) {
-      const placement = findCampPlacement({
-        rng,
-        zone,
-        terrain,
-        routes,
-        radiusX,
-        radiusZ,
-        index,
-        count: spec.vehicles,
-        routeClearance: 2.5,
-        minimumPeerDistance: 5.2,
-        peers: vehiclePlacements,
-        otherPeers: [],
-        minimumOtherDistance: 0,
-      });
-      vehiclePlacements.push({
-        ...placement,
-        y:
-          sampleFlowFestTerrainWorldY(terrain, placement.x, placement.z) + 0.65,
-        rotation: Math.PI / 2 + (rng() - 0.5) * 0.18,
-        scale: 1,
-        colorIndex: index % 4,
-      });
-    }
+  vehiclePlacements.push(
+    ...lowerOccupancy.centerVehicles.map((placement, index) => ({
+      ...placement,
+      y: sampleFlowFestTerrainWorldY(terrain, placement.x, placement.z) + 0.65,
+      scale: 1,
+      colorIndex: index % 4,
+    }))
+  );
 
-    for (let index = 0; index < spec.tents; index += 1) {
-      const placement =
-        spec.branch === "lower-tent"
-          ? findLowerLoopTentPlacement({
-              rng,
-              loop: lowerLoop,
-              terrain,
-              routes,
-              index,
-              count: spec.tents,
-            })
-          : findCampPlacement({
-              rng,
-              zone,
-              terrain,
-              routes,
-              radiusX,
-              radiusZ,
-              index,
-              count: spec.tents,
-              routeClearance: 1.4,
-              minimumPeerDistance: 3.1,
-              peers: occupiedTentPlacements,
-              otherPeers: vehiclePlacements,
-              minimumOtherDistance: 4.1,
-            });
-      const tentPlacement: Placement = {
-        ...placement,
-        rotation: placement.rotation + Math.PI + (rng() - 0.5) * 0.4,
-        scale: 0.86 + rng() * 0.26,
-        colorIndex: Math.floor(rng() * TENT_COLORS.length),
-      };
-      occupiedTentPlacements.push(tentPlacement);
-      if (spec.branch === "lower-tent") {
-        lowerTentPlacements.push(tentPlacement);
-      }
-      if (spec.branch === selectedBranch && index === 0) {
-        playerTentPlacement = { ...tentPlacement, scale: 1.25 };
-      } else {
-        tentPlacements.push(tentPlacement);
-      }
-    }
+  const upperZone = contract.zones.find(
+    (candidate) => candidate.id === "upper-tent-zone"
+  );
+  if (!upperZone) {
+    throw new Error("The runtime contract is missing the upper tent zone");
+  }
+  const upperRng = makeRng(childSeed(FLOW_FEST_MASTER_SEED, "upper-tent-zone"));
+  const upperTentCount = 21;
+  const upperRadiusX =
+    upperZone.radiusMeters ?? upperZone.searchRadiusXMeters ?? 12;
+  const upperRadiusZ =
+    upperZone.radiusMeters ?? upperZone.searchRadiusZMeters ?? 12;
+  for (let index = 0; index < upperTentCount; index += 1) {
+    const placement = findCampPlacement({
+      rng: upperRng,
+      zone: upperZone,
+      terrain,
+      routes,
+      radiusX: upperRadiusX,
+      radiusZ: upperRadiusZ,
+      index,
+      count: upperTentCount,
+      routeClearance: 1.4,
+      minimumPeerDistance: 3.1,
+      peers: occupiedTentPlacements,
+      otherPeers: vehiclePlacements,
+      minimumOtherDistance: 3,
+    });
+    registerTent(placement, "upper-tent", upperRng, index === 0);
   }
 
   const tentGeometry = new ConeGeometry(1.75, 1.85, 4);
@@ -849,15 +874,33 @@ function buildCampClusters(
         allTentPlacements,
         vehiclePlacements
       ),
-      lowerTentPerimeterCount: lowerTentPlacements.length,
+      lowerTentPerimeterCount:
+        lowerInnerRoadsideTentPlacements.length +
+        lowerOuterTreeLineTentPlacements.length,
       lowerTentMinimumLoopDistance: minimumDistanceToPlanLine(
-        lowerTentPlacements,
+        [
+          ...lowerInnerRoadsideTentPlacements,
+          ...lowerOuterTreeLineTentPlacements,
+        ],
         lowerLoop
       ),
       lowerTentMaximumLoopDistance: maximumDistanceToPlanLine(
-        lowerTentPlacements,
+        [
+          ...lowerInnerRoadsideTentPlacements,
+          ...lowerOuterTreeLineTentPlacements,
+        ],
         lowerLoop
       ),
+      lowerCenterVehicleCount: vehiclePlacements.length,
+      lowerCenterTentCount: lowerCenterTentPlacements.length,
+      lowerInnerRoadsideTentCount: lowerInnerRoadsideTentPlacements.length,
+      lowerOuterTreeLineTentCount: lowerOuterTreeLineTentPlacements.length,
+      lowerCenterVehicleOutsideLoopCount:
+        lowerOccupancy.audit.centerVehicleOutsideLoopCount,
+      lowerInnerRoadsideTentOutsideLoopCount:
+        lowerOccupancy.audit.innerRoadsideTentOutsideLoopCount,
+      lowerOuterTreeLineTentInsideLoopCount:
+        lowerOccupancy.audit.outerTreeLineTentInsideLoopCount,
     },
     setEstablished: (visible) => {
       playerTent.visible = visible;
@@ -868,106 +911,16 @@ function buildCampClusters(
   };
 }
 
-function findLowerLoopTentPlacement(options: {
-  rng: () => number;
-  loop: FlowFestCampPlanLine;
-  terrain: ImportedTerrainDataV2;
-  routes: FlowFestRuntimeSegment[];
-  index: number;
-  count: number;
-}): Placement {
-  const uniqueLoopPoints =
-    distanceBetweenPlanPoints(
-      options.loop.points[0]!,
-      options.loop.points.at(-1)!
-    ) < 0.15
-      ? options.loop.points.slice(0, -1)
-      : options.loop.points;
-  const center = uniqueLoopPoints.reduce(
-    (sum, point) => ({ x: sum.x + point.x, z: sum.z + point.z }),
-    { x: 0, z: 0 }
-  );
-  center.x /= uniqueLoopPoints.length;
-  center.z /= uniqueLoopPoints.length;
-
-  for (let attempt = 0; attempt < 24; attempt += 1) {
-    const fraction =
-      (options.index + 1) / (options.count + 1) +
-      (options.rng() - 0.5) * 0.018 +
-      attempt * 0.007;
-    const sample = sampleClosedPlanLine(options.loop.points, fraction);
-    const tangentLength = Math.hypot(sample.tangentX, sample.tangentZ) || 1;
-    const left = {
-      x: -sample.tangentZ / tangentLength,
-      z: sample.tangentX / tangentLength,
-    };
-    const outwardDot =
-      left.x * (sample.x - center.x) + left.z * (sample.z - center.z);
-    const outward = outwardDot >= 0 ? left : { x: -left.x, z: -left.z };
-    const offset = options.loop.widthMeters / 2 + 4.6 + options.rng() * 1.35;
-    const x = sample.x + outward.x * offset;
-    const z = sample.z + outward.z * offset;
-    if (pointNearRoutes(x, z, options.routes, 1.4)) continue;
-    return {
-      x,
-      y: sampleFlowFestTerrainWorldY(options.terrain, x, z) + 0.08,
-      z,
-      rotation: Math.atan2(center.x - x, center.z - z),
-      scale: 1,
-      colorIndex: 0,
-    };
-  }
-  throw new Error(
-    `Could not place lower-perimeter tent ${options.index + 1}/${options.count}`
-  );
-}
-
-function sampleClosedPlanLine(
-  points: ReadonlyArray<{ x: number; z: number }>,
-  fraction: number
-): { x: number; z: number; tangentX: number; tangentZ: number } {
-  const segments = points.slice(1).map((end, index) => {
-    const start = points[index]!;
-    return {
-      start,
-      end,
-      length: distanceBetweenPlanPoints(start, end),
-    };
-  });
-  const totalLength = segments.reduce(
-    (sum, segment) => sum + segment.length,
-    0
-  );
-  let remaining =
-    (((fraction % 1) + 1) % 1) * Math.max(totalLength, Number.EPSILON);
-  for (const segment of segments) {
-    if (remaining > segment.length) {
-      remaining -= segment.length;
-      continue;
-    }
-    const progress = segment.length > 0 ? remaining / segment.length : 0;
-    return {
-      x: segment.start.x + (segment.end.x - segment.start.x) * progress,
-      z: segment.start.z + (segment.end.z - segment.start.z) * progress,
-      tangentX: segment.end.x - segment.start.x,
-      tangentZ: segment.end.z - segment.start.z,
-    };
-  }
-  const first = points[0]!;
-  const second = points[1] ?? first;
+function groundTentPlacement(
+  placement: { x: number; z: number; rotation: number },
+  terrain: ImportedTerrainDataV2
+): Placement {
   return {
-    x: first.x,
-    z: first.z,
-    tangentX: second.x - first.x,
-    tangentZ: second.z - first.z,
+    ...placement,
+    y: sampleFlowFestTerrainWorldY(terrain, placement.x, placement.z) + 0.08,
+    scale: 1,
+    colorIndex: 0,
   };
-}
-
-function distanceBetweenPlanPoints(
-  first: { x: number; z: number },
-  second: { x: number; z: number }
-): number {
-  return Math.hypot(first.x - second.x, first.z - second.z);
 }
 
 function minimumPairDistance(placements: Placement[]): number {
