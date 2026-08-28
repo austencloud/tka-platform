@@ -39,6 +39,19 @@ Verified by current source and tests:
 
 Ownership decision: **extend** `destination-walk-plan.ts`; do not create a parallel Stage-only step planner.
 
+### Walk Lab runtime audit returned
+
+The `Fix Walk Lab leg teleporting` task audited this handoff on 2026-08-28. Read-only inspection of its active worktree confirmed the key boundaries:
+
+- The locomotion gait clock exposes monotonic `step`, `distanceStep`, and cadence. Cadence currently advances the clock internally; there is no external authored footfall-time input.
+- `TerminalStepPlan` owns a final two-step braking/landing window, per-step root distances, a derived left/right terminal foot, cadence, terminal status, and `targetFacing`. `targetFacing` is stored but no `plan.targetFacing` runtime use exists yet.
+- `FootPlanter` runs after locomotion animation as a contact/IK correction layer. Its contract does not accept authored footprint poses, foot yaw, plant beats, or arbitrary contact windows.
+- Motion-matching database extraction and search utilities exist, but repository search found no runtime consumer that builds and queries that database for Stage playback.
+- Faithful behavior today is therefore limited to straight `from`/`to` travel, exact alternating step count, per-step root distances, uniform cadence, derived terminal foot, terminal status, supported turn clips, and observed contact diagnostics.
+- Exact lead-foot choice, arbitrary two-foot goal stance, curved paths, crossed steps, grapevine, and arbitrary footprint schedules are not currently faithful runtime inputs.
+
+The Walk Lab task reports 65 focused tests passing and `svelte-check` with zero errors and warnings. That output was produced in the Walk Lab task and was not rerun from this Stage worktree. Its branch remains dirty and uncommitted pending its required scoped commit confirmation.
+
 ### External model checked against established practice
 
 Verified sources:
@@ -64,7 +77,7 @@ Distance, step count, arrival timing, cadence, stride length, and speed cannot a
 
 - The proposed footfall schema below is grounded in the current code and research but has not been run through the shipping rig or persisted in a Stage project.
 - The present exact-step Walk Lab proves endpoint and count for straight, evenly spaced travel. It does not yet prove arbitrary starting stance, lead-foot selection, crossed steps, grapevine, backwards travel, curved paths, or an exact two-foot goal stance.
-- The current motion-matching feature vector can help choose foot-aware motion, but no current proof shows that it can satisfy a user-authored arbitrary footprint sequence.
+- The current motion-matching feature vector describes foot-aware motion, but no runtime database build/search currently consumes it for Stage playback. It cannot yet be treated as a solver for authored footprints.
 - Avatar-specific reach envelopes are not yet derived from rig leg length, hip width, joint limits, and available animation coverage. Do not promote the Walk Lab's 0.55–0.85 m heuristic into production canon.
 - The correct phase-lock direction for Stage remains unproved. Walk Lab currently lets the locomotion gait clock drive exact-step progress. A musical score needs authored beat/contact events to remain deterministic and may instead need the renderer gait phase synchronized to the score.
 
@@ -78,7 +91,7 @@ The active Codex task is titled `Fix Walk Lab leg teleporting`:
 - Worktree: `E:\tka-platform-walk-lab-terminal-step`
 - Reported branch: `codex/walk-lab-terminal-step`
 
-Its recent work owns exact-step terminal transitions, foot planting/arrival diagnostics, steady-gait quality measurements, and turn-in-place animation. Its last visible report was awaiting commit grouping approval. Audit its actual `git status`, branch, and newest turns before acting; do not rely on this handoff as proof that its working tree is clean.
+Its recent work owns exact-step terminal transitions, foot planting/arrival diagnostics, steady-gait quality measurements, and turn-in-place animation. The 2026-08-28 audit found its branch dirty and uncommitted while awaiting scoped commit confirmation. Audit its actual `git status`, branch, and newest turns before acting; do not rely on this handoff as proof that its working tree remains in that state.
 
 ### Stage timeline task owned here
 
@@ -139,7 +152,7 @@ Focused proof already captured here: `tests/unit/stage/stage-timeline-projection
    ```
 
    Templates such as step-together, cross-step, grapevine, forward/backward, sidestep, and pivot generate editable footfalls. Do not leave the gait as an opaque enum or one animation clip.
-4. **Resolve the clock contract.** For Stage, the timeline's musical beat must remain canonical. Prove whether the renderer can phase-lock its gait/contact clock to authored `plantBeat` values without foot skating, late arrival, or frame-rate dependence. Do not let a free-running gait clock drift from the score.
+4. **Add and prove one external `GaitTimingPlan` seam before footprint targets.** For Stage, the timeline's musical beat must remain canonical. The first architectural experiment should let the existing locomotion animator accept explicit footfall times while preserving its monotonic gait/distance clocks, terminal controller, and current contacts. Prove phase-locked arrival without foot skating, late arrival, or frame-rate dependence. Only after the animator can realize the authored schedule should `FootprintTarget` poses/contact windows be added to the planter/IK path.
 5. **Establish feasibility as layered output, not one magic clamp.** Proposed layers:
    - hard invalid: unreachable pose, leg/foot collision, missing support, invalid alternating contact sequence;
    - renderer unavailable: requested placement outside existing clip/motion-matching coverage;
