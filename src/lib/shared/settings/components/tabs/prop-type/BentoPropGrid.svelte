@@ -1,9 +1,9 @@
 <!--
-  BentoPropGrid.svelte - Flat prop selection grid
+  BentoPropGrid.svelte - Family-first prop selection grid
 
-  Every prop renders as its own button under a picker section header
-  (Standard / Big / Novelty / Premium). No variant popover, no count badges —
-  the sections come from PROP_PICKER_SECTIONS.
+  Base props render under the picker section headers. Families with several
+  builds open a style chooser, so Club owns Club / Classic Club / Torch rather
+  than scattering those choices across unrelated sections.
 
   Variants:
   - "panel" (default): has border/background for standalone use (e.g. Settings tab)
@@ -16,9 +16,14 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     PROP_PICKER_SECTIONS,
+    getAllVariations,
+    getBasePropType,
+    getPropTypeDisplayInfo,
     isPropActive,
     isPremiumCosmeticProp,
   } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import { Popover } from "bits-ui";
+  import { flyFade } from "$lib/shared/transitions/motion";
   import PropTypeButton from "./PropTypeButton.svelte";
   import PropChiralityRow from "./PropChiralityRow.svelte";
   import type { PropChiralitySeam } from "./prop-chirality-seam";
@@ -76,20 +81,51 @@
     chirality?: PropChiralitySeam;
   }>();
 
-  // Active props grouped into the flat picker sections. Each prop renders as
-  // its own button — no variant drill-down.
-  const sections = $derived(
-    PROP_PICKER_SECTIONS.map((s) => ({
-      label: s.label,
-      props: s.props.filter((p) => {
-        if (p === PropType.POI) return poiPickerEnabled;
-        if (isPremiumCosmeticProp(p)) return premiumPickerEnabled;
-        return isPropActive(p);
-      }),
-    })).filter((s) => s.props.length > 0)
-  );
+  function canShowProp(prop: PropType): boolean {
+    if (prop === PropType.POI) return poiPickerEnabled;
+    if (isPremiumCosmeticProp(prop)) return premiumPickerEnabled;
+    return isPropActive(prop);
+  }
 
-  const allProps = $derived(sections.flatMap((s) => s.props));
+  const selectableProps = $derived(
+    PROP_PICKER_SECTIONS.flatMap((section) => section.props).filter((prop) =>
+      canShowProp(prop)
+    )
+  );
+  const selectablePropSet = $derived(new Set(selectableProps));
+
+  // Preserve the curated Standard / Big / Novelty / Premium ordering, but show
+  // each physical family once at the first position where one of its members
+  // appears. The chooser then gets only variants that the curated picker
+  // actually allows, so internal-only Staff builds stay internal.
+  const sections = $derived.by(() => {
+    const seen = new Set<PropType>();
+    return PROP_PICKER_SECTIONS.map((section) => {
+      const bases: PropType[] = [];
+      for (const prop of section.props) {
+        if (!canShowProp(prop)) continue;
+        const base = isPremiumCosmeticProp(prop) ? prop : getBasePropType(prop);
+        if (seen.has(base)) continue;
+        seen.add(base);
+        bases.push(base);
+      }
+      return { label: section.label, bases };
+    }).filter((section) => section.bases.length > 0);
+  });
+
+  const allBases = $derived(sections.flatMap((section) => section.bases));
+  const selectedBase = $derived(getBasePropType(selectedPropType));
+
+  function familyChoices(base: PropType): PropType[] {
+    return getAllVariations(base).filter((prop) => selectablePropSet.has(prop));
+  }
+
+  function familyCount(base: PropType): number | undefined {
+    const count = familyChoices(base).length;
+    return count > 1 ? count : undefined;
+  }
+
+  let openFamily = $state<PropType | null>(null);
 
   // Track which locked prop (if any) is showing its inline earn tip.
   let lockedTipFor = $state<PropType | null>(null);
@@ -115,6 +151,7 @@
     if (route === "select") {
       lockedTipFor = null;
       premiumNudgeFor = null;
+      openFamily = null;
       onSelect(prop);
       return;
     }
@@ -178,11 +215,65 @@
     </div>
   {/snippet}
 
+  {#snippet familyTile(base: PropType)}
+    {@const choices = familyChoices(base)}
+    {#if choices.length <= 1}
+      {@render tile(choices[0] ?? base)}
+    {:else}
+      <Popover.Root
+        open={openFamily === base}
+        onOpenChange={(open) => (openFamily = open ? base : null)}
+      >
+        <Popover.Trigger>
+          {#snippet child({ props })}
+            <PropTypeButton
+              propType={base}
+              selected={selectedBase === base}
+              badge={familyCount(base)}
+              actionLabel={`Choose ${getPropTypeDisplayInfo(base).label} style`}
+              buttonProps={props}
+              {color}
+            />
+          {/snippet}
+        </Popover.Trigger>
+        <Popover.Content
+          side="bottom"
+          sideOffset={8}
+          avoidCollisions={true}
+          collisionPadding={12}
+          forceMount
+        >
+          {#snippet child({ open, wrapperProps, props })}
+            <div {...wrapperProps}>
+              {#if open}
+                <section
+                  {...props}
+                  class="variant-popover"
+                  aria-label={`${getPropTypeDisplayInfo(base).label} styles`}
+                  transition:flyFade={{ y: 6 }}
+                >
+                  <span class="variant-popover-label">
+                    {getPropTypeDisplayInfo(base).label} styles
+                  </span>
+                  <div class="variant-popover-buttons">
+                    {#each choices as prop (prop)}
+                      {@render tile(prop)}
+                    {/each}
+                  </div>
+                </section>
+              {/if}
+            </div>
+          {/snippet}
+        </Popover.Content>
+      </Popover.Root>
+    {/if}
+  {/snippet}
+
   <div class="grid-scroll themed-scrollbar">
     {#if flat}
       <div class="flat-grid">
-        {#each allProps as prop (prop)}
-          {@render tile(prop)}
+        {#each allBases as base (base)}
+          {@render familyTile(base)}
         {/each}
       </div>
     {:else}
@@ -190,8 +281,8 @@
         {#each sections as section, i}
           <div class="section-label" class:first={i === 0}>{section.label}</div>
           <div class="section-buttons">
-            {#each section.props as prop (prop)}
-              {@render tile(prop)}
+            {#each section.bases as base (base)}
+              {@render familyTile(base)}
             {/each}
           </div>
         {/each}
@@ -314,6 +405,41 @@
   .section-buttons :global(.prop-button) {
     width: 79px;
     flex-shrink: 0;
+  }
+
+  .variant-popover {
+    z-index: 60;
+    display: flex;
+    width: min(420px, calc(100vw - 24px));
+    max-height: min(440px, calc(100vh - 24px));
+    box-sizing: border-box;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    overflow-y: auto;
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
+    border-radius: 14px;
+    background: var(--theme-card-bg, #0c0e16);
+    box-shadow: 0 16px 52px var(--theme-shadow, rgba(0, 0, 0, 0.62));
+  }
+
+  .variant-popover-label {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .variant-popover-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+    gap: 8px;
+  }
+
+  .variant-popover-buttons .tile-wrapper :global(.prop-button) {
+    width: 100%;
   }
 
   /* Paid labels include the product family name. At the narrowest picker

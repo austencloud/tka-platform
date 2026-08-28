@@ -27,6 +27,7 @@ export const BIG_UNILATERAL_PROPS = [
 export const SMALL_UNILATERAL_PROPS = [
   "fan",
   "club",
+  "classic_club",
   "minihoop",
   "triad", // ← TRIAD IS UNILATERAL!
   "ukulele",
@@ -273,7 +274,11 @@ export function getBetaOffsetSize(
   let baseOffset: number;
 
   // Large props
-  if (normalizedType === "club" || normalizedType === "eightrings") {
+  if (
+    normalizedType === "club" ||
+    normalizedType === "classic_club" ||
+    normalizedType === "eightrings"
+  ) {
     baseOffset = 950 / 60; // 15.83px
   }
   // Medium props

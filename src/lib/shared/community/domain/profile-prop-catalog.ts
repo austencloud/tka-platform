@@ -49,6 +49,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
     choices: [
       skill(PropType.CLUB, "Club", [
         PropType.CLUB,
+        PropType.CLASSIC_CLUB,
         PropType.TORCH,
         PropType.BIGCLUB,
         PropType.BIGTORCH,

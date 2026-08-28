@@ -13,6 +13,7 @@ describe("propTipEnds", () => {
 
   it("regular club is single-ended (1)", () => {
     expect(propTipEnds(PropType.CLUB)).toBe(1);
+    expect(propTipEnds(PropType.CLASSIC_CLUB)).toBe(1);
   });
 
   it("big club is bilateral → two-ended (2)", () => {
@@ -48,6 +49,7 @@ describe("pairTipEnds", () => {
 describe("effect tip points (fire / LED / trail)", () => {
   it("regular club emits from one tip", () => {
     expect(getTipPoints("club").points).toHaveLength(1);
+    expect(getTipPoints("classic_club")).toEqual(getTipPoints("club"));
   });
 
   it("big club emits from two mirror-symmetric ends (Knob / Bulb)", () => {

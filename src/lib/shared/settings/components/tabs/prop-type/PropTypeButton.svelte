@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { HTMLButtonAttributes } from "svelte/elements";
   import { PropType } from "../../../../pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "./prop-type-registry";
   import PropCompositionPreview from "../../../../pictograph/prop/components/PropCompositionPreview.svelte";
@@ -10,6 +11,8 @@
     selectedRed = false,
     color = "blue",
     badge = undefined,
+    actionLabel,
+    buttonProps,
     onSelect,
   } = $props<{
     propType: PropType;
@@ -24,6 +27,10 @@
     color?: "blue" | "red" | (string & {});
     /** Variant count badge. Shown as a small circle in the top-right corner. */
     badge?: number;
+    /** Override when the tile opens a family chooser instead of selecting. */
+    actionLabel?: string;
+    /** Native trigger attributes supplied by a headless interaction primitive. */
+    buttonProps?: HTMLButtonAttributes;
     onSelect?: (propType: PropType) => void;
   }>();
 
@@ -33,7 +40,7 @@
   const customStyle = $derived(
     isSentinel
       ? ""
-      : `background: ${color}; box-shadow: 0 3px 10px color-mix(in srgb, ${color} 50%, transparent), 0 1px 3px var(--theme-shadow);`,
+      : `background: ${color}; box-shadow: 0 3px 10px color-mix(in srgb, ${color} 50%, transparent), 0 1px 3px var(--theme-shadow);`
   );
 
   const displayInfo = $derived(getPropTypeDisplayInfo(propType));
@@ -43,9 +50,9 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Enter" || e.key === " ") {
+    if ((e.key === "Enter" || e.key === " ") && onSelect) {
       e.preventDefault();
-      onSelect?.(propType);
+      onSelect(propType);
     }
   }
 </script>
@@ -55,12 +62,13 @@
   class:selected
   onclick={handleClick}
   onkeydown={handleKeydown}
-  aria-label={`Select ${displayInfo.label} prop type`}
+  {...buttonProps}
+  aria-label={actionLabel ?? `Select ${displayInfo.label} prop type`}
   aria-pressed={selected}
   data-ghost={selected ? undefined : "safe"}
   data-ghost-kind={selected ? undefined : "prop"}
   data-ghost-label={displayInfo.label}
-  title={`${displayInfo.label} - Click to select this prop type`}
+  title={actionLabel ?? `${displayInfo.label} - Click to select this prop type`}
 >
   <div class="prop-image-container">
     <PropCompositionPreview {propType} neutral />
@@ -111,7 +119,13 @@
     background: rgba(255, 255, 255, 0.025);
     border: 1px solid rgba(255, 255, 255, 0.05);
     cursor: pointer;
-    transition: all var(--duration-normal, 200ms) cubic-bezier(0.22, 1, 0.36, 1);
+    transition:
+      color var(--duration-normal, 200ms) cubic-bezier(0.22, 1, 0.36, 1),
+      background-color var(--duration-normal, 200ms)
+        cubic-bezier(0.22, 1, 0.36, 1),
+      border-color var(--duration-normal, 200ms) cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow var(--duration-normal, 200ms) cubic-bezier(0.22, 1, 0.36, 1),
+      transform var(--duration-fast, 150ms) cubic-bezier(0.22, 1, 0.36, 1);
     color: var(--theme-text);
     position: relative;
     padding: 8px 4px 6px;
@@ -135,7 +149,8 @@
     background: color-mix(in srgb, var(--theme-accent) 10%, transparent);
     border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
     color: var(--theme-text);
-    box-shadow: 0 0 16px color-mix(in srgb, var(--theme-accent) 12%, transparent);
+    box-shadow: 0 0 16px
+      color-mix(in srgb, var(--theme-accent) 12%, transparent);
   }
 
   .prop-button.selected:hover {
@@ -149,7 +164,6 @@
 
   .prop-button:active {
     transform: scale(0.96);
-    transition-duration: 60ms;
   }
 
   .prop-image-container {
@@ -197,7 +211,9 @@
     flex-shrink: 0;
     color: var(--theme-text-dim);
     opacity: 0.4;
-    transition: all var(--duration-normal, 200ms) ease;
+    transition:
+      color var(--duration-normal, 200ms) ease,
+      opacity var(--duration-normal, 200ms) ease;
     font-family:
       -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
   }
@@ -257,12 +273,14 @@
 
   .ios-checkmark.blue {
     background: var(--theme-accent, #818cf8);
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--theme-accent, #818cf8) 40%, transparent);
+    box-shadow: 0 2px 8px
+      color-mix(in srgb, var(--theme-accent, #818cf8) 40%, transparent);
   }
 
   .ios-checkmark.red {
     background: var(--prop-red-text, #f87171);
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--prop-red-text, #f87171) 40%, transparent);
+    box-shadow: 0 2px 8px
+      color-mix(in srgb, var(--prop-red-text, #f87171) 40%, transparent);
   }
 
   /* When both checkmarks are present, offset the red one slightly */
