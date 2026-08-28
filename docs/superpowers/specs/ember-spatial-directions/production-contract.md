@@ -323,6 +323,29 @@ changes the visual ownership of the focal formations.
 - Gate result: implementation and verification complete; approval remains unset
   pending Austen's review.
 
+### Cinematic atmosphere R1 result
+
+Museum tracker `sDKmB6cUEXLfHgz4DGd4` authorizes the runtime atmosphere
+audition after the R7 Meshy geometry still read as one gray material band. The
+R7 GLB, terrain dimensions, lava route, and performer clearance remain locked.
+
+- Selected direction: Blackglass Inferno.
+- Rejected directions: Furnace Storm, which flattened the composition into an
+  orange wash; Sulfur Caldera, which weakened Ember's red-black identity.
+- Runtime ownership: one scene-local data rig drives the existing haze,
+  particles, heat fields, lava colors, light placement, quality-aware shadow,
+  and per-material GLB response.
+- Visual proof:
+  `evidence/gate-4-atmosphere-r1/ember-atmosphere-look-board.png`,
+  `evidence/gate-4-atmosphere-r1/ember-blackglass-orbit-board.png`, and
+  `evidence/gate-4-atmosphere-r1/ember-blackglass-viewport-board.png`.
+- Performance proof:
+  `evidence/gate-4-atmosphere-r1/ember-atmosphere-runtime-report.json` records
+  60.23 average FPS and a 16.8 ms p95 across 180 frames at the decisive 1920 by
+  1080 runtime view.
+- Credit result: no Meshy calls and no credit spend.
+- Gate result: ready for review; approval remains unset.
+
 ## Gate 5: Integrated room
 
 ### Implemented visual integration

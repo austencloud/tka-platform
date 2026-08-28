@@ -24,13 +24,14 @@
   import {
     type EmberSceneConfig,
     createDefaultEmberConfig,
+    isEmberAtmosphereLookId,
   } from "../domain/models/scene-configs";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
   import ObsidianPlatform from "./ember/ObsidianPlatform.svelte";
   import { resolveCircularStageRadius } from "../domain/performer-stage-bounds";
   import GltfAsset from "../primitives/GltfAsset.svelte";
-  import volcanicWorldR7 from "../domain/models/scene-configs/ember-volcanic-world-r7.json";
+  import { tryGetAdaptiveQualityContext } from "../../context/adaptive-quality-context";
 
   interface Props {
     config?: EmberSceneConfig;
@@ -40,7 +41,23 @@
 
   let { config, stageRadius = 3, stageRadiusGrowth = 0 }: Props = $props();
 
-  const baseConfig = $derived(config ?? createDefaultEmberConfig());
+  const requestedLook = (() => {
+    if (
+      typeof window === "undefined" ||
+      !import.meta.env.DEV ||
+      !window.location.pathname.startsWith("/test/")
+    ) {
+      return undefined;
+    }
+    const requested = new URLSearchParams(window.location.search).get(
+      "emberLook"
+    );
+    return isEmberAtmosphereLookId(requested) ? requested : undefined;
+  })();
+
+  const baseConfig = $derived(
+    config ?? createDefaultEmberConfig(requestedLook)
+  );
 
   const activeConfig = $derived.by(() => {
     const r = resolveCircularStageRadius(
@@ -77,20 +94,16 @@
     !baseConfig.platform.enabled && stageRadiusGrowth > 0
   );
 
-  const lavaRiverMouth = $derived.by(() => {
-    const points = activeConfig.lavaRivers?.channels[0]?.points;
-    const mouth = points?.[points.length - 1];
-    return mouth
-      ? { x: mouth[0], z: mouth[1] }
-      : activeConfig.lavaPool.position;
-  });
-
   const logModel = useGltf("/models/camping/tree-log.glb");
   const logSmall = useGltf("/models/camping/tree-log-small.glb");
   const campfire = useGltf("/models/camping/campfire-pit.glb");
   let productionSliceProgress = $state(0);
 
   const { scene, renderer, camera } = useThrelte();
+  const adaptiveQuality = tryGetAdaptiveQualityContext();
+  const shadowsEnabled = $derived(
+    adaptiveQuality?.config.enableShadows ?? true
+  );
 
   let sceneFeatures = $state<ReturnType<typeof getSceneFeatureContext> | null>(
     null
@@ -198,7 +211,57 @@
     productionSliceProgress = fraction;
   }
 
-  function handleProductionSliceReady(_asset: Object3D): void {
+  function handleProductionSliceReady(asset: Object3D): void {
+    const treatments = activeConfig.atmosphere.materials;
+    asset.traverse((child) => {
+      const mesh = child as {
+        isMesh?: boolean;
+        material?: MeshStandardMaterial | MeshStandardMaterial[];
+        castShadow: boolean;
+        receiveShadow: boolean;
+      };
+      if (!mesh.isMesh || !mesh.material) return;
+
+      const role = child.userData.tka_role as string | undefined;
+      mesh.receiveShadow = true;
+      mesh.castShadow =
+        shadowsEnabled &&
+        role !== "playable-surface" &&
+        role !== "playable-shelf" &&
+        role !== "volcanic-basin" &&
+        role !== "lava-channel-levee";
+
+      const materials = Array.isArray(mesh.material)
+        ? mesh.material
+        : [mesh.material];
+      for (const material of materials) {
+        if (!material.isMeshStandardMaterial) continue;
+        const name = material.name;
+        const treatment = name.includes("Ground_Blackglass")
+          ? treatments.playableSurface
+          : name.includes("Meshy_Geology")
+            ? treatments.meshyGeology
+            : name.includes("Mineral") || name.includes("Ash_Deposit")
+              ? treatments.mineral
+              : treatments.world;
+        material.color.lerp(new Color(treatment.tint), treatment.tintBlend);
+        material.emissive.lerp(
+          new Color(treatment.emissive),
+          treatment.emissiveBlend
+        );
+        material.emissiveIntensity = treatment.emissiveIntensity;
+        material.roughness = Math.min(
+          1,
+          material.roughness * treatment.roughnessScale
+        );
+        material.metalness = Math.max(
+          0,
+          Math.min(1, material.metalness + treatment.metalnessAdd)
+        );
+        material.needsUpdate = true;
+      }
+    });
+    asset.userData.emberAtmosphereLook = activeConfig.atmosphere.id;
     productionSliceProgress = 1;
   }
 
@@ -265,13 +328,16 @@
     config={activeConfig.lavaRivers}
     poolPosition={activeConfig.lavaPool.position}
   />
-  <HeatDistortion
-    position={lavaRiverMouth}
-    radius={2.4}
-    height={4.5}
-    intensity={0.035}
-  />
 {/if}
+
+{#each activeConfig.atmosphere.heatFields as field}
+  <HeatDistortion
+    position={field.position}
+    radius={field.radius}
+    height={field.height}
+    intensity={field.intensity}
+  />
+{/each}
 
 <!-- Obsidian crystal pillars with animated veins -->
 <ObsidianPillars config={activeConfig.obsidianPillars} />
@@ -428,34 +494,38 @@
   <VolcanicHaze config={activeConfig.volcanicHaze} />
 {/if}
 
-<!-- One distant plume makes the 100 m vent read as a working volcano, not a prop. -->
-<T.Group
-  position.x={volcanicWorldR7.distantVent.centerRuntimeXZ[0]}
-  position.y={groundY + volcanicWorldR7.distantVent.height + 10}
-  position.z={volcanicWorldR7.distantVent.centerRuntimeXZ[1]}
->
-  <FallingParticles
-    type="smoke"
-    count={48}
-    area={{ width: 15, height: 28, depth: 13 }}
-    speed={0.032}
-    colors={["#403b3a", "#383637", "#49413e", "#303436"]}
-    sizeRange={[1.0, 2.4]}
-    spin={false}
-    opacity={0.09}
-    emissionShape="ellipse"
-    motionScale={0.72}
-  />
-</T.Group>
+<!-- Layered fumaroles stitch the playable shelf into the distant active caldera. -->
+{#each activeConfig.atmosphere.plumes as plume}
+  <T.Group
+    position.x={plume.position[0]}
+    position.y={groundY + plume.position[1]}
+    position.z={plume.position[2]}
+  >
+    <FallingParticles
+      type="smoke"
+      count={plume.count}
+      area={plume.area}
+      speed={plume.speed}
+      colors={plume.colors}
+      sizeRange={plume.sizeRange}
+      spin={false}
+      opacity={plume.opacity}
+      emissionShape="ellipse"
+      motionScale={plume.motionScale}
+    />
+  </T.Group>
+{/each}
 
 <T.PointLight
-  position.x={volcanicWorldR7.distantVent.centerRuntimeXZ[0]}
-  position.y={groundY + volcanicWorldR7.distantVent.height * 0.72}
-  position.z={volcanicWorldR7.distantVent.centerRuntimeXZ[1]}
-  color="#ff3d0d"
-  intensity={92}
-  distance={34}
-  decay={2}
+  position={[
+    activeConfig.atmosphere.calderaLight.position[0],
+    groundY + activeConfig.atmosphere.calderaLight.position[1],
+    activeConfig.atmosphere.calderaLight.position[2],
+  ]}
+  color={activeConfig.atmosphere.calderaLight.color}
+  intensity={activeConfig.atmosphere.calderaLight.intensity}
+  distance={activeConfig.atmosphere.calderaLight.distance}
+  decay={activeConfig.atmosphere.calderaLight.decay}
 />
 
 <!-- Hemisphere ambient -->
@@ -474,43 +544,43 @@
     position.x={sl.position[0]}
     position.y={sl.position[1]}
     position.z={sl.position[2]}
+    castShadow={shadowsEnabled}
+    shadow.mapSize.width={1024}
+    shadow.mapSize.height={1024}
+    shadow.camera.near={1}
+    shadow.camera.far={120}
+    shadow.camera.left={-42}
+    shadow.camera.right={42}
+    shadow.camera.top={42}
+    shadow.camera.bottom={-42}
+    shadow.bias={-0.0007}
+    shadow.normalBias={0.045}
+    shadow.radius={3}
+    shadow.intensity={0.55}
   />
 {/if}
 
-<!-- Opposing moon fills keep the caldera sculptural through the complete orbit. -->
-<T.DirectionalLight position={[14, 11, 18]} color="#c8cbc3" intensity={0.72} />
-<T.DirectionalLight position={[-16, 8, 10]} color="#687e80" intensity={0.46} />
-<T.DirectionalLight position={[0, 22, 3]} color="#eee4d5" intensity={0.36} />
-<T.DirectionalLight position={[-30, 18, 82]} color="#8b4330" intensity={0.34} />
+<!-- The look owns one complementary sky key and a restrained lava-bounce rig. -->
+{#each activeConfig.atmosphere.directionals as light}
+  <T.DirectionalLight
+    position={light.position}
+    color={light.color}
+    intensity={light.intensity}
+  />
+{/each}
 
-<!-- Local heat reveals the faults without washing the whole scene orange. -->
-<T.PointLight
-  position={[-7.0, groundY + 8.0, 14.0]}
-  color="#a9c1bd"
-  intensity={145}
-  distance={36}
-  decay={2}
-/>
-<T.PointLight
-  position={[2.4, groundY + 3.2, 13.2]}
-  color="#ff5418"
-  intensity={30}
-  distance={16}
-  decay={2}
-/>
-<T.PointLight
-  position={[-5.0, groundY + 0.75, -0.5]}
-  color="#ff5418"
-  intensity={16}
-  distance={7}
-  decay={2}
-/>
-<T.PointLight
-  position={[1.4, groundY + 3.8, 13.35]}
-  color="#ff3d0d"
-  intensity={38}
-  distance={12}
-  decay={2}
-/>
+{#each activeConfig.atmosphere.points as light}
+  <T.PointLight
+    position={[
+      light.position[0],
+      groundY + light.position[1],
+      light.position[2],
+    ]}
+    color={light.color}
+    intensity={light.intensity}
+    distance={light.distance}
+    decay={light.decay}
+  />
+{/each}
 
 <ObsidianPlatform config={activeConfig.platform} embedded={embeddedExpansion} />

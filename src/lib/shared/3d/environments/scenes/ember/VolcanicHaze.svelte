@@ -113,7 +113,7 @@
 
       // Combine with depth-weighted blending
       float combined = n1 * 0.5 + n2 * 0.35 + n3 * 0.15;
-      combined = pow(combined, 1.6);
+      combined = pow(combined, 1.25);
 
       vec3 color = mix(uColor1, uColor2, n2);
 
@@ -121,7 +121,10 @@
       // Lit from below — bottom hemisphere glows warmly
       float bottomGlow = smoothstep(0.1, -0.6, dir.y);
       float topFade = smoothstep(0.3, -0.15, dir.y);
-      float alpha = combined * uOpacity * topFade;
+      // Cut visible cloud bodies out of the noise instead of tinting the whole
+      // dome evenly. The old low-contrast wash was the flat graybox ceiling.
+      float cloudBody = smoothstep(0.18, 0.62, combined);
+      float alpha = cloudBody * uOpacity * topFade;
 
       // Horizon boost — volcanic glow at eye level
       float horizonBoost = exp(-abs(dir.y) * 3.5) * 0.5;

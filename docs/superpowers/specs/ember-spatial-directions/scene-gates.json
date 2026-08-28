@@ -23,7 +23,8 @@
       "5otAzYdNg5Wp5E27mgfo",
       "nu73zqvPJRxio4T2sWz7",
       "ATURN84Ov2hmjWUndebl",
-      "ZSnkB98pb0wz6PO17XKp"
+      "ZSnkB98pb0wz6PO17XKp",
+      "sDKmB6cUEXLfHgz4DGd4"
     ]
   },
   "sequenceFingerprints": [],
@@ -330,10 +331,6 @@
         {
           "kind": "material-lighting-brief",
           "path": "docs/superpowers/specs/ember-spatial-directions/look-development.md"
-        },
-        {
-          "kind": "editable-blender-source",
-          "path": "blender/ember-broken-rift-lookdev-r3.blend"
         }
       ],
       "checks": [
@@ -367,23 +364,35 @@
       "evidence": [
         {
           "kind": "vertical-slice-build",
-          "path": "blender/ember-volcanic-world-production-slice-r7.blend"
+          "path": "static/models/ember/ember-production-slice-r7.glb"
         },
         {
           "kind": "build-report",
           "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-report.json"
         },
         {
-          "kind": "registered-orbit-board",
+          "kind": "atmosphere-orbit-board",
           "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-orbit-board.png"
         },
         {
           "kind": "interaction-capture",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-r7-runtime-hero-1920x1080.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/look-blackglass-inferno-hero-1920x1080.png"
+        },
+        {
+          "kind": "visual-target-board",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/ember-atmosphere-look-board.png"
+        },
+        {
+          "kind": "registered-orbit-board",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/ember-blackglass-orbit-board.png"
+        },
+        {
+          "kind": "responsive-proof-board",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/ember-blackglass-viewport-board.png"
         },
         {
           "kind": "performance-report",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-report.json"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/ember-atmosphere-runtime-report.json"
         },
         {
           "kind": "baseline-performance-report",
@@ -456,6 +465,26 @@
           "name": "lava-river",
           "status": "passed",
           "evidence": "A shared seventeen-point downhill channel drives the static levees and runtime indexed spline surface from the distant vent through the audience side of frame while remaining outside the action radius."
+        },
+        {
+          "name": "cinematic-atmosphere-audition",
+          "status": "passed",
+          "evidence": "Blackglass Inferno, Furnace Storm, and Sulfur Caldera were captured over identical R7 geometry and the same hero camera. Blackglass was selected for the strongest lava contrast, Ember identity, performer readability, and complete-orbit value separation."
+        },
+        {
+          "name": "complete-orbit-atmosphere",
+          "status": "passed",
+          "evidence": "The final Blackglass rig was captured from front, front-right, right, rear-right, rear, rear-left, left, and front-left. Every sector retains continuous terrain, volcanic sky, lava continuity, performer readability, and a restrained stage edge."
+        },
+        {
+          "name": "responsive-runtime",
+          "status": "passed",
+          "evidence": "The production viewer rendered the selected look at 1920x1080, 2560x1440, 3840x2160, 1440x900, 820x1180, 960x412, and 375x667 without an alternate scene or reduced composition."
+        },
+        {
+          "name": "atmosphere-performance",
+          "status": "passed",
+          "evidence": "A 180-frame 1920x1080 sample measured 60.28 average FPS with a 16.8 ms p95 while the selected shadow, haze, plumes, particles, heat fields, lava river, performer, and R7 GLB were active."
         }
       ],
       "approval": null

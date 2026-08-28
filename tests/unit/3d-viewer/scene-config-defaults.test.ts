@@ -49,8 +49,10 @@ const expectedHashes: Record<keyof typeof factories, string> = {
     "0bd38acd71a42d1944bcdf0d61b9998b5bbed1800bc4f5cc0fe7e30a6d5763b4",
   createDefaultCosmicNightConfig:
     "36a5c5c124f80ad24e50ac7e5926ac5ca37df95f18c16dd30ae0278aed72f50c",
+  // Re-baselined 2026-08-28 by the approved Gate 4 cinematic-atmosphere
+  // audition. Geometry stays fixed; this hash owns the selected runtime look.
   createDefaultEmberConfig:
-    "119e2009e26ef6b7c891534a94a2ee14026ece6ab23275c37e5272b84a669c14",
+    "fa4236c4cb8fc0452a0671229d70974edb7b41793d777b87bdded71f73f426bb",
   createDefaultForestAutumnConfig:
     "5429d3c565a020b03582d6fe83b48e2a430f160e7f533363d4d6ebe689f70a8e",
   createDefaultForestFireflyConfig:

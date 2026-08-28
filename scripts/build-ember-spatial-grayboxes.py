@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import math
 import random
+import sys
 from pathlib import Path
 
 import bpy
@@ -928,21 +929,28 @@ def set_visible_option(active_option: str) -> None:
 
 
 render_paths: dict[str, dict[str, str]] = {}
-for option_id in OPTION_IDS:
-    set_visible_option(option_id)
-    render_paths[option_id] = {}
-    for camera_id, camera in CAMERAS.items():
-        scene.camera = camera
-        path = EVIDENCE_DIR / f"{option_id}-{camera_id}.png"
-        scene.render.filepath = str(path)
-        bpy.ops.render.render(write_still=True)
-        render_paths[option_id][camera_id] = str(path.relative_to(ROOT)).replace("\\", "/")
+source_only = "--source-only" in sys.argv
+if not source_only:
+    for option_id in OPTION_IDS:
+        set_visible_option(option_id)
+        render_paths[option_id] = {}
+        for camera_id, camera in CAMERAS.items():
+            scene.camera = camera
+            path = EVIDENCE_DIR / f"{option_id}-{camera_id}.png"
+            scene.render.filepath = str(path)
+            bpy.ops.render.render(write_still=True)
+            render_paths[option_id][camera_id] = str(path.relative_to(ROOT)).replace("\\", "/")
 
 # Leave Direction A visible when Austen opens the file; every alternative is
 # one collection toggle away and remains at the same coordinates.
 set_visible_option("a-basalt-arch")
 scene.camera = CAMERAS["hero"]
 bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH))
+
+if source_only:
+    print(f"Saved editable Ember spatial exploration: {BLEND_PATH}")
+    print("Skipped renders and report because --source-only was requested")
+    raise SystemExit(0)
 
 
 def collection_bounds(collection: bpy.types.Collection) -> dict[str, list[float]]:

@@ -10,6 +10,7 @@ export * from "./scene-configs/blossom-scene-config";
 export * from "./scene-configs/celestial-scene-config";
 export * from "./scene-configs/cosmic-scene-config";
 export * from "./scene-configs/ember-scene-config";
+export * from "./scene-configs/ember-atmosphere-looks";
 export * from "./scene-configs/forest-scene-config";
 export * from "./scene-configs/ocean-scene-config";
 export * from "./scene-configs/rainbow-scene-config";

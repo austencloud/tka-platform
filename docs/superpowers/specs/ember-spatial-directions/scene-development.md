@@ -225,3 +225,23 @@ terrain; authored rubble remains transition tissue instead of duplicating hero
 silhouettes. The orbit evidence and audit ledger live under
 `evidence/gate-4-meshy-r1/`. Final spend was 200 of 240 credits, leaving 40
 credits unused.
+
+## R8 cinematic atmosphere audition
+
+Museum tracker `sDKmB6cUEXLfHgz4DGd4` authorizes a runtime-only look pass over
+the locked R7 geometry. Blackglass Inferno, Furnace Storm, and Sulfur Caldera
+were captured from the same hero camera. Blackglass was selected because its
+red cloud horizon, dark geology, local lava bounce, and cool opposing rim keep
+the broad terrain readable without washing the performer and world into one
+color.
+
+The selected look also owns a restrained quality-aware shadow key, three heat
+fields along the river and vent, three depth-registered fumarole plumes, and
+material-name-aware response for the playable blackglass, Meshy formations,
+mineral seams, and surrounding authored terrain. The initial glittering stage
+and orange shelf trim were rejected during the proof loop and removed before
+the final capture.
+
+The comparison, complete orbit, viewport sweep, and runtime frame-time report
+live under `evidence/gate-4-atmosphere-r1/`. The geometry asset and remaining 40
+Meshy credits were untouched.
