@@ -80,7 +80,10 @@ export function createTunnelPresentationState(
         DEFAULT_CONFIG
     ),
     gridVisible: initialSnapshot?.tunnel.gridVisible ?? false,
-    spectrum: initialSnapshot?.tunnel.spectrum ?? true,
+    // New Tunnel choreography starts with the same blue-Left/red-Right palette
+    // its pictographs use. A saved snapshot still wins exactly, including an
+    // authored spectrum appearance from an older tunnel.
+    spectrum: initialSnapshot?.tunnel.spectrum ?? false,
     section: initialSnapshot?.tunnel.section ?? ("tunnel" as const),
     presetRecipe: clone(initialSnapshot?.tunnel.presetRecipe ?? null),
   });
@@ -164,6 +167,9 @@ export function createTunnelPresentationState(
       applyTunnelSnapshot(snapshotDeps(next), initialSnapshot);
     } else {
       next.applyConfig(unattachedTunnel.config, unattachedTunnel.presetRecipe);
+      next.gridVisible = unattachedTunnel.gridVisible;
+      next.spectrum = unattachedTunnel.spectrum;
+      next.section = unattachedTunnel.section;
     }
     unattachedTunnel = {
       config: clone(next.config),

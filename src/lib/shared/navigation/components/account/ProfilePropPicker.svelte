@@ -63,7 +63,7 @@
       <i class="fas fa-layer-group"></i>
     </span>
     <span class="profile-prop-label">No preference</span>
-    <span class="profile-prop-note">Do not feature one skill</span>
+    <span class="profile-prop-note">Show full list</span>
   </button>
 </div>
 
@@ -71,19 +71,19 @@
   .profile-prop-picker {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-    gap: 0.75rem;
+    gap: 0.625rem;
     padding: 0.5rem;
   }
 
   .profile-prop-card {
     position: relative;
     display: flex;
-    min-height: 9.5rem;
+    min-height: 7rem;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.55rem;
-    padding: 1rem 0.75rem;
+    gap: 0.4rem;
+    padding: 0.7rem 0.6rem;
     color: var(--theme-text, white);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -125,8 +125,8 @@
 
   .profile-prop-image,
   .no-preference-icon {
-    width: 4.5rem;
-    height: 4.5rem;
+    width: 3.5rem;
+    height: 3.5rem;
   }
 
   .profile-prop-image {
@@ -168,13 +168,13 @@
     }
 
     .profile-prop-card {
-      min-height: 15rem;
+      min-height: 11rem;
     }
 
     .profile-prop-image,
     .no-preference-icon {
-      width: 7rem;
-      height: 7rem;
+      width: 5rem;
+      height: 5rem;
     }
 
     .profile-prop-label {

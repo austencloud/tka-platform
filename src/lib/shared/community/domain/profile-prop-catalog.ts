@@ -1,8 +1,6 @@
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 
-export type ProfilePropGroup = "core" | "specialty";
-
 /** A skill a creator can meaningfully claim, independent of its render asset. */
 export interface ProfilePropSkillChoice {
   prop: PropType;
@@ -14,7 +12,6 @@ export interface ProfilePropFamily {
   representative: PropType;
   label: string;
   description: string;
-  group: ProfilePropGroup;
   choices: readonly ProfilePropSkillChoice[];
 }
 
@@ -35,8 +32,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.STAFF,
     label: "Staff",
-    description: "Staffs and batons",
-    group: "core",
+    description: "Includes batons",
     choices: [
       skill(PropType.STAFF, "Staff", [
         PropType.STAFF,
@@ -52,8 +48,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.CLUB,
     label: "Club",
-    description: "Clubs and torches",
-    group: "core",
+    description: "Includes torches",
     choices: [
       skill(PropType.CLUB, "Club", [
         PropType.CLUB,
@@ -66,15 +61,13 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.FAN,
     label: "Fan",
-    description: "All fan styles",
-    group: "core",
+    description: "",
     choices: [skill(PropType.FAN, "Fan", [PropType.FAN, PropType.BIGFAN])],
   },
   {
     representative: PropType.BUUGENG,
     label: "Buugeng",
-    description: "All buugeng styles",
-    group: "core",
+    description: "",
     choices: [
       skill(PropType.BUUGENG, "Buugeng", [
         PropType.BUUGENG,
@@ -85,8 +78,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.MINIHOOP,
     label: "Hoop",
-    description: "Choose mini, big, or both",
-    group: "core",
+    description: "Mini or big",
     choices: [
       skill(PropType.MINIHOOP, "Mini Hoop", [PropType.MINIHOOP]),
       skill(PropType.BIGHOOP, "Big Hoop", [PropType.BIGHOOP]),
@@ -95,8 +87,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.TRIAD,
     label: "Triad",
-    description: "Triads and trigengs",
-    group: "core",
+    description: "Includes trigengs",
     choices: [
       skill(PropType.TRIAD, "Triad", [
         PropType.TRIAD,
@@ -108,8 +99,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.TRIQUETRA,
     label: "Triquetra",
-    description: "All triquetra styles",
-    group: "core",
+    description: "",
     choices: [
       skill(PropType.TRIQUETRA, "Triquetra", [
         PropType.TRIQUETRA,
@@ -120,8 +110,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.SWORD,
     label: "Sword",
-    description: "Swords and lightsabers",
-    group: "core",
+    description: "Includes lightsabers",
     choices: [
       skill(PropType.SWORD, "Sword", [PropType.SWORD, PropType.ENERGY_SABER]),
     ],
@@ -129,8 +118,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.DOUBLESTAR,
     label: "Double Star",
-    description: "All sizes",
-    group: "specialty",
+    description: "",
     choices: [
       skill(PropType.DOUBLESTAR, "Double Star", [
         PropType.DOUBLESTAR,
@@ -141,8 +129,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.EIGHTRINGS,
     label: "Eight Rings",
-    description: "All sizes",
-    group: "specialty",
+    description: "",
     choices: [
       skill(PropType.EIGHTRINGS, "Eight Rings", [
         PropType.EIGHTRINGS,

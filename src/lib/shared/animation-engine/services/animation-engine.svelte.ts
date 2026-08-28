@@ -94,7 +94,7 @@ export interface AnimationEngineProps {
   tunnelSpectrum?: boolean;
   /** Tunnel performer spotlight: the selected performer (0 = base, k = copy arm
    *  k), or null. When set, every other copy dims in the render. Default null. */
-  tunnelSelectedLayer?: number | null;
+  tunnelSelectedLayer?: number | readonly number[] | null;
 }
 
 /**

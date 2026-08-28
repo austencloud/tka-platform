@@ -109,6 +109,11 @@
     if (family.choices.length > 1) {
       activeFamily = representative;
       triggerHaptic("selection");
+      requestAnimationFrame(() => {
+        editorContentElement
+          ?.querySelector<HTMLElement>("#prop-family-skill-choices")
+          ?.scrollIntoView({ block: "nearest" });
+      });
       return;
     }
 
@@ -197,17 +202,15 @@
   {#snippet header()}
     <div class="modal-header">
       <span class="step-label">
-        {step === "props" ? "Required · Step 1 of 2" : "Optional · Step 2 of 2"}
+        {step === "props" ? "1 of 2" : "Optional · 2 of 2"}
       </span>
       <h2 class="modal-title">
-        {step === "props"
-          ? "Which props do you spin?"
-          : "Which skill should lead your profile?"}
+        {step === "props" ? "What do you spin?" : "Feature a skill?"}
       </h2>
       <p class="modal-description">
         {step === "props"
-          ? "Choose the prop skills you practice. These appear on your public creator profile and support prop-based discovery."
-          : "This only chooses the skill shown beside your name on creator cards. It does not change your full list or app features."}
+          ? "Shown on your profile and used in prop search."
+          : "Shown beside your name on creator cards. Your full list stays the same."}
       </p>
       <button
         type="button"
@@ -255,10 +258,7 @@
 
       {#if legacyProps.length > 0}
         <section class="legacy-props" aria-labelledby="legacy-props-title">
-          <span class="legacy-heading">
-            <strong id="legacy-props-title">Previously saved</strong>
-            <small>Kept for compatibility, but not offered during setup.</small>
-          </span>
+          <strong id="legacy-props-title">Old saved props</strong>
           <div class="legacy-list">
             {#each legacyProps as prop (prop)}
               <button
@@ -308,7 +308,7 @@
 
 <style>
   :global(.my-props-modal) {
-    width: min(94vw, 68rem) !important;
+    width: min(94vw, 64rem) !important;
   }
 
   .modal-header {
@@ -316,13 +316,13 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.3rem;
-    padding: 1rem 4.25rem 0.6rem 1rem;
+    gap: 0.2rem;
+    padding: 0.75rem 4rem 0.4rem 0.75rem;
   }
 
   .step-label {
     color: color-mix(in srgb, var(--theme-accent, #6366f1) 58%, white);
-    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
+    font-size: max(0.75rem, var(--font-size-compact, 0.75rem));
     font-weight: 750;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -352,9 +352,9 @@
     container-type: inline-size;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
     overflow-y: auto;
-    padding-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2))
       transparent;
@@ -362,8 +362,8 @@
 
   .close-button {
     position: absolute;
-    top: 0.85rem;
-    right: 0.85rem;
+    top: 0.65rem;
+    right: 0.65rem;
     display: grid;
     width: var(--min-touch-target, 44px);
     height: var(--min-touch-target, 44px);
@@ -428,34 +428,23 @@
   }
 
   .legacy-props {
-    padding: 0.75rem;
-    background: color-mix(in srgb, var(--theme-text) 3%, transparent);
-    border: 1px dashed var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    border-radius: 0.85rem;
-  }
-
-  .legacy-heading {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
   }
 
-  .legacy-heading strong {
-    color: var(--theme-text, white);
-    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
-  }
-
-  .legacy-heading small {
+  .legacy-props strong {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
+    font-size: max(0.75rem, var(--font-size-compact, 0.75rem));
   }
 
   .legacy-list {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-top: 0.6rem;
+    margin: 0;
   }
 
   .legacy-chip {
@@ -486,14 +475,6 @@
     height: 100%;
   }
 
-  @media (max-width: 520px) {
-    .legacy-heading {
-      align-items: flex-start;
-      flex-direction: column;
-      gap: 0.2rem;
-    }
-  }
-
   @media (min-width: 1680px) {
     :global(.my-props-modal) {
       width: min(86vw, 96rem) !important;
@@ -520,11 +501,10 @@
 
     .modal-description,
     .prop-error,
-    .legacy-heading strong {
+    .legacy-props strong {
       font-size: 1.375rem;
     }
 
-    .legacy-heading small,
     .legacy-chip {
       font-size: 1.125rem;
     }

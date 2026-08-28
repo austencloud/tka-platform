@@ -14,8 +14,13 @@
   } from "../domain/stage-types";
   import type { StageEditMode } from "../state/stage-edit-mode.svelte";
 
+  type TimelineMode = "dock" | "editor";
+
   interface Props {
     editMode: StageEditMode;
+    mode?: TimelineMode;
+    onExpand?: () => void;
+    onCollapse?: () => void;
   }
 
   type ClipDrag = {
@@ -38,7 +43,12 @@
     draftTransitionBeats: number;
   };
 
-  let { editMode }: Props = $props();
+  let {
+    editMode,
+    mode = "editor",
+    onExpand = () => {},
+    onCollapse = () => {},
+  }: Props = $props();
 
   const stageState = getStageChoreographyContext();
   const choreography = $derived(stageState.choreography);
@@ -96,9 +106,7 @@
   }
 
   function seekFromPointer(event: PointerEvent): void {
-    if (
-      (event.target as Element).closest(".sequence-clip, .formation-block")
-    )
+    if ((event.target as Element).closest(".sequence-clip, .formation-block"))
       return;
     const lane = event.currentTarget as HTMLElement;
     const rect = lane.getBoundingClientRect();
@@ -308,7 +316,10 @@
       editMode.selectFormation(formation.id);
       return;
     }
-    if (index > 0 && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+    if (
+      index > 0 &&
+      (event.key === "ArrowLeft" || event.key === "ArrowRight")
+    ) {
       event.preventDefault();
       const direction = event.key === "ArrowLeft" ? -1 : 1;
       stageState.moveFormation(
@@ -364,14 +375,32 @@
   }}
 />
 
-<section class="stage-timeline" aria-label="Performance timeline">
+<section
+  class="stage-timeline"
+  class:dock={mode === "dock"}
+  aria-label="Performance timeline"
+>
   <header class="timeline-toolbar">
     <div class="timeline-title">
+      {#if mode === "dock"}
+        <span class="timeline-label">Performance</span>
+      {/if}
       <strong
         >Count {stageState.currentBeat.toFixed(1)} / {Math.round(
           stageState.maxTotalBeats
         )}</strong
       >
+      {#if mode === "dock"}
+        <span class="timeline-summary"
+          >{choreography.performers.length} performer{choreography.performers
+            .length === 1
+            ? ""
+            : "s"} · {choreography.formations.length} set{choreography
+            .formations.length === 1
+            ? ""
+            : "s"}</span
+        >
+      {/if}
     </div>
 
     <TransportControls
@@ -388,272 +417,301 @@
         showPractice={false}
         presetsMode="popover"
       />
+      <button
+        type="button"
+        class="timeline-disclosure"
+        aria-expanded={mode === "editor"}
+        aria-controls="stage-timeline-editor"
+        aria-label={mode === "dock"
+          ? "Open choreography editor"
+          : "Collapse choreography editor"}
+        onclick={mode === "dock" ? onExpand : onCollapse}
+      >
+        <i
+          class="fas {mode === 'dock' ? 'fa-wave-square' : 'fa-chevron-down'}"
+          aria-hidden="true"
+        ></i>
+        <span>{mode === "dock" ? "Choreograph" : "Collapse"}</span>
+      </button>
     </div>
   </header>
 
-  <div class="timeline-scroll" bind:clientWidth={timelineViewportWidth}>
+  {#if mode === "editor"}
     <div
-      class="timeline-grid"
-      style:--timeline-width="{Math.max(
-        720,
-        maxBeats * effectivePixelsPerBeat
-      )}px"
+      id="stage-timeline-editor"
+      class="timeline-scroll"
+      bind:clientWidth={timelineViewportWidth}
     >
-      <div class="ruler-label" aria-hidden="true">PERFORMER</div>
       <div
-        class="ruler"
-        onpointerdown={seekFromPointer}
-        role="group"
-        aria-label="Count ruler. Click to move the playhead."
+        class="timeline-grid"
+        style:--timeline-width="{Math.max(
+          720,
+          maxBeats * effectivePixelsPerBeat
+        )}px"
       >
-        <TimeRuler
-          duration={maxBeats}
-          pixelsPerSecond={effectivePixelsPerBeat}
-          tickInterval={1}
-          formatLabel={(beat) => `${Math.round(beat)}`}
-        />
+        <div class="ruler-label" aria-hidden="true">PERFORMER</div>
         <div
-          class="ruler-playhead"
-          style:left="{stageState.currentBeat * effectivePixelsPerBeat}px"
-        ></div>
-      </div>
-
-      <div class="formation-label">
-        <span class="formation-label-text">SETS</span>
-        <button
-          type="button"
-          class="add-formation"
-          onclick={addFormationAtPlayhead}
-          aria-label="Add a set at the playhead"
-          title="Add a set at the playhead"
+          class="ruler"
+          onpointerdown={seekFromPointer}
+          role="group"
+          aria-label="Count ruler. Click to move the playhead."
         >
-          <i class="fas fa-plus" aria-hidden="true"></i>
-        </button>
-      </div>
-
-      <div
-        class="formation-track"
-        style="--pixels-per-beat: {effectivePixelsPerBeat}px"
-        onpointerdown={seekFromPointer}
-        role="listbox"
-        aria-label="Formation sets. Each block is a held set; the ramp before it is the walk into that set."
-        tabindex="-1"
-      >
-        <div
-          class="lane-playhead"
-          style:left="{stageState.currentBeat * effectivePixelsPerBeat}px"
-        ></div>
-        {#each choreography.formations as formation, index (formation.id)}
-          {@const beat = formationBeat(formation)}
-          {@const transition = formationTransition(formation)}
-          {@const hold = formationHoldBeats(index)}
-          {@const selected = editMode.selectedFormationId === formation.id}
-          {#if hold > 0}
-            <div
-              class="formation-hold"
-              class:selected
-              style="left: {beat * effectivePixelsPerBeat}px; width: {hold *
-                effectivePixelsPerBeat}px"
-              aria-hidden="true"
-            ></div>
-          {/if}
-          {#if transition > 0}
-            <div
-              class="formation-ramp"
-              class:selected
-              style="left: {(beat - transition) *
-                effectivePixelsPerBeat}px; width: {transition *
-                effectivePixelsPerBeat}px"
-              aria-hidden="true"
-            ></div>
-          {/if}
+          <TimeRuler
+            duration={maxBeats}
+            pixelsPerSecond={effectivePixelsPerBeat}
+            tickInterval={1}
+            formatLabel={(beat) => `${Math.round(beat)}`}
+          />
           <div
-            class="formation-block"
-            class:selected
-            class:dragging={formationDrag?.formationId === formation.id}
-            style="left: {beat * effectivePixelsPerBeat}px"
-            role="option"
-            aria-selected={selected}
-            tabindex="0"
-            onkeydown={(event) =>
-              handleFormationKeydown(event, formation, index)}
-          >
-            {#if index > 0}
-              <button
-                type="button"
-                class="transition-handle"
-                onpointerdown={(event) =>
-                  beginFormationDrag(event, formation, "transition")}
-                aria-label="Change the walk into {formationName(
-                  formation,
-                  index
-                )}, currently {formation.transitionBeats} counts"
-                title="Drag to change how many counts the walk takes"
-              ></button>
-            {/if}
-            <button
-              type="button"
-              class="formation-body"
-              onpointerdown={(event) => {
-                if (index === 0) return;
-                beginFormationDrag(event, formation, "move");
-              }}
-              onclick={() => {
-                if (didFormationDrag) {
-                  didFormationDrag = false;
-                  return;
-                }
-                editMode.selectFormation(formation.id);
-              }}
-              aria-label="{formationName(formation, index)}, in place on count {formation.atBeat}{index >
-              0
-                ? `, ${formation.transitionBeats} counts to get there`
-                : ''}"
-            >
-              <span class="formation-name">
-                {formationName(formation, index)}
-              </span>
-              <span class="formation-count">{beat}</span>
-            </button>
-            {#if selected && index > 0}
-              <button
-                type="button"
-                class="formation-action"
-                aria-label="Remove {formationName(formation, index)}"
-                title="Remove"
-                onpointerdown={(event) => event.stopPropagation()}
-                onclick={(event) => {
-                  event.stopPropagation();
-                  removeFormation(formation.id);
-                }}
-              >
-                <i class="fas fa-trash" aria-hidden="true"></i>
-              </button>
-            {/if}
-          </div>
-        {/each}
-      </div>
+            class="ruler-playhead"
+            style:left="{stageState.currentBeat * effectivePixelsPerBeat}px"
+          ></div>
+        </div>
 
-      {#each choreography.performers as performer (performer.id)}
-        <div
-          class="lane-label"
-          class:selected={editMode.selectedPerformerId === performer.id}
-          style:--performer-color={performer.color}
-        >
+        <div class="formation-label">
+          <span class="formation-label-text">SETS</span>
           <button
             type="button"
-            class="performer-select"
-            onclick={(event) =>
-              editMode.selectPerformer(performer.id, event.shiftKey)}
-            aria-pressed={editMode.multiSelectedPerformerIds.has(performer.id)}
-          >
-            <span>{performer.label}</span>
-          </button>
-          <button
-            type="button"
-            class="add-sequence"
-            onclick={() => openPicker(performer.id)}
-            aria-label="Add sequence for performer {performer.label}"
-            title="Add sequence"
+            class="add-formation"
+            onclick={addFormationAtPlayhead}
+            aria-label="Add a set at the playhead"
+            title="Add a set at the playhead"
           >
             <i class="fas fa-plus" aria-hidden="true"></i>
           </button>
         </div>
 
         <div
-          class="sequence-lane"
-          class:selected={editMode.selectedPerformerId === performer.id}
-          style="--performer-color: {performer.color}; --pixels-per-beat: {effectivePixelsPerBeat}px"
+          class="formation-track"
+          style="--pixels-per-beat: {effectivePixelsPerBeat}px"
           onpointerdown={seekFromPointer}
-          role="group"
-          aria-label="Performer {performer.label} sequence lane"
+          role="listbox"
+          aria-label="Formation sets. Each block is a held set; the ramp before it is the walk into that set."
+          tabindex="-1"
         >
           <div
             class="lane-playhead"
             style:left="{stageState.currentBeat * effectivePixelsPerBeat}px"
           ></div>
-          {#if performer.sequenceClips.length === 0}
-            <button
-              type="button"
-              class="lane-add-hint"
-              onpointerdown={(event) => event.stopPropagation()}
-              onclick={() => openPicker(performer.id)}
-            >
-              <i class="fas fa-plus" aria-hidden="true"></i>
-              Add sequence
-            </button>
-          {/if}
-          {#each performer.sequenceClips as clip (clip.id)}
+          {#each choreography.formations as formation, index (formation.id)}
+            {@const beat = formationBeat(formation)}
+            {@const transition = formationTransition(formation)}
+            {@const hold = formationHoldBeats(index)}
+            {@const selected = editMode.selectedFormationId === formation.id}
+            {#if hold > 0}
+              <div
+                class="formation-hold"
+                class:selected
+                style="left: {beat * effectivePixelsPerBeat}px; width: {hold *
+                  effectivePixelsPerBeat}px"
+                aria-hidden="true"
+              ></div>
+            {/if}
+            {#if transition > 0}
+              <div
+                class="formation-ramp"
+                class:selected
+                style="left: {(beat - transition) *
+                  effectivePixelsPerBeat}px; width: {transition *
+                  effectivePixelsPerBeat}px"
+                aria-hidden="true"
+              ></div>
+            {/if}
             <div
-              class="sequence-clip"
-              class:selected={editMode.selectedClipId === clip.id}
-              class:active={activeClipIds.has(clip.id)}
-              class:dragging={drag?.clipId === clip.id}
-              style="left: {clipStart(clip) *
-                effectivePixelsPerBeat}px; width: {Math.max(
-                28,
-                clipDuration(clip) * effectivePixelsPerBeat
-              )}px"
+              class="formation-block"
+              class:selected
+              class:dragging={formationDrag?.formationId === formation.id}
+              style="left: {beat * effectivePixelsPerBeat}px"
               role="option"
-              aria-selected={editMode.selectedClipId === clip.id}
+              aria-selected={selected}
               tabindex="0"
-              onkeydown={(event) => handleClipKeydown(event, performer, clip)}
+              onkeydown={(event) =>
+                handleFormationKeydown(event, formation, index)}
             >
+              {#if index > 0}
+                <button
+                  type="button"
+                  class="transition-handle"
+                  onpointerdown={(event) =>
+                    beginFormationDrag(event, formation, "transition")}
+                  aria-label="Change the walk into {formationName(
+                    formation,
+                    index
+                  )}, currently {formation.transitionBeats} counts"
+                  title="Drag to change how many counts the walk takes"
+                ></button>
+              {/if}
               <button
                 type="button"
-                class="clip-body"
-                onpointerdown={(event) => beginClipDrag(event, clip, "move")}
-                onclick={(event) => selectClip(event, performer, clip)}
-                aria-label="{stageState.clipLabel(clip)}, starts at beat {clip.startBeat}, lasts {clip.durationBeats} beats"
+                class="formation-body"
+                onpointerdown={(event) => {
+                  if (index === 0) return;
+                  beginFormationDrag(event, formation, "move");
+                }}
+                onclick={() => {
+                  if (didFormationDrag) {
+                    didFormationDrag = false;
+                    return;
+                  }
+                  editMode.selectFormation(formation.id);
+                }}
+                aria-label="{formationName(
+                  formation,
+                  index
+                )}, in place on count {formation.atBeat}{index > 0
+                  ? `, ${formation.transitionBeats} counts to get there`
+                  : ''}"
               >
-                <span class="clip-name">{stageState.clipLabel(clip)}</span>
-                {#if clip.loop && editMode.selectedClipId !== clip.id}
-                  <i class="fas fa-repeat" aria-label="Loops"></i>
-                {/if}
+                <span class="formation-name">
+                  {formationName(formation, index)}
+                </span>
+                <span class="formation-count">{beat}</span>
               </button>
-              {#if editMode.selectedClipId === clip.id}
+              {#if selected && index > 0}
                 <button
                   type="button"
-                  class="clip-action"
-                  class:active={clip.loop}
-                  aria-pressed={clip.loop}
-                  aria-label="Loop {stageState.clipLabel(clip)}"
-                  title="Loop"
-                  onpointerdown={(event) => event.stopPropagation()}
-                  onclick={(event) => {
-                    event.stopPropagation();
-                    stageState.toggleSequenceClipLoop(clip.id);
-                  }}
-                >
-                  <i class="fas fa-repeat" aria-hidden="true"></i>
-                </button>
-                <button
-                  type="button"
-                  class="clip-action delete-clip"
-                  aria-label="Remove {stageState.clipLabel(clip)}"
+                  class="formation-action"
+                  aria-label="Remove {formationName(formation, index)}"
                   title="Remove"
                   onpointerdown={(event) => event.stopPropagation()}
                   onclick={(event) => {
                     event.stopPropagation();
-                    removeClip(performer, clip);
+                    removeFormation(formation.id);
                   }}
                 >
                   <i class="fas fa-trash" aria-hidden="true"></i>
                 </button>
               {/if}
-              <button
-                type="button"
-                class="resize-handle"
-                onpointerdown={(event) => beginClipDrag(event, clip, "resize")}
-                aria-label="Resize {stageState.clipLabel(clip)}"
-                title="Drag to change duration"
-              ></button>
             </div>
           {/each}
         </div>
-      {/each}
+
+        {#each choreography.performers as performer (performer.id)}
+          <div
+            class="lane-label"
+            class:selected={editMode.selectedPerformerId === performer.id}
+            style:--performer-color={performer.color}
+          >
+            <button
+              type="button"
+              class="performer-select"
+              onclick={(event) =>
+                editMode.selectPerformer(performer.id, event.shiftKey)}
+              aria-pressed={editMode.multiSelectedPerformerIds.has(
+                performer.id
+              )}
+            >
+              <span>{performer.label}</span>
+            </button>
+            <button
+              type="button"
+              class="add-sequence"
+              onclick={() => openPicker(performer.id)}
+              aria-label="Add sequence for performer {performer.label}"
+              title="Add sequence"
+            >
+              <i class="fas fa-plus" aria-hidden="true"></i>
+            </button>
+          </div>
+
+          <div
+            class="sequence-lane"
+            class:selected={editMode.selectedPerformerId === performer.id}
+            style="--performer-color: {performer.color}; --pixels-per-beat: {effectivePixelsPerBeat}px"
+            onpointerdown={seekFromPointer}
+            role="group"
+            aria-label="Performer {performer.label} sequence lane"
+          >
+            <div
+              class="lane-playhead"
+              style:left="{stageState.currentBeat * effectivePixelsPerBeat}px"
+            ></div>
+            {#if performer.sequenceClips.length === 0}
+              <button
+                type="button"
+                class="lane-add-hint"
+                onpointerdown={(event) => event.stopPropagation()}
+                onclick={() => openPicker(performer.id)}
+              >
+                <i class="fas fa-plus" aria-hidden="true"></i>
+                Add sequence
+              </button>
+            {/if}
+            {#each performer.sequenceClips as clip (clip.id)}
+              <div
+                class="sequence-clip"
+                class:selected={editMode.selectedClipId === clip.id}
+                class:active={activeClipIds.has(clip.id)}
+                class:dragging={drag?.clipId === clip.id}
+                style="left: {clipStart(clip) *
+                  effectivePixelsPerBeat}px; width: {Math.max(
+                  28,
+                  clipDuration(clip) * effectivePixelsPerBeat
+                )}px"
+                role="option"
+                aria-selected={editMode.selectedClipId === clip.id}
+                tabindex="0"
+                onkeydown={(event) => handleClipKeydown(event, performer, clip)}
+              >
+                <button
+                  type="button"
+                  class="clip-body"
+                  onpointerdown={(event) => beginClipDrag(event, clip, "move")}
+                  onclick={(event) => selectClip(event, performer, clip)}
+                  aria-label="{stageState.clipLabel(
+                    clip
+                  )}, starts at beat {clip.startBeat}, lasts {clip.durationBeats} beats"
+                >
+                  <span class="clip-name">{stageState.clipLabel(clip)}</span>
+                  {#if clip.loop && editMode.selectedClipId !== clip.id}
+                    <i class="fas fa-repeat" aria-label="Loops"></i>
+                  {/if}
+                </button>
+                {#if editMode.selectedClipId === clip.id}
+                  <button
+                    type="button"
+                    class="clip-action"
+                    class:active={clip.loop}
+                    aria-pressed={clip.loop}
+                    aria-label="Loop {stageState.clipLabel(clip)}"
+                    title="Loop"
+                    onpointerdown={(event) => event.stopPropagation()}
+                    onclick={(event) => {
+                      event.stopPropagation();
+                      stageState.toggleSequenceClipLoop(clip.id);
+                    }}
+                  >
+                    <i class="fas fa-repeat" aria-hidden="true"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="clip-action delete-clip"
+                    aria-label="Remove {stageState.clipLabel(clip)}"
+                    title="Remove"
+                    onpointerdown={(event) => event.stopPropagation()}
+                    onclick={(event) => {
+                      event.stopPropagation();
+                      removeClip(performer, clip);
+                    }}
+                  >
+                    <i class="fas fa-trash" aria-hidden="true"></i>
+                  </button>
+                {/if}
+                <button
+                  type="button"
+                  class="resize-handle"
+                  onpointerdown={(event) =>
+                    beginClipDrag(event, clip, "resize")}
+                  aria-label="Resize {stageState.clipLabel(clip)}"
+                  title="Drag to change duration"
+                ></button>
+              </div>
+            {/each}
+          </div>
+        {/each}
+      </div>
     </div>
-  </div>
+  {/if}
 </section>
 
 <SequencePickerModal
@@ -676,6 +734,17 @@
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: color-mix(in srgb, var(--theme-panel-bg, #10111a) 94%, black);
     color: var(--theme-text, white);
+  }
+
+  .stage-timeline.dock {
+    background:
+      linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--theme-accent) 8%, transparent),
+        transparent 42%
+      ),
+      color-mix(in srgb, var(--theme-panel-bg, #10111a) 92%, black);
+    box-shadow: 0 -0.75rem 2rem rgba(0, 0, 0, 0.26);
   }
 
   .timeline-toolbar {
@@ -702,16 +771,65 @@
     font-size: var(--font-size-min, 0.875rem);
   }
 
+  .timeline-label {
+    color: var(--theme-text, white);
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 750;
+  }
+
   .timeline-title strong {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
     font-size: var(--font-size-compact, 0.75rem);
     font-variant-numeric: tabular-nums;
   }
 
+  .timeline-summary {
+    overflow: hidden;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-compact, 0.75rem);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .timeline-tools {
     position: relative;
     min-width: 0;
     justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .timeline-disclosure {
+    display: inline-flex;
+    width: auto;
+    min-width: 0;
+    min-height: var(--min-touch-target, 44px);
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.8rem;
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
+    border-radius: 0.7rem;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 12%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+    color: var(--theme-text, white);
+    cursor: pointer;
+    font: inherit;
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .timeline-disclosure:hover,
+  .timeline-disclosure:focus-visible {
+    border-color: var(--theme-accent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 20%,
+      var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08))
+    );
   }
 
   /* TempoControl's inline popover would grow the toolbar row; float it below
@@ -746,12 +864,12 @@
     display: grid;
     width: max-content;
     min-width: 100%;
-    min-height: 100%;
+    min-height: min-content;
     /* The track column is at least the beat scale wide and takes whatever
        else is going, so a chip sitting on the final count has somewhere to be
        drawn instead of being clipped by the lane it ends. */
     grid-template-columns: 7rem minmax(var(--timeline-width), 1fr);
-    grid-auto-rows: minmax(3.5rem, 1fr);
+    grid-auto-rows: 3.5rem;
     /* 3.5rem keeps the set chip's 2.75rem touch target intact inside its
        0.35rem inset, and matches the performer lane height. */
     grid-template-rows: 2.25rem 3.5rem;
@@ -1229,6 +1347,10 @@
   }
 
   @media (max-width: 920px) {
+    .timeline-summary {
+      display: none;
+    }
+
     .timeline-grid {
       grid-template-columns: 6rem minmax(var(--timeline-width), 1fr);
     }
@@ -1248,6 +1370,15 @@
       display: flex;
       grid-column: 1 / -1;
       justify-content: center;
+    }
+
+    .timeline-disclosure {
+      width: var(--min-touch-target, 44px);
+      padding-inline: 0;
+    }
+
+    .timeline-disclosure span {
+      display: none;
     }
   }
 

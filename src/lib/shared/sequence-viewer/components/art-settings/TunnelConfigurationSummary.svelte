@@ -68,6 +68,10 @@
       <dt>Loop</dt>
       <dd>{controller.loopCycles === 1 ? "Returns in one pass" : `Returns in ${controller.loopCycles} passes`}</dd>
     </div>
+    <div>
+      <dt>Stage colors</dt>
+      <dd>{controller.spectrum ? "Spectrum by generated copy" : "Blue Left · red Right"}</dd>
+    </div>
   </dl>
 
   {#if controller.performerCount > controller.authoredPerformerCount}
@@ -98,6 +102,5 @@
   .generated-note { margin: 0; font-size: var(--font-size-compact, 12px); line-height: 1.4; color: var(--theme-text-dim, rgba(255,255,255,0.7)); }
   .compact { padding: 0.55rem; }
   .compact .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem 0.55rem; }
-  .compact .summary-grid div:last-child { display: none; }
   @container (max-width: 26rem) { .summary-grid, .compact .summary-grid { grid-template-columns: 1fr; } }
 </style>
