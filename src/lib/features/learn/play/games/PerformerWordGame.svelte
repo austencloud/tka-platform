@@ -6,7 +6,7 @@ A 3D performer flows through a sequence; the player names the word. The
 arcade session engine owns scoring/streak/completion; this component owns
 question loading, the performer stage (scene picker + diagnostic copy), and
 per-question feedback, reporting each answer via session.submitAnswer() with
-the exact QuizAnswerEvent shape gap detection depends on. The level's
+the exact QuizAnswerEvent shape gap detection depends on. The challenge's
 wordLength constraint rides through the question generator as a soft filter.
 -->
 <script lang="ts">
@@ -64,13 +64,15 @@ wordLength constraint rides through the question generator as a soft filter.
   let showScorePop = $state(false);
   let currentGap = $state<DetectedGap | null>(null);
 
-  // Fixed answer slots — count follows the level's optionCount constraint.
+  // Fixed answer slots — count follows the challenge's optionCount constraint.
   const answerSlots = Array.from(
     { length: constraints.optionCount ?? 4 },
     (_, i) => i
   );
 
-  let quizScene = $state<BackgroundType>(settingsService.settings.backgroundType ?? BackgroundType.COSMIC);
+  let quizScene = $state<BackgroundType>(
+    settingsService.settings.backgroundType ?? BackgroundType.COSMIC
+  );
 
   function selectScene(type: BackgroundType) {
     quizScene = type;
@@ -91,7 +93,9 @@ wordLength constraint rides through the question generator as a soft filter.
     await navigator.clipboard.writeText(JSON.stringify(diag, null, 2));
     copiedDiag = true;
     if (copiedDiagTimer !== null) clearTimeout(copiedDiagTimer);
-    copiedDiagTimer = setTimeout(() => { copiedDiag = false; }, 1500);
+    copiedDiagTimer = setTimeout(() => {
+      copiedDiag = false;
+    }, 1500);
   }
 
   let currentSequence = $derived(
@@ -221,7 +225,10 @@ wordLength constraint rides through the question generator as a soft filter.
     <div class="quiz-content">
       <div class="stage-column">
         <div class="stage-panel">
-          <QuizPerformerStage sequence={currentSequence} backgroundType={quizScene} />
+          <QuizPerformerStage
+            sequence={currentSequence}
+            backgroundType={quizScene}
+          />
         </div>
         <div class="stage-toolbar">
           <div class="scene-strip">
@@ -246,7 +253,9 @@ wordLength constraint rides through the question generator as a soft filter.
           >
             <span class="diag-label">
               <span class="diag-sizer" aria-hidden="true">Copy Diag</span>
-              <span class="diag-live">{copiedDiag ? "Copied" : "Copy Diag"}</span>
+              <span class="diag-live"
+                >{copiedDiag ? "Copied" : "Copy Diag"}</span
+              >
             </span>
           </button>
         </div>

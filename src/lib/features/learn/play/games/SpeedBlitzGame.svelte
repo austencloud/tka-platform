@@ -2,12 +2,12 @@
 Speed Blitz — pictograph-to-letter, but the clock is the game. Shares the
 render kit with PictographToLetterGame (QuizPictographCard + QuizLetterButton
 + feedback banner + score pop) — same submit/feedback/advance shape, no new
-answer primitives. Two things make this a distinct game rather than a level
+answer primitives. Two things make this a distinct game rather than a challenge
 variant of PictographToLetterGame:
 
 1. A per-question clock that drains a slim bar under the pictograph, paced by
-   the level's paceStartSeconds -> paceEndSeconds curve (fixed mode ramps
-   across the level's full questionCount; survival mode ramps across a
+   the challenge's paceStartSeconds -> paceEndSeconds curve (fixed mode ramps
+   across the challenge's full questionCount; survival mode ramps across a
    rolling 20-question window, then holds at paceEndSeconds). The bar is a
    plain rAF loop recomputing `remaining` from a performance.now() delta each
    frame (same drift-correction technique as the positions SpeedRounds
@@ -86,21 +86,29 @@ correct letter" for free).
 
   // Fixed answer slots so letter buttons persist across questions (same
   // technique as PictographToLetterGame — avoids remounting the grid).
-  const answerSlots = Array.from({ length: constraints.optionCount ?? 4 }, (_, i) => i);
+  const answerSlots = Array.from(
+    { length: constraints.optionCount ?? 4 },
+    (_, i) => i
+  );
 
-  let currentPictograph = $derived(questionData?.questionContent as PictographData | null);
+  let currentPictograph = $derived(
+    questionData?.questionContent as PictographData | null
+  );
   let correctAnswer = $derived(questionData?.correctAnswer as string);
   let isCorrectAnswer = $derived(
     selectedAnswerId
-      ? (questionData?.answerOptions.find((o) => o.id === selectedAnswerId)?.isCorrect ?? false)
+      ? (questionData?.answerOptions.find((o) => o.id === selectedAnswerId)
+          ?.isCorrect ?? false)
       : false
   );
   let isTimeout = $derived(selectedAnswerId === "timeout");
   let isUrgent = $derived(drainScale < 0.3);
 
   // Rendered only while session.phase.name === "playing" (GameShell routes
-  // on that), so this narrows safely for the pace curve's level.mode lookup.
-  const levelMode = $derived(session.phase.name === "playing" ? session.phase.level.mode : null);
+  // on that), so this narrows safely for the pace curve's challenge.mode lookup.
+  const challengeMode = $derived(
+    session.phase.name === "playing" ? session.phase.challenge.mode : null
+  );
 
   // Stop the clock the instant the phase stops being "playing" — survival
   // mode can complete on the 3rd miss from inside submitAnswer(), which runs
@@ -124,8 +132,8 @@ correct letter" for free).
     const start = constraints.paceStartSeconds ?? DEFAULT_PACE_START_SECONDS;
     const end = constraints.paceEndSeconds ?? DEFAULT_PACE_END_SECONDS;
     const rampSpan =
-      levelMode?.kind === "fixed"
-        ? Math.max(levelMode.questionCount - 1, 1)
+      challengeMode?.kind === "fixed"
+        ? Math.max(challengeMode.questionCount - 1, 1)
         : SURVIVAL_RAMP_QUESTIONS - 1;
     const t = Math.min(index, rampSpan) / rampSpan;
     return start + (end - start) * t;
@@ -203,7 +211,9 @@ correct letter" for free).
     }, 50);
 
     if (questionData) {
-      const selectedOption = questionData.answerOptions.find((o) => o.id === optionId);
+      const selectedOption = questionData.answerOptions.find(
+        (o) => o.id === optionId
+      );
       const correctOption = questionData.answerOptions.find((o) => o.isCorrect);
       session.submitAnswer({
         isCorrect,
@@ -244,7 +254,7 @@ correct letter" for free).
   }
 
   async function handleNextQuestion() {
-    // The engine may have completed the level (last survival miss, or the
+    // The engine may have completed the challenge (last survival miss, or the
     // last fixed-mode question) while this timer was pending.
     if (session.phase.name !== "playing") return;
     selectedAnswerId = null;
@@ -307,7 +317,11 @@ correct letter" for free).
           {/each}
         </div>
 
-        <ScorePopAnimation visible={showScorePop} score={1} streakCount={session.streak} />
+        <ScorePopAnimation
+          visible={showScorePop}
+          score={1}
+          streakCount={session.streak}
+        />
 
         {#if showFeedback}
           <QuizFeedbackBanner

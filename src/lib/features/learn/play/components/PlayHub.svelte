@@ -3,7 +3,7 @@
 
   Owns the arcade session: creates the engine, wraps every user-driven phase
   change in the View Transitions API, and sets the (wrapped) session into
-  context for LevelPicker / GameShell / ArcadeResults. Engine-internal
+  context for ChallengePicker / GameShell / ArcadeResults. Engine-internal
   transitions (submitAnswer → complete) stay unwrapped — snapshotting the
   whole page on every answered question would make each answer stutter.
 
@@ -38,7 +38,7 @@
   import * as letterToConceptMapper from "$lib/features/learn/services/letter-to-concept-mapper";
   import GameCard from "./GameCard.svelte";
   import GameShell from "./GameShell.svelte";
-  import LevelPicker from "./LevelPicker.svelte";
+  import ChallengePicker from "./ChallengePicker.svelte";
   import ArcadeResults from "./ArcadeResults.svelte";
 
   // Session: engine + view-transitioned navigation seam
@@ -83,10 +83,10 @@
       return engine.accuracy;
     },
     selectGame: (game) => withViewTransition(() => engine.selectGame(game)),
-    startLevel: (game, level) =>
-      withViewTransition(() => engine.startLevel(game, level)),
+    startChallenge: (game, challenge) =>
+      withViewTransition(() => engine.startChallenge(game, challenge)),
     quitToHub: () => withViewTransition(() => engine.quitToHub()),
-    backToLevels: () => withViewTransition(() => engine.backToLevels()),
+    backToChallenges: () => withViewTransition(() => engine.backToChallenges()),
     markQuestionShown: engine.markQuestionShown,
     submitAnswer: engine.submitAnswer,
     /* Unwrapped, exactly like submitAnswer: wrapping a round submission in a
@@ -221,12 +221,12 @@
       });
   }
 
-  const hasNextLevel = $derived.by(() => {
+  const hasNextChallenge = $derived.by(() => {
     if (engine.phase.name !== "results" || !resultsOutcome) return false;
-    const { game, level } = engine.phase;
+    const { game, challenge } = engine.phase;
     return (
-      level.levelNumber < game.levels.length &&
-      resultsOutcome.progress.levelsUnlocked > level.levelNumber
+      challenge.challengeNumber < game.challenges.length &&
+      resultsOutcome.progress.challengesUnlocked > challenge.challengeNumber
     );
   });
 
@@ -280,8 +280,8 @@
       </ul>
     </div>
   </div>
-{:else if session.phase.name === "level-select"}
-  <LevelPicker
+{:else if session.phase.name === "challenge-select"}
+  <ChallengePicker
     game={session.phase.game}
     progress={gameProgress(session.phase.game.id)}
   />
@@ -292,7 +292,7 @@
     result={session.phase.result}
     progress={resultsOutcome.progress}
     isNewBest={resultsOutcome.isNewBest}
-    {hasNextLevel}
+    {hasNextChallenge}
   />
 {/if}
 

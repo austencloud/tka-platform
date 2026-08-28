@@ -76,8 +76,8 @@ Presentation constraints, all deliberate:
 
   {#if assisted}
     <p class="note">
-      Completed with Tap Route. This round counts toward the level and does not
-      claim a trace score.
+      Completed with Tap Route. This round counts toward the challenge and does
+      not claim a trace score.
     </p>
   {/if}
 

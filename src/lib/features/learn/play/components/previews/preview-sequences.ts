@@ -1,6 +1,6 @@
 /**
  * Real sequences for hub previews (Mandala Match's mandala, Read the
- * Performer's 3D rig). Pulled from the SAME Level-1 catalog pool the
+ * Performer's 3D rig). Pulled from the same TKA Level 1 catalog pool the
  * sequence games quiz from (catalog-loader; localStorage-warm after first
  * visit), so the hub shows real product content, not mockups.
  *
@@ -23,7 +23,9 @@ function loadPool(): Promise<SequenceData[]> {
     for (const catalog of candidates.slice(0, 3)) {
       try {
         const page = await loadCatalogSequencesPage(catalog.id, 4);
-        const withWords = page.sequences.filter((s) => s.word && s.word.length > 0);
+        const withWords = page.sequences.filter(
+          (s) => s.word && s.word.length > 0
+        );
         if (withWords.length > 0) return withWords;
       } catch {
         // try the next catalog
@@ -35,7 +37,9 @@ function loadPool(): Promise<SequenceData[]> {
 }
 
 /** One real sequence for a preview surface; index picks variety per card. */
-export async function loadPreviewSequence(index = 0): Promise<SequenceData | null> {
+export async function loadPreviewSequence(
+  index = 0
+): Promise<SequenceData | null> {
   const sequences = await loadPool();
   if (sequences.length === 0) return null;
   return sequences[index % sequences.length] ?? null;

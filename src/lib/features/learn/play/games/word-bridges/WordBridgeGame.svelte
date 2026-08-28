@@ -64,8 +64,8 @@
   );
   const fixedQuestionCount = $derived(
     session.phase.name === "playing" &&
-      session.phase.level.mode.kind === "fixed"
-      ? session.phase.level.mode.questionCount
+      session.phase.challenge.mode.kind === "fixed"
+      ? session.phase.challenge.mode.questionCount
       : 0
   );
   const isFinalAnswer = $derived(
@@ -160,9 +160,9 @@
     try {
       if (
         session.phase.name !== "playing" ||
-        session.phase.level.mode.kind !== "fixed"
+        session.phase.challenge.mode.kind !== "fixed"
       ) {
-        throw new Error("Word bridges requires a fixed question level.");
+        throw new Error("Word bridges requires a fixed question challenge.");
       }
 
       const [transitionGraph, wordGenerator, loadedPictographs] =
@@ -178,7 +178,7 @@
 
       const questions = buildWordBridgeDeck({
         task,
-        questionCount: session.phase.level.mode.questionCount,
+        questionCount: session.phase.challenge.mode.questionCount,
         optionCount: constraints.optionCount,
         graph: adaptGraph(transitionGraph),
         availableLetters: new Set(loadedPictographs.keys()),
