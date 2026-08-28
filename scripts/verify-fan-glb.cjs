@@ -334,25 +334,14 @@ invariant(
   "Lotus fan is missing the two built-up grip junction welds"
 );
 invariant(
-  lotusGroup.extras?.tka_finger_ring_brace_count === 2 &&
+  lotusGroup.extras?.tka_finger_ring_brace_count === 0 &&
     lotusGroup.extras?.tka_finger_ring_weld_count === 1 &&
-    nodeIndexByName.has("Fan_Lotus_FingerBrace_Left") &&
-    nodeIndexByName.has("Fan_Lotus_FingerBrace_Right") &&
+    !nodeIndexByName.has("Fan_Lotus_FingerBrace_Left") &&
+    !nodeIndexByName.has("Fan_Lotus_FingerBrace_Right") &&
     nodeIndexByName.has("Fan_Lotus_FingerWeld_Lower") &&
     !nodeIndexByName.has("Fan_Lotus_FingerWeld_UpperLeft") &&
     !nodeIndexByName.has("Fan_Lotus_FingerWeld_LowerLeft"),
   "Lotus finger ring is not joined by one centered weld without crossing braces"
-);
-invariant(
-  JSON.stringify(lotusGroup.extras?.tka_finger_ring_triangle_half_m) ===
-    JSON.stringify({
-      outer_grip_join: [-0.034, 0.0284],
-      brace_control_1: [-0.027, 0.0355],
-      brace_control_2: [-0.018, 0.047],
-      inner_grip_join: [-0.0145, 0.03974],
-      apex: [-0.013, 0.0525],
-    }),
-  "Lotus finger-ring triangles no longer use the calibrated wide mirrored roots"
 );
 invariant(
   lotusGroup.extras?.tka_wick_mount ===

@@ -46,13 +46,6 @@
       "center": [0.0, 0.0462, 0.0004],
       "radius": 0.0018
     },
-    "finger_ring_triangle_half": {
-      "outer_grip_join": [-0.034, 0.0284],
-      "brace_control_1": [-0.027, 0.0355],
-      "brace_control_2": [-0.018, 0.047],
-      "inner_grip_join": [-0.0145, 0.03974],
-      "apex": [-0.013, 0.0525]
-    },
     "center_petal_root": [-0.0064, 0.0715],
     "wick_roll_length_m": 0.05,
     "wick_roll_lengths_m": [0.053505, 0.045583, 0.050441, 0.050414, 0.054937],
