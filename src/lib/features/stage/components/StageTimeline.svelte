@@ -4,6 +4,9 @@
   import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import TimeRuler from "$lib/features/compose/timeline/components/TimeRuler.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { flyFade, growFade, popIn } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
 
   import { getStageChoreographyContext } from "../context/stage-choreography-context";
   import { getActiveStageSequenceClip } from "../domain/stage-sequence-timeline";
@@ -383,7 +386,11 @@
   <header class="timeline-toolbar">
     <div class="timeline-title">
       {#if mode === "dock"}
-        <span class="timeline-label">Performance</span>
+        <span
+          class="timeline-label"
+          transition:growFade={{ duration: DURATION.fast, axis: "x" }}
+          >Performance</span
+        >
       {/if}
       <strong
         >Count {stageState.currentBeat.toFixed(1)} / {Math.round(
@@ -391,7 +398,9 @@
         )}</strong
       >
       {#if mode === "dock"}
-        <span class="timeline-summary"
+        <span
+          class="timeline-summary"
+          transition:growFade={{ duration: DURATION.fast, axis: "x" }}
           >{choreography.performers.length} performer{choreography.performers
             .length === 1
             ? ""
@@ -427,11 +436,19 @@
           : "Collapse choreography editor"}
         onclick={mode === "dock" ? onExpand : onCollapse}
       >
-        <i
-          class="fas {mode === 'dock' ? 'fa-wave-square' : 'fa-chevron-down'}"
-          aria-hidden="true"
-        ></i>
-        <span>{mode === "dock" ? "Choreograph" : "Collapse"}</span>
+        <Crossfade key={mode} duration={DURATION.fast}>
+          <span class="disclosure-content">
+            <i
+              class="fas {mode === 'dock'
+                ? 'fa-wave-square'
+                : 'fa-chevron-down'}"
+              aria-hidden="true"
+            ></i>
+            <span class="disclosure-copy"
+              >{mode === "dock" ? "Choreograph" : "Collapse"}</span
+            >
+          </span>
+        </Crossfade>
       </button>
     </div>
   </header>
@@ -441,6 +458,7 @@
       id="stage-timeline-editor"
       class="timeline-scroll"
       bind:clientWidth={timelineViewportWidth}
+      transition:flyFade={{ duration: DURATION.emphasis, y: 8 }}
     >
       <div
         class="timeline-grid"
@@ -571,6 +589,7 @@
                 <button
                   type="button"
                   class="formation-action"
+                  transition:popIn={{ duration: DURATION.fast }}
                   aria-label="Remove {formationName(formation, index)}"
                   title="Remove"
                   onpointerdown={(event) => event.stopPropagation()}
@@ -630,6 +649,7 @@
               <button
                 type="button"
                 class="lane-add-hint"
+                transition:flyFade={{ duration: DURATION.normal, x: 6, y: 0 }}
                 onpointerdown={(event) => event.stopPropagation()}
                 onclick={() => openPicker(performer.id)}
               >
@@ -664,13 +684,18 @@
                 >
                   <span class="clip-name">{stageState.clipLabel(clip)}</span>
                   {#if clip.loop && editMode.selectedClipId !== clip.id}
-                    <i class="fas fa-repeat" aria-label="Loops"></i>
+                    <i
+                      class="fas fa-repeat"
+                      aria-label="Loops"
+                      transition:popIn={{ duration: DURATION.fast }}
+                    ></i>
                   {/if}
                 </button>
                 {#if editMode.selectedClipId === clip.id}
                   <button
                     type="button"
                     class="clip-action"
+                    transition:popIn={{ duration: DURATION.fast }}
                     class:active={clip.loop}
                     aria-pressed={clip.loop}
                     aria-label="Loop {stageState.clipLabel(clip)}"
@@ -686,6 +711,7 @@
                   <button
                     type="button"
                     class="clip-action delete-clip"
+                    transition:popIn={{ duration: DURATION.fast }}
                     aria-label="Remove {stageState.clipLabel(clip)}"
                     title="Remove"
                     onpointerdown={(event) => event.stopPropagation()}
@@ -800,8 +826,8 @@
 
   .timeline-disclosure {
     display: inline-flex;
-    width: auto;
-    min-width: 0;
+    width: 8.75rem;
+    min-width: 8.75rem;
     min-height: var(--min-touch-target, 44px);
     align-items: center;
     justify-content: center;
@@ -820,6 +846,13 @@
     font-size: var(--font-size-min, 0.875rem);
     font-weight: 700;
     white-space: nowrap;
+  }
+
+  .disclosure-content {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
   }
 
   .timeline-disclosure:hover,
@@ -1374,10 +1407,11 @@
 
     .timeline-disclosure {
       width: var(--min-touch-target, 44px);
+      min-width: var(--min-touch-target, 44px);
       padding-inline: 0;
     }
 
-    .timeline-disclosure span {
+    .timeline-disclosure .disclosure-copy {
       display: none;
     }
   }

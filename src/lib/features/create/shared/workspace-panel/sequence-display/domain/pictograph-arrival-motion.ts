@@ -40,6 +40,6 @@ export function getPictographArrivalPropMotionDurationMs(
  * on the same clock as every other grid layout change.
  */
 export {
-  GRID_LAYOUT_TRANSITION_MS as PICTOGRAPH_ARRIVAL_LANDING_MS,
-  GRID_LAYOUT_TRANSITION_EASING as PICTOGRAPH_ARRIVAL_LANDING_EASING,
+  LAYOUT_MOTION_DURATION_MS as PICTOGRAPH_ARRIVAL_LANDING_MS,
+  LAYOUT_MOTION_EASING as PICTOGRAPH_ARRIVAL_LANDING_EASING,
 } from "$lib/shared/transitions/layout-flip";

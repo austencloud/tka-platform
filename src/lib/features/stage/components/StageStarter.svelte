@@ -1,7 +1,10 @@
 <script lang="ts">
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { SceneEnvironmentId } from "$lib/shared/3d/environments/domain/scene-environment";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { flyFade, growFade } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
 
   import {
     RECOMMENDED_STUDIO_STARTER,
@@ -106,118 +109,129 @@
 </script>
 
 {#if !dismissed}
-  <aside class="starter" aria-labelledby="studio-starter-title">
-    {#if !guided}
-      <div class="eyebrow">
-        <i class="fas fa-wand-sparkles" aria-hidden="true"></i> 3D Studio
-      </div>
-      <h1 id="studio-starter-title">Put something in motion.</h1>
-      <p>
-        {#if word}
-          Your current sequence is ready when you are.
-        {:else}
-          Start with a real cast, prop, and world. The deeper tools stay one tap
-          away.
-        {/if}
-      </p>
-      <div class="actions">
-        <PanelButton variant="primary" fullWidth onclick={applyRecommended}>
-          <i class="fas fa-play" aria-hidden="true"></i>
-          Start a recommended scene
-        </PanelButton>
-        <PanelButton
-          variant="secondary"
-          fullWidth
-          onclick={() => (guided = true)}
-        >
-          <i class="fas fa-sliders" aria-hidden="true"></i>
-          Start a scene
-        </PanelButton>
-      </div>
-    {:else}
-      <header>
-        <div>
-          <div class="eyebrow">Guided start</div>
-          <h1 id="studio-starter-title">Make it yours</h1>
-        </div>
-        <button class="back" type="button" onclick={() => (guided = false)}
-          >Back</button
-        >
-      </header>
-
-      <fieldset>
-        <legend>Starting material</legend>
-        <div class="choice-row">
-          <button
-            type="button"
-            class:chosen={startingMaterial === "recommended"}
-            aria-pressed={startingMaterial === "recommended"}
-            onclick={() => (startingMaterial = "recommended")}
-            >Recommended flow</button
-          >
-          <button
-            type="button"
-            class:chosen={startingMaterial === "choose-sequence"}
-            aria-pressed={startingMaterial === "choose-sequence"}
-            onclick={() => (startingMaterial = "choose-sequence")}
-            >Pick a sequence</button
-          >
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Who is on stage?</legend>
-        <div class="choice-row">
-          {#each castOptions as option (option.count)}
-            <button
-              type="button"
-              class:chosen={performerCount === option.count}
-              aria-pressed={performerCount === option.count}
-              onclick={() => selectCast(option)}>{option.label}</button
-            >
-          {/each}
-        </div>
-        {#if performerCount > 1}
-          <p class="hint">
-            Opening formation: {formation.replaceAll("-", " ")}
+  <aside
+    class="starter"
+    aria-labelledby="studio-starter-title"
+    transition:flyFade={{ duration: DURATION.emphasis, x: -10, y: 0 }}
+  >
+    <Crossfade key={guided} duration={DURATION.emphasis} animateHeight>
+      <div class="starter-step">
+        {#if !guided}
+          <div class="eyebrow">
+            <i class="fas fa-wand-sparkles" aria-hidden="true"></i> 3D Studio
+          </div>
+          <h1 id="studio-starter-title">Put something in motion.</h1>
+          <p>
+            {#if word}
+              Your current sequence is ready when you are.
+            {:else}
+              Start with a real cast, prop, and world. The deeper tools stay one
+              tap away.
+            {/if}
           </p>
+          <div class="actions">
+            <PanelButton variant="primary" fullWidth onclick={applyRecommended}>
+              <i class="fas fa-play" aria-hidden="true"></i>
+              Start a recommended scene
+            </PanelButton>
+            <PanelButton
+              variant="secondary"
+              fullWidth
+              onclick={() => (guided = true)}
+            >
+              <i class="fas fa-sliders" aria-hidden="true"></i>
+              Start a scene
+            </PanelButton>
+          </div>
+        {:else}
+          <header>
+            <div>
+              <div class="eyebrow">Guided start</div>
+              <h1 id="studio-starter-title">Make it yours</h1>
+            </div>
+            <button class="back" type="button" onclick={() => (guided = false)}
+              >Back</button
+            >
+          </header>
+
+          <fieldset>
+            <legend>Starting material</legend>
+            <div class="choice-row">
+              <button
+                type="button"
+                class:chosen={startingMaterial === "recommended"}
+                aria-pressed={startingMaterial === "recommended"}
+                onclick={() => (startingMaterial = "recommended")}
+                >Recommended flow</button
+              >
+              <button
+                type="button"
+                class:chosen={startingMaterial === "choose-sequence"}
+                aria-pressed={startingMaterial === "choose-sequence"}
+                onclick={() => (startingMaterial = "choose-sequence")}
+                >Pick a sequence</button
+              >
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Who is on stage?</legend>
+            <div class="choice-row">
+              {#each castOptions as option (option.count)}
+                <button
+                  type="button"
+                  class:chosen={performerCount === option.count}
+                  aria-pressed={performerCount === option.count}
+                  onclick={() => selectCast(option)}>{option.label}</button
+                >
+              {/each}
+            </div>
+            {#if performerCount > 1}
+              <p
+                class="hint"
+                transition:growFade={{ duration: DURATION.fast, axis: "y" }}
+              >
+                Opening formation: {formation.replaceAll("-", " ")}
+              </p>
+            {/if}
+          </fieldset>
+
+          <fieldset>
+            <legend>Prop</legend>
+            <div class="choice-row">
+              {#each propOptions as option (option.id)}
+                <button
+                  type="button"
+                  class:chosen={prop === option.id}
+                  aria-pressed={prop === option.id}
+                  onclick={() => (prop = option.id)}>{option.label}</button
+                >
+              {/each}
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>World</legend>
+            <div class="choice-row scenes">
+              {#each sceneOptions as option (option.id)}
+                <button
+                  type="button"
+                  class:chosen={environmentId === option.id}
+                  aria-pressed={environmentId === option.id}
+                  onclick={() => (environmentId = option.id)}
+                  ><i class="fas {option.icon}" aria-hidden="true"></i>
+                  {option.label}</button
+                >
+              {/each}
+            </div>
+          </fieldset>
+
+          <PanelButton variant="primary" fullWidth onclick={applyGuided}>
+            Create this scene
+          </PanelButton>
         {/if}
-      </fieldset>
-
-      <fieldset>
-        <legend>Prop</legend>
-        <div class="choice-row">
-          {#each propOptions as option (option.id)}
-            <button
-              type="button"
-              class:chosen={prop === option.id}
-              aria-pressed={prop === option.id}
-              onclick={() => (prop = option.id)}>{option.label}</button
-            >
-          {/each}
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>World</legend>
-        <div class="choice-row scenes">
-          {#each sceneOptions as option (option.id)}
-            <button
-              type="button"
-              class:chosen={environmentId === option.id}
-              aria-pressed={environmentId === option.id}
-              onclick={() => (environmentId = option.id)}
-              ><i class="fas {option.icon}" aria-hidden="true"></i>
-              {option.label}</button
-            >
-          {/each}
-        </div>
-      </fieldset>
-
-      <PanelButton variant="primary" fullWidth onclick={applyGuided}>
-        Create this scene
-      </PanelButton>
-    {/if}
+      </div>
+    </Crossfade>
 
     <div class="advanced" aria-label="Continue editing or open expert tools">
       <button
@@ -270,6 +284,11 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+  }
+  .starter-step {
+    display: grid;
+    min-width: 0;
+    gap: 1rem;
   }
   h1 {
     margin: 0;
@@ -337,6 +356,10 @@
     font: inherit;
     font-size: var(--font-size-compact, 0.8125rem);
     cursor: pointer;
+    transition:
+      border-color var(--transition-fast),
+      background-color var(--transition-fast),
+      color var(--transition-fast);
   }
   .choice-row button:hover,
   .choice-row button:focus-visible {

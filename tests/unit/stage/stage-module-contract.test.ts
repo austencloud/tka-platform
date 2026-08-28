@@ -105,8 +105,10 @@ describe("One Stage ownership", () => {
     );
     expect(stage).toContain('timelineDisclosure === "hidden"');
     expect(stage).toContain('timelineDisclosure === "dock"');
-    expect(stage).toContain('mode="dock"');
-    expect(stage).toContain('mode="editor"');
+    expect(stage).toContain("content: timelinePanel");
+    expect(stage).toContain(
+      'mode={timelineDisclosure === "editor" ? "editor" : "dock"}'
+    );
     expect(starter).toContain("onVisibilityChange(!dismissed)");
     expect(starter).toContain("Choreograph the performance");
     expect(timeline).toContain('{#if mode === "editor"}');
