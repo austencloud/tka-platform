@@ -1,4 +1,9 @@
-import { compressForURL, decompressFromURL, compressForQR, decompressFromQR } from "./sequence-codec";
+import {
+  compressForURL,
+  decompressFromURL,
+  compressForQR,
+  decompressFromQR,
+} from "./sequence-codec";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
@@ -16,7 +21,15 @@ import type { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pict
 import type { ArrowPlacementData } from "$lib/shared/pictograph/arrow/positioning/placement/domain/arrow-placement-data";
 import type { PropPlacementData } from "$lib/shared/pictograph/prop/domain/models/prop-placement-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import type { CompressionResult, ShareURLResult, ShareURLMetadata, DeepLinkParseResult, QRSizeEstimate, SequenceRouteIdParseResult, URLPropOptions } from "./types";
+import type {
+  CompressionResult,
+  ShareURLResult,
+  ShareURLMetadata,
+  DeepLinkParseResult,
+  QRSizeEstimate,
+  SequenceRouteIdParseResult,
+  URLPropOptions,
+} from "./types";
 import {
   calculateEndOrientation,
   deriveMotionType,
@@ -89,6 +102,9 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
   // "double" or "staff" is taken.
   [PropType.FIRE_DOUBLE_STAFF]: "6",
   [PropType.CLUB]: "C",
+  // Visual club build. Digits 0-6 are already assigned or reserved by
+  // shipped prop codes; 7 keeps every existing one-character link stable.
+  [PropType.CLASSIC_CLUB]: "7",
   [PropType.BIGCLUB]: "c",
   [PropType.FAN]: "F",
   [PropType.BIGFAN]: "f",
@@ -139,8 +155,6 @@ PROP_TYPE_DECODE["R"] = PropType.BUUGENG;
 
 const INLINE_PREFIX = "s~";
 
-
-
 type FloatWireFormat = "token" | "numeric";
 
 function encodeMotion(
@@ -166,14 +180,14 @@ function encodeMotion(
     ? floatWireFormat === "numeric"
       ? prefloatRotation
       : ROTATION_ENCODE[RotationDirection.NO_ROTATION]
-    : ROTATION_ENCODE[
+    : (ROTATION_ENCODE[
         motion.rotationDirection === ("no_rotation" as RotationDirection)
           ? RotationDirection.NO_ROTATION
           : motion.rotationDirection
       ] ??
       (motion.motionType === "static" || motion.motionType === "dash"
         ? ROTATION_ENCODE[RotationDirection.NO_ROTATION]
-        : undefined);
+        : undefined));
 
   const turns = isFloat
     ? floatWireFormat === "numeric"
@@ -219,7 +233,10 @@ function encodeBeat(
   return duration === 1 ? encodedMotions : `${encodedMotions}:d${duration}`;
 }
 
-function decodeDuration(encoded: string | undefined, stepNumber: number): number {
+function decodeDuration(
+  encoded: string | undefined,
+  stepNumber: number
+): number {
   if (!encoded) return 1;
 
   if (!encoded.startsWith("d")) {
@@ -247,8 +264,10 @@ function decodeMotion(
   if (!encoded || encoded.length < 6) return undefined;
 
   let pos = 0;
-  const startLocCode = encoded.slice(pos, pos + 2); pos += 2;
-  const endLocCode = encoded.slice(pos, pos + 2); pos += 2;
+  const startLocCode = encoded.slice(pos, pos + 2);
+  pos += 2;
+  const endLocCode = encoded.slice(pos, pos + 2);
+  pos += 2;
   const rotationCode = encoded[pos++];
 
   const turnsCode = encoded.slice(pos);
@@ -385,7 +404,8 @@ function buildMetadataQuery(metadata?: ShareURLMetadata): string {
   if (metadata.creator) params.set("creator", metadata.creator);
   if (metadata.notes) params.set("notes", metadata.notes);
   if (metadata.bpm !== undefined) params.set("bpm", String(metadata.bpm));
-  if (metadata.darkMode !== undefined) params.set("dark", metadata.darkMode ? "1" : "0");
+  if (metadata.darkMode !== undefined)
+    params.set("dark", metadata.darkMode ? "1" : "0");
   if (metadata.difficulty) params.set("difficulty", metadata.difficulty);
   if (metadata.birthday) params.set("birthday", metadata.birthday);
 
@@ -463,12 +483,18 @@ function encodeSequenceWithFloatFormat(
     }
   }
 
-  const spMotions = startPositionStep.motions ?? { blue: undefined, red: undefined };
-  const blueSeed = ORIENTATION_ENCODE[spMotions.blue?.startOrientation as Orientation] ?? "i";
-  const redSeed = ORIENTATION_ENCODE[spMotions.red?.startOrientation as Orientation] ?? "i";
+  const spMotions = startPositionStep.motions ?? {
+    blue: undefined,
+    red: undefined,
+  };
+  const blueSeed =
+    ORIENTATION_ENCODE[spMotions.blue?.startOrientation as Orientation] ?? "i";
+  const redSeed =
+    ORIENTATION_ENCODE[spMotions.red?.startOrientation as Orientation] ?? "i";
   const bluePropCode =
-    PROP_TYPE_ENCODE[(spMotions.blue?.propType ?? PropType.STAFF) as PropType] ??
-    PROP_TYPE_ENCODE[PropType.STAFF];
+    PROP_TYPE_ENCODE[
+      (spMotions.blue?.propType ?? PropType.STAFF) as PropType
+    ] ?? PROP_TYPE_ENCODE[PropType.STAFF];
   const redPropCode =
     PROP_TYPE_ENCODE[(spMotions.red?.propType ?? PropType.STAFF) as PropType] ??
     PROP_TYPE_ENCODE[PropType.STAFF];
@@ -493,16 +519,22 @@ export function decodeSequence(encoded: string): SequenceData {
   }
 
   const parts = encoded.split("|");
-  if (parts.length < 2) throw new Error("Invalid sequence encoding - missing data");
+  if (parts.length < 2)
+    throw new Error("Invalid sequence encoding - missing data");
 
   const header = parts[0] ?? "iiSS";
-  let blueOri = (ORIENTATION_DECODE[header[0] ?? "i"] ?? Orientation.IN) as Orientation;
-  let redOri = (ORIENTATION_DECODE[header[1] ?? "i"] ?? Orientation.IN) as Orientation;
-  const blueProp = (PROP_TYPE_DECODE[header[2] ?? "S"] ?? PropType.STAFF) as PropType;
-  const redProp = (PROP_TYPE_DECODE[header[3] ?? "S"] ?? PropType.STAFF) as PropType;
+  let blueOri = (ORIENTATION_DECODE[header[0] ?? "i"] ??
+    Orientation.IN) as Orientation;
+  let redOri = (ORIENTATION_DECODE[header[1] ?? "i"] ??
+    Orientation.IN) as Orientation;
+  const blueProp = (PROP_TYPE_DECODE[header[2] ?? "S"] ??
+    PropType.STAFF) as PropType;
+  const redProp = (PROP_TYPE_DECODE[header[3] ?? "S"] ??
+    PropType.STAFF) as PropType;
 
   const beatEncodings = parts.slice(1);
-  if (beatEncodings.length === 0) throw new Error("Invalid sequence encoding - no beats");
+  if (beatEncodings.length === 0)
+    throw new Error("Invalid sequence encoding - no beats");
 
   // Per-hand location chain: an empty segment ("this hand is not really
   // there") synthesizes an invisible static placeholder at the hand's last
@@ -514,18 +546,38 @@ export function decodeSequence(encoded: string): SequenceData {
     const segs = enc.split(":");
     const blue = decodeMotion(segs[0] ?? "", "blue", blueOri, blueProp);
     const red = decodeMotion(segs[1] ?? "", "red", redOri, redProp);
-    if (blue) { blueOri = blue.endOrientation; blueLoc = blue.endLocation; }
-    if (red) { redOri = red.endOrientation; redLoc = red.endLocation; }
+    if (blue) {
+      blueOri = blue.endOrientation;
+      blueLoc = blue.endLocation;
+    }
+    if (red) {
+      redOri = red.endOrientation;
+      redLoc = red.endLocation;
+    }
     return {
       stepNumber,
       duration: decodeDuration(segs[2], stepNumber),
-      blueReversal: false, redReversal: false,
+      blueReversal: false,
+      redReversal: false,
       isBlank: !(segs[0] ?? "") && !(segs[1] ?? ""),
       motions: {
-        blue: blue ?? createPlaceholderMotion(MotionColor.BLUE, { location: blueLoc, orientation: blueOri }),
-        red: red ?? createPlaceholderMotion(MotionColor.RED, { location: redLoc, orientation: redOri }),
+        blue:
+          blue ??
+          createPlaceholderMotion(MotionColor.BLUE, {
+            location: blueLoc,
+            orientation: blueOri,
+          }),
+        red:
+          red ??
+          createPlaceholderMotion(MotionColor.RED, {
+            location: redLoc,
+            orientation: redOri,
+          }),
       },
-      id: crypto.randomUUID(), letter: null, startPosition: null, endPosition: null,
+      id: crypto.randomUUID(),
+      letter: null,
+      startPosition: null,
+      endPosition: null,
     };
   };
 
@@ -539,19 +591,30 @@ export function decodeSequence(encoded: string): SequenceData {
     motions: startBeat.motions,
   });
 
-  const steps = beatEncodings.slice(1)
+  const steps = beatEncodings
+    .slice(1)
     .filter((e) => e && e.length > 0)
     .map((enc, index) => decodeChained(enc, index + 1));
 
   return {
-    id: crypto.randomUUID(), name: "Shared Sequence", word: "",
-    steps, startingPosition: startPosition, startPosition,
-    thumbnails: [], isFavorite: false, isCircular: false,
-    tags: [], metadata: {}, sequenceLength: steps.length,
+    id: crypto.randomUUID(),
+    name: "Shared Sequence",
+    word: "",
+    steps,
+    startingPosition: startPosition,
+    startPosition,
+    thumbnails: [],
+    isFavorite: false,
+    isCircular: false,
+    tags: [],
+    metadata: {},
+    sequenceLength: steps.length,
   };
 }
 
-export function encodeSequenceWithCompression(sequence: SequenceData): CompressionResult {
+export function encodeSequenceWithCompression(
+  sequence: SequenceData
+): CompressionResult {
   const rawEncoded = encodeSequence(sequence);
   const compressed = compressForURL(rawEncoded);
   const isCompressed = compressed.startsWith("d1:");
@@ -632,7 +695,9 @@ export function estimateURLLength(
 
 export function generateViewerURL(
   sequence: SequenceData,
-  options: { compress?: boolean; metadata?: ShareURLMetadata } = { compress: true }
+  options: { compress?: boolean; metadata?: ShareURLMetadata } = {
+    compress: true,
+  }
 ): ShareURLResult {
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
   const metadataQuery = buildMetadataQuery(options.metadata);
@@ -681,13 +746,14 @@ export function parseSequenceRouteId(id: string): SequenceRouteIdParseResult {
   return { encoded: null, legacyId: id };
 }
 
-export async function encodeSequenceForQR(sequence: SequenceData): Promise<string> {
+export async function encodeSequenceForQR(
+  sequence: SequenceData
+): Promise<string> {
   const flatEncoded = encodeSequence(sequence);
 
   try {
-    const { CompositionalEncoder } = await import(
-      "$lib/shared/qr/services/compositional-encoder"
-    );
+    const { CompositionalEncoder } =
+      await import("$lib/shared/qr/services/compositional-encoder");
     const encoder = new CompositionalEncoder(
       { encode: (s) => encodeSequence(s) },
       { decode: (s) => decodeSequence(s) },
@@ -709,15 +775,16 @@ export function isInlineEncoded(code: string): boolean {
   return code.startsWith(INLINE_PREFIX);
 }
 
-export async function decodeSequenceFromQR(encoded: string): Promise<SequenceData> {
+export async function decodeSequenceFromQR(
+  encoded: string
+): Promise<SequenceData> {
   const data = encoded.startsWith(INLINE_PREFIX)
     ? encoded.slice(INLINE_PREFIX.length)
     : encoded;
 
   if (data.startsWith("r1:")) {
-    const { CompositionalDecoder } = await import(
-      "$lib/shared/qr/services/compositional-decoder"
-    );
+    const { CompositionalDecoder } =
+      await import("$lib/shared/qr/services/compositional-decoder");
     // A recipe's hash covers the flat wire representation, not just its
     // motions. Recipes printed before 2026-05-30 therefore have to be
     // reconstructed with the matching historical encoder before the hash can
@@ -754,7 +821,9 @@ export async function decodeSequenceFromQR(encoded: string): Promise<SequenceDat
   return decodeSequenceWithCompression(data);
 }
 
-export async function estimateOfflineQRSize(sequence: SequenceData): Promise<QRSizeEstimate> {
+export async function estimateOfflineQRSize(
+  sequence: SequenceData
+): Promise<QRSizeEstimate> {
   const encoded = await encodeSequenceForQR(sequence);
   const length = encoded.length;
 
@@ -769,7 +838,11 @@ export async function estimateOfflineQRSize(sequence: SequenceData): Promise<QRS
   let recommendedVersion = 40;
   let comfortable = false;
 
-  for (const { version, capacity, comfortable: isComfortable } of VERSION_CAPACITIES) {
+  for (const {
+    version,
+    capacity,
+    comfortable: isComfortable,
+  } of VERSION_CAPACITIES) {
     if (length <= capacity) {
       recommendedVersion = version;
       comfortable = isComfortable;
@@ -784,11 +857,13 @@ export async function estimateOfflineQRSize(sequence: SequenceData): Promise<QRS
   };
 
   if (recommendedVersion > 15) {
-    result.warning = `Sequence produces a dense QR code (${length} chars). ` +
+    result.warning =
+      `Sequence produces a dense QR code (${length} chars). ` +
       `Consider using online mode for better scanning reliability.`;
     result.offlineRecommended = false;
   } else if (recommendedVersion > 10) {
-    result.warning = `Sequence is moderately large (${length} chars). ` +
+    result.warning =
+      `Sequence is moderately large (${length} chars). ` +
       `QR code will require good lighting and a steady hand to scan.`;
   }
 

@@ -587,40 +587,21 @@ Shows:
 
   @container learn-tab (min-width: 1800px) {
     .concept-path {
-      display: grid;
-      grid-template-columns: minmax(0, 1.25fr) minmax(22rem, 0.75fr);
-      grid-template-areas:
-        "intro intro"
-        "lesson map"
-        "toggle toggle"
-        "concepts concepts";
-      align-content: start;
-      column-gap: clamp(2rem, 4cqw, 5rem);
-      max-width: min(2200px, 90cqw);
+      gap: clamp(1.25rem, 1.5cqw, 2rem);
+      max-width: min(2800px, 92cqw);
+      padding: clamp(2rem, 3cqw, 4rem);
       font-size: clamp(16px, calc(16px + (100cqw - 1680px) * 8 / 2160), 24px);
     }
 
-    .course-intro {
-      grid-area: intro;
-    }
-
     .main-content {
-      grid-area: lesson;
-      max-width: none;
-      justify-content: center;
+      max-width: 760px;
     }
 
     .level-map-slot {
-      grid-area: map;
-      align-self: start;
-    }
-
-    .view-all-toggle {
-      grid-area: toggle;
+      width: 100%;
     }
 
     .all-concepts {
-      grid-area: concepts;
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 1.25rem;

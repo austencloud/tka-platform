@@ -395,6 +395,67 @@ function buildInternalDrives(
   ];
 }
 
+function clipConnectorAtLoopBoundary(
+  points: ReadonlyArray<Pick<FlowFestRuntimePoint, "x" | "z">>,
+  loop: ReadonlyArray<Pick<FlowFestRuntimePoint, "x" | "z">>
+): Array<Pick<FlowFestRuntimePoint, "x" | "z">> {
+  if (points.length < 2 || loop.length < 3) return [...points];
+
+  const clipped = [points[0]!];
+  for (let pointIndex = 1; pointIndex < points.length; pointIndex += 1) {
+    const start = points[pointIndex - 1]!;
+    const end = points[pointIndex]!;
+    const intersections = loop.slice(1).flatMap((edgeEnd, edgeIndex) => {
+      const intersection = segmentIntersection(
+        start,
+        end,
+        loop[edgeIndex]!,
+        edgeEnd
+      );
+      return intersection ? [intersection] : [];
+    });
+
+    const firstIntersection = intersections.sort(
+      (first, second) => first.progress - second.progress
+    )[0];
+    if (firstIntersection) {
+      clipped.push({ x: firstIntersection.x, z: firstIntersection.z });
+      return clipped;
+    }
+    clipped.push(end);
+  }
+
+  return clipped;
+}
+
+function segmentIntersection(
+  lineStart: Pick<FlowFestRuntimePoint, "x" | "z">,
+  lineEnd: Pick<FlowFestRuntimePoint, "x" | "z">,
+  edgeStart: Pick<FlowFestRuntimePoint, "x" | "z">,
+  edgeEnd: Pick<FlowFestRuntimePoint, "x" | "z">
+): { x: number; z: number; progress: number } | null {
+  const lineX = lineEnd.x - lineStart.x;
+  const lineZ = lineEnd.z - lineStart.z;
+  const edgeX = edgeEnd.x - edgeStart.x;
+  const edgeZ = edgeEnd.z - edgeStart.z;
+  const denominator = lineX * edgeZ - lineZ * edgeX;
+  if (Math.abs(denominator) < Number.EPSILON) return null;
+
+  const offsetX = edgeStart.x - lineStart.x;
+  const offsetZ = edgeStart.z - lineStart.z;
+  const progress = (offsetX * edgeZ - offsetZ * edgeX) / denominator;
+  const edgeProgress = (offsetX * lineZ - offsetZ * lineX) / denominator;
+  if (progress < 0 || progress > 1 || edgeProgress < 0 || edgeProgress > 1) {
+    return null;
+  }
+
+  return {
+    x: lineStart.x + lineX * progress,
+    z: lineStart.z + lineZ * progress,
+    progress,
+  };
+}
+
 function buildRegions(): FlowFestCampPlanRegion[] {
   return [
     {
@@ -607,6 +668,10 @@ export function createFlowFestCampPlan(
   branch: FlowFestBranchId
 ): FlowFestCampPlan {
   const selectedCampZoneId = CAMP_ZONE_BY_BRANCH[branch];
+  const middleToLowerLoop = clipConnectorAtLoopBoundary(
+    contract.connectorTraces.middleEarthToLowerClearing.vertices,
+    FLOW_FEST_LOWER_CAMPGROUND_LOOP
+  );
   return {
     bounds: { ...ORIENTATION_BOUNDS },
     publicRoads: [
@@ -634,13 +699,13 @@ export function createFlowFestCampPlan(
       },
       {
         id: "middle-to-lower",
-        label: "Middle Earth to lower level",
+        label: "Middle Earth to lower loop",
         evidence: "austen-traced",
         kind: "foot-connector",
         widthMeters: 1.8,
-        points: contract.connectorTraces.middleEarthToLowerClearing.vertices,
+        points: middleToLowerLoop,
         sourceNote:
-          "Austen's orthophoto trace, preserved as a route centerline rather than a surveyed trail edge.",
+          "Austen's orthophoto trace through the woodland, clipped where it meets the lower campground loop so it does not imply a path through the car-camping field.",
       },
     ],
     zones: contract.zones.map(toZone),

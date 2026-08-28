@@ -2,7 +2,11 @@
   import { onDestroy, onMount } from "svelte";
   import { T, useTask, useThrelte } from "@threlte/core";
   import { CameraMode, UnifiedCameraController } from "@austencloud/camera-3d";
-  import type { AvatarState, PhysicsProvider } from "@austencloud/camera-3d";
+  import type {
+    AvatarState,
+    CameraCollisionProbe,
+    PhysicsProvider,
+  } from "@austencloud/camera-3d";
   import type { FlowFestProductionCollisionSet } from "$lib/features/flow-fest-sim/domain/flow-fest-simulation-contract";
   import {
     FLOW_FEST_EUC_CONFIG,
@@ -55,6 +59,7 @@
   import {
     buildFlowFestTerrainHost,
     buildFlowFestChunkSeamTraversal,
+    flowFestColliderWindowKey,
     sampleFlowFestTerrainWorldY,
     type FlowFestTerrainHost,
     type FlowFestTerrainHostMode,
@@ -141,6 +146,22 @@
   let terrain: Awaited<ReturnType<typeof loadGeospatialTerrain>> | null = null;
   let initialized = $state(false);
   let disposed = false;
+  const probeThirdPersonCameraCollision: CameraCollisionProbe = (
+    origin,
+    direction,
+    maxDistance
+  ) => {
+    if (!physicsState?.world || !playerState) return null;
+    return (
+      castRay(
+        physicsState,
+        origin,
+        direction,
+        maxDistance,
+        playerState.collider
+      )?.distance ?? null
+    );
+  };
   let appliedResetToken = props.resetToken;
   let appliedCameraToken = props.cameraToken;
   let appliedStageToken = props.stageToken ?? 0;
@@ -190,6 +211,7 @@
   let performanceWarmupFrames = 0;
   let missingColliderFrames = 0;
   const activeTerrainBodies = new Map<string, PhysicsBodyComponent>();
+  let activeTerrainColliderWindowKey: string | null = null;
   let productionCollisionBodies: PhysicsBodyComponent[] = [];
   let mountedProductionCollision: FlowFestProductionCollisionSet | null = null;
   let mountedCampEstablished = false;
@@ -347,6 +369,26 @@
   ): boolean {
     if (!physicsState?.world || !terrainHost) return false;
 
+    const nextWindowKey =
+      props.hostMode === "bounded-static"
+        ? "bounded-static"
+        : terrain
+          ? flowFestColliderWindowKey(
+              x,
+              z,
+              terrain.worldBounds,
+              CHUNK_SIZE_METERS
+            )
+          : null;
+    if (
+      pruneDistant &&
+      nextWindowKey !== null &&
+      nextWindowKey === activeTerrainColliderWindowKey
+    ) {
+      return true;
+    }
+    if (!pruneDistant) activeTerrainColliderWindowKey = null;
+
     const desired = new Set<string>();
     for (const collider of terrainHost.colliders) {
       const isNeeded =
@@ -386,6 +428,8 @@
         Math.abs(collider.centerX - x) <= collider.halfExtentX + 1e-6 &&
         Math.abs(collider.centerZ - z) <= collider.halfExtentZ + 1e-6
     );
+    activeTerrainColliderWindowKey =
+      pruneDistant && containingColliderIsActive ? nextWindowKey : null;
     updateActiveColliderProof();
     return containingColliderIsActive;
   }
@@ -1045,9 +1089,6 @@
         props.hostMode,
         texture
       );
-      terrainHost.root.traverse((object) => {
-        if (object instanceof Mesh) object.userData.cameraCollider = true;
-      });
       overlay = buildFlowFestReviewOverlay(
         loadedContract,
         loadedTerrain,
@@ -1209,6 +1250,7 @@
             props.hostMode === "chunked"
               ? "one full-resolution render batch with 32 m collision chunks"
               : "one full-resolution visible/collider mesh",
+          cameraCollisionStrategy: "rapier-active-chunk-broadphase",
           candidateColliderMeshes: terrainHost.metrics.colliderMeshes,
           activeColliderMeshes: activeTerrainBodies.size,
           colliderBufferMeters:
@@ -1478,6 +1520,7 @@
     clearProductionCollisionBodies();
     if (physicsState) disposePhysicsWorld(physicsState);
     activeTerrainBodies.clear();
+    activeTerrainColliderWindowKey = null;
     terrainHost?.dispose();
     disposeOverlay(overlay);
     if (barrier) {
@@ -1541,6 +1584,7 @@
       preferencesKey="flow-fest-gate2-camera"
       {avatarState}
       {physicsProvider}
+      cameraCollisionProbe={probeThirdPersonCameraCollision}
       enabled={true}
       initialYaw={playerYaw}
       {initialPitch}

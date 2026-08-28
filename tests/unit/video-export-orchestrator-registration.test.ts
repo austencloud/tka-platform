@@ -5,7 +5,7 @@
  * composition-root/deferred-registrations, which the root layout schedules on
  * an idle callback (2s timeout). Hosts that can reach a video export before
  * that idle slot — the Browse animation sheet, the sequence viewer shell's
- * export panel, the Create export drawer, the /q scan page — used to resolve
+ * export panel and the Create export drawer used to resolve
  * the orchestrator eagerly and threw
  * "VideoExportOrchestrator factory not registered".
  *
@@ -26,9 +26,8 @@ import {
 // WebCodecs and Firestore). It registers a stub factory the same way the real
 // module does, so the ordering behaviour under test is unchanged.
 vi.mock("$lib/shared/composition-root/deferred-registrations", async () => {
-  const { registerVideoExportOrchestratorFactory } = await import(
-    "$lib/shared/animation-engine/get-video-export-orchestrator"
-  );
+  const { registerVideoExportOrchestratorFactory } =
+    await import("$lib/shared/animation-engine/get-video-export-orchestrator");
   registerVideoExportOrchestratorFactory(
     () => ({ __stub: true }) as unknown as never
   );
@@ -43,7 +42,6 @@ const repoRoot = path.resolve(
 const HOSTS = [
   "src/lib/shared/coordinators/AnimationSheetCoordinator.svelte",
   "src/lib/features/create/shared/components/coordinators/SequenceDrawerHost.svelte",
-  "src/routes/q/[code]/QScanPage.svelte",
   "src/lib/shared/sequence-viewer/services/sequence-modal-exporter.svelte.ts",
 ];
 
@@ -51,7 +49,9 @@ describe("video export orchestrator registration", () => {
   // Order matters: this must observe the unregistered state before the ensure
   // test below loads the (mocked) deferred registrations.
   it("throws when nothing has registered the factory yet", () => {
-    expect(() => getVideoExportOrchestrator()).toThrow(/factory not registered/);
+    expect(() => getVideoExportOrchestrator()).toThrow(
+      /factory not registered/
+    );
   });
 
   it("resolves after loading the deferred registrations on demand", async () => {

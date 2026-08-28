@@ -71,6 +71,7 @@
     practiceMirrorEnabled = false,
     tunnelComposition = null,
     tunnelSaveTarget = null,
+    onTunnelSaved,
   }: ViewerSplitPaneProps = $props();
 
   // Both canvas renderers share one effects state. The orchestrator normally
@@ -237,6 +238,7 @@
       {onArtAction}
       {tunnelComposition}
       {tunnelSaveTarget}
+      {onTunnelSaved}
     />
     <PracticeCountInOverlay count={practiceCountdown} />
   </div>
@@ -310,6 +312,7 @@
         {onArtAction}
         {tunnelComposition}
         {tunnelSaveTarget}
+        {onTunnelSaved}
       />
       {#if practiceActive}
         <ViewerPracticeLane

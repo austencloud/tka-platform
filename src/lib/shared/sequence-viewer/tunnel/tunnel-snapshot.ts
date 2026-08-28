@@ -6,6 +6,7 @@ import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
 import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { TunnelPresetRecipe } from "./tunnel-preset-recipe";
+import type { TunnelComposition, TunnelSaveTarget } from "./tunnel-composition";
 
 export const SNAPSHOT_VERSION = 2;
 
@@ -43,6 +44,14 @@ export interface TunnelSnapshot {
   };
   trailRender: TrailSettings;
 }
+
+export interface TunnelSaveReceipt {
+  target: TunnelSaveTarget;
+  composition: TunnelComposition | null;
+  snapshot: TunnelSnapshot;
+}
+
+export type TunnelSavedCallback = (receipt: TunnelSaveReceipt) => void;
 
 // TunnelConfig / EffectsConfig / TrailSettings are large, internally-validated
 // shapes; the boundary schema guards the envelope + enums and passes the deep
@@ -214,8 +223,13 @@ export function applyTunnelSnapshot(
 
 /** Converts the one earlier snapshot shape without claiming it had a preset
  * recipe. The performed configuration is copied verbatim. */
-export function migrateTunnelSnapshot(snapshot: TunnelSnapshot): TunnelSnapshot {
-  if (snapshot.version >= SNAPSHOT_VERSION && "presetRecipe" in snapshot.tunnel) {
+export function migrateTunnelSnapshot(
+  snapshot: TunnelSnapshot
+): TunnelSnapshot {
+  if (
+    snapshot.version >= SNAPSHOT_VERSION &&
+    "presetRecipe" in snapshot.tunnel
+  ) {
     return snapshot;
   }
   return {

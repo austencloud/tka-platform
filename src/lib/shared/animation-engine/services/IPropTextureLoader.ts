@@ -40,6 +40,7 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   // The regular club stops short of the grid center so its visible end, trails,
   // and mandala all share the same ~130-unit reach.
   club: { width: 258.67, height: 34.17 },
+  classic_club: { width: 258.67, height: 34.17 },
   bigclub: { width: 252, height: 65 },
 
   // Fan family

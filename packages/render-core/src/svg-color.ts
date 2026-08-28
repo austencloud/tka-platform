@@ -37,6 +37,9 @@ export const MOTION_COLOR_MAP: Record<
  * blue or red.
  */
 export const SELECTIVE_COLOR_PROP_TYPES = [
+  // Juggling club: the body carries blue/red motion identity while the rubber
+  // knob, wrapped handle, shoulder ring and top keep their authored materials.
+  "club",
   "torch",
   "bigtorch",
   "sword",
