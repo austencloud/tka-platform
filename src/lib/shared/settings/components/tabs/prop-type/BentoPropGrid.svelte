@@ -94,10 +94,11 @@
   );
   const selectablePropSet = $derived(new Set(selectableProps));
 
-  // Preserve the curated Standard / Big / Novelty / Premium ordering, but show
-  // each physical family once at the first position where one of its members
-  // appears. The chooser then gets only variants that the curated picker
-  // actually allows, so internal-only Staff builds stay internal.
+  // Preserve the curated base-prop ordering while letting each base own its
+  // variants. A family stays in the section where its base was authored, so a
+  // Big Chicken entry cannot move the Chicken family out of Novelty. The
+  // chooser then gets only variants that the curated picker actually allows,
+  // so internal-only Staff builds stay internal.
   const sections = $derived.by(() => {
     const seen = new Set<PropType>();
     return PROP_PICKER_SECTIONS.map((section) => {
@@ -105,6 +106,7 @@
       for (const prop of section.props) {
         if (!canShowProp(prop)) continue;
         const base = isPremiumCosmeticProp(prop) ? prop : getBasePropType(prop);
+        if (prop !== base) continue;
         if (seen.has(base)) continue;
         seen.add(base);
         bases.push(base);
