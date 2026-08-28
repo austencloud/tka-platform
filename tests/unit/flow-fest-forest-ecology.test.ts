@@ -7,6 +7,7 @@ import {
   deriveFlowFestForestEcology,
   FLOW_FEST_FOREST_GRASS_ASSET,
   FLOW_FEST_FOREST_GROUND_LIFE_ASSETS,
+  FLOW_FEST_PLANTFACTORY_ACCENT_COUNT,
   FLOW_FEST_PLANTFACTORY_TREE_FAMILIES,
   FLOW_FEST_FOREST_TREE_ASSETS,
 } from "../../src/routes/test/flow-fest-sim/flow-fest-forest-ecology";
@@ -127,7 +128,7 @@ describe("Flow Fest Forest ecology integration", () => {
     expect(first.audit).toMatchObject({
       measuredCanopyPlacements: 440,
       sourceTreeFamilies: 11,
-      plantFactoryTreePlacements: 269,
+      plantFactoryTreePlacements: FLOW_FEST_PLANTFACTORY_ACCENT_COUNT,
       grassPlacements: 22_217,
       groundLifePlacements: 20,
     });
@@ -151,7 +152,7 @@ describe("Flow Fest Forest ecology integration", () => {
     expect(ecology.groundLife.length).toBeGreaterThan(0);
     expect(
       ecology.audit.plantFactoryTreePlacements / ecology.trees.length
-    ).toBeGreaterThanOrEqual(0.6);
+    ).toBeLessThan(0.1);
     expect(
       ecology.trees.filter((tree) =>
         FLOW_FEST_PLANTFACTORY_TREE_FAMILIES.includes(
@@ -168,12 +169,29 @@ describe("Flow Fest Forest ecology integration", () => {
     }
     expect(
       Math.max(...familyCounts.values()) / ecology.trees.length
-    ).toBeLessThanOrEqual(0.2);
+    ).toBeLessThanOrEqual(0.28);
     for (const familyId of Object.keys(FLOW_FEST_FOREST_TREE_ASSETS)) {
       expect(ecology.trees.some((tree) => tree.familyId === familyId)).toBe(
         true
       );
     }
+    const accentIndices = ecology.trees.flatMap((tree, index) =>
+      FLOW_FEST_PLANTFACTORY_TREE_FAMILIES.includes(
+        tree.familyId as (typeof FLOW_FEST_PLANTFACTORY_TREE_FAMILIES)[number]
+      )
+        ? [index]
+        : []
+    );
+    expect(accentIndices).toHaveLength(FLOW_FEST_PLANTFACTORY_ACCENT_COUNT);
+    expect(accentIndices[0]).toBe(0);
+    expect(accentIndices.at(-1)).toBe(ecology.trees.length - 1);
+    expect(
+      Math.max(
+        ...accentIndices.slice(1).map((index, accentIndex) => {
+          return index - accentIndices[accentIndex]!;
+        })
+      )
+    ).toBeLessThanOrEqual(14);
   });
 
   it("carves the shared camp-plan roads and connectors from the measured ecology", () => {

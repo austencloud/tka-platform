@@ -62,10 +62,12 @@ export const FLOW_FEST_PLANTFACTORY_TREE_FAMILIES = [
   "plantcatalog-buckeye-79",
   "plantcatalog-habitat-snag",
 ] as const satisfies readonly FlowFestForestTreeFamilyId[];
+export const FLOW_FEST_PLANTFACTORY_ACCENT_COUNT = 34;
 export type FlowFestForestGrassTier = "base" | "medium" | "high";
 export type FlowFestForestGrassSpecies = "summer-sward" | "woodland-grass";
 export type FlowFestForestGroundLifeSpecies =
-  "damp-sedge-tussock" | "woodland-hazel-shrub";
+  | "damp-sedge-tussock"
+  | "woodland-hazel-shrub";
 
 export interface FlowFestForestTreePlacement {
   x: number;
@@ -138,50 +140,52 @@ export function deriveFlowFestForestEcology(
   campPlan: FlowFestCampPlan | null = null
 ): FlowFestForestEcologyLayout {
   const routes = mergeEcologyRoutes(contract, campPlan);
-  const trees = deriveFlowFestCanopyPeaks(contract, terrain, canopy)
-    .filter((peak) => !pointNearRoutes(peak.x, peak.z, routes, 3.2))
-    .map((peak, index): FlowFestForestTreePlacement => {
-      const rng = makeRng(
-        childSeed(FLOW_FEST_MASTER_SEED, `forest-tree:${peak.x}:${peak.z}`)
-      );
-      const renderedHeightMeters = clamp(
-        peak.measuredHeightMeters * (0.62 + rng() * 0.08),
-        7.5,
-        19
-      );
-      const groundY = sampleFlowFestTerrainWorldY(terrain, peak.x, peak.z);
-      const familyId = chooseTreeFamily(
-        renderedHeightMeters,
-        groundY,
-        peak.neighborhoodHighReturnRatio,
-        peak.x,
-        peak.z,
-        index,
-        rng
-      );
-      return {
-        x: peak.x,
-        y: groundY,
-        z: peak.z,
-        rotation: rng() * Math.PI * 2,
-        scale: 1,
-        colorIndex: 0,
-        measuredHeightMeters: peak.measuredHeightMeters,
-        renderedHeightMeters,
-        trunkHeightMeters: renderedHeightMeters * (0.68 + rng() * 0.05),
-        trunkRadiusMeters: clamp(
-          0.16 + renderedHeightMeters * 0.012,
-          0.24,
-          0.48
-        ),
-        crownRadiusMeters: clamp(
-          renderedHeightMeters * (0.27 + rng() * 0.035),
-          2.15,
-          5.1
-        ),
-        familyId,
-      };
-    });
+  const canopyPeaks = deriveFlowFestCanopyPeaks(
+    contract,
+    terrain,
+    canopy
+  ).filter((peak) => !pointNearRoutes(peak.x, peak.z, routes, 3.2));
+  const plantFactoryAccentOrdinalByIndex =
+    derivePlantFactoryAccentOrdinalByIndex(canopyPeaks.length);
+  const trees = canopyPeaks.map((peak, index): FlowFestForestTreePlacement => {
+    const rng = makeRng(
+      childSeed(FLOW_FEST_MASTER_SEED, `forest-tree:${peak.x}:${peak.z}`)
+    );
+    const renderedHeightMeters = clamp(
+      peak.measuredHeightMeters * (0.62 + rng() * 0.08),
+      7.5,
+      19
+    );
+    const groundY = sampleFlowFestTerrainWorldY(terrain, peak.x, peak.z);
+    const familyId = chooseTreeFamily(
+      renderedHeightMeters,
+      groundY,
+      peak.neighborhoodHighReturnRatio,
+      peak.x,
+      peak.z,
+      index,
+      plantFactoryAccentOrdinalByIndex.get(index) ?? null,
+      rng
+    );
+    return {
+      x: peak.x,
+      y: groundY,
+      z: peak.z,
+      rotation: rng() * Math.PI * 2,
+      scale: 1,
+      colorIndex: 0,
+      measuredHeightMeters: peak.measuredHeightMeters,
+      renderedHeightMeters,
+      trunkHeightMeters: renderedHeightMeters * (0.68 + rng() * 0.05),
+      trunkRadiusMeters: clamp(0.16 + renderedHeightMeters * 0.012, 0.24, 0.48),
+      crownRadiusMeters: clamp(
+        renderedHeightMeters * (0.27 + rng() * 0.035),
+        2.15,
+        5.1
+      ),
+      familyId,
+    };
+  });
 
   const grass: FlowFestForestGrassPlacement[] = [];
   const groundLife: FlowFestForestGroundLifePlacement[] = [];
@@ -367,77 +371,79 @@ function chooseTreeFamily(
   x: number,
   z: number,
   index: number,
+  plantFactoryAccentOrdinal: number | null,
   rng: () => number
 ): FlowFestForestTreeFamilyId {
-  // Each 48 metre habitat cell gets a deterministic PlantFactory-led profile.
-  // Nearby trees therefore read as an ecological stand, while the per-tree
-  // roll prevents a copied silhouette marching down the tree line.
+  if (plantFactoryAccentOrdinal !== null) {
+    return choosePlantFactoryAccentFamily(plantFactoryAccentOrdinal);
+  }
+
+  // The four Flow Fest LOD families carry the measured canopy at riding
+  // distance. Each 48 metre habitat cell receives a stable phase offset, so
+  // neighboring trees read as a stand without one silhouette taking over.
   const habitatRng = makeRng(
     childSeed(
       FLOW_FEST_MASTER_SEED,
       `forest-habitat:${Math.floor(x / 48)}:${Math.floor(z / 48)}`
     )
   );
-  if (renderedHeightMeters > 12 && index % 149 === 0) {
-    return "plantcatalog-habitat-snag";
-  }
-
-  const moistPool = [
-    "plantcatalog-willow",
-    "plantcatalog-willow",
-    "plantcatalog-buckeye-31",
-    "plantcatalog-buckeye-79",
-    "plantcatalog-aesculus-carnea",
-    "island-tree-03",
-  ] as const satisfies readonly FlowFestForestTreeFamilyId[];
-  const understoryPool = [
-    "plantcatalog-buckeye-31",
-    "plantcatalog-buckeye-79",
-    "plantcatalog-aesculus-carnea",
-    "plantcatalog-oak-colonised",
-    "island-tree-03",
-    "island-tree-01",
-  ] as const satisfies readonly FlowFestForestTreeFamilyId[];
-  const denseCanopyPool = [
-    "plantcatalog-oak-colonised",
-    "plantcatalog-oak-colonised",
-    "plantcatalog-oak-urban",
-    "plantcatalog-aesculus-carnea",
-    "island-tree-01",
-    "island-tree-02",
-    "tree-small-02",
-  ] as const satisfies readonly FlowFestForestTreeFamilyId[];
-  const generalPool = [
-    "plantcatalog-aesculus-carnea",
-    "plantcatalog-oak-urban",
-    "plantcatalog-oak-colonised",
-    "plantcatalog-willow",
-    "plantcatalog-buckeye-31",
-    "plantcatalog-buckeye-79",
+  const massFamilies = [
     "island-tree-01",
     "island-tree-02",
     "island-tree-03",
     "tree-small-02",
   ] as const satisfies readonly FlowFestForestTreeFamilyId[];
-
-  const pool =
+  const habitatBias =
     groundY < 8.5
-      ? moistPool
+      ? 2
       : renderedHeightMeters < 10.6
-        ? understoryPool
+        ? 3
         : neighborhoodHighReturnRatio > 0.72
-          ? denseCanopyPool
-          : generalPool;
-  const clusterPrimary = pickTreeFamily(pool, habitatRng());
-  if (rng() < 0.26) return clusterPrimary;
-  return pickTreeFamily(pool, rng());
+          ? 0
+          : 1;
+  const habitatPhase = Math.floor(habitatRng() * massFamilies.length);
+  const variation = rng() < 0.28 ? 1 : 0;
+  return massFamilies[
+    (index + habitatBias + habitatPhase + variation) % massFamilies.length
+  ]!;
 }
 
-function pickTreeFamily(
-  pool: readonly FlowFestForestTreeFamilyId[],
-  roll: number
+function derivePlantFactoryAccentOrdinalByIndex(
+  treeCount: number
+): ReadonlyMap<number, number> {
+  const accentCount = Math.min(FLOW_FEST_PLANTFACTORY_ACCENT_COUNT, treeCount);
+  const accents = new Map<number, number>();
+  if (accentCount === 0) return accents;
+  if (accentCount === 1) {
+    accents.set(0, 0);
+    return accents;
+  }
+
+  const spacing = (treeCount - 1) / (accentCount - 1);
+  for (let ordinal = 0; ordinal < accentCount; ordinal += 1) {
+    accents.set(Math.round(ordinal * spacing), ordinal);
+  }
+  return accents;
+}
+
+function choosePlantFactoryAccentFamily(
+  accentOrdinal: number
 ): FlowFestForestTreeFamilyId {
-  return pool[Math.min(pool.length - 1, Math.floor(roll * pool.length))]!;
+  // Snags are habitat punctuation, not a repeated canopy. The living accents
+  // cycle through every PlantFactory family before repeating.
+  if (accentOrdinal === 13 || accentOrdinal === 29) {
+    return "plantcatalog-habitat-snag";
+  }
+  const livingFamilies = [
+    "plantcatalog-oak-colonised",
+    "plantcatalog-aesculus-carnea",
+    "plantcatalog-oak-urban",
+    "plantcatalog-willow",
+    "plantcatalog-buckeye-31",
+    "plantcatalog-buckeye-79",
+  ] as const satisfies readonly FlowFestForestTreeFamilyId[];
+  const priorSnags = Number(accentOrdinal > 13) + Number(accentOrdinal > 29);
+  return livingFamilies[(accentOrdinal - priorSnags) % livingFamilies.length]!;
 }
 
 function sampleCanopyOffsetMeters(
