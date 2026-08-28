@@ -3,6 +3,7 @@
   import { onMount } from "svelte";
   import { Canvas, T } from "@threlte/core";
   import { AgXToneMapping, Color, PCFSoftShadowMap } from "three";
+  import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import CandidateAvatarStage from "./CandidateAvatarStage.svelte";
   import type { AvatarBakeoffDiagnostics } from "./CandidateAvatarStage.svelte";
   import {
@@ -109,7 +110,17 @@
       toneMappingExposure={1.22}
     >
       <T is={background} attach="background" />
-      <T.PerspectiveCamera makeDefault position={[0, 1.08, 4]} fov={31} />
+      <T.PerspectiveCamera makeDefault position={[0, 1.08, 4]} fov={31}>
+        <OrbitControls
+          target={[0, 1, 0]}
+          minDistance={1.8}
+          maxDistance={7}
+          minPolarAngle={0.3}
+          maxPolarAngle={Math.PI * 0.72}
+          enableDamping
+          enablePan={false}
+        />
+      </T.PerspectiveCamera>
       <T.HemisphereLight color="#ffffff" groundColor="#3a414d" intensity={1.8} />
       <T.DirectionalLight position={[3.5, 5.5, 4]} intensity={2.8} castShadow />
       <T.DirectionalLight position={[-4, 3, 2]} intensity={1.55} color="#dbeafe" />
@@ -128,6 +139,8 @@
         <T.MeshStandardMaterial color="#272c35" roughness={0.82} />
       </T.Mesh>
     </Canvas>
+
+    <p class="stage-help">Drag to orbit · wheel or pinch to zoom</p>
   </section>
 
   <aside class="diagnostics" aria-live="polite">
@@ -264,6 +277,7 @@
   }
 
   .stage {
+    position: relative;
     min-width: 0;
     min-height: 0;
   }
@@ -272,6 +286,23 @@
     display: block;
     width: 100% !important;
     height: 100% !important;
+  }
+
+  .stage-help {
+    position: absolute;
+    bottom: 0.85rem;
+    left: 50%;
+    z-index: 1;
+    margin: 0;
+    padding: 0.4rem 0.65rem;
+    border: 1px solid rgb(255 255 255 / 12%);
+    border-radius: 999px;
+    color: #c7cfda;
+    background: rgb(12 15 20 / 78%);
+    font-size: var(--font-size-compact, 0.75rem);
+    line-height: 1.2;
+    pointer-events: none;
+    transform: translateX(-50%);
   }
 
   .diagnostics {
