@@ -51,6 +51,7 @@
   } from "./services/stage-viewer-adapter";
 
   type SequenceLoadState = "loading" | "ready" | "error";
+  type TimelineDisclosure = "hidden" | "dock" | "editor";
 
   // Opening a saved 3D scene from the collection hands over a whole resolved
   // sequence rather than an id, so it seeds the resolver instead of going
@@ -89,14 +90,17 @@
 
   const exporter = createSceneVideoExport(viewer);
 
-  const compactPortrait = new MediaQuery(
-    "(max-width: 900px) and (orientation: portrait)"
+  const compactTimelineWorkspace = new MediaQuery(
+    "(max-width: 900px), (max-height: 560px)"
   );
 
   const choreography = $derived(stageState.choreography);
   const performanceFrames = $derived(stageState.performanceFrames);
 
   let chartRaised = $state(false);
+  let starterVisible = $state(!handoff);
+  let timelineExpanded = $state(false);
+  let workspaceSizes = $state<number[]>([]);
   let pickerOpen = $state(false);
   const preloadedSequences = new Map<string, SequenceData>(
     handoff ? [[handoff.sequence.id, handoff.sequence]] : []
@@ -113,6 +117,10 @@
   );
   const sharedSequence = $derived(
     resolvedSequences.get(sharedSequenceId) ?? null
+  );
+
+  const timelineDisclosure = $derived<TimelineDisclosure>(
+    starterVisible ? "hidden" : timelineExpanded ? "editor" : "dock"
   );
 
   const sequenceIds = $derived.by(() => {
@@ -325,16 +333,47 @@
 
   let exportOpen = $state(false);
 
-  const workspacePanels: PanelDefinition[] = [
-    { content: stagePanel, defaultSize: 2.6, minSize: 240, id: "stage" },
-    {
-      content: timelinePanel,
-      defaultSize: 1.55,
-      minSize: 170,
-      maxSize: 540,
-      id: "timeline",
-    },
-  ];
+  const workspacePanels = $derived.by<PanelDefinition[]>(() => {
+    const stage: PanelDefinition = {
+      content: stagePanel,
+      defaultSize: 2.8,
+      minSize: 240,
+      id: "stage",
+      resizable:
+        timelineDisclosure === "editor" && !compactTimelineWorkspace.current,
+    };
+    if (timelineDisclosure === "hidden") return [stage];
+
+    return [
+      stage,
+      {
+        content:
+          timelineDisclosure === "editor"
+            ? timelineEditorPanel
+            : timelineDockPanel,
+        defaultSize: 1.2,
+        minSize: 200,
+        maxSize: 360,
+        fixedSize:
+          timelineDisclosure === "dock"
+            ? "var(--stage-timeline-dock-size)"
+            : compactTimelineWorkspace.current
+              ? "var(--stage-timeline-sheet-size)"
+              : undefined,
+        id: "timeline",
+      },
+    ];
+  });
+
+  function openChoreography(openChart = false): void {
+    starterVisible = false;
+    timelineExpanded = true;
+    if (openChart) chartRaised = true;
+  }
+
+  function collapseChoreography(): void {
+    timelineExpanded = false;
+  }
 
   function chooseSequence(next: SequenceData): void {
     stageState.setSharedSequence(next);
@@ -502,7 +541,8 @@
       directorHref={FILM_DIRECTOR_ROUTE}
       onApply={applyStudioStarter}
       onChooseSequence={() => (pickerOpen = true)}
-      onOpenChart={() => (chartRaised = true)}
+      onOpenChoreography={() => openChoreography(true)}
+      onVisibilityChange={(visible) => (starterVisible = visible)}
     />
   {/if}
 {/snippet}
@@ -555,8 +595,12 @@
   </div>
 {/snippet}
 
-{#snippet timelinePanel()}
-  <StageTimeline {editMode} />
+{#snippet timelineDockPanel()}
+  <StageTimeline {editMode} mode="dock" onExpand={() => openChoreography()} />
+{/snippet}
+
+{#snippet timelineEditorPanel()}
+  <StageTimeline {editMode} mode="editor" onCollapse={collapseChoreography} />
 {/snippet}
 
 <div
@@ -571,14 +615,11 @@
     canUndo={stageState.canUndo}
     canRedo={stageState.canRedo}
   />
-  {#if compactPortrait.current}
-    <div class="compact-stage-layout">
-      <div class="compact-viewer">{@render stagePanel()}</div>
-      <div class="compact-timeline">{@render timelinePanel()}</div>
-    </div>
-  {:else}
-    <PanelGroup direction="vertical" panels={workspacePanels} />
-  {/if}
+  <PanelGroup
+    direction="vertical"
+    panels={workspacePanels}
+    bind:sizes={workspaceSizes}
+  />
 </div>
 
 <SequencePickerModal
@@ -600,6 +641,8 @@
 
 <style>
   .stage-module {
+    --stage-timeline-dock-size: 4.25rem;
+    --stage-timeline-sheet-size: min(66cqh, 26rem);
     display: flex;
     width: 100%;
     height: 100%;
@@ -607,26 +650,13 @@
     min-height: 0;
     overflow: hidden;
     background: var(--color-bg-primary, #080910);
+    container-type: size;
   }
 
-  .compact-stage-layout {
-    display: grid;
-    width: 100%;
-    height: 100%;
-    min-width: 0;
-    min-height: 0;
-    grid-template-rows: minmax(17rem, 54%) minmax(19rem, 1fr);
-    overflow: hidden;
-  }
-
-  .compact-viewer,
-  .compact-timeline {
-    position: relative;
-    display: flex;
-    min-width: 0;
-    min-height: 0;
-    flex-direction: column;
-    overflow: hidden;
+  @media (max-width: 35rem) {
+    .stage-module {
+      --stage-timeline-dock-size: 6.75rem;
+    }
   }
 
   .stage-canvas {

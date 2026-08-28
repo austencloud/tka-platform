@@ -14,7 +14,8 @@
     directorHref: string;
     onApply: (starter: StudioStarter) => void;
     onChooseSequence: () => void;
-    onOpenChart: () => void;
+    onOpenChoreography: () => void;
+    onVisibilityChange: (visible: boolean) => void;
   }
 
   let {
@@ -23,7 +24,8 @@
     directorHref,
     onApply,
     onChooseSequence,
-    onOpenChart,
+    onOpenChoreography,
+    onVisibilityChange,
   }: Props = $props();
 
   const STORAGE_KEY = "tka-stage-starter-dismissed";
@@ -65,6 +67,10 @@
     SceneEnvironmentId.EMBER
   );
   let prop = $state<StudioStarter["prop"]>(PropType.STAFF);
+
+  $effect(() => {
+    onVisibilityChange(!dismissed);
+  });
 
   function dismiss(): void {
     dismissed = true;
@@ -218,8 +224,8 @@
         type="button"
         onclick={() => {
           dismiss();
-          onOpenChart();
-        }}>Continue in drill chart</button
+          onOpenChoreography();
+        }}>Choreograph the performance</button
       >
       <button
         type="button"

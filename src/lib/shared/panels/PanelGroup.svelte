@@ -24,6 +24,14 @@
     minSize?: number;
     /** Maximum size in pixels (0 = no max) */
     maxSize?: number;
+    /**
+     * Hold this panel at a CSS length while keeping its normal flex size for
+     * later. A collapsed dock can therefore reopen at the exact size the user
+     * left its editor instead of resetting the workspace.
+     */
+    fixedSize?: string;
+    /** Whether the handle after this panel is available (default: true). */
+    resizable?: boolean;
     /** Panel ID for tracking */
     id?: string;
   }
@@ -183,7 +191,8 @@
 
   // Get flex style for a panel
   function getFlexStyle(index: number): string {
-    return `flex: ${sizes[index] ?? 1}`;
+    const fixedSize = panels[index]?.fixedSize;
+    return fixedSize ? `flex: 0 0 ${fixedSize}` : `flex: ${sizes[index] ?? 1}`;
   }
 </script>
 
@@ -208,7 +217,7 @@
     </div>
 
     <!-- Resize handle between panels -->
-    {#if !flattened && i < panels.length - 1}
+    {#if !flattened && i < panels.length - 1 && panel.resizable !== false}
       <ResizeHandle
         direction={direction === "horizontal" ? "horizontal" : "vertical"}
         size={gap}
