@@ -2,13 +2,15 @@
   Creates profile-specific Chrome desktop shortcuts without touching the
   currently focused window or restarting Explorer.
 
-  Windows groups taskbar windows by AppUserModelID. Chrome derives the ID for a
-  custom user-data directory from the sanitized user-data and profile folder
-  names, so the Agent DevTools shortcut must carry the same ID as its window.
+  Windows groups taskbar windows by AppUserModelID. Chrome derives each profile
+  ID from the sanitized user-data and profile folder names. The shortcut IDs
+  and icons must match the live Austen and Agent DevTools windows.
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
   [string]$DesktopPath = [Environment]::GetFolderPath('Desktop'),
+  [string]$AustenUserDataDir = "$env:LOCALAPPDATA\Google\Chrome\User Data",
+  [string]$AustenProfileDirectory = 'Default',
   [string]$AgentUserDataDir = "$env:USERPROFILE\.claude\chrome-profile",
   [string]$AgentProfileDirectory = 'Profile 1',
   [string]$ChromeBaseAppId = 'Chrome'
@@ -20,7 +22,7 @@ $sourceIcon = Join-Path $PSScriptRoot 'assets\agent-devtools-browser.ico'
 $installedIconDir = Join-Path $env:LOCALAPPDATA 'TKA\agent-browser'
 $installedIcon = Join-Path $installedIconDir 'agent-devtools-browser.ico'
 
-foreach ($requiredPath in @($chrome, $sourceIcon, $AgentUserDataDir)) {
+foreach ($requiredPath in @($chrome, $sourceIcon, $AustenUserDataDir, $AgentUserDataDir)) {
   if (-not (Test-Path -LiteralPath $requiredPath)) {
     throw "Required path not found: $requiredPath"
   }
@@ -162,6 +164,19 @@ function New-ChromeProfileShortcut {
   )
 }
 
+$austenUserDataDir = [IO.Path]::GetFullPath($AustenUserDataDir)
+$austenProfilePath = [IO.Path]::GetFullPath((Join-Path $austenUserDataDir $AustenProfileDirectory))
+if (-not $austenProfilePath.StartsWith($austenUserDataDir.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) {
+  throw "Austen profile escaped its user-data directory: $austenProfilePath"
+}
+if (-not (Test-Path -LiteralPath $austenProfilePath)) {
+  throw "Austen profile not found: $austenProfilePath"
+}
+$austenProfileIcon = Join-Path $austenProfilePath 'Google Profile.ico'
+if (-not (Test-Path -LiteralPath $austenProfileIcon)) {
+  throw "Austen profile icon not found: $austenProfileIcon"
+}
+
 $agentUserDataDir = [IO.Path]::GetFullPath($AgentUserDataDir)
 $agentProfilePath = [IO.Path]::GetFullPath((Join-Path $agentUserDataDir $AgentProfileDirectory))
 if (-not $agentProfilePath.StartsWith($agentUserDataDir.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) {
@@ -171,6 +186,8 @@ if (-not (Test-Path -LiteralPath $agentProfilePath)) {
   throw "Agent profile not found: $agentProfilePath"
 }
 
+$austenProfileId = Get-ChromeProfileId -UserDataDir $austenUserDataDir -ProfileDirectory $AustenProfileDirectory
+$austenAppUserModelId = "$ChromeBaseAppId.$austenProfileId"
 $agentProfileId = Get-ChromeProfileId -UserDataDir $agentUserDataDir -ProfileDirectory $AgentProfileDirectory
 $agentAppUserModelId = "$ChromeBaseAppId.$agentProfileId"
 $austenShortcut = Join-Path $DesktopPath 'Austen - Chrome.lnk'
@@ -182,12 +199,13 @@ if ($PSCmdlet.ShouldProcess($installedIcon, 'Install Agent DevTools taskbar icon
 }
 
 if ($PSCmdlet.ShouldProcess($austenShortcut, 'Create Austen Chrome profile shortcut')) {
+  $austenArguments = "--profile-directory=`"$AustenProfileDirectory`""
   New-ChromeProfileShortcut `
     -ShortcutPath $austenShortcut `
-    -Arguments '--profile-directory="Default"' `
-    -IconLocation $chrome `
-    -AppUserModelId $ChromeBaseAppId `
-    -Description 'Open Austen Chrome'
+    -Arguments $austenArguments `
+    -IconLocation $austenProfileIcon `
+    -AppUserModelId $austenAppUserModelId `
+    -Description 'Open Austen Chrome profile'
 }
 
 if ($PSCmdlet.ShouldProcess($agentShortcut, 'Create Agent DevTools Chrome profile shortcut')) {
@@ -202,7 +220,8 @@ if ($PSCmdlet.ShouldProcess($agentShortcut, 'Create Agent DevTools Chrome profil
 
 [pscustomobject]@{
   AustenShortcut = $austenShortcut
-  AustenAppUserModelId = $ChromeBaseAppId
+  AustenAppUserModelId = $austenAppUserModelId
+  AustenIcon = $austenProfileIcon
   AgentShortcut = $agentShortcut
   AgentAppUserModelId = $agentAppUserModelId
   AgentIcon = $installedIcon

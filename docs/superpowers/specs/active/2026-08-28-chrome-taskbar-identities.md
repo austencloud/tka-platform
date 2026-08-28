@@ -10,7 +10,8 @@ identities. The taskbar could show several indistinguishable Chrome entries.
 
 Keep Chrome Stable for both uses. Give the shared debugging browser a dedicated
 non-default Chrome shell profile named `Agent DevTools`, with a violet
-code-window icon, while Austen's shortcut keeps the normal Chrome identity.
+code-window fallback icon, while Austen's shortcut targets the real `Default`
+profile and its native profile image.
 Edge and a second Chrome release channel are not part of this design.
 
 The existing `scripts/launch-chrome-debug.ps1` remains the sole owner of agent
@@ -23,12 +24,15 @@ startup path.
 
 | Use | Chrome arguments | AppUserModelID | Icon |
 | --- | --- | --- | --- |
-| Austen | `--profile-directory="Default"` | `Chrome` | Chrome |
-| Agent DevTools | `--user-data-dir="%USERPROFILE%\.claude\chrome-profile" --profile-directory="Profile 1"` | `Chrome.chromeprofile.Profile1` | Violet code window |
+| Austen | `--profile-directory="Default"` | `Chrome.UserData.Default` | Native `Default\Google Profile.ico` |
+| Agent DevTools | `--user-data-dir="%USERPROFILE%\.claude\chrome-profile" --profile-directory="Profile 1"` | `Chrome.chromeprofile.Profile1` | Violet fallback; profile badge while running |
 
 Chromium derives the custom-profile portion of its Windows identity from the
 sanitized user-data and profile directory basenames. The shortcut must carry
 the same ID as the resulting browser window or Windows will split it again.
+Chrome's generic shortcut has AppUserModelID `Chrome`; its profile-picker window
+uses `Chrome.UserData.SystemProfile`. Neither matches Austen's live `Default`
+profile, so neither is a valid daily pin.
 
 ## Profile migration
 

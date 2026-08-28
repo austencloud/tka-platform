@@ -162,8 +162,10 @@ Austen's everyday Chrome. Do not override `-ProfileDirectory`.
 If the desktop shortcuts or taskbar identities need repair, run
 `pwsh -NoProfile -File launchers/install-chrome-profile-shortcuts.ps1`. It
 creates `Austen - Chrome` and `Agent DevTools - Chrome` desktop shortcuts with
-matching AppUserModelIDs and installs the violet agent icon. It does not restart
-Explorer or change taskbar pins.
+matching profile AppUserModelIDs. Austen's shortcut uses Chrome's native profile
+icon; the agent shortcut installs the violet fallback icon and uses its Chrome
+profile badge while running. The installer does not restart Explorer or change
+taskbar pins.
 
 Each agent opens a task-owned tab with `new_page(..., background: true)`, keeps
 the returned page ID, and supplies that `pageId` to every page-scoped tool. Do

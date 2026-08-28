@@ -80,13 +80,18 @@ pwsh -NoProfile -File launchers/install-chrome-profile-shortcuts.ps1
 
 The installer creates:
 
-- `Austen - Chrome`, which carries the normal Chrome AppUserModelID.
+- `Austen - Chrome`, which carries `Chrome.UserData.Default` and uses Austen's
+  native `Default\Google Profile.ico` profile image.
 - `Agent DevTools - Chrome`, which carries the agent profile AppUserModelID and
-  uses the violet code-window icon.
+  uses the violet code-window fallback icon. Chrome shows the Agent DevTools
+  profile badge while that window is running.
 
 It does not restart Explorer, focus Chrome, or change taskbar pins. Windows
 requires the user to unpin stale Chrome entries and pin these shortcuts once.
 Keep the desktop shortcuts after pinning so the repair source remains obvious.
+Do not pin Chrome from Start or from the profile-picker window: those use the
+generic `Chrome` and `Chrome.UserData.SystemProfile` identities, which create
+extra taskbar entries instead of opening Austen's `Default` profile group.
 
 ## Provisioning and audit
 
