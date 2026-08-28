@@ -323,3 +323,31 @@ sources, reorder it, reload it, and verify relationship lineage remains intact.
 
 Acceptance: finish, save, reopen, share, and view a tunnel at every required
 viewport with no obscured animation, lost recipe, stale card, or console error.
+
+#### Saved-tunnel access inside the creator
+
+- The Tunnel workspace header exposes **Your tunnels** without making Browse a
+  required detour. The control opens a focused responsive library surface;
+  Browse remains the management destination for rename, publication, connected
+  footage, and deletion.
+- This library reads the existing tunnel collection singleton. It does not own
+  another cache, query, migration, or saved-artifact shape.
+- Choosing a card replaces the complete editor document. It never inserts a
+  tunnel into one performer card or conflates artifact selection with the
+  sequence and Shape Matrix source pickers.
+- Browse and the in-tab library resolve a collection entry through the same
+  migration and truthful legacy-reconstruction function. Loading preserves the
+  saved artifact ID as the edit/save target and does not mint a revision.
+- A keyed editor session owns one artifact's composition, presentation stores,
+  draft, and save target. Switching artifacts remounts that session so effects,
+  props, playback, and identity cannot leak across tunnels.
+- A successful viewer save acknowledges the exact saved target, composition,
+  and presentation back to that session. This makes the first save the edit
+  target and advances the dirty baseline without matching by name or time.
+- Replacing a workspace with uncommitted content requires an explicit warning.
+  Empty or unchanged sessions open immediately; selecting the already-active
+  tunnel simply closes the library.
+- The compact library shows recent saved work, search, truthful authored and
+  rendered counts, current-editing state, and poster-refresh uncertainty. It
+  offers New tunnel and a button-styled Manage in Browse exit without embedding
+  the full collection management interface in Create.

@@ -409,6 +409,7 @@
               shareOnOpen={overlay.shareOnOpen}
               tunnelComposition={overlay.tunnelComposition}
               tunnelSaveTarget={overlay.tunnelSaveTarget}
+              onTunnelSaved={overlay.onTunnelSaved}
             />
           {/snippet}
         </SequenceViewerOrchestrator>
