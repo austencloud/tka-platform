@@ -94,7 +94,14 @@ pwsh -NoProfile -File scripts/launch-chrome-debug.ps1 -Url about:blank
 This is one shared process and window for every agent. Never launch Chrome
 directly. The launcher serializes simultaneous starts, reuses the active
 process, and lets Chrome restore the last manually chosen window size and
-position.
+position. Its Chrome shell profile is `Agent DevTools` (`Profile 1` inside the
+dedicated user-data directory), which gives it a separate Windows taskbar
+identity from Austen's Chrome. Do not override `-ProfileDirectory`.
+
+Repair the two desktop launch identities with
+`pwsh -NoProfile -File launchers/install-chrome-profile-shortcuts.ps1`. The
+installer creates `Austen - Chrome` and `Agent DevTools - Chrome` shortcuts and
+the violet agent icon without restarting Explorer or changing taskbar pins.
 
 Open a task-owned tab with `new_page(..., background: true)`, retain its returned
 page ID, and pass that `pageId` to every page-scoped tool. Do not depend on

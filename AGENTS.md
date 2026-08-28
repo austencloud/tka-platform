@@ -154,7 +154,16 @@ pwsh -NoProfile -File scripts/launch-chrome-debug.ps1 -Url about:blank
 This is one shared browser process and window for every agent. Never launch
 Chrome directly. The launcher serializes simultaneous calls, reuses the active
 process, and leaves window geometry alone so Chrome restores Austen's last
-manual size and position.
+manual size and position. Its Chrome shell profile is `Agent DevTools`
+(`Profile 1` inside the dedicated user-data directory). That non-default
+profile gives the agent browser a separate Windows taskbar identity from
+Austen's everyday Chrome. Do not override `-ProfileDirectory`.
+
+If the desktop shortcuts or taskbar identities need repair, run
+`pwsh -NoProfile -File launchers/install-chrome-profile-shortcuts.ps1`. It
+creates `Austen - Chrome` and `Agent DevTools - Chrome` desktop shortcuts with
+matching AppUserModelIDs and installs the violet agent icon. It does not restart
+Explorer or change taskbar pins.
 
 Each agent opens a task-owned tab with `new_page(..., background: true)`, keeps
 the returned page ID, and supplies that `pageId` to every page-scoped tool. Do
@@ -181,9 +190,10 @@ Read-only (`take_snapshot`, `take_screenshot`, `list_console_messages`) is fine 
 ### Shared Agent Application Identity
 
 When an approved browser task needs an ordinary TKA sign-in, Codex and Claude
-use the dedicated `Codex + Claude` profile. Do not use Austen's personal account
-or the Google reviewer account. The profile has normal user access only and
-must never receive admin, tester, premium, or reviewer privileges.
+use the dedicated `Codex + Claude` TKA application account inside the
+`Agent DevTools` Chrome shell profile. Do not use Austen's personal account or
+the Google reviewer account. The profile has normal user access only and must
+never receive admin, tester, premium, or reviewer privileges.
 
 Credentials stay outside the repository in a Windows user-scoped encrypted
 store. Use `scripts/agent-profile-credential.ps1` to copy one field at a time,
