@@ -4,10 +4,13 @@
   Load with query params and screenshot the 1280x480 canvas at the top-left
   of the page, then downscale to 640x240 webp:
 
-    /test/prop-3d-studio/capture?prop=triad&finish=fire&rz=0&zoom=1
+    /test/prop-3d-studio/capture?prop=fan&fanBuild=lotus&rz=-90&zoom=1.15
 
   - prop:   scene-3d PropType value (staff, triad, quiad, trigeng, ...)
   - finish: fire | day (props with finish variants)
+  - fanBuild: pictograph | fire | lotus | day
+  - fanFrameColor: black | white
+  - fanCover: bare | covered
   - rx/ry/rz: presentation rotation in degrees
   - zoom:   camera distance multiplier (default 1)
 
@@ -20,6 +23,9 @@
   import {
     PropType,
     propFinishState,
+    type FanBuild,
+    type FanCover,
+    type FanFrameColor,
     type PropFinish,
   } from "@austencloud/scene-3d";
   import CaptureScene from "./CaptureScene.svelte";
@@ -42,11 +48,37 @@
   });
 
   const zoom = $derived(Number(params.get("zoom") ?? 1) || 1);
+  const captureKey = $derived(
+    [
+      propType,
+      params.get("finish") ?? "",
+      params.get("fanBuild") ?? "",
+      params.get("fanFrameColor") ?? "",
+      params.get("fanCover") ?? "",
+    ].join(":")
+  );
 
   $effect(() => {
     const finish = params.get("finish");
     if (finish === "fire" || finish === "day") {
       propFinishState.set(finish satisfies PropFinish);
+    }
+    const fanBuild = params.get("fanBuild");
+    if (
+      fanBuild === "pictograph" ||
+      fanBuild === "fire" ||
+      fanBuild === "lotus" ||
+      fanBuild === "day"
+    ) {
+      propFinishState.setFanBuild(fanBuild satisfies FanBuild);
+    }
+    const fanFrameColor = params.get("fanFrameColor");
+    if (fanFrameColor === "black" || fanFrameColor === "white") {
+      propFinishState.setFanFrameColor(fanFrameColor satisfies FanFrameColor);
+    }
+    const fanCover = params.get("fanCover");
+    if (fanCover === "bare" || fanCover === "covered") {
+      propFinishState.setFanCover(fanCover satisfies FanCover);
     }
   });
 </script>
@@ -57,7 +89,7 @@
 </svelte:head>
 
 <div class="capture-stage">
-  {#key `${propType}:${params.get("finish") ?? ""}`}
+  {#key captureKey}
     <Canvas>
       <CaptureScene {propType} {rotationDeg} {zoom} />
     </Canvas>

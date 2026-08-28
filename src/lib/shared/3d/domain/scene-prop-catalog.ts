@@ -198,6 +198,7 @@ function fanImage(
 ): string {
   if (build === "pictograph") return previewImage("fan-pictograph-front.webp");
   if (build === "fire") return previewImage(`fan-fire-${cover}-complete.webp`);
+  if (build === "lotus") return previewImage("fan-lotus-bare-complete.webp");
   return previewImage(`fan-day-${frame}-${cover}-complete.webp`);
 }
 
@@ -212,6 +213,7 @@ export function fanBuildPreviewOptions(
       image: fanImage("pictograph", frame, cover),
     },
     { id: "fire", label: "Fire", image: fanImage("fire", frame, cover) },
+    { id: "lotus", label: "Lotus", image: fanImage("lotus", frame, cover) },
     { id: "day", label: "Day", image: fanImage("day", frame, cover) },
   ];
 }
@@ -226,7 +228,7 @@ export function fanFramePreviewOptions(
 }
 
 export function fanCoverPreviewOptions(
-  build: Exclude<FanBuild, "pictograph">,
+  build: Extract<FanBuild, "fire" | "day">,
   frame: FanFrameColor
 ): readonly PropBuildPreviewOption<FanCover>[] {
   return [

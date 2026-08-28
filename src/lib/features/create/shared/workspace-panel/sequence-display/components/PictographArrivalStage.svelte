@@ -48,6 +48,8 @@
     onMotionComplete = () => {},
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
+    blueColorOverride = undefined,
+    redColorOverride = undefined,
   }: {
     request: PictographStageRequest;
     sequence: SequenceData;
@@ -59,6 +61,8 @@
     onMotionComplete?: (requestId: number) => void;
     bluePropTypeOverride?: PropType;
     redPropTypeOverride?: PropType;
+    blueColorOverride?: string;
+    redColorOverride?: string;
   } = $props();
 
   const step = $derived(sequence.steps[request.stepIndex] ?? null);
@@ -466,6 +470,8 @@
           propRenderContext="editor"
           {bluePropTypeOverride}
           {redPropTypeOverride}
+          {blueColorOverride}
+          {redColorOverride}
           {motionStartData}
           {motionProgress}
           {arrowOpacity}

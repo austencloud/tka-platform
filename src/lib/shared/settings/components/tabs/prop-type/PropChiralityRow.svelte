@@ -20,9 +20,9 @@
   Exactly one of two states is always active per hand, so this routes to
   SegmentedControl per .claude/rules/chip-primitives.md. Each segment renders
   the selected prop's own art in its hand's colour — one upright, one mirrored
-  — through the primitive's existing optionContent slot. Colour plus the
-  control's aria-label carry which hand it is, so the words Blue and Red stay
-  off the face (chip-primitives.md, Blue / Red Prop Identity).
+  — through the primitive's existing optionContent slot. The hand cards keep
+  visible Blue/Red labels as well as their aria-labels because this choice is a
+  primary part of selecting a buugeng, not an expert-only adjustment.
 
   The two are named A and B, matching what pictograph-inspect already prints
   (sequence-actions/pictograph-inspect/formatters.ts). Neither handedness is
@@ -66,10 +66,17 @@
 </script>
 
 <div class="chirality-row">
-  <span class="chirality-label">Chirality</span>
+  <div class="chirality-heading">
+    <span class="chirality-label">Buugeng chirality</span>
+    <span class="chirality-hint">Choose A or B for each prop</span>
+  </div>
   <div class="chirality-controls">
     {#each hands as state (state.hand)}
       <div class="chirality-hand" class:red={state.hand === "red"}>
+        <span class="chirality-hand-label">
+          <span class="chirality-hand-dot" aria-hidden="true"></span>
+          {state.hand === "red" ? "Red prop" : "Blue prop"}
+        </span>
         <SegmentedControl
           {options}
           value={valueFor(state.flipped)}
@@ -96,18 +103,39 @@
 <style>
   .chirality-row {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+    align-items: stretch;
     gap: 12px;
-    padding: 10px;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    margin: 0 12px 12px;
+    padding: 12px;
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.14));
+    border-radius: 16px;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b6cff) 8%,
+      var(--theme-card-bg, rgba(0, 0, 0, 0.75))
+    );
+  }
+
+  .chirality-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
   }
 
   .chirality-label {
     font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    color: var(--theme-text-secondary, var(--theme-text));
+    font-weight: 700;
+    color: var(--theme-text);
     white-space: nowrap;
+  }
+
+  .chirality-hint {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.3;
+    text-align: right;
   }
 
   .chirality-controls {
@@ -116,7 +144,7 @@
     justify-content: center;
     /* Wide enough that two controls read as two groups. At 10px the four
        segments ran together as one A/B/A/B bar. */
-    gap: 20px;
+    gap: 12px;
     flex: 1;
     min-width: 0;
   }
@@ -132,11 +160,10 @@
     flex: 0 1 11rem;
     min-width: 0;
     max-width: 13rem;
-    padding: 4px;
+    padding: 8px;
     border-radius: 14px;
-    /* The wash and ring make the whole control unmistakably one hand's, which
-       is what lets the words Blue and Red stay off the face
-       (chip-primitives.md, Blue / Red Prop Identity). */
+    /* The wash and ring repeat the visible hand label in the control's chrome,
+       so the identity stays clear while attention moves between A and B. */
     background: color-mix(
       in srgb,
       var(--dm-motion-blue, #3d44b8) 12%,
@@ -156,6 +183,32 @@
       color-mix(in srgb, var(--dm-motion-red, #dc2626) 38%, transparent);
   }
 
+  .chirality-hand-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 20px;
+    color: var(--theme-text);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+  }
+
+  .chirality-hand-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--dm-motion-blue, #3d44b8);
+    box-shadow: 0 0 8px
+      color-mix(in srgb, var(--dm-motion-blue, #3d44b8) 70%, transparent);
+  }
+
+  .chirality-hand.red .chirality-hand-dot {
+    background: var(--dm-motion-red, #dc2626);
+    box-shadow: 0 0 8px
+      color-mix(in srgb, var(--dm-motion-red, #dc2626) 70%, transparent);
+  }
+
   .chirality-row :global(.segment-label) {
     display: flex;
     align-items: center;
@@ -164,8 +217,8 @@
   }
 
   .chirality-art {
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
     object-fit: contain;
     flex-shrink: 0;
   }
@@ -187,17 +240,16 @@
     filter: hue-rotate(125deg) saturate(1.2);
   }
 
-  /* Narrow hosts stack the pair one per line, so the word moves above them
-     instead of disappearing. Hiding it left two identical A/B pairs with
-     nothing on screen saying what they set. */
+  /* The summary becomes one readable block before either phrase is forced
+     below the 12px typography floor. */
   @container prop-grid (max-width: 340px) {
-    .chirality-row {
+    .chirality-heading {
       flex-direction: column;
-      align-items: stretch;
-      gap: 8px;
+      align-items: center;
+      gap: 2px;
     }
 
-    .chirality-label {
+    .chirality-hint {
       text-align: center;
     }
   }

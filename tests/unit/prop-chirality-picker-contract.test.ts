@@ -94,6 +94,14 @@ describe("buugeng chirality is owned by the prop picker", () => {
     const row = read(ROW_PATH);
     expect(row).toMatch(/\{#each hands as/);
     expect(row).toContain("onChange(state.hand,");
+    expect(row).toContain('state.hand === "red" ? "Red prop" : "Blue prop"');
+  });
+
+  it("keeps an auto-closing sheet open for the chirality choice", () => {
+    const sheet = read(SHEET_PATH);
+    expect(sheet).toContain("isBuugengFamilyProp");
+    expect(sheet).toContain("needsChiralityChoice");
+    expect(sheet).toContain("autoClose && !needsChiralityChoice");
   });
 
   it("no seam ever writes one hand's chirality onto the other", () => {
@@ -119,9 +127,12 @@ describe("buugeng chirality is owned by the prop picker", () => {
     expect(tab).not.toContain("redBuugengFlipped = blueBuugengFlipped");
   });
 
-  it.each(Object.entries(HOSTS))("%s passes a chirality seam", (_name, file) => {
-    expect(read(file)).toMatch(/chirality(=\{|Seam\(|\})|propChirality=\{/);
-  });
+  it.each(Object.entries(HOSTS))(
+    "%s passes a chirality seam",
+    (_name, file) => {
+      expect(read(file)).toMatch(/chirality(=\{|Seam\(|\})|propChirality=\{/);
+    }
+  );
 
   it.each(Object.entries(NON_HOSTS))(
     "%s does not expose chirality",

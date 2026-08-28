@@ -11,6 +11,7 @@
   import { onMount, onDestroy } from "svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
   import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import BentoPropGrid from "./BentoPropGrid.svelte";
@@ -81,7 +82,13 @@
     const hapticService = getHapticFeedback();
     hapticService?.trigger("selection");
     onSelect(propType);
-    if (autoClose) {
+    // Buugeng is not fully chosen until its per-hand A/B controls are visible.
+    // Keep the sheet open for that second decision; every other prop preserves
+    // the host's existing auto-close behavior.
+    const needsChiralityChoice = Boolean(
+      chirality && isBuugengFamilyProp(propType)
+    );
+    if (autoClose && !needsChiralityChoice) {
       isOpen = false;
     }
   }
@@ -126,14 +133,21 @@
     <!-- Header row: cat/dog toggle when enabled -->
     {#if showCatDogToggle}
       <div class="drawer-header-row">
-        <CatDogToggle catDogMode={catDogEnabled} onToggle={() => onCatDogToggle?.()} />
+        <CatDogToggle
+          catDogMode={catDogEnabled}
+          onToggle={() => onCatDogToggle?.()}
+        />
       </div>
     {/if}
 
     <!-- Blue/Red tabs for cat/dog mode -->
     {#if showTabs}
       <div class="segment-wrapper">
-        <div class="segment-control" role="tablist" aria-label="Prop hand selection">
+        <div
+          class="segment-control"
+          role="tablist"
+          aria-label="Prop hand selection"
+        >
           <button
             type="button"
             role="tab"
@@ -188,7 +202,8 @@
     /* left:0/right:0 match the Drawer bottom defaults — dropped. */
     margin-left: auto;
     margin-right: auto;
-    border-radius: var(--sheet-radius-large, 20px) var(--sheet-radius-large, 20px) 0 0;
+    border-radius: var(--sheet-radius-large, 20px)
+      var(--sheet-radius-large, 20px) 0 0;
   }
 
   /* Desktop side drawer: full-height right panel (matches the inbox/messages
@@ -295,12 +310,17 @@
     cursor: pointer;
     transition: all var(--duration-fast, 150ms) ease;
     min-height: 36px;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     -webkit-tap-highlight-color: transparent;
   }
 
   .segment-btn:hover {
-    background: color-mix(in srgb, var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08)) 50%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08)) 50%,
+      transparent
+    );
     color: var(--theme-text, white);
   }
 
