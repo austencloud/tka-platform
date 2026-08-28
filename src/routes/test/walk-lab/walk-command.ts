@@ -39,6 +39,16 @@ export interface WalkState {
   completedSteps?: number;
   /** Straight-line distance still owed to the requested mark, in metres. */
   endpointError?: number;
+  /** Declared-vs-observed musical footfall timing for an exact move. */
+  timing?: {
+    planId: string;
+    scoreTimeSeconds: number;
+    observedFootfalls: number;
+    nextPlantBeat: number | null;
+    latestErrorMilliseconds: number | null;
+    maxErrorMilliseconds: number;
+    settled: boolean;
+  };
   /** Turn clip request for a stationary authored pivot. */
   turnRequest?: TurnRequest | null;
 }

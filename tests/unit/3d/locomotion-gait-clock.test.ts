@@ -32,6 +32,7 @@ interface GaitClockHarness {
     remainingDistance: number;
     cadence: number;
     targetFacing: number;
+    timingPlanId?: string;
   } | null;
   terminalStatus: "armed" | "braking" | "landed" | "settled" | null;
   terminalMotions: {
@@ -192,5 +193,112 @@ describe("locomotion gait clock", () => {
       step: 12,
       terminal: { status: "settled", foot: "right", phase: 1 },
     });
+  });
+
+  it("samples a musical terminal window without re-integrating frame delta", () => {
+    const { animator, harness } = animatorWithOneSecondGait();
+    harness.terminalPlan = {
+      id: "arrival-score",
+      startAtGaitStep: 10,
+      landAtGaitStep: 12,
+      terminalFoot: "right",
+      stepDistances: [0.65, 0.45],
+      remainingDistance: 1.1,
+      cadence: 2,
+      targetFacing: 0,
+      timingPlanId: "score-1",
+    };
+    harness.terminalStatus = "braking";
+    harness.terminalMotions.stopRight = {
+      version: 1,
+      clipName: "stop-right",
+      terminalFoot: "right",
+      frameRate: 30,
+      frameCount: 5,
+      stepFrames: [2, 3],
+      stepPhases: [0.5, 0.75],
+      settlePhase: 1,
+      nativeTravelMeters: 1,
+      rootDistance: [0, 0.3, 0.6, 1, 1],
+      leftFoot: [1, 0, 1, 1, 1],
+      rightFoot: [1, 1, 0, 1, 1],
+    };
+    const stopAction = {
+      time: 0,
+      getClip: () => ({ duration: 1.2 }),
+    };
+    harness.stopActions.stopRight = stopAction;
+
+    animator.setGaitTimingSample({
+      planId: "score-1",
+      gaitStep: 11,
+      cadence: 1,
+      arrived: false,
+      settled: false,
+      settleProgress: 0,
+    });
+    harness.advanceTerminalStep(17);
+    expect(animator.getGaitClock()).toMatchObject({
+      step: 11,
+      distanceStep: 11,
+      cadence: 1,
+      terminal: { status: "braking", phase: 0.5 },
+    });
+
+    animator.setGaitTimingSample({
+      planId: "score-1",
+      gaitStep: 12,
+      cadence: 0,
+      arrived: true,
+      settled: false,
+      settleProgress: 0,
+    });
+    harness.advanceTerminalStep(17);
+    expect(stopAction.time).toBeCloseTo(0.9, 10);
+    expect(animator.getGaitClock()).toMatchObject({
+      step: 12,
+      distanceStep: 12,
+      terminal: { status: "landed", phase: 0.75 },
+    });
+
+    animator.setGaitTimingSample({
+      planId: "score-1",
+      gaitStep: 12,
+      cadence: 0,
+      arrived: true,
+      settled: true,
+      settleProgress: 1,
+    });
+    harness.advanceTerminalStep(17);
+    expect(animator.getGaitClock()).toMatchObject({
+      terminal: { status: "settled", phase: 1 },
+    });
+  });
+
+  it("ignores a timing sample from a different terminal plan", () => {
+    const { animator, harness } = animatorWithOneSecondGait();
+    harness.terminalPlan = {
+      id: "arrival-guard",
+      startAtGaitStep: 10,
+      landAtGaitStep: 12,
+      terminalFoot: "right",
+      stepDistances: [0.65, 0.45],
+      remainingDistance: 1.1,
+      cadence: 2,
+      targetFacing: 0,
+      timingPlanId: "score-current",
+    };
+    harness.terminalStatus = "armed";
+    animator.setGaitTimingSample({
+      planId: "score-stale",
+      gaitStep: 8,
+      cadence: 4,
+      arrived: false,
+      settled: false,
+      settleProgress: 0,
+    });
+
+    harness.advanceGaitPhase(0.25);
+    expect(animator.getGaitClock().step).toBeCloseTo(0.5, 10);
   });
 });

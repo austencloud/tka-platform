@@ -19,11 +19,7 @@ describe("destination walk plan", () => {
     expect(plan.stepLength).toBeCloseTo(1, 10);
     expect(plan.duration).toBeCloseTo(2.5, 10);
 
-    expect(plan.stepDistances.slice(0, 3)).toEqual([
-      3.5 / 3,
-      3.5 / 3,
-      3.5 / 3,
-    ]);
+    expect(plan.stepDistances.slice(0, 3)).toEqual([3.5 / 3, 3.5 / 3, 3.5 / 3]);
     expect(plan.stepDistances[3]).toBeCloseTo(0.95, 10);
     expect(plan.stepDistances[4]).toBeCloseTo(0.55, 10);
     expect(plan.terminalStartStep).toBe(3);
@@ -43,7 +39,7 @@ describe("destination walk plan", () => {
       to: { x: 0, z: 8 },
       steps: 12,
     });
-    const terminal = createTerminalStepPlan(plan, 4, "walk-17", 0);
+    const terminal = createTerminalStepPlan(plan, 4, "walk-17", 0, "phrase-17");
 
     expect(terminal).toMatchObject({
       id: "walk-17",
@@ -52,6 +48,7 @@ describe("destination walk plan", () => {
       terminalFoot: "left",
       cadence: plan.cadence,
       targetFacing: 0,
+      timingPlanId: "phrase-17",
     });
     expect(terminal.stepDistances).toEqual(plan.stepDistances.slice(-2));
     expect(terminal.remainingDistance).toBeCloseTo(plan.terminalDistance, 10);
@@ -108,6 +105,17 @@ describe("destination walk plan", () => {
     expect(sample.remainingSteps).toBe(4.5);
   });
 
+  it("uses the timing plan's local cadence for world speed", () => {
+    const plan = createDestinationWalkPlan({
+      from: { x: 0, z: 0 },
+      to: { x: 0, z: 6 },
+      steps: 6,
+    });
+
+    const sample = sampleDestinationWalkPlan(plan, 2.25, 2.25, 1);
+    expect(sample.speed).toBeCloseTo(plan.stepDistances[2]!, 10);
+  });
+
   it("clamps observations before departure without walking backwards", () => {
     const plan = createDestinationWalkPlan({
       from: { x: 4, z: 9 },
@@ -156,5 +164,8 @@ describe("destination walk plan", () => {
         Number.POSITIVE_INFINITY
       )
     ).toThrow("distanceStep must be finite");
+    expect(() =>
+      sampleDestinationWalkPlan(createDestinationWalkPlan(base), 1, 1, -1)
+    ).toThrow("cadence");
   });
 });

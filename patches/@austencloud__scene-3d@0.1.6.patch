@@ -11128,10 +11128,10 @@ diff --git a/dist/lib/state/user-proportions-state.svelte.d.ts.map b/dist/lib/st
 deleted file mode 100644
 index a8fd5a41c1434bf568841daf28c8443ba1515e65..0000000000000000000000000000000000000000
 diff --git a/src/lib/components/Avatar3D.svelte b/src/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eabb9f6e525 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..14cd26ea2e0e8f75f5786bfe2c294eb96c3a7ad0 100644
 --- a/src/lib/components/Avatar3D.svelte
 +++ b/src/lib/components/Avatar3D.svelte
-@@ -16,29 +16,41 @@
+@@ -16,29 +16,42 @@
     */
  
    import { onMount, onDestroy, untrack } from "svelte";
@@ -11176,12 +11176,13 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
 +  import type {
 +    ILocomotionAnimator,
 +    LocomotionGaitClock,
++    ScheduledGaitTimingSample,
 +    TerminalStepPlan,
 +  } from "../services/contracts/ILocomotionAnimator";
    import type { IAnimationStateMachine } from "../services/contracts/IAnimationStateMachine";
    import { LocomotionState } from "../services/contracts/IAnimationStateMachine";
    import type { IRootMotionExtractor } from "../services/contracts/IRootMotionExtractor";
-@@ -51,7 +63,11 @@
+@@ -51,7 +64,11 @@
    import { createAvatarServices } from "../services/implementations/AvatarServicesFactory";
    import { GripType } from "../domain/models/GripPose";
    import { CollisionDetector } from "../services/implementations/CollisionDetector";
@@ -11194,7 +11195,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
    import { tryGetViewer3DContext } from "../context/viewer-3d-context";
    import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
    import {
-@@ -74,6 +90,17 @@
+@@ -74,6 +91,17 @@
    const blueVisible = $derived(viewerVisibility?.blueMotion ?? true);
    const redVisible = $derived(viewerVisibility?.redMotion ?? true);
  
@@ -11212,7 +11213,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
    // Default Z position for avatars
    // Placing avatar at z=0 (same as grid plane) so hands are exactly at prop positions
    // The avatar's body is thin enough that it won't clip through the grid
-@@ -115,11 +142,46 @@
+@@ -115,11 +143,48 @@
      enableRootMotion?: boolean;
      /** Called each frame with the world-space XZ delta from root motion.
       *  The parent applies this to physics for collision-aware movement. */
@@ -11232,6 +11233,8 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
 +    onGaitClock?: (clock: LocomotionGaitClock) => void;
 +    /** Authored two-step braking transition for an exact destination. */
 +    terminalStepPlan?: TerminalStepPlan | null;
++    /** Score-authored sample that drives the animator's gait clock. */
++    gaitTimingSample?: ScheduledGaitTimingSample | null;
      /** PropAnchor group ref for blue hand IK target (from PerformerRig) */
      bluePropAnchorRef?: import("three").Group;
      /** PropAnchor group ref for red hand IK target (from PerformerRig) */
@@ -11260,7 +11263,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
      /** Disable spine twist (dual-wheel: wide lateral targets twist the torso/feet) */
      disableSpineTwist?: boolean;
      /** Current beat index for collision detection logging */
-@@ -173,8 +235,17 @@
+@@ -173,8 +238,18 @@
      isJumpRequested = false,
      enableRootMotion = false,
      onRootMotion,
@@ -11268,6 +11271,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
 +    onTurnRootSample,
 +    onGaitClock,
 +    terminalStepPlan = null,
++    gaitTimingSample = null,
      bluePropAnchorRef,
      redPropAnchorRef,
 +    bluePropCorrectionRef,
@@ -11278,7 +11282,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
      disableSpineTwist = false,
      stepNumber = 0,
      beatProgress = 0,
-@@ -195,8 +266,17 @@
+@@ -195,8 +270,17 @@
    // Services (manually instantiated to ensure shared skeleton instance)
    let skeletonService: IAvatarSkeletonBuilder | null = $state(null);
    let ikSolver: IIKSolver | null = $state(null);
@@ -11297,7 +11301,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
    let stateMachine: IAnimationStateMachine | null = null;
    let rootMotionExtractor: IRootMotionExtractor | null = null;
    let footPlanter: IFootPlanter | null = null;
-@@ -210,11 +290,18 @@
+@@ -210,11 +294,18 @@
    // Collision detection - logs when props/arms clip through the avatar body
    const collisionDetector = new CollisionDetector();
    const _boneVecs = {
@@ -11321,7 +11325,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
    };
    // Scratch vectors for deriving the face center from the shoulder line.
    // The Mixamo Head bone is at the base of the skull, so we push the face
-@@ -224,7 +311,7 @@
+@@ -224,7 +315,7 @@
    const _faceRight = new Vector3();
    const _faceForward = new Vector3();
    const FACE_FORWARD_OFFSET = 0.08; // 8 cm forward from head bone
@@ -11330,7 +11334,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
  
    /**
     * Base rotation from the staff's local-Y axis to the "horizontal" axis
-@@ -277,10 +364,185 @@
+@@ -277,10 +368,185 @@
    }
  
    const _unitY = new Vector3(0, 1, 0);
@@ -11517,7 +11521,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
    let currentLoadedAvatarId = $state<string | null>(null);
    let isLoading = $state(false);
    let hasShownFallbackToast = $state(false);
-@@ -302,14 +564,46 @@
+@@ -302,14 +568,46 @@
    // feetOffset adjusts so feet touch the ground (it's negative)
    const baseGroupY = $derived(
      position.y !== undefined && position.y !== 0
@@ -11566,7 +11570,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
    // Load a GLTF model for a specific avatar
    // Uses hot-swap pattern: keeps old avatar visible until new one is ready
    async function loadAvatar(targetAvatarId: string) {
-@@ -319,12 +613,22 @@
+@@ -319,12 +617,22 @@
      if (currentLoadedAvatarId === targetAvatarId) return;
  
      const url = getAvatarModelPath(targetAvatarId);
@@ -11590,7 +11594,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
  
        // Scale model to match user's height
        // setHeight() calculates proper scale and stores feet offset
-@@ -333,19 +637,43 @@
+@@ -333,19 +641,43 @@
        // Get the feet offset for positioning (negative value)
        feetOffset = skeletonService.getFeetOffset();
  
@@ -11643,7 +11647,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
        currentLoadedAvatarId = targetAvatarId;
        modelLoaded = true;
        useProceduralFallback = false;
-@@ -363,8 +691,14 @@
+@@ -363,8 +695,14 @@
        const rightUpLeg = skState.bones.get("RightUpLeg");
        if (leftUpLeg && rightUpLeg) {
          const stanceAngle = (8 * Math.PI) / 180; // 8° outward each side
@@ -11660,7 +11664,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
          leftUpLeg.quaternion.multiply(leftTilt);
          rightUpLeg.quaternion.multiply(rightTilt);
          leftUpLeg.updateMatrixWorld(true);
-@@ -388,17 +722,21 @@
+@@ -388,17 +726,21 @@
        // use IK only and don't need idle/walk animations.
        if (enableLocomotion && locomotionAnimator && cachedRoot) {
          // Configure before initialize so clips are prepared correctly
@@ -11687,7 +11691,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
            const hipsBone = locomotionAnimator.getHipsBone();
            if (hipsBone) {
              rootMotionExtractor.initialize(hipsBone);
-@@ -416,12 +754,34 @@
+@@ -416,12 +758,34 @@
              idle: `${animBase}idle${rmSuffix}.glb`,
              forward: `${animBase}walk-forward${rmSuffix}.glb`,
              backward: `${animBase}walk-backward${rmSuffix}.glb`,
@@ -11725,7 +11729,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
            })
            .catch((err) => {
              console.warn(
-@@ -444,18 +804,23 @@
+@@ -444,18 +808,23 @@
          const turnsBase = "/animations/turns/";
          const probeUrl = `${turnsBase}turn-left-90.glb`;
          const rootForTurns = cachedRoot;
@@ -11758,7 +11762,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
                ])
                .then(() => {
                  // Register turn clip contact curves so FootPlanter can query them
-@@ -476,7 +841,13 @@
+@@ -476,7 +845,13 @@
        // ikSolver, which is still used by arm IK elsewhere in this file).
        // Gated on enableFootPlanting - off by default so the museum FPS player
        // (which wants responsive code-driven movement) isn't affected.
@@ -11773,7 +11777,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
          footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
        }
  
-@@ -502,6 +873,16 @@
+@@ -502,6 +877,16 @@
        }
      } finally {
        isLoading = false;
@@ -11790,7 +11794,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
      }
    }
  
-@@ -587,25 +968,29 @@
+@@ -587,25 +972,30 @@
  
      // Disable spine twist in dual-wheel mode - wide lateral IK targets
      // twist the torso and shift the feet on the ground.
@@ -11802,6 +11806,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
      // 1. Full-body animation (idle/walk/jump/fall/land with arm swing, hip sway)
      // Only runs for locomotion-enabled avatars (player), not exhibit performers
      if (enableLocomotion && locomotionAnimator) {
++      locomotionAnimator.setGaitTimingSample?.(gaitTimingSample);
 +      locomotionAnimator.setTerminalStepPlan?.(terminalStepPlan);
        if (stateMachine) {
          // State machine decides what state we're in based on physics signals
@@ -11831,7 +11836,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
  
          // Feed state to LocomotionAnimator for clip selection
          locomotionAnimator.setActiveState?.(stateOutput.state);
-@@ -627,6 +1012,15 @@
+@@ -627,6 +1017,15 @@
          });
        }
        locomotionAnimator.update(delta);
@@ -11847,7 +11852,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
  
        // Turn clip overlay - when a turn is active, overwrite lower-body
        // and spine bones with the turn clip's authored pose at the current
-@@ -639,20 +1033,50 @@
+@@ -639,20 +1038,50 @@
        if (turnRequestProp && turnAnimator?.isReady() && skeletonService) {
          const sample = turnAnimator.sample(turnRequestProp);
          const bones = skeletonService.getState().bones;
@@ -11909,7 +11914,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
            }
          }
  
-@@ -681,7 +1105,11 @@
+@@ -681,7 +1110,11 @@
        // displacement needs the same conversion.
        if (rootMotionExtractor?.isReady() && onRootMotion) {
          const localDelta = rootMotionExtractor.extract();
@@ -11922,7 +11927,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
            // Convert Mixamo centimeters to scene units.
            // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
            // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
-@@ -708,28 +1136,90 @@
+@@ -708,28 +1141,90 @@
        // clips without authored curves. Gated on enableFootPlanting so the
        // museum FPS player stays fully code-driven.
        if (enableFootPlanting && footPlanter?.isReady()) {
@@ -12018,7 +12023,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
      }
  
      if (redPropAnchorRef && redPropState) {
-@@ -737,6 +1227,10 @@
+@@ -737,6 +1232,10 @@
        redPropAnchorRef.getWorldPosition(redIKTarget);
      } else if (redPropState) {
        redIKTarget.copy(redPropState.worldPosition);
@@ -12029,7 +12034,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
      }
  
      const blueWorldProp = bluePropState
-@@ -746,15 +1240,74 @@
+@@ -746,15 +1245,74 @@
        ? { ...redPropState, worldPosition: redIKTarget }
        : null;
  
@@ -12104,7 +12109,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
      // 2b. Collision detection - run after IK so bones are at final positions
      if (collisionDetector.enabled && skeletonService) {
        const state = skeletonService.getState();
-@@ -867,20 +1420,15 @@
+@@ -867,20 +1425,15 @@
    // transparent with depth-write off so the fade blends correctly.
    $effect(() => {
      if (!cachedRoot) return;
@@ -12131,7 +12136,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
      // Dispose locomotion animator, state machine, and foot planter
      if (locomotionAnimator) {
        locomotionAnimator.dispose();
-@@ -913,13 +1461,19 @@
+@@ -913,13 +1466,19 @@
  </script>
  
  {#if visible}
@@ -12158,7 +12163,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
      <T.Group
        name={`PERFORMER_${id}`}
        position={[position.x, position.y ?? 0, position.z]}
-@@ -950,6 +1504,7 @@
+@@ -950,6 +1509,7 @@
        preventing visual glitches during avatar swap.
      -->
      <T.Group
@@ -12167,7 +12172,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0d03c54eab839aeb41227558a9909eab
        position={[position.x, groupY, position.z]}
        rotation.y={facingAngle}
 diff --git a/src/lib/components/PerformerRig.svelte b/src/lib/components/PerformerRig.svelte
-index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b60266e4fbc4217e433da1f7374d650cd04b339f 100644
+index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8cc21568fe65050cc9154e640f8726b7595a231b 100644
 --- a/src/lib/components/PerformerRig.svelte
 +++ b/src/lib/components/PerformerRig.svelte
 @@ -16,11 +16,12 @@
@@ -12184,12 +12189,13 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b60266e4fbc4217e433da1f7374d650c
    import { Plane } from "../domain/enums/Plane";
    import { PlaneMode } from "../domain/enums/PlaneMode";
    import {
-@@ -34,8 +35,14 @@
+@@ -34,8 +35,15 @@
    import type { GridMode } from "../domain/constants/grid-layout";
    import type { TipEffectMap } from "../domain/types/TipEffectTypes";
    import type { TurnRequest } from "../services/contracts/ITurnAnimator";
 +  import type {
 +    LocomotionGaitClock,
++    ScheduledGaitTimingSample,
 +    TerminalStepPlan,
 +  } from "../services/contracts/ILocomotionAnimator";
    import { derivePlaneModeFromHands } from "../domain/utils/plane-mode-utils";
@@ -12199,7 +12205,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b60266e4fbc4217e433da1f7374d650c
  
    // Constant sets to avoid allocating new Set objects on every reactive update.
    const WHEEL_ONLY = new Set([Plane.WHEEL]);
-@@ -79,6 +86,7 @@
+@@ -79,6 +87,7 @@
      isPlaying?: boolean;
      staffHalfLength?: number;
      propLength?: number;
@@ -12207,7 +12213,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b60266e4fbc4217e433da1f7374d650c
  
      // Vertical offset (museum platforms, stages)
      groundOffset?: number;
-@@ -90,6 +98,11 @@
+@@ -90,6 +99,11 @@
      enableLocomotion?: boolean;
      isMoving?: boolean;
      moveSpeed?: number;
@@ -12219,7 +12225,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b60266e4fbc4217e433da1f7374d650c
  
      /** When true, facingAngle is driven by root motion yawDelta from
       *  the animation clip (accumulated each frame). When false (default),
-@@ -100,6 +113,10 @@
+@@ -100,6 +114,12 @@
       *  is true. The consumer receives the new accumulated angle so it can
       *  sync its own sequence/state representation if needed. */
      onYawIntegrated?: (newAngle: number) => void;
@@ -12227,10 +12233,12 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b60266e4fbc4217e433da1f7374d650c
 +    onGaitClock?: (clock: LocomotionGaitClock) => void;
 +    /** Exact-arrival braking transition owned by the locomotion animator. */
 +    terminalStepPlan?: TerminalStepPlan | null;
++    /** Score-authored sample that drives the animator's gait clock. */
++    gaitTimingSample?: ScheduledGaitTimingSample | null;
      /** Enable idle/walk locomotion animation on the avatar.
       *  When true, the avatar breathes/sways while standing. */
      enableRootMotion?: boolean;
-@@ -119,17 +136,33 @@
+@@ -119,17 +139,33 @@
       * effect orchestrator can place tip-tracking effects (trails, LED, etc.)
       * in the correct rig-root-local frame without duplicating rig internals.
       */
@@ -12275,7 +12283,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b60266e4fbc4217e433da1f7374d650c
      /** Avatar mesh opacity 0-1, forwarded to Avatar3D for swap cross-fades.
       *  1 = fully opaque (default). */
      avatarOpacity?: number;
-@@ -157,16 +190,23 @@
+@@ -157,16 +193,24 @@
      isPlaying = false,
      staffHalfLength: staffHalfLengthProp,
      propLength,
@@ -12290,6 +12298,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b60266e4fbc4217e433da1f7374d650c
      onYawIntegrated,
 +    onGaitClock,
 +    terminalStepPlan = null,
++    gaitTimingSample = null,
      enableRootMotion = false,
      enableFootPlanting = false,
      turnRequestOverride,
@@ -12299,7 +12308,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b60266e4fbc4217e433da1f7374d650c
      avatarOpacity = 1,
      onAvatarSwapped,
      gridSlot,
-@@ -174,19 +214,24 @@
+@@ -174,19 +218,24 @@
    }: Props = $props();
  
    const staffHalfLength = $derived(
@@ -12332,7 +12341,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b60266e4fbc4217e433da1f7374d650c
  
    // Derive mode config and grid offset from the current plane mode
    const modeConfig = $derived(PLANE_MODE_CONFIGS[planeMode]);
-@@ -247,7 +292,23 @@
+@@ -247,7 +296,23 @@
  
    // When a turn is active, enable animation-driven yaw so the rig
    // rotates from the turn clip's root motion rather than snapping.
@@ -12357,7 +12366,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b60266e4fbc4217e433da1f7374d650c
  
    // Turn completion snap: when turnRequest goes null after being active,
    // snap avatarState to the post-turn heading so the sync effect below
-@@ -259,6 +320,8 @@
+@@ -259,6 +324,8 @@
        // Turn just completed - snap avatarState to post-turn heading
        avatarState.snapFacingAngle(turnTargetHeading);
        turnTargetHeading = null;
@@ -12366,7 +12375,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b60266e4fbc4217e433da1f7374d650c
      }
    });
  
-@@ -291,45 +354,103 @@
+@@ -291,45 +358,104 @@
    let bluePropAnchorRef = $state<Group | undefined>(undefined);
    let redPropAnchorRef = $state<Group | undefined>(undefined);
  
@@ -12457,6 +12466,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b60266e4fbc4217e433da1f7374d650c
 -      redPropAnchorRef={redPropAnchorRef}
 +      {onGaitClock}
 +      {terminalStepPlan}
++      {gaitTimingSample}
 +      {turnRequest}
 +      onTurnYawSample={applyTurnYawSample}
 +      onTurnRootSample={applyTurnRootSample}
@@ -12479,7 +12489,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b60266e4fbc4217e433da1f7374d650c
                accumulatedYaw += delta.yawDelta;
                onYawIntegrated?.(accumulatedYaw);
              }
-@@ -339,15 +460,12 @@
+@@ -339,15 +465,12 @@
    {/if}
  
    <!-- Grid (consumer-provided via gridSlot) -->
@@ -12497,7 +12507,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b60266e4fbc4217e433da1f7374d650c
      {#if bluePropState && blueVisible}
        <T.Group
          bind:ref={bluePropAnchorRef}
-@@ -355,23 +473,23 @@
+@@ -355,23 +478,23 @@
          position.y={bluePropState.worldPosition.y}
          position.z={bluePropState.worldPosition.z}
        >
@@ -12533,7 +12543,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..b60266e4fbc4217e433da1f7374d650c
      {#if redPropState && redVisible}
        <T.Group
          bind:ref={redPropAnchorRef}
-@@ -379,20 +497,23 @@
+@@ -379,20 +502,23 @@
          position.y={redPropState.worldPosition.y}
          position.z={redPropState.worldPosition.z}
        >
@@ -17488,7 +17498,7 @@ index a6a29aa9b928eb98fc102f572da1ed2035c658ba..08994c5b2a1f5816db497d58a030af04
  	BIGTORCH = "bigtorch",
  	POI = "poi",
 diff --git a/src/lib/index.ts b/src/lib/index.ts
-index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..ed11b7d1190a942a4c0fe37284c6c64c091550ce 100644
+index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..28054e745a187b14a6f83acaf4eb26ed5a7e7ff3 100644
 --- a/src/lib/index.ts
 +++ b/src/lib/index.ts
 @@ -71,6 +71,16 @@ export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shoul
@@ -17508,7 +17518,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..ed11b7d1190a942a4c0fe37284c6c64c
  
  // Context
  export { setViewer3DContext, getViewer3DContext, tryGetViewer3DContext } from "./context/viewer-3d-context";
-@@ -81,7 +91,12 @@ export type { ViewerVisibilityState } from "./context/viewer-visibility-context"
+@@ -81,7 +91,13 @@ export type { ViewerVisibilityState } from "./context/viewer-visibility-context"
  export type { IAvatarAnimator } from "./services/contracts/IAvatarAnimator";
  export type { IAvatarSkeletonBuilder, BoneName } from "./services/contracts/IAvatarSkeletonBuilder";
  export type { IIKSolver } from "./services/contracts/IIKSolver";
@@ -17516,13 +17526,14 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..ed11b7d1190a942a4c0fe37284c6c64c
 +export type {
 +  ILocomotionAnimator,
 +  LocomotionGaitClock,
++  ScheduledGaitTimingSample,
 +  TerminalFoot,
 +  TerminalStepPlan,
 +} from "./services/contracts/ILocomotionAnimator";
  export type { IAnimationStateMachine } from "./services/contracts/IAnimationStateMachine";
  export { LocomotionState } from "./services/contracts/IAnimationStateMachine";
  export type { IFootPlanter } from "./services/contracts/IFootPlanter";
-@@ -113,6 +128,10 @@ export { IKSolver } from "./services/implementations/IKSolver";
+@@ -113,6 +129,10 @@ export { IKSolver } from "./services/implementations/IKSolver";
  export { LocomotionAnimator } from "./services/implementations/LocomotionAnimator";
  export { AnimationStateMachine } from "./services/implementations/AnimationStateMachine";
  export { FootPlanter } from "./services/implementations/FootPlanter";
@@ -17533,7 +17544,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..ed11b7d1190a942a4c0fe37284c6c64c
  export { RootMotionExtractor } from "./services/implementations/RootMotionExtractor";
  export { FingerAnimator } from "./services/implementations/FingerAnimator";
  export { ClavicleRaiser } from "./services/implementations/ClavicleRaiser";
-@@ -151,3 +170,7 @@ export { PROP_COLORS, METAL_COLORS } from "./components/props/Prop3DProps";
+@@ -151,3 +171,7 @@ export { PROP_COLORS, METAL_COLORS } from "./components/props/Prop3DProps";
  
  // Data
  export { STAFF_GRIP_POSES } from "./data/grip-poses/staff-grip-poses";
@@ -18169,10 +18180,10 @@ index df13878005926639ee48b400e7eb19647b92b020..d68905bd3ebda71325e9a332f633a38c
 +  solve(input: LegIKInput): LegIKResult;
  }
 diff --git a/src/lib/services/contracts/ILocomotionAnimator.ts b/src/lib/services/contracts/ILocomotionAnimator.ts
-index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..f236aac8bd942f9b56715bc1ce53e0ffe46e13cf 100644
+index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..0054e3ff79ce1d7ee28a7064c22766f04bfc1c45 100644
 --- a/src/lib/services/contracts/ILocomotionAnimator.ts
 +++ b/src/lib/services/contracts/ILocomotionAnimator.ts
-@@ -25,6 +25,75 @@ export interface LocomotionInput {
+@@ -25,6 +25,90 @@ export interface LocomotionInput {
    moveDirection?: { x: number; z: number };
  }
  
@@ -18215,6 +18226,19 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..f236aac8bd942f9b56715bc1ce53e0ff
 +
 +export type TerminalFoot = "left" | "right";
 +
++/** One score-authored sample of the monotonic gait clock. */
++export interface ScheduledGaitTimingSample {
++  planId: string;
++  /** Absolute monotonic authored-step coordinate. */
++  gaitStep: number;
++  /** Local authored steps per second until the next declared footfall. */
++  cadence: number;
++  arrived: boolean;
++  settled: boolean;
++  /** Progress from the final plant to the stable terminal pose. */
++  settleProgress: number;
++}
++
 +/** URLs for one authored two-step braking transition and its motion labels. */
 +export interface TerminalStopAssetUrls {
 +  animation: string;
@@ -18243,12 +18267,14 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..f236aac8bd942f9b56715bc1ce53e0ff
 +  cadence: number;
 +  /** Requested world-space facing at rest. */
 +  targetFacing: number;
++  /** Timing plan allowed to drive this terminal transition, when scheduled. */
++  timingPlanId?: string;
 +}
 +
  /**
   * URLs for all locomotion animation clips
   */
-@@ -42,6 +111,8 @@ export interface AnimationUrls {
+@@ -42,6 +126,8 @@ export interface AnimationUrls {
    land?: string;
    /** Crouch idle loop (optional) */
    crouch?: string;
@@ -18257,7 +18283,7 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..f236aac8bd942f9b56715bc1ce53e0ff
  }
  
  /**
-@@ -53,10 +124,11 @@ export interface LocomotionConfig {
+@@ -53,10 +139,11 @@ export interface LocomotionConfig {
    /** Blend time when transitioning between states (seconds, default: 0.3) */
    blendTime?: number;
    /**
@@ -18273,7 +18299,7 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..f236aac8bd942f9b56715bc1ce53e0ff
     */
    animationWalkSpeed?: number;
    /**
-@@ -124,6 +196,53 @@ export interface ILocomotionAnimator {
+@@ -124,6 +211,56 @@ export interface ILocomotionAnimator {
     */
    getHipsBone?(): Bone | null;
  
@@ -18323,6 +18349,9 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..f236aac8bd942f9b56715bc1ce53e0ff
 +
 +  /** Arm, replace, or clear an exact terminal-step transition. */
 +  setTerminalStepPlan?(plan: TerminalStepPlan | null): void;
++
++  /** Apply a score-time sample, or null to resume native delta integration. */
++  setGaitTimingSample?(sample: ScheduledGaitTimingSample | null): void;
 +
    /**
     * Clean up all resources (mixer, actions, clips)
@@ -22491,10 +22520,10 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..605270cc1d1b04401b253e61778aaa16
    }
  }
 diff --git a/src/lib/services/implementations/LocomotionAnimator.ts b/src/lib/services/implementations/LocomotionAnimator.ts
-index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d24c2b92a 100644
+index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff92709219560264 100644
 --- a/src/lib/services/implementations/LocomotionAnimator.ts
 +++ b/src/lib/services/implementations/LocomotionAnimator.ts
-@@ -13,17 +13,125 @@
+@@ -13,17 +13,126 @@
   */
  
  import type { AnimationAction, Object3D, Bone } from "three";
@@ -22514,6 +22543,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
    AnimationUrls,
    LocomotionConfig,
 +  LocomotionGaitClock,
++  ScheduledGaitTimingSample,
 +  TerminalFoot,
 +  TerminalStepPlan,
  } from "../contracts/ILocomotionAnimator";
@@ -22622,7 +22652,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
  
  /**
   * Known Mixamo bone prefixes. Animation files may use a different
-@@ -70,20 +178,27 @@ function detectClipPrefix(clip: AnimationClip): string {
+@@ -70,20 +179,27 @@ function detectClipPrefix(clip: AnimationClip): string {
   *   "strip"    - Remove Hips position entirely (default for idle/jump/fall/land)
   *   "rootMotion" - Keep and make Z relative to first frame (for walk/run root motion)
   *   "pose"     - Keep as-is, no baseline subtraction (for crouch - absolute Y is the pose)
@@ -22653,7 +22683,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
    stripLegBones = false
  ): AnimationClip {
    const clipPrefix = detectClipPrefix(clip);
-@@ -95,7 +210,9 @@ function remapClipToSkeleton(
+@@ -95,7 +211,9 @@ function remapClipToSkeleton(
  
        const boneName = track.name.slice(0, dotIdx);
        const property = track.name.slice(dotIdx + 1);
@@ -22664,7 +22694,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
  
        // Skip bones that don't exist on our models
        if (coreName.endsWith("_End")) return false;
-@@ -110,7 +227,13 @@ function remapClipToSkeleton(
+@@ -110,7 +228,13 @@ function remapClipToSkeleton(
        if (coreName === "Hips" && property === "quaternion") return false;
  
        // Keep Hips position track when needed for root motion or crouch pose.
@@ -22679,7 +22709,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
  
        // Keep all other quaternion tracks - bone rotations are the animation.
        // Filter out position/scale tracks (position teleports, scale vanishes).
-@@ -122,7 +245,9 @@ function remapClipToSkeleton(
+@@ -122,7 +246,9 @@ function remapClipToSkeleton(
        const dotIdx = track.name.indexOf(".");
        const boneName = track.name.slice(0, dotIdx);
        const property = track.name.slice(dotIdx);
@@ -22690,7 +22720,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
  
        const cloned = track.clone();
  
-@@ -136,7 +261,11 @@ function remapClipToSkeleton(
+@@ -136,7 +262,11 @@ function remapClipToSkeleton(
        // first keyframe's Z preserves the natural vertical bob (hips go up
        // and down ~2-3cm per step) while removing the absolute offset that
        // would slam the avatar underground.
@@ -22703,7 +22733,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
          const values = cloned.values as Float32Array;
          const baseZ = values[2] ?? 0; // First keyframe's Z = rest height
          for (let i = 2; i < values.length; i += 3) {
-@@ -144,13 +273,60 @@ function remapClipToSkeleton(
+@@ -144,13 +274,60 @@ function remapClipToSkeleton(
          }
        }
  
@@ -22765,7 +22795,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
          const values = cloned.values as Float32Array;
          for (let i = 0; i < values.length; i++) {
            values[i]! *= 0.01;
-@@ -167,10 +343,345 @@ function remapClipToSkeleton(
+@@ -167,10 +344,345 @@ function remapClipToSkeleton(
    return new AnimationClip(clip.name, clip.duration, tracks);
  }
  
@@ -23112,7 +23142,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
    private modelPrefix = "mixamorig";
  
    // Actions - created from raw clips, no processing
-@@ -185,19 +696,45 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -185,19 +697,47 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    private fallAction: AnimationAction | null = null;
    private landAction: AnimationAction | null = null;
    private crouchAction: AnimationAction | null = null;
@@ -23137,6 +23167,8 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
 +    null;
 +  private terminalPhase = 0;
 +  private terminalElapsed = 0;
++  private terminalDistanceStep = 0;
++  private gaitTimingSample: ScheduledGaitTimingSample | null = null;
 +  private currentTerminalWeight = 0;
 +  private terminalEntryStrideScale = 1;
 +  private terminalEntryDirWeights: Record<DirectionKey, number> = {
@@ -23159,7 +23191,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
      animationWalkSpeed: 1.57,
      enableRootMotion: false,
      stripLegBones: false,
-@@ -205,6 +742,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -205,6 +745,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
  
    // Blend weights (smoothed each frame)
    private currentIdleWeight = 1;
@@ -23167,7 +23199,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
    private targetIdleWeight = 1;
    private currentDirWeights: Record<DirectionKey, number> = {
      forward: 0,
-@@ -212,6 +750,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -212,6 +753,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      strafeLeft: 0,
      strafeRight: 0,
    };
@@ -23180,7 +23212,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
    private targetDirWeights: Record<DirectionKey, number> = {
      forward: 0,
      backward: 0,
-@@ -219,32 +763,174 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -219,32 +766,176 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      strafeRight: 0,
    };
  
@@ -23343,6 +23375,8 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
 +    this.terminalStatus = null;
 +    this.terminalPhase = 0;
 +    this.terminalElapsed = 0;
++    this.terminalDistanceStep = 0;
++    this.gaitTimingSample = null;
 +    this.currentTerminalWeight = 0;
 +    this.terminalEntryStrideScale = 1;
 +    for (const key of Object.keys(
@@ -23362,7 +23396,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
    }
  
    async loadAnimations(urls: AnimationUrls): Promise<void> {
-@@ -260,16 +946,21 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -260,16 +951,21 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      if (urls.land) entries.push({ key: "land", url: urls.land });
      if (urls.crouch) entries.push({ key: "crouch", url: urls.crouch });
  
@@ -23392,7 +23426,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
          return { key, clip };
        })
      );
-@@ -280,6 +971,23 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -280,6 +976,23 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        }
      }
  
@@ -23416,7 +23450,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
      this.clipsLoaded = true;
      if (this.initialized && this.mixer) {
        this.createActions();
-@@ -300,6 +1008,13 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -300,6 +1013,13 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // - Crouch: keep Hips position as-is (absolute Y IS the crouched height)
      // - Everything else: strip Hips position (would teleport the avatar)
      const isLocomotionClip =
@@ -23430,7 +23464,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
        key === "forward" ||
        key === "backward" ||
        key === "strafeLeft" ||
-@@ -308,15 +1023,58 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -308,15 +1028,58 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // Crouch uses "pose" mode - keeps Hips position track but scales cm→m
      // (Mixamo FBX→GLB values are in centimeters, skeleton is in meters).
      // This lets the Hips bone drop to the correct crouched height.
@@ -23492,7 +23526,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
    }
  
    /**
-@@ -327,6 +1085,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -327,6 +1090,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    private createActions(): void {
      if (!this.mixer) return;
  
@@ -23510,7 +23544,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
  
      // Idle - starts at weight 1
      const idleClip = this.prepareClip("idle");
-@@ -338,7 +1107,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -338,7 +1112,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      }
  
      // Walk directions - start at weight 0
@@ -23524,7 +23558,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
        const clip = this.prepareClip(key);
        if (clip && !this.walkActions[key]) {
          const action = this.mixer.clipAction(clip);
-@@ -346,6 +1120,14 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -346,6 +1125,14 @@ export class LocomotionAnimator implements ILocomotionAnimator {
          this.setWeight(action, 0);
          action.play();
          this.walkActions[key] = action;
@@ -23539,7 +23573,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
        }
      }
  
-@@ -386,6 +1168,20 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -386,6 +1173,20 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        this.setWeight(this.crouchAction, 0);
        this.crouchAction.play();
      }
@@ -23560,7 +23594,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
    }
  
    /**
-@@ -398,6 +1194,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -398,6 +1199,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    }
  
    setLocomotion(input: LocomotionInput): void {
@@ -23568,7 +23602,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
      if (input.isMoving) {
        this.targetIdleWeight = 0;
        this.updateDirectionalTargets(input);
-@@ -411,6 +1208,50 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -411,6 +1213,68 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      }
    }
  
@@ -23585,6 +23619,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
 +        plan.remainingDistance <= 0 ||
 +        !Number.isFinite(plan.cadence) ||
 +        plan.cadence <= 0 ||
++        (plan.timingPlanId !== undefined && !plan.timingPlanId) ||
 +        plan.stepDistances.some(
 +          (distance) => !Number.isFinite(distance) || distance <= 0
 +        ) ||
@@ -23603,6 +23638,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
 +    this.terminalStatus = plan ? "armed" : null;
 +    this.terminalPhase = 0;
 +    this.terminalElapsed = 0;
++    this.terminalDistanceStep = plan?.startAtGaitStep ?? this.gaitSteps;
 +    this.currentTerminalWeight = 0;
 +    this.terminalEntryStrideScale = this.strideScale;
 +    this.terminalEntryContactLeft = -1;
@@ -23616,10 +23652,26 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
 +    }
 +  }
 +
++  setGaitTimingSample(sample: ScheduledGaitTimingSample | null): void {
++    if (
++      sample &&
++      (!sample.planId ||
++        !Number.isFinite(sample.gaitStep) ||
++        !Number.isFinite(sample.cadence) ||
++        sample.cadence < 0 ||
++        !Number.isFinite(sample.settleProgress) ||
++        sample.settleProgress < 0 ||
++        sample.settleProgress > 1)
++    ) {
++      throw new RangeError("scheduled gait timing sample is invalid");
++    }
++    this.gaitTimingSample = sample;
++  }
++
    setActiveState(state: LocomotionState): void {
      this.activeState = state;
    }
-@@ -422,13 +1263,48 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -422,13 +1286,48 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      const blendSpeed = 1 / Math.max(0.01, this.config.blendTime);
      const blendFactor = 1 - Math.exp(-blendSpeed * delta);
  
@@ -23672,7 +23724,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
    }
  
    isReady(): boolean {
-@@ -447,40 +1323,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -447,40 +1346,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    }
  
    dispose(): void {
@@ -23714,7 +23766,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
    private updateDirectionalTargets(input: LocomotionInput): void {
      const dir = input.moveDirection ?? { x: 0, z: 1 };
      const fw = Math.max(0, dir.z);
-@@ -521,15 +1372,443 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -521,15 +1395,532 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        return;
      }
  
@@ -23777,7 +23829,8 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
 +  private blendedNativeSpeed(): number {
 +    let sum = 0;
 +    let weight = 0;
-+    for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
+     for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
+-      this.walkActions[key]?.setEffectiveTimeScale(timeScale);
 +      const gait = this.gaits[key];
 +      // Smoothed weights, not targets: stride and contact have to describe
 +      // the pose on screen, not the pose being blended toward.
@@ -23785,11 +23838,19 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
 +      if (!gait || w <= 1e-4) continue;
 +      sum += gait.nativeSpeed * w;
 +      weight += w;
-+    }
+     }
 +    if (weight <= 1e-4) return 0;
 +    return (sum / weight) * this.rootWorldScale;
 +  }
 +
++  private matchingGaitTimingSample(): ScheduledGaitTimingSample | null {
++    const sample = this.gaitTimingSample;
++    if (!sample) return null;
++    const timingPlanId = this.terminalPlan?.timingPlanId;
++    return timingPlanId && timingPlanId !== sample.planId ? null : sample;
+   }
+ 
+-  private applyStateWeights(blendFactor: number): void {
 +  /**
 +   * Advance the shared phase and write it to every walk action, offset by
 +   * where that clip puts its own left-foot strike so all four agree on which
@@ -23806,7 +23867,24 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
 +      weight += w;
 +    }
 +
-+    if (weight > 1e-4 && this.commandedMoving) {
++    const scheduled = this.matchingGaitTimingSample();
++    if (scheduled && (this.commandedMoving || scheduled.arrived)) {
++      this.gaitSteps = scheduled.gaitStep;
++      const gaitCycles = this.gaitSteps / 2;
++      this.masterPhase = gaitCycles - Math.floor(gaitCycles);
++      this.gaitCadence = scheduled.arrived ? 0 : scheduled.cadence;
++
++      const plan = this.terminalPlan;
++      if (
++        plan &&
++        this.terminalStatus === "armed" &&
++        this.gaitSteps >= plan.startAtGaitStep &&
++        this.beginTerminalStep()
++      ) {
++        this.advanceScheduledTerminalStep(scheduled);
++        return;
++      }
++    } else if (weight > 1e-4 && this.commandedMoving) {
 +      const cadence = (this.playRate * stepRate) / weight;
 +      this.gaitSteps += delta * cadence;
 +      const gaitCycles = this.gaitSteps / 2;
@@ -23836,8 +23914,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
 +
 +    let left = 0;
 +    let right = 0;
-     for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
--      this.walkActions[key]?.setEffectiveTimeScale(timeScale);
++    for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
 +      const gait = this.gaits[key];
 +      const action = this.walkActions[key];
 +      if (!gait || !action) continue;
@@ -23886,6 +23963,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
 +    this.terminalStatus = "braking";
 +    this.terminalPhase = 0;
 +    this.terminalElapsed = 0;
++    this.terminalDistanceStep = plan.startAtGaitStep;
 +    this.gaitSteps = plan.startAtGaitStep;
 +    const gaitCycles = this.gaitSteps / 2;
 +    this.masterPhase = gaitCycles - Math.floor(gaitCycles);
@@ -23905,13 +23983,96 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
 +    const action = this.stopActions[key];
 +    if (!motion || !action) return;
 +
++    const scheduled = this.matchingGaitTimingSample();
++    if (scheduled) {
++      this.advanceScheduledTerminalStep(scheduled);
++      return;
++    }
++
 +    this.terminalElapsed += Math.max(0, delta);
 +    const desiredLandingDuration = 2 / plan.cadence;
 +    const nativeLandingDuration = action.getClip().duration * motion.stepPhases[1];
 +    const playbackRate = nativeLandingDuration / desiredLandingDuration;
 +    const rawPhase =
 +      (this.terminalElapsed * playbackRate) / action.getClip().duration;
-+    this.terminalPhase = rawPhase >= 1 - 1e-9 ? 1 : Math.max(0, rawPhase);
++    const phase = rawPhase >= 1 - 1e-9 ? 1 : Math.max(0, rawPhase);
++    const clampedProgress = this.applyTerminalPose(plan, motion, action, phase);
++    const gaitStep = Math.min(
++      plan.landAtGaitStep,
++      plan.startAtGaitStep + clampedProgress
++    );
++    this.gaitSteps = gaitStep;
++    const gaitCycles = this.gaitSteps / 2;
++    this.masterPhase = gaitCycles - Math.floor(gaitCycles);
++
++    if (gaitStep >= plan.landAtGaitStep - 1e-6) {
++      this.gaitSteps = plan.landAtGaitStep;
++      const gaitCycles = this.gaitSteps / 2;
++      this.masterPhase = gaitCycles - Math.floor(gaitCycles);
++      this.gaitCadence = 0;
++      this.terminalStatus = this.terminalPhase >= 1 ? "settled" : "landed";
++    } else {
++      this.gaitCadence = plan.cadence;
++      this.terminalStatus = "braking";
++    }
++
++    if (this.terminalPhase >= 1) {
++      this.terminalStatus = "settled";
++      this.contactLeft = this.terminalContactLeft;
++      this.contactRight = this.terminalContactRight;
++    }
++  }
++
++  private advanceScheduledTerminalStep(
++    sample: ScheduledGaitTimingSample
++  ): void {
++    const plan = this.terminalPlan;
++    if (!plan) return;
++    const key = terminalKey(plan.terminalFoot);
++    const motion = this.terminalMotions[key];
++    const action = this.stopActions[key];
++    if (!motion || !action) return;
++
++    const localStep = Math.min(
++      2,
++      Math.max(0, sample.gaitStep - plan.startAtGaitStep)
++    );
++    const phase =
++      localStep <= 1
++        ? motion.stepPhases[0] * localStep
++        : localStep < 2
++          ? motion.stepPhases[0] +
++            (motion.stepPhases[1] - motion.stepPhases[0]) * (localStep - 1)
++          : motion.stepPhases[1] +
++            (1 - motion.stepPhases[1]) * sample.settleProgress;
++    this.applyTerminalPose(plan, motion, action, phase);
++
++    this.gaitSteps = Math.min(
++      plan.landAtGaitStep,
++      Math.max(plan.startAtGaitStep, sample.gaitStep)
++    );
++    const gaitCycles = this.gaitSteps / 2;
++    this.masterPhase = gaitCycles - Math.floor(gaitCycles);
++    this.gaitCadence = sample.arrived ? 0 : sample.cadence;
++    this.terminalStatus = sample.settled
++      ? "settled"
++      : sample.arrived
++        ? "landed"
++        : "braking";
++
++    if (sample.arrived) {
++      this.contactLeft = this.terminalContactLeft;
++      this.contactRight = this.terminalContactRight;
++    }
++  }
++
++  private applyTerminalPose(
++    plan: TerminalStepPlan,
++    motion: TerminalStopMotion,
++    action: AnimationAction,
++    phase: number
++  ): number {
++    this.terminalPhase = Math.min(1, Math.max(0, phase));
 +    action.time = this.terminalPhase * action.getClip().duration;
 +
 +    const rootProgress = sampleNonLoopingCurve(
@@ -23929,13 +24090,10 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
 +          (rootProgress - firstLandingProgress) /
 +            Math.max(1e-6, 1 - firstLandingProgress);
 +    const clampedProgress = Math.min(2, Math.max(0, stepProgress));
-+    const gaitStep = Math.min(
++    this.terminalDistanceStep = Math.min(
 +      plan.landAtGaitStep,
 +      plan.startAtGaitStep + clampedProgress
 +    );
-+    this.gaitSteps = gaitStep;
-+    const gaitCycles = this.gaitSteps / 2;
-+    this.masterPhase = gaitCycles - Math.floor(gaitCycles);
 +
 +    const sourceDistance = motion.nativeTravelMeters * this.rootWorldScale;
 +    const sourceSegments: readonly [number, number] = [
@@ -23968,26 +24126,9 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
 +      motion.rightFoot,
 +      this.terminalPhase
 +    );
++    return clampedProgress;
++  }
 +
-+    if (gaitStep >= plan.landAtGaitStep - 1e-6) {
-+      this.gaitSteps = plan.landAtGaitStep;
-+      const gaitCycles = this.gaitSteps / 2;
-+      this.masterPhase = gaitCycles - Math.floor(gaitCycles);
-+      this.gaitCadence = 0;
-+      this.terminalStatus = this.terminalPhase >= 1 ? "settled" : "landed";
-+    } else {
-+      this.gaitCadence = plan.cadence;
-+      this.terminalStatus = "braking";
-+    }
-+
-+    if (this.terminalPhase >= 1) {
-+      this.terminalStatus = "settled";
-+      this.contactLeft = this.terminalContactLeft;
-+      this.contactRight = this.terminalContactRight;
-     }
-   }
- 
--  private applyStateWeights(blendFactor: number): void {
 +  /**
 +   * How much longer or shorter each step should be than the clip authored it.
 +   * FootPlanter applies this where the foot lands.
@@ -24068,7 +24209,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
 +      this.terminalStatus === "landed" ||
 +      this.terminalStatus === "settled"
 +    ) {
-+      return this.gaitSteps;
++      return this.terminalDistanceStep;
 +    }
 +
 +    let distance = 0;
@@ -24163,7 +24304,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
      const state = this.activeState!;
  
      // Phase-based jump: each state has its own clip.
-@@ -545,22 +1824,35 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -545,22 +1936,35 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // "hunched walk" without needing a dedicated crouch-walk animation clip.
      // Without movement, 100% crouch-idle plays normally.
      const isCrouching = state === LocomotionState.CROUCHING;
@@ -24204,7 +24345,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
        this.walkActions[key]?.setEffectiveWeight(newWeight);
      }
  
-@@ -573,12 +1865,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -573,12 +1977,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // On state entry: snap weights for instant transitions on one-shot clips.
      if (state !== this.currentActiveState) {
        // Zero out ground animations instantly when entering any airborne state
@@ -24223,7 +24364,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..3a4567ab23b43d83b7410334a442512d
          }
        }
        // Reset one-shot clips on entry
-@@ -601,16 +1898,27 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -601,16 +2010,27 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      }
    }
  

@@ -32,6 +32,7 @@
     userProportionsState,
     type AvatarId,
     type LocomotionGaitClock,
+    type ScheduledGaitTimingSample,
     type TerminalStepPlan,
   } from "@austencloud/scene-3d";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
@@ -51,6 +52,10 @@
     createDestinationWalkPlan,
     createTerminalStepPlan,
   } from "$lib/shared/3d/locomotion/destination-walk-plan";
+  import {
+    createCountedGaitTimingPlan,
+    type CountedGaitSchedule,
+  } from "$lib/shared/3d/locomotion/gait-timing-plan";
   import WalkDriver from "./WalkDriver.svelte";
   import type { ManualInput, WalkState } from "./walk-command";
 
@@ -59,6 +64,7 @@
   const MIN_EXACT_STEP_LENGTH = 0.55;
   const MAX_EXACT_STEP_LENGTH = 0.85;
   const MAX_EXACT_STEPS = 16;
+  const TEMPO_OPTIONS = [90, 120, 150] as const;
 
   function exactStepRange(distance: number): { min: number; max: number } {
     const min = Math.max(3, Math.ceil(distance / MAX_EXACT_STEP_LENGTH));
@@ -168,7 +174,21 @@
   let markSteps = $state(
     clampExactSteps(markDistance, Math.round(Number(asked("steps", "6")) || 6))
   );
-  let running = $state(true);
+  const askedTempo = Number(asked("bpm", "120"));
+  let tempoBpm = $state(
+    TEMPO_OPTIONS.includes(askedTempo as (typeof TEMPO_OPTIONS)[number])
+      ? askedTempo
+      : 120
+  );
+  let timingSchedule = $state<CountedGaitSchedule>(
+    asked("schedule", "even") === "hold-middle" ? "hold-middle" : "even"
+  );
+  let departureBeat = $state(
+    Math.min(4, Math.max(0, Math.round(Number(asked("departure", "1")) || 0)))
+  );
+  // A scored departure is armed, never auto-fired while its rig is still
+  // loading. Free-running diagnostic patterns keep their historical autoplay.
+  let running = $state(patternId !== EXACT_MARK);
   let follow = $state(true);
   /**
    * The foot planter, on a switch.
@@ -208,6 +228,18 @@
           from: { x: 0, z: 0 },
           to: { x: 0, z: markDistance },
           steps: markSteps,
+          cadence: tempoBpm / 60,
+        })
+      : null
+  );
+  const gaitTimingPlan = $derived(
+    isExactMark
+      ? createCountedGaitTimingPlan({
+          id: `walk-lab-score-${resetNonce}`,
+          steps: markSteps,
+          tempoBpm,
+          departureBeat,
+          schedule: timingSchedule,
         })
       : null
   );
@@ -228,6 +260,7 @@
     turnRequest: null,
   });
   let gaitClock = $state<LocomotionGaitClock | null>(null);
+  let gaitTimingSample = $state<ScheduledGaitTimingSample | null>(null);
   let departureGaitStep = $state<number | null>(null);
   const terminalStepPlan = $derived<TerminalStepPlan | null>(
     destinationPlan && departureGaitStep !== null
@@ -235,7 +268,8 @@
           destinationPlan,
           departureGaitStep,
           `walk-lab-${resetNonce}`,
-          Math.atan2(destinationPlan.direction.x, destinationPlan.direction.z)
+          Math.atan2(destinationPlan.direction.x, destinationPlan.direction.z),
+          gaitTimingPlan?.id
         )
       : null
   );
@@ -386,6 +420,9 @@
       steps: String(markSteps),
       camera: vantageId,
       plant: planting ? "on" : "off",
+      bpm: String(tempoBpm),
+      schedule: timingSchedule,
+      departure: String(departureBeat),
     });
     if (routed) replaceState(`?${next}`, {});
   });
@@ -461,6 +498,7 @@
         completedSteps: walk.completedSteps ?? null,
         plannedSteps: walk.plannedSteps ?? null,
         endpointError: +(walk.endpointError ?? 0).toFixed(6),
+        timing: walk.timing ?? null,
       },
       gaitClock,
       heightCm: userProportionsState.heightCm,
@@ -584,6 +622,7 @@
             moveDirection={walk.direction}
             turnRequestOverride={walk.turnRequest ?? null}
             {terminalStepPlan}
+            {gaitTimingSample}
             onGaitClock={(clock) => (gaitClock = clock)}
           />
         {/key}
@@ -595,9 +634,11 @@
         {running}
         manual={manualInput}
         {destinationPlan}
+        {gaitTimingPlan}
         {gaitClock}
         {resetNonce}
         onDepartureStep={(step) => (departureGaitStep = step)}
+        onGaitTimingSample={(sample) => (gaitTimingSample = sample)}
         onState={(state) => {
           walk = state;
           // Straight to the controls rather than through a reactive `target`
@@ -627,6 +668,14 @@
             ? `${markDistance.toFixed(1)} metres in exactly ${markSteps} authored steps`
             : pattern.hunts}
       </p>
+      {#if gaitTimingPlan}
+        <p class="timing-score">
+          Counts
+          {gaitTimingPlan.footfalls
+            .map((footfall) => footfall.plantBeat)
+            .join(" · ")}
+        </p>
+      {/if}
       <dl class="hud-grid">
         <div>
           <dt>speed</dt>
@@ -662,6 +711,28 @@
               {((walk.endpointError ?? markDistance) * 100).toFixed(1)} cm
             </dd>
           </div>
+          <div>
+            <dt>next plant</dt>
+            <dd>
+              {walk.timing?.nextPlantBeat === null
+                ? "settling"
+                : (walk.timing?.nextPlantBeat ??
+                  gaitTimingPlan?.footfalls[0]?.plantBeat)}
+            </dd>
+          </div>
+          <div>
+            <dt>timing error</dt>
+            <dd>
+              {walk.timing?.latestErrorMilliseconds === null ||
+              walk.timing?.latestErrorMilliseconds === undefined
+                ? "waiting"
+                : `${walk.timing.latestErrorMilliseconds >= 0 ? "+" : ""}${walk.timing.latestErrorMilliseconds.toFixed(0)} ms`}
+            </dd>
+          </div>
+          <div>
+            <dt>worst timing</dt>
+            <dd>{(walk.timing?.maxErrorMilliseconds ?? 0).toFixed(0)} ms</dd>
+          </div>
         {/if}
       </dl>
     </div>
@@ -682,6 +753,7 @@
         value={patternId}
         onchange={(value) => {
           patternId = value;
+          running = value !== EXACT_MARK;
           resetNonce += 1;
         }}
         size="sm"
@@ -703,6 +775,7 @@
               const distance = Number(event.currentTarget.value);
               markDistance = distance;
               markSteps = clampExactSteps(distance, markSteps);
+              running = false;
               resetNonce += 1;
             }}
             aria-label="Destination distance in metres"
@@ -720,12 +793,73 @@
             value={markSteps}
             onchange={(event) => {
               markSteps = Number(event.currentTarget.value);
+              running = false;
               resetNonce += 1;
             }}
             aria-label="Exact authored step count"
           />
           <output>{markSteps}</output>
         </label>
+
+        <div class="group">
+          <span class="group-label" id="walk-lab-tempo">Tempo</span>
+          <SegmentedControl
+            options={TEMPO_OPTIONS.map((tempo) => ({
+              value: String(tempo),
+              label: `${tempo}`,
+              ariaLabel: `${tempo} beats per minute`,
+            }))}
+            value={String(tempoBpm)}
+            onchange={(value) => {
+              tempoBpm = Number(value);
+              running = false;
+              resetNonce += 1;
+            }}
+            size="sm"
+            ariaLabelledby="walk-lab-tempo"
+          />
+        </div>
+
+        <div class="group">
+          <span class="group-label" id="walk-lab-rhythm">Rhythm</span>
+          <SegmentedControl
+            options={[
+              { value: "even", label: "Even" },
+              {
+                value: "hold-middle",
+                label: "Held middle",
+                ariaLabel: "Hold one extra count in the middle",
+              },
+            ]}
+            value={timingSchedule}
+            onchange={(value) => {
+              timingSchedule = value as CountedGaitSchedule;
+              running = false;
+              resetNonce += 1;
+            }}
+            size="sm"
+            ariaLabelledby="walk-lab-rhythm"
+          />
+        </div>
+
+        <div class="group">
+          <span class="group-label" id="walk-lab-departure">Depart</span>
+          <SegmentedControl
+            options={[0, 1, 2, 4].map((beat) => ({
+              value: String(beat),
+              label: String(beat),
+              ariaLabel: `Depart on count ${beat}`,
+            }))}
+            value={String(departureBeat)}
+            onchange={(value) => {
+              departureBeat = Number(value);
+              running = false;
+              resetNonce += 1;
+            }}
+            size="sm"
+            ariaLabelledby="walk-lab-departure"
+          />
+        </div>
       {:else}
         <label class="slider">
           <span class="slider-label">Speed</span>
@@ -749,6 +883,7 @@
           onchange={(value) => {
             avatarId = value;
             gaitClock = null;
+            if (isExactMark) running = false;
             resetNonce += 1;
           }}
           size="sm"
@@ -811,6 +946,7 @@
           type="button"
           class="action"
           onclick={() => {
+            if (isExactMark) running = false;
             resetNonce += 1;
             frame(0, 0, true);
           }}
@@ -877,6 +1013,14 @@
     font-size: 0.8125rem;
     line-height: 1.35;
     color: #97a3b6;
+  }
+
+  .timing-score {
+    margin: -0.25rem 0 0.65rem;
+    color: #77b7ff;
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.025em;
   }
 
   .hud-grid {

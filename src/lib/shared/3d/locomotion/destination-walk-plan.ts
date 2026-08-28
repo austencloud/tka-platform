@@ -136,7 +136,8 @@ export function createDestinationWalkPlan(
 export function sampleDestinationWalkPlan(
   plan: DestinationWalkPlan,
   step: number,
-  distanceStep: number = step
+  distanceStep: number = step,
+  cadence: number = plan.cadence
 ): DestinationWalkSample {
   if (!Number.isFinite(step)) {
     throw new RangeError("step must be finite");
@@ -144,17 +145,14 @@ export function sampleDestinationWalkPlan(
   if (!Number.isFinite(distanceStep)) {
     throw new RangeError("distanceStep must be finite");
   }
+  if (!Number.isFinite(cadence) || cadence < 0) {
+    throw new RangeError("cadence must be a non-negative finite number");
+  }
 
   const clampedStep = Math.min(plan.steps, Math.max(0, step));
   const arrived = clampedStep >= plan.steps;
-  const clampedDistanceStep = Math.min(
-    plan.steps,
-    Math.max(0, distanceStep)
-  );
-  const completed = Math.min(
-    plan.steps - 1,
-    Math.floor(clampedDistanceStep)
-  );
+  const clampedDistanceStep = Math.min(plan.steps, Math.max(0, distanceStep));
+  const completed = Math.min(plan.steps - 1, Math.floor(clampedDistanceStep));
   const fraction = arrived ? 1 : clampedDistanceStep - completed;
   const distanceAtStep = arrived
     ? plan.distance
@@ -172,7 +170,7 @@ export function sampleDestinationWalkPlan(
     step: clampedStep,
     progress,
     remainingSteps: plan.steps - clampedStep,
-    speed: arrived ? 0 : plan.stepDistances[completed]! * plan.cadence,
+    speed: arrived ? 0 : plan.stepDistances[completed]! * cadence,
     moving: !arrived,
     arrived,
   };
@@ -189,7 +187,8 @@ export function createTerminalStepPlan(
   plan: DestinationWalkPlan,
   departureGaitStep: number,
   id: string,
-  targetFacing: number
+  targetFacing: number,
+  timingPlanId?: string
 ): TerminalStepPlan {
   if (!Number.isFinite(departureGaitStep)) {
     throw new RangeError("departure gait step must be finite");
@@ -198,11 +197,13 @@ export function createTerminalStepPlan(
   if (!Number.isFinite(targetFacing)) {
     throw new RangeError("target facing must be finite");
   }
+  if (timingPlanId !== undefined && !timingPlanId) {
+    throw new RangeError("timing plan id cannot be empty");
+  }
 
   const startAtGaitStep = departureGaitStep + plan.terminalStartStep;
   const landAtGaitStep = departureGaitStep + plan.steps;
-  const terminalFoot =
-    Math.round(landAtGaitStep) % 2 === 0 ? "left" : "right";
+  const terminalFoot = Math.round(landAtGaitStep) % 2 === 0 ? "left" : "right";
   const stepDistances = plan.stepDistances.slice(-2) as [number, number];
 
   return {
@@ -214,6 +215,7 @@ export function createTerminalStepPlan(
     remainingDistance: plan.terminalDistance,
     cadence: plan.cadence,
     targetFacing,
+    ...(timingPlanId && { timingPlanId }),
   };
 }
 
