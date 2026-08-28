@@ -133,7 +133,7 @@ Last audit: 2025-12-27
     redProp: PropState | null;
     additionalLayers?: AdditionalLayerProps[];
     tunnelSpectrum?: boolean;
-    tunnelSelectedLayer?: number | null;
+    tunnelSelectedLayer?: number | readonly number[] | null;
     gridVisible?: boolean;
     gridMode?: GridMode | null;
     backgroundAlpha?: number;

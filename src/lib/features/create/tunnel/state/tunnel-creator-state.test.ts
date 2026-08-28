@@ -13,6 +13,7 @@ import {
 import type { TunnelPresentationState } from "./tunnel-presentation-state.svelte";
 import type { TunnelSnapshot } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
 import type { ShapeMatrixTunnelSourceProvenance } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
+import { resolveTunnelLayerPlans } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
 import type { CollectedTunnel } from "$lib/features/tunnel-collection/domain/tunnel-collection-types";
 import { collectedTunnelComposition } from "$lib/features/tunnel-collection/domain/collected-tunnel-source";
 import { tunnelRevisionPayload } from "$lib/features/tunnel-collection/domain/tunnel-revision";
@@ -136,6 +137,135 @@ describe("tunnel creator edit state", () => {
       initial.performers[1]?.timing
     );
     expect(openComposition.mock.calls[0]?.[1]).toEqual(presentationSnapshot);
+  });
+
+  it("exposes one card per authored performer while formation copies stay generated", () => {
+    const initial = composition();
+    initial.performers.push({
+      id: "fourth",
+      label: "Performer 4",
+      source: { kind: "derived", performerId: "third", transforms: [] },
+      timing: { stepOffset: 0, speed: 1 },
+    });
+    initial.formation = { ...DEFAULT_CONFIG, fold: 8, speedOverrides: {} };
+
+    const state = createState({
+      openComposition: vi.fn(),
+      initialComposition: initial,
+    });
+    const reopened = state.previewCompositionWithFormation(initial.formation)!;
+    const layers = resolveTunnelLayerPlans(reopened, initial.formation);
+
+    expect(state.performerSlots.map((slot) => slot.id)).toEqual([
+      "lead",
+      "partner",
+      "third",
+      "fourth",
+    ]);
+    expect(layers).toHaveLength(8);
+    expect(
+      Object.fromEntries(
+        reopened.performers.map((performer) => [
+          performer.id,
+          layers.filter((layer) => layer.performerId === performer.id).length,
+        ])
+      )
+    ).toEqual({ lead: 2, partner: 2, third: 2, fourth: 2 });
+  });
+
+  it("adds stable performer cards up to the formation and schema ceilings", () => {
+    const state = createState({
+      openComposition: vi.fn(),
+      initialFormation: { ...DEFAULT_CONFIG, fold: 8, speedOverrides: {} },
+      createId: (() => {
+        let id = 0;
+        return () => `roster-${++id}`;
+      })(),
+    });
+    const initialIds = state.performerSlots.map((slot) => slot.id);
+
+    while (state.canAddPerformer) expect(state.addPerformer()).not.toBeNull();
+
+    expect(state.performerSlots).toHaveLength(8);
+    expect(state.performerSlots.slice(0, 2).map((slot) => slot.id)).toEqual(
+      initialIds
+    );
+    expect(new Set(state.performerSlots.map((slot) => slot.id)).size).toBe(8);
+    expect(state.addPerformer()).toBeNull();
+    expect(state.addPerformerBlockedReason).toContain("eight");
+
+    const restored = createState({
+      openComposition: vi.fn(),
+      initialDraft: state.draftSnapshot(),
+    });
+    expect(restored.performerSlots.map((slot) => slot.id)).toEqual(
+      state.performerSlots.map((slot) => slot.id)
+    );
+  });
+
+  it("keeps derived lineage valid while reordering and removing cards", () => {
+    const state = createState({
+      openComposition: vi.fn(),
+      initialFormation: { ...DEFAULT_CONFIG, fold: 8, speedOverrides: {} },
+      createId: (() => {
+        let id = 0;
+        return () => `lineage-${++id}`;
+      })(),
+    });
+    const leadId = state.performerIdAt(0)!;
+    const partnerId = state.performerIdAt(1)!;
+    state.setPerformerSequence(leadId, sequence);
+    const thirdId = state.addPerformer()!;
+    state.setPerformerSequence(thirdId, { ...sequence, id: "third-source" });
+    const fourthId = state.addPerformer()!;
+    state.setPerformerSequence(fourthId, { ...sequence, id: "fourth-source" });
+    expect(state.setPerformerSource(fourthId, thirdId)).toBe(true);
+
+    expect(state.canMovePerformer(fourthId, -1)).toBe(false);
+    expect(state.canMovePerformer(leadId, 1)).toBe(false);
+    expect(state.removePerformer(thirdId)).toBe(false);
+    expect(state.dependantLabels(thirdId)).toEqual(["Performer 4"]);
+    expect(state.removePerformer(fourthId)).toBe(true);
+    expect(state.movePerformer(thirdId, -1)).toBe(true);
+    expect(state.performerSlots.map((slot) => slot.id)).toEqual([
+      leadId,
+      thirdId,
+      partnerId,
+    ]);
+  });
+
+  it("round-trips a later performer's source relationship and timing by stable id", () => {
+    const state = createState({
+      openComposition: vi.fn(),
+      initialFormation: { ...DEFAULT_CONFIG, fold: 8, speedOverrides: {} },
+      createId: (() => {
+        let id = 0;
+        return () => `relationship-${++id}`;
+      })(),
+    });
+    const leadId = state.performerIdAt(0)!;
+    state.setPerformerSequence(leadId, sequence);
+    const thirdId = state.addPerformer()!;
+    state.setPerformerSequence(thirdId, { ...sequence, id: "third-source" });
+    expect(state.openPairingPanel(thirdId)).toBe(true);
+    expect(state.setPerformerSource(thirdId, leadId)).toBe(true);
+    state.setRelationship({ rotationSteps: 3, reflect: "mirror" });
+    state.setPerformerTiming(thirdId, { stepOffset: 4, speed: 0.5 });
+
+    const restored = createState({
+      openComposition: vi.fn(),
+      initialDraft: state.draftSnapshot(),
+    });
+    const performer = restored.performerSlots.find(
+      (slot) => slot.id === thirdId
+    )?.performer;
+
+    expect(performer?.source).toEqual({
+      kind: "derived",
+      performerId: leadId,
+      transforms: [{ kind: "rotate", amount: 3 }, { kind: "mirror" }],
+    });
+    expect(performer?.timing).toEqual({ stepOffset: 4, speed: 0.5 });
   });
 
   // A tunnel saved before the creator existed reopens as a solo cast: one

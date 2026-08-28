@@ -88,7 +88,7 @@ export interface RenderPropsState {
   tunnelSpectrum: boolean;
   /** Spotlight: the selected performer (0 = base "you", k = copy arm k), or null.
    *  When set, every other family dims. Default null (no spotlight). */
-  tunnelSelectedLayer?: number | null;
+  tunnelSelectedLayer?: number | readonly number[] | null;
 }
 
 /**

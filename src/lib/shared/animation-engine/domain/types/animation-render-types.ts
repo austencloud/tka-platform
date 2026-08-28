@@ -48,5 +48,5 @@ export interface RenderSceneParams {
   skipTrailRendering?: boolean;
   /** Performer spotlight: selected performer (0 = base, k = copy arm k) or null.
    *  When set, non-selected copies' props dim. Default null. */
-  tunnelSelectedLayer?: number | null;
+  tunnelSelectedLayer?: number | readonly number[] | null;
 }

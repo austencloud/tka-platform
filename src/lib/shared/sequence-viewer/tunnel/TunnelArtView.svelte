@@ -188,7 +188,7 @@
         redProp={base.red}
         {additionalLayers}
         tunnelSpectrum={controller.spectrum}
-        tunnelSelectedLayer={controller.selectedArm}
+        tunnelSelectedLayer={controller.spotlightLayers}
         {bluePropType}
         {redPropType}
         {blueBuugengFlipped}

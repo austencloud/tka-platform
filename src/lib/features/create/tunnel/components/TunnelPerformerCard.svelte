@@ -16,6 +16,10 @@
     formationCopy = false,
     label,
     linked = false,
+    expanded = false,
+    selected = false,
+    generatedInstanceCount = 0,
+    sourcePerformerLabel = null,
     disabled = false,
     bluePropType,
     redPropType,
@@ -27,6 +31,14 @@
     onEditGeneration,
     onPrevious,
     onEditPairing,
+    onSelect,
+    onMoveUp,
+    onMoveDown,
+    onRemove,
+    canMoveUp = false,
+    canMoveDown = false,
+    canRemove = false,
+    removeBlockedReason = null,
   }: {
     performer: TunnelPerformer | null;
     displaySequence?: SequenceData | null;
@@ -36,6 +48,10 @@
     formationCopy?: boolean;
     label: string;
     linked?: boolean;
+    expanded?: boolean;
+    selected?: boolean;
+    generatedInstanceCount?: number;
+    sourcePerformerLabel?: string | null;
     disabled?: boolean;
     bluePropType?: PropType;
     redPropType?: PropType;
@@ -47,12 +63,20 @@
     onEditGeneration?: () => void;
     onPrevious?: () => void;
     onEditPairing?: () => void;
+    onSelect?: () => void;
+    onMoveUp?: () => void;
+    onMoveDown?: () => void;
+    onRemove?: () => void;
+    canMoveUp?: boolean;
+    canMoveDown?: boolean;
+    canRemove?: boolean;
+    removeBlockedReason?: string | null;
   } = $props();
 
   const ownSequence = $derived(
     performer?.source.kind === "independent" ? performer.source.sequence : null
   );
-  const previewSequence = $derived(ownSequence ?? displaySequence);
+  const previewSequence = $derived(displaySequence ?? ownSequence);
   const displayWord = $derived(
     previewSequence
       ? simplifyRepeatedWord(
@@ -85,95 +109,168 @@
   }
 </script>
 
-<section class="source-card" aria-label={`${label} sequence`}>
+<section
+  class="source-card"
+  class:expanded
+  class:selected
+  aria-label={`${label} sequence`}
+>
   <header class="source-heading">
-    <div class="source-identity">
+    <button
+      type="button"
+      class="source-identity"
+      aria-expanded={expanded}
+      aria-pressed={selected}
+      onclick={onSelect}
+    >
       <div>
         <h3>{label}</h3>
         <p>
           {#if previewSequence}
-            {previewSequence.steps.length} steps{#if sourceOrigin === "generated"}
+            {previewSequence.steps.length} steps{#if !linked && sourceOrigin === "generated"}
               · Generated
             {/if}{#if linked && sourceLabel}
-              · {sourceLabel}
+              · Follows {sourcePerformerLabel ?? "earlier performer"} · {sourceLabel}
             {/if}{#if linked && stageTransformLabel}
               · On stage: {stageTransformLabel}
             {/if}
             {#if formationCopy}
               · Formation copy (not authored)
             {/if}
+            {#if generatedInstanceCount > 0}
+              · Drives {generatedInstanceCount} stage {generatedInstanceCount ===
+              1
+                ? "instance"
+                : "instances"}
+            {/if}
           {:else if linked}
-            Follows the Performer 1 sequence
+            Follows {sourcePerformerLabel ?? "an earlier performer"}
           {:else}
             Complete two-prop sequence
           {/if}
         </p>
       </div>
+      <span class="expand-indicator" aria-hidden="true">
+        <i class={`fas ${expanded ? "fa-chevron-up" : "fa-chevron-down"}`}></i>
+      </span>
+    </button>
+
+    <div class="hand-key" aria-label="Hand colors: blue Left, red Right">
+      <span class="hand blue"><i aria-hidden="true"></i><b>L</b> Left</span>
+      <span class="hand red"><i aria-hidden="true"></i><b>R</b> Right</span>
     </div>
 
-    {#if linked && sourceLabel && onEditPairing}
-      <PanelButton
-        variant="secondary"
-        onclick={onEditPairing}
-        ariaLabel={`${formationCopy ? "Author" : "Edit"} pairing: ${sourceLabel}`}
-      >
-        <i class="fas fa-link" aria-hidden="true"></i>
-        {formationCopy ? "Author pairing" : "Edit pairing"}
-        <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-      </PanelButton>
-    {:else if !linked && ownSequence}
-      <div class="source-actions" aria-label={`${label} source actions`}>
-        {#if previousCount > 0 && onPrevious}
-          <PanelButton
-            variant="secondary"
-            onclick={onPrevious}
-            ariaLabel={`Show the previous ${label} sequence`}
-          >
-            <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
-            <span class="action-label">Previous</span>
-          </PanelButton>
-        {/if}
-        {#if onGenerateNow}
-          <PanelButton
-            variant="primary"
-            onclick={onGenerateNow}
-            ariaLabel={`Generate a new ${label} sequence with the current settings`}
-          >
-            <i class="fas fa-dice" aria-hidden="true"></i>
-            <span class="action-label">Generate</span>
-          </PanelButton>
-        {/if}
-        {#if onEditGeneration}
-          <PanelButton
-            variant="secondary"
-            onclick={onEditGeneration}
-            ariaLabel={`Edit generation settings for ${label}`}
-          >
-            <i class="fas fa-sliders" aria-hidden="true"></i>
-            <span class="action-label">Generation settings</span>
-          </PanelButton>
-        {/if}
+    {#if expanded}
+      {#if linked && onEditPairing}
         <PanelButton
           variant="secondary"
-          onclick={onChoose}
-          ariaLabel={`Choose an existing sequence for ${label}`}
+          onclick={onEditPairing}
+          ariaLabel={`${formationCopy ? "Author" : "Edit"} source relationship${sourceLabel ? `: ${sourceLabel}` : ""}`}
         >
-          <i class="fas fa-folder-open" aria-hidden="true"></i>
-          <span class="action-label">Choose</span>
+          <i class="fas fa-link" aria-hidden="true"></i>
+          {formationCopy ? "Author relationship" : "Edit relationship"}
+          <i class="fas fa-pen-to-square" aria-hidden="true"></i>
         </PanelButton>
-        {#if onChooseShapeMatrix}
+      {:else if !linked && ownSequence}
+        <div class="source-actions" aria-label={`${label} source actions`}>
+          {#if onEditPairing}
+            <PanelButton
+              variant="secondary"
+              onclick={onEditPairing}
+              ariaLabel={`Link ${label} to an earlier performer`}
+            >
+              <i class="fas fa-link" aria-hidden="true"></i>
+              <span class="action-label">Source</span>
+            </PanelButton>
+          {/if}
+          {#if previousCount > 0 && onPrevious}
+            <PanelButton
+              variant="secondary"
+              onclick={onPrevious}
+              ariaLabel={`Show the previous ${label} sequence`}
+            >
+              <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
+              <span class="action-label">Previous</span>
+            </PanelButton>
+          {/if}
+          {#if onGenerateNow}
+            <PanelButton
+              variant="primary"
+              onclick={onGenerateNow}
+              ariaLabel={`Generate a new ${label} sequence with the current settings`}
+            >
+              <i class="fas fa-dice" aria-hidden="true"></i>
+              <span class="action-label">Generate</span>
+            </PanelButton>
+          {/if}
+          {#if onEditGeneration}
+            <PanelButton
+              variant="secondary"
+              onclick={onEditGeneration}
+              ariaLabel={`Edit generation settings for ${label}`}
+            >
+              <i class="fas fa-sliders" aria-hidden="true"></i>
+              <span class="action-label">Generation settings</span>
+            </PanelButton>
+          {/if}
           <PanelButton
             variant="secondary"
-            onclick={onChooseShapeMatrix}
-            ariaLabel={`Choose a Shape Matrix realization for ${label}`}
+            onclick={onChoose}
+            ariaLabel={`Choose an existing sequence for ${label}`}
           >
-            <i class="fas fa-shapes" aria-hidden="true"></i>
-            <span class="action-label">Shape Matrix</span>
+            <i class="fas fa-folder-open" aria-hidden="true"></i>
+            <span class="action-label">Choose</span>
           </PanelButton>
-        {/if}
-      </div>
+          {#if onChooseShapeMatrix}
+            <PanelButton
+              variant="secondary"
+              onclick={onChooseShapeMatrix}
+              ariaLabel={`Choose a Shape Matrix realization for ${label}`}
+            >
+              <i class="fas fa-shapes" aria-hidden="true"></i>
+              <span class="action-label">Shape Matrix</span>
+            </PanelButton>
+          {/if}
+        </div>
+      {/if}
     {/if}
   </header>
+
+  {#if expanded}
+    <div class="card-order" aria-label={`${label} roster controls`}>
+      <PanelButton
+        variant="secondary"
+        disabled={!canMoveUp}
+        onclick={onMoveUp}
+        ariaLabel={`Move ${label} earlier`}
+      >
+        <i class="fas fa-arrow-up" aria-hidden="true"></i>
+        Earlier
+      </PanelButton>
+      <PanelButton
+        variant="secondary"
+        disabled={!canMoveDown}
+        onclick={onMoveDown}
+        ariaLabel={`Move ${label} later`}
+      >
+        <i class="fas fa-arrow-down" aria-hidden="true"></i>
+        Later
+      </PanelButton>
+      {#if onRemove}
+        <span title={removeBlockedReason ?? undefined}>
+          <PanelButton
+            variant="secondary"
+            disabled={!canRemove}
+            onclick={onRemove}
+            ariaLabel={removeBlockedReason ?? `Remove ${label}`}
+          >
+            <i class="fas fa-user-minus" aria-hidden="true"></i>
+            Remove
+          </PanelButton>
+        </span>
+      {/if}
+    </div>
+  {/if}
 
   <div class="workbench-stage">
     {#if displayWord}
@@ -204,15 +301,17 @@
         <i class="fas fa-book-open" aria-hidden="true"></i>
         <div>
           <strong
-            >{linked ? "Waiting for Performer 1" : "Choose a sequence"}</strong
+            >{linked
+              ? `Waiting for ${sourcePerformerLabel ?? "source performer"}`
+              : "Choose a sequence"}</strong
           >
           <span>
             {linked
-              ? "Performer 2 will use the same complete sequence."
+              ? `${label} will resolve from ${sourcePerformerLabel ?? "its source"}.`
               : "Pick from your library or the community."}
           </span>
         </div>
-        {#if !linked}
+        {#if expanded && !linked}
           <div class="empty-actions">
             <PanelButton variant="secondary" {disabled} onclick={onChoose}>
               <i class="fas fa-folder-open" aria-hidden="true"></i>
@@ -256,12 +355,24 @@
     container-type: inline-size;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
+    flex: 0 0 9.5rem;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
     border: 1px solid var(--theme-stroke);
     border-radius: var(--settings-radius-lg, 20px);
     background: var(--theme-panel-bg);
+  }
+
+  .source-card.expanded {
+    flex-basis: clamp(22rem, 58cqh, 34rem);
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+
+  .source-card.selected {
+    border-color: color-mix(in srgb, var(--theme-accent) 70%, white 10%);
+    box-shadow: 0 0 0 1px
+      color-mix(in srgb, var(--theme-accent) 35%, transparent);
   }
 
   .source-heading,
@@ -271,6 +382,7 @@
   }
 
   .source-heading {
+    flex-wrap: wrap;
     justify-content: space-between;
     gap: var(--settings-spacing-sm, 8px);
     min-height: 3.5rem;
@@ -279,18 +391,89 @@
   }
 
   .source-identity {
+    flex: 1 1 11rem;
     min-width: 0;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .source-identity:focus-visible {
+    border-radius: var(--settings-radius-sm, 8px);
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 3px;
+  }
+
+  .expand-indicator {
+    display: grid;
+    flex: 0 0 var(--min-touch-target, 44px);
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    place-items: center;
+    color: var(--theme-text-dim);
   }
 
   .source-actions,
-  .empty-actions {
+  .empty-actions,
+  .card-order,
+  .hand-key {
     display: flex;
     align-items: center;
     gap: var(--settings-spacing-xs, 6px);
   }
 
   .source-actions {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+
+  .hand-key {
     flex: 0 0 auto;
+  }
+
+  .hand {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 1.75rem;
+    padding: 2px 7px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 999px;
+    color: var(--theme-text-dim);
+    background: var(--theme-card-bg);
+    font-size: var(--font-size-compact, 12px);
+    white-space: nowrap;
+  }
+
+  .hand i {
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 50%;
+    background: var(--hand-color);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--hand-color) 70%, white);
+  }
+
+  .hand.blue {
+    --hand-color: var(--prop-blue, #2e8bf0);
+  }
+
+  .hand.red {
+    --hand-color: var(--prop-red, #ed1c24);
+  }
+
+  .hand b {
+    color: var(--theme-text);
+  }
+
+  .card-order {
+    justify-content: flex-end;
+    padding: var(--settings-spacing-xs, 6px) var(--settings-spacing-md, 14px);
+    border-bottom: 1px solid var(--theme-stroke);
+    background: var(--theme-card-bg);
   }
 
   .empty-actions {
@@ -329,6 +512,32 @@
     min-height: 0;
     overflow: hidden;
     background: color-mix(in srgb, var(--theme-card-bg) 72%, black);
+  }
+
+  .source-card:not(.expanded) .word-rail {
+    display: none;
+  }
+
+  .source-card:not(.expanded) .live-grid {
+    padding: 4px;
+  }
+
+  .source-card:not(.expanded) .source-empty {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    align-content: center;
+    justify-items: start;
+    min-height: 0;
+    padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 14px);
+    text-align: left;
+  }
+
+  .source-card:not(.expanded) .source-empty > i {
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .source-card:not(.expanded) .source-empty span {
+    display: none;
   }
 
   .word-rail {
@@ -405,6 +614,19 @@
 
     .source-actions .action-label {
       display: none;
+    }
+
+    .hand {
+      padding-inline: 6px;
+    }
+
+    .hand:not(b) {
+      font-size: 0;
+    }
+
+    .hand b,
+    .hand i {
+      font-size: var(--font-size-compact, 12px);
     }
   }
 

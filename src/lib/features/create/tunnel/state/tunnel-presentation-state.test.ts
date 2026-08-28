@@ -150,6 +150,7 @@ describe("tunnel presentation state", () => {
       tunnel: {
         config: { fold: 2 },
         gridVisible: true,
+        spectrum: false,
         section: "playback",
         presetRecipe: null,
       },
@@ -163,5 +164,28 @@ describe("tunnel presentation state", () => {
         redBuugengFlipped: true,
       },
     });
+  });
+
+  it("starts new creator stages with pictograph hand colors but preserves saved spectrum", () => {
+    const create = (initialSnapshot?: TunnelSnapshot) => {
+      const state = createTunnelPresentationState({
+        initialSnapshot,
+        effects: createEffectsConfigState(undefined, { persist: false }),
+        visibility: new AnimationVisibilityStateManager({ ephemeral: true }),
+        animationSettings: createAnimationSettingsState({ ephemeral: true }),
+        initialBluePropType: "staff",
+        initialRedPropType: "staff",
+        initialBlueBuugengFlipped: false,
+        initialRedBuugengFlipped: false,
+      });
+      const controller = controllerFor();
+      state.attachController(controller);
+      return state.capture().tunnel.spectrum;
+    };
+
+    expect(create()).toBe(false);
+    const legacySpectrum = savedSnapshot();
+    legacySpectrum.tunnel.spectrum = true;
+    expect(create(legacySpectrum)).toBe(true);
   });
 });

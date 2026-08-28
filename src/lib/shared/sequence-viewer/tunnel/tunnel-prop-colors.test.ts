@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { SPOTLIGHT_DIM, dimHex, spotlightFactor, tunnelPropColor } from "./tunnel-prop-colors";
+import {
+  SPOTLIGHT_DIM,
+  dimHex,
+  spotlightFactor,
+  tunnelPropColor,
+} from "./tunnel-prop-colors";
 
 describe("tunnelPropColor", () => {
   it("anchors the base pair at blue and red", () => {
@@ -53,6 +58,12 @@ describe("spotlightFactor", () => {
     // Select the base ("you", arm 0) → family 0 bright; copies dim.
     expect(spotlightFactor(0, 0)).toBe(1);
     expect(spotlightFactor(0, 1)).toBe(SPOTLIGHT_DIM);
+  });
+
+  it("keeps every generated instance of one authored performer bright", () => {
+    expect(spotlightFactor([1, 5], 1)).toBe(1);
+    expect(spotlightFactor([1, 5], 5)).toBe(1);
+    expect(spotlightFactor([1, 5], 3)).toBe(SPOTLIGHT_DIM);
   });
 });
 

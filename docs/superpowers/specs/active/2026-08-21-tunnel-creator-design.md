@@ -285,6 +285,33 @@ inspect it, save it, and confirm both visual previews update together.
 Acceptance: author a mixed eight-person cast, including independent and linked
 sources, reorder it, reload it, and verify relationship lineage remains intact.
 
+#### Roster and hand-color contract
+
+- The source rail renders one choreography card for every authored performer.
+  It never creates cards for formation-generated instances. A legacy formation
+  copy may remain visible only when it is explicitly labelled as not authored.
+- All cards remain present from one through eight performers. One selected card
+  expands to the complete source workbench while the other cards stay compact;
+  the roster scrolls independently instead of shrinking eight full editors into
+  the available height.
+- Performer source mode belongs to the performer card, not to a global two-person
+  switch. The first performer is independent. Every later performer is either
+  independent or follows an earlier stable performer ID with its own ordered
+  transform recipe and timing.
+- Reordering preserves stable IDs and may not place a derived performer before
+  its source. Removing a source with dependants is blocked until those
+  relationships are reassigned or removed explicitly.
+- The live summary reports authored performers separately from rendered
+  instances. Selecting a card spotlights every rendered instance driven by that
+  authored performer; generated copies never gain authored identity.
+- New creator sessions use the canonical pictograph hand palette: blue is Left
+  and red is Right. Cards and the preview show both a color swatch and the words
+  `Left` / `Right`, so hand identity never relies on color alone.
+- Existing saved spectrum choices remain exact on reopen because color mode is
+  performed presentation state. Spectrum is labelled as instance coloring and
+  offers an explicit return to pictograph hand colors; it is never silently
+  migrated.
+
 ### Phase 4: Result and recovery parity
 
 - Bring result actions, playback state, errors/retry, save/share/open-viewer,
