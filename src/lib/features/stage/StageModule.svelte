@@ -100,6 +100,7 @@
   let chartRaised = $state(false);
   let starterVisible = $state(!handoff);
   let timelineExpanded = $state(false);
+  let timelineLens = $state<"hands" | "floor" | "motion">("hands");
   let workspaceSizes = $state<number[]>([]);
   let pickerOpen = $state(false);
   const preloadedSequences = new Map<string, SequenceData>(
@@ -596,11 +597,23 @@
 {/snippet}
 
 {#snippet timelineDockPanel()}
-  <StageTimeline {editMode} mode="dock" onExpand={() => openChoreography()} />
+  <StageTimeline
+    {editMode}
+    sequences={resolvedSequences}
+    bind:timelineLens
+    mode="dock"
+    onExpand={() => openChoreography()}
+  />
 {/snippet}
 
 {#snippet timelineEditorPanel()}
-  <StageTimeline {editMode} mode="editor" onCollapse={collapseChoreography} />
+  <StageTimeline
+    {editMode}
+    sequences={resolvedSequences}
+    bind:timelineLens
+    mode="editor"
+    onCollapse={collapseChoreography}
+  />
 {/snippet}
 
 <div
