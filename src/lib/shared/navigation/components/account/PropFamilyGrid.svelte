@@ -69,26 +69,9 @@
     gap: 0.625rem;
   }
 
-  @container (min-width: 40rem) {
+  @container (min-width: 50rem) {
     .family-grid {
       grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
-  }
-
-  @container (min-width: 70rem) {
-    .family-grid {
-      gap: 0.75rem;
-    }
-
-    .family-picker {
-      gap: 0.75rem;
-      padding-inline: 1rem;
-    }
-  }
-
-  @container (min-width: 120rem) {
-    .family-grid {
-      gap: 1.25rem;
     }
   }
 </style>
