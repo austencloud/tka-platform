@@ -82,6 +82,7 @@
   let activeFeatureId = $state("camp-road-entrance");
   let proposalNote = $state("");
   let svgElement = $state<SVGSVGElement | null>(null);
+  let mapInteractionElement = $state<HTMLButtonElement | null>(null);
   let view = $state({ ...FLOW_FEST_TRACE_VIEW });
 
   const history: Record<FlowFestPathId, ImagePoint[][]> = {
@@ -304,11 +305,11 @@
   }
 
   function handlePointerDown(event: PointerEvent): void {
-    if (!svgElement || pointerId !== null) return;
+    if (!svgElement || !mapInteractionElement || pointerId !== null) return;
     const point = pointFromEvent(event);
     if (!point) return;
     pointerId = event.pointerId;
-    svgElement.setPointerCapture(event.pointerId);
+    mapInteractionElement.setPointerCapture(event.pointerId);
     if (interactionMode === "draw" && workspaceMode === "paths") {
       draftPath = activePath;
       draft = [point];
@@ -424,8 +425,8 @@
     }
     const releasedPointerId = pointerId;
     pointerId = null;
-    if (svgElement.hasPointerCapture(releasedPointerId)) {
-      svgElement.releasePointerCapture(releasedPointerId);
+    if (mapInteractionElement?.hasPointerCapture(releasedPointerId)) {
+      mapInteractionElement.releasePointerCapture(releasedPointerId);
     }
     draft = [];
     draftPath = null;
@@ -436,8 +437,8 @@
     if (!svgElement || event.pointerId !== pointerId) return;
     const releasedPointerId = pointerId;
     pointerId = null;
-    if (svgElement.hasPointerCapture(releasedPointerId)) {
-      svgElement.releasePointerCapture(releasedPointerId);
+    if (mapInteractionElement?.hasPointerCapture(releasedPointerId)) {
+      mapInteractionElement.releasePointerCapture(releasedPointerId);
     }
     draft = [];
     draftPath = null;
@@ -911,14 +912,12 @@
         >
       </div>
 
-      <svg
+      <button
+        type="button"
         class:panning={interactionMode === "pan"}
         class:placing={interactionMode === "place"}
-        class="terrain-map"
-        bind:this={svgElement}
-        viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`}
-        role="application"
-        tabindex="0"
+        class="terrain-map-interaction"
+        bind:this={mapInteractionElement}
         aria-label="Flow Fest terrain drawing map"
         onpointerdown={handlePointerDown}
         onpointermove={handlePointerMove}
@@ -928,147 +927,157 @@
         onkeydown={handleMapKeydown}
         onwheel={handleWheel}
       >
-        <image
-          href="/data/flow-fest-sim/ortho.webp"
-          x="0"
-          y="0"
-          width="2048"
-          height="2048"
-          preserveAspectRatio="none"
-        />
+        <svg
+          class="terrain-map"
+          bind:this={svgElement}
+          viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`}
+          role="img"
+          aria-label="North-up registered aerial map with camp plan and route overlays"
+        >
+          <image
+            href="/data/flow-fest-sim/ortho.webp"
+            x="0"
+            y="0"
+            width="2048"
+            height="2048"
+            preserveAspectRatio="none"
+          />
 
-        {#if workspaceMode === "plan" && previewPlan}
-          <g class="plan-regions" aria-label="Camp plan regions">
-            {#each previewPlan.regions as region}
-              {#if region.shape === "ellipse" && region.center}
-                {@const center = worldPointToImage(region.center)}
-                <ellipse
-                  class:woodland={region.kind === "woodland"}
-                  class:clearing={region.kind === "clearing"}
-                  class:parking={region.kind === "parking-field"}
-                  cx={center.x}
-                  cy={center.y}
-                  rx={(region.radiusXMeters ?? 1) * 2}
-                  ry={(region.radiusZMeters ?? 1) * 2}
+          {#if workspaceMode === "plan" && previewPlan}
+            <g class="plan-regions" aria-label="Camp plan regions">
+              {#each previewPlan.regions as region}
+                {#if region.shape === "ellipse" && region.center}
+                  {@const center = worldPointToImage(region.center)}
+                  <ellipse
+                    class:woodland={region.kind === "woodland"}
+                    class:clearing={region.kind === "clearing"}
+                    class:parking={region.kind === "parking-field"}
+                    cx={center.x}
+                    cy={center.y}
+                    rx={(region.radiusXMeters ?? 1) * 2}
+                    ry={(region.radiusZMeters ?? 1) * 2}
+                  />
+                {:else if region.points}
+                  <polygon
+                    class="crop"
+                    points={worldPointsAttribute(region.points)}
+                  />
+                {/if}
+              {/each}
+            </g>
+            <g class="plan-lines" aria-label="Camp plan routes">
+              {#each previewPlan.publicRoads as road}
+                <polyline
+                  class="plan-line official"
+                  points={worldPointsAttribute(road.points)}
                 />
-              {:else if region.points}
-                <polygon
-                  class="crop"
-                  points={worldPointsAttribute(region.points)}
+              {/each}
+              {#each previewPlan.internalDrives as drive}
+                <polyline
+                  class="plan-line internal"
+                  points={worldPointsAttribute(drive.points)}
                 />
-              {/if}
-            {/each}
-          </g>
-          <g class="plan-lines" aria-label="Camp plan routes">
-            {#each previewPlan.publicRoads as road}
-              <polyline
-                class="plan-line official"
-                points={worldPointsAttribute(road.points)}
-              />
-            {/each}
-            {#each previewPlan.internalDrives as drive}
-              <polyline
-                class="plan-line internal"
-                points={worldPointsAttribute(drive.points)}
-              />
-            {/each}
-            {#each previewPlan.footConnectors as connector}
-              <polyline
-                class="plan-line connector"
-                points={worldPointsAttribute(connector.points)}
-              />
-            {/each}
-          </g>
-          <g class="plan-landmarks" aria-label="Camp plan landmarks">
-            {#each previewPlan.landmarks.filter((landmark) => landmark.id !== "selected-camp") as landmark}
-              {@const point = worldPointToImage(landmark.position)}
-              <g
-                class="plan-marker"
-                class:selected={landmark.id === activeFeatureId}
-                class:corrected={proposals.some(
-                  (proposal) => proposal.featureId === landmark.id
-                )}
-                transform={`translate(${point.x} ${point.y})`}
-              >
-                <circle r={landmark.id === activeFeatureId ? 10 : 6} />
-                <text x="11" y="-10">{landmark.mapLabel}</text>
-              </g>
-            {/each}
-            {#each previewPlan.regions.filter((region) => region.center) as region}
-              {@const point = featureImagePoint(region.id)}
-              {#if point}
+              {/each}
+              {#each previewPlan.footConnectors as connector}
+                <polyline
+                  class="plan-line connector"
+                  points={worldPointsAttribute(connector.points)}
+                />
+              {/each}
+            </g>
+            <g class="plan-landmarks" aria-label="Camp plan landmarks">
+              {#each previewPlan.landmarks.filter((landmark) => landmark.id !== "selected-camp") as landmark}
+                {@const point = worldPointToImage(landmark.position)}
                 <g
-                  class="region-center-marker"
-                  class:selected={region.id === activeFeatureId}
+                  class="plan-marker"
+                  class:selected={landmark.id === activeFeatureId}
                   class:corrected={proposals.some(
-                    (proposal) => proposal.featureId === region.id
+                    (proposal) => proposal.featureId === landmark.id
                   )}
                   transform={`translate(${point.x} ${point.y})`}
                 >
-                  <path d="M -5 0 L 0 -5 L 5 0 L 0 5 Z" />
+                  <circle r={landmark.id === activeFeatureId ? 10 : 6} />
+                  <text x="11" y="-10">{landmark.mapLabel}</text>
                 </g>
-              {/if}
-            {/each}
-          </g>
-          {#if activeFeature && activeProposal}
-            {@const original = worldPointToImage(activeFeature.originalWorld)}
-            {@const proposed = worldPointToImage(activeProposal.proposedWorld)}
-            <line
-              class="correction-vector"
-              x1={original.x}
-              y1={original.y}
-              x2={proposed.x}
-              y2={proposed.y}
-            />
-            <circle
-              class="original-marker"
-              cx={original.x}
-              cy={original.y}
-              r="6"
-            />
-          {/if}
-        {:else}
-          <polyline
-            class="stored-path upper"
-            class:active={activePath === "upper-to-middle"}
-            points={pointsAttribute(traces["upper-to-middle"])}
-          />
-          <polyline
-            class="stored-path lower"
-            class:active={activePath === "middle-to-lower"}
-            points={pointsAttribute(traces["middle-to-lower"])}
-          />
-          {#if draftPath}
+              {/each}
+              {#each previewPlan.regions.filter((region) => region.center) as region}
+                {@const point = featureImagePoint(region.id)}
+                {#if point}
+                  <g
+                    class="region-center-marker"
+                    class:selected={region.id === activeFeatureId}
+                    class:corrected={proposals.some(
+                      (proposal) => proposal.featureId === region.id
+                    )}
+                    transform={`translate(${point.x} ${point.y})`}
+                  >
+                    <path d="M -5 0 L 0 -5 L 5 0 L 0 5 Z" />
+                  </g>
+                {/if}
+              {/each}
+            </g>
+            {#if activeFeature && activeProposal}
+              {@const original = worldPointToImage(activeFeature.originalWorld)}
+              {@const proposed = worldPointToImage(
+                activeProposal.proposedWorld
+              )}
+              <line
+                class="correction-vector"
+                x1={original.x}
+                y1={original.y}
+                x2={proposed.x}
+                y2={proposed.y}
+              />
+              <circle
+                class="original-marker"
+                cx={original.x}
+                cy={original.y}
+                r="6"
+              />
+            {/if}
+          {:else}
             <polyline
-              class="draft-path"
-              class:upper={draftPath === "upper-to-middle"}
-              class:lower={draftPath === "middle-to-lower"}
-              points={pointsAttribute(draft)}
+              class="stored-path upper"
+              class:active={activePath === "upper-to-middle"}
+              points={pointsAttribute(traces["upper-to-middle"])}
             />
-          {/if}
+            <polyline
+              class="stored-path lower"
+              class:active={activePath === "middle-to-lower"}
+              points={pointsAttribute(traces["middle-to-lower"])}
+            />
+            {#if draftPath}
+              <polyline
+                class="draft-path"
+                class:upper={draftPath === "upper-to-middle"}
+                class:lower={draftPath === "middle-to-lower"}
+                points={pointsAttribute(draft)}
+              />
+            {/if}
 
-          <g class="clearing-marker" transform="translate(900 876)">
-            <circle r="9" />
-            <text x="14" y="-14">Upper clearing</text>
+            <g class="clearing-marker" transform="translate(900 876)">
+              <circle r="9" />
+              <text x="14" y="-14">Upper clearing</text>
+            </g>
+            <g class="clearing-marker" transform="translate(1224 794)">
+              <circle r="9" />
+              <text x="14" y="-14">Middle Earth</text>
+            </g>
+            <g class="clearing-marker" transform="translate(1596 764)">
+              <circle r="9" />
+              <text x="-14" y="-14" text-anchor="end">Lower clearing</text>
+            </g>
+          {/if}
+          <g
+            class="north-arrow"
+            transform="translate(1718 622)"
+            aria-label="North"
+          >
+            <text x="0" y="0" text-anchor="middle">N</text>
+            <path d="M 0 10 L -8 34 L 0 29 L 8 34 Z" />
           </g>
-          <g class="clearing-marker" transform="translate(1224 794)">
-            <circle r="9" />
-            <text x="14" y="-14">Middle Earth</text>
-          </g>
-          <g class="clearing-marker" transform="translate(1596 764)">
-            <circle r="9" />
-            <text x="-14" y="-14" text-anchor="end">Lower clearing</text>
-          </g>
-        {/if}
-        <g
-          class="north-arrow"
-          transform="translate(1718 622)"
-          aria-label="North"
-        >
-          <text x="0" y="0" text-anchor="middle">N</text>
-          <path d="M 0 10 L -8 34 L 0 29 L 8 34 Z" />
-        </g>
-      </svg>
+        </svg>
+      </button>
     </div>
   </section>
 
@@ -1374,25 +1383,34 @@
     white-space: nowrap;
   }
 
-  .terrain-map {
-    display: block;
+  .terrain-map-interaction {
     width: 100%;
     aspect-ratio: 1080 / 560;
+    padding: 0;
+    border: 0;
     background: var(--theme-panel-bg, #12121c);
+    color: inherit;
+    text-align: initial;
     cursor: crosshair;
     touch-action: none;
     user-select: none;
   }
 
-  .terrain-map.panning {
+  .terrain-map {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .terrain-map-interaction.panning {
     cursor: grab;
   }
 
-  .terrain-map.placing {
+  .terrain-map-interaction.placing {
     cursor: move;
   }
 
-  .terrain-map:focus-visible {
+  .terrain-map-interaction:focus-visible {
     outline: 3px solid var(--theme-accent, #d6a84e);
     outline-offset: -3px;
   }
