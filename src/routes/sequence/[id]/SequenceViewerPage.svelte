@@ -2,7 +2,7 @@
   import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
   import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import { loadSequencesByIds } from "$lib/features/choreo-card/services/catalog-loader";
-  import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
+  import type { SequenceRouteMeta } from "./sequence-seo";
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
@@ -67,12 +67,10 @@
   interface Props {
     data: {
       meta: SequenceRouteMeta;
-      seo: SequenceSeoDocument;
     };
   }
 
   const { data }: Props = $props();
-  const seo = $derived(data.seo);
 
   // Route params
   const sequenceId = $derived(page.params.id);
@@ -543,49 +541,6 @@
     blockClicks={swipeDismiss.state.blockClicks}
   >
     {#snippet children(ctx)}
-      {#snippet routeContext()}
-        {#if !ctx.editingPane}
-          <section
-            class="sequence-context"
-            aria-labelledby="sequence-context-heading"
-            data-sequence-index-content
-          >
-            <div class="sequence-context-identity">
-              <p>Flow Arts Composer</p>
-              <h1 id="sequence-context-heading">{seo.heading}</h1>
-            </div>
-
-            <p class="sequence-context-facts">
-              {#if data.meta.creator}<span>By {data.meta.creator}</span>{/if}
-              {#if data.meta.stepCount}
-                <span>
-                  {data.meta.stepCount}
-                  {data.meta.stepCount === 1 ? "step" : "steps"}
-                </span>
-              {/if}
-              {#if data.meta.difficulty}
-                <span>Difficulty: {data.meta.difficulty}</span>
-              {/if}
-            </p>
-
-            <details class="sequence-context-details">
-              <summary>
-                Details
-                <i class="fas fa-chevron-down" aria-hidden="true"></i>
-              </summary>
-              <div class="sequence-context-panel">
-                <p>{seo.description}</p>
-
-                <nav aria-label="More flow arts tools">
-                  <a href="/create">Open Flow Arts Composer</a>
-                  <a href="/browse/gallery">Browse public sequences</a>
-                </nav>
-              </div>
-            </details>
-          </section>
-        {/if}
-      {/snippet}
-
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <main
         class="sequence-route-page"
@@ -607,7 +562,6 @@
             label: `Back to ${handoffData?.returnLabel || "Browse"}`,
           }}
           openAppHref="/browse/gallery"
-          contextContent={routeContext}
           showFullscreenControls
         />
       </main>
@@ -625,167 +579,6 @@
     height: 100vh;
     height: 100dvh;
     overflow: hidden;
-  }
-
-  .sequence-context {
-    position: relative;
-    z-index: 19;
-    display: grid;
-    grid-template-columns: minmax(180px, 1fr) auto auto;
-    align-items: center;
-    gap: 12px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 6px 16px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: var(--theme-panel-bg, rgba(15, 20, 30, 0.96));
-    flex-shrink: 0;
-  }
-
-  .sequence-context-identity {
-    min-width: 0;
-  }
-
-  .sequence-context-identity p {
-    margin: 0 0 2px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    line-height: 1;
-    text-transform: uppercase;
-  }
-
-  .sequence-context-identity h1 {
-    margin: 0;
-    overflow: hidden;
-    color: var(--theme-text, #ffffff);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-    line-height: 1.25;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .sequence-context-facts {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 6px 14px;
-    margin: 0;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.72));
-    font-size: var(--font-size-compact, 12px);
-    line-height: 1.3;
-  }
-
-  .sequence-context-facts span {
-    white-space: nowrap;
-  }
-
-  .sequence-context-details {
-    position: relative;
-  }
-
-  .sequence-context-details summary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 0 12px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
-    color: var(--theme-text, #ffffff);
-    cursor: pointer;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    list-style: none;
-  }
-
-  .sequence-context-details summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .sequence-context-details summary:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.09));
-  }
-
-  .sequence-context-details summary:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  .sequence-context-details summary i {
-    font-size: 10px;
-    transition: transform 180ms ease;
-  }
-
-  .sequence-context-details[open] summary i {
-    transform: rotate(180deg);
-  }
-
-  .sequence-context-panel {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    width: min(620px, calc(100vw - 24px));
-    padding: 16px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    border-radius: 14px;
-    background: var(--theme-panel-bg, rgba(15, 20, 30, 0.98));
-    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.42);
-  }
-
-  .sequence-context-panel > p {
-    max-width: 62ch;
-    margin: 0;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.78));
-    font-size: var(--font-size-sm, 14px);
-    line-height: 1.55;
-  }
-
-  .sequence-context-panel nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 18px;
-    margin-top: 16px;
-  }
-
-  .sequence-context-panel a {
-    color: var(--theme-accent, #a78bfa);
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
-  }
-
-  .sequence-context-panel a:hover {
-    text-decoration-thickness: 2px;
-  }
-
-  @media (max-width: 700px) {
-    .sequence-context {
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 5px 10px;
-      padding: 6px 12px;
-    }
-
-    .sequence-context-facts {
-      grid-column: 1 / -1;
-      grid-row: 2;
-      justify-content: flex-start;
-    }
-
-    .sequence-context-details {
-      grid-column: 2;
-      grid-row: 1;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .sequence-context-details summary i {
-      transition: none;
-    }
   }
 
   /* Loading state */
