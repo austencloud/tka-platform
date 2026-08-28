@@ -676,7 +676,7 @@
     --stage-timeline-dock-size: 4.25rem;
     --stage-timeline-sheet-size: min(66cqh, 26rem);
     --stage-timeline-editor-max-size: 22.5rem;
-    --stage-timeline-toolbar-size: 3.75rem;
+    --stage-timeline-toolbar-size: 4.25rem;
     --stage-timeline-ruler-size: 2.25rem;
     --stage-timeline-lane-size: 3.5rem;
     display: flex;
