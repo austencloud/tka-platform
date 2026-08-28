@@ -48,8 +48,8 @@
   "artifacts": {
     "blend": "blender/ember-volcanic-world-production-slice-r9.blend",
     "rawGlb": "static/models/ember/ember-production-slice_raw.glb",
-    "rawGlbSha256": "500771c4280b0ae5cdd5c7263be837c7881a015e703e42e5e131fe018516eed6",
-    "rawGlbBytes": 14833108,
+    "rawGlbSha256": "a2940af86488d24bef7894e3b9fb10b5d5451af0e74fe2c87fa090384cab285b",
+    "rawGlbBytes": 14758596,
     "worldContract": "src/lib/shared/3d/environments/domain/models/scene-configs/ember-volcanic-world-r7.json",
     "worldContractSha256": "18919591d40e50a596fbc9faa95f1cf792efe14cbceae080ffdb1773f0e143fc"
   },
@@ -158,7 +158,12 @@
         -122.0,
         -0.32
       ]
-    ]
+    ],
+    "collapsedLavaBankCenterRuntimeXZ": [
+      28.0,
+      6.0
+    ],
+    "collapsedLavaBankRiverEdgeClearanceMeters": 4.3171
   },
   "geometry": {
     "meshObjectCount": 87,
@@ -199,13 +204,13 @@
     "boundsBlenderXYZ": {
       "min": [
         -190.0,
-        -217.1481,
-        -1.0511
+        -224.1357,
+        -3.468
       ],
       "max": [
         190.0,
         145.0,
-        52.9665
+        33.4242
       ]
     }
   },
@@ -327,10 +332,10 @@
     "direction": "fresh-rift-synthesis",
     "approvalTrackerItem": "ahPuPwh34G3FeqvUEHsB",
     "familyPolygonCounts": {
-      "0": 5332,
-      "1": 38040,
-      "2": 50737,
-      "3": 81926
+      "0": 5365,
+      "1": 38530,
+      "2": 49431,
+      "3": 82709
     },
     "runtimeAssets": {
       "detailTextures": [

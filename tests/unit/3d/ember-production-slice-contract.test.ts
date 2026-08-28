@@ -5,6 +5,10 @@ import { describe, expect, it } from "vitest";
 import { createDefaultEmberConfig } from "$lib/shared/3d/environments/domain/models/scene-configs/ember-scene-config";
 import { getCanonicalPerformerStageBounds } from "$lib/shared/3d/environments/domain/performer-stage-bounds";
 import {
+  createEmberSurfaceEcology,
+  distanceToEmberLavaCorridor,
+} from "$lib/shared/3d/environments/scenes/ember/ember-surface-ecology";
+import {
   resolveViewerFormationFacingAngle,
   VIEWER_FRONT_STAGE_FACING_ANGLE,
 } from "$lib/shared/3d/domain/viewer-formation-facing";
@@ -195,6 +199,8 @@ describe("Ember production-slice contracts", () => {
     const report = JSON.parse(readFileSync(reportPath, "utf8")) as {
       contract: {
         lavaRiverControlPointsRuntimeXZHeight: [number, number, number][];
+        collapsedLavaBankCenterRuntimeXZ: [number, number];
+        collapsedLavaBankRiverEdgeClearanceMeters: number;
       };
       geometry: { volcanicBasinCount: number; lavaChannelLeveeCount: number };
     };
@@ -206,6 +212,10 @@ describe("Ember production-slice contracts", () => {
     expect(report.contract.lavaRiverControlPointsRuntimeXZHeight).toEqual(
       world.lavaRiver.pointsRuntimeXZHeight
     );
+    expect(report.contract.collapsedLavaBankCenterRuntimeXZ).toEqual([28, 6]);
+    expect(
+      report.contract.collapsedLavaBankRiverEdgeClearanceMeters
+    ).toBeGreaterThan(4);
     expect(report.geometry.volcanicBasinCount).toBe(1);
     expect(report.geometry.lavaChannelLeveeCount).toBe(2);
     expect(world.terrain.runtimeXRange).toEqual([-190, 190]);
@@ -351,6 +361,7 @@ describe("Ember integrated-room contracts", () => {
     expect(workbenchSource).toContain(
       "facingAngle: VIEWER_FRONT_STAGE_FACING_ANGLE"
     );
+    expect(VIEWER_FRONT_STAGE_FACING_ANGLE).toBe(Math.PI);
 
     const line = createFormationFromPreset("line", 4);
     for (const slot of line.slots) {
@@ -372,6 +383,20 @@ describe("Ember integrated-room contracts", () => {
         resolveViewerFormationFacingAngle(slot, circle, Number.NaN)
       )
     ).toEqual(circle.slots.map((slot) => slot.facingAngle));
+  });
+
+  it("fills the shelf with deterministic geology without invading stage or lava", () => {
+    const first = createEmberSurfaceEcology(5.2);
+    const second = createEmberSurfaceEcology(5.2);
+    expect(first).toEqual(second);
+    expect(first.rubble).toHaveLength(220);
+    expect(first.plates).toHaveLength(54);
+
+    for (const placement of [...first.rubble, ...first.plates]) {
+      const [x, , z] = placement.position;
+      expect(Math.hypot(x, z)).toBeGreaterThanOrEqual(7.4);
+      expect(distanceToEmberLavaCorridor(x, z)).toBeGreaterThanOrEqual(3.7);
+    }
   });
 
   it("keeps the visibility revision above the darkness regression floor", () => {

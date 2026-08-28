@@ -22,6 +22,7 @@
   import VolcanicHaze from "./ember/VolcanicHaze.svelte";
   import HeatDistortion from "./ember/HeatDistortion.svelte";
   import EmberGroundDetail from "./ember/EmberGroundDetail.svelte";
+  import EmberSurfaceEcology from "./ember/EmberSurfaceEcology.svelte";
   import {
     type EmberSceneConfig,
     createDefaultEmberConfig,
@@ -325,6 +326,10 @@
 />
 
 <EmberGroundDetail scene={productionSliceAsset} />
+
+<!-- Runtime geology breaks the playable shelf into physical clinker, rafted
+     plates, and heat-stained fragments without consuming the clear stage. -->
+<EmberSurfaceEcology stageRadius={activeConfig.platform.radius} />
 
 <!-- Heat distortion shimmer above lava -->
 {#if activeConfig.lavaPool.enabled}

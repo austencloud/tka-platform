@@ -108,18 +108,18 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
   id: "blackglass-inferno",
   label: "Blackglass Inferno",
   sky: {
-    topColor: "#030305",
-    midColor: "#0b0506",
-    bottomColor: "#4d1008",
+    topColor: "#030507",
+    midColor: "#120809",
+    bottomColor: "#7a1d0c",
   },
-  fog: { color: "#160807", density: 0.0082 },
+  fog: { color: "#170b0b", density: 0.0069 },
   lavaRivers: {
     baseColor: "#c92a04",
     hotColor: "#ffb12b",
     crustColor: "#070303",
     flowSpeed: 0.052,
     warpIntensity: 0.62,
-    crustCoverage: 0.66,
+    crustCoverage: 0.54,
   },
   volcanicHaze: {
     enabled: true,
@@ -161,9 +161,9 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
     spin: false,
   },
   hemisphereLight: {
-    skyColor: "#6e6769",
-    groundColor: "#5b1509",
-    intensity: 1.04,
+    skyColor: "#78878d",
+    groundColor: "#4d170c",
+    intensity: 1.12,
   },
   skyLight: {
     enabled: true,
@@ -175,8 +175,8 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
     id: "blackglass-inferno",
     label: "Blackglass Inferno",
     directionals: [
-      { position: [18, 15, 18], color: "#ffc18c", intensity: 0.46 },
-      { position: [-20, 10, 12], color: "#6f8c9b", intensity: 0.72 },
+      { position: [18, 15, 18], color: "#ffc18c", intensity: 0.58 },
+      { position: [-20, 10, 12], color: "#769bb0", intensity: 1.04 },
       { position: [0, 24, -6], color: "#ffeadb", intensity: 0.3 },
       { position: [-34, 20, 90], color: "#c33a18", intensity: 0.55 },
     ],
@@ -256,8 +256,8 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
     ],
     materials: {
       world: {
-        tint: "#24100d",
-        tintBlend: 0.08,
+        tint: "#11191c",
+        tintBlend: 0.13,
         emissive: "#3a0903",
         emissiveBlend: 0.08,
         emissiveIntensity: 0.16,
@@ -265,8 +265,8 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
         metalnessAdd: -0.05,
       },
       playableSurface: {
-        tint: "#120708",
-        tintBlend: 0.06,
+        tint: "#141a1c",
+        tintBlend: 0.14,
         emissive: "#681704",
         emissiveBlend: 0.025,
         emissiveIntensity: 0.05,
@@ -274,8 +274,8 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
         metalnessAdd: -0.25,
       },
       meshyGeology: {
-        tint: "#180a08",
-        tintBlend: 0.09,
+        tint: "#151a1c",
+        tintBlend: 0.13,
         emissive: "#4a0d03",
         emissiveBlend: 0.06,
         emissiveIntensity: 0.14,

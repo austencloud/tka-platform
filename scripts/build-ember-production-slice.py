@@ -1901,29 +1901,46 @@ def r8_geological_height(
     )
 
     if direction == "breached-caldera-terraces":
-        # One giant, offset caldera defines the world. Quantized collapse benches
-        # produce readable strata while a missing south-east arc creates the
-        # travel breach instead of another circular backdrop wall.
-        caldera_x = (x + 10.0) / 1.13
-        caldera_z = (runtime_z - 74.0) / 0.84
-        caldera_radius = math.hypot(caldera_x, caldera_z)
-        angle = math.atan2(caldera_z, caldera_x)
-        rim = math.exp(-((caldera_radius - 102.0) / 25.0) ** 2)
-        broken_arc = 0.22 + 0.78 * smoothstep(-0.62, 0.18, math.sin(angle + 0.42))
-        rim_height = rim * broken_arc * (28.0 + 7.0 * math.sin(angle * 2.7 + 0.6))
-
-        collapse_axis = max(0.0, 1.0 - caldera_radius / 132.0)
-        raw_benches = collapse_axis * 17.5
-        terrace_step = 2.8
-        terraced = math.floor(raw_benches / terrace_step) * terrace_step
-        bench_blend = smoothstep(0.0, 1.0, (raw_benches % terrace_step) / terrace_step)
-        terraced += bench_blend * 0.42
-
-        west_scarp = math.exp(-(((x + 72.0) / 31.0) ** 2 + ((runtime_z - 38.0) / 76.0) ** 2)) * 13.0
-        east_scarp = math.exp(-(((x - 96.0) / 42.0) ** 2 + ((runtime_z - 64.0) / 88.0) ** 2)) * 18.0
-        rear_saddle = math.exp(-(((x - 66.0) / 30.0) ** 2 + ((runtime_z - 132.0) / 42.0) ** 2)) * 13.0
+        # A long breached valley reads as exterior country from the audience
+        # camera. The former radial rim formed a continuous arena wall, even
+        # with a mathematical saddle cut into it. These separated scarps keep
+        # the caldera scale on both flanks while preserving a sky-backed travel
+        # corridor along the lava river.
+        west_scarp = math.exp(
+            -(((x + 118.0) / 48.0) ** 2 + ((runtime_z - 62.0) / 102.0) ** 2)
+        ) * 27.0
+        east_scarp = math.exp(
+            -(((x - 126.0) / 46.0) ** 2 + ((runtime_z - 54.0) / 96.0) ** 2)
+        ) * 24.0
+        west_rear_mass = math.exp(
+            -(((x + 78.0) / 40.0) ** 2 + ((runtime_z - 164.0) / 40.0) ** 2)
+        ) * 21.0
+        east_rear_mass = math.exp(
+            -(((x - 92.0) / 42.0) ** 2 + ((runtime_z - 170.0) / 44.0) ** 2)
+        ) * 24.0
+        west_bench = math.exp(
+            -(((x + 52.0) / 30.0) ** 2 + ((runtime_z - 72.0) / 74.0) ** 2)
+        ) * 9.0
+        east_bench = math.exp(
+            -(((x - 64.0) / 34.0) ** 2 + ((runtime_z - 86.0) / 78.0) ** 2)
+        ) * 10.5
+        flank_weight = smoothstep(32.0, 108.0, abs(x))
+        raw_terraces = flank_weight * max(0.0, 1.0 - abs(runtime_z - 70.0) / 170.0) * 6.5
+        terrace_step = 1.65
+        terraced = math.floor(raw_terraces / terrace_step) * terrace_step
+        breach = math.exp(
+            -(((x - 1.0) / 42.0) ** 2 + ((runtime_z - 132.0) / 68.0) ** 2)
+        ) * 5.5
         return base + terrain_weight * (
-            rim_height + terraced + west_scarp + east_scarp - rear_saddle + micro_relief
+            west_scarp
+            + east_scarp
+            + west_rear_mass
+            + east_rear_mass
+            + west_bench
+            + east_bench
+            + terraced
+            - breach
+            + micro_relief * 0.82
         )
 
     if direction == "collapsed-lava-delta":
@@ -2022,9 +2039,9 @@ def create_volcanic_basin(
                 # not be guillotined by a later terrain pass. Local erosion
                 # bowls retain their bases while the surrounding benches rise.
                 for asset_x, asset_z, inner_radius, outer_radius, bed_height in (
-                    (-8.5, 27.0, 10.0, 22.0, -0.22),
-                    (16.0, 1.6, 3.8, 8.5, -0.18),
-                    (-13.0, 11.0, 4.2, 9.5, -0.2),
+                    (-24.0, 24.0, 14.0, 27.0, -0.22),
+                    (28.0, 6.0, 5.0, 10.0, -0.18),
+                    (19.0, 15.0, 6.2, 13.0, -0.2),
                 ):
                     asset_distance = math.hypot(x - asset_x, runtime_z - asset_z)
                     asset_blend = 1.0 - smoothstep(inner_radius, outer_radius, asset_distance)
@@ -2684,12 +2701,16 @@ def create_meshy_geology_ensemble(
 ) -> dict[str, object]:
     """Place the three approved formations once, with authored country between them."""
 
+    # The columnar formation is a framing escarpment, not a shrine. Its former
+    # near-centre placement stopped both the eye and the lava route. Cropping a
+    # larger mass into the right edge makes the authored detail feel like one
+    # exposed face of a much larger volcanic country.
     hero = import_meshy_geology(
         "hero-columnar-escarpment.glb",
         "Ember_Meshy_Columnar_Escarpment",
-        (-8.5, -27.0, -0.62),
-        12.5,
-        180.0,
+        (-24.0, -24.0, -0.62),
+        19.0,
+        158.0,
         "meshy-hero-geology",
         "hero-columnar-escarpment",
         "01a04587-db17-7a2a-b386-849e70d03b4e",
@@ -2698,7 +2719,7 @@ def create_meshy_geology_ensemble(
     lava_bank = import_meshy_geology(
         "collapsed-lava-bank.glb",
         "Ember_Meshy_Collapsed_Lava_Bank",
-        (16.0, -1.6, -0.34),
+        (28.0, -6.0, -0.34),
         3.4,
         22.0,
         "meshy-lava-bank",
@@ -2709,9 +2730,9 @@ def create_meshy_geology_ensemble(
     fumarole = import_meshy_geology(
         "obsidian-fumarole-talus.glb",
         "Ember_Meshy_Obsidian_Fumarole_Talus",
-        (-13.0, -11.0, -0.42),
-        3.7,
-        -18.0,
+        (19.0, -15.0, -0.42),
+        5.4,
+        24.0,
         "meshy-fumarole-talus",
         "obsidian-fumarole-talus",
         "01a0458e-5a9d-7d9c-a115-d569ba60119a",
@@ -2720,9 +2741,9 @@ def create_meshy_geology_ensemble(
     distant_caldera = import_meshy_geology(
         "distant-breached-caldera.glb",
         "Ember_Meshy_Distant_Breached_Caldera",
-        (-25.0, -145.0, 2.0),
-        24.0,
-        180.0,
+        (108.0, -158.0, 2.0),
+        22.0,
+        172.0,
         "meshy-distant-caldera",
         "distant-breached-caldera",
         "01a045d9-7610-7858-bf2d-3caba206f23a",
@@ -3569,6 +3590,21 @@ def scene_report(
         )
         for obj in structural_objects
     )
+    lava_bank = next(
+        obj for obj in mesh_objects if obj.get("tka_role") == "meshy-lava-bank"
+    )
+    river = sample_river_centerline()
+    lava_bank_centerline_clearance = min(
+        river_distance_and_height(
+            (lava_bank.matrix_world @ vertex.co).x,
+            (lava_bank.matrix_world @ vertex.co).y,
+            river,
+        )[0]
+        for vertex in lava_bank.data.vertices
+    )
+    lava_bank_edge_clearance = lava_bank_centerline_clearance - (
+        float(WORLD_CONTRACT["lavaRiver"]["width"]) * 0.5
+    )
     return {
         "revision": REVISION,
         "blenderVersion": bpy.app.version_string,
@@ -3671,6 +3707,13 @@ def scene_report(
             ),
             "performerFacing": "negative-runtime-z-toward-front-stage-audience",
             "lavaRiverControlPointsRuntimeXZHeight": RIVER_POINTS_RUNTIME,
+            "collapsedLavaBankCenterRuntimeXZ": [
+                round(lava_bank.location.x, 4),
+                round(-lava_bank.location.y, 4),
+            ],
+            "collapsedLavaBankRiverEdgeClearanceMeters": round(
+                lava_bank_edge_clearance, 4
+            ),
         },
         "geometry": {
             "meshObjectCount": len(mesh_objects),
