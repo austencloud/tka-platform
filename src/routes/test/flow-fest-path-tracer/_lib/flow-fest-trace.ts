@@ -168,6 +168,23 @@ export function imagePointToWorld(point: ImagePoint): WorldPoint {
   };
 }
 
+export function worldPointToImage(point: WorldPoint): ImagePoint {
+  return {
+    x: Number(
+      (
+        (point.x - FLOW_FEST_IMAGE.worldMinX) /
+        FLOW_FEST_IMAGE.pixelSizeMeters
+      ).toFixed(3)
+    ),
+    y: Number(
+      (
+        (point.z - FLOW_FEST_IMAGE.worldMinZ) /
+        FLOW_FEST_IMAGE.pixelSizeMeters
+      ).toFixed(3)
+    ),
+  };
+}
+
 export function createTraceSubmission(
   traces: FlowFestImageTraces,
   capturedAt = new Date().toISOString()
