@@ -441,6 +441,7 @@
 
   .variant-popover {
     z-index: 60;
+    container-type: inline-size;
     display: flex;
     width: min(420px, calc(100vw - 24px));
     max-height: min(440px, calc(100vh - 24px));
@@ -473,12 +474,25 @@
 
   .variant-popover-buttons {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
     gap: 8px;
   }
 
   .variant-popover-buttons .tile-wrapper :global(.prop-button) {
     width: 100%;
+  }
+
+  @container (max-width: 359px) {
+    .variant-popover-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .variant-popover-buttons .tile-wrapper {
+      flex: 0 1 calc((100% - 16px) / 3);
+      min-width: 0;
+    }
   }
 
   .flat-variant-drawer {
