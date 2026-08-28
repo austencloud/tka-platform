@@ -324,8 +324,12 @@ invariant(
 invariant(
   lotusGroup.extras?.tka_petal_count === 5 &&
     lotusGroup.extras?.tka_frame_path_count === 10 &&
-    lotusGroup.extras?.tka_frame_symmetry === "mirrored averaged rail pairs",
-  "Lotus fan no longer carries five complete two-sided petals"
+    lotusGroup.extras?.tka_frame_symmetry ===
+      "mirrored Illustrator SVG centerlines" &&
+    lotusGroup.extras?.tka_vector_reference ===
+      "scripts/assets/lotus-fire-reference.svg" &&
+    lotusGroup.extras?.tka_vector_path_count === 10,
+  "Lotus fan no longer carries the ten mirrored SVG centerlines"
 );
 invariant(
   lotusGroup.extras?.tka_side_weld_boss_count === 2 &&
@@ -341,7 +345,7 @@ invariant(
     nodeIndexByName.has("Fan_Lotus_FingerWeld_Lower") &&
     !nodeIndexByName.has("Fan_Lotus_FingerWeld_UpperLeft") &&
     !nodeIndexByName.has("Fan_Lotus_FingerWeld_LowerLeft"),
-  "Lotus finger ring is not joined by one centered weld without crossing braces"
+  "Lotus finger ring is not centered above the rail-formed triangles"
 );
 invariant(
   lotusGroup.extras?.tka_wick_mount ===

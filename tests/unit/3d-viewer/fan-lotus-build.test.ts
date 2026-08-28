@@ -8,6 +8,10 @@ const builder = fs.readFileSync(
   path.join(root, "scripts", "build-fan-model.py"),
   "utf8"
 );
+const vectorReference = fs.readFileSync(
+  path.join(root, "scripts", "assets", "lotus-fire-reference.svg"),
+  "utf8"
+);
 const picker = fs.readFileSync(
   path.join(
     root,
@@ -32,6 +36,7 @@ const reference = JSON.parse(
   pivot_px: [number, number];
   published_dimensions_m: [number, number];
   pixel_scale_m: [number, number];
+  vector_reference: string;
   published_construction: {
     spinning_ring_inside_diameter_m: number;
     wick_length_m: number;
@@ -55,7 +60,6 @@ const reference = JSON.parse(
       center: [number, number, number];
       radius: number;
     };
-    center_petal_root: [number, number];
     wick_roll_length_m: number;
     wick_roll_lengths_m: number[];
     wick_diameters_m: number[];
@@ -65,8 +69,6 @@ const reference = JSON.parse(
     wick_tine_insertion_depth_m: number;
     wick_centers_m: [number, number][];
     wick_directions: [number, number][];
-    left_frame_paths: Record<string, [number, number][]>;
-    right_frame_paths: Record<string, [number, number][]>;
   };
   calibration: {
     symmetry: string;
@@ -107,33 +109,56 @@ describe("Medium Lotus five-wick fire fan", () => {
     expect(reference.pixel_scale_m[1]).toBeCloseTo(0.35 / (1503 - 310), 12);
   });
 
-  it("builds five complete petals from one averaged mirrored frame", () => {
-    const expectedPaths = [
-      "center_petal",
-      "upper_outer_petal",
-      "upper_inner_petal",
-      "lower_outer_petal",
-      "lower_inner_petal",
+  it("builds five complete petals from mirrored SVG paths", () => {
+    const expectedPathIds = [
+      "center-petal-left",
+      "center-petal-right",
+      "upper-outer-petal-left",
+      "upper-outer-petal-right",
+      "upper-inner-petal-left",
+      "upper-inner-petal-right",
+      "lower-outer-petal-left",
+      "lower-outer-petal-right",
+      "lower-inner-petal-left",
+      "lower-inner-petal-right",
     ];
-    expect(Object.keys(reference.geometry_m.left_frame_paths)).toEqual(
-      expectedPaths
+    const paths = new Map(
+      [...vectorReference.matchAll(/<path id="([^"]+)" d="([^"]+)"\/>/g)].map(
+        (match) => [match[1], match[2]]
+      )
     );
-    expect(Object.keys(reference.geometry_m.right_frame_paths)).toEqual(
-      expectedPaths
+    expect([...paths.keys()]).toEqual(expectedPathIds);
+    expect(reference.vector_reference).toBe(
+      "scripts/assets/lotus-fire-reference.svg"
     );
-    for (const side of [
-      reference.geometry_m.left_frame_paths,
-      reference.geometry_m.right_frame_paths,
-    ]) {
-      for (const pathPoints of Object.values(side)) {
-        expect(pathPoints.length).toBeGreaterThanOrEqual(18);
+    expect(reference.calibration.symmetry).toContain("cubic Beziers");
+    expect(reference.calibration.symmetry).toContain("reflected exactly");
+
+    for (const leftId of expectedPathIds.filter((id) => id.endsWith("-left"))) {
+      const rightId = leftId.replace(/-left$/, "-right");
+      const leftNumbers = paths
+        .get(leftId)
+        ?.match(/-?\d+(?:\.\d+)?/g)
+        ?.map(Number);
+      const rightNumbers = paths
+        .get(rightId)
+        ?.match(/-?\d+(?:\.\d+)?/g)
+        ?.map(Number);
+      expect(rightNumbers).toHaveLength(leftNumbers?.length ?? 0);
+      for (let index = 0; index < (leftNumbers?.length ?? 0); index += 2) {
+        expect(rightNumbers?.[index]).toBeCloseTo(480 - leftNumbers![index], 4);
+        expect(rightNumbers?.[index + 1]).toBeCloseTo(
+          leftNumbers![index + 1],
+          4
+        );
       }
     }
-    expect(reference.calibration.symmetry).toContain("averaged");
-    expect(reference.calibration.symmetry).toContain("mirrored");
+
     expect(builder).toContain('add_empty("Fan_Lotus", root)');
     expect(builder).toContain('parent["tka_frame_path_count"] = 10');
-    expect(builder).toContain("mirrored_anchor_pair(");
+    expect(builder).toContain("bpy.ops.import_curve.svg");
+    expect(builder).toContain("interpolate_bezier(");
+    expect(builder).not.toContain("mirrored_anchor_pair(");
     expect(builder).toContain('f"Fan_Lotus_{readable_name}_Left"');
     expect(builder).toContain('f"Fan_Lotus_{readable_name}_Right"');
   });
@@ -178,11 +203,13 @@ describe("Medium Lotus five-wick fire fan", () => {
       fingerRingInnerRadius +
       reference.published_construction.frame_stock_diameter_m;
 
-    for (const path of [
-      reference.geometry_m.left_frame_paths.center_petal,
-      reference.geometry_m.right_frame_paths.center_petal,
-    ]) {
-      const [startX, startY] = path[0];
+    for (const pathId of ["center-petal-left", "center-petal-right"]) {
+      const pathData = vectorReference.match(
+        new RegExp(`<path id="${pathId}" d="M ([^ ]+) ([^ ]+)`)
+      );
+      expect(pathData).not.toBeNull();
+      const startX = (Number(pathData?.[1]) - 240) / 1000;
+      const startY = (270 - Number(pathData?.[2])) / 1000;
       const offsetFromFingerRing = Math.hypot(
         startX - reference.geometry_m.finger_ring_center_x,
         startY - reference.geometry_m.finger_ring_center_y
@@ -259,11 +286,18 @@ describe("Medium Lotus five-wick fire fan", () => {
     expect(builder).toContain("Fan_Lotus_SideWeld_");
   });
 
-  it("keeps the finger-ring junction centered without crossing braces", () => {
+  it("keeps the finger-ring junction clear of fake crossing braces", () => {
     expect(reference.geometry_m.finger_ring_bottom_weld.radius).toBe(0.0018);
+    expect(vectorReference).not.toContain("finger-triangle-brace");
     expect(builder).not.toContain("Fan_Lotus_FingerBrace_");
     expect(builder).toContain('"Fan_Lotus_FingerWeld_Lower"');
     expect(builder).not.toContain("finger_ring_weld_bosses");
+  });
+
+  it("keeps traced rail geometry owned by the vector reference", () => {
+    expect(reference.geometry_m).not.toHaveProperty("left_frame_paths");
+    expect(reference.geometry_m).not.toHaveProperty("right_frame_paths");
+    expect(reference.geometry_m).not.toHaveProperty("center_petal_root");
   });
 
   it("keeps four build tiles balanced in wide and narrow picker containers", () => {

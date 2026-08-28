@@ -32,6 +32,7 @@ from pathlib import Path
 
 import bpy
 from mathutils import Vector
+from mathutils.geometry import interpolate_bezier
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -41,6 +42,9 @@ DOODLEGRIP_FIRE_REFERENCE = (
     ROOT / "scripts" / "assets" / "doodlegrip-fire-reference.json"
 )
 LOTUS_FIRE_REFERENCE = ROOT / "scripts" / "assets" / "lotus-fire-reference.json"
+LOTUS_FIRE_VECTOR_REFERENCE = (
+    ROOT / "scripts" / "assets" / "lotus-fire-reference.svg"
+)
 
 FIRE_WIDTH_M = 0.4826
 FIRE_HEIGHT_M = 0.3302
@@ -711,51 +715,56 @@ def quadratic_curve(
     return points
 
 
-def resample_anchors(
-    anchors: list[list[float]], sample_count: int
-) -> list[Vector]:
-    """Resample a photographed rail so its opposite side can share each station."""
-    points = [Vector(point) for point in anchors]
-    cumulative = [0.0]
-    for start, end in zip(points, points[1:]):
-        cumulative.append(cumulative[-1] + (end - start).length)
-    total_length = cumulative[-1]
-    if total_length <= 0:
-        return [points[0].copy() for _ in range(sample_count)]
-
-    samples: list[Vector] = []
-    segment_index = 0
-    for sample_index in range(sample_count):
-        target = total_length * sample_index / (sample_count - 1)
-        while (
-            segment_index < len(points) - 2
-            and cumulative[segment_index + 1] < target
-        ):
-            segment_index += 1
-        segment_length = cumulative[segment_index + 1] - cumulative[segment_index]
-        progress = (
-            0.0
-            if segment_length <= 0
-            else (target - cumulative[segment_index]) / segment_length
+def import_svg_centerlines(
+    svg_path: Path,
+    expected_path_ids: set[str],
+) -> dict[str, list[tuple[float, float, float]]]:
+    """Import Illustrator paths without turning their handles back into guessed points."""
+    before = set(bpy.data.objects)
+    bpy.ops.import_curve.svg(filepath=str(svg_path))
+    imported = [obj for obj in bpy.data.objects if obj not in before]
+    imported_names = {obj.name for obj in imported}
+    if imported_names != expected_path_ids:
+        missing = sorted(expected_path_ids - imported_names)
+        unexpected = sorted(imported_names - expected_path_ids)
+        raise ValueError(
+            f"Lotus SVG path mismatch; missing={missing}, unexpected={unexpected}"
         )
-        samples.append(points[segment_index].lerp(points[segment_index + 1], progress))
-    return samples
 
+    # Blender imports the 480 x 350 mm artboard with its lower-left at (0, 0).
+    # Moving it by this calibrated offset places the SVG pivot at model origin.
+    artboard_offset = Vector((-0.24, -0.08, 0.0))
+    centerlines: dict[str, list[tuple[float, float, float]]] = {}
+    for obj in imported:
+        if obj.type != "CURVE" or len(obj.data.splines) != 1:
+            raise ValueError(f"Lotus SVG path {obj.name} is not one curve spline")
+        spline = obj.data.splines[0]
+        if spline.type != "BEZIER" or spline.use_cyclic_u:
+            raise ValueError(f"Lotus SVG path {obj.name} must be an open Bezier")
 
-def mirrored_anchor_pair(
-    left_anchors: list[list[float]],
-    right_anchors: list[list[float]],
-) -> tuple[list[list[float]], list[list[float]]]:
-    """Average the two photographed rails into one deliberately mirrored design."""
-    sample_count = max(len(left_anchors), len(right_anchors))
-    left_samples = resample_anchors(left_anchors, sample_count)
-    right_samples = resample_anchors(right_anchors, sample_count)
-    left = [
-        [(left_point.x - right_point.x) / 2, (left_point.y + right_point.y) / 2]
-        for left_point, right_point in zip(left_samples, right_samples)
-    ]
-    right = [[-x, y] for x, y in left]
-    return left, right
+        points: list[tuple[float, float, float]] = []
+        bezier_points = spline.bezier_points
+        for index in range(len(bezier_points) - 1):
+            start = bezier_points[index]
+            end = bezier_points[index + 1]
+            segment = interpolate_bezier(
+                start.co,
+                start.handle_right,
+                end.handle_left,
+                end.co,
+                5,
+            )
+            if index > 0:
+                segment = segment[1:]
+            points.extend(
+                tuple(obj.matrix_world @ point + artboard_offset)
+                for point in segment
+            )
+        centerlines[obj.name] = points
+
+    for obj in imported:
+        bpy.data.objects.remove(obj, do_unlink=True)
+    return centerlines
 
 
 def catmull_rom_curve(
@@ -1294,7 +1303,11 @@ def build_lotus_frame(
     parent["tka_reference_symmetry"] = reference["calibration"]["symmetry"]
     parent["tka_petal_count"] = 5
     parent["tka_frame_path_count"] = 10
-    parent["tka_frame_symmetry"] = "mirrored averaged rail pairs"
+    parent["tka_frame_symmetry"] = "mirrored Illustrator SVG centerlines"
+    parent["tka_vector_reference"] = str(
+        LOTUS_FIRE_VECTOR_REFERENCE.relative_to(ROOT)
+    ).replace("\\", "/")
+    parent["tka_vector_path_count"] = 10
     parent["tka_side_weld_boss_count"] = len(geometry["side_weld_bosses"])
     parent["tka_finger_ring_brace_count"] = 0
     parent["tka_finger_ring_weld_count"] = 1
@@ -1380,29 +1393,14 @@ def build_lotus_frame(
         )
     )
 
-    ring_centerline_radius = LOTUS_RING_DIAMETER_M / 2 + LOTUS_GRIP_RADIUS_M
-    grip_ring_center = Vector(
-        (geometry["grip_ring_center_x"], geometry["grip_ring_center_y"])
-    )
-
-    def seat_in_grip_ring(anchors: list[list[float]]) -> list[list[float]]:
-        """Hide a rail's open construction end inside its photographed weld."""
-        direction = (Vector(anchors[0]) - grip_ring_center).normalized()
-        start = grip_ring_center + direction * ring_centerline_radius
-        return [[start.x, start.y], *anchors[1:]]
-
     def build_frame_rod(
         name: str,
-        anchors: list[list[float]],
+        traced_path: list[tuple[float, float, float]],
         neck: Vector,
         entry: Vector,
     ) -> bpy.types.Object:
         """Blend one photographed rail into its measured axial wick tine."""
         direction = (entry - neck).normalized()
-        traced_path = catmull_rom_curve(
-            [tuple(point) for point in anchors],
-            segments_per_span=4,
-        )
         cut_index = 1
         for index in range(len(traced_path) - 2, 0, -1):
             point = Vector(traced_path[index])
@@ -1454,45 +1452,29 @@ def build_lotus_frame(
         rod["tka_wick_tine_entry_m"] = list(entry)
         return rod
 
-    left_frame_paths = geometry["left_frame_paths"]
-    right_frame_paths = geometry["right_frame_paths"]
-    seated_left_paths: dict[str, list[list[float]]] = {}
-    seated_right_paths: dict[str, list[list[float]]] = {}
-    for path_name in left_frame_paths:
+    path_names = tuple(left_path_tines)
+    vector_path_ids = {
+        f"{path_name.replace('_', '-')}-{side}"
+        for path_name in path_names
+        for side in ("left", "right")
+    }
+    vector_paths = import_svg_centerlines(
+        LOTUS_FIRE_VECTOR_REFERENCE,
+        vector_path_ids,
+    )
+    for path_name in path_names:
         readable_name = "".join(part.title() for part in path_name.split("_"))
-        left_symmetric, right_symmetric = mirrored_anchor_pair(
-            left_frame_paths[path_name],
-            right_frame_paths[path_name],
-        )
-        if path_name == "center_petal":
-            left_symmetric[0] = geometry["center_petal_root"]
-            right_symmetric[0] = [
-                -geometry["center_petal_root"][0],
-                geometry["center_petal_root"][1],
-            ]
-        left_anchors = (
-            left_symmetric
-            if path_name == "center_petal"
-            else seat_in_grip_ring(left_symmetric)
-        )
-        right_anchors = (
-            right_symmetric
-            if path_name == "center_petal"
-            else seat_in_grip_ring(right_symmetric)
-        )
-        seated_left_paths[path_name] = left_anchors
-        seated_right_paths[path_name] = right_anchors
         objects.append(
             build_frame_rod(
                 f"Fan_Lotus_{readable_name}_Left",
-                left_anchors,
+                vector_paths[f"{path_name.replace('_', '-')}-left"],
                 *left_path_tines[path_name],
             )
         )
         objects.append(
             build_frame_rod(
                 f"Fan_Lotus_{readable_name}_Right",
-                right_anchors,
+                vector_paths[f"{path_name.replace('_', '-')}-right"],
                 *right_path_tines[path_name],
             )
         )
@@ -1510,16 +1492,14 @@ def build_lotus_frame(
         )
 
     weld_points = [
-        *(
-            (*paths[path_name][0], 0.0)
-            for paths in (seated_left_paths, seated_right_paths)
-            for path_name in (
-                "upper_outer_petal",
-                "upper_inner_petal",
-                "lower_outer_petal",
-                "lower_inner_petal",
-            )
-        ),
+        vector_paths[f"{path_name.replace('_', '-')}-{side}"][0]
+        for side in ("left", "right")
+        for path_name in (
+            "upper_outer_petal",
+            "upper_inner_petal",
+            "lower_outer_petal",
+            "lower_inner_petal",
+        )
     ]
     for index, point in enumerate(weld_points, start=1):
         objects.append(
