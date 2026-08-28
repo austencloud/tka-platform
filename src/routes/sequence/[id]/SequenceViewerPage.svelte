@@ -36,6 +36,7 @@
   import SequenceViewerOrchestrator from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
   import type { OrchestratorContext } from "$lib/shared/sequence-viewer/domain/viewer-orchestrator-context";
   import SequenceViewerShell from "$lib/shared/sequence-viewer/components/SequenceViewerShell.svelte";
+  import { viewerModeForRenderMode } from "$lib/shared/sequence-viewer/services/viewer-modes";
 
   import {
     getIabBannerVisible,
@@ -600,7 +601,9 @@
     initialStep={handoffData?.playbackState?.currentStep || 0}
     initialViewMode={urlViewMode || undefined}
     initialRenderMode={urlRenderMode || (scanOriginCode ? "2d" : undefined)}
-    initialViewerMode={scanOriginCode ? "card" : undefined}
+    initialViewerMode={scanOriginCode
+      ? "card"
+      : viewerModeForRenderMode(urlRenderMode)}
     deferInteractiveStartup={!!scanOriginCode}
     initialActiveEffect={scanOriginCode ? "trails" : undefined}
     handPathMode={urlHandPathMode}
