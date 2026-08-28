@@ -1,76 +1,125 @@
-# No Layout Shift — ENFORCED
+# Layout Stability and Motion — ENFORCED
 
-## The Problem This Solves
+## Why This Is Load-Bearing
 
-A dynamic label in the Inspect dock read `{colorName} · {tierLabel}` — "Red ·
-Special JSON" vs "Blue · Special JSON". The color word and tier label are
-different widths, so every selection switch resized the title box and shoved
-every sibling in the row to the right. Jarring, and below 2026 web standards.
+Movement is information. When a panel opens, a row is inserted, a control
+changes size, or a workspace recomposes, the path between the old and new
+geometry tells the user what changed and where it went. Snapping directly to
+the destination erases that explanation and forces the user to reconstruct the
+change mentally.
 
-Austen's feedback (2026-05-30): *"it causes the entire thing to shift over all
-of the elements ... which is very awkward and definitely does not represent
-modern 2026 web standards ... this is an incredibly naive thing to do and you
-can do better than that."*
+There are two different defects that agents used to group together as “layout
+shift”:
 
-The `frontend-design` plugin does NOT cover this — it is aesthetics-only (bold
-typography, color, animation). Layout stability is a separate discipline. This
-rule owns it.
+1. **Accidental movement**: a counter changes width, an image loads without a
+   reserved box, or a label pushes its siblings. Prevent it.
+2. **Intentional movement**: the user expands a panel, inserts an item, changes
+   a workspace mode, or reveals more detail. Animate it through the canonical
+   motion system.
+
+An intentional layout change that instantly pops to its new location is a UI
+defect. A locally invented easing or one-off keyframe is also a defect: motion
+must feel like one product.
 
 ## The Rule
 
-When ANY element's text or contents change at runtime — selection labels, tab
-titles, live counters, status words, toggling icons, loading→loaded swaps,
-expand/collapse — the element MUST NOT change the size of its box in a way that
-moves sibling or downstream elements. Reserve space for the worst case up front.
+Before changing dynamic UI, classify the geometry change:
 
-A control that reflows its neighbors when its own value changes is a defect, not
-a detail. Treat it the same as a visual bug.
+- If the movement carries no useful meaning, reserve the destination geometry
+  so nothing moves.
+- If the movement communicates a user-requested structural change, animate the
+  affected geometry with the canonical owner below.
 
-## The Techniques (pick the cheapest that fits)
+This applies to expand/collapse, disclosure, panel resize, insertion/removal,
+sorting, filtering that moves survivors, mode changes, responsive
+recomposition, async replacement, and controls whose label or icon changes.
 
-1. **Ghost-sizer (variable text, unknown-longest, zero magic numbers).** Stack a
-   hidden sizer holding the LONGEST possible variant under the live text in one
-   grid cell; the cell sizes to the sizer, the live text overlays it. Canonical
-   impl: `PipelineEditorDock.svelte` `.dock-title` (`display: inline-grid`;
-   sizer + live both `grid-area: 1 / 1`; sizer `visibility: hidden`).
-   ```html
-   <span class="title">            <!-- display: inline-grid -->
-     <span class="sizer" aria-hidden="true">Blue · Global Override</span>
-     <span class="live">{liveText}</span>   <!-- both grid-area: 1 / 1 -->
-   </span>
-   ```
-2. **`font-variant-numeric: tabular-nums`** for any changing NUMBER (counters,
-   coordinates, timers, BPM, percentages) so digit-width never jitters.
-3. **`min-width` / fixed `width` in `ch`** when the set of values is known and
-   small (e.g. a unit suffix, a 2-state word) — size it to the wider value.
-4. **Reserve the slot, toggle `visibility`/`opacity`** (not `display`) for
-   appear/disappear elements (unsaved dots, badges, spinners) so the gap is
-   always there.
-5. **Fixed-size media boxes** — set `width`/`height` or `aspect-ratio` on images,
-   canvases, icons, and async-loaded content so first paint doesn't relayout.
-6. **Equal-width flex/grid segments** for control groups so the active/selected
-   indicator and the neighbors don't move as the selection changes.
+Never use `transition: all`. Name the properties that move. Never add raw
+durations or easing curves in feature code. Use `DURATION`, the global
+`--transition-*` tokens, and the shared transition owners.
 
-## The Self-Check (before claiming any dynamic UI done)
+## Canonical Motion Routing
 
-For every element whose contents change at runtime, ask: *if this shows its
-longest / widest / tallest possible value, does anything else on screen move?*
-If yes — reserve the space first. If you can't answer because you don't know the
-longest value, enumerate the variants (they're in the code) and size to the max.
+| Change                                                                   | Required owner                                                                                          |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| Cheap mutually exclusive content or label/icon swap                      | `shared/components/Crossfade.svelte`; use `animateHeight` when the wrapper height materially changes    |
+| One row, chip, settings group, or ordinary element entering/leaving flow | `growFade` from `shared/transitions/motion.ts`                                                          |
+| A flex workspace panel entering/leaving                                  | `PanelGroup.svelte`, which owns `flexPresence`; do not reproduce its sizing transition in a feature     |
+| Keyed list reorder                                                       | Svelte `animate:flip` with `flipDuration()`                                                             |
+| Several survivors recomposing across grids, families, or keyed blocks    | `createLayoutMotion()` from `shared/transitions/layout-flip.ts`                                         |
+| Small overlay/control presence that does not reflow siblings             | `flyFade` or `popIn` from `shared/transitions/motion.ts`                                                |
+| Route/module navigation                                                  | the existing native view-transition/module-transition owner in `src/app.css` and `view-transitions.css` |
+
+If none fits, extend the closest shared owner first and document the new route
+in `.claude/rules/canonical-capabilities.md`. Do not create a feature-local
+motion framework.
+
+## Preventing Accidental Movement
+
+Pick the cheapest technique that fits:
+
+1. **Ghost-sizer for variable text.** Stack a hidden longest variant and live
+   text in one grid cell. Canonical example: `PipelineEditorDock.svelte`
+   `.dock-title`.
+2. **`font-variant-numeric: tabular-nums`** for changing numbers.
+3. **Known fixed/min width** for a small enumerated set of labels.
+4. **Reserved slot + opacity/visibility** for transient badges, spinners, and
+   status marks inside a row.
+5. **Fixed media geometry** with width/height or aspect-ratio before images,
+   canvases, pictographs, and 3D surfaces load.
+6. **Equal-width grid/flex tracks** for segmented controls and sibling actions.
+
+After reserving the geometry, `Crossfade` may still communicate a true content
+swap without moving its neighbours.
+
+## Direct Manipulation and Reduced Motion
+
+- Pointer dragging and scrubbing follow the pointer immediately. Do not ease
+  behind the hand. The release may settle through the canonical motion owner.
+- `prefers-reduced-motion: reduce` collapses motion to an immediate accessible
+  state. Every JS transition must route through `motion.ts`/`motionDuration()`;
+  every CSS transition must have the reduced-motion override supplied by its
+  shared owner.
+- Initial server/first paint does not animate structural chrome into place.
+  Motion explains a state change, not page construction.
+- A safety-critical state may change immediately when delay would be harmful.
+  This is rare and must be named in the code comment.
+
+These are the only routine exceptions to animated intentional reflow.
+
+## Required Self-Check
+
+For every conditional block and runtime label in a changed surface, answer:
+
+1. Does this alter geometry or move anything else?
+2. If no movement is meaningful, where is the space reserved?
+3. If movement is meaningful, which canonical owner animates the old geometry
+   into the new geometry?
+4. What happens when that motion is interrupted halfway through?
+5. What happens under reduced motion?
+
+Visual verification must exercise both endpoints and at least one real
+transition trigger. A screenshot of only the final state cannot prove motion.
 
 ## Forbidden
 
-- A label like `{a} · {b}` where `a` or `b` varies in width and the element has
-  intrinsic (content) sizing with siblings after it.
-- Changing numbers without `tabular-nums`.
-- `display: none` ↔ `block` toggles for transient status elements inside a row
-  (use reserved space + visibility instead).
-- Async content (images, pictographs, 3D canvases) with no reserved box,
-  causing a reflow on load.
-- Shipping a dynamic-content change without running the self-check above.
+- Any intentional layout change that snaps to its destination with no canonical
+  transition.
+- `display: none`/`block` disclosure that reflows surrounding UI instantly.
+- Dynamic intrinsic-width labels that push siblings.
+- Changing numbers without tabular numerals.
+- Async media with no reserved box.
+- Feature-local raw milliseconds, easing curves, FLIP helpers, or animation
+  stacks that duplicate the shared owners.
+- Animating `width`, `height`, `flex-basis`, grid tracks, or transforms during a
+  pointer drag so the UI lags behind the pointer.
+- Claiming a structural UI change is done without watching the transition and
+  checking the required responsive viewports.
 
 ## Related
 
-- `verification-protocol.md` — prove the fix (no shift) with evidence
-- `never-hand-roll.md` — reach for a stable shared primitive before rolling one
-- `frontend-design` plugin — aesthetics; does NOT cover layout stability
+- `docs/architecture/layout-motion.md` — owner boundaries and implementation examples
+- `canonical-capabilities.md` — searchable routing index
+- `crossfade-primitive.md` — true content swaps and remount limits
+- `visual-verification-mandatory.md` — required visual evidence
+- `never-hand-roll.md` — extend an owner instead of creating a parallel behavior stack
