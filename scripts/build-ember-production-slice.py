@@ -13,6 +13,7 @@ import json
 import math
 import random
 import struct
+import sys
 import zlib
 from pathlib import Path
 
@@ -29,6 +30,16 @@ BLEND_PATH = PROJECT_ROOT / "blender" / "ember-volcanic-world-production-slice-r
 RAW_GLB_PATH = PROJECT_ROOT / "static" / "models" / "ember" / "ember-production-slice_raw.glb"
 REPORT_PATH = EVIDENCE_DIR / "ember-volcanic-world-production-slice-r7-report.json"
 REVISION = "ember-broken-rift-gate4-meshy-r7"
+R8_TARGET_EVIDENCE_DIR = SPEC_DIR / "evidence" / "gate-3-terrain-r8"
+R8_TARGET_BLEND_PATH = PROJECT_ROOT / "blender" / "ember-geological-world-r8-targets.blend"
+R8_PRODUCTION_EVIDENCE_DIR = SPEC_DIR / "evidence" / "gate-4-terrain-r8"
+R8_PRODUCTION_BLEND_PATH = PROJECT_ROOT / "blender" / "ember-volcanic-world-production-slice-r8.blend"
+R8_PRODUCTION_REPORT_PATH = R8_PRODUCTION_EVIDENCE_DIR / "ember-volcanic-world-production-slice-r8-report.json"
+R8_TERRAIN_DIRECTIONS = (
+    "breached-caldera-terraces",
+    "collapsed-lava-delta",
+    "basalt-badlands",
+)
 MESHY_GEOLOGY_DIR = PROJECT_ROOT / "static" / "models" / "ember" / "meshy-geology"
 WORLD_CONTRACT_PATH = (
     PROJECT_ROOT
@@ -808,6 +819,42 @@ def create_shelf_edge_talus(
         tag(obj, "shelf-stratum", f"shelf-edge-talus-{index + 1:02d}")
 
 
+def create_stage_crust_transition(
+    blackglass: bpy.types.Material,
+    basalt: bpy.types.Material,
+    collection: bpy.types.Collection,
+) -> list[bpy.types.Object]:
+    """Bury the authored floor inside overlapping volcanic crust plates."""
+
+    plate_specs = [
+        ("Front_Left", [(-14.2, 10.2), (-5.8, 10.8), (-3.5, 6.0), (-8.2, 4.6), (-12.8, 6.1)], 0.44, blackglass),
+        ("Front_Center", [(-6.2, 11.4), (5.4, 11.0), (4.0, 6.0), (-2.0, 5.75), (-5.5, 7.1)], 0.4, basalt),
+        ("Front_Right", [(4.6, 10.9), (14.1, 8.6), (11.7, 3.5), (7.2, 2.7), (5.3, 6.0)], 0.46, blackglass),
+        ("East", [(11.4, 5.0), (14.6, -2.2), (10.6, -8.4), (6.2, -6.0), (7.2, -0.2)], 0.36, basalt),
+        ("Rear_Right", [(10.8, -6.2), (7.1, -13.3), (0.8, -12.1), (2.9, -8.2), (6.5, -8.0)], 0.42, blackglass),
+        ("Rear_Center", [(4.0, -12.8), (-5.2, -13.8), (-5.9, -8.4), (-0.8, -7.8), (3.4, -9.0)], 0.34, basalt),
+        ("Rear_Left", [(-4.6, -13.1), (-12.8, -9.0), (-10.7, -3.6), (-6.0, -4.8), (-5.7, -8.5)], 0.4, blackglass),
+        ("West", [(-12.2, -7.8), (-15.0, -0.4), (-12.6, 6.8), (-7.8, 4.8), (-7.0, -0.8)], 0.38, basalt),
+    ]
+    plates: list[bpy.types.Object] = []
+    for index, (label, outline, top, material) in enumerate(plate_specs, start=1):
+        plate = create_extruded_polygon(
+            f"Ember_Stage_Crust_{label}",
+            ensure_counter_clockwise(outline),
+            top,
+            top - (0.38 + (index % 3) * 0.07),
+            material,
+            collection,
+            "stage-crust-transition",
+            f"stage-crust-transition-{index:02d}",
+            bevel=0.08,
+        )
+        plate.rotation_euler.z = math.radians(math.sin(index * 1.77) * 1.2)
+        plate["tka_radial_clearance"] = min(math.hypot(x, y) for x, y in outline)
+        plates.append(plate)
+    return plates
+
+
 def create_columnar_joint(
     name: str,
     location: tuple[float, float, float],
@@ -1202,10 +1249,101 @@ def river_distance_and_height(x: float, y: float, river: list[Vector]) -> tuple[
     return nearest_distance, nearest_height
 
 
+def smoothstep(edge_start: float, edge_end: float, value: float) -> float:
+    if edge_start == edge_end:
+        return 0.0
+    normalized = max(0.0, min(1.0, (value - edge_start) / (edge_end - edge_start)))
+    return normalized * normalized * (3.0 - 2.0 * normalized)
+
+
+def r8_geological_height(
+    direction: str,
+    x: float,
+    runtime_z: float,
+    radial_distance: float,
+    terrain_weight: float,
+    seed_phase: float,
+) -> float:
+    """Shape the three Gate 3 terrain directions around one locked action shelf."""
+
+    base = -0.36 + terrain_weight * (0.32 + radial_distance * 0.009)
+    micro_relief = (
+        math.sin(x * 0.151 + runtime_z * 0.103 + seed_phase) * 0.34
+        + math.sin(x * 0.071 - runtime_z * 0.173) * 0.22
+        + math.sin((x - runtime_z) * 0.029 - seed_phase * 0.4) * 0.27
+    )
+
+    if direction == "breached-caldera-terraces":
+        # One giant, offset caldera defines the world. Quantized collapse benches
+        # produce readable strata while a missing south-east arc creates the
+        # travel breach instead of another circular backdrop wall.
+        caldera_x = (x + 10.0) / 1.13
+        caldera_z = (runtime_z - 74.0) / 0.84
+        caldera_radius = math.hypot(caldera_x, caldera_z)
+        angle = math.atan2(caldera_z, caldera_x)
+        rim = math.exp(-((caldera_radius - 102.0) / 25.0) ** 2)
+        broken_arc = 0.22 + 0.78 * smoothstep(-0.62, 0.18, math.sin(angle + 0.42))
+        rim_height = rim * broken_arc * (28.0 + 7.0 * math.sin(angle * 2.7 + 0.6))
+
+        collapse_axis = max(0.0, 1.0 - caldera_radius / 132.0)
+        raw_benches = collapse_axis * 17.5
+        terrace_step = 2.8
+        terraced = math.floor(raw_benches / terrace_step) * terrace_step
+        bench_blend = smoothstep(0.0, 1.0, (raw_benches % terrace_step) / terrace_step)
+        terraced += bench_blend * 0.42
+
+        west_scarp = math.exp(-(((x + 72.0) / 31.0) ** 2 + ((runtime_z - 38.0) / 76.0) ** 2)) * 13.0
+        east_scarp = math.exp(-(((x - 96.0) / 42.0) ** 2 + ((runtime_z - 64.0) / 88.0) ** 2)) * 18.0
+        rear_saddle = math.exp(-(((x - 66.0) / 30.0) ** 2 + ((runtime_z - 132.0) / 42.0) ** 2)) * 13.0
+        return base + terrain_weight * (
+            rim_height + terraced + west_scarp + east_scarp - rear_saddle + micro_relief
+        )
+
+    if direction == "collapsed-lava-delta":
+        # Wide overlapping flow lobes read as a field assembled by successive
+        # eruptions. Sharp fronts and braided troughs make this intentionally
+        # lower and more horizontal than the caldera direction.
+        fan_distance = math.hypot(x * 0.78, runtime_z - 112.0)
+        fan_angle = math.atan2(x, 112.0 - runtime_z)
+        fan_mask = smoothstep(176.0, 36.0, fan_distance)
+        lobe_phase = fan_distance * 0.115 + math.sin(fan_angle * 5.0) * 1.8
+        lobe_fronts = max(0.0, math.sin(lobe_phase)) ** 4
+        delta = fan_mask * (8.0 + lobe_fronts * 6.5)
+        braided = (
+            math.exp(-((x - 34.0 - math.sin(runtime_z * 0.035) * 18.0) / 16.0) ** 2)
+            + math.exp(-((x + 48.0 + math.sin(runtime_z * 0.028 + 1.4) * 15.0) / 20.0) ** 2)
+        ) * smoothstep(-30.0, 145.0, runtime_z)
+        far_wall = math.exp(-(((x + 12.0) / 118.0) ** 2 + ((runtime_z - 176.0) / 32.0) ** 2)) * 22.0
+        flank_left = math.exp(-(((x + 145.0) / 44.0) ** 2 + ((runtime_z - 48.0) / 98.0) ** 2)) * 14.0
+        flank_right = math.exp(-(((x - 136.0) / 48.0) ** 2 + ((runtime_z - 18.0) / 92.0) ** 2)) * 12.0
+        return base + terrain_weight * (
+            delta - braided * 4.2 + far_wall + flank_left + flank_right + micro_relief * 0.72
+        )
+
+    if direction == "basalt-badlands":
+        # Eroded radial ribs and alternating gullies create the most aggressive
+        # silhouette, with one broad rear saddle keeping the world traversable.
+        warped_x = x + math.sin(runtime_z * 0.025) * 18.0
+        rib_wave = math.sin(warped_x * 0.071 + runtime_z * 0.017 + 0.5)
+        ribs = max(0.0, rib_wave) ** 5
+        crossing_ribs = max(0.0, math.sin(x * 0.027 - runtime_z * 0.061 - 1.2)) ** 7
+        north_weight = smoothstep(18.0, 172.0, runtime_z)
+        badlands = (ribs * 14.0 + crossing_ribs * 8.0) * (0.42 + north_weight * 0.82)
+        left_massif = math.exp(-(((x + 118.0) / 40.0) ** 2 + ((runtime_z - 92.0) / 74.0) ** 2)) * 27.0
+        right_massif = math.exp(-(((x - 116.0) / 38.0) ** 2 + ((runtime_z - 76.0) / 68.0) ** 2)) * 24.0
+        travel_saddle = math.exp(-(((x - 20.0) / 45.0) ** 2 + ((runtime_z - 146.0) / 40.0) ** 2)) * 9.0
+        return base + terrain_weight * (
+            badlands + left_massif + right_massif - travel_saddle + micro_relief * 0.9
+        )
+
+    raise ValueError(f"Unknown R8 terrain direction: {direction}")
+
+
 def create_volcanic_basin(
     materials: list[bpy.types.Material],
     collection: bpy.types.Collection,
     river: list[Vector],
+    direction: str = "r7-continuous-basin",
 ) -> bpy.types.Object:
     """Build one continuous exterior basin instead of concentric backdrop rings."""
 
@@ -1219,6 +1357,10 @@ def create_volcanic_basin(
     near_material_end = float(specification["nearMaterialEndsAtDistance"])
     middle_material_end = float(specification["middleMaterialEndsAtDistance"])
     action_floor_radius = float(specification["actionFloorRadius"])
+    if direction in R8_TERRAIN_DIRECTIONS:
+        # The responsive deck tops out well inside this transition zone. R7's
+        # 23 m dead-flat moat made the shelf read as a floating vignette.
+        action_floor_radius = 10.8
     seed = int(specification["seed"])
     vertices: list[tuple[float, float, float]] = []
     faces: list[tuple[int, int, int, int]] = []
@@ -1240,55 +1382,48 @@ def create_volcanic_basin(
             )
             terrain_weight = terrain_weight * terrain_weight * (3.0 - 2.0 * terrain_weight)
 
-            # The shelf sits inside one landmass, not in a circular arena.
-            # Offset provinces provide near, middle, and far overlap; the low
-            # saddles between them remain visible routes into the larger world.
-            height = -0.32 + terrain_weight * (0.45 + radial_distance * 0.014)
-            for ridge_x, ridge_z, ridge_width_x, ridge_width_z, ridge_height in (
-                (-92.0, -82.0, 48.0, 40.0, 17.0),
-                (82.0, -98.0, 54.0, 43.0, 19.0),
-                (-148.0, -5.0, 48.0, 66.0, 22.0),
-                (148.0, 30.0, 50.0, 64.0, 20.0),
-                (-108.0, 102.0, 57.0, 51.0, 20.0),
-                (86.0, 120.0, 52.0, 49.0, 24.0),
-                (-50.0, 174.0, 62.0, 42.0, 27.0),
-                (78.0, 178.0, 64.0, 39.0, 21.0),
-            ):
-                ridge_distance = ((x - ridge_x) / ridge_width_x) ** 2
-                ridge_distance += ((runtime_z - ridge_z) / ridge_width_z) ** 2
-                height += terrain_weight * math.exp(-ridge_distance * 1.85) * ridge_height
-
-            for pass_x, pass_z, pass_width_x, pass_width_z, pass_depth in (
-                (-3.0, -108.0, 38.0, 88.0, 9.0),
-                (108.0, -18.0, 34.0, 72.0, 7.0),
-                (-22.0, 164.0, 38.0, 54.0, 8.0),
-            ):
-                pass_distance = ((x - pass_x) / pass_width_x) ** 2
-                pass_distance += ((runtime_z - pass_z) / pass_width_z) ** 2
-                height -= terrain_weight * math.exp(-pass_distance * 2.0) * pass_depth
-
-            height += terrain_weight * (
-                math.sin(x * 0.061 + runtime_z * 0.039 + seed_phase) * 0.78
-                + math.sin(x * 0.127 - runtime_z * 0.083) * 0.34
-                + math.sin((x + runtime_z) * 0.021 - seed_phase * 0.35) * 0.62
-            )
-
-            # Cooling scarps and collapsed flow fronts break the broad hills
-            # into volcanic strata. Squared positive lobes keep the detail
-            # local instead of adding uniform high-frequency noise.
-            cooling_fold = max(
-                0.0,
-                math.sin(x * 0.118 + runtime_z * 0.074 + seed_phase * 0.27)
-                + math.sin(x * 0.041 - runtime_z * 0.133 - 1.7) * 0.62,
-            )
-            flow_front = max(
-                0.0,
-                math.sin(math.hypot(x + 34.0, runtime_z - 22.0) * 0.19 + 0.8),
-            )
-            height += terrain_weight * (
-                cooling_fold * cooling_fold * 1.35
-                + flow_front * flow_front * 0.72
-            )
+            if direction in R8_TERRAIN_DIRECTIONS:
+                height = r8_geological_height(
+                    direction,
+                    x,
+                    runtime_z,
+                    radial_distance,
+                    terrain_weight,
+                    seed_phase,
+                )
+                # The fixed Meshy silhouettes must emerge from the country,
+                # not be guillotined by a later terrain pass. Local erosion
+                # bowls retain their bases while the surrounding benches rise.
+                for asset_x, asset_z, inner_radius, outer_radius, bed_height in (
+                    (-8.5, 27.0, 10.0, 22.0, -0.22),
+                    (16.0, 1.6, 3.8, 8.5, -0.18),
+                    (-13.0, 11.0, 4.2, 9.5, -0.2),
+                ):
+                    asset_distance = math.hypot(x - asset_x, runtime_z - asset_z)
+                    asset_blend = 1.0 - smoothstep(inner_radius, outer_radius, asset_distance)
+                    if asset_blend > 0.0:
+                        height = height * (1.0 - asset_blend) + bed_height * asset_blend
+            else:
+                # R7 is retained as a reconstruction path and before image.
+                height = -0.32 + terrain_weight * (0.45 + radial_distance * 0.014)
+                for ridge_x, ridge_z, ridge_width_x, ridge_width_z, ridge_height in (
+                    (-92.0, -82.0, 48.0, 40.0, 17.0),
+                    (82.0, -98.0, 54.0, 43.0, 19.0),
+                    (-148.0, -5.0, 48.0, 66.0, 22.0),
+                    (148.0, 30.0, 50.0, 64.0, 20.0),
+                    (-108.0, 102.0, 57.0, 51.0, 20.0),
+                    (86.0, 120.0, 52.0, 49.0, 24.0),
+                    (-50.0, 174.0, 62.0, 42.0, 27.0),
+                    (78.0, 178.0, 64.0, 39.0, 21.0),
+                ):
+                    ridge_distance = ((x - ridge_x) / ridge_width_x) ** 2
+                    ridge_distance += ((runtime_z - ridge_z) / ridge_width_z) ** 2
+                    height += terrain_weight * math.exp(-ridge_distance * 1.85) * ridge_height
+                height += terrain_weight * (
+                    math.sin(x * 0.061 + runtime_z * 0.039 + seed_phase) * 0.78
+                    + math.sin(x * 0.127 - runtime_z * 0.083) * 0.34
+                    + math.sin((x + runtime_z) * 0.021 - seed_phase * 0.35) * 0.62
+                )
 
             distance, river_height = river_distance_and_height(x, y, river)
             channel_influence = max(0.0, 1.0 - distance / (channel_half_width + 5.2))
@@ -1309,10 +1444,11 @@ def create_volcanic_basin(
             faces.append((a, b, c, d))
             material_indices.append(material_index)
 
-    mesh = bpy.data.meshes.new("Ember_Volcanic_Basin_Mesh")
+    suffix = direction.replace("-", "_")
+    mesh = bpy.data.meshes.new(f"Ember_Volcanic_Basin_{suffix}_Mesh")
     mesh.from_pydata(vertices, [], faces)
     mesh.update()
-    obj = bpy.data.objects.new("Ember_Volcanic_Basin", mesh)
+    obj = bpy.data.objects.new(f"Ember_Volcanic_Basin_{suffix}", mesh)
     collection.objects.link(obj)
     for material in materials:
         obj.data.materials.append(material)
@@ -1320,7 +1456,8 @@ def create_volcanic_basin(
         polygon.use_smooth = True
         polygon.material_index = material_index
     project_uv(obj, 4.6)
-    tag(obj, "volcanic-basin", "continuous-volcanic-basin")
+    tag(obj, "volcanic-basin", f"continuous-volcanic-basin-{direction}")
+    obj["tka_terrain_direction"] = direction
     obj["tka_depth_layers"] = "near,middle,far"
     obj["tka_authorship"] = "scene-authored-deterministic"
     return obj
@@ -1980,6 +2117,7 @@ def create_meshy_geology_ensemble(
 
 def build_production_geometry(
     production: bpy.types.Collection,
+    terrain_direction: str = "r7-continuous-basin",
 ) -> dict[str, object]:
     print("[ember-r7] baking blackglass textures", flush=True)
     textures = create_blackglass_textures()
@@ -2025,7 +2163,12 @@ def build_production_geometry(
     )
     chasm = create_plain_material("Ember_Fissure_Chasm", (0.002, 0.003, 0.005, 1.0), 1.0)
     lava = create_plain_material("Ember_Live_Fissure", (1.0, 0.085, 0.008, 1.0), 0.38, emission_strength=2.15)
-    mineral = create_plain_material("Ember_Mineral_Ochre", (0.16, 0.095, 0.032, 1.0), 0.96)
+    mineral_color = (
+        (0.058, 0.048, 0.036, 1.0)
+        if terrain_direction in R8_TERRAIN_DIRECTIONS
+        else (0.16, 0.095, 0.032, 1.0)
+    )
+    mineral = create_plain_material("Ember_Mineral_Ochre", mineral_color, 0.96)
     ash = create_plain_material("Ember_Ash_Deposit", (0.035, 0.048, 0.047, 1.0), 0.985)
 
     create_caldera_banks(SHELF_OUTLINE, ash, columnar_basalt, production)
@@ -2047,7 +2190,7 @@ def build_production_geometry(
         scaled_outline(SHELF_OUTLINE, 1.018),
         0.21,
         0.04,
-        mineral,
+        blackglass if terrain_direction in R8_TERRAIN_DIRECTIONS else mineral,
         production,
         "shelf-stratum",
         "upper-stratum",
@@ -2066,6 +2209,8 @@ def build_production_geometry(
     )
     create_surface_field(SHELF_OUTLINE, blackglass, production)
     create_shelf_edge_talus(SHELF_OUTLINE, blackglass, mineral, production)
+    if terrain_direction in R8_TERRAIN_DIRECTIONS:
+        create_stage_crust_transition(blackglass, near_caldera, production)
 
     fissures = [
         [(-7.2, 5.6), (-6.35, 4.35), (-6.1, 3.15), (-5.45, 2.15), (-5.6, 0.9), (-5.15, -0.15), (-5.3, -1.45), (-4.85, -2.8), (-4.95, -4.0), (-4.5, -5.2), (-3.8, -6.9)],
@@ -2111,7 +2256,10 @@ def build_production_geometry(
     print("[ember-r7] authoring surrounding volcanic country and lava channel", flush=True)
     river = sample_river_centerline()
     volcanic_basin = create_volcanic_basin(
-        [near_caldera, middle_caldera, far_caldera], production, river
+        [near_caldera, middle_caldera, far_caldera],
+        production,
+        river,
+        terrain_direction,
     )
     distant_vent = [furnace["distantCaldera"]]
     levees = create_lava_channel_levees(near_caldera, production, river)
@@ -2255,7 +2403,10 @@ def create_qa_scene(qa: bpy.types.Collection) -> dict[str, bpy.types.Object]:
         # instead of proving a composed back and silhouette.
         "rear-right": ((27.0, -49.0, 14.0), (0.0, -10.0, 3.5), "PERSP", 50.0),
         "rear": ((0.0, -54.0, 15.0), (0.0, -12.0, 3.5), "PERSP", 50.0),
-        "rear-left": ((-27.0, -49.0, 14.0), (0.0, -10.0, 3.5), "PERSP", 50.0),
+        # The breached-caldera west bench rises beneath this sector. Lift the
+        # registered proof camera above the bench so the orbit judges the
+        # composed terrain instead of clipping through its surface.
+        "rear-left": ((-27.0, -49.0, 24.0), (0.0, -10.0, 4.25), "PERSP", 50.0),
         "left": ((-20.0, 0.0, 7.5), (0.0, -3.5, 2.25), "PERSP", 45.0),
         "front-left": ((-14.8, 14.8, 8.0), (0.2, -5.8, 2.45), "PERSP", 43.0),
         "detail": ((10.8, 0.8, 6.9), HERO_CENTER, "PERSP", 52.0),
@@ -2298,10 +2449,13 @@ def configure_render() -> None:
     scene.world = world
 
 
-def render_evidence(cameras: dict[str, bpy.types.Object]) -> dict[str, str]:
+def render_evidence(
+    cameras: dict[str, bpy.types.Object],
+    filename_revision: str = "r7",
+) -> dict[str, str]:
     renders: dict[str, str] = {}
     for name, camera in cameras.items():
-        output = EVIDENCE_DIR / f"ember-volcanic-world-production-slice-r7-{name}.png"
+        output = EVIDENCE_DIR / f"ember-volcanic-world-production-slice-{filename_revision}-{name}.png"
         bpy.context.scene.camera = camera
         bpy.context.scene.render.filepath = str(output)
         bpy.ops.render.render(write_still=True)
@@ -2309,10 +2463,86 @@ def render_evidence(cameras: dict[str, bpy.types.Object]) -> dict[str, str]:
     return renders
 
 
+def render_r8_target_evidence(
+    cameras: dict[str, bpy.types.Object],
+    terrain_objects: dict[str, bpy.types.Object],
+) -> dict[str, dict[str, str]]:
+    R8_TARGET_EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+    scene = bpy.context.scene
+    scene.render.resolution_x = 1280
+    scene.render.resolution_y = 720
+    target_cameras = ("hero", "front-right", "left", "rear")
+    renders: dict[str, dict[str, str]] = {}
+    for direction, terrain in terrain_objects.items():
+        for candidate in terrain_objects.values():
+            candidate.hide_render = candidate is not terrain
+        renders[direction] = {}
+        for camera_name in target_cameras:
+            output = R8_TARGET_EVIDENCE_DIR / f"ember-r8-{direction}-{camera_name}.png"
+            scene.camera = cameras[camera_name]
+            scene.render.filepath = str(output)
+            bpy.ops.render.render(write_still=True)
+            renders[direction][camera_name] = output.relative_to(PROJECT_ROOT).as_posix()
+    for terrain in terrain_objects.values():
+        terrain.hide_render = False
+    return renders
+
+
+def build_r8_target_set() -> None:
+    R8_TARGET_EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+    TEXTURE_DIR.mkdir(parents=True, exist_ok=True)
+    clean_scene()
+    production = make_collection("EMBER_PRODUCTION_SLICE")
+    qa = make_collection("EMBER_QA")
+    print("[ember-r8] building shared R7 geology and first terrain direction", flush=True)
+    geometry = build_production_geometry(production, R8_TERRAIN_DIRECTIONS[0])
+    river = sample_river_centerline()
+    terrain_materials = [
+        geometry["materials"]["nearCaldera"],
+        geometry["materials"]["middleCaldera"],
+        geometry["materials"]["farCaldera"],
+    ]
+    terrain_objects = {R8_TERRAIN_DIRECTIONS[0]: geometry["volcanicBasin"]}
+    for direction in R8_TERRAIN_DIRECTIONS[1:]:
+        print(f"[ember-r8] building {direction}", flush=True)
+        terrain_objects[direction] = create_volcanic_basin(
+            terrain_materials,
+            production,
+            river,
+            direction,
+        )
+    configure_render()
+    cameras = create_qa_scene(qa)
+    print("[ember-r8] rendering registered target set", flush=True)
+    renders = render_r8_target_evidence(cameras, terrain_objects)
+    R8_TARGET_BLEND_PATH.parent.mkdir(parents=True, exist_ok=True)
+    bpy.ops.wm.save_as_mainfile(filepath=str(R8_TARGET_BLEND_PATH), compress=True)
+    report = {
+        "revision": "ember-geological-world-gate3-r8",
+        "authorityTrackerItem": "s3cxnp6hOLBVQR5dDF42",
+        "fixedElements": {
+            "actionClearanceMeters": ACTION_RADIUS,
+            "lavaRiverControlPointsRuntimeXZHeight": RIVER_POINTS_RUNTIME,
+            "meshyGeology": [
+                "hero-columnar-escarpment",
+                "collapsed-lava-bank",
+                "obsidian-fumarole-talus",
+                "distant-breached-caldera",
+            ],
+            "registeredCameras": list(cameras),
+        },
+        "directions": list(R8_TERRAIN_DIRECTIONS),
+        "renders": renders,
+        "blend": R8_TARGET_BLEND_PATH.relative_to(PROJECT_ROOT).as_posix(),
+    }
+    report_path = R8_TARGET_EVIDENCE_DIR / "ember-r8-terrain-target-report.json"
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(report, indent=2))
+
+
 def export_production(production: bpy.types.Collection) -> None:
     BLEND_PATH.parent.mkdir(parents=True, exist_ok=True)
     RAW_GLB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH))
     bpy.ops.object.select_all(action="DESELECT")
     for obj in production.all_objects:
         obj.select_set(True)
@@ -2328,12 +2558,21 @@ def export_production(production: bpy.types.Collection) -> None:
         export_apply=True,
         use_selection=True,
     )
+    if REVISION == "ember-geological-world-gate4-r8":
+        # The shipped source stays below GitHub's 100 MiB hard limit. All image
+        # pixels are deterministic build products or live in the four tracked
+        # Meshy source GLBs, so geometry/material graphs remain editable while
+        # the builder is the lossless texture reconstruction path.
+        for image in list(bpy.data.images):
+            bpy.data.images.remove(image, do_unlink=True)
+    bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH), compress=True)
 
 
 def scene_report(
     production: bpy.types.Collection,
     cameras: dict[str, bpy.types.Object],
     renders: dict[str, str],
+    terrain_direction: str = "r7-continuous-basin",
 ) -> dict[str, object]:
     mesh_objects = [obj for obj in production.all_objects if obj.type == "MESH"]
     minimum, maximum = combined_bounds(mesh_objects)
@@ -2405,6 +2644,11 @@ def scene_report(
             "gate4VolcanicWorldTrackerItem": "nu73zqvPJRxio4T2sWz7",
             "gate4ContinuityTrackerItem": "ATURN84Ov2hmjWUndebl",
             "gate4MeshyGeologyTrackerItem": "ZSnkB98pb0wz6PO17XKp",
+            "gate3GeologicalWorldTrackerItem": (
+                "s3cxnp6hOLBVQR5dDF42"
+                if terrain_direction in R8_TERRAIN_DIRECTIONS
+                else None
+            ),
         },
         "sources": [
             {
@@ -2457,9 +2701,18 @@ def scene_report(
             "heroCenterBlenderXYZ": list(HERO_CENTER),
             "heroCenterRuntimeXYZ": [HERO_CENTER[0], HERO_CENTER[2], -HERO_CENTER[1]],
             "heroInPositiveRuntimeZFarField": True,
-            "selectedDirection": "Fractured Columnar Chasm",
+            "selectedDirection": (
+                "Breached Caldera Terraces"
+                if terrain_direction == "breached-caldera-terraces"
+                else "Fractured Columnar Chasm"
+            ),
+            "terrainDirection": terrain_direction,
             "revisionDirection": (
-                "Meshy-authored blackglass escarpment, collapsed lava banks, fumarole "
+                "An asymmetrical breached caldera with collapsed terraces, an embedded "
+                "blackglass action shelf, protected Meshy formations, and a river-cut "
+                "travel saddle"
+                if terrain_direction == "breached-caldera-terraces"
+                else "Meshy-authored blackglass escarpment, collapsed lava banks, fumarole "
                 "talus, and a breached distant caldera inside continuous volcanic "
                 "country and a through-frame river"
             ),
@@ -2514,21 +2767,35 @@ def scene_report(
 
 
 def main() -> None:
+    global BLEND_PATH, EVIDENCE_DIR, REPORT_PATH, REVISION
+    arguments = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
+    if "--r8-targets" in arguments:
+        build_r8_target_set()
+        return
+    terrain_direction = "r7-continuous-basin"
+    filename_revision = "r7"
+    if "--r8-production" in arguments:
+        EVIDENCE_DIR = R8_PRODUCTION_EVIDENCE_DIR
+        BLEND_PATH = R8_PRODUCTION_BLEND_PATH
+        REPORT_PATH = R8_PRODUCTION_REPORT_PATH
+        REVISION = "ember-geological-world-gate4-r8"
+        terrain_direction = "breached-caldera-terraces"
+        filename_revision = "r8"
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     TEXTURE_DIR.mkdir(parents=True, exist_ok=True)
     clean_scene()
     production = make_collection("EMBER_PRODUCTION_SLICE")
     qa = make_collection("EMBER_QA")
     print("[ember-r7] building production geometry", flush=True)
-    build_production_geometry(production)
+    build_production_geometry(production, terrain_direction)
     print("[ember-r7] configuring QA scene", flush=True)
     configure_render()
     cameras = create_qa_scene(qa)
     print("[ember-r7] rendering evidence", flush=True)
-    renders = render_evidence(cameras)
+    renders = render_evidence(cameras, filename_revision)
     print("[ember-r7] exporting production asset", flush=True)
     export_production(production)
-    report = scene_report(production, cameras, renders)
+    report = scene_report(production, cameras, renders, terrain_direction)
     REPORT_PATH.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2))
 

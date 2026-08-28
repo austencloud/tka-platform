@@ -1,7 +1,7 @@
 {
-  "revision": "ember-broken-rift-gate4-meshy-r7",
-  "authorityTrackerItem": "ZSnkB98pb0wz6PO17XKp",
-  "derivedFromTrackerItem": "ATURN84Ov2hmjWUndebl",
+  "revision": "ember-geological-world-gate4-r8",
+  "authorityTrackerItem": "s3cxnp6hOLBVQR5dDF42",
+  "derivedFromTrackerItem": "ZSnkB98pb0wz6PO17XKp",
   "lavaRiver": {
     "width": 5.2,
     "flowSpeed": 0.075,
@@ -34,7 +34,8 @@
     "rows": 128,
     "nearMaterialEndsAtDistance": 66.0,
     "middleMaterialEndsAtDistance": 126.0,
-    "actionFloorRadius": 23.0,
+    "actionFloorRadius": 10.8,
+    "direction": "breached-caldera-terraces",
     "seed": 6301
   },
   "distantVent": {
