@@ -1,10 +1,9 @@
 """Build Ember's Gate 4 volcanic-world production slice.
 
 The selected Gate 3 target owns the composition: a safe blackglass shelf faces
-an asymmetric volcanic escarpment split by one narrow incandescent fault. R6
-carries that landmark into continuous volcanic country around the camera and
-sends one open lava channel through the audience frame. No pre-existing or
-generated hero model is imported.
+an asymmetric volcanic escarpment split by one incandescent lava landscape. R7
+replaces the graybox-like hero and near-field silhouettes with four selected,
+budgeted Meshy geology formations while preserving the continuous R6 country.
 """
 
 from __future__ import annotations
@@ -24,12 +23,13 @@ from mathutils import Vector
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SPEC_DIR = PROJECT_ROOT / "docs" / "superpowers" / "specs" / "ember-spatial-directions"
-EVIDENCE_DIR = SPEC_DIR / "evidence" / "gate-4-volcanic-r6"
-TEXTURE_DIR = PROJECT_ROOT / "blender" / "ember-volcanic-world-r6-textures"
-BLEND_PATH = PROJECT_ROOT / "blender" / "ember-volcanic-world-production-slice-r6.blend"
+EVIDENCE_DIR = SPEC_DIR / "evidence" / "gate-4-meshy-r1"
+TEXTURE_DIR = PROJECT_ROOT / "blender" / "ember-volcanic-world-r7-textures"
+BLEND_PATH = PROJECT_ROOT / "blender" / "ember-volcanic-world-production-slice-r7.blend"
 RAW_GLB_PATH = PROJECT_ROOT / "static" / "models" / "ember" / "ember-production-slice_raw.glb"
-REPORT_PATH = EVIDENCE_DIR / "ember-volcanic-world-production-slice-r6-report.json"
-REVISION = "ember-broken-rift-gate4-volcanic-r6"
+REPORT_PATH = EVIDENCE_DIR / "ember-volcanic-world-production-slice-r7-report.json"
+REVISION = "ember-broken-rift-gate4-meshy-r7"
+MESHY_GEOLOGY_DIR = PROJECT_ROOT / "static" / "models" / "ember" / "meshy-geology"
 WORLD_CONTRACT_PATH = (
     PROJECT_ROOT
     / "src"
@@ -40,7 +40,7 @@ WORLD_CONTRACT_PATH = (
     / "domain"
     / "models"
     / "scene-configs"
-    / "ember-volcanic-world-r6.json"
+    / "ember-volcanic-world-r7.json"
 )
 WORLD_CONTRACT = json.loads(WORLD_CONTRACT_PATH.read_text(encoding="utf-8"))
 RIVER_POINTS_RUNTIME = [
@@ -52,7 +52,7 @@ RIVER_POINTS_BLENDER = [
 ]
 ACTION_RADIUS = 4.5
 SURFACE_Z = 0.5
-HERO_CENTER = (0.85, -14.35, 3.45)
+HERO_CENTER = (-8.5, -27.0, 5.25)
 
 SHELF_OUTLINE = [
     (-8.4, 5.6),
@@ -114,6 +114,81 @@ def tag(obj: bpy.types.Object, role: str, element_id: str) -> None:
     obj["tka_gate"] = 4
     obj["tka_role"] = role
     obj["tka_element"] = element_id
+
+
+def import_meshy_geology(
+    source_name: str,
+    object_name: str,
+    position: tuple[float, float, float],
+    target_height: float,
+    rotation_degrees: float,
+    role: str,
+    element_id: str,
+    source_task_id: str,
+    collection: bpy.types.Collection,
+) -> bpy.types.Object:
+    """Import one selected Meshy formation, normalize it, and retain provenance."""
+
+    source_path = MESHY_GEOLOGY_DIR / source_name
+    if not source_path.exists():
+        raise FileNotFoundError(f"Missing prepared Meshy geology: {source_path}")
+    before = set(bpy.context.scene.objects)
+    bpy.ops.import_scene.gltf(filepath=str(source_path))
+    imported = [obj for obj in bpy.context.scene.objects if obj not in before]
+    meshes = [obj for obj in imported if obj.type == "MESH"]
+    helper_objects = [obj for obj in imported if obj.type != "MESH"]
+    if not meshes:
+        raise RuntimeError(f"No mesh objects imported from {source_path}")
+
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in meshes:
+        if obj.parent is not None:
+            bpy.context.view_layer.objects.active = obj
+            obj.select_set(True)
+            bpy.ops.object.parent_clear(type="CLEAR_KEEP_TRANSFORM")
+            obj.select_set(False)
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in meshes:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = meshes[0]
+    if len(meshes) > 1:
+        bpy.ops.object.join()
+    formation = bpy.context.view_layer.objects.active
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+
+    minimum, maximum = combined_bounds([formation])
+    height = maximum.z - minimum.z
+    if height <= 0:
+        raise RuntimeError(f"Invalid zero-height Meshy formation: {source_path}")
+    formation.scale *= target_height / height
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    minimum, maximum = combined_bounds([formation])
+    center = (minimum + maximum) * 0.5
+    formation.location += Vector((-center.x, -center.y, -minimum.z))
+    bpy.ops.object.transform_apply(location=True, rotation=False, scale=False)
+    formation.name = object_name
+    formation.rotation_euler[2] = math.radians(rotation_degrees)
+    formation.location = position
+    move_to_collection(formation, collection)
+    for index, material in enumerate(formation.data.materials):
+        if material is not None:
+            material.name = f"Ember_Meshy_Geology_PBR_{element_id}_{index + 1:02d}"
+    tag(formation, role, element_id)
+    formation["tka_authorship"] = "meshy-selected-multiview-r7"
+    formation["tka_meshy_source_task_id"] = source_task_id
+    formation["tka_source_asset"] = source_path.relative_to(PROJECT_ROOT).as_posix()
+    formation["tka_target_height_m"] = target_height
+    dimensions = formation.dimensions
+    formation["tka_radial_clearance"] = max(
+        0.0,
+        math.hypot(position[0], position[1])
+        - math.hypot(dimensions.x * 0.5, dimensions.y * 0.5),
+    )
+
+    for obj in helper_objects:
+        if obj.name in bpy.data.objects:
+            bpy.data.objects.remove(obj, do_unlink=True)
+    return formation
 
 
 def smooth_noise(values: np.ndarray, passes: int) -> np.ndarray:
@@ -1198,6 +1273,23 @@ def create_volcanic_basin(
                 + math.sin((x + runtime_z) * 0.021 - seed_phase * 0.35) * 0.62
             )
 
+            # Cooling scarps and collapsed flow fronts break the broad hills
+            # into volcanic strata. Squared positive lobes keep the detail
+            # local instead of adding uniform high-frequency noise.
+            cooling_fold = max(
+                0.0,
+                math.sin(x * 0.118 + runtime_z * 0.074 + seed_phase * 0.27)
+                + math.sin(x * 0.041 - runtime_z * 0.133 - 1.7) * 0.62,
+            )
+            flow_front = max(
+                0.0,
+                math.sin(math.hypot(x + 34.0, runtime_z - 22.0) * 0.19 + 0.8),
+            )
+            height += terrain_weight * (
+                cooling_fold * cooling_fold * 1.35
+                + flow_front * flow_front * 0.72
+            )
+
             distance, river_height = river_distance_and_height(x, y, river)
             channel_influence = max(0.0, 1.0 - distance / (channel_half_width + 5.2))
             channel_influence = channel_influence * channel_influence * (3.0 - 2.0 * channel_influence)
@@ -1227,88 +1319,11 @@ def create_volcanic_basin(
     for polygon, material_index in zip(obj.data.polygons, material_indices, strict=True):
         polygon.use_smooth = True
         polygon.material_index = material_index
-    project_uv(obj, 7.5)
+    project_uv(obj, 4.6)
     tag(obj, "volcanic-basin", "continuous-volcanic-basin")
     obj["tka_depth_layers"] = "near,middle,far"
     obj["tka_authorship"] = "scene-authored-deterministic"
     return obj
-
-
-def create_distant_volcanic_vent(
-    material: bpy.types.Material,
-    chasm: bpy.types.Material,
-    collection: bpy.types.Collection,
-) -> list[bpy.types.Object]:
-    specification = WORLD_CONTRACT["distantVent"]
-    runtime_x, runtime_z = (float(value) for value in specification["centerRuntimeXZ"])
-    center_x = runtime_x
-    center_y = -runtime_z
-    radius_x = float(specification["baseRadiusX"])
-    radius_y = float(specification["baseRadiusZ"])
-    height = float(specification["height"])
-    crater_radius = float(specification["craterRadius"])
-    seed = int(specification["seed"])
-    angular_segments = 48
-    radial_segments = 7
-    vertices: list[tuple[float, float, float]] = []
-    faces: list[tuple[int, int, int, int]] = []
-
-    for radial_index in range(radial_segments + 1):
-        radial_t = radial_index / radial_segments
-        radius_t = crater_radius / max(radius_x, radius_y) + (1.0 - crater_radius / max(radius_x, radius_y)) * radial_t
-        ring_height = height * (1.0 - radial_t**1.18)
-        for angular_index in range(angular_segments):
-            angle = math.tau * angular_index / angular_segments
-            rim_noise = (
-                math.sin(angle * 3.0 + seed * 0.01) * 0.9
-                + math.sin(angle * 8.0 - seed * 0.004) * 0.42
-                + math.sin(angle * 17.0 + 1.3) * 0.16
-            )
-            x = center_x + math.cos(angle) * radius_x * radius_t
-            y = center_y + math.sin(angle) * radius_y * radius_t
-            z = ring_height + rim_noise * (1.0 - radial_t * 0.62)
-            vertices.append((x, y, z))
-
-    for radial_index in range(radial_segments):
-        for angular_index in range(angular_segments):
-            next_angle = (angular_index + 1) % angular_segments
-            a = radial_index * angular_segments + angular_index
-            b = radial_index * angular_segments + next_angle
-            c = (radial_index + 1) * angular_segments + next_angle
-            d = (radial_index + 1) * angular_segments + angular_index
-            faces.append((a, b, c, d))
-
-    mesh = bpy.data.meshes.new("Ember_Distant_Volcanic_Vent_Mesh")
-    mesh.from_pydata(vertices, [], faces)
-    mesh.update()
-    vent = bpy.data.objects.new("Ember_Distant_Volcanic_Vent", mesh)
-    collection.objects.link(vent)
-    vent.data.materials.append(material)
-    for polygon in vent.data.polygons:
-        polygon.use_smooth = True
-    project_uv(vent, 8.0)
-    tag(vent, "distant-volcanic-vent", "distant-volcanic-vent")
-    vent["tka_authorship"] = "scene-authored-deterministic"
-
-    crater_outline = [
-        (
-            center_x + math.cos(math.tau * index / 32) * crater_radius * 0.82,
-            center_y + math.sin(math.tau * index / 32) * crater_radius * 0.66,
-        )
-        for index in range(32)
-    ]
-    crater = create_extruded_polygon(
-        "Ember_Distant_Vent_Crater",
-        crater_outline,
-        height - 3.2,
-        height - 3.7,
-        chasm,
-        collection,
-        "distant-volcanic-vent",
-        "distant-vent-crater",
-        bevel=0.0,
-    )
-    return [vent, crater]
 
 
 def create_lava_channel_levees(
@@ -1898,16 +1913,80 @@ def create_columnar_furnace_r3(
     }
 
 
+def create_meshy_geology_ensemble(
+    basalt: bpy.types.Material,
+    ash: bpy.types.Material,
+    collection: bpy.types.Collection,
+) -> dict[str, object]:
+    """Place the three approved formations once, with authored country between them."""
+
+    hero = import_meshy_geology(
+        "hero-columnar-escarpment.glb",
+        "Ember_Meshy_Columnar_Escarpment",
+        (-8.5, -27.0, -0.62),
+        12.5,
+        180.0,
+        "meshy-hero-geology",
+        "hero-columnar-escarpment",
+        "01a04587-db17-7a2a-b386-849e70d03b4e",
+        collection,
+    )
+    lava_bank = import_meshy_geology(
+        "collapsed-lava-bank.glb",
+        "Ember_Meshy_Collapsed_Lava_Bank",
+        (16.0, -1.6, -0.34),
+        3.4,
+        22.0,
+        "meshy-lava-bank",
+        "collapsed-lava-bank",
+        "01a0458b-0cf6-7131-90ac-0c7b38dac384",
+        collection,
+    )
+    fumarole = import_meshy_geology(
+        "obsidian-fumarole-talus.glb",
+        "Ember_Meshy_Obsidian_Fumarole_Talus",
+        (-13.0, -11.0, -0.42),
+        3.7,
+        -18.0,
+        "meshy-fumarole-talus",
+        "obsidian-fumarole-talus",
+        "01a0458e-5a9d-7d9c-a115-d569ba60119a",
+        collection,
+    )
+    distant_caldera = import_meshy_geology(
+        "distant-breached-caldera.glb",
+        "Ember_Meshy_Distant_Breached_Caldera",
+        (-25.0, -145.0, 2.0),
+        24.0,
+        180.0,
+        "meshy-distant-caldera",
+        "distant-breached-caldera",
+        "01a045d9-7610-7858-bf2d-3caba206f23a",
+        collection,
+    )
+
+    # Scene-authored rubble remains the transition tissue. The selected Meshy
+    # assets own the unique silhouettes; procedural pieces only bury their
+    # bases and carry the geology around the orbit without visible duplication.
+    perimeter = create_perimeter_geology(basalt, ash, collection)
+    return {
+        "hero": hero,
+        "lavaBank": lava_bank,
+        "fumarole": fumarole,
+        "distantCaldera": distant_caldera,
+        "perimeter": perimeter,
+    }
+
+
 def build_production_geometry(
     production: bpy.types.Collection,
 ) -> dict[str, object]:
-    print("[ember-r6] baking blackglass textures", flush=True)
+    print("[ember-r7] baking blackglass textures", flush=True)
     textures = create_blackglass_textures()
     blackglass = create_blackglass_material(textures)
-    print("[ember-r6] baking basalt textures", flush=True)
+    print("[ember-r7] baking basalt textures", flush=True)
     basalt_textures = create_basalt_textures("weathered-basalt", seed=250827)
-    cap_textures = create_basalt_textures("fresh-basalt-fracture", seed=250917, fresh_fracture=True)
-    print("[ember-r6] creating materials", flush=True)
+    print("[ember-r7] creating materials", flush=True)
     columnar_basalt = create_texture_material(
         "Ember_Columnar_Basalt_PBR",
         "columnar-joint-face",
@@ -1916,15 +1995,6 @@ def build_production_geometry(
         roughness=0.86,
         metallic=0.015,
         normal_strength=0.52,
-    )
-    columnar_cap = create_texture_material(
-        "Ember_Columnar_Cap_PBR",
-        "fresh-column-fracture",
-        cap_textures,
-        base_color=(0.18, 0.21, 0.2, 1.0),
-        roughness=0.74,
-        metallic=0.01,
-        normal_strength=0.64,
     )
     near_caldera = create_texture_material(
         "Ember_Near_Caldera_PBR",
@@ -1959,7 +2029,7 @@ def build_production_geometry(
     ash = create_plain_material("Ember_Ash_Deposit", (0.035, 0.048, 0.047, 1.0), 0.985)
 
     create_caldera_banks(SHELF_OUTLINE, ash, columnar_basalt, production)
-    print("[ember-r6] authoring shelf", flush=True)
+    print("[ember-r7] authoring shelf", flush=True)
 
     create_extruded_polygon(
         "Ember_Blackglass_Shelf",
@@ -2032,21 +2102,18 @@ def build_production_geometry(
                 f"fissure-{index + 1:02d}-live-{live_index + 1:02d}",
             )
 
-    print("[ember-r6] authoring furnace and perimeter", flush=True)
-    furnace = create_columnar_furnace_r3(
+    print("[ember-r7] importing selected geology and authoring transitions", flush=True)
+    furnace = create_meshy_geology_ensemble(
         columnar_basalt,
-        columnar_cap,
         ash,
-        lava,
-        chasm,
         production,
     )
-    print("[ember-r6] authoring surrounding volcanic country and lava channel", flush=True)
+    print("[ember-r7] authoring surrounding volcanic country and lava channel", flush=True)
     river = sample_river_centerline()
     volcanic_basin = create_volcanic_basin(
         [near_caldera, middle_caldera, far_caldera], production, river
     )
-    distant_vent = create_distant_volcanic_vent(far_caldera, chasm, production)
+    distant_vent = [furnace["distantCaldera"]]
     levees = create_lava_channel_levees(near_caldera, production, river)
     return {
         "furnace": furnace,
@@ -2060,7 +2127,6 @@ def build_production_geometry(
             "mineral": mineral,
             "ash": ash,
             "columnar": columnar_basalt,
-            "columnarCap": columnar_cap,
             "nearCaldera": near_caldera,
             "middleCaldera": middle_caldera,
             "farCaldera": far_caldera,
@@ -2122,13 +2188,6 @@ def create_qa_scene(qa: bpy.types.Collection) -> dict[str, bpy.types.Object]:
     )
     river = sample_river_centerline(144)
     create_qa_lava_river(qa_lava_material, qa, river, qa_lava_crust_material)
-
-    ground_material = create_plain_material("QA_Ash_Field", (0.012, 0.026, 0.028, 1.0), 0.98)
-    bpy.ops.mesh.primitive_plane_add(size=230, location=(0, 0, -0.5))
-    ground = bpy.context.object
-    ground.name = "QA_Ash_Field"
-    move_to_collection(ground, qa)
-    ground.data.materials.append(ground_material)
 
     lights: list[bpy.types.Object] = []
     light_specs = [
@@ -2231,7 +2290,7 @@ def configure_render() -> None:
     scene.render.use_file_extension = True
     scene.view_settings.look = "AgX - Medium High Contrast"
     scene.view_settings.exposure = 1.05
-    world = bpy.data.worlds.new("Ember_Volcanic_World_R6")
+    world = bpy.data.worlds.new("Ember_Volcanic_World_R7")
     world.use_nodes = True
     background = world.node_tree.nodes.get("Background")
     background.inputs["Color"].default_value = (0.012, 0.02, 0.021, 1.0)
@@ -2242,7 +2301,7 @@ def configure_render() -> None:
 def render_evidence(cameras: dict[str, bpy.types.Object]) -> dict[str, str]:
     renders: dict[str, str] = {}
     for name, camera in cameras.items():
-        output = EVIDENCE_DIR / f"ember-volcanic-world-production-slice-r6-{name}.png"
+        output = EVIDENCE_DIR / f"ember-volcanic-world-production-slice-r7-{name}.png"
         bpy.context.scene.camera = camera
         bpy.context.scene.render.filepath = str(output)
         bpy.ops.render.render(write_still=True)
@@ -2318,6 +2377,10 @@ def scene_report(
             "perimeter-talus-cluster",
             "secondary-columnar-outcrop",
             "lava-channel-levee",
+            "meshy-hero-geology",
+            "meshy-lava-bank",
+            "meshy-fumarole-talus",
+            "meshy-distant-caldera",
         }
     ]
     minimum_structural_clearance = min(
@@ -2341,11 +2404,43 @@ def scene_report(
             "gate4ArtRevisionTrackerItem": "5otAzYdNg5Wp5E27mgfo",
             "gate4VolcanicWorldTrackerItem": "nu73zqvPJRxio4T2sWz7",
             "gate4ContinuityTrackerItem": "ATURN84Ov2hmjWUndebl",
+            "gate4MeshyGeologyTrackerItem": "ZSnkB98pb0wz6PO17XKp",
         },
-        "sources": [],
+        "sources": [
+            {
+                "role": "hero-columnar-escarpment",
+                "sourceTaskId": "01a04587-db17-7a2a-b386-849e70d03b4e",
+                "retextureTaskId": "01a0459b-0657-711d-89d0-0aa73e15e5cb",
+                "remeshTaskId": "01a045af-5015-7cb4-ac34-0d62f4269b67",
+                "referenceDirectory": "assets/meshy-refs/ember/hero-columnar-escarpment",
+            },
+            {
+                "role": "collapsed-lava-bank",
+                "sourceTaskId": "01a0458b-0cf6-7131-90ac-0c7b38dac384",
+                "retextureTaskId": "01a045a0-4707-72e6-8e2f-ce95c2dabb61",
+                "remeshTaskId": "01a045b2-f26d-772f-a92e-9bf36e3fc318",
+                "referenceDirectory": "assets/meshy-refs/ember/collapsed-lava-bank",
+            },
+            {
+                "role": "obsidian-fumarole-talus",
+                "sourceTaskId": "01a0458e-5a9d-7d9c-a115-d569ba60119a",
+                "retextureTaskId": "01a045a5-a3d7-73a6-8530-eb42836c009f",
+                "remeshTaskId": "01a045b6-292c-7930-bdd7-ad8a5222989d",
+                "referenceDirectory": "assets/meshy-refs/ember/obsidian-fumarole-talus",
+            },
+            {
+                "role": "distant-breached-caldera",
+                "sourceTaskId": "01a045d9-7610-7858-bf2d-3caba206f23a",
+                "retextureTaskId": "01a045db-a666-78ec-99a2-3195f6a55319",
+                "remeshTaskId": "01a045e1-a103-7626-bff7-b62b29c74094",
+                "referenceDirectory": "assets/meshy-refs/ember/distant-breached-caldera",
+            },
+        ],
         "provenance": (
-            "The complete hero formation is scene-authored deterministic geometry. "
-            "No pre-existing, generated, or downloaded model is imported."
+            "Four unique geology silhouettes were generated from registered Ember "
+            "multiview references, selected from paired auditions, retextured with the "
+            "same references, remeshed through Meshy's topology service, and embedded once each. "
+            "Scene-authored terrain and rubble remain the continuity tissue."
         ),
         "artifacts": {
             "blend": BLEND_PATH.relative_to(PROJECT_ROOT).as_posix(),
@@ -2362,10 +2457,11 @@ def scene_report(
             "heroCenterBlenderXYZ": list(HERO_CENTER),
             "heroCenterRuntimeXYZ": [HERO_CENTER[0], HERO_CENTER[2], -HERO_CENTER[1]],
             "heroInPositiveRuntimeZFarField": True,
-            "selectedDirection": "Columnar Furnace",
+            "selectedDirection": "Fractured Columnar Chasm",
             "revisionDirection": (
-                "Continuous volcanic country with surrounding terrain, travel "
-                "corridors, and a through-frame lava river"
+                "Meshy-authored blackglass escarpment, collapsed lava banks, fumarole "
+                "talus, and a breached distant caldera inside continuous volcanic "
+                "country and a through-frame river"
             ),
             "performerFacing": "negative-runtime-z-toward-front-stage-audience",
             "lavaRiverControlPointsRuntimeXZHeight": RIVER_POINTS_RUNTIME,
@@ -2382,12 +2478,18 @@ def scene_report(
             "roleCounts": dict(sorted(role_counts.items())),
             "columnarJointCount": len(column_objects),
             "columnSideDistribution": dict(sorted(joint_side_distribution.items())),
-            "columnHeightRangeMeters": [
-                round(min(float(obj["tka_joint_height"]) for obj in column_objects), 4),
-                round(max(float(obj["tka_joint_height"]) for obj in column_objects), 4),
-            ],
-            "maximumCapLossMeters": round(
-                max(float(obj["tka_cap_loss_max"]) for obj in column_objects), 4
+            "columnHeightRangeMeters": (
+                [
+                    round(min(float(obj["tka_joint_height"]) for obj in column_objects), 4),
+                    round(max(float(obj["tka_joint_height"]) for obj in column_objects), 4),
+                ]
+                if column_objects
+                else []
+            ),
+            "maximumCapLossMeters": (
+                round(max(float(obj["tka_cap_loss_max"]) for obj in column_objects), 4)
+                if column_objects
+                else None
             ),
             "authoredHeroMeshCount": len(structural_objects),
             "authoredWorldMeshCount": len(mesh_objects),
@@ -2417,14 +2519,14 @@ def main() -> None:
     clean_scene()
     production = make_collection("EMBER_PRODUCTION_SLICE")
     qa = make_collection("EMBER_QA")
-    print("[ember-r6] building production geometry", flush=True)
+    print("[ember-r7] building production geometry", flush=True)
     build_production_geometry(production)
-    print("[ember-r6] configuring QA scene", flush=True)
+    print("[ember-r7] configuring QA scene", flush=True)
     configure_render()
     cameras = create_qa_scene(qa)
-    print("[ember-r6] rendering evidence", flush=True)
+    print("[ember-r7] rendering evidence", flush=True)
     renders = render_evidence(cameras)
-    print("[ember-r6] exporting production asset", flush=True)
+    print("[ember-r7] exporting production asset", flush=True)
     export_production(production)
     report = scene_report(production, cameras, renders)
     REPORT_PATH.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

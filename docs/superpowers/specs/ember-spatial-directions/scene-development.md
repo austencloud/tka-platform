@@ -206,3 +206,22 @@ minimum structural clearance around the protected 4.5 m action radius. Its
 registered source, report, and orbit evidence live in
 `evidence/gate-4-volcanic-r6/`; live runtime verification remains pending on the
 checkout's unrelated SvelteKit HTTP 500.
+
+## R7 Meshy geology correction
+
+Museum tracker `ZSnkB98pb0wz6PO17XKp` reopens Gate 4 because R6 solved spatial
+continuity but still exposed procedural, graybox-like geology. R7 preserves the
+380 by 335 m volcanic country, seventeen-point river, performer relationship,
+front-stage heading, and protected 4.5 m action radius. It replaces the focal
+geology with four unique modules generated from registered Ember multiview
+references: a fractured columnar escarpment, a collapsed lava bank, and an
+obsidian fumarole talus, plus a low breached caldera that replaces the
+procedural distant vent after runtime review exposed its pyramid silhouette.
+
+Two geometry candidates per family were audited at matched triangle budgets.
+Only the B winner in each family advanced to retexture and official Meshy
+remesh. The four sources are embedded once each and buried into deterministic
+terrain; authored rubble remains transition tissue instead of duplicating hero
+silhouettes. The orbit evidence and audit ledger live under
+`evidence/gate-4-meshy-r1/`. Final spend was 200 of 240 credits, leaving 40
+credits unused.

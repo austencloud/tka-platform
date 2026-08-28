@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "sourceStatePath": "blender/ember-meshy-image-tasks-r7.json",
+  "statePath": "blender/ember-meshy-retexture-tasks-r7.json",
+  "outputDirectory": "static/models/ember/meshy-candidates",
+  "styleRoot": "assets/meshy-refs/ember",
+  "aiModel": "meshy-7",
+  "imageOrder": ["front.png", "right.png", "back.png"],
+  "textureResolution": "2k",
+  "enablePbr": true,
+  "estimatedCreditsPerAsset": 10,
+  "maxCredits": 40,
+  "assets": [
+    {
+      "id": "hero-columnar-escarpment-b-textured",
+      "sourceAssetId": "hero-columnar-escarpment-b",
+      "imageFolder": "hero-columnar-escarpment",
+      "label": "Columnar escarpment winner",
+      "maximumIntegratedTriangles": 48000
+    },
+    {
+      "id": "collapsed-lava-bank-b-textured",
+      "sourceAssetId": "collapsed-lava-bank-b",
+      "imageFolder": "collapsed-lava-bank",
+      "label": "Collapsed lava-bank winner",
+      "maximumIntegratedTriangles": 28000
+    },
+    {
+      "id": "obsidian-fumarole-talus-b-textured",
+      "sourceAssetId": "obsidian-fumarole-talus-b",
+      "imageFolder": "obsidian-fumarole-talus",
+      "label": "Obsidian fumarole-talus winner",
+      "maximumIntegratedTriangles": 32000
+    },
+    {
+      "id": "distant-breached-caldera-textured",
+      "sourceAssetId": "distant-breached-caldera",
+      "imageFolder": "distant-breached-caldera",
+      "label": "Distant breached-caldera massif",
+      "maximumIntegratedTriangles": 36000
+    }
+  ]
+}

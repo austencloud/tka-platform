@@ -291,6 +291,38 @@ control points ending beyond the audience camera.
 - Gate result: `in-progress`, approval unset. The implementation is complete;
   runtime capture is the remaining verification item.
 
+### Volcanic World Revision 7 Meshy geology result
+
+Museum tracker `ZSnkB98pb0wz6PO17XKp` authorizes a bounded Gate 4 geology
+correction after R6 still read as a graybox. R7 keeps the R6 spatial chassis and
+changes the visual ownership of the focal formations.
+
+- Editable source: `blender/ember-volcanic-world-production-slice-r7.blend`
+- Build report:
+  `evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-report.json`
+- Eight-sector orbit board:
+  `evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-orbit-board.png`
+- Optimized runtime asset: `static/models/ember/ember-production-slice.glb`
+- Reversible optimized asset: `static/models/ember/ember-production-slice-r7.glb`
+- Source result: four unique Meshy 7 multiview winners, each retextured,
+  officially remeshed, embedded once, and buried into authored terrain.
+- Geometry result: 79 mesh objects, 196,906 triangles, 49,345 triangles in the
+  largest mesh, and 6.156 m minimum structural clearance against the protected
+  4.5 m action radius.
+- Delivery result: the 6.33 MiB asset uses 18 KTX2 textures, Meshopt, and mesh
+  quantization.
+- Credit result: 200 of the authorized 240 credits spent; 40 remain unused.
+- Runtime result:
+  `evidence/gate-4-meshy-r1/ember-r7-runtime-hero-1920x1080.png` records the
+  decisive front-stage view with the breached caldera, crusted river, scaled
+  escarpment, and separated blackglass stage. The browser console reached the
+  environment-ready state with no errors or warnings.
+- Focused verification: 15 R7 production and paid-request checks pass, the
+  absent historical integrated-room fixture remains an explicit todo, and
+  `svelte-check` reports zero errors and zero warnings.
+- Gate result: implementation and verification complete; approval remains unset
+  pending Austen's review.
+
 ## Gate 5: Integrated room
 
 ### Implemented visual integration

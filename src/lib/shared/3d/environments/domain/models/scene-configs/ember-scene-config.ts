@@ -12,7 +12,7 @@ import type {
   ObsidianPlatformConfig,
   TreeRingConfig,
 } from "./shared-scene-config";
-import volcanicWorldR6 from "./ember-volcanic-world-r6.json";
+import volcanicWorldR7 from "./ember-volcanic-world-r7.json";
 
 export interface LavaPoolConfig {
   enabled: boolean;
@@ -188,7 +188,7 @@ export function createDefaultEmberConfig(): EmberSceneConfig {
       midColor: "#172126",
       bottomColor: "#594039",
     },
-    fog: { color: "#1d292b", density: 0.006 },
+    fog: { color: "#161b1c", density: 0.0095 },
     ground: {
       color: "#151a19",
       size: 380,
@@ -224,18 +224,18 @@ export function createDefaultEmberConfig(): EmberSceneConfig {
       channels: [
         {
           widthScale: 1,
-          points: volcanicWorldR6.lavaRiver.pointsRuntimeXZHeight.map(
+          points: volcanicWorldR7.lavaRiver.pointsRuntimeXZHeight.map(
             ([x, z, height]) => [x, z, height]
           ) as [number, number, number][],
         },
       ],
-      baseColor: "#cf2b08",
-      hotColor: "#ffb13b",
-      crustColor: "#170f0d",
-      flowSpeed: volcanicWorldR6.lavaRiver.flowSpeed,
-      width: volcanicWorldR6.lavaRiver.width,
-      warpIntensity: volcanicWorldR6.lavaRiver.warpIntensity,
-      crustCoverage: volcanicWorldR6.lavaRiver.crustCoverage,
+      baseColor: "#8f1d06",
+      hotColor: "#ff5a0a",
+      crustColor: "#0c100f",
+      flowSpeed: volcanicWorldR7.lavaRiver.flowSpeed,
+      width: volcanicWorldR7.lavaRiver.width,
+      warpIntensity: volcanicWorldR7.lavaRiver.warpIntensity,
+      crustCoverage: volcanicWorldR7.lavaRiver.crustCoverage,
     },
     obsidianPillars: {
       enabled: false,
@@ -319,12 +319,12 @@ export function createDefaultEmberConfig(): EmberSceneConfig {
     hemisphereLight: {
       skyColor: "#b8c4c0",
       groundColor: "#2b1c18",
-      intensity: 1.05,
+      intensity: 0.88,
     },
     skyLight: {
       enabled: true,
       color: "#e3ddd1",
-      intensity: 1.65,
+      intensity: 1.35,
       position: [-10, 18, -6],
     },
     platform: {

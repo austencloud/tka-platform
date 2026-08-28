@@ -22,7 +22,8 @@
       "kqMUPC5UpCHjj7ts9atQ",
       "5otAzYdNg5Wp5E27mgfo",
       "nu73zqvPJRxio4T2sWz7",
-      "ATURN84Ov2hmjWUndebl"
+      "ATURN84Ov2hmjWUndebl",
+      "ZSnkB98pb0wz6PO17XKp"
     ]
   },
   "sequenceFingerprints": [],
@@ -190,6 +191,25 @@
         "Gate 4 Columnar Revision 3 visual evidence"
       ],
       "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-columnar-r4/"
+    },
+    {
+      "invalidatedAt": "2026-08-27T23:00:00.000Z",
+      "reopenedGate": 4,
+      "museumTrackerItem": "ZSnkB98pb0wz6PO17XKp",
+      "reason": "R6 solved environmental continuity but still read as procedural graybox geology. R7 preserves that continuous spatial chassis and replaces the focal geological language with three audited Meshy multiview modules.",
+      "preserved": [
+        "R6 continuous 380 by 335 m volcanic country",
+        "seventeen-point lava route",
+        "4.5 m performer action clearance",
+        "responsive stage sizing",
+        "front-stage performer facing"
+      ],
+      "invalidated": [
+        "R6 focal geological surface language",
+        "R6 direct-authorship constraint",
+        "R6 Gate 4 visual evidence"
+      ],
+      "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/"
     }
   ],
   "gates": [
@@ -301,11 +321,11 @@
       "evidence": [
         {
           "kind": "locked-camera-set",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-report.json"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-report.json"
         },
         {
           "kind": "visual-target-board",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-orbit-board.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-orbit-board.png"
         },
         {
           "kind": "material-lighting-brief",
@@ -343,19 +363,27 @@
     },
     {
       "id": "production-slice",
-      "status": "in-progress",
+      "status": "ready-for-review",
       "evidence": [
         {
           "kind": "vertical-slice-build",
-          "path": "blender/ember-volcanic-world-production-slice-r6.blend"
+          "path": "blender/ember-volcanic-world-production-slice-r7.blend"
         },
         {
           "kind": "build-report",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-report.json"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-report.json"
         },
         {
           "kind": "registered-orbit-board",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-orbit-board.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-orbit-board.png"
+        },
+        {
+          "kind": "interaction-capture",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-r7-runtime-hero-1920x1080.png"
+        },
+        {
+          "kind": "performance-report",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-report.json"
         },
         {
           "kind": "baseline-performance-report",
@@ -372,18 +400,22 @@
         {
           "kind": "reversible-r6-glb",
           "path": "static/models/ember/ember-production-slice-r6.glb"
+        },
+        {
+          "kind": "reversible-r7-glb",
+          "path": "static/models/ember/ember-production-slice-r7.glb"
         }
       ],
       "checks": [
         {
-          "name": "direct-authorship",
+          "name": "registered-source-provenance",
           "status": "passed",
-          "evidence": "The R6 build report records an empty source list; all 192 mesh objects are scene-authored deterministic geometry with no Meshy, web, Ocean, generated, or pre-existing hero import."
+          "evidence": "The R7 report records four unique Ember Meshy multiview source chains, including geometry, retexture, and official remesh task IDs. Each selected source is embedded once; no Ocean asset or unrelated pre-existing hero is present."
         },
         {
           "name": "anti-repetition",
           "status": "passed",
-          "evidence": "Revision 6 retains the irregular 31-joint Columnar Furnace and complete-orbit outcrops, then expands one terrain owner to 380 by 335 m around the camera with eight offset geological provinces, three low travel saddles, one distant vent assembly, and two authored river levees."
+          "evidence": "R7 uses one hero escarpment, one collapsed lava bank, one fumarole talus, and one breached distant caldera, then buries each unique source into the continuous R6 terrain. Procedural secondary column clusters and the pyramid-like distant vent were removed after review exposed their graybox repetition."
         },
         {
           "name": "action-clearance",
@@ -393,7 +425,7 @@
         {
           "name": "performance",
           "status": "passed",
-          "evidence": "The optimized R6 asset requires Meshopt, mesh quantization, and nine KTX2 textures and remains below five megabytes. The static artifact is 49,532 triangles and its largest mesh is 16,128 triangles."
+          "evidence": "The optimized R7 asset is 6.33 MiB with Meshopt, mesh quantization, and 18 KTX2 textures. The source artifact is 196,906 triangles and its largest mesh is 49,345 triangles."
         },
         {
           "name": "interaction-state",
@@ -407,18 +439,18 @@
         },
         {
           "name": "runtime-console",
-          "status": "pending",
-          "evidence": "R6 live capture is blocked by the checkout's SvelteKit virtual-CSS HTTP 500 and patchedDependencies/lockfile mismatch; R5 runtime evidence remains the baseline."
+          "status": "passed",
+          "evidence": "The decisive 1920 by 1080 front-stage runtime capture loaded the final R7 GLB, reached the environment-ready state, and produced no browser-console errors or warnings."
         },
         {
           "name": "focused-verification",
           "status": "passed",
-          "evidence": "The focused R6 Ember asset contract passed eight executable tests with one historical integrated-room fixture recorded as todo; svelte-check completed with zero errors and zero warnings."
+          "evidence": "The focused R7 request-safety, provenance, terrain, stage, and shipping-asset suite passed 15 checks with one historical integrated-room todo. Svelte-check completed with zero errors and zero warnings."
         },
         {
           "name": "volcanic-world-composition",
           "status": "passed",
-          "evidence": "One continuous terrain mesh spans 380 m across and 335 m in depth around the camera. The registered orbit board shows overlapping foreground, middle, and distant landforms in all eight sectors, with low saddles instead of a uniform enclosing rim."
+          "evidence": "The R6 380 by 335 m terrain owner remains intact. R7's registered eight-sector orbit and decisive runtime view add a fractured columnar landmark, collapsed bank, fumarole talus, and low breached caldera without restoring a uniform enclosure or isolated backdrop."
         },
         {
           "name": "lava-river",

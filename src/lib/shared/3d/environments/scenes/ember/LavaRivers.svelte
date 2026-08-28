@@ -76,29 +76,34 @@
     void main() {
       // U follows the authored downhill spline. Advecting the field toward +U
       // makes every crust plate travel from the distant vent toward the shelf.
-      vec2 flowUv = vec2(vUv.x * 10.5 - uTime * 0.72, (vUv.y - 0.5) * 3.2);
+      // The river is roughly sixty times longer than it is wide. Sampling the
+      // old field at nearly square UV frequencies stretched every feature into
+      // a neon stripe. This aspect-corrected domain produces rafted plates and
+      // short molten seams at world scale.
+      vec2 flowUv = vec2(vUv.x * 54.0 - uTime * 0.22, (vUv.y - 0.5) * 3.6);
       vec2 warp = vec2(
         fbm(flowUv * 0.78 + vec2(3.1, 7.7)),
         fbm(flowUv * 0.9 + vec2(11.2, 1.4))
       ) - 0.5;
       vec2 warpedUv = flowUv + warp * uWarpIntensity;
 
-      float broadFlow = fbm(warpedUv * vec2(0.72, 1.4));
-      float plateField = fbm(warpedUv * vec2(1.65, 2.35) + vec2(uTime * 0.05, 0.0));
-      float crustThreshold = 0.62 - uCrustCoverage * 0.32;
-      float crust = smoothstep(crustThreshold - 0.07, crustThreshold + 0.08, plateField);
-      float fracture = 1.0 - smoothstep(0.035, 0.13, abs(plateField - crustThreshold));
+      float broadFlow = fbm(warpedUv * vec2(0.24, 0.92));
+      float plateField = fbm(warpedUv * vec2(0.72, 1.18) + vec2(uTime * 0.018, 0.0));
+      float crustThreshold = 0.54 - uCrustCoverage * 0.12;
+      float crust = smoothstep(crustThreshold - 0.045, crustThreshold + 0.035, plateField);
+      float fracture = 1.0 - smoothstep(0.018, 0.058, abs(plateField - crustThreshold));
 
       float center = 1.0 - smoothstep(0.0, 1.0, abs(vUv.y - 0.5) * 2.0);
-      float lateralShear = sin(warpedUv.x * 2.2 + warpedUv.y * 5.6) * 0.5 + 0.5;
-      float heat = clamp(broadFlow * 0.72 + lateralShear * 0.28, 0.0, 1.0);
-      vec3 molten = mix(uBaseColor, uHotColor, pow(heat, 2.2) * (0.42 + center * 0.58));
+      float heat = clamp(broadFlow * 0.82 + fbm(warpedUv * 0.46 + 8.3) * 0.18, 0.0, 1.0);
+      vec3 molten = mix(uBaseColor, uHotColor, pow(heat, 2.4) * (0.22 + center * 0.24));
 
       // Open channels raft dark crust downstream. Brightness survives in the
       // seams between plates and in a restless medial lane.
-      vec3 color = mix(molten, uCrustColor, crust * 0.94);
-      color += uHotColor * fracture * (0.38 + center * 0.46);
-      color += uHotColor * pow(center, 3.0) * (1.0 - crust) * 0.34;
+      vec3 cooledCrust = uCrustColor * (0.56 + broadFlow * 0.24);
+      vec3 color = mix(molten, cooledCrust, crust * 0.985);
+      color += uHotColor * fracture * (0.11 + center * 0.09);
+      float medialLead = smoothstep(0.72, 0.92, fbm(warpedUv * vec2(0.38, 0.76) + 13.4));
+      color += uHotColor * medialLead * pow(center, 3.0) * (1.0 - crust) * 0.1;
 
       float bank = smoothstep(0.0, 0.16, vUv.y) * (1.0 - smoothstep(0.84, 1.0, vUv.y));
       color = mix(uCrustColor * 0.72, color, bank);
