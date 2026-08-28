@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { tick } from "svelte";
+
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import { SceneEnvironmentId } from "$lib/shared/3d/environments/domain/scene-environment";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { flyFade } from "$lib/shared/transitions/motion";
-  import { DURATION } from "$lib/shared/transitions/transitions";
 
   import type { FormationPresetId } from "../domain/stage-types";
   import {
@@ -110,6 +111,7 @@
   let formation = $state<StudioStarter["formation"] | null>(null);
   let environmentId = $state<StudioStarter["environmentId"] | null>(null);
   let prop = $state<StudioStarter["prop"] | null>(null);
+  let activeHeading = $state<HTMLHeadingElement | null>(null);
 
   const guideSteps = $derived<GuideStep[]>(
     performerCount === 1
@@ -149,15 +151,22 @@
     }
   }
 
+  async function focusActiveHeading(): Promise<void> {
+    await tick();
+    activeHeading?.focus({ preventScroll: true });
+  }
+
   function beginGuided(): void {
     currentStep = "material";
     guided = true;
     onStartEmptyStage();
+    void focusActiveHeading();
   }
 
   function returnToExample(): void {
     guided = false;
     onReturnToExample();
+    void focusActiveHeading();
   }
 
   function selectCast(count: StudioStarter["performerCount"]): void {
@@ -182,7 +191,10 @@
 
   function moveStep(direction: -1 | 1): void {
     const next = guideSteps[currentStepIndex + direction];
-    if (next) currentStep = next;
+    if (next) {
+      currentStep = next;
+      void focusActiveHeading();
+    }
   }
 
   function back(): void {
@@ -230,235 +242,264 @@
   }
 </script>
 
-{#if !dismissed}
-  <aside
-    class="starter"
-    aria-label="Set up 3D Studio"
-    transition:flyFade={{ duration: DURATION.normal, x: -12, y: 0 }}
-  >
-    <Crossfade key={guided ? "guided" : "entry"} animateHeight>
-      {#if !guided}
-        <div class="starter-surface entry-surface">
-          <div class="eyebrow">
-            <i class="fas fa-wand-sparkles" aria-hidden="true"></i>
-            3D Studio
+<BaseModal
+  open={!dismissed}
+  closeOnBackdrop={false}
+  closeOnEscape={false}
+  size="fit"
+  animation="pop"
+  class="stage-starter-modal"
+  labelledBy="stage-starter-title"
+>
+  <span id="stage-starter-title" class="visually-hidden">Set up 3D Studio</span>
+  <Crossfade key={guided ? "guided" : "entry"} animateHeight>
+    {#if !guided}
+      <div class="starter-surface entry-surface">
+        <div class="eyebrow">
+          <i class="fas fa-wand-sparkles" aria-hidden="true"></i>
+          3D Studio
+        </div>
+        <h1 bind:this={activeHeading} tabindex="-1">
+          Begin with motion or an empty stage.
+        </h1>
+        <p>
+          The performance behind this card is an example. Keep it, or clear the
+          stage and choose each part yourself.
+        </p>
+        {#if word}
+          <div class="example-label">
+            <span>Example sequence</span>
+            <strong>{word}</strong>
           </div>
-          <h1>Begin with motion or an empty stage.</h1>
-          <p>
-            The performance behind this card is an example. Keep it, or clear
-            the stage and choose each part yourself.
-          </p>
-          {#if word}
-            <div class="example-label">
-              <span>Example sequence</span>
-              <strong>{word}</strong>
-            </div>
+        {/if}
+        <div class="actions">
+          <PanelButton
+            variant="primary"
+            fullWidth
+            disabled={applying}
+            ariaBusy={applying}
+            onclick={() => void applyRecommended()}
+          >
+            <i
+              class="fas {applying ? 'fa-circle-notch fa-spin' : 'fa-play'}"
+              aria-hidden="true"
+            ></i>
+            Start with a recommended scene
+          </PanelButton>
+          <PanelButton
+            variant="secondary"
+            fullWidth
+            disabled={applying}
+            onclick={beginGuided}
+          >
+            <i class="fas fa-eraser" aria-hidden="true"></i>
+            Build from an empty stage
+          </PanelButton>
+        </div>
+
+        <div class="advanced" aria-label="Other ways to begin">
+          <button
+            type="button"
+            onclick={() => {
+              dismiss();
+              onOpenChoreography();
+            }}>Keep this example and choreograph it</button
+          >
+          <button
+            type="button"
+            onclick={() => {
+              dismiss();
+              onChooseSequence();
+            }}>Open a sequence from your library</button
+          >
+          {#if showDirector}
+            <a href={directorHref}
+              >Director preview &amp; JSON
+              <span
+                >Expert workspace. It does not load this unsaved Stage project
+                yet.</span
+              ></a
+            >
           {/if}
-          <div class="actions">
-            <PanelButton
-              variant="primary"
-              fullWidth
-              disabled={applying}
-              ariaBusy={applying}
-              onclick={() => void applyRecommended()}
-            >
-              <i
-                class="fas {applying ? 'fa-circle-notch fa-spin' : 'fa-play'}"
-                aria-hidden="true"
-              ></i>
-              Start with a recommended scene
-            </PanelButton>
-            <PanelButton
-              variant="secondary"
-              fullWidth
-              disabled={applying}
-              onclick={beginGuided}
-            >
-              <i class="fas fa-eraser" aria-hidden="true"></i>
-              Build from an empty stage
-            </PanelButton>
-          </div>
-
-          <div class="advanced" aria-label="Other ways to begin">
-            <button
-              type="button"
-              onclick={() => {
-                dismiss();
-                onOpenChoreography();
-              }}>Keep this example and choreograph it</button
-            >
-            <button
-              type="button"
-              onclick={() => {
-                dismiss();
-                onChooseSequence();
-              }}>Open a sequence from your library</button
-            >
-            {#if showDirector}
-              <a href={directorHref}
-                >Director preview &amp; JSON
-                <span
-                  >Expert workspace. It does not load this unsaved Stage project
-                  yet.</span
-                ></a
-              >
-            {/if}
-          </div>
         </div>
-      {:else}
-        <div class="starter-surface guide-surface">
-          <div class="guide-body">
-            <Crossfade key={currentStep} animateHeight>
-              <section class="step-content" aria-live="polite">
-                {#if currentStep === "material"}
-                  <h2>Choose a sequence</h2>
-                  <p>Use your library, or let Studio choose for you.</p>
-                  <div class="choice-grid two" aria-label="Choose a sequence">
-                    <button
-                      type="button"
-                      class="choice-card material-choice"
-                      class:chosen={startingMaterial === "recommended"}
-                      aria-pressed={startingMaterial === "recommended"}
-                      onclick={() => selectStartingMaterial("recommended")}
-                    >
+      </div>
+    {:else}
+      <div class="starter-surface guide-surface">
+        <div class="guide-body">
+          <Crossfade key={currentStep} animateHeight>
+            <section class="step-content" aria-live="polite">
+              {#if currentStep === "material"}
+                <h2 bind:this={activeHeading} tabindex="-1">
+                  Choose a sequence
+                </h2>
+                <p>Use your library, or let Studio choose for you.</p>
+                <div class="choice-grid two" aria-label="Choose a sequence">
+                  <button
+                    type="button"
+                    class="choice-card material-choice"
+                    class:chosen={startingMaterial === "recommended"}
+                    aria-pressed={startingMaterial === "recommended"}
+                    onclick={() => selectStartingMaterial("recommended")}
+                  >
+                    <i class="fas fa-wand-magic-sparkles" aria-hidden="true"
+                    ></i>
+                    <span class="choice-copy">
                       <strong>Pick one for me</strong>
-                    </button>
+                      <span>Studio picks a clear starter sequence.</span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    class="choice-card material-choice"
+                    class:chosen={startingMaterial === "choose-sequence"}
+                    aria-pressed={startingMaterial === "choose-sequence"}
+                    onclick={() => selectStartingMaterial("choose-sequence")}
+                  >
+                    <i class="fas fa-folder-open" aria-hidden="true"></i>
+                    <span class="choice-copy">
+                      <strong>Pick one</strong>
+                      <span>Choose something from your library.</span>
+                    </span>
+                  </button>
+                </div>
+              {:else if currentStep === "cast"}
+                <h2 bind:this={activeHeading} tabindex="-1">
+                  Who is on stage?
+                </h2>
+                <div class="choice-grid three">
+                  {#each castOptions as option (option.count)}
                     <button
                       type="button"
-                      class="choice-card material-choice"
-                      class:chosen={startingMaterial === "choose-sequence"}
-                      aria-pressed={startingMaterial === "choose-sequence"}
-                      onclick={() => selectStartingMaterial("choose-sequence")}
+                      class="choice-card compact"
+                      class:chosen={performerCount === option.count}
+                      aria-pressed={performerCount === option.count}
+                      onclick={() => selectCast(option.count)}
                     >
-                      <strong>Pick one</strong>
+                      <i class="fas {option.icon}" aria-hidden="true"></i>
+                      <strong>{option.label}</strong>
+                      <span>{option.description}</span>
                     </button>
-                  </div>
-                {:else if currentStep === "cast"}
-                  <h2>Who is on stage?</h2>
-                  <div class="choice-grid three">
-                    {#each castOptions as option (option.count)}
-                      <button
-                        type="button"
-                        class="choice-card compact"
-                        class:chosen={performerCount === option.count}
-                        aria-pressed={performerCount === option.count}
-                        onclick={() => selectCast(option.count)}
-                      >
-                        <i class="fas {option.icon}" aria-hidden="true"></i>
-                        <strong>{option.label}</strong>
-                        <span>{option.description}</span>
-                      </button>
-                    {/each}
-                  </div>
-                {:else if currentStep === "formation"}
-                  <h2>How should they begin?</h2>
-                  <div class="choice-grid three">
-                    {#each formationOptions as option (option.id)}
-                      <button
-                        type="button"
-                        class="choice-card compact"
-                        class:chosen={formation === option.id}
-                        aria-pressed={formation === option.id}
-                        onclick={() => (formation = option.id)}
-                      >
-                        <i class="fas {option.icon}" aria-hidden="true"></i>
-                        <strong>{option.label}</strong>
-                      </button>
-                    {/each}
-                  </div>
-                {:else if currentStep === "prop"}
-                  <h2>What are they holding?</h2>
-                  <div class="choice-grid three">
-                    {#each propOptions as option (option.id)}
-                      <button
-                        type="button"
-                        class="choice-card compact"
-                        class:chosen={prop === option.id}
-                        aria-pressed={prop === option.id}
-                        onclick={() => (prop = option.id)}
-                      >
-                        <i class="fas {option.icon}" aria-hidden="true"></i>
-                        <strong>{option.label}</strong>
-                      </button>
-                    {/each}
-                  </div>
-                {:else}
-                  <h2>Where are they performing?</h2>
-                  <div class="choice-grid worlds">
-                    {#each sceneOptions as option (option.id)}
-                      <button
-                        type="button"
-                        class="choice-card compact"
-                        class:chosen={environmentId === option.id}
-                        aria-pressed={environmentId === option.id}
-                        onclick={() => (environmentId = option.id)}
-                      >
-                        <i class="fas {option.icon}" aria-hidden="true"></i>
-                        <strong>{option.label}</strong>
-                      </button>
-                    {/each}
-                  </div>
-                {/if}
-              </section>
-            </Crossfade>
-          </div>
-
-          <footer>
-            <PanelButton disabled={applying} onclick={back}>Back</PanelButton>
-            {#if currentStep !== "material"}
-              {#if currentStepIndex < guideSteps.length - 1}
-                <PanelButton
-                  variant="primary"
-                  disabled={!canContinue || applying}
-                  onclick={() => moveStep(1)}>Next</PanelButton
-                >
+                  {/each}
+                </div>
+              {:else if currentStep === "formation"}
+                <h2 bind:this={activeHeading} tabindex="-1">
+                  How should they begin?
+                </h2>
+                <div class="choice-grid three">
+                  {#each formationOptions as option (option.id)}
+                    <button
+                      type="button"
+                      class="choice-card compact"
+                      class:chosen={formation === option.id}
+                      aria-pressed={formation === option.id}
+                      onclick={() => (formation = option.id)}
+                    >
+                      <i class="fas {option.icon}" aria-hidden="true"></i>
+                      <strong>{option.label}</strong>
+                    </button>
+                  {/each}
+                </div>
+              {:else if currentStep === "prop"}
+                <h2 bind:this={activeHeading} tabindex="-1">
+                  What are they holding?
+                </h2>
+                <div class="choice-grid three">
+                  {#each propOptions as option (option.id)}
+                    <button
+                      type="button"
+                      class="choice-card compact"
+                      class:chosen={prop === option.id}
+                      aria-pressed={prop === option.id}
+                      onclick={() => (prop = option.id)}
+                    >
+                      <i class="fas {option.icon}" aria-hidden="true"></i>
+                      <strong>{option.label}</strong>
+                    </button>
+                  {/each}
+                </div>
               {:else}
-                <PanelButton
-                  variant="primary"
-                  disabled={!canContinue || applying}
-                  ariaBusy={applying}
-                  onclick={() => void applyGuided()}
-                >
-                  <i
-                    class="fas {applying
-                      ? 'fa-circle-notch fa-spin'
-                      : 'fa-wand-magic-sparkles'}"
-                    aria-hidden="true"
-                  ></i>
-                  Bring them on stage
-                </PanelButton>
+                <h2 bind:this={activeHeading} tabindex="-1">
+                  Where are they performing?
+                </h2>
+                <div class="choice-grid worlds">
+                  {#each sceneOptions as option (option.id)}
+                    <button
+                      type="button"
+                      class="choice-card compact"
+                      class:chosen={environmentId === option.id}
+                      aria-pressed={environmentId === option.id}
+                      onclick={() => (environmentId = option.id)}
+                    >
+                      <i class="fas {option.icon}" aria-hidden="true"></i>
+                      <strong>{option.label}</strong>
+                    </button>
+                  {/each}
+                </div>
               {/if}
-            {/if}
-          </footer>
+            </section>
+          </Crossfade>
         </div>
-      {/if}
-    </Crossfade>
-  </aside>
-{/if}
+
+        <footer>
+          <PanelButton disabled={applying} onclick={back}>Back</PanelButton>
+          {#if currentStep !== "material"}
+            {#if currentStepIndex < guideSteps.length - 1}
+              <PanelButton
+                variant="primary"
+                disabled={!canContinue || applying}
+                onclick={() => moveStep(1)}>Next</PanelButton
+              >
+            {:else}
+              <PanelButton
+                variant="primary"
+                disabled={!canContinue || applying}
+                ariaBusy={applying}
+                onclick={() => void applyGuided()}
+              >
+                <i
+                  class="fas {applying
+                    ? 'fa-circle-notch fa-spin'
+                    : 'fa-wand-magic-sparkles'}"
+                  aria-hidden="true"
+                ></i>
+                Bring them on stage
+              </PanelButton>
+            {/if}
+          {/if}
+        </footer>
+      </div>
+    {/if}
+  </Crossfade>
+</BaseModal>
 
 <style>
-  .starter {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    z-index: 24;
-    width: min(32rem, calc(100% - 1.5rem));
-    max-height: calc(100% - 1.5rem);
-    overflow-x: hidden;
-    overflow-y: auto;
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.14));
-    border-radius: 1rem;
-    background: var(--theme-panel-bg, #0c0e16);
-    box-shadow: var(--theme-panel-shadow, 0 1rem 3rem rgba(0, 0, 0, 0.52));
-    color: var(--theme-text, #fff);
-    translate: -50% -50%;
+  :global(dialog.stage-starter-modal[data-size="fit"]) {
+    width: min(36rem, calc(100vw - 2rem));
   }
 
   .starter-surface {
+    --font-size-sm: 1rem;
+    --min-touch-target: 3rem;
+
     display: grid;
     min-width: 0;
-    gap: 1rem;
-    padding: clamp(1rem, 2.5cqi, 1.5rem);
+    gap: 1.25rem;
+    padding: clamp(1.25rem, 3cqi, 2rem);
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--theme-accent) 8%, transparent),
+      transparent 42%
+    );
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .eyebrow {
@@ -466,7 +507,7 @@
     align-items: center;
     gap: 0.5rem;
     color: var(--theme-accent);
-    font-size: var(--font-size-compact, 0.75rem);
+    font-size: 0.875rem;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -479,20 +520,21 @@
   }
 
   h1 {
-    font-size: clamp(1.35rem, 2.2cqi, 2rem);
-    line-height: 1.08;
+    font-size: clamp(1.75rem, 4cqi, 2.25rem);
+    line-height: 1.12;
     letter-spacing: -0.025em;
   }
 
   h2 {
-    font-size: 1.1rem;
-    line-height: 1.25;
+    font-size: clamp(1.25rem, 3cqi, 1.5rem);
+    line-height: 1.3;
   }
 
   p {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-min, 0.875rem);
-    line-height: 1.5;
+    max-width: 56ch;
+    color: var(--theme-text);
+    font-size: 1rem;
+    line-height: 1.6;
   }
 
   .example-label {
@@ -506,7 +548,7 @@
     border-radius: 0.75rem;
     background: var(--theme-card-bg);
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 0.75rem);
+    font-size: 0.9375rem;
   }
 
   .example-label strong {
@@ -537,7 +579,7 @@
     background: transparent;
     color: var(--theme-text-dim);
     font: inherit;
-    font-size: var(--font-size-min, 0.875rem);
+    font-size: 1rem;
     text-align: left;
     cursor: pointer;
   }
@@ -559,7 +601,8 @@
 
   .advanced a span {
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 0.75rem);
+    font-size: 0.9375rem;
+    line-height: 1.5;
   }
 
   .guide-body {
@@ -591,9 +634,9 @@
     align-content: center;
     justify-items: start;
     min-width: 0;
-    min-height: 6.75rem;
-    gap: 0.375rem;
-    padding: 0.75rem;
+    min-height: 7.25rem;
+    gap: 0.625rem;
+    padding: 1rem;
     border: 1px solid var(--theme-stroke);
     border-radius: 0.75rem;
     background: var(--theme-card-bg);
@@ -615,9 +658,9 @@
   }
 
   .choice-card.material-choice {
-    justify-items: center;
-    min-height: 4.75rem;
-    text-align: center;
+    justify-items: start;
+    min-height: 9rem;
+    text-align: left;
   }
 
   .choice-card:hover,
@@ -644,19 +687,31 @@
   }
 
   .choice-card i {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    border-radius: 0.875rem;
+    background: color-mix(in srgb, var(--theme-accent) 13%, transparent);
     color: var(--theme-accent);
-    font-size: 1rem;
+    font-size: 1.125rem;
+    place-items: center;
   }
 
   .choice-card strong {
-    font-size: var(--font-size-min, 0.875rem);
-    line-height: 1.2;
+    font-size: 1rem;
+    line-height: 1.35;
   }
 
   .choice-card span {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 0.75rem);
-    line-height: 1.35;
+    color: var(--theme-text);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+
+  .choice-copy {
+    display: grid;
+    gap: 0.25rem;
   }
 
   footer {
