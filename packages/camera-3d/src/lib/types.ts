@@ -4,7 +4,13 @@ export enum CameraMode {
   THIRD_PERSON = "third_person",
 }
 
-/** Keep a saved preference inside the modes the current world supports. */
+/**
+ * Keep a persisted camera preference inside the modes a destination supports.
+ *
+ * A destination that only exposes first person must not wake up in a stale
+ * orbit preference. In game scenes that is more than a camera mismatch: orbit
+ * mode deliberately disables character movement.
+ */
 export function resolveAllowedCameraMode(
   preferred: CameraMode,
   allowedModes?: readonly CameraMode[]

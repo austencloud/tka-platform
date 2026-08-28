@@ -4,8 +4,8 @@ SmartCollectionDetailView.svelte
 A Smart Collection's detail view. Members are NOT stored — they derive live
 from the saved filter rule. An ephemeral BrowseEngine loads the rule's target
 pool (community or my-library), the saved filters are replayed onto it, and
-the shared BrowsePanel renders the result. The rule shows as chips in the
-header; "Edit rule" reopens the builder to change it.
+the shared BrowsePanel renders the result. Editable collections show their
+rule here; TKA's founding decks use the surrounding library hierarchy instead.
 -->
 <script lang="ts">
 	import { onMount, untrack } from "svelte";
@@ -140,17 +140,10 @@ header; "Edit rule" reopens the builder to change it.
 						collectionId === "founding_book"
 							? loadCanonicalBookVariations
 							: loadCanonicalTnDSequences,
-					// Learning Letters is small enough to browse directly. A second rail
-					// asking people to decode Split/Tog/Quarter before they see the cards
-					// works against that lesson, so its 19 labeled cards stay in one grid.
-					// The larger founding decks retain the family index that breaks their
-					// longer result sets into useful sections.
-					defaultSectionGroupBy:
-						collectionId === "founding_tka-1"
-							? "none"
-							: isFoundingId(collectionId)
-								? "tnd-family"
-								: undefined,
+					// The TKA Core library already explains which deck is open. Its cards
+					// should be immediately browseable, without a second technical rail
+					// competing with that library hierarchy.
+					defaultSectionGroupBy: isFoundingId(collectionId) ? "none" : undefined,
 				});
 				applySpecToEngine(engine, s);
 				void engine.initialize();
@@ -176,17 +169,7 @@ header; "Edit rule" reopens the builder to change it.
 	const liveMatchCount = $derived(
 		engine && !engine.isLoading && !engine.error ? engine.resultCount : null,
 	);
-	const contentFirst = $derived(collectionId === "founding_tka-1");
-	const ruleDisclosureLabel = $derived.by(() => {
-		if (!isFounding || contentFirst) return undefined;
-		if (hasLoadError) return "Collection details";
-		if (liveMatchCount == null) return "Finding matches";
-
-		if (collectionId === "founding_tka-1") {
-			return `${liveMatchCount} ${liveMatchCount === 1 ? "letter" : "letters"}`;
-		}
-		return `${liveMatchCount} ${liveMatchCount === 1 ? "sequence" : "sequences"}`;
-	});
+	const contentFirst = $derived(isFoundingId(collectionId));
 
 	function retryLoad() {
 		engine?.destroy();
@@ -296,7 +279,6 @@ header; "Edit rule" reopens the builder to change it.
 	color={tileColor}
 	{spec}
 	matchCount={liveMatchCount}
-	{ruleDisclosureLabel}
 	{contentFirst}
 	backLabel={contentFirst ? "TKA Core" : undefined}
 	loading={resultsLoading}

@@ -10,6 +10,12 @@ describe("camera frame delta", () => {
     expect(normalizeCameraFrameDelta(2.5)).toBe(0.1);
   });
 
+  it("lets fixed-step vehicle consumers request a larger bounded catch-up", () => {
+    expect(normalizeCameraFrameDelta(0.125, 0.25)).toBe(0.125);
+    expect(normalizeCameraFrameDelta(2.5, 0.25)).toBe(0.25);
+    expect(normalizeCameraFrameDelta(2.5, 5)).toBe(0.25);
+  });
+
   it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
     "rejects non-finite delta %s",
     (delta) => {

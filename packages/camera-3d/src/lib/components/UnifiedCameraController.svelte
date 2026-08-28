@@ -37,7 +37,10 @@
     sprintMultiplier?: number;
     jumpForce?: number;
     gravity?: number;
-    /** Bounded catch-up for movement owners that perform fixed substeps. */
+    /**
+     * Bounded simulation catch-up for consumers whose movement owner performs
+     * fixed substeps. Ordinary walking keeps the conservative 100 ms default.
+     */
     maximumFrameDeltaSeconds?: number;
     /** Camera height above the physics body's centre in first person. */
     firstPersonCameraOffset?: number;
@@ -80,6 +83,11 @@
      * per gesture instead of one per frame.
      */
     onInteractionEnd?: (kind: FlyInteractionKind) => void;
+    onInputStateChange?: (input: {
+      activeCodes: string[];
+      mode: CameraMode;
+    }) => void;
+    onControlReadinessChange?: (ready: boolean) => void;
   }
 
   const props: Props = $props();
@@ -123,6 +131,9 @@
   $effect.pre(() => {
     mode = _initMode;
   });
+  $effect(() => {
+    props.onModeChange?.(mode);
+  });
 
   // `initial*` means initial. These used to be assigned from an $effect.pre,
   // which read both props reactively - so any consumer passing a live value for
@@ -147,6 +158,8 @@
     "KeyS",
     "KeyD",
     "KeyC",
+    "ControlLeft",
+    "ControlRight",
     "Space",
     "ShiftLeft",
     "ShiftRight",
@@ -266,7 +279,6 @@
       mode = cameraPreferences.cycleMode(destinationId);
       attempts++;
     } while (allowedModes && !allowedModes.includes(mode) && attempts < 3);
-    props.onModeChange?.(mode);
     if (mode === CameraMode.ORBIT && isPointerLocked) {
       document.exitPointerLock();
     }
@@ -276,7 +288,6 @@
     if (mode !== CameraMode.ORBIT) {
       cameraPreferences.setModeForDestination(destinationId, CameraMode.ORBIT);
       mode = CameraMode.ORBIT;
-      props.onModeChange?.(mode);
     }
   }
 
@@ -317,6 +328,7 @@
       const isMovementKey = MOVEMENT_KEYS.has(e.code);
       if (isMovementKey && !e.repeat) markFlyInteraction("keyboard");
       keys.add(e.code);
+      props.onInputStateChange?.({ activeCodes: [...keys], mode });
       if (isMovementKey) {
         e.preventDefault();
       }
@@ -325,6 +337,7 @@
 
   function handleKeyUp(e: KeyboardEvent) {
     keys.delete(e.code);
+    props.onInputStateChange?.({ activeCodes: [...keys], mode });
   }
 
   function handleMouseMove(e: MouseEvent) {
@@ -439,7 +452,6 @@
       );
       mode = CameraMode.THIRD_PERSON;
     }
-    props.onModeChange?.(mode);
     if (isGameMode(mode) && inputCaps.canUsePointerLock()) {
       const canvas =
         cachedCanvas ?? resolveThrelteContextValue(renderer)?.domElement;
@@ -452,9 +464,12 @@
   function handleBlur() {
     flushCompletedInteraction();
     keys.clear();
+    props.onInputStateChange?.({ activeCodes: [], mode });
   }
 
   let attached = false;
+  let controllerDestroyed = false;
+  let reportedControlReady: boolean | null = null;
 
   function findCanvas(): HTMLCanvasElement | null {
     return (
@@ -494,7 +509,7 @@
   $effect(() => {
     if (enabled && !attached) {
       queueMicrotask(() => {
-        if (!enabled || attached) return;
+        if (controllerDestroyed || !enabled || attached) return;
         const canvas = findCanvas();
         if (canvas) {
           attachToCanvas(canvas);
@@ -502,6 +517,7 @@
         } else {
           let attempts = 0;
           function tryAttach() {
+            if (controllerDestroyed) return;
             const c = findCanvas();
             if (c) {
               attachToCanvas(c);
@@ -519,6 +535,7 @@
   });
 
   function attachToCanvas(canvas: HTMLCanvasElement) {
+    if (controllerDestroyed) return;
     cachedCanvas = canvas;
     isPointerLocked = document.pointerLockElement === canvas;
     inputCaps.init();
@@ -537,6 +554,7 @@
   }
 
   onDestroy(() => {
+    controllerDestroyed = true;
     detachFromCanvas();
   });
 
@@ -562,7 +580,12 @@
 
   useTask((delta) => {
     const activeCamera = resolveThrelteContextValue(camera);
-    if (!enabled || !activeCamera) return;
+    const controlReady = enabled && activeCamera !== null;
+    if (controlReady !== reportedControlReady) {
+      reportedControlReady = controlReady;
+      props.onControlReadinessChange?.(controlReady);
+    }
+    if (!controlReady || !activeCamera) return;
 
     // Background tabs, debugger pauses, and renderer handoffs can produce a
     // negative or abnormally large task delta. A negative limit makes the
@@ -623,7 +646,9 @@
     const isSprinting =
       enableSprint && (keys.has("ShiftLeft") || keys.has("ShiftRight"));
     const isJumping = enableJump && keys.has("Space");
-    const isCrouching = enableCrouch && keys.has("KeyC");
+    const isCrouching =
+      enableCrouch &&
+      (keys.has("KeyC") || keys.has("ControlLeft") || keys.has("ControlRight"));
     const hasMovementInput = forwardInput !== 0 || strafeInput !== 0;
 
     const cam = activeCamera;
