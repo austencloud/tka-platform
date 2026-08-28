@@ -557,7 +557,8 @@
   function updateUrlParam(key: string, value: string) {
     if (!browser) return;
     mutateCurrentUrl((url) => {
-      url.searchParams.set(key, value);
+      if (value) url.searchParams.set(key, value);
+      else url.searchParams.delete(key);
     });
   }
 </script>
