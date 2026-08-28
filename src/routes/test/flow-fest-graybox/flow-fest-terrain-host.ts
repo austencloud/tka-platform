@@ -30,6 +30,21 @@ export interface FlowFestTerrainHostMetrics {
   triangles: number;
   geometryBytes: number;
   sourceHeightSamples: number;
+  fullDetailBounds: FlowFestTerrainDetailBounds | null;
+  farSampleStepMeters: number;
+}
+
+export interface FlowFestTerrainDetailBounds {
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+}
+
+export interface FlowFestTerrainHostOptions {
+  fullDetailBounds?: FlowFestTerrainDetailBounds;
+  fullDetailPaddingMeters?: number;
+  farSampleStep?: number;
 }
 
 export interface FlowFestTerrainHost {
@@ -170,7 +185,8 @@ interface GridWindow {
 export function buildFlowFestTerrainHost(
   terrain: ImportedTerrainDataV2,
   mode: FlowFestTerrainHostMode,
-  orthophoto: Texture | null
+  orthophoto: Texture | null,
+  options: FlowFestTerrainHostOptions = {}
 ): FlowFestTerrainHost {
   const startedAt = performance.now();
   const material = new MeshStandardMaterial({
@@ -204,18 +220,41 @@ export function buildFlowFestTerrainHost(
     segmentRows: terrain.heightmap.height - 1,
   };
   const renderWindows = [boundedWindow];
+  const farSampleStep =
+    mode === "chunked"
+      ? Math.max(1, Math.floor(options.farSampleStep ?? 1))
+      : 1;
+  const detailWindow =
+    mode === "chunked" && farSampleStep > 1 && options.fullDetailBounds
+      ? worldBoundsToGridWindow(
+          terrain,
+          options.fullDetailBounds,
+          options.fullDetailPaddingMeters ?? 0,
+          farSampleStep
+        )
+      : null;
   const colliderWindows =
     mode === "bounded-static"
       ? renderWindows
       : buildChunkWindows(terrain.heightmap.width, terrain.heightmap.height);
 
   for (const window of renderWindows) {
-    const built = buildWindowGeometry(terrain, window);
+    const built = detailWindow
+      ? buildAdaptiveWindowGeometry(
+          terrain,
+          window,
+          detailWindow,
+          farSampleStep
+        )
+      : buildWindowGeometry(terrain, window);
     const geometry = new BufferGeometry();
     geometry.setAttribute("position", new BufferAttribute(built.positions, 3));
     geometry.setAttribute("uv", new BufferAttribute(built.uvs!, 2));
+    if (built.normals) {
+      geometry.setAttribute("normal", new BufferAttribute(built.normals, 3));
+    }
     geometry.setIndex(new BufferAttribute(built.indices, 1));
-    geometry.computeVertexNormals();
+    if (!built.normals) geometry.computeVertexNormals();
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
 
@@ -232,6 +271,7 @@ export function buildFlowFestTerrainHost(
     geometryBytes +=
       built.positions.byteLength +
       built.uvs!.byteLength +
+      (built.normals?.byteLength ?? 0) +
       built.indices.byteLength;
 
     if (mode === "bounded-static") {
@@ -287,6 +327,10 @@ export function buildFlowFestTerrainHost(
     triangles,
     geometryBytes,
     sourceHeightSamples: terrain.heightmap.heights.length,
+    fullDetailBounds: detailWindow
+      ? gridWindowToWorldBounds(terrain, detailWindow)
+      : null,
+    farSampleStepMeters: farSampleStep * spacingX,
   };
 
   return {
@@ -336,6 +380,7 @@ function buildWindowGeometry(
 ): {
   positions: Float32Array;
   uvs: Float32Array | null;
+  normals: Float32Array | null;
   indices: Uint32Array;
 } {
   const width = terrain.heightmap.width;
@@ -389,5 +434,238 @@ function buildWindowGeometry(
     }
   }
 
-  return { positions, uvs, indices };
+  return { positions, uvs, normals: null, indices };
+}
+
+function worldBoundsToGridWindow(
+  terrain: ImportedTerrainDataV2,
+  bounds: FlowFestTerrainDetailBounds,
+  paddingMeters: number,
+  alignment: number
+): GridWindow {
+  const segmentsX = terrain.heightmap.width - 1;
+  const segmentsZ = terrain.heightmap.height - 1;
+  const spacingX =
+    (terrain.worldBounds.maxX - terrain.worldBounds.minX) / segmentsX;
+  const spacingZ =
+    (terrain.worldBounds.maxZ - terrain.worldBounds.minZ) / segmentsZ;
+  const snapDown = (value: number, spacing: number, minimum: number) =>
+    Math.max(
+      0,
+      Math.floor((value - paddingMeters - minimum) / spacing / alignment) *
+        alignment
+    );
+  const snapUp = (
+    value: number,
+    spacing: number,
+    minimum: number,
+    maximum: number
+  ) =>
+    Math.min(
+      maximum,
+      Math.ceil((value + paddingMeters - minimum) / spacing / alignment) *
+        alignment
+    );
+  const startColumn = snapDown(bounds.minX, spacingX, terrain.worldBounds.minX);
+  const endColumn = snapUp(
+    bounds.maxX,
+    spacingX,
+    terrain.worldBounds.minX,
+    segmentsX
+  );
+  const startRow = snapDown(bounds.minZ, spacingZ, terrain.worldBounds.minZ);
+  const endRow = snapUp(
+    bounds.maxZ,
+    spacingZ,
+    terrain.worldBounds.minZ,
+    segmentsZ
+  );
+  return {
+    startColumn,
+    startRow,
+    segmentColumns: endColumn - startColumn,
+    segmentRows: endRow - startRow,
+  };
+}
+
+function gridWindowToWorldBounds(
+  terrain: ImportedTerrainDataV2,
+  window: GridWindow
+): FlowFestTerrainDetailBounds {
+  const spacingX =
+    (terrain.worldBounds.maxX - terrain.worldBounds.minX) /
+    (terrain.heightmap.width - 1);
+  const spacingZ =
+    (terrain.worldBounds.maxZ - terrain.worldBounds.minZ) /
+    (terrain.heightmap.height - 1);
+  return {
+    minX: terrain.worldBounds.minX + window.startColumn * spacingX,
+    maxX:
+      terrain.worldBounds.minX +
+      (window.startColumn + window.segmentColumns) * spacingX,
+    minZ: terrain.worldBounds.minZ + window.startRow * spacingZ,
+    maxZ:
+      terrain.worldBounds.minZ +
+      (window.startRow + window.segmentRows) * spacingZ,
+  };
+}
+
+/**
+ * Keep every source vertex inside the registered campground while widening
+ * only the off-site horizon. Adjacent rows are zipper-triangulated when their
+ * sample counts differ, so the single surface has no skirts or T-junctions.
+ */
+function buildAdaptiveWindowGeometry(
+  terrain: ImportedTerrainDataV2,
+  window: GridWindow,
+  detailWindow: GridWindow,
+  farSampleStep: number
+): {
+  positions: Float32Array;
+  uvs: Float32Array;
+  normals: Float32Array;
+  indices: Uint32Array;
+} {
+  const width = terrain.heightmap.width;
+  const height = terrain.heightmap.height;
+  const verticalOrigin = terrain.heightmap.verticalOriginMeters;
+  const spacingX =
+    (terrain.worldBounds.maxX - terrain.worldBounds.minX) / (width - 1);
+  const spacingZ =
+    (terrain.worldBounds.maxZ - terrain.worldBounds.minZ) / (height - 1);
+  const detailEndColumn =
+    detailWindow.startColumn + detailWindow.segmentColumns;
+  const detailEndRow = detailWindow.startRow + detailWindow.segmentRows;
+  const rowSamples = buildAdaptiveAxisSamples(
+    window.startRow,
+    window.startRow + window.segmentRows,
+    detailWindow.startRow,
+    detailEndRow,
+    farSampleStep,
+    true
+  );
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const normals: number[] = [];
+  const rows: Array<{ columns: number[]; vertices: number[] }> = [];
+
+  for (const sourceRow of rowSamples) {
+    const rowIsDetailed =
+      sourceRow >= detailWindow.startRow && sourceRow <= detailEndRow;
+    const columns = buildAdaptiveAxisSamples(
+      window.startColumn,
+      window.startColumn + window.segmentColumns,
+      detailWindow.startColumn,
+      detailEndColumn,
+      farSampleStep,
+      rowIsDetailed
+    );
+    const vertices: number[] = [];
+    for (const sourceColumn of columns) {
+      const sourceIndex = sourceRow * width + sourceColumn;
+      const vertexIndex = positions.length / 3;
+      vertices.push(vertexIndex);
+      positions.push(
+        terrain.worldBounds.minX + sourceColumn * spacingX,
+        (terrain.heightmap.heights[sourceIndex] ?? verticalOrigin) -
+          verticalOrigin,
+        terrain.worldBounds.minZ + sourceRow * spacingZ
+      );
+      uvs.push(sourceColumn / (width - 1), 1 - sourceRow / (height - 1));
+      appendTerrainNormal(
+        normals,
+        terrain.heightmap.heights,
+        width,
+        height,
+        sourceColumn,
+        sourceRow,
+        spacingX,
+        spacingZ
+      );
+    }
+    rows.push({ columns, vertices });
+  }
+
+  const indices: number[] = [];
+  for (let rowIndex = 1; rowIndex < rows.length; rowIndex += 1) {
+    const north = rows[rowIndex - 1]!;
+    const south = rows[rowIndex]!;
+    let northIndex = 0;
+    let southIndex = 0;
+    while (
+      northIndex < north.columns.length - 1 ||
+      southIndex < south.columns.length - 1
+    ) {
+      const nextNorth =
+        north.columns[northIndex + 1] ?? Number.POSITIVE_INFINITY;
+      const nextSouth =
+        south.columns[southIndex + 1] ?? Number.POSITIVE_INFINITY;
+      const northWest = north.vertices[northIndex]!;
+      const southWest = south.vertices[southIndex]!;
+      if (nextNorth <= nextSouth) {
+        indices.push(northWest, southWest, north.vertices[northIndex + 1]!);
+        northIndex += 1;
+      }
+      if (nextSouth <= nextNorth) {
+        indices.push(
+          north.vertices[northIndex]!,
+          southWest,
+          south.vertices[southIndex + 1]!
+        );
+        southIndex += 1;
+      }
+    }
+  }
+
+  return {
+    positions: new Float32Array(positions),
+    uvs: new Float32Array(uvs),
+    normals: new Float32Array(normals),
+    indices: new Uint32Array(indices),
+  };
+}
+
+function buildAdaptiveAxisSamples(
+  start: number,
+  end: number,
+  detailStart: number,
+  detailEnd: number,
+  farSampleStep: number,
+  includeDetail: boolean
+): number[] {
+  const samples = new Set<number>([start, end]);
+  for (let sample = start; sample <= end; sample += farSampleStep) {
+    samples.add(sample);
+  }
+  if (includeDetail) {
+    const first = Math.max(start, detailStart);
+    const last = Math.min(end, detailEnd);
+    for (let sample = first; sample <= last; sample += 1) samples.add(sample);
+  }
+  return [...samples].sort((a, b) => a - b);
+}
+
+function appendTerrainNormal(
+  output: number[],
+  heights: Float32Array,
+  width: number,
+  height: number,
+  column: number,
+  row: number,
+  spacingX: number,
+  spacingZ: number
+): void {
+  const west = Math.max(0, column - 1);
+  const east = Math.min(width - 1, column + 1);
+  const north = Math.max(0, row - 1);
+  const south = Math.min(height - 1, row + 1);
+  const slopeX =
+    ((heights[row * width + east] ?? 0) - (heights[row * width + west] ?? 0)) /
+    ((east - west) * spacingX || 1);
+  const slopeZ =
+    ((heights[south * width + column] ?? 0) -
+      (heights[north * width + column] ?? 0)) /
+    ((south - north) * spacingZ || 1);
+  const inverseLength = 1 / Math.hypot(slopeX, 1, slopeZ);
+  output.push(-slopeX * inverseLength, inverseLength, -slopeZ * inverseLength);
 }
