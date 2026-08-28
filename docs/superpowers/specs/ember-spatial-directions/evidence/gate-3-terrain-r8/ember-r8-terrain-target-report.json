@@ -1,0 +1,138 @@
+{
+  "revision": "ember-geological-world-gate3-r8",
+  "authorityTrackerItem": "s3cxnp6hOLBVQR5dDF42",
+  "fixedElements": {
+    "actionClearanceMeters": 4.5,
+    "lavaRiverControlPointsRuntimeXZHeight": [
+      [
+        -20.0,
+        156.0,
+        15.2
+      ],
+      [
+        -25.0,
+        132.0,
+        12.7
+      ],
+      [
+        -20.0,
+        108.0,
+        10.6
+      ],
+      [
+        -17.0,
+        82.0,
+        8.7
+      ],
+      [
+        -12.0,
+        67.0,
+        6.5
+      ],
+      [
+        -4.0,
+        52.0,
+        4.4
+      ],
+      [
+        8.0,
+        40.0,
+        2.9
+      ],
+      [
+        11.0,
+        29.0,
+        1.9
+      ],
+      [
+        10.0,
+        19.0,
+        1.1
+      ],
+      [
+        12.0,
+        11.0,
+        0.55
+      ],
+      [
+        14.0,
+        2.0,
+        0.25
+      ],
+      [
+        12.0,
+        -8.0,
+        0.1
+      ],
+      [
+        8.0,
+        -24.0,
+        -0.02
+      ],
+      [
+        -1.0,
+        -43.0,
+        -0.12
+      ],
+      [
+        -14.0,
+        -64.0,
+        -0.18
+      ],
+      [
+        -10.0,
+        -91.0,
+        -0.24
+      ],
+      [
+        2.0,
+        -122.0,
+        -0.32
+      ]
+    ],
+    "meshyGeology": [
+      "hero-columnar-escarpment",
+      "collapsed-lava-bank",
+      "obsidian-fumarole-talus",
+      "distant-breached-caldera"
+    ],
+    "registeredCameras": [
+      "hero",
+      "front-right",
+      "right",
+      "rear-right",
+      "rear",
+      "rear-left",
+      "left",
+      "front-left",
+      "detail",
+      "plan"
+    ]
+  },
+  "directions": [
+    "breached-caldera-terraces",
+    "collapsed-lava-delta",
+    "basalt-badlands"
+  ],
+  "renders": {
+    "breached-caldera-terraces": {
+      "hero": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-terrain-r8/ember-r8-breached-caldera-terraces-hero.png",
+      "front-right": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-terrain-r8/ember-r8-breached-caldera-terraces-front-right.png",
+      "left": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-terrain-r8/ember-r8-breached-caldera-terraces-left.png",
+      "rear": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-terrain-r8/ember-r8-breached-caldera-terraces-rear.png"
+    },
+    "collapsed-lava-delta": {
+      "hero": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-terrain-r8/ember-r8-collapsed-lava-delta-hero.png",
+      "front-right": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-terrain-r8/ember-r8-collapsed-lava-delta-front-right.png",
+      "left": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-terrain-r8/ember-r8-collapsed-lava-delta-left.png",
+      "rear": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-terrain-r8/ember-r8-collapsed-lava-delta-rear.png"
+    },
+    "basalt-badlands": {
+      "hero": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-terrain-r8/ember-r8-basalt-badlands-hero.png",
+      "front-right": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-terrain-r8/ember-r8-basalt-badlands-front-right.png",
+      "left": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-terrain-r8/ember-r8-basalt-badlands-left.png",
+      "rear": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-terrain-r8/ember-r8-basalt-badlands-rear.png"
+    }
+  },
+  "blend": "blender/ember-geological-world-r8-targets.blend"
+}

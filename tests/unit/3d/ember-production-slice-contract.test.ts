@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { createDefaultEmberConfig } from "$lib/shared/3d/environments/domain/models/scene-configs/ember-scene-config";
+import { getCanonicalPerformerStageBounds } from "$lib/shared/3d/environments/domain/performer-stage-bounds";
 import {
   resolveViewerFormationFacingAngle,
   VIEWER_FRONT_STAGE_FACING_ANGLE,
@@ -33,7 +34,7 @@ interface EmberSliceGltf {
 const optimizedPath = resolve("static/models/ember/ember-production-slice.glb");
 const integratedPath = resolve("static/models/ember/ember-integrated-room.glb");
 const reportPath = resolve(
-  "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-report.json"
+  "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-terrain-r8/ember-volcanic-world-production-slice-r8-report.json"
 );
 const volcanicWorldContractPath = resolve(
   "src/lib/shared/3d/environments/domain/models/scene-configs/ember-volcanic-world-r7.json"
@@ -69,12 +70,13 @@ describe("Ember production-slice contracts", () => {
     expect(statSync(optimizedPath).size).toBeLessThan(7_000_000);
   });
 
-  it("retains the continuous world and the four selected geology roles", () => {
+  it("retains the breached-caldera world and the four selected geology roles", () => {
     const roles = new Set(gltf.nodes?.map((node) => node.extras?.tka_role));
     expect(roles).toEqual(
       new Set([
         "playable-shelf",
         "shelf-stratum",
+        "stage-crust-transition",
         "playable-surface",
         "cooled-fissure",
         "caldera-bank",
@@ -103,7 +105,7 @@ describe("Ember production-slice contracts", () => {
           !node.extras ||
           (node.extras.tka_scene === "ember" &&
             node.extras.tka_gate === 4 &&
-            node.extras.tka_revision === "ember-broken-rift-gate4-meshy-r7")
+            node.extras.tka_revision === "ember-geological-world-gate4-r8")
       )
     ).toBe(true);
   });
@@ -129,13 +131,12 @@ describe("Ember production-slice contracts", () => {
       "Ember_Ash_Deposit",
       "Ember_Columnar_Basalt_PBR",
       "Ember_Ground_Blackglass_PBR",
-      "Ember_Mineral_Ochre",
+      "Ember_Near_Caldera_PBR",
       "Ember_Fissure_Chasm",
       "Ember_Meshy_Geology_PBR_hero-columnar-escarpment_01",
       "Ember_Meshy_Geology_PBR_collapsed-lava-bank_01",
       "Ember_Meshy_Geology_PBR_obsidian-fumarole-talus_01",
       "Ember_Meshy_Geology_PBR_distant-breached-caldera_01",
-      "Ember_Near_Caldera_PBR",
       "Ember_Middle_Caldera_PBR",
       "Ember_Far_Caldera_PBR",
     ]);
@@ -148,7 +149,7 @@ describe("Ember production-slice contracts", () => {
         maximumMeshTriangleCount: number;
       };
     };
-    expect(report.geometry.triangleCount).toBeLessThan(220_000);
+    expect(report.geometry.triangleCount).toBeLessThan(225_000);
     expect(report.geometry.maximumMeshTriangleCount).toBeLessThan(55_000);
   });
 
@@ -162,6 +163,7 @@ describe("Ember production-slice contracts", () => {
     expect(report).toContain("nu73zqvPJRxio4T2sWz7");
     expect(report).toContain("ATURN84Ov2hmjWUndebl");
     expect(report).toContain("ZSnkB98pb0wz6PO17XKp");
+    expect(report).toContain("s3cxnp6hOLBVQR5dDF42");
     expect(report).toContain("01a045af-5015-7cb4-ac34-0d62f4269b67");
     expect(report).toContain("01a045b2-f26d-772f-a92e-9bf36e3fc318");
     expect(report).toContain("01a045b6-292c-7930-bdd7-ad8a5222989d");
@@ -184,6 +186,7 @@ describe("Ember production-slice contracts", () => {
         runtimeXRange: [number, number];
         runtimeZRange: [number, number];
         actionFloorRadius: number;
+        direction: string;
       };
     };
     const report = JSON.parse(readFileSync(reportPath, "utf8")) as {
@@ -205,7 +208,11 @@ describe("Ember production-slice contracts", () => {
     expect(world.terrain.runtimeXRange).toEqual([-190, 190]);
     expect(world.terrain.runtimeZRange[0]).toBeLessThanOrEqual(-140);
     expect(world.terrain.runtimeZRange[1]).toBeGreaterThanOrEqual(180);
-    expect(world.terrain.actionFloorRadius).toBeGreaterThanOrEqual(20);
+    expect(world.terrain.direction).toBe("breached-caldera-terraces");
+    expect(world.terrain.actionFloorRadius).toBe(10.8);
+    expect(
+      getCanonicalPerformerStageBounds(8).radius
+    ).toBeLessThan(world.terrain.actionFloorRadius);
 
     const frontContinuation = world.lavaRiver.pointsRuntimeXZHeight.at(-1)!;
     expect(frontContinuation[1]).toBeLessThanOrEqual(-120);

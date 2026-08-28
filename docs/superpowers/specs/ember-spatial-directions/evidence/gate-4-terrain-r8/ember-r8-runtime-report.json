@@ -1,0 +1,53 @@
+{
+  "revision": "ember-geological-world-gate4-r8",
+  "capturedAt": "2026-08-28T07:28:45.0281082Z",
+  "environment": {
+    "url": "http://127.0.0.1:5184/test/viewer-3d?scene=ember",
+    "viewport": {
+      "width": 1920,
+      "height": 1080,
+      "deviceScaleFactor": 1
+    }
+  },
+  "asset": {
+    "path": "static/models/ember/ember-production-slice.glb",
+    "bytes": 6697772,
+    "meshObjects": 87,
+    "triangles": 197898,
+    "largestMeshTriangles": 49345,
+    "ktx2Textures": 18,
+    "compression": [
+      "EXT_meshopt_compression",
+      "KHR_mesh_quantization",
+      "KHR_texture_basisu"
+    ]
+  },
+  "frameSample": {
+    "performerCount": 1,
+    "frames": 180,
+    "averageMilliseconds": 16.64888888887233,
+    "averageFramesPerSecond": 60.06406833962193,
+    "p95Milliseconds": 17.5,
+    "maximumMilliseconds": 18.6
+  },
+  "runtimeChecks": {
+    "environmentReady": "passed",
+    "browserConsoleErrors": 0,
+    "browserConsoleWarnings": 0,
+    "frontStageFacing": "passed",
+    "fourPerformerStageGrowth": "passed-visually",
+    "completeOrbitSourceProof": "passed-after-rear-left-camera-clearance-correction"
+  },
+  "captures": {
+    "hero": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-terrain-r8/ember-r8-runtime-hero-1920x1080.png",
+    "fourPerformers": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-terrain-r8/ember-r8-runtime-four-performers-1920x1080.png",
+    "registeredOrbit": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-terrain-r8/ember-volcanic-world-production-slice-r8-orbit-board.png"
+  },
+  "focusedVerification": {
+    "command": "pnpm test -- --run tests/unit/3d/ember-production-slice-contract.test.ts",
+    "passed": 8,
+    "todo": 1,
+    "failed": 0,
+    "todoReason": "Historical integrated-room fixture remains intentionally absent from this production-slice contract."
+  }
+}

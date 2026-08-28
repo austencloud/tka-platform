@@ -5,7 +5,9 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import sharp from "sharp";
 
-const volcanicRevision = process.argv.includes("--meshy-r7")
+const volcanicRevision = process.argv.includes("--terrain-r8")
+  ? "r8"
+  : process.argv.includes("--meshy-r7")
   ? "r7"
   : process.argv.includes("--volcanic-r6")
     ? "r6"
@@ -15,7 +17,9 @@ const volcanicRevision = process.argv.includes("--meshy-r7")
 const volcanic = volcanicRevision !== null;
 const evidenceDirectory = resolve(
   volcanic
-    ? volcanicRevision === "r7"
+    ? volcanicRevision === "r8"
+      ? "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-terrain-r8"
+      : volcanicRevision === "r7"
       ? "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1"
       : `docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-${volcanicRevision}`
     : "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-columnar-r4"
@@ -76,8 +80,8 @@ const composites = [
       `<rect width="${width}" height="${headerHeight}" fill="${palette.background}"/>
        <rect x="12" y="22" width="6" height="80" rx="3" fill="${palette.ember}"/>
        <text x="34" y="50" fill="${palette.heading}" font-family="Segoe UI, sans-serif" font-size="30" font-weight="800">${volcanic ? "EMBER GATE 4 · VOLCANIC WORLD" : "EMBER GATE 4 · COLUMNAR FURNACE"}</text>
-       <text x="34" y="80" fill="${palette.body}" font-family="Segoe UI, sans-serif" font-size="17">${volcanicRevision === "r7" ? "Production slice r7 · selected Meshy geology · continuous terrain · complete orbit" : volcanicRevision === "r6" ? "Production slice r6 · surrounding volcanic country · through-frame lava river · complete orbit" : volcanic ? "Production slice r5 · continuous caldera basin · open lava channel · complete orbit" : "Production slice r4 · buried massif · fractured heat cavity · composed complete orbit"}</text>
-       <text x="34" y="104" fill="#708f91" font-family="Segoe UI, sans-serif" font-size="14">${volcanicRevision === "r7" ? "48k hero · 28k lava bank · 32k fumarole talus · 36k breached caldera · registered multiview PBR references" : volcanicRevision === "r6" ? "380 × 335 m terrain field · three travel saddles · distant active vent · no imported hero model" : volcanic ? "230 m exterior field · distant active vent · rafted crust · no imported hero model" : "Non-repeating PBR basalt · collapsed secondary outcrops · clustered talus · no imported hero model"}</text>`
+       <text x="34" y="80" fill="${palette.body}" font-family="Segoe UI, sans-serif" font-size="17">${volcanicRevision === "r8" ? "Breached Caldera Terraces · embedded stage crust · continuous world · complete orbit" : volcanicRevision === "r7" ? "Production slice r7 · selected Meshy geology · continuous terrain · complete orbit" : volcanicRevision === "r6" ? "Production slice r6 · surrounding volcanic country · through-frame lava river · complete orbit" : volcanic ? "Production slice r5 · continuous caldera basin · open lava channel · complete orbit" : "Production slice r4 · buried massif · fractured heat cavity · composed complete orbit"}</text>
+       <text x="34" y="104" fill="#708f91" font-family="Segoe UI, sans-serif" font-size="14">${volcanicRevision === "r8" ? "380 × 335 m country · 8 crust transition plates · 17-point lava route · 4 retained Meshy landmarks" : volcanicRevision === "r7" ? "48k hero · 28k lava bank · 32k fumarole talus · 36k breached caldera · registered multiview PBR references" : volcanicRevision === "r6" ? "380 × 335 m terrain field · three travel saddles · distant active vent · no imported hero model" : volcanic ? "230 m exterior field · distant active vent · rafted crust · no imported hero model" : "Non-repeating PBR basalt · collapsed secondary outcrops · clustered talus · no imported hero model"}</text>`
     ),
     left: 0,
     top: 0,

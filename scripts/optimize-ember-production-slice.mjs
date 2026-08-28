@@ -99,13 +99,13 @@ function applyEmberMaterialProfile(document) {
 }
 
 const runtimeOutput = "static/models/ember/ember-production-slice.glb";
-const versionedOutput = "static/models/ember/ember-production-slice-r7.glb";
+const versionedOutput = "static/models/ember/ember-production-slice-r8.glb";
 
 await optimizeGltfKtx2({
   input: "static/models/ember/ember-production-slice_raw.glb",
   output: runtimeOutput,
   temporaryStem: "ember-production-slice",
-  label: "Ember volcanic world, Meshy geology ensemble, and blackglass shelf",
+  label: "Ember breached-caldera terraces, Meshy geology ensemble, and embedded blackglass shelf",
   textureSize: 1024,
   materialTextureSize: 512,
   simplifyRatio: 0.92,
@@ -114,4 +114,4 @@ await optimizeGltfKtx2({
 });
 
 await copyFile(runtimeOutput, versionedOutput);
-console.log(`  preserved reversible R7 asset: ${versionedOutput}`);
+console.log(`  preserved reversible R8 asset: ${versionedOutput}`);

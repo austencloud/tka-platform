@@ -1,6 +1,6 @@
 # Ember Spatial Directions
 
-Status: Volcanic World Gate 4 Revision 5 ready for review; approval unset
+Status: Geological World Gate 4 R8 ready for review; approval unset
 
 Date: 2026-08-25
 
@@ -8,8 +8,10 @@ Historical final acceptance: museum tracker `wqUAKQMa79rTYDYa0N5m`
 
 Current regression authority: museum trackers `rn25Qau62kXyyOJpgm7Z`,
 `QRHbwRQLhM7Zn9LyYHOd`, `gME4uHJawz9dtTlirRl8`,
-`kqMUPC5UpCHjj7ts9atQ`, `5otAzYdNg5Wp5E27mgfo`, and
-`nu73zqvPJRxio4T2sWz7`
+`kqMUPC5UpCHjj7ts9atQ`, `5otAzYdNg5Wp5E27mgfo`,
+`nu73zqvPJRxio4T2sWz7`, `ATURN84Ov2hmjWUndebl`,
+`ZSnkB98pb0wz6PO17XKp`, `sDKmB6cUEXLfHgz4DGd4`, and
+`s3cxnp6hOLBVQR5dDF42`
 
 ## Why this exists
 
@@ -245,3 +247,26 @@ the final capture.
 The comparison, complete orbit, viewport sweep, and runtime frame-time report
 live under `evidence/gate-4-atmosphere-r1/`. The geometry asset and remaining 40
 Meshy credits were untouched.
+
+## Geological World R8 terrain track
+
+Museum tracker `s3cxnp6hOLBVQR5dDF42` reopens Gate 3 around the latest spatial
+critique: the environment was continuous in metres but still read as one broad,
+uniform basin around a contained stage. The R8 terrain track therefore compares
+three registered topologies in the actual R7 scene instead of treating one
+concept image as an immutable target.
+
+Breached Caldera Terraces wins over Collapsed Lava Delta and Basalt Badlands.
+Its offset rim and collapsed benches create a stronger near/middle/far hierarchy,
+while the missing arc and river-cut saddle imply travel beyond the focal area.
+The former 23 m flat moat contracts to the 10.8 m required by the responsive
+stage envelope. Eight fractured crust plates make that shelf part of the same
+geological event, and erosion bowls let the four R7 Meshy landmarks emerge from
+rather than intersect the terrain.
+
+Gate 3 comparison evidence lives in `evidence/gate-3-terrain-r8/`. The selected
+production source, ten registered renders, complete orbit board, runtime hero,
+four-performer growth proof, and frame report live in
+`evidence/gate-4-terrain-r8/`. The R7 geology, Blackglass Inferno atmosphere,
+seventeen-point runtime river, front-stage heading, 4.5 m action clearance, and
+remaining 40 Meshy credits are preserved.

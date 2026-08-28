@@ -24,7 +24,8 @@
       "nu73zqvPJRxio4T2sWz7",
       "ATURN84Ov2hmjWUndebl",
       "ZSnkB98pb0wz6PO17XKp",
-      "sDKmB6cUEXLfHgz4DGd4"
+      "sDKmB6cUEXLfHgz4DGd4",
+      "s3cxnp6hOLBVQR5dDF42"
     ]
   },
   "sequenceFingerprints": [],
@@ -38,10 +39,10 @@
     {
       "id": "C-002",
       "class": "invention",
-      "statement": "The Columnar Furnace sits within one continuous exterior-scale volcanic basin while a distant vent and open lava channel establish far depth outside the 4.5 m action radius without forming a uniform enclosure.",
+      "statement": "The Columnar Furnace rises from an offset breached caldera whose collapsed terraces, open travel saddle, embedded stage crust, and through-frame lava channel establish continuous foreground, midground, and far terrain outside the protected 4.5 m action radius.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/scene-development.md",
-        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-orbit-board.png"
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-terrain-r8/ember-volcanic-world-production-slice-r8-orbit-board.png"
       ]
     },
     {
@@ -211,6 +212,27 @@
         "R6 Gate 4 visual evidence"
       ],
       "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/"
+    },
+    {
+      "invalidatedAt": "2026-08-28T07:23:22.335Z",
+      "reopenedGate": 3,
+      "museumTrackerItem": "s3cxnp6hOLBVQR5dDF42",
+      "reason": "R7 and the Blackglass atmosphere fixed focal geology and color separation, but the broad uniform basin and 23 m flat moat still made the stage read as a contained vignette. R8 compares three registered terrain topologies and advances the strongest world-scale composition.",
+      "preserved": [
+        "four unique R7 Meshy geological landmarks",
+        "Blackglass Inferno runtime atmosphere",
+        "seventeen-point lava route",
+        "4.5 m performer action clearance",
+        "responsive stage sizing",
+        "front-stage performer facing"
+      ],
+      "invalidated": [
+        "uniform R7 basin silhouette",
+        "23 m flat action-floor moat",
+        "R7 Gate 3 terrain target",
+        "R7 Gate 4 terrain evidence"
+      ],
+      "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-terrain-r8/ and docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-terrain-r8/"
     }
   ],
   "gates": [
@@ -322,11 +344,11 @@
       "evidence": [
         {
           "kind": "locked-camera-set",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-report.json"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-terrain-r8/ember-r8-terrain-target-report.json"
         },
         {
           "kind": "visual-target-board",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-orbit-board.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-terrain-r8/ember-r8-breached-caldera-terraces-hero.png"
         },
         {
           "kind": "material-lighting-brief",
@@ -337,24 +359,24 @@
         {
           "name": "camera-registration",
           "status": "passed",
-          "evidence": "The report records one shared ten-camera set used unchanged by all three Blender target scenes: eight orbit sectors, one geological detail, and one orthographic plan view."
+          "evidence": "The target report records one shared hero, front-right, left, and rear camera set used unchanged by Breached Caldera Terraces, Collapsed Lava Delta, and Basalt Badlands."
         },
         {
           "name": "silhouette-read",
           "status": "passed",
-          "evidence": "The comparison and three orbit boards show three distinct hero silhouettes under matched camera and lighting conditions without depending on a pre-existing hero model."
+          "evidence": "Twelve registered renders show three distinct terrain silhouettes under matched camera and lighting conditions. The decision ledger selects Breached Caldera Terraces for shelf fusion, depth hierarchy, river causality, and open travel continuity."
         },
         {
           "name": "action-clearance",
           "status": "passed",
-          "evidence": "All target geometry and secondary geology remain outside the preserved 4.5 m unobstructed performer action radius, confirmed by the registered plan views."
+          "evidence": "All three directions preserve the 4.5 m action radius. The selected direction contracts the surrounding flat moat to 10.8 m while keeping a computed 6.156 m minimum structural clearance."
         }
       ],
       "approval": {
         "approvedBy": "Austen",
-        "approvedAt": "2026-08-27T07:27:15.129Z",
-        "quote": "I will take your recommendation",
-        "museumTrackerItem": "QRHbwRQLhM7Zn9LyYHOd",
+        "approvedAt": "2026-08-28T07:23:22.335Z",
+        "quote": "Sick. Send it",
+        "museumTrackerItem": "s3cxnp6hOLBVQR5dDF42",
         "visualComprehensionConfirmed": true
       }
     },
@@ -364,19 +386,23 @@
       "evidence": [
         {
           "kind": "vertical-slice-build",
-          "path": "static/models/ember/ember-production-slice-r7.glb"
+          "path": "static/models/ember/ember-production-slice-r8.glb"
         },
         {
           "kind": "build-report",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-report.json"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-terrain-r8/ember-volcanic-world-production-slice-r8-report.json"
         },
         {
-          "kind": "atmosphere-orbit-board",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-orbit-board.png"
+          "kind": "registered-terrain-orbit-board",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-terrain-r8/ember-volcanic-world-production-slice-r8-orbit-board.png"
+        },
+        {
+          "kind": "runtime-hero-capture",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-terrain-r8/ember-r8-runtime-hero-1920x1080.png"
         },
         {
           "kind": "interaction-capture",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/look-blackglass-inferno-hero-1920x1080.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-terrain-r8/ember-r8-runtime-four-performers-1920x1080.png"
         },
         {
           "kind": "visual-target-board",
@@ -392,7 +418,7 @@
         },
         {
           "kind": "performance-report",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/ember-atmosphere-runtime-report.json"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-terrain-r8/ember-r8-runtime-report.json"
         },
         {
           "kind": "baseline-performance-report",
@@ -413,6 +439,10 @@
         {
           "kind": "reversible-r7-glb",
           "path": "static/models/ember/ember-production-slice-r7.glb"
+        },
+        {
+          "kind": "reversible-r8-glb",
+          "path": "static/models/ember/ember-production-slice-r8.glb"
         }
       ],
       "checks": [
@@ -434,12 +464,12 @@
         {
           "name": "performance",
           "status": "passed",
-          "evidence": "The optimized R7 asset is 6.33 MiB with Meshopt, mesh quantization, and 18 KTX2 textures. The source artifact is 196,906 triangles and its largest mesh is 49,345 triangles."
+          "evidence": "The optimized R8 asset is 6,697,772 bytes with Meshopt, mesh quantization, and 18 KTX2 textures. The source artifact is 197,898 triangles and its largest mesh is 49,345 triangles. A 180-frame runtime sample measured 60.06 average FPS with a 17.5 ms p95."
         },
         {
           "name": "interaction-state",
           "status": "passed",
-          "evidence": "The shared stage owner grew through one, two, three, and four performers; the corrected four-performer runtime proof keeps every body inside the platform and every visible front toward the audience camera."
+          "evidence": "The R8 four-performer runtime capture confirms that the shared stage owner grows inside the eight-piece crust transition while every body remains on the deck and faces the front-stage camera."
         },
         {
           "name": "front-stage-facing",
@@ -449,17 +479,17 @@
         {
           "name": "runtime-console",
           "status": "passed",
-          "evidence": "The decisive 1920 by 1080 front-stage runtime capture loaded the final R7 GLB, reached the environment-ready state, and produced no browser-console errors or warnings."
+          "evidence": "The decisive 1920 by 1080 front-stage runtime capture loaded the final R8 GLB, reached the environment-ready state, and produced no browser-console errors or warnings."
         },
         {
           "name": "focused-verification",
           "status": "passed",
-          "evidence": "The focused R7 request-safety, provenance, terrain, stage, and shipping-asset suite passed 15 checks with one historical integrated-room todo. Svelte-check completed with zero errors and zero warnings."
+          "evidence": "The focused R8 terrain, stage, provenance, and shipping-asset contract passed 8 checks with one historical integrated-room todo and zero failures."
         },
         {
           "name": "volcanic-world-composition",
           "status": "passed",
-          "evidence": "The R6 380 by 335 m terrain owner remains intact. R7's registered eight-sector orbit and decisive runtime view add a fractured columnar landmark, collapsed bank, fumarole talus, and low breached caldera without restoring a uniform enclosure or isolated backdrop."
+          "evidence": "R8 retains the 380 by 335 m country but replaces the broad uniform basin with an offset breached caldera, collapsed benches, open saddle, and eight-piece stage-to-crust transition. The corrected eight-sector orbit contains no camera-terrain intersections."
         },
         {
           "name": "lava-river",
@@ -485,6 +515,11 @@
           "name": "atmosphere-performance",
           "status": "passed",
           "evidence": "A 180-frame 1920x1080 sample measured 60.28 average FPS with a 16.8 ms p95 while the selected shadow, haze, plumes, particles, heat fields, lava river, performer, and R7 GLB were active."
+        },
+        {
+          "name": "geological-world-terrain",
+          "status": "passed",
+          "evidence": "Breached Caldera Terraces won a matched three-direction Gate 3 comparison. The production pass reduces the flat moat from 23 m to 10.8 m, adds eight fractured stage-crust transitions, protects all four Meshy landmark bases, and proves the resulting continuous world in a corrected eight-sector orbit."
         }
       ],
       "approval": null
