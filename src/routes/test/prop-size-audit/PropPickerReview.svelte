@@ -10,7 +10,6 @@
     PropType.BIGFAN,
     PropType.TORCH,
     PropType.SICKLES,
-    PropType.CHICKEN,
   ]);
   let favoriteProp = $state<PropType | null>(PropType.TORCH);
   let favoriteCatdog = $state<CatdogCombo | null>(null);
@@ -146,8 +145,7 @@
     place-items: center;
     padding: clamp(1rem, 4vw, 4rem);
     color: var(--theme-text, #f8fafc);
-    background:
-      radial-gradient(
+    background: radial-gradient(
         circle at 18% 12%,
         color-mix(in srgb, var(--prop-blue, #3b82f6) 18%, transparent),
         transparent 32%

@@ -28,8 +28,8 @@
   const selectionSummary = $derived(
     family.choices
       .filter((choice) => selectedChoices.includes(choice.prop))
-      .map((choice) => choice.label)
-      .join(", ")
+      .map((choice) => choice.label.replace(" Hoop", ""))
+      .join(" + ")
   );
 </script>
 
@@ -52,8 +52,6 @@
     />
     {#if selected}
       <span class="selection-mark"><i class="fas fa-check"></i></span>
-    {:else}
-      <span class="add-mark"><i class="fas fa-plus"></i></span>
     {/if}
   </span>
   <span class="card-copy">
@@ -73,12 +71,12 @@
   .family-card {
     position: relative;
     display: grid;
-    grid-template-columns: 3.25rem minmax(0, 1fr) auto;
+    grid-template-columns: 2.5rem minmax(0, 1fr) auto;
     min-width: 0;
-    min-height: 5.25rem;
+    min-height: 4.5rem;
     align-items: center;
-    gap: 0.65rem;
-    padding: 0.7rem;
+    gap: 0.55rem;
+    padding: 0.55rem 0.65rem;
     color: var(--theme-text, white);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -127,8 +125,8 @@
   .art-stage {
     position: relative;
     display: grid;
-    width: 3.25rem;
-    height: 3.25rem;
+    width: 2.5rem;
+    height: 2.5rem;
     place-items: center;
     border-radius: 0.7rem;
     background: color-mix(in srgb, var(--theme-text) 4%, transparent);
@@ -139,8 +137,7 @@
     height: 80%;
   }
 
-  .selection-mark,
-  .add-mark {
+  .selection-mark {
     position: absolute;
     top: -0.25rem;
     right: -0.25rem;
@@ -154,12 +151,6 @@
     background: color-mix(in srgb, var(--theme-accent) 82%, #090b13);
     font-size: 0.875rem;
     font-weight: 850;
-  }
-
-  .add-mark {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    background: var(--theme-panel-bg, #11141c);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .card-copy {
@@ -182,7 +173,7 @@
 
   .card-copy small {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
+    font-size: max(0.75rem, var(--font-size-compact, 0.75rem));
   }
 
   .detail-cue {
@@ -192,15 +183,15 @@
 
   @container (min-width: 120rem) {
     .family-card {
-      grid-template-columns: 5rem minmax(0, 1fr) auto;
-      min-height: 7rem;
-      gap: 1rem;
-      padding: 1rem;
+      grid-template-columns: 4rem minmax(0, 1fr) auto;
+      min-height: 6rem;
+      gap: 0.85rem;
+      padding: 0.85rem;
     }
 
     .art-stage {
-      width: 5rem;
-      height: 5rem;
+      width: 4rem;
+      height: 4rem;
     }
 
     .card-copy strong {
@@ -214,15 +205,15 @@
 
   @media (max-width: 520px) {
     .family-card {
-      grid-template-columns: 2.75rem minmax(0, 1fr);
-      min-height: 4.5rem;
+      grid-template-columns: 2.5rem minmax(0, 1fr);
+      min-height: 4rem;
       gap: 0.45rem;
       padding: 0.55rem;
     }
 
     .art-stage {
-      width: 2.75rem;
-      height: 2.75rem;
+      width: 2.5rem;
+      height: 2.5rem;
     }
 
     .card-copy small,

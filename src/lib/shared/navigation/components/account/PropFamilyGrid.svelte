@@ -25,12 +25,6 @@
     ontoggleskill,
   }: Props = $props();
 
-  const coreFamilies = PROFILE_PROP_FAMILIES.filter(
-    (family) => family.group === "core"
-  );
-  const specialtyFamilies = PROFILE_PROP_FAMILIES.filter(
-    (family) => family.group === "specialty"
-  );
   const activeFamilyInfo = $derived(
     activeFamily
       ? getProfilePropFamilyByRepresentative(activeFamily)
@@ -39,51 +33,17 @@
 </script>
 
 <div class="family-picker">
-  <section class="family-section" aria-labelledby="core-prop-families">
-    <header class="section-heading">
-      <span id="core-prop-families">Prop families</span>
-      <small>Choose each skill. Hoop asks for size.</small>
-    </header>
-    <div
-      class="family-grid core-grid"
-      role="group"
-      aria-labelledby="core-prop-families"
-    >
-      {#each coreFamilies as family (family.representative)}
-        <PropFamilyCard
-          {family}
-          selectedChoices={getSelectedFamilyChoices(selectedProps, family)}
-          active={activeFamily === family.representative}
-          {disabled}
-          onselect={onselectfamily}
-        />
-      {/each}
-    </div>
-  </section>
-
-  <section
-    class="family-section specialty-section"
-    aria-labelledby="specialty-prop-families"
-  >
-    <header class="section-heading compact">
-      <span id="specialty-prop-families">Specialty shapes</span>
-    </header>
-    <div
-      class="family-grid specialty-grid"
-      role="group"
-      aria-labelledby="specialty-prop-families"
-    >
-      {#each specialtyFamilies as family (family.representative)}
-        <PropFamilyCard
-          {family}
-          selectedChoices={getSelectedFamilyChoices(selectedProps, family)}
-          active={activeFamily === family.representative}
-          {disabled}
-          onselect={onselectfamily}
-        />
-      {/each}
-    </div>
-  </section>
+  <div class="family-grid" role="group" aria-label="Prop skills">
+    {#each PROFILE_PROP_FAMILIES as family (family.representative)}
+      <PropFamilyCard
+        {family}
+        selectedChoices={getSelectedFamilyChoices(selectedProps, family)}
+        active={activeFamily === family.representative}
+        {disabled}
+        onselect={onselectfamily}
+      />
+    {/each}
+  </div>
 
   {#if activeFamilyInfo && activeFamilyInfo.choices.length > 1}
     <PropVariantPicker
@@ -99,33 +59,8 @@
   .family-picker {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.625rem;
     padding: 0 0.5rem 0.25rem;
-  }
-
-  .family-section {
-    min-width: 0;
-  }
-
-  .section-heading {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.75rem;
-    margin-bottom: 0.55rem;
-    color: var(--theme-text, white);
-    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
-    font-weight: 750;
-  }
-
-  .section-heading small {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
-    font-weight: 500;
-  }
-
-  .section-heading.compact {
-    justify-content: flex-start;
   }
 
   .family-grid {
@@ -136,50 +71,24 @@
 
   @container (min-width: 40rem) {
     .family-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .specialty-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
     }
   }
 
   @container (min-width: 70rem) {
-    .core-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 0.85rem;
+    .family-grid {
+      gap: 0.75rem;
     }
 
     .family-picker {
-      gap: 1.25rem;
+      gap: 0.75rem;
       padding-inline: 1rem;
     }
   }
 
   @container (min-width: 120rem) {
-    .core-grid {
+    .family-grid {
       gap: 1.25rem;
-    }
-
-    .specialty-grid {
-      gap: 1.25rem;
-    }
-
-    .section-heading {
-      margin-bottom: 0.85rem;
-      font-size: 1.5rem;
-    }
-
-    .section-heading small {
-      font-size: 1.125rem;
-    }
-  }
-
-  @media (max-width: 520px) {
-    .section-heading {
-      align-items: flex-start;
-      flex-direction: column;
-      gap: 0.2rem;
     }
   }
 </style>

@@ -1,10 +1,8 @@
 <!--
-  SelectionFooterBar.svelte - Sticky footer in My Props drawer.
-  Shows selected prop context plus the current step's bounded actions.
+  SelectionFooterBar.svelte - Sticky actions in the My Props drawer.
 -->
 <script lang="ts">
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
 
   interface Props {
@@ -29,22 +27,9 @@
 </script>
 
 <div class="selection-footer">
-  <div class="selected-chips">
-    {#each selectedProps as prop (prop)}
-      <span class="chip-image" aria-hidden="true">
-        <PropCompositionPreview
-          propType={prop}
-          size={24}
-          useSavedOverrides={false}
-        />
-      </span>
-    {/each}
-    <span class="chip-count">
-      {count === 0
-        ? "Select at least one prop"
-        : `${count} ${count === 1 ? "prop" : "props"} selected`}
-    </span>
-  </div>
+  <span class="selection-count">
+    {count === 0 ? "Choose at least one" : `${count} selected`}
+  </span>
 
   <div class="footer-actions">
     {#if onback}
@@ -74,39 +59,12 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
-  .selected-chips {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    overflow-x: auto;
+  .selection-count {
     flex: 1;
     min-width: 0;
-    scrollbar-width: none;
-  }
-
-  .selected-chips::-webkit-scrollbar {
-    display: none;
-  }
-
-  .chip-image {
-    display: grid;
-    width: 24px;
-    height: 24px;
-    flex-shrink: 0;
-    place-items: center;
-  }
-
-  .chip-image :global(.prop-composition-preview) {
-    width: 100%;
-    height: 100%;
-  }
-
-  .chip-count {
     font-size: max(0.875rem, var(--font-size-min, 0.875rem));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     white-space: nowrap;
-    flex-shrink: 0;
-    margin-left: 4px;
   }
 
   .footer-actions {
@@ -122,10 +80,6 @@
   }
 
   @media (max-width: 480px) {
-    .chip-image {
-      display: none;
-    }
-
     .footer-actions :global(.panel-btn) {
       min-width: 5.5rem;
       padding-inline: 0.75rem;
@@ -138,16 +92,7 @@
       padding: 1.25rem 2rem;
     }
 
-    .selected-chips {
-      gap: 0.5rem;
-    }
-
-    .chip-image {
-      width: 3rem;
-      height: 3rem;
-    }
-
-    .chip-count,
+    .selection-count,
     .footer-actions :global(.panel-btn) {
       font-size: 1.5rem;
     }
