@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { ImportedTerrainDataV2 } from "$lib/shared/3d/procedural-engine/generation/real-terrain-zone";
@@ -6,6 +6,7 @@ import { parseFlowFestRuntimeContract } from "../../src/routes/test/flow-fest-gr
 import {
   deriveFlowFestForestEcology,
   FLOW_FEST_FOREST_GRASS_ASSET,
+  FLOW_FEST_FOREST_GROUND_LIFE_ASSETS,
   FLOW_FEST_PLANTFACTORY_TREE_FAMILIES,
   FLOW_FEST_FOREST_TREE_ASSETS,
 } from "../../src/routes/test/flow-fest-sim/flow-fest-forest-ecology";
@@ -83,6 +84,20 @@ function loadInputs() {
 }
 
 describe("Flow Fest Forest ecology integration", () => {
+  it("ships every asset required by the all-family runtime readiness gate", () => {
+    const assetPaths = [
+      ...Object.values(FLOW_FEST_FOREST_TREE_ASSETS),
+      FLOW_FEST_FOREST_GRASS_ASSET,
+      ...Object.values(FLOW_FEST_FOREST_GROUND_LIFE_ASSETS),
+    ];
+
+    for (const assetPath of assetPaths) {
+      expect(existsSync(resolve(root, `static${assetPath}`)), assetPath).toBe(
+        true
+      );
+    }
+  });
+
   it("uses the approved Forest families at deterministic measured coordinates", () => {
     const { contract, terrain, offsets } = loadInputs();
     const canopy = {

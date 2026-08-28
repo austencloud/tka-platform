@@ -45,6 +45,13 @@ export const FLOW_FEST_FOREST_TREE_ASSETS = {
 export const FLOW_FEST_FOREST_GRASS_ASSET =
   "/models/flow-fest-sim/ecology/forest-grass-prototypes.glb";
 
+export const FLOW_FEST_FOREST_GROUND_LIFE_ASSETS = {
+  "damp-sedge-tussock":
+    "/models/forest/ground-life/damp-sedge-tussock.glb",
+  "woodland-hazel-shrub":
+    "/models/forest/ground-life/woodland-hazel-shrub.glb",
+} as const;
+
 export type FlowFestForestTreeFamilyId =
   keyof typeof FLOW_FEST_FOREST_TREE_ASSETS;
 export const FLOW_FEST_PLANTFACTORY_TREE_FAMILIES = [

@@ -21,6 +21,7 @@
   import ForestClearingWind from "$lib/shared/3d/environments/scenes/forest/ForestClearingWind.svelte";
   import {
     FLOW_FEST_FOREST_GRASS_ASSET,
+    FLOW_FEST_FOREST_GROUND_LIFE_ASSETS,
     FLOW_FEST_FOREST_TREE_ASSETS,
     type FlowFestForestEcologyLayout,
     type FlowFestForestTreeFamilyId,
@@ -97,11 +98,11 @@
   );
   const grassPrototypes = useGltf(FLOW_FEST_FOREST_GRASS_ASSET, loaderOptions);
   const dampSedge = useGltf(
-    "/models/forest/ground-life/damp-sedge-tussock.glb",
+    FLOW_FEST_FOREST_GROUND_LIFE_ASSETS["damp-sedge-tussock"],
     loaderOptions
   );
   const hazelShrub = useGltf(
-    "/models/forest/ground-life/woodland-hazel-shrub.glb",
+    FLOW_FEST_FOREST_GROUND_LIFE_ASSETS["woodland-hazel-shrub"],
     loaderOptions
   );
 
