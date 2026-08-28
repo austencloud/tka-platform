@@ -140,17 +140,10 @@ rule here; TKA's founding decks use the surrounding library hierarchy instead.
 						collectionId === "founding_book"
 							? loadCanonicalBookVariations
 							: loadCanonicalTnDSequences,
-					// Learning Letters is small enough to browse directly. A second rail
-					// asking people to decode Split/Tog/Quarter before they see the cards
-					// works against that lesson, so its 19 labeled cards stay in one grid.
-					// The larger founding decks retain the family index that breaks their
-					// longer result sets into useful sections.
-					defaultSectionGroupBy:
-						collectionId === "founding_tka-1"
-							? "none"
-							: isFoundingId(collectionId)
-								? "tnd-family"
-								: undefined,
+					// The TKA Core library already explains which deck is open. Its cards
+					// should be immediately browseable, without a second technical rail
+					// competing with that library hierarchy.
+					defaultSectionGroupBy: isFoundingId(collectionId) ? "none" : undefined,
 				});
 				applySpecToEngine(engine, s);
 				void engine.initialize();
