@@ -51,8 +51,10 @@ Navigation via bottom tabs (mobile-first UX pattern)
   // Props
   let {
     onHeaderChange,
+    publicCourse = false,
   }: {
     onHeaderChange?: (header: string) => void;
+    publicCourse?: boolean;
   } = $props();
 
   const delightOrchestrator = getDelightOrchestrator();
@@ -250,7 +252,11 @@ Navigation via bottom tabs (mobile-first UX pattern)
   }
 </script>
 
-<div class="learn-tab">
+<div
+  class="learn-tab"
+  class:public-course={publicCourse}
+  class:course-index={publicCourse && selectedConcept === null}
+>
   <!-- Delight components (confetti and toasts) -->
   <ConfettiBurst orchestrator={delightOrchestrator} />
   <AchievementToast orchestrator={delightOrchestrator} />
@@ -307,6 +313,29 @@ Navigation via bottom tabs (mobile-first UX pattern)
     color: var(--foreground, #ffffff);
     container-type: size;
     container-name: learn-tab;
+  }
+
+  .learn-tab.public-course:not(.course-index) {
+    height: calc(100dvh - 64px);
+  }
+
+  .learn-tab.course-index {
+    height: auto;
+    min-height: calc(100dvh - 64px);
+    overflow: visible;
+    container-type: inline-size;
+  }
+
+  .learn-tab.course-index .content-container {
+    height: auto;
+    overflow: visible;
+  }
+
+  .learn-tab.course-index .mode-panel {
+    position: relative;
+    inset: auto;
+    height: auto;
+    overflow: visible;
   }
 
   /* Content container */

@@ -71,3 +71,12 @@ measured pass must restore sparse high-detail PlantFactory accents, enforce
 distance-aware tree LOD, and reduce material batches. Visual diversity and
 registered travel corridors are invariants; tree count is not a reason to keep
 unbounded triangle or draw-call cost.
+
+The post-collision runtime sample removed the triangle-raycast stack entirely,
+but the scene still rendered only about 7.6 FPS while carrying 259 PlantFactory
+trees. A representative PlantFactory oak is 146,389 triangles across 19
+primitives; a Flow Fest LOD tree is 22,639 triangles across three primitives.
+The forest therefore uses all 427 measured canopy coordinates but limits the
+production PlantFactory sources to 34 evenly distributed hero accents. The four
+Flow Fest LOD families carry the remaining canopy, with deterministic habitat
+variation and no change to registered route clearance.
