@@ -59,6 +59,7 @@
   import {
     buildFlowFestTerrainHost,
     buildFlowFestChunkSeamTraversal,
+    flowFestColliderWindowKey,
     sampleFlowFestTerrainWorldY,
     type FlowFestTerrainHost,
     type FlowFestTerrainHostMode,
@@ -210,6 +211,7 @@
   let performanceWarmupFrames = 0;
   let missingColliderFrames = 0;
   const activeTerrainBodies = new Map<string, PhysicsBodyComponent>();
+  let activeTerrainColliderWindowKey: string | null = null;
   let productionCollisionBodies: PhysicsBodyComponent[] = [];
   let mountedProductionCollision: FlowFestProductionCollisionSet | null = null;
   let mountedCampEstablished = false;
@@ -367,6 +369,26 @@
   ): boolean {
     if (!physicsState?.world || !terrainHost) return false;
 
+    const nextWindowKey =
+      props.hostMode === "bounded-static"
+        ? "bounded-static"
+        : terrain
+          ? flowFestColliderWindowKey(
+              x,
+              z,
+              terrain.worldBounds,
+              CHUNK_SIZE_METERS
+            )
+          : null;
+    if (
+      pruneDistant &&
+      nextWindowKey !== null &&
+      nextWindowKey === activeTerrainColliderWindowKey
+    ) {
+      return true;
+    }
+    if (!pruneDistant) activeTerrainColliderWindowKey = null;
+
     const desired = new Set<string>();
     for (const collider of terrainHost.colliders) {
       const isNeeded =
@@ -406,6 +428,8 @@
         Math.abs(collider.centerX - x) <= collider.halfExtentX + 1e-6 &&
         Math.abs(collider.centerZ - z) <= collider.halfExtentZ + 1e-6
     );
+    activeTerrainColliderWindowKey =
+      pruneDistant && containingColliderIsActive ? nextWindowKey : null;
     updateActiveColliderProof();
     return containingColliderIsActive;
   }
@@ -1496,6 +1520,7 @@
     clearProductionCollisionBodies();
     if (physicsState) disposePhysicsWorld(physicsState);
     activeTerrainBodies.clear();
+    activeTerrainColliderWindowKey = null;
     terrainHost?.dispose();
     disposeOverlay(overlay);
     if (barrier) {

@@ -1,7 +1,12 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { T, useTask, useThrelte } from "@threlte/core";
-  import { FogExp2, type Mesh, type MeshStandardMaterial } from "three";
+  import {
+    FogExp2,
+    type Mesh,
+    type MeshStandardMaterial,
+    type Object3D,
+  } from "three";
   import type { InstanceFrustumCullingStats } from "$lib/shared/3d/rendering/instance-frustum-culling";
   import SkyGradient from "$lib/shared/3d/environments/primitives/SkyGradient.svelte";
   import FallingParticles from "$lib/shared/3d/environments/primitives/FallingParticles.svelte";
@@ -70,6 +75,7 @@
   let buildEpoch = 0;
   let destroyed = false;
   let sceneElapsed = 0;
+  let animatedLedRings: Object3D[] = [];
 
   const campEstablished = $derived(
     isFlowFestCampEstablishedPhase(props.progressPhase)
@@ -149,11 +155,15 @@
       "FFS_EntranceFence_",
       "FFS_EntranceUtilityPole_",
     ];
+    const nextAnimatedLedRings: Object3D[] = [];
     next.root.traverse((object) => {
       if (
         cameraColliderPrefixes.some((prefix) => object.name.startsWith(prefix))
       ) {
         object.userData.cameraCollider = true;
+      }
+      if (object.name.startsWith("FFS_LEDFlowCircle_HangingRing_")) {
+        nextAnimatedLedRings.push(object);
       }
     });
     if (destroyed || epoch !== buildEpoch) {
@@ -165,6 +175,7 @@
     next.setFestivalActive(festivalActive);
     dressing?.dispose();
     dressing = next;
+    animatedLedRings = nextAnimatedLedRings;
     contract = loadedContract;
     builtBranch = branch;
     heroFirePosition = {
@@ -246,7 +257,8 @@
   ): void {
     const proof = (globalThis as Record<string, unknown>)
       .__flowFestProduction as
-      { festivalCommunity?: Record<string, unknown> } | undefined;
+      | { festivalCommunity?: Record<string, unknown> }
+      | undefined;
     if (!proof?.festivalCommunity) return;
     proof.festivalCommunity.rotationOrdinal = frame.rotationOrdinal;
     proof.festivalCommunity.activeFirePerformerIds =
@@ -260,7 +272,8 @@
     readyCommunityAvatarIds = [...readyCommunityAvatarIds, id];
     const proof = (globalThis as Record<string, unknown>)
       .__flowFestProduction as
-      { festivalCommunity?: Record<string, unknown> } | undefined;
+      | { festivalCommunity?: Record<string, unknown> }
+      | undefined;
     if (proof?.festivalCommunity) {
       proof.festivalCommunity.avatarsReady = readyCommunityAvatarIds.length;
     }
@@ -279,7 +292,8 @@
   }): void {
     const proof = (globalThis as Record<string, unknown>)
       .__flowFestProduction as
-      { forestEcology?: Record<string, unknown> } | undefined;
+      | { forestEcology?: Record<string, unknown> }
+      | undefined;
     if (!proof?.forestEcology) return;
     proof.forestEcology.treeAssetsReady = details.treeInstances;
     proof.forestEcology.grassAssetsReady = details.grassInstances;
@@ -300,7 +314,8 @@
     props.onForestCullingSample?.({ ...details });
     const proof = (globalThis as Record<string, unknown>)
       .__flowFestProduction as
-      { forestEcology?: Record<string, unknown> } | undefined;
+      | { forestEcology?: Record<string, unknown> }
+      | undefined;
     if (!proof?.forestEcology) return;
     proof.forestEcology.treeCullingBatchInstances = details.instances;
     proof.forestEcology.treeVisibleBatchInstances = details.visibleInstances;
@@ -400,7 +415,8 @@
     const terrainMesh = (activeScene.getObjectByName(
       "FFS_Terrain_ChunkedRenderBatch"
     ) ?? activeScene.getObjectByName("FFS_Terrain_Bounded")) as
-      Mesh | undefined;
+      | Mesh
+      | undefined;
     if (terrainMesh) {
       const material = terrainMesh.material as MeshStandardMaterial;
       // The grade is a restrained multiplicative color, so the orthophoto still
@@ -410,15 +426,13 @@
       terrainMesh.receiveShadow = true;
     }
 
-    dressing?.root.traverse((object) => {
-      if (object.name.startsWith("FFS_LEDFlowCircle_HangingRing_")) {
-        const energy = props.fireJamEnergy ?? 0;
-        object.rotation.z += delta * (0.035 + energy * 0.52);
-        const pulse =
-          1 + Math.sin(sceneElapsed * (1.8 + energy * 3.2)) * energy * 0.045;
-        object.scale.setScalar(pulse);
-      }
-    });
+    const energy = props.fireJamEnergy ?? 0;
+    const pulse =
+      1 + Math.sin(sceneElapsed * (1.8 + energy * 3.2)) * energy * 0.045;
+    for (const ring of animatedLedRings) {
+      ring.rotation.z += delta * (0.035 + energy * 0.52);
+      ring.scale.setScalar(pulse);
+    }
     if (proof?.festivalCommunity) {
       const community = proof.festivalCommunity as Record<string, unknown>;
       community.interactionState = props.fireJamState ?? "not-started";
@@ -429,6 +443,7 @@
   onDestroy(() => {
     destroyed = true;
     buildEpoch += 1;
+    animatedLedRings = [];
     dressing?.dispose();
     delete (globalThis as Record<string, unknown>).__flowFestProduction;
   });
