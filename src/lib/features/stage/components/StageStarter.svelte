@@ -311,6 +311,8 @@
             <Crossfade key={currentStep} animateHeight>
               <section class="step-content" aria-live="polite">
                 {#if currentStep === "material"}
+                  <h2>Choose a sequence</h2>
+                  <p>Use your library, or let Studio choose for you.</p>
                   <div class="choice-grid two" aria-label="Choose a sequence">
                     <button
                       type="button"
@@ -437,11 +439,11 @@
 <style>
   .starter {
     position: absolute;
-    top: 4.5rem;
-    left: clamp(0.75rem, 2.5cqi, 3rem);
+    top: 50%;
+    left: 50%;
     z-index: 24;
-    width: min(32rem, calc(100% - 7rem));
-    max-height: calc(100% - 9.25rem);
+    width: min(32rem, calc(100% - 1.5rem));
+    max-height: calc(100% - 1.5rem);
     overflow-x: hidden;
     overflow-y: auto;
     border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.14));
@@ -449,6 +451,7 @@
     background: var(--theme-panel-bg, #0c0e16);
     box-shadow: var(--theme-panel-shadow, 0 1rem 3rem rgba(0, 0, 0, 0.52));
     color: var(--theme-text, #fff);
+    translate: -50% -50%;
   }
 
   .starter-surface {
@@ -661,28 +664,6 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-  }
-
-  @container (min-width: 48rem) and (min-height: 34rem) {
-    .starter {
-      top: 10rem;
-      max-height: calc(100% - 11rem);
-    }
-  }
-
-  @container (max-height: 32rem) {
-    .starter {
-      top: 1rem;
-      max-height: calc(100% - 2rem);
-    }
-  }
-
-  @container (max-width: 36rem) {
-    .starter {
-      right: 0.75rem;
-      left: 0.75rem;
-      width: auto;
-    }
   }
 
   @container (max-width: 28rem) {
