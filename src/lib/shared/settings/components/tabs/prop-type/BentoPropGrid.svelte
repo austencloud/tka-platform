@@ -129,6 +129,10 @@
 
   let openFamily = $state<PropType | null>(null);
 
+  function toggleFamily(base: PropType): void {
+    openFamily = openFamily === base ? null : base;
+  }
+
   // Track which locked prop (if any) is showing its inline earn tip.
   let lockedTipFor = $state<PropType | null>(null);
   // Track which paid prop (if any) is showing its upgrade nudge.
@@ -221,6 +225,32 @@
     {@const choices = familyChoices(base)}
     {#if choices.length <= 1}
       {@render tile(choices[0] ?? base)}
+    {:else if flat}
+      <PropTypeButton
+        propType={base}
+        selected={selectedBase === base}
+        badge={familyCount(base)}
+        actionLabel={`Choose ${getPropTypeDisplayInfo(base).label} style`}
+        buttonProps={{ "aria-expanded": openFamily === base }}
+        onSelect={() => toggleFamily(base)}
+        {color}
+      />
+      {#if openFamily === base}
+        <section
+          class="variant-popover flat-variant-drawer"
+          aria-label={`${getPropTypeDisplayInfo(base).label} styles`}
+          transition:flyFade={{ y: 6 }}
+        >
+          <span class="variant-popover-label">
+            {getPropTypeDisplayInfo(base).label} styles
+          </span>
+          <div class="variant-popover-buttons">
+            {#each choices as prop (prop)}
+              {@render tile(prop)}
+            {/each}
+          </div>
+        </section>
+      {/if}
     {:else}
       <Popover.Root
         open={openFamily === base}
@@ -442,6 +472,14 @@
 
   .variant-popover-buttons .tile-wrapper :global(.prop-button) {
     width: 100%;
+  }
+
+  .flat-variant-drawer {
+    z-index: auto;
+    grid-column: 1 / -1;
+    width: 100%;
+    max-height: none;
+    box-shadow: 0 8px 24px var(--theme-shadow, rgba(0, 0, 0, 0.42));
   }
 
   /* Paid labels include the product family name. At the narrowest picker
