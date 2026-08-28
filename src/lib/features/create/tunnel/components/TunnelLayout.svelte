@@ -355,10 +355,10 @@
           <PanelButton
             variant="secondary"
             onclick={onOpenLibrary}
-            ariaLabel={`Open your ${collectionCount} saved ${collectionCount === 1 ? "tunnel" : "tunnels"}`}
+            ariaLabel={`Open tunnels; ${collectionCount} saved`}
           >
             <i class="fas fa-folder-open" aria-hidden="true"></i>
-            <span class="library-label">Your tunnels</span>
+            <span class="library-label">Tunnels</span>
             <span class="library-count" aria-hidden="true"
               >{collectionCount}</span
             >
