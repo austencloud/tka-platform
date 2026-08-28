@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "revision": "forest-ecology-r2-and-euc-steep-terrain",
+  "capturedAt": "2026-08-27",
+  "coordinateFingerprint": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d",
+  "forestEcology": {
+    "measuredCanopyPlacements": 427,
+    "sourceTreeFamilies": 12,
+    "plantFactoryTreePlacements": 34,
+    "treeDistribution": {
+      "forest-oak": 84,
+      "island-tree-01": 42,
+      "island-tree-02": 38,
+      "island-tree-03": 148,
+      "tree-small-02": 81,
+      "plantcatalog-aesculus-carnea": 6,
+      "plantcatalog-oak-urban": 5,
+      "plantcatalog-oak-colonised": 7,
+      "plantcatalog-willow": 2,
+      "plantcatalog-buckeye-31": 6,
+      "plantcatalog-buckeye-79": 5,
+      "plantcatalog-habitat-snag": 3
+    },
+    "grassPlacements": 20798,
+    "groundLifePlacements": 19,
+    "treeRouteIntrusions": 0,
+    "grassRouteIntrusions": 0,
+    "groundLifeRouteIntrusions": 0,
+    "treeDrawBatches": 107,
+    "treeRenderedTriangles": 13633504
+  },
+  "newPlantFactoryCandidates": [
+    {
+      "id": "aesculus-pavia-ld-s31",
+      "runtimeBytes": 779968,
+      "runtimeTriangles": 26381,
+      "sha256": "df8f480406696c2813140b4912953fac5bf87cdebe471e5c71f5d43196cc9514"
+    },
+    {
+      "id": "aesculus-pavia-ld-s79",
+      "runtimeBytes": 1193948,
+      "runtimeTriangles": 44896,
+      "sha256": "44fd77bc4fd87c76298c4645e5b08cffc65618e4b9c286618f8434a1aced6807"
+    },
+    {
+      "id": "quercus-robur-dead-ld-s37",
+      "semanticProfile": "wood-only-habitat-snag",
+      "runtimeBytes": 683848,
+      "runtimeTriangles": 3337,
+      "sha256": "7a002ab8a38bfa43f405e20cf2949b89fdbe4e392c941efb077be0e3347cf6e2"
+    }
+  ],
+  "plantFactoryQualification": {
+    "manifestSet": "flowFestBiomeR2",
+    "qualifiedJobs": 9,
+    "proofCommand": "node scripts/verify-forest-plantcatalog-bridge.mjs --phase=proof",
+    "status": "passed"
+  },
+  "steadyState4k": {
+    "sampleFrames": 240,
+    "p50FrameMilliseconds": 16.7,
+    "p95FrameMilliseconds": 16.8,
+    "p99FrameMilliseconds": 33.3,
+    "wholeSceneDrawCalls": 672,
+    "wholeSceneRenderedTriangles": 40764360,
+    "programs": 67,
+    "geometries": 251,
+    "textures": 351
+  },
+  "electricUnicycle": {
+    "onFootMaximumSlopeDegrees": 25,
+    "mountedMaximumSlopeDegrees": 42,
+    "mountedSlideThresholdDegrees": 48,
+    "mountedAutostepHeightMeters": 0.42,
+    "mountedGroundSnapMeters": 0.55,
+    "measuredTerrainRegression": {
+      "startWorld": {
+        "x": -193,
+        "z": -100
+      },
+      "initialSlopeDegrees": 37.06199686003407,
+      "testDurationSeconds": 2.5,
+      "planarTravelMeters": 13.301526762647109,
+      "groundElevationGainMeters": 1.2168592565065524,
+      "endingSpeedMetersPerSecond": 13.489158896111865,
+      "endingCollisionLimited": false
+    }
+  },
+  "screenshots": [
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/forest-ecology-r2/flow-fest-biome-r2-upper-parking-day-4k.png",
+      "sha256": "ac981085dc8a903b27bea99c4f2b57fe433cb7da3a2416bf93dda6fa3eb8c2eb"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/forest-ecology-r2/flow-fest-biome-r2-4k.png",
+      "sha256": "b44f9ada8509a2bfc4b1e261424cd399e7409585e86ba9688890eb13b21ebeb8"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/forest-ecology-r2/flow-fest-euc-37-degree-climb-4k.png",
+      "sha256": "d0267544966a12ff6f79166f0c365d717a0cf597eebbc4b4a5f1135d1a45d9b5"
+    }
+  ],
+  "verification": {
+    "flowFestTests": {
+      "files": 12,
+      "tests": 70,
+      "status": "passed"
+    },
+    "focusedRevisionTests": {
+      "files": 2,
+      "tests": 18,
+      "status": "passed"
+    },
+    "svelteCheck": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "browserConsoleApplicationErrors": 0
+  }
+}

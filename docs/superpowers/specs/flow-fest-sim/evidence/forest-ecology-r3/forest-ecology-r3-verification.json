@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "revision": "forest-ecology-r3-instance-frustum-culling",
+  "capturedAt": "2026-08-27",
+  "coordinateFingerprint": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d",
+  "capabilityOwnership": {
+    "relationship": "promote-and-extend",
+    "canonicalOwner": "src/lib/shared/3d/rendering/instance-frustum-culling.ts",
+    "promotedFrom": "src/lib/shared/3d/environments/scenes/ocean/authored/flora-instance-culling.ts",
+    "consumers": [
+      "src/lib/shared/3d/environments/scenes/ocean/authored/FloraInstances.svelte",
+      "src/routes/test/flow-fest-sim/FlowFestForestEcology.svelte"
+    ],
+    "drawCallPolicy": "compact expensive instance buffers without multiplying geometry/material batches"
+  },
+  "forestEcology": {
+    "measuredCanopyPlacements": 427,
+    "sourceTreeFamilies": 12,
+    "plantFactoryTreePlacements": 34,
+    "grassPlacements": 20798,
+    "groundLifePlacements": 19,
+    "treeRouteIntrusions": 0,
+    "grassRouteIntrusions": 0,
+    "groundLifeRouteIntrusions": 0,
+    "treeSourceBatches": 107,
+    "treeCullingBatches": 69,
+    "treeCullingBatchInstances": 2027,
+    "treeCullingCoveredVertices": 40685514,
+    "nativeBatchBounds": "computed after static instance matrices are written"
+  },
+  "registeredCameraSamples": [
+    {
+      "id": "live-rider-camera",
+      "visibleBatchInstances": 71,
+      "submittedVertices": 1585284,
+      "reductionPercent": 96.104
+    },
+    {
+      "id": "upper-parking-day",
+      "visibleBatchInstances": 1345,
+      "submittedVertices": 27300399,
+      "reductionPercent": 32.899
+    },
+    {
+      "id": "middle-earth-dusk",
+      "visibleBatchInstances": 395,
+      "submittedVertices": 7895424,
+      "reductionPercent": 80.594
+    }
+  ],
+  "viewportSweep": [
+    { "width": 1920, "height": 1080, "status": "passed" },
+    { "width": 2560, "height": 1440, "status": "passed" },
+    { "width": 3840, "height": 2160, "status": "passed" },
+    { "width": 1440, "height": 900, "status": "passed" },
+    { "width": 820, "height": 1180, "status": "passed" },
+    { "width": 960, "height": 412, "status": "passed" },
+    { "width": 375, "height": 667, "status": "passed" }
+  ],
+  "screenshots": [
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/forest-ecology-r3/flow-fest-ecology-culling-upper-parking-day-4k.png",
+      "sha256": "32d9604a79f7d6288343fb251450e96793b6a27a11bc3e52ce109b45f1d72137"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/forest-ecology-r3/flow-fest-ecology-culling-middle-earth-dusk-4k.png",
+      "sha256": "6e1b26d9b2e94a1102bcdc6aea9729513feb6abc9c3f5a14bbb77f47e939b100"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/forest-ecology-r3/flow-fest-ecology-culling-middle-earth-1920x1080.png",
+      "sha256": "7fdb5fddfb33106fa398e67b4e4532c126952952776aa121e8e9fb5ce4e8be10"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/forest-ecology-r3/flow-fest-ecology-culling-middle-earth-2560x1440.png",
+      "sha256": "9266238f3d84edddce58c54986e620923f7a1c6021529f55cc3c83fd3844f85e"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/forest-ecology-r3/flow-fest-ecology-culling-middle-earth-1440x900.png",
+      "sha256": "3d94eedb9b57db704999eb3712c068e8216ecbc86a32f9d3b403efba21e8d28f"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/forest-ecology-r3/flow-fest-ecology-culling-middle-earth-820x1180.png",
+      "sha256": "2a0bc7597daf327b9664b6fe6cd0847091bade7334f53ce89a0e2de6bdfb9d48"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/forest-ecology-r3/flow-fest-ecology-culling-middle-earth-960x412.png",
+      "sha256": "4b247afc41078c4903e28156e7a9d3c23192f6f99fd7e39957b904d95f30d3fc"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/forest-ecology-r3/flow-fest-ecology-culling-middle-earth-375x667.png",
+      "sha256": "c7ff0683303cd8055c9a3756722c965c478a908a0398201c64880cb2e42f8e9f"
+    }
+  ],
+  "verification": {
+    "focusedTests": {
+      "files": 14,
+      "tests": 73,
+      "status": "passed"
+    },
+    "scopedLint": {
+      "errors": 0,
+      "status": "passed"
+    },
+    "runtimeCompilation": "passed",
+    "browserConsoleApplicationErrors": 0,
+    "workspaceCheck": {
+      "status": "blocked-by-unrelated-shared-worktree-errors",
+      "touchedFileDiagnostics": 0,
+      "observedWorkspaceErrors": 459,
+      "observedWorkspaceWarnings": 24
+    }
+  },
+  "researchBasis": [
+    "https://threejs.org/docs/pages/InstancedMesh.html",
+    "https://github.com/mrdoob/three.js/wiki/Migration-Guide/e9a07ac56491e661dbff2d9fd8d482b594664046"
+  ]
+}

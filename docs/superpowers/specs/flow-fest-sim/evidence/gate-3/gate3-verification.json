@@ -1,0 +1,294 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "gate": 3,
+  "status": "ready-for-review",
+  "capturedAt": "2026-08-26T23:47:50.741Z",
+  "route": "/test/flow-fest-sim?gate3=1&camera=<id>&moment=<day|dusk|night>&branch=lower-tent",
+  "coordinateFingerprint": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d",
+  "checks": [
+    {
+      "name": "camera-registration",
+      "status": "passed",
+      "evidence": "15/15 captures use one of the five Gate 2 camera positions and targets with <=0.03 m eye-position error and exactly 65 degrees horizontal FOV."
+    },
+    {
+      "name": "spatial-fidelity",
+      "status": "passed",
+      "evidence": "Every runtime proof retains the Gate 2 coordinate fingerprint, 12 canonical path surfaces, 427 LiDAR-derived canopy peaks, and the same five-camera contract."
+    },
+    {
+      "name": "silhouette-read",
+      "status": "passed",
+      "evidence": "All 15 registered frames pass a non-blank channel-deviation check; the contact sheet was visually reviewed for terrain, canopy, camp, fire-jam, and LED-circle separation."
+    },
+    {
+      "name": "focal-hierarchy",
+      "status": "passed",
+      "evidence": "The board reads measured terrain first, registered paths second, temporary camps third, the fire-jam spectator perimeter fourth, and the separate LED circle only at night."
+    },
+    {
+      "name": "density",
+      "status": "passed",
+      "evidence": "The locked visual set holds 427 interpreted canopy peaks, 38 tents, 9 vehicles, 16 fire-circle spectators, 8 active flow artists, one open fire floor, and one separate LED circle without moving registered clearings or routes."
+    }
+  ],
+  "cameraLock": {
+    "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/gate3-locked-camera-set.json",
+    "bytes": 4944,
+    "sha256": "2469a6b2ec5cb2a67ddb43b7145681b41e27e19ece08960d8e496f43652031c1"
+  },
+  "cameraCount": 5,
+  "captureProof": {
+    "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/gate3-runtime-capture-proofs.json",
+    "bytes": 21914,
+    "sha256": "c77ac991a50bc765065fb14a694344668125a3b3e3af95cf0223589dda6744ba"
+  },
+  "board": {
+    "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/gate3-visual-target-board.png",
+    "bytes": 2414314,
+    "sha256": "7fd85c4c3509c80364788bc75e5a2708f0891da16fa681af6e72f7d6bbe309c3"
+  },
+  "frames": [
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/day-lower-gate.webp",
+      "bytes": 94276,
+      "sha256": "35d2b90e830a5517f7f6dd85fc0eaf85a43b1958c5b8ca1e6d197431d05f20c8"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/day-lower-level.webp",
+      "bytes": 83222,
+      "sha256": "7492585b35daed18b8a5904d82f408725c80f3120edd2773479c373ac879df9c"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/day-upper-parking.webp",
+      "bytes": 83954,
+      "sha256": "9bf251e7fcb0f7f724b6c87672b289ab42c4483b4ce0f3f5cf5b25d6e732f7c9"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/day-middle-earth.webp",
+      "bytes": 91476,
+      "sha256": "87a03f87a657b6485a136e9ecc07d2824a51cd8733ba6324fc88418a9aeda2fa"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/day-night-composition.webp",
+      "bytes": 93016,
+      "sha256": "855019d4209023c1de9bfe03eeeec2b6830e5eb2e493d62745306e453b5cac4b"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/dusk-lower-gate.webp",
+      "bytes": 94350,
+      "sha256": "4502a76a93f5b3576a19cd08f62a00feb784c634b446621946ece16d9e610270"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/dusk-lower-level.webp",
+      "bytes": 84808,
+      "sha256": "ea6b5213ace1ccbf93b9b8bb9838db1b69a7f16b7134d9c6de332c0bdc679307"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/dusk-upper-parking.webp",
+      "bytes": 83122,
+      "sha256": "e12cbfb3ee447b777ead3d3f3fd0215d7d99c01b51d26a173b683a3d4f80ab84"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/dusk-middle-earth.webp",
+      "bytes": 90012,
+      "sha256": "aeb56175ba70a7cfbc88c1a5eb935da03470200707d1d4324c2edceb5bee9b04"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/dusk-night-composition.webp",
+      "bytes": 92146,
+      "sha256": "4bdd5fe4e8097bc2d1166942b18ed7893d54a951aa0ceedd028e19c5d151c6e7"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/night-lower-gate.webp",
+      "bytes": 76422,
+      "sha256": "1dbb41c2921166ca55e321c0faf49137167503e52583c9fdbf80d990e2136099"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/night-lower-level.webp",
+      "bytes": 69450,
+      "sha256": "2583abff06ac7673e1ef1b6c47648b996b7a43cf85c7c53351a61ee214c45ac4"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/night-upper-parking.webp",
+      "bytes": 70496,
+      "sha256": "ed8accae489c796a5900774a22a734c9f5b177c5801360e58cd31df34f18af9b"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/night-middle-earth.webp",
+      "bytes": 120346,
+      "sha256": "32e55f0905d4e8877f3c9649519f5e5f8c88b36e0c115f2d84fe06b6d408977f"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/night-night-composition.webp",
+      "bytes": 96960,
+      "sha256": "dcc606910f077af0caa0195fa796f256d0dfdf7c40fb919246ccdf87dc178e5d"
+    }
+  ],
+  "frameRead": [
+    {
+      "cameraId": "lower-gate",
+      "momentId": "day",
+      "meanChannelDeviation": 32.84959501477458
+    },
+    {
+      "cameraId": "lower-level",
+      "momentId": "day",
+      "meanChannelDeviation": 27.924975771306123
+    },
+    {
+      "cameraId": "upper-parking",
+      "momentId": "day",
+      "meanChannelDeviation": 28.118397360463632
+    },
+    {
+      "cameraId": "middle-earth",
+      "momentId": "day",
+      "meanChannelDeviation": 31.560343645346048
+    },
+    {
+      "cameraId": "night-composition",
+      "momentId": "day",
+      "meanChannelDeviation": 30.59926477897829
+    },
+    {
+      "cameraId": "lower-gate",
+      "momentId": "dusk",
+      "meanChannelDeviation": 27.283607671868594
+    },
+    {
+      "cameraId": "lower-level",
+      "momentId": "dusk",
+      "meanChannelDeviation": 27.67807207012379
+    },
+    {
+      "cameraId": "upper-parking",
+      "momentId": "dusk",
+      "meanChannelDeviation": 26.168144125518197
+    },
+    {
+      "cameraId": "middle-earth",
+      "momentId": "dusk",
+      "meanChannelDeviation": 26.460774531783084
+    },
+    {
+      "cameraId": "night-composition",
+      "momentId": "dusk",
+      "meanChannelDeviation": 25.926431074201634
+    },
+    {
+      "cameraId": "lower-gate",
+      "momentId": "night",
+      "meanChannelDeviation": 22.491523108890714
+    },
+    {
+      "cameraId": "lower-level",
+      "momentId": "night",
+      "meanChannelDeviation": 22.815157110353265
+    },
+    {
+      "cameraId": "upper-parking",
+      "momentId": "night",
+      "meanChannelDeviation": 24.344864660053428
+    },
+    {
+      "cameraId": "middle-earth",
+      "momentId": "night",
+      "meanChannelDeviation": 28.28594353424741
+    },
+    {
+      "cameraId": "night-composition",
+      "momentId": "night",
+      "meanChannelDeviation": 25.891808929366036
+    }
+  ],
+  "sources": [
+    {
+      "path": "static/data/flow-fest-sim/gate2-runtime-contract.json",
+      "bytes": 77571,
+      "sha256": "ff43b8373da6a6313923f275c85f4bfad2fc02e4b2dcdc5efeb8bf4bbc6968cf"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/+page.svelte",
+      "bytes": 67211,
+      "sha256": "038fea6669acb6ab97c2f8aeda2dbe3457069a800a4efa5f8f8b38ba067b4063"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/domain/flow-fest-electric-unicycle.ts",
+      "bytes": 15304,
+      "sha256": "806c2b955f17de5d74e1d7646a716429a35cf4a1a2346d1796dac053f886f62f"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/domain/flow-fest-living-fire-jam.ts",
+      "bytes": 9223,
+      "sha256": "0b72eb1543fd960653288ec38595b3c98dce9f7d2820a6394ede93775118c5db"
+    },
+    {
+      "path": "src/lib/shared/3d/performers/LiveSequencePerformer3D.svelte",
+      "bytes": 4301,
+      "sha256": "3781f5e241db3edb43a81e2c277639bcaee1acb6af876d9fad462d4fb9e859a1"
+    },
+    {
+      "path": "src/lib/shared/3d/effects/fire/volumetric-fire-mesh.ts",
+      "bytes": 13258,
+      "sha256": "ce6e6e54dda8a09f4cd4b618bb4bee24a907f0b092e7c40fec72a3e48ce0735a"
+    },
+    {
+      "path": "src/lib/shared/3d/effects/volumetric-fire/VolumetricFireComponent.svelte",
+      "bytes": 2041,
+      "sha256": "a4484784a468e050b9a2d168d84e451b6ee7bedad468650cdb03e6880c076b84"
+    },
+    {
+      "path": "src/lib/shared/animation-engine/domain/tip-effect-map.ts",
+      "bytes": 669,
+      "sha256": "3fd9bd47b21003cc15d6e144b1406b1d409512644335f9ff4421407bb86233ad"
+    },
+    {
+      "path": "src/lib/shared/combination/domain/demo-fixtures.ts",
+      "bytes": 14719,
+      "sha256": "0c559344a8522e5baf68f5a25dd85db471cf596b910f3d5b0f4eb7088b18da6d"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/FlowFestElectricUnicycle.svelte",
+      "bytes": 7392,
+      "sha256": "8a7b832c6a6e128e6786183b61e64f94361741fe0e4b831df987550e6bd693fa"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/FlowFestFestivalCommunity.svelte",
+      "bytes": 3794,
+      "sha256": "9c7d5a369bc424fd5171dc5b9af4ae8a53d6a8ca7dae7d378a2091f1cd44271b"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/FlowFestHeroFire.svelte",
+      "bytes": 3371,
+      "sha256": "840050a47c8bd17d9c256e2d613ba2f757788a8706f4010fcd263191dcb0937e"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/FlowFestProductionLayer.svelte",
+      "bytes": 15978,
+      "sha256": "bcae5d658d0a9a85ef69c528286f1cada0c06fd3c1ff4e067237ff00c4ebe2a0"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/flow-fest-production-geometry.ts",
+      "bytes": 33566,
+      "sha256": "d71ade04ecd2164cd03fc94d10937c33ab1eb7878f5ce50798d8fab3ec82fe0a"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/flow-fest-visual-system.ts",
+      "bytes": 5676,
+      "sha256": "3f47e0d5d21428242be3888c306ed75135701e8c5b612230894b2ee41e2aca66"
+    },
+    {
+      "path": "tests/unit/flow-fest-living-fire-jam.test.ts",
+      "bytes": 3248,
+      "sha256": "ff8999a94f3fb2fbcb3bf47b46d10d193c65a239f34aad3e157b3dee74d49342"
+    }
+  ],
+  "knownLimits": [
+    "Canopy peaks are deterministic LiDAR interpretations, not surveyed tree trunks or species.",
+    "The bridge and permanent-structure footprints remain source-unlocked and are not invented in Gate 3.",
+    "The fire-jam community, LED canopy, tents, cars, people, and fire treatment are authored festival fiction.",
+    "Gate 3 approves a visual target system, not final production assets or audio behavior."
+  ]
+}

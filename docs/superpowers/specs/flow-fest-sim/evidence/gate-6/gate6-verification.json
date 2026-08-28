@@ -1,0 +1,394 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "gate": 6,
+  "status": "ready-for-review",
+  "capturedAt": "2026-08-27T04:04:41Z",
+  "route": "/test/flow-fest-sim?gate6=1",
+  "evidenceRoute": "/test/flow-fest-sim?gate6=1&capture=1",
+  "coordinateFingerprint": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d",
+  "checks": [
+    {
+      "name": "focused-tests",
+      "status": "passed",
+      "evidence": "All focused Flow Fest and permission-boundary tests pass, including projection round trips, accepted/held fix semantics, journey persistence, fire-jam state, EUC dynamics, terrain contract, and production geometry."
+    },
+    {
+      "name": "typecheck",
+      "status": "passed",
+      "evidence": "The final project check completed with zero errors and zero warnings."
+    },
+    {
+      "name": "runtime-console",
+      "status": "passed",
+      "evidence": "The task-owned Chrome tab recorded zero application errors. The existing Rapier initialization deprecation warning remains disclosed; extension-origin wallet diagnostics are excluded from application results."
+    },
+    {
+      "name": "performance",
+      "status": "passed",
+      "evidence": "Gate 6 adds DOM controls, pure projection math, and opt-in browser geolocation without adding WebGL geometry, materials, lights, colliders, or animation owners. The approved 16.8 ms p95 production envelope remains within budget."
+    },
+    {
+      "name": "field-positioning",
+      "status": "passed",
+      "evidence": "The EPSG:26916 projection round trip stays below one millimetre. A valid 86-sample registered-route replay advances the real player seam; poor-accuracy and stale fixes remain visible but cannot change player revision or position."
+    },
+    {
+      "name": "acceptance-state",
+      "status": "passed",
+      "evidence": "The accepted lower-tent run reaches morning at the selected camp with the fire jam complete and backtracking recorded; reload restores the exact camp position and parked-EUC state with zero positional drift."
+    },
+    {
+      "name": "viewport-evidence",
+      "status": "passed",
+      "evidence": "The final acceptance UI and playable world were inspected and retained at 1920x1080, 2560x1440, 3840x2160, 1440x900, 820x1180, 960x412, and 375x812 with no panel overlap."
+    }
+  ],
+  "acceptanceWalk": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1920,
+        "height": 1080,
+        "avg_frame_rate": "30/1",
+        "nb_frames": "1020"
+      }
+    ],
+    "format": {
+      "duration": "34.000000",
+      "size": "4528530"
+    }
+  },
+  "viewports": [
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-acceptance-fire-jam-1920x1080.png",
+      "width": 1920,
+      "height": 1080,
+      "meanChannelDeviation": 43.74123096580882
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-acceptance-fire-jam-2560x1440.png",
+      "width": 2560,
+      "height": 1440,
+      "meanChannelDeviation": 40.981957073057885
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-acceptance-fire-jam-3840x2160.png",
+      "width": 3840,
+      "height": 2160,
+      "meanChannelDeviation": 40.17414179714141
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-acceptance-fire-jam-1440x900.png",
+      "width": 1440,
+      "height": 900,
+      "meanChannelDeviation": 46.34994203717557
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-acceptance-fire-jam-820x1180.png",
+      "width": 820,
+      "height": 1180,
+      "meanChannelDeviation": 41.16774798495869
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-acceptance-fire-jam-960x412.png",
+      "width": 960,
+      "height": 412,
+      "meanChannelDeviation": 49.40849057856303
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-acceptance-fire-jam-375x812.png",
+      "width": 375,
+      "height": 812,
+      "meanChannelDeviation": 45.61090964773231
+    }
+  ],
+  "evidence": [
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-acceptance-walk.mp4",
+      "bytes": 4528530,
+      "sha256": "08cc4c25746729fdb01245aa395c18652b76cfaad96b4bdb620dc673f4b429d7"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-viewport-evidence.png",
+      "bytes": 2490032,
+      "sha256": "5d20f91716f73e1fa60a1a0459ee3a3c61e9f9efb63b9346fbf3a46b2746e82e"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-gnss-rehearsal-report.json",
+      "bytes": 3318,
+      "sha256": "83515e696282c87adb8e6d1a531fcaeaec118cb2317ebb007f5f0585ca53644d"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-regression-report.json",
+      "bytes": 2591,
+      "sha256": "7c355e9efbe84433c1376fa4d7b9f09fe7009dd2f4a9ffe9ad031ee4e7e792a2"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-performance-report.json",
+      "bytes": 2455,
+      "sha256": "6ba87fef4b26adc6ea45fb3293b5c9cf6799d3af752ec3b4cec7fe82b7395073"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-runtime-console.json",
+      "bytes": 974,
+      "sha256": "a8cb34b57d9062c3d18a4ac01d96e2d303bcd0465ca12c0d9831070e45f8ffae"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-gnss-route-accepted-1920x1080.png",
+      "bytes": 153517,
+      "sha256": "73ce0d21e4d901b6e3934d69dd901cccd60ec0ab95b12d856937a3dda1dd3b1f"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-gnss-poor-accuracy-held-1920x1080.png",
+      "bytes": 145001,
+      "sha256": "6982202f470feed0103fd20f5f98c7a0a296db30e1a1a0d386f44b73a1ae3f97"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-gnss-stale-held-1920x1080.png",
+      "bytes": 157056,
+      "sha256": "a2be1891bb6908705c5c84aa0bd485471d7a9fed1a7d1742a876bf6334eea077"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-acceptance-final-camp-1920x1080.png",
+      "bytes": 145271,
+      "sha256": "54c77a9011b1e68322ce4c70f7cbadbc9b1f837e92d11aa1fe1fac44f300b696"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-acceptance-fire-jam-1920x1080.png",
+      "bytes": 177050,
+      "sha256": "b34398d8ccd077b83e5a1c77e57e054e28d7570969310bfa49862b8028ad71dc"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-acceptance-fire-jam-2560x1440.png",
+      "bytes": 248417,
+      "sha256": "d4fb72382531eb0b4f5d7b33e984c8cc0a2f492c7ba331d1dc6ea45437a5adef"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-acceptance-fire-jam-3840x2160.png",
+      "bytes": 431568,
+      "sha256": "eb45ce220d28d27f589bf3e8012ecb33083031a8e5acd02a8562add8966ae2a4"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-acceptance-fire-jam-1440x900.png",
+      "bytes": 134155,
+      "sha256": "110e579fe0dc34f8b83cfb672d5809df029897b77d03588e383c5a70fd9a4208"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-acceptance-fire-jam-820x1180.png",
+      "bytes": 93198,
+      "sha256": "08cfc9a7bfd3f3d43c12015bcc403b3f732240cacb4c85713391b8dde57971cd"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-acceptance-fire-jam-960x412.png",
+      "bytes": 49093,
+      "sha256": "146dd21a2ba75396d6e55e0f7dc6a05e19ae9e10bbef5716d456aa1a89e7b060"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-acceptance-fire-jam-375x812.png",
+      "bytes": 281423,
+      "sha256": "d12b48503e40c9183cf2f12fdedc79d2a20a9330e40642333d0eecf8f2b5616c"
+    }
+  ],
+  "sources": [
+    {
+      "path": "scripts/geospatial/build_flow_fest_gate6_acceptance.mjs",
+      "bytes": 15222,
+      "sha256": "e52c0e4e8a1379dca8676941bb7f0cf1a64a2deaa3b53461a9b217ee9158ae01"
+    },
+    {
+      "path": "static/data/flow-fest-sim/gate2-runtime-contract.json",
+      "bytes": 77571,
+      "sha256": "ff43b8373da6a6313923f275c85f4bfad2fc02e4b2dcdc5efeb8bf4bbc6968cf"
+    },
+    {
+      "path": "src/hooks.server.ts",
+      "bytes": 7681,
+      "sha256": "e34fda475d4075e70adcbd53fcea15c5bd10fbc796e074343369eb36ffc8afb6"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/domain/flow-fest-field-positioning.ts",
+      "bytes": 12749,
+      "sha256": "59d4e4777fe2134c03085a2663f84a39b7b3c9307ce37f0df30b600c4e57d08a"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/domain/flow-fest-electric-unicycle.ts",
+      "bytes": 15304,
+      "sha256": "806c2b955f17de5d74e1d7646a716429a35cf4a1a2346d1796dac053f886f62f"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/domain/flow-fest-fire-jam.ts",
+      "bytes": 2996,
+      "sha256": "861840d93f0c7e7d1211996a31050bc8c273a4b6d4bc4a43099dc5178519ed5a"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/domain/flow-fest-living-fire-jam.ts",
+      "bytes": 9223,
+      "sha256": "0b72eb1543fd960653288ec38595b3c98dce9f7d2820a6394ede93775118c5db"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/domain/flow-fest-site-audio.ts",
+      "bytes": 2631,
+      "sha256": "36e0c53288633aaf5363315f9f81851818a3e0f5deb439a0cc91a70de941101b"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/services/flow-fest-electric-unicycle-drive.ts",
+      "bytes": 7140,
+      "sha256": "692ac9fcba08d9fc284def485bd80555d8a3c500720587328f2e8e856a3ff5b0"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/services/contracts/IFlowFestFireJamSoundscape.ts",
+      "bytes": 869,
+      "sha256": "488a5b7bf77c6c7adbd2e74b2f55970c3331dfc970fcdf565be47fff1dc6e67e"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/services/implementations/FlowFestFireJamSoundscape.ts",
+      "bytes": 10141,
+      "sha256": "39dfcacbffc3f1cae5d1b793e3626c0e21f24d3754466863c82be8d3c90180fa"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/services/contracts/IFlowFestFieldPositioning.ts",
+      "bytes": 553,
+      "sha256": "4f3c58aac1e1c0a5013fbc99769310c8fd9a3ba248536177e3fef74006d2e046"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/services/implementations/FlowFestFieldPositioning.ts",
+      "bytes": 2592,
+      "sha256": "2758faece920a7847fb077ba752c33b001fc0166f7fb0161764ad72f0c738574"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/getFlowFestFieldPositioning.ts",
+      "bytes": 294,
+      "sha256": "bf26cc3515428a2b40ece2439dd0b1fee62e39c92007f8b745ef77248010fefe"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/state/flow-fest-field-positioning-state.svelte.ts",
+      "bytes": 5228,
+      "sha256": "44485f0f27a95964bc91b6f847f68c65a27d0a51e783e9146868fbfdfaa30477"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/context/flow-fest-field-positioning-context.ts",
+      "bytes": 819,
+      "sha256": "7435ea21516b5ba7243646b80c78fa67e3b7bd126add20dfa09e8aef1355bd25"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/components/FlowFestFieldPositioningPanel.svelte",
+      "bytes": 5886,
+      "sha256": "6fe868ca4e68b00facfcd671a01353a1f30f046673a8b26f66a162285041a260"
+    },
+    {
+      "path": "src/lib/shared/3d/performers/LiveSequencePerformer3D.svelte",
+      "bytes": 4301,
+      "sha256": "3781f5e241db3edb43a81e2c277639bcaee1acb6af876d9fad462d4fb9e859a1"
+    },
+    {
+      "path": "src/lib/shared/3d/effects/fire/volumetric-fire-mesh.ts",
+      "bytes": 13258,
+      "sha256": "ce6e6e54dda8a09f4cd4b618bb4bee24a907f0b092e7c40fec72a3e48ce0735a"
+    },
+    {
+      "path": "src/lib/shared/3d/effects/volumetric-fire/VolumetricFireComponent.svelte",
+      "bytes": 2041,
+      "sha256": "a4484784a468e050b9a2d168d84e451b6ee7bedad468650cdb03e6880c076b84"
+    },
+    {
+      "path": "src/lib/shared/animation-engine/domain/tip-effect-map.ts",
+      "bytes": 669,
+      "sha256": "3fd9bd47b21003cc15d6e144b1406b1d409512644335f9ff4421407bb86233ad"
+    },
+    {
+      "path": "src/lib/shared/combination/domain/demo-fixtures.ts",
+      "bytes": 14719,
+      "sha256": "0c559344a8522e5baf68f5a25dd85db471cf596b910f3d5b0f4eb7088b18da6d"
+    },
+    {
+      "path": "packages/camera-3d/src/lib/frame-delta.ts",
+      "bytes": 411,
+      "sha256": "5c41136e36f4541fa750cd9648a37444aacf20ceceddd7beb61770bd14b10c3d"
+    },
+    {
+      "path": "packages/camera-3d/src/lib/components/UnifiedCameraController.svelte",
+      "bytes": 33283,
+      "sha256": "a4e84f4ac55ada79e53e1ca579de49e2da36ecbb6024870fb2b8afc358f75e99"
+    },
+    {
+      "path": "src/routes/test/flow-fest-graybox/FlowFestGrayboxWalkScene.svelte",
+      "bytes": 53304,
+      "sha256": "851a739b6040df17cb6e93f70c6f864667515f7ebd3113b04bdc3ee2e86171d8"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/+page.svelte",
+      "bytes": 67211,
+      "sha256": "038fea6669acb6ab97c2f8aeda2dbe3457069a800a4efa5f8f8b38ba067b4063"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/FlowFestElectricUnicycle.svelte",
+      "bytes": 7392,
+      "sha256": "8a7b832c6a6e128e6786183b61e64f94361741fe0e4b831df987550e6bd693fa"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/FlowFestFestivalCommunity.svelte",
+      "bytes": 3794,
+      "sha256": "9c7d5a369bc424fd5171dc5b9af4ae8a53d6a8ca7dae7d378a2091f1cd44271b"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/FlowFestHeroFire.svelte",
+      "bytes": 3371,
+      "sha256": "840050a47c8bd17d9c256e2d613ba2f757788a8706f4010fcd263191dcb0937e"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/FlowFestProductionLayer.svelte",
+      "bytes": 15978,
+      "sha256": "bcae5d658d0a9a85ef69c528286f1cada0c06fd3c1ff4e067237ff00c4ebe2a0"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/flow-fest-production-geometry.ts",
+      "bytes": 33566,
+      "sha256": "d71ade04ecd2164cd03fc94d10937c33ab1eb7878f5ce50798d8fab3ec82fe0a"
+    },
+    {
+      "path": "tests/unit/flow-fest-living-fire-jam.test.ts",
+      "bytes": 3248,
+      "sha256": "ff8999a94f3fb2fbcb3bf47b46d10d193c65a239f34aad3e157b3dee74d49342"
+    },
+    {
+      "path": "tests/unit/flow-fest-electric-unicycle.test.ts",
+      "bytes": 12362,
+      "sha256": "dbf9ef918e553997f2ee98a2dccdc90df51ed1d411e6bbecdd881caa37609ee9"
+    },
+    {
+      "path": "tests/unit/flow-fest-fire-jam.test.ts",
+      "bytes": 3871,
+      "sha256": "c4caa6f874cbd1efee5303c75bb99a081c9de60fc1ae58d9de91320c09414264"
+    },
+    {
+      "path": "tests/unit/flow-fest-field-positioning.test.ts",
+      "bytes": 3659,
+      "sha256": "555be34c12816ff34b1879384b329d8d06d8565b853b63a2cd084345c9495bf7"
+    },
+    {
+      "path": "tests/unit/flow-fest-integrated-world.test.ts",
+      "bytes": 4058,
+      "sha256": "bb1e654c2911cea2ddf496a05c6ccc3483a1b0ca9afcb635ce0c0c18431eb03a"
+    },
+    {
+      "path": "tests/unit/flow-fest-progress.test.ts",
+      "bytes": 4811,
+      "sha256": "04a7d11ff108884a16cfb657cb42cf88d16fc319f3ec8831c9f943f4184a139a"
+    },
+    {
+      "path": "tests/unit/camera-permission-boundary.test.ts",
+      "bytes": 2548,
+      "sha256": "482a7d137180b9d9529565f02072bb0cb4bc561e44fd68b422a476181cebae19"
+    }
+  ],
+  "knownLimits": [
+    "The acceptance video is a disclosed composite of the Gate 5 integrated journey plus current Gate 6 GNSS and final-camp states; it is not one uninterrupted real-time drive.",
+    "The GNSS result is a deterministic registered-route rehearsal. No real festival-day device track was captured, so field hardware and multipath behavior remain unverified.",
+    "Poor-accuracy and stale fix diagnostics are capture-only controls; production GPS remains opt-in through a user gesture.",
+    "Installation performance still requires measurement on the final backpack display, phone, battery, and thermal envelope.",
+    "The bridge and permanent-structure footprints remain source-unlocked and absent."
+  ]
+}

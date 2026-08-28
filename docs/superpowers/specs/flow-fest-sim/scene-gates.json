@@ -3,7 +3,8 @@
   "sceneId": "flow-fest-sim-earth",
   "title": "Flow Fest Sim Earth",
   "domainProofRequired": false,
-  "currentGate": 2,
+  "currentGate": 6,
+  "currentGateStatus": "reopened-for-reality-lock",
   "authority": {
     "experienceSpec": "docs/superpowers/specs/active/2026-08-24-flow-fest-sim-design.md",
     "roomShellSource": "static/data/flow-fest-sim/terrain.manifest.json",
@@ -11,7 +12,13 @@
     "connectorTrace": "docs/superpowers/specs/flow-fest-sim/austen-traced-connectors.json",
     "museumTrackerItems": [
       "user-direction:flow-fest-sim:2026-08-25-proceed",
-      "0RowNe7w8F1g3dGTu1KW"
+      "0RowNe7w8F1g3dGTu1KW",
+      "HrGjJinYAgyhTrJLgALm",
+      "kKPZRyz05roZKL2Dj33s",
+      "wszyPNGWMYTbTeVqSrnl",
+      "aIEQkUWFS8ksXj9CqZ70",
+      "QIh1kgVVMLiZfiZee62t",
+      "y42EDiLshaxxwhYWqAc1"
     ]
   },
   "sequenceFingerprints": [],
@@ -38,9 +45,7 @@
       "id": "C-003",
       "class": "literal",
       "statement": "Public event guidance places check-in at the gate, lets arrivals drive to a selected site to unload or settle a car-camping site, and requires tent campers to move vehicles to designated parking.",
-      "evidence": [
-        "https://kineticfire.org/general-info/"
-      ]
+      "evidence": ["https://kineticfire.org/general-info/"]
     },
     {
       "id": "C-004",
@@ -79,9 +84,110 @@
     {
       "id": "C-008",
       "class": "invention",
-      "statement": "The eight-metre night-heart mast is art direction only; no Gate 1 sightline result depends on its height.",
+      "statement": "The Gate 1 night-heart mast was an art-direction proposal only and has been superseded in Gate 3 by a low fire-jam focal plane plus a separate LED circle; no Gate 1 sightline result depends on either treatment.",
       "evidence": [
         "docs/superpowers/specs/flow-fest-sim/evidence/gate-1/gate1-sightline-study.png"
+      ]
+    },
+    {
+      "id": "C-009",
+      "class": "literal",
+      "statement": "The playable Gate 2 browser runtime renders and collides against the full one-metre DTM. Its four-metre GLB terrain is an offline review surface with measured interpolation error and is not runtime collision authority.",
+      "evidence": [
+        "static/data/flow-fest-sim/gate2-runtime-contract.json",
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-verification.json",
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-host-comparison.json"
+      ]
+    },
+    {
+      "id": "C-010",
+      "class": "invention",
+      "statement": "Gate 2's visible canopy screen contains 95,459 one-metre cells derived from checked lidar occupancy at least four metres above the DTM plus an explicit 18 metre conservative gameplay dilation. Dilation-only cells are removed from all seven registered clearings, and every approved person and staged vehicle corridor is carved with audited physical clearance. It does not assert individual trees or buildings.",
+      "evidence": [
+        "static/data/flow-fest-sim/gate2-runtime-contract.json",
+        "src/routes/test/flow-fest-graybox/flow-fest-review-geometry.ts",
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-host-comparison.json"
+      ]
+    },
+    {
+      "id": "C-011",
+      "class": "literal",
+      "statement": "Gate 3 preserves the Gate 2 coordinate fingerprint and locks all five approved review-camera positions, targets, and 65 degree horizontal fields of view across day, dusk, and night.",
+      "evidence": [
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/gate3-locked-camera-set.json",
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/gate3-runtime-capture-proofs.json"
+      ]
+    },
+    {
+      "id": "C-012",
+      "class": "invention",
+      "statement": "The current visual revision retains Gate 3's 427 checked lidar canopy centers while distributing twelve accepted Forest and PlantFactory tree families. Thirty-four high-detail PlantFactory trees remain sparse habitat accents; the centers and family assignments remain interpreted visual ecology, not surveyed tree trunks or species.",
+      "evidence": [
+        "docs/superpowers/specs/flow-fest-sim/forest-ecology-integration.md",
+        "docs/superpowers/specs/flow-fest-sim/evidence/forest-ecology-r2/forest-ecology-r2-verification.json"
+      ]
+    },
+    {
+      "id": "C-013",
+      "class": "invention",
+      "statement": "The temporary tents, vehicles, 16-person fire-circle perimeter, eight active flow artists, fire treatment, and separate LED canopy are authored festival fiction. The bridge and permanent structures remain source-unlocked and absent from Gate 3.",
+      "evidence": [
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/gate3-material-lighting-sound-brief.md",
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/gate3-verification.json"
+      ]
+    },
+    {
+      "id": "C-014",
+      "class": "invention",
+      "statement": "Gate 4 makes one representative night-heart slice interactive: the player parks a physical EUC, enters on foot, joins a responsive fire jam, completes the turn, and restores the completed state plus parked collider after reload.",
+      "evidence": [
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-state-transition-audit.json",
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-interaction-capture.mp4",
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-production-slice-build.json"
+      ]
+    },
+    {
+      "id": "C-015",
+      "class": "invention",
+      "statement": "Gate 5 integrates the registered lower gate, selected camp, west parking, Middle Earth fire circle, festival exit and re-entry, and final selected-camp return in one persisted journey. Capture-only landmark staging is explicitly separated from the inherited continuous route and collider proof.",
+      "evidence": [
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-5/gate5-state-persistence-report.json",
+        "docs/superpowers/specs/flow-fest-sim/flow-fest-gate5-integration.md"
+      ]
+    },
+    {
+      "id": "C-016",
+      "class": "literal",
+      "statement": "Gate 6 converts opt-in WGS84 device fixes through the checked EPSG:26916 coordinate frame into the existing world. Nominal registered-route fixes may stage the player; poor-accuracy and stale fixes remain visible but cannot move it.",
+      "evidence": [
+        "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-gnss-rehearsal-report.json",
+        "docs/superpowers/specs/flow-fest-sim/flow-fest-gate6-acceptance.md"
+      ]
+    },
+    {
+      "id": "C-017",
+      "class": "invention",
+      "statement": "The living Middle Earth revision keeps an open fire-performance floor and arrival wedge while a deterministic community rotates five fire artists through three active slots, moves perimeter spectators, preserves social pairs, spatializes the fire, LED circle, and crowd, and applies measured-terrain attitude to the third-person electric unicycle.",
+      "evidence": [
+        "docs/superpowers/specs/flow-fest-sim/evidence/living-fire-jam/living-fire-jam-verification.json"
+      ]
+    },
+    {
+      "id": "C-018",
+      "class": "invention",
+      "statement": "The Forest ecology acceptance revision reuses twelve Forest and PlantFactory tree families, two extracted Forest grass prototypes, rooted wind, Forest ground-life assets, and the shared Forest lighting rig around the measured Flow Fest terrain. It imports no Forest clearing layout and records 427 trees, 20,798 grass instances, 19 ground-life instances, 34 PlantFactory accents, and zero registered-route intrusions.",
+      "evidence": [
+        "docs/superpowers/specs/flow-fest-sim/forest-ecology-integration.md",
+        "docs/superpowers/specs/flow-fest-sim/evidence/forest-ecology-r2/forest-ecology-r2-verification.json"
+      ]
+    },
+    {
+      "id": "C-019",
+      "class": "invention",
+      "statement": "Mounted EUC traversal uses a separate 42 degree climb envelope and grounded surface-velocity reconciliation. A checked browser regression climbed from a 37.06 degree DTM sample, traveled 13.30 metres in 2.5 seconds, and gained 1.22 metres of ground elevation without ending collision-limited.",
+      "evidence": [
+        "docs/superpowers/specs/flow-fest-sim/evidence/forest-ecology-r2/forest-ecology-r2-verification.json",
+        "docs/superpowers/specs/flow-fest-sim/evidence/forest-ecology-r2/flow-fest-euc-37-degree-climb-4k.png"
       ]
     }
   ],
@@ -264,37 +370,450 @@
     },
     {
       "id": "playable-graybox",
-      "status": "in-progress",
-      "evidence": [],
-      "checks": [],
-      "approval": null
+      "status": "approved",
+      "evidence": [
+        {
+          "kind": "blender-source",
+          "path": "blender/flow_fest_sim_gate2_graybox.blend",
+          "sha256": "0748146c2f814a6391886dcfab27c8ca2585dee4aa8139c4c44cd18ca3b1e174"
+        },
+        {
+          "kind": "coordinate-manifest",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-coordinate-manifest.json",
+          "sha256": "ff43b8373da6a6313923f275c85f4bfad2fc02e4b2dcdc5efeb8bf4bbc6968cf"
+        },
+        {
+          "kind": "graybox-glb",
+          "path": "static/models/flow-fest-sim/review/flow-fest-sim-gate2-graybox.glb",
+          "sha256": "ab200c645832f0f08fd2a79003288ea9153c1eedc73f53c04c2a6bb92dfbf00a"
+        },
+        {
+          "kind": "first-person-walk",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-first-person-lower-tent-route.mp4",
+          "sha256": "d9068fba021644703399fdfa012dfddbd685db6df49284caaffeec9dd24fac1a"
+        },
+        {
+          "kind": "review-contact-sheet",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-review-contact-sheet.png",
+          "sha256": "25ceb3d6e81b1cc810926117b2f7b23b946b6fc07a5f4f96a96f8469edd9c455"
+        },
+        {
+          "kind": "automated-report",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-verification.json",
+          "sha256": "d46e0ed03e9b551b497906184715c5a9f99e8c499604ced1b38e024209085780"
+        },
+        {
+          "kind": "host-comparison",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-2/gate2-host-comparison.json",
+          "sha256": "060f1a3e0ea9bbb7ff6e2d4038d3fb695fc670038eaee4944adfd7595f94a8d9"
+        },
+        {
+          "kind": "runtime-revision-report",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/overnight-rehearsal/site-fidelity-revision-verification.json",
+          "sha256": "c0a3c4765090f54ea5c1c79d45b7ef2ed52d88e72c6cafcbea4f9d7c68b37aa3"
+        },
+        {
+          "kind": "runtime-desktop-capture",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/overnight-rehearsal/site-fidelity-1920x1080.webp",
+          "sha256": "b85b3fe66293ccfdf997050a28fa630014d0dc567d7d314d2364673e3147d6de"
+        },
+        {
+          "kind": "runtime-portrait-capture",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/overnight-rehearsal/site-fidelity-820x1180.webp",
+          "sha256": "a08f5e72d2bc4dfe56a6b43bea336d0f778fd105d50a96404cf3880240736e40"
+        },
+        {
+          "kind": "runtime-landscape-capture",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/overnight-rehearsal/site-fidelity-960x412.webp",
+          "sha256": "527e559e54f290f6c332626187ee4d2924eaad93a9ec8aa333b1d26be22597ba"
+        }
+      ],
+      "checks": [
+        {
+          "name": "artifact-digest",
+          "status": "passed",
+          "evidence": "The offline verifier records SHA-256 and byte length for the builder, coordinate contract, editable Blend, GLB, six fixed views, contact sheet, and first-person video; every scene-gate evidence digest matches current bytes."
+        },
+        {
+          "name": "collision",
+          "status": "passed",
+          "evidence": "Both browser hosts use the full 1 m DTM for visible geometry and Rapier collision. All 144 registered person-route waypoints hit authoritative ground with zero misses, 0.008399 m maximum DTM error, and zero missing-collider frames. The 95,459-cell interpreted canopy screen uses the same visible and collider mesh."
+        },
+        {
+          "name": "dynamic-collision",
+          "status": "passed",
+          "evidence": "The selected 32 m collision host passed 258 live Rapier probes placed 0.05 m before, on, and after 86 registered route/chunk seam crossings plus 264 route-leg endpoint probes. It exercised 107 collider-window transitions, kept 25 to 30 terrain bodies active, reported zero missing collider samples and ground hits, and stayed within 0.008399 m of the authoritative DTM."
+        },
+        {
+          "name": "barrier-topology",
+          "status": "passed",
+          "evidence": "The lower-gate spawn, all 132 approved person legs, all 54 staged vehicle legs, and all seven registered clearings are open. Same-metric in-corridor and off-corridor searches found no shorter challenger. Continuous 0.05 m line-of-sight smoothing kept the upper and lower connector deviations to 1.20 m and 2.12 m, both within the 2.5 m corridor limit."
+        },
+        {
+          "name": "camera-projection",
+          "status": "passed",
+          "evidence": "The runtime converts each registered 65 degree horizontal field of view to the live viewport's vertical projection. At the captured 1.768333 aspect, the actual camera measured 39.624728 degrees vertical and exactly 65 degrees horizontal."
+        },
+        {
+          "name": "route-duration",
+          "status": "passed",
+          "evidence": "Every person segment retains the approved 1.2 m/s timing. Vehicle duration stays null because no vehicle speed is approved. The 30 s H.264 route proof moves continuously by equal route distance per frame and makes no false real-time claim."
+        },
+        {
+          "name": "sequence-parity",
+          "status": "passed",
+          "evidence": "No TKA performance sequence is present in this geospatial graybox. All three arrival branches and three night returns match the approved Gate 1 coordinate contract. Austen's 13- and 14-vertex connector traces match their source exactly and appear as eight exact forward or reverse subsequences in every semantically affected runtime route."
+        }
+      ],
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-26T20:43:52Z",
+        "quote": "Okay what's next bring it to the next level my friend start the next phase",
+        "museumTrackerItem": "kKPZRyz05roZKL2Dj33s",
+        "visualComprehensionConfirmed": true,
+        "comprehensionBasis": "Austen had already identified and traced both concealed connector paths, described the lower-gate and three-camping arrival topology, walked the production candidate, and then explicitly directed advancement after the site-fidelity and locomotion revision evidence was presented."
+      }
     },
     {
       "id": "registered-visual-target",
-      "status": "pending",
-      "evidence": [],
-      "checks": [],
-      "approval": null
+      "status": "approved",
+      "evidence": [
+        {
+          "kind": "locked-camera-set",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/gate3-locked-camera-set.json",
+          "sha256": "2469a6b2ec5cb2a67ddb43b7145681b41e27e19ece08960d8e496f43652031c1"
+        },
+        {
+          "kind": "visual-target-board",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/gate3-visual-target-board.png",
+          "sha256": "7fd85c4c3509c80364788bc75e5a2708f0891da16fa681af6e72f7d6bbe309c3"
+        },
+        {
+          "kind": "material-lighting-brief",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/gate3-material-lighting-sound-brief.md",
+          "sha256": "28fd2f880ca8786eb84ff1bda7f565e5b238d6b5ffb5582264405d82c3468051"
+        },
+        {
+          "kind": "runtime-capture-proof",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/gate3-runtime-capture-proofs.json",
+          "sha256": "c77ac991a50bc765065fb14a694344668125a3b3e3af95cf0223589dda6744ba"
+        },
+        {
+          "kind": "automated-report",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/gate3-verification.json",
+          "sha256": "a03e878b2bf806e37a9d2ff4650aabe7f1f0e7bbe244728cce92e7a3da223523"
+        },
+        {
+          "kind": "registered-day-frame",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/day-lower-gate.webp",
+          "sha256": "35d2b90e830a5517f7f6dd85fc0eaf85a43b1958c5b8ca1e6d197431d05f20c8"
+        },
+        {
+          "kind": "registered-dusk-frame",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/dusk-middle-earth.webp",
+          "sha256": "aeb56175ba70a7cfbc88c1a5eb935da03470200707d1d4324c2edceb5bee9b04"
+        },
+        {
+          "kind": "registered-night-frame",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/night-night-composition.webp",
+          "sha256": "dcc606910f077af0caa0195fa796f256d0dfdf7c40fb919246ccdf87dc178e5d"
+        }
+      ],
+      "checks": [
+        {
+          "name": "camera-registration",
+          "status": "passed",
+          "evidence": "All 15 captures retain the Gate 2 coordinate fingerprint and use the five approved camera positions and targets with no more than 0.03 metre eye-position error and exactly 65 degrees horizontal field of view."
+        },
+        {
+          "name": "silhouette-read",
+          "status": "passed",
+          "evidence": "The registered contact sheet was visually reviewed across day, dusk, and night; terrain tiers, canopy edges, camp clusters, route openings, the fire-jam spectator perimeter, and the separate LED circle remain readable."
+        },
+        {
+          "name": "spatial-fidelity",
+          "status": "passed",
+          "evidence": "All moments retain 12 canonical path surfaces, 427 interpreted canopy peaks, the same registered clearings, and the immutable Gate 2 coordinate fingerprint."
+        },
+        {
+          "name": "focal-hierarchy",
+          "status": "passed",
+          "evidence": "The locked visual order reads measured land first, routes second, temporary camps third, the fire-jam spectator perimeter fourth, and the separate LED circle only in the first-night state."
+        },
+        {
+          "name": "density",
+          "status": "passed",
+          "evidence": "The registered set holds 427 interpreted canopy peaks, 38 tents, 9 vehicles, 16 fire-circle spectators, 8 active flow artists, one open fire floor, and one separate LED circle without moving routes or clearing envelopes."
+        }
+      ],
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-27T00:49:01Z",
+        "quote": "Send it to the next phase",
+        "museumTrackerItem": "wszyPNGWMYTbTeVqSrnl",
+        "visualComprehensionConfirmed": true,
+        "comprehensionBasis": "Austen reviewed the live registered visual target and subsequent EUC and fire-circle corrections, then explicitly directed the work into the next phase."
+      }
     },
     {
       "id": "production-slice",
-      "status": "pending",
-      "evidence": [],
-      "checks": [],
-      "approval": null
+      "status": "approved",
+      "evidence": [
+        {
+          "kind": "vertical-slice-build",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-production-slice-build.json",
+          "sha256": "8055360af3026c4a9c5213813e59e9c42b603a83de409e58a11d1467fa168085"
+        },
+        {
+          "kind": "interaction-capture",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-interaction-capture.mp4",
+          "sha256": "b66965f57f7ad1f30fdbf0868c87e8977642536df3727fbf1cbf23fd6b6132f8"
+        },
+        {
+          "kind": "state-transition-audit",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-state-transition-audit.json",
+          "sha256": "42df535c0d339522e7e5399ee29f02054accc40730f312192d2037190f9ebe3e"
+        },
+        {
+          "kind": "performance-report",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-performance-report.json",
+          "sha256": "417a8763dbc411fb701ee9b6ab08cad0416bd3062297b553d7352d5b72b89952"
+        },
+        {
+          "kind": "active-interaction-frame",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-fire-jam-active-1920x1080.png",
+          "sha256": "e2eeaeab86ab608da01ae8152570162a0e9ddb6e67aad8a816c283e882d20cf7"
+        },
+        {
+          "kind": "completed-interaction-frame",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-fire-jam-completed-1920x1080.png",
+          "sha256": "bd54beeb58b29afbbdae256de0ff9eaf92e64631b5ff031ec70415b39d4fd721"
+        },
+        {
+          "kind": "viewport-contact-sheet",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-viewport-contact-sheet.png",
+          "sha256": "838cbf4ce5c828017d1d39946137f6651a5672a760270c786429752a0c8e65df"
+        }
+      ],
+      "checks": [
+        {
+          "name": "interaction-state",
+          "status": "passed",
+          "evidence": "The browser capture and state audit show mounted approach, real parking, on-foot entry, active fire-jam response, completed turn, and reload restoration."
+        },
+        {
+          "name": "runtime-console",
+          "status": "passed",
+          "evidence": "The final task-owned Chrome navigation recorded zero runtime errors; two existing non-blocking diagnostics are disclosed in the build report."
+        },
+        {
+          "name": "performance",
+          "status": "passed",
+          "evidence": "The 600-frame foreground sample recorded 16.8 ms p95 and p99, 16.9 ms maximum, 78 draw calls, and 2.82 million rendered triangles."
+        },
+        {
+          "name": "state-persistence",
+          "status": "passed",
+          "evidence": "Reload restored the completed fire jam, exact player pose, parked EUC pose, and active parked collider while correctly requiring another audio gesture."
+        },
+        {
+          "name": "collision-response",
+          "status": "passed",
+          "evidence": "The parked wheel and five festival fixtures use visible production collision while the inherited invisible topology screen remains disabled."
+        },
+        {
+          "name": "audio-response",
+          "status": "passed",
+          "evidence": "The Join gesture unlocks the deterministic procedural fire, LED, and crowd mix, driven by the same proximity and interaction state as the visible response."
+        }
+      ],
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-27T01:43:03Z",
+        "quote": "Bring this to the next phase.",
+        "museumTrackerItem": "aIEQkUWFS8ksXj9CqZ70",
+        "visualComprehensionConfirmed": true,
+        "comprehensionBasis": "Austen walked the live Gate 4 production slice, directly reported and drove revisions to movement, collision, third-person EUC behavior, avatar fit, and the fire-circle composition, then explicitly advanced the reviewed slice into the next phase."
+      }
     },
     {
       "id": "integrated-room",
-      "status": "pending",
-      "evidence": [],
-      "checks": [],
-      "approval": null
+      "status": "approved",
+      "evidence": [
+        {
+          "kind": "integrated-walk",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-5/gate5-integrated-walk.mp4",
+          "sha256": "c55b1154dfbc783e344f9cd610466c0d2c21f235581c3f6455f771d48681195c"
+        },
+        {
+          "kind": "transition-captures",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-5/gate5-transition-captures.mp4",
+          "sha256": "18639ddee29f5ad07b981d6661031d9dfc85e4d4b22e4d03dd2f0f8c51539e13"
+        },
+        {
+          "kind": "audio-review",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-5/gate5-audio-review.md",
+          "sha256": "3ec40bab631a5c6ea1015410dc2112d517a06c6fe6f92974ab55b47960bdd406"
+        },
+        {
+          "kind": "performance-report",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-5/gate5-performance-report.json",
+          "sha256": "e30b5266f21af5966d890a8dcd9138ad2155dae8079c78346ad09d065f5a79a6"
+        },
+        {
+          "kind": "state-persistence-report",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-5/gate5-state-persistence-report.json",
+          "sha256": "8b9acfd2174d3891bbe5aaf055473936b5cce847ac1705ca8d5f103d248063f6"
+        },
+        {
+          "kind": "viewport-contact-sheet",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-5/gate5-viewport-contact-sheet.png",
+          "sha256": "b62e57d411fbc1851ed8a1775598522822a3b2845abee2e17b522ff7c5e9cbef"
+        },
+        {
+          "kind": "automated-report",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-5/gate5-verification.json",
+          "sha256": "84b3868c1fbbba3d6f89c0cd8eda8faf6c74726e85f91ff83bfc48b0ac522049"
+        }
+      ],
+      "checks": [
+        {
+          "name": "museum-connectivity",
+          "status": "passed",
+          "evidence": "The browser itinerary reaches the registered gate, selected camp, west parking, festival, and selected camp; Gate 2 separately proves continuous terrain and dynamic collider traversal between those landmarks."
+        },
+        {
+          "name": "backtracking",
+          "status": "passed",
+          "evidence": "The settled-position journal recorded seven landmark transitions, a reverse camp/festival edge, one festival exit, a festival re-entry, and the final selected-camp return."
+        },
+        {
+          "name": "state-persistence",
+          "status": "passed",
+          "evidence": "Reload restored the exact lower-tent camp pose and one crossing without a phantom gate/camp transition; completed fire-jam and return state remains serializable."
+        },
+        {
+          "name": "runtime-console",
+          "status": "passed",
+          "evidence": "The final task-owned Chrome capture reported zero application errors. The existing Rapier initialization deprecation warning is recorded in the Gate 5 reports."
+        },
+        {
+          "name": "performance",
+          "status": "passed",
+          "evidence": "Gate 5 adds no WebGL object or collider owner beyond the measured Gate 4 production envelope: 16.8 ms p95/p99, 78 draw calls, and 2.82 million rendered triangles."
+        },
+        {
+          "name": "audio-boundaries",
+          "status": "passed",
+          "evidence": "Arrival, woodland, camp, fire, LED, and crowd gains crossfade on one gesture-created graph; the browser retained one graph build and three long-lived source starts across exit, re-entry, and return."
+        }
+      ],
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-27T03:26:24Z",
+        "quote": "Okay continue to the next phase. Essentially I'm doing an experiment where I don't really check the gates and I have you build this whole f****** thing in full.",
+        "museumTrackerItem": "QIh1kgVVMLiZfiZee62t",
+        "visualComprehensionConfirmed": true,
+        "comprehensionBasis": "Austen walked the live integrated runtime through repeated production revisions, explicitly chose not to stop for another interim gate review, and directed autonomous advancement into the final phase."
+      }
     },
     {
       "id": "final-acceptance",
-      "status": "pending",
-      "evidence": [],
-      "checks": [],
+      "status": "geographic-acceptance-withdrawn",
+      "evidence": [
+        {
+          "kind": "acceptance-walk",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-acceptance-walk.mp4",
+          "sha256": "08cc4c25746729fdb01245aa395c18652b76cfaad96b4bdb620dc673f4b429d7"
+        },
+        {
+          "kind": "viewport-evidence",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-viewport-evidence.png",
+          "sha256": "5d20f91716f73e1fa60a1a0459ee3a3c61e9f9efb63b9346fbf3a46b2746e82e"
+        },
+        {
+          "kind": "gnss-rehearsal",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-gnss-rehearsal-report.json",
+          "sha256": "83515e696282c87adb8e6d1a531fcaeaec118cb2317ebb007f5f0585ca53644d"
+        },
+        {
+          "kind": "regression-report",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-regression-report.json",
+          "sha256": "7c355e9efbe84433c1376fa4d7b9f09fe7009dd2f4a9ffe9ad031ee4e7e792a2"
+        },
+        {
+          "kind": "performance-report",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-performance-report.json",
+          "sha256": "6ba87fef4b26adc6ea45fb3293b5c9cf6799d3af752ec3b4cec7fe82b7395073"
+        },
+        {
+          "kind": "runtime-console",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-runtime-console.json",
+          "sha256": "a8cb34b57d9062c3d18a4ac01d96e2d303bcd0465ca12c0d9831070e45f8ffae"
+        },
+        {
+          "kind": "automated-report",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-6/gate6-verification.json",
+          "sha256": "2d8b7cb2fddab4d203301cc9a9cbf23e7feafa1e0564648311aa9d5577250beb"
+        },
+        {
+          "kind": "living-middle-earth-revision",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/living-fire-jam/living-fire-jam-verification.json",
+          "sha256": "dd6a4a7c6a89479b27295a192203bb6a31f723da8f0b5642a358ce6bcc9beceb"
+        },
+        {
+          "kind": "forest-ecology-revision",
+          "path": "docs/superpowers/specs/flow-fest-sim/evidence/forest-ecology-r3/forest-ecology-r3-verification.json",
+          "sha256": "7b1dc5ccf60efb5dd15d0e43663407e0e4502d1b1d0d73ceec489c64b3833897"
+        }
+      ],
+      "checks": [
+        {
+          "name": "focused-tests",
+          "status": "passed",
+          "evidence": "Ten focused Flow Fest and permission-boundary files passed 54 tests on the final runtime sources."
+        },
+        {
+          "name": "typecheck",
+          "status": "passed",
+          "evidence": "The final Svelte and TypeScript check completed with zero errors and zero warnings."
+        },
+        {
+          "name": "runtime-console",
+          "status": "passed",
+          "evidence": "The task-owned Chrome tab recorded zero application errors; the existing Rapier deprecation warning remains disclosed."
+        },
+        {
+          "name": "performance",
+          "status": "passed",
+          "evidence": "Forest ecology R3 compacts 69 expensive tree batches per camera without adding source batches. Across 40,685,514 covered vertices, submitted vertices fell 96.104% at the rider camera, 80.594% at Middle Earth, and 32.899% in the wide upper-parking panorama."
+        },
+        {
+          "name": "field-positioning",
+          "status": "passed",
+          "evidence": "The 86-fix registered replay round-trips within 0.000057 metres; nominal fixes move the player while poor-accuracy and stale fixes are held."
+        },
+        {
+          "name": "acceptance-state",
+          "status": "passed",
+          "evidence": "The lower-tent journey reaches Friday morning at the selected camp with completion, backtracking, re-entry, and zero reload-position drift."
+        },
+        {
+          "name": "viewport-evidence",
+          "status": "passed",
+          "evidence": "Seven exact desktop, tablet, short-landscape, and phone viewports are nonblank and visually retain the world plus acceptance controls without overlap."
+        },
+        {
+          "name": "living-middle-earth",
+          "status": "passed",
+          "evidence": "Twenty-six production avatars form an organic, route-clear community with an open fire floor and ingress, three production-prop fire performers active at once, moving spectators, one shared raymarched hero fire, three spatialized audio sources, and measured-terrain EUC attitude."
+        },
+        {
+          "name": "forest-ecology",
+          "status": "passed",
+          "evidence": "Twelve Forest and PlantFactory tree families, the Forest summer-sward and woodland-grass prototypes, rooted wind, Forest ground-life assets, and Forest lighting run at the measured Earth site. Runtime proof retains 427 LiDAR canopy anchors, 20,798 grass instances, 19 ground-life instances, and zero route intrusions while the shared instance culler cuts submitted tree geometry by 32.9% to 96.1% across registered cameras without adding draw batches."
+        }
+      ],
       "approval": null
     }
   ]

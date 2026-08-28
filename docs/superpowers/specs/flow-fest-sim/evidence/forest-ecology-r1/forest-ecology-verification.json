@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "revisionId": "flow-fest-forest-ecology-r1",
+  "capturedAt": "2026-08-27T06:50:00-05:00",
+  "status": "ready-for-review",
+  "userDirection": {
+    "quote": "The forest scene has all the trees and grass and systems we need for this.",
+    "museumTrackerItem": "y42EDiLshaxxwhYWqAc1"
+  },
+  "coordinateAuthority": {
+    "runtimeContractFingerprint": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d",
+    "worldFrame": "x east, y up, z south, metres",
+    "terrain": "unchanged one-metre checked DTM",
+    "forestLayoutImported": false
+  },
+  "runtime": {
+    "treeInstances": 427,
+    "treeFamilies": 5,
+    "grassInstances": 20798,
+    "grassSpecies": 2,
+    "grassTiers": 3,
+    "groundLifeInstances": 19,
+    "treeRouteIntrusions": 0,
+    "grassRouteIntrusions": 0,
+    "groundLifeRouteIntrusions": 0,
+    "canonicalPathSurfaces": 12,
+    "reviewCameraHorizontalFovDegrees": 65,
+    "reviewCameraPositionErrorMeters": 0.004605249023438063,
+    "forestOwners": [
+      "ForestLighting",
+      "ForestClearingWind",
+      "Forest summer-sward prototype",
+      "Forest woodland-grass prototype",
+      "Forest ground-life catalog",
+      "Forest tree-family assets"
+    ]
+  },
+  "performance": {
+    "browser": "Chrome 151",
+    "captureViewport": "3840x2160x1 foreground",
+    "samples": 240,
+    "p50FrameMilliseconds": 16.7,
+    "p95FrameMilliseconds": 16.8,
+    "p99FrameMilliseconds": 16.8,
+    "drawCalls": 51,
+    "renderedTriangles": 17337668,
+    "programs": 20,
+    "geometries": 48,
+    "textures": 77,
+    "interpretation": "The production ecology retained 60 Hz pacing on the capture workstation. The 17.34 million instanced-triangle density is recorded explicitly and supersedes the pre-ecology 2.82 million figure."
+  },
+  "verification": {
+    "focusedTests": {
+      "command": "pnpm exec vitest run --config tests/config/vitest.config.ts tests/unit/flow-fest-forest-ecology.test.ts tests/unit/flow-fest-production-geometry.test.ts tests/unit/flow-fest-visual-system.test.ts",
+      "files": 3,
+      "tests": 11,
+      "status": "passed"
+    },
+    "typecheck": {
+      "command": "pnpm run check",
+      "errors": 0,
+      "warnings": 0,
+      "status": "passed"
+    },
+    "scopedLint": {
+      "command": "pnpm exec eslint --no-warn-ignored [four changed TypeScript owners]",
+      "errors": 0,
+      "warnings": 0,
+      "status": "passed"
+    },
+    "runtimeConsole": {
+      "applicationErrors": 0,
+      "warnings": [
+        "Existing Rapier initialization deprecation warning"
+      ],
+      "status": "passed"
+    },
+    "visualInspection": {
+      "registeredFrames": [
+        "middle-earth afternoon",
+        "night-composition first night"
+      ],
+      "viewports": [
+        "1920x1080",
+        "2560x1440",
+        "3840x2160",
+        "1440x900",
+        "820x1180 touch",
+        "960x412 touch landscape",
+        "375x667 touch"
+      ],
+      "nonblank": true,
+      "overflowObserved": false,
+      "routeOpeningsReadable": true,
+      "nightHeartReadable": true,
+      "status": "passed"
+    }
+  },
+  "sourceDigests": {
+    "src/routes/test/flow-fest-sim/FlowFestForestEcology.svelte": "3de604c97047170887d5e50d593a9d2b0d45b75b8809fdc7643e84365d476a52",
+    "src/routes/test/flow-fest-sim/flow-fest-forest-ecology.ts": "201b70737964bb9dcbe84de10c2a32bbf6bbd9bbc8dbcce6dd1d5b9ee1b2ce19",
+    "src/routes/test/flow-fest-sim/flow-fest-production-geometry.ts": "d71ade04ecd2164cd03fc94d10937c33ab1eb7878f5ce50798d8fab3ec82fe0a",
+    "src/routes/test/flow-fest-sim/FlowFestProductionLayer.svelte": "bcae5d658d0a9a85ef69c528286f1cada0c06fd3c1ff4e067237ff00c4ebe2a0",
+    "src/routes/test/flow-fest-sim/flow-fest-visual-system.ts": "3f47e0d5d21428242be3888c306ed75135701e8c5b612230894b2ee41e2aca66",
+    "src/lib/shared/3d/environments/scenes/forest/forest-runtime-ecology.ts": "77456ac3abc2a5a36e13d24d6d7ddc375daf02593d6d090c588a96afb8fe6ef7",
+    "src/lib/shared/3d/environments/scenes/forest/ForestLighting.svelte": "e41fb79da0689314068fc7fe032dfe628a23da68bc82a0abef0f4b0eed3c2bf4",
+    "scripts/geospatial/extract_flow_fest_forest_grass.mjs": "92e6d2d32bb8c44c96e639b89029d601fd79fabcf1e4b4a51ddf8d83a7174af6",
+    "tests/unit/flow-fest-forest-ecology.test.ts": "acbc585bd6a6a2494cd788b6887e8115d86ec61f7088381ab61d72fba102df8d",
+    "docs/superpowers/specs/flow-fest-sim/forest-ecology-integration.md": "59a8f7291064311eca9c492cad42667cdc11bde86eba296b0dda11fcfab42bbc"
+  },
+  "assetDigests": {
+    "static/models/flow-fest-sim/ecology/forest-oak-flow-lod-512.glb": "a19209e1fe57eed568022225886665f5d53671cc5b88051414c64bedd7cbb65c",
+    "static/models/flow-fest-sim/ecology/island-tree-01-flow-lod-512.glb": "c130634d19e6ae2d6156f67f2bac14c95d1cf81d7d5fe9ee99baaafc8e4e1439",
+    "static/models/flow-fest-sim/ecology/island-tree-02-flow-lod-512.glb": "426ca53a19ce3d5963c2b6033cf8aac051a8efd5843ba874d74d6abd7a88ff6e",
+    "static/models/flow-fest-sim/ecology/island-tree-03-flow-lod-512.glb": "1989b812490c0b16dc2d8fb1082d27a0312e2fe112224283f14528a1ee01ccab",
+    "static/models/flow-fest-sim/ecology/tree-small-02-flow-lod-512.glb": "36ab6796be5a74a1a4bebf8267c32eff6434698f8028dfd57b527385c51572b8",
+    "static/models/flow-fest-sim/ecology/forest-grass-prototypes.glb": "773d4ffef6e3934ed759f834adc65756e05bd12ba91f78d361c67a9c45196e76"
+  },
+  "captureDigests": {
+    "viewports/night-1440x900.png": "baf7a30a535bdc257b86661ac7070696e0cc56cd9554aa5597ba1e1733379a68",
+    "viewports/night-1920x1080.png": "bc1f48eaa68828d211276e06c83dfcdee12bbba3742f3a8c4d8b76b2f7d06363",
+    "viewports/night-2560x1440.png": "1c34aaf56d2fbbe17f1d9fac7ddf5e97f53470bf7f3a3e905f9eb9cbc9424b39",
+    "viewports/night-375x667.png": "35f2644e97e91632eb724f61a1f36d66f0f3734fdf355afd3f52b69eb8b73d04",
+    "viewports/night-3840x2160.png": "32f1982fcdfd7b9a5c5ab7ba60333ca9907a0bd76e4ea7a51c684ced1cf273eb",
+    "viewports/night-820x1180.png": "6b54eaf1792146d88b9f04b1a117d7f8c7e0df28a9f172fa33a9b166aa47a1b3",
+    "viewports/night-960x412.png": "6dc4103d6556f0ff89655915c038750abba6dfd31bbea634bee6bd8984d08ee3"
+  },
+  "knownLimits": [
+    "LiDAR peaks are interpreted tree centers, not surveyed individual trunks or species.",
+    "Grass and ground-life placement is authored visual ecology constrained by measured terrain and routes.",
+    "The unresolved bridge, permanent structures, and final campsite placements still require field evidence or Austen traces.",
+    "Phone captures prove composition and layout only; touch locomotion is not claimed."
+  ]
+}

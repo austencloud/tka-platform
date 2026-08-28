@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "gate": 5,
+  "status": "passed",
+  "capturedAt": "2026-08-27T02:22:08.741Z",
+  "route": "/test/flow-fest-sim?gate5=1&capture=1",
+  "coordinateFingerprint": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d",
+  "captureMode": {
+    "kind": "registered-landmark-staging",
+    "disclosure": "The capture-only controls stage exact registered gate, branch-camp, and festival coordinates. They verify runtime state boundaries and do not claim continuous vehicle travel. Continuous terrain and collider traversal remains proven by the inherited Gate 2 route replay."
+  },
+  "checkpoints": [
+    {
+      "id": "lower-gate",
+      "area": "lower-gate",
+      "transitions": "0",
+      "x": "340.000",
+      "z": "-20.000"
+    },
+    {
+      "id": "selected-camp-unload",
+      "area": "selected-camp",
+      "transitions": "1",
+      "x": "286.000",
+      "z": "-130.000"
+    },
+    {
+      "id": "west-parking",
+      "area": "west-parking",
+      "phase": "walk-home",
+      "transitions": "2"
+    },
+    {
+      "id": "festival-night",
+      "area": "festival",
+      "layer": "fire-circle",
+      "mounted": "true",
+      "phase": "night-free-roam",
+      "transitions": "4"
+    },
+    {
+      "id": "active-fire-jam",
+      "area": "festival",
+      "audio": "true",
+      "builds": "1",
+      "fire": "active",
+      "layer": "fire-circle",
+      "phase": "night-free-roam",
+      "starts": "3"
+    },
+    {
+      "id": "returned-camp",
+      "area": "selected-camp",
+      "audioPlaying": true,
+      "audioUnlocked": true,
+      "backtracking": true,
+      "complete": true,
+      "fire": "completed",
+      "graphBuilds": 1,
+      "layer": "camp",
+      "layout": [
+        1920,
+        1080
+      ],
+      "phase": "morning",
+      "reentry": true,
+      "sourceStarts": 3,
+      "transitions": 7,
+      "x": 286,
+      "z": -130
+    }
+  ],
+  "reloadProof": {
+    "beforeReload": {
+      "area": "selected-camp",
+      "transitions": "1"
+    },
+    "afterReload": {
+      "area": "selected-camp",
+      "phase": "vehicle-settle",
+      "transitions": "1",
+      "x": "286.000",
+      "z": "-130.000"
+    },
+    "expectedAudioGestureReset": true
+  },
+  "checks": [
+    {
+      "name": "museum-connectivity",
+      "status": "passed",
+      "evidence": "The lower-tent browser itinerary reached the registered lower gate, selected camp, west parking, festival, and selected camp again; Gate 2 separately proves every intervening route and collider seam."
+    },
+    {
+      "name": "backtracking",
+      "status": "passed",
+      "evidence": "The runtime journal recorded seven landmark transitions and detected the festival-to-camp reversal."
+    },
+    {
+      "name": "state-persistence",
+      "status": "passed",
+      "evidence": "Reload restored vehicle-settle at the exact selected-camp coordinate with one crossing retained and no phantom gate/camp crossings."
+    },
+    {
+      "name": "re-entry",
+      "status": "passed",
+      "evidence": "The runtime journal recorded a festival exit followed by re-entry before the final camp return."
+    },
+    {
+      "name": "runtime-console",
+      "status": "passed",
+      "evidence": "The task-owned Chrome tab reported zero application errors; the two app warnings are the same Rapier initialization deprecation diagnostic across two navigations."
+    }
+  ]
+}

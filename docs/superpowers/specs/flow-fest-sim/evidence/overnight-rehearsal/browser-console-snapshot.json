@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "artifactClass": "operator-snapshot-not-formal-gate-evidence",
+  "capturedAt": "2026-08-26T17:00:56.5296192Z",
+  "page": "https://localhost:5173/test/flow-fest-sim",
+  "errorCount": 0,
+  "warningCount": 1,
+  "warnings": [
+    {
+      "owner": "src/lib/shared/3d/physics/rapier-world.ts",
+      "message": "Rapier warns that its deprecated positional initialization parameters should be passed as a single object.",
+      "classification": "pre-existing-shared-owner-warning"
+    }
+  ],
+  "ignoredDevelopmentMessages": [
+    "Vite connection and hot-update debug messages"
+  ]
+}

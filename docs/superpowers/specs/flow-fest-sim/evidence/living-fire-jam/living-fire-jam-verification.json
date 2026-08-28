@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "phase": "living-middle-earth-production-revision",
+  "capturedAt": "2026-08-27T00:42:09.0571627-05:00",
+  "coordinateFingerprint": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d",
+  "status": "passed",
+  "community": {
+    "spectators": 16,
+    "performers": 10,
+    "firePerformers": 5,
+    "simultaneouslyActiveFirePerformers": 3,
+    "readyAvatars": 26,
+    "rotationSeconds": 24,
+    "observedRotationOrdinal": 1,
+    "observedActiveFirePerformerIds": [
+      "fire-performer-2",
+      "fire-performer-3",
+      "fire-performer-4"
+    ],
+    "observedMovingSpectators": 3,
+    "observedTalkingSpectators": 6,
+    "minimumSpectatorRadiusMeters": 11.588356225108031,
+    "spectatorFloorIntrusions": 0,
+    "ingressParticipantCount": 0,
+    "fireRotationComplete": true
+  },
+  "mobilityRuntimeProbe": {
+    "input": "Shift+W",
+    "sampleSeconds": 1,
+    "before": {
+      "player": { "x": 338.4452819824219, "z": -22.72046661376953 },
+      "speedMetersPerSecond": 0,
+      "odometerMeters": 3.155592903769324
+    },
+    "during": {
+      "player": { "x": 335.80224609375, "z": -27.340288162231445 },
+      "speedMetersPerSecond": 10.498949999999944,
+      "odometerMeters": 8.492025508769256,
+      "distanceAdvancedMeters": 5.336432605,
+      "inputSource": "keyboard",
+      "performanceMode": true,
+      "collisionLimited": false,
+      "terrainAttitude": {
+        "pitchRadians": 0.06426728168423945,
+        "rollRadians": -0.04054173758076496,
+        "roughnessMeters": 0.0037885092704783574
+      }
+    },
+    "cameraMode": "third_person",
+    "cameraBehavior": "collision-aware-heading-chase"
+  },
+  "spatialAudioRuntimeProbe": {
+    "supported": true,
+    "unlocked": true,
+    "playing": true,
+    "graphBuildCount": 1,
+    "sourceStartCount": 3,
+    "spatialFrameCount": 479,
+    "spatializedSources": 3,
+    "panningModel": "HRTF",
+    "sourceRoles": ["fire", "led-circle", "crowd"]
+  },
+  "runtimeConsole": {
+    "errors": 0,
+    "warnings": 1,
+    "knownWarning": "Rapier initialization uses its deprecated positional signature in the inherited physics owner."
+  },
+  "verification": {
+    "focusedTests": { "files": 4, "tests": 27, "failed": 0 },
+    "fullFlowFestRegression": { "files": 12, "tests": 67, "failed": 0 },
+    "svelteCheck": { "errors": 0, "warnings": 0 },
+    "checks": [
+      {
+        "name": "living-community-schedule",
+        "status": "passed",
+        "evidence": "The deterministic 24-second scheduler rotates all five fire artists through three active slots while keeping moving spectators and social pairs alive between turns."
+      },
+      {
+        "name": "performance-floor-and-ingress",
+        "status": "passed",
+        "evidence": "No spectator enters the 8.4 metre performance floor plus safety margin, and the authored arrival wedge contains zero perimeter placements."
+      },
+      {
+        "name": "production-prop-owner",
+        "status": "passed",
+        "evidence": "Fire, LED, hoop, poi, and juggling artists render through LiveSequencePerformer3D with production prop sequences and the existing effect orchestrator; no detached festival flame or LED proxy is used."
+      },
+      {
+        "name": "hero-fire-owner",
+        "status": "passed",
+        "evidence": "The shared static-fire bridge now composes the canonical object-space VolumetricFireMesh over a physical log and coal bed; the obsolete slice renderer is no longer instantiated."
+      },
+      {
+        "name": "spatial-audio",
+        "status": "passed",
+        "evidence": "One user gesture built one graph, started exactly three long-lived sources, and updated three HRTF panners from the live camera listener pose."
+      },
+      {
+        "name": "euc-terrain-feedback",
+        "status": "passed",
+        "evidence": "The third-person EUC advanced 5.336 metres during the one-second performance-mode probe, reached 10.499 m/s, remained collision-clear, and reported measured terrain pitch, roll, and roughness."
+      },
+      {
+        "name": "responsive-composition",
+        "status": "passed",
+        "evidence": "The registered 65 degree horizontal composition rendered without overflow at 1920x1080, 2560x1440, 3840x2160, 1440x900, 820x1180, 960x412, and 375x667."
+      }
+    ]
+  },
+  "captures": [
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/living-fire-jam/euc-terrain-feedback-1920x1080.png",
+      "bytes": 1193999,
+      "sha256": "6569f1eb10b0bee4df9e93b8dba7743faaa45f4c27f4477fb69652bfb4bde625"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/living-fire-jam/living-fire-jam-1920x1080.png",
+      "bytes": 1212345,
+      "sha256": "c3ef0577a13bf218d684ec489187a5336ef02c16d111c5d04fd2c8946b967195"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/living-fire-jam/living-fire-jam-2560x1440.png",
+      "bytes": 1849377,
+      "sha256": "eb5f2b08c513fd234bfdbb73a4a3c5c998fc3172c44f9839a82dd9dcb7458acd"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/living-fire-jam/living-fire-jam-3840x2160.png",
+      "bytes": 3351236,
+      "sha256": "6fc23079c4ef2dbb43f34d47a30308ad51504cafdb70e7ffa24a0e3ac2b0b314"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/living-fire-jam/living-fire-jam-1440x900.png",
+      "bytes": 830988,
+      "sha256": "d180d1acdc003e5deb34539a4fb2f0207e660e971b3c4c178ac5312e0716ebda"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/living-fire-jam/living-fire-jam-820x1180.png",
+      "bytes": 478527,
+      "sha256": "8c09e30d3f1a6e7cfd61de406b7708272735686c6c526a6f3fa7703443de6abf"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/living-fire-jam/living-fire-jam-960x412.png",
+      "bytes": 369525,
+      "sha256": "80177fec3e9be5763a928aa0587478d8349ce182803972f68331b9375da784a8"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/living-fire-jam/living-fire-jam-375x667.png",
+      "bytes": 150234,
+      "sha256": "30c66a4759183084acc9a9c92531f570a39b0cffd0bb7f847610c3e937b74e35"
+    }
+  ],
+  "sourceFiles": [
+    { "path": "src/lib/features/flow-fest-sim/domain/flow-fest-living-fire-jam.ts", "bytes": 9223, "sha256": "0b72eb1543fd960653288ec38595b3c98dce9f7d2820a6394ede93775118c5db" },
+    { "path": "src/routes/test/flow-fest-sim/flow-fest-production-geometry.ts", "bytes": 36664, "sha256": "27ed3331bf9ee106c74321750bc8b88cd2fb50642007be7765ec35a1f90d2a72" },
+    { "path": "src/routes/test/flow-fest-sim/FlowFestFestivalCommunity.svelte", "bytes": 3794, "sha256": "9c7d5a369bc424fd5171dc5b9af4ae8a53d6a8ca7dae7d378a2091f1cd44271b" },
+    { "path": "src/routes/test/flow-fest-sim/FlowFestHeroFire.svelte", "bytes": 3371, "sha256": "840050a47c8bd17d9c256e2d613ba2f757788a8706f4010fcd263191dcb0937e" },
+    { "path": "src/routes/test/flow-fest-sim/FlowFestProductionLayer.svelte", "bytes": 15639, "sha256": "9061b1ee10e2aa1df1d5c407eb949c2e82efc7712963272234ed31eb6829d648" },
+    { "path": "src/lib/shared/3d/effects/volumetric-fire/VolumetricFireComponent.svelte", "bytes": 2041, "sha256": "a4484784a468e050b9a2d168d84e451b6ee7bedad468650cdb03e6880c076b84" },
+    { "path": "src/lib/shared/3d/effects/fire/volumetric-fire-mesh.ts", "bytes": 13258, "sha256": "ce6e6e54dda8a09f4cd4b618bb4bee24a907f0b092e7c40fec72a3e48ce0735a" },
+    { "path": "src/lib/features/flow-fest-sim/services/contracts/IFlowFestFireJamSoundscape.ts", "bytes": 869, "sha256": "488a5b7bf77c6c7adbd2e74b2f55970c3331dfc970fcdf565be47fff1dc6e67e" },
+    { "path": "src/lib/features/flow-fest-sim/services/implementations/FlowFestFireJamSoundscape.ts", "bytes": 10141, "sha256": "39dfcacbffc3f1cae5d1b793e3626c0e21f24d3754466863c82be8d3c90180fa" },
+    { "path": "src/lib/features/flow-fest-sim/domain/flow-fest-electric-unicycle.ts", "bytes": 15304, "sha256": "806c2b955f17de5d74e1d7646a716429a35cf4a1a2346d1796dac053f886f62f" },
+    { "path": "src/routes/test/flow-fest-graybox/FlowFestGrayboxWalkScene.svelte", "bytes": 53304, "sha256": "851a739b6040df17cb6e93f70c6f864667515f7ebd3113b04bdc3ee2e86171d8" },
+    { "path": "src/routes/test/flow-fest-sim/FlowFestElectricUnicycle.svelte", "bytes": 7392, "sha256": "8a7b832c6a6e128e6786183b61e64f94361741fe0e4b831df987550e6bd693fa" },
+    { "path": "tests/unit/flow-fest-living-fire-jam.test.ts", "bytes": 3248, "sha256": "ff8999a94f3fb2fbcb3bf47b46d10d193c65a239f34aad3e157b3dee74d49342" },
+    { "path": "tests/unit/flow-fest-production-geometry.test.ts", "bytes": 9749, "sha256": "a69328be8c619c4a2c2f019b4a2e8aec125d3be9935ff1b6b65599ed483fa80d" },
+    { "path": "tests/unit/flow-fest-electric-unicycle.test.ts", "bytes": 12362, "sha256": "dbf9ef918e553997f2ee98a2dccdc90df51ed1d411e6bbecdd881caa37609ee9" },
+    { "path": "tests/unit/flow-fest-fire-jam.test.ts", "bytes": 3871, "sha256": "c4caa6f874cbd1efee5303c75bb99a081c9de60fc1ae58d9de91320c09414264" }
+  ]
+}

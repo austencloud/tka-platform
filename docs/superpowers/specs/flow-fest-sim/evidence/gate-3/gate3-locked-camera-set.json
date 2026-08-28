@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "gate": 3,
+  "coordinateFingerprint": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d",
+  "sourceAuthority": {
+    "path": "static/data/flow-fest-sim/gate2-runtime-contract.json",
+    "bytes": 77571,
+    "sha256": "ff43b8373da6a6313923f275c85f4bfad2fc02e4b2dcdc5efeb8bf4bbc6968cf"
+  },
+  "invariants": {
+    "worldFrame": {
+      "units": "meter",
+      "metersPerUnit": 1,
+      "handedness": "right",
+      "axes": {
+        "x": "east",
+        "y": "up",
+        "z": "south"
+      },
+      "projectedCrs": {
+        "authority": "EPSG",
+        "code": 26916,
+        "name": "NAD83 / UTM zone 16N",
+        "wkt": "PROJCRS[\"NAD83 / UTM zone 16N\",BASEGEOGCRS[\"NAD83\",DATUM[\"North American Datum 1983\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",4269]],CONVERSION[\"UTM zone 16N\",METHOD[\"Transverse Mercator\",ID[\"EPSG\",9807]],PARAMETER[\"Latitude of natural origin\",0,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8801]],PARAMETER[\"Longitude of natural origin\",-87,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8802]],PARAMETER[\"Scale factor at natural origin\",0.9996,SCALEUNIT[\"unity\",1],ID[\"EPSG\",8805]],PARAMETER[\"False easting\",500000,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8806]],PARAMETER[\"False northing\",0,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8807]]],CS[Cartesian,2],AXIS[\"(E)\",east,ORDER[1],LENGTHUNIT[\"metre\",1]],AXIS[\"(N)\",north,ORDER[2],LENGTHUNIT[\"metre\",1]],USAGE[SCOPE[\"Engineering survey, topographic mapping.\"],AREA[\"North America - between 90°W and 84°W - onshore and offshore. Canada - Manitoba; Nunavut; Ontario. United States (USA) - Alabama; Arkansas; Florida; Georgia; Indiana; Illinois; Kentucky; Louisiana; Michigan; Minnesota; Mississippi; Missouri; North Carolina; Ohio; Tennessee; Wisconsin.\"],BBOX[23.97,-90,84,-84]],ID[\"EPSG\",26916]]"
+      },
+      "requestedAnchorWgs84": {
+        "latitude": 39.589617,
+        "longitude": -84.785764
+      },
+      "resolvedOriginWgs84": {
+        "latitude": 39.589613265369856,
+        "longitude": -84.78576527257212
+      },
+      "originProjectedMeters": {
+        "easting": 690142,
+        "northing": 4384552
+      },
+      "vertical": {
+        "datum": "NAVD88",
+        "originElevationMeters": 270,
+        "scale": 1
+      },
+      "transform": {
+        "worldX": "projectedEasting - originEasting",
+        "worldZ": "originNorthing - projectedNorthing",
+        "worldY": "navd88Elevation - originElevation"
+      }
+    },
+    "cameraCount": 5,
+    "horizontalFovDegrees": 65,
+    "geometryMutableInGate3": false,
+    "viewAdaptation": "projection-only; world positions never move per viewport"
+  },
+  "reviewMoments": [
+    {
+      "id": "day",
+      "profile": "afternoon",
+      "label": "THURSDAY AFTERNOON"
+    },
+    {
+      "id": "dusk",
+      "profile": "golden-hour",
+      "label": "THURSDAY DUSK"
+    },
+    {
+      "id": "night",
+      "profile": "night",
+      "label": "FIRST NIGHT"
+    }
+  ],
+  "cameras": [
+    {
+      "id": "lower-gate",
+      "label": "Lower gate check-in",
+      "sourceClass": "approved-gate1-review-camera",
+      "horizontalFovDegrees": 65,
+      "positionWorld": [
+        340,
+        12.092426,
+        -20
+      ],
+      "targetWorld": [
+        320,
+        10.958095,
+        -55
+      ]
+    },
+    {
+      "id": "lower-level",
+      "label": "Lower camping choices",
+      "sourceClass": "approved-gate1-review-camera",
+      "horizontalFovDegrees": 65,
+      "positionWorld": [
+        300,
+        8.499339,
+        -105
+      ],
+      "targetWorld": [
+        255,
+        8.187831,
+        -130
+      ]
+    },
+    {
+      "id": "upper-parking",
+      "label": "West upper parking",
+      "sourceClass": "approved-gate1-review-camera",
+      "horizontalFovDegrees": 65,
+      "positionWorld": [
+        -130,
+        28.513934,
+        -15
+      ],
+      "targetWorld": [
+        -110,
+        27.757365,
+        -30
+      ]
+    },
+    {
+      "id": "middle-earth",
+      "label": "Middle Earth relationship",
+      "sourceClass": "approved-gate1-review-camera",
+      "horizontalFovDegrees": 65,
+      "positionWorld": [
+        78,
+        16.804225,
+        -101
+      ],
+      "targetWorld": [
+        100,
+        16.049686,
+        -115
+      ]
+    },
+    {
+      "id": "night-composition",
+      "label": "First-night composition",
+      "sourceClass": "approved-gate1-review-camera",
+      "horizontalFovDegrees": 65,
+      "positionWorld": [
+        60,
+        17.459583,
+        -99
+      ],
+      "targetWorld": [
+        100,
+        16.049686,
+        -115
+      ]
+    }
+  ],
+  "overviewContext": {
+    "kind": "measured-plan-context-not-a-composition-camera",
+    "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-1/gate1-measured-plan.png"
+  }
+}

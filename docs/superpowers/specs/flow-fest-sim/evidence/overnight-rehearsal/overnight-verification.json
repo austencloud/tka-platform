@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "artifactClass": "operator-verification-summary-not-formal-gate-evidence",
+  "verifiedOn": "2026-08-26",
+  "authorizationDecisionId": "PW3IurUeD2ziVyqV4yQO",
+  "formalGateState": {
+    "currentGate": 2,
+    "gate2Status": "ready-for-review",
+    "gate2Approval": null,
+    "laterGates": "pending"
+  },
+  "supportingArtifacts": [
+    "docs/superpowers/specs/flow-fest-sim/evidence/overnight-rehearsal/browser-runtime-snapshot.json",
+    "docs/superpowers/specs/flow-fest-sim/evidence/overnight-rehearsal/browser-console-snapshot.json"
+  ],
+  "sourceHashes": {
+    "gate2RuntimeContract": "ff43b8373da6a6313923f275c85f4bfad2fc02e4b2dcdc5efeb8bf4bbc6968cf",
+    "simulationContract": "356b53d95b2da5877ba26000334400a1f273bb0847f19d8c6ea145402d29f099",
+    "progressOwner": "3b7b5a82a3eaad931fed411b1905efb88cd947917ce743cc84d7222ea8bb8e40",
+    "routePage": "2cfd1e47c0b89f333ff3f9de500198b008770755b68a23845458d745412de0fe",
+    "productionLayer": "0f4dfa66bbe98a60ed41b272f6e234daf3defbffe43929c9248ba05499010789",
+    "productionGeometry": "8143279964f5d1d3e900757b2a8b24f9362f9287375a72249568ea6c56929e6c",
+    "progressTests": "8c2c890b538878bc806b2f59a4796357046074cb928c85f48028f0f54a55a24e",
+    "geometryTests": "f0571b8d22df1ef63a6510ce9251853f01b9eec4bac23d2ed7bf18c647a2f962",
+    "rehearsalSpec": "7b8a88bc8bb191707bb5eb04a8031533972e555f3617f9e2df711f0481288eac",
+    "browserRuntimeSnapshot": "2571d394571b3598ceb057807d010e00106a740be4b365f88e9bdd93cee9813c",
+    "browserConsoleSnapshot": "37afbc160638d09861106beb822b898da290cd6c097da2c99c5471918217383e"
+  },
+  "runtime": {
+    "route": "/test/flow-fest-sim",
+    "contractFingerprint": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d",
+    "sourceClasses": {
+      "terrain": "measured-dtm",
+      "canopy": "interpreted-from-measured-high-returns",
+      "festival": "authored-fictional-rehearsal"
+    },
+    "productionCounts": {
+      "interpretedTrees": 647,
+      "tents": 38,
+      "vehicles": 9,
+      "festivalPeople": 36,
+      "selectedBranchLanterns": 37,
+      "capturedBranch": "lower-tent"
+    },
+    "campSpatialAudit": {
+      "routeViolations": 0,
+      "minimumTentCenterDistanceMeters": 3.1415426330422105,
+      "minimumVehicleCenterDistanceMeters": 5.773141830334144,
+      "minimumTentVehicleDistanceMeters": 4.383245648650278
+    },
+    "productionCollision": {
+      "invisibleTopologyScreenActive": false,
+      "topologyBarrierCellsActive": 0,
+      "staticVisibleSolidObjects": 695,
+      "campEstablishedVisibleSolidObjects": 1,
+      "mergedStaticColliderBodies": 1,
+      "mergedColliderBodiesAfterCamp": 2
+    },
+    "readinessMilliseconds": {
+      "sourceVerified": 181.7,
+      "geometryReady": 2139.5,
+      "collisionReady": 2416.3,
+      "playerReady": 2417.6
+    },
+    "settledDesktopPerformance": {
+      "artifact": "browser-runtime-snapshot.json",
+      "captureState": "lower-tent/night-free-roam/night",
+      "sampleCount": 240,
+      "p50FrameMilliseconds": 16.7,
+      "p95FrameMilliseconds": 16.7,
+      "p99FrameMilliseconds": 16.8,
+      "drawCalls": 20,
+      "renderedTriangles": 2230364,
+      "geometries": 18,
+      "textures": 5,
+      "missingColliderFrames": 0
+    }
+  },
+  "simulation": {
+    "masterSeed": "flow-fest-thursday-01",
+    "locomotion": {
+      "productionMetersPerSecond": 4.2,
+      "observedOneSecondDisplacementMeters": 4.1994485520138225,
+      "sprint": {
+        "enabled": true,
+        "key": "Shift",
+        "multiplier": 1.8,
+        "observedOneSecondDisplacementMeters": 7.8022276936608765
+      },
+      "crouch": {
+        "enabled": true,
+        "keys": ["Control", "C"],
+        "observedBodyDropMeters": 0.3000001907348633,
+        "observedReleaseRecoveryMeters": 0.3000001907348633
+      },
+      "jump": {
+        "enabled": true,
+        "key": "Space",
+        "force": 5,
+        "observedRiseMeters": 1.3584775924682617
+      },
+      "surveyMetersPerSecond": 1.2,
+      "surveyTimingPreserved": true
+    },
+    "branches": ["lower-tent", "upper-tent", "car-camp"],
+    "guardedPhases": [
+      "gate-check-in",
+      "choose-camp",
+      "camp-arrival",
+      "vehicle-settle",
+      "walk-home",
+      "make-camp",
+      "walk-to-festival",
+      "festival-night",
+      "night-free-roam",
+      "night-return",
+      "morning"
+    ],
+    "vehicleBehavior": "registered-view-button-staging-with-null-speed-and-duration; no route traversal claimed",
+    "materialWorldChanges": [
+      "making camp reveals the selected branch's player tent",
+      "night-free-roam separates the lit gathering from the later trip home"
+    ],
+    "sessionContract": "versioned, fingerprint-locked, and rejected unless phase/branch/moment/completed steps form a reachable reducer state"
+  },
+  "browser": {
+    "consoleErrors": 0,
+    "consoleArtifact": "browser-console-snapshot.json",
+    "knownWarnings": [
+      "Rapier emits its pre-existing deprecated initialization-parameter warning from the shared Gate 2 owner."
+    ],
+    "lighthouseSnapshot": {
+      "accessibility": 100,
+      "bestPractices": 100,
+      "seo": 100,
+      "agenticBrowsing": 50,
+      "agenticFailure": "Repository-level llms.txt recommendation; not a Flow Fest route accessibility defect."
+    },
+    "viewports": [
+      { "width": 1920, "height": 1080, "status": "visually-inspected" },
+      { "width": 2560, "height": 1440, "status": "visually-inspected" },
+      { "width": 3840, "height": 2160, "status": "visually-inspected" },
+      { "width": 1440, "height": 900, "status": "visually-inspected" },
+      {
+        "width": 820,
+        "height": 1180,
+        "status": "visually-inspected-layout-only"
+      },
+      {
+        "width": 960,
+        "height": 412,
+        "status": "visually-inspected-layout-only"
+      },
+      {
+        "width": 375,
+        "height": 667,
+        "status": "visually-inspected-layout-only"
+      }
+    ],
+    "visualStatesInspected": [
+      "afternoon-gate-check-in",
+      "camp-choice",
+      "golden-hour-upper-parking-and-camp",
+      "night-heart-free-roam",
+      "dawn-morning"
+    ]
+  },
+  "verification": {
+    "focusedTests": "21/21 passed across four files",
+    "workspaceCheck": "svelte-check found 0 errors and 0 warnings after the production collision correction",
+    "finalRouteCompilation": "live Vite Svelte route compiled after the adversarial corrections; browser console contained zero errors",
+    "scopedLint": "0 errors and 0 warnings in the simulation contract, progress owner, and production-geometry owner",
+    "gate2RuntimeVerifier": "10/10 passed",
+    "gate2OfflineVerifier": "13/13 passed",
+    "sceneGateManifest": "PASS"
+  },
+  "knownLimits": [
+    "Vehicle legs are registered-view button staging and do not claim traversal, a drivable vehicle controller, or invented travel timing.",
+    "Visible tree trunks, tents, vehicles, mast, and fire ring are production collision authority alongside measured terrain; crowd silhouettes and route lanterns remain non-colliding.",
+    "Resume restores a guarded checkpoint and registered camera, not an exact mid-stride player pose.",
+    "Tablet and phone captures prove layout only; first-person touch locomotion is not implemented.",
+    "Tree placement is interpreted from measured high returns and does not claim literal trunk locations or species.",
+    "Festival objects and people are authored rehearsal fiction, not permanent-structure survey truth.",
+    "Volumetric-fire and sky texture provenance needs a release audit before external shipping.",
+    "Spatial audio, performer choreography, drivable vehicles, and field-recorded GNSS remain later capabilities.",
+    "The performance result is one refresh-quantized RTX 4090 desktop snapshot, not a portable-device or sustained thermal benchmark."
+  ]
+}

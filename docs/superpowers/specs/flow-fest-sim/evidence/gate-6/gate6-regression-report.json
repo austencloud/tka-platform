@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "gate": 6,
+  "status": "passed",
+  "capturedAt": "2026-08-27T04:04:41Z",
+  "route": "/test/flow-fest-sim?gate6=1&capture=1",
+  "coordinateFingerprint": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d",
+  "acceptanceWalk": {
+    "branch": "lower-tent",
+    "phase": "morning",
+    "area": "selected-camp",
+    "transitions": 8,
+    "complete": true,
+    "backtracking": true,
+    "reentry": true,
+    "fireJam": "completed",
+    "playerWorldMeters": {
+      "x": 286,
+      "z": -130
+    }
+  },
+  "persistence": {
+    "beforeReload": {
+      "phase": "morning",
+      "area": "selected-camp",
+      "x": 286,
+      "z": -130
+    },
+    "afterReload": {
+      "phase": "morning",
+      "area": "selected-camp",
+      "x": 286,
+      "z": -130,
+      "complete": true,
+      "backtracking": true,
+      "fireJam": "completed"
+    },
+    "positionDriftMeters": 0,
+    "audioGestureReset": true
+  },
+  "inheritedGate5": {
+    "source": "docs/superpowers/specs/flow-fest-sim/evidence/gate-5/gate5-state-persistence-report.json",
+    "registeredLandmarkTransitions": 7,
+    "reentry": true,
+    "oneAudioGraph": true,
+    "longLivedAudioSources": 3
+  },
+  "tests": {
+    "command": "pnpm exec vitest run --config tests/config/vitest.config.ts plus the ten focused Flow Fest and permission-boundary files",
+    "files": 10,
+    "passed": 54,
+    "failed": 0
+  },
+  "typecheck": {
+    "command": "pnpm run check",
+    "errors": 0,
+    "warnings": 0
+  },
+  "checks": [
+    {
+      "name": "acceptance-state",
+      "status": "passed",
+      "evidence": "The lower-tent run reaches the selected camp on Friday morning with eight recorded crossings, backtracking, re-entry, and the fire jam complete."
+    },
+    {
+      "name": "reload-persistence",
+      "status": "passed",
+      "evidence": "Reload restores the exact 286, -130 camp position with zero drift and retains the completed journey, fire jam, and EUC state."
+    },
+    {
+      "name": "journey-regression",
+      "status": "passed",
+      "evidence": "The Gate 5 integrated evidence still proves gate, selected camp, west parking, festival exit, re-entry, final return, and one persistent audio graph."
+    },
+    {
+      "name": "focused-tests",
+      "status": "passed",
+      "evidence": "Ten focused files passed 54 tests with zero failures on the final runtime sources."
+    },
+    {
+      "name": "typecheck",
+      "status": "passed",
+      "evidence": "The final Svelte and TypeScript check completed with zero errors and zero warnings."
+    }
+  ]
+}

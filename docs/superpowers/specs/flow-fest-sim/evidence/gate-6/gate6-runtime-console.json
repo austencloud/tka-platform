@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "gate": 6,
+  "status": "passed",
+  "capturedAt": "2026-08-27T03:54:45.575Z",
+  "route": "/test/flow-fest-sim?gate6=1&capture=1",
+  "applicationErrors": 0,
+  "applicationWarnings": [
+    {
+      "message": "using deprecated parameters for the initialization function; pass a single object instead",
+      "occurrences": 2,
+      "classification": "existing Rapier initialization diagnostic across two navigations"
+    }
+  ],
+  "ignoredBrowserExtensionDiagnostics": {
+    "origin": "chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn",
+    "occurrences": 12,
+    "reason": "MetaMask content-script diagnostics are outside the application origin and codebase."
+  },
+  "viteConnectionDiagnostics": 4,
+  "checks": [
+    {
+      "name": "runtime-console",
+      "status": "passed",
+      "evidence": "The task-owned Gate 6 tab produced zero application errors across the acceptance run and final reload."
+    }
+  ]
+}

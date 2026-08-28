@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "gate": 5,
+  "status": "passed",
+  "capturedAt": "2026-08-27T02:22:08.741Z",
+  "route": "/test/flow-fest-sim?gate5=1&capture=1",
+  "sequence": [
+    "lower-gate",
+    "selected-camp",
+    "west-parking",
+    "selected-camp",
+    "festival",
+    "selected-camp",
+    "festival",
+    "selected-camp"
+  ],
+  "final": {
+    "area": "selected-camp",
+    "audioPlaying": true,
+    "audioUnlocked": true,
+    "backtracking": true,
+    "complete": true,
+    "fire": "completed",
+    "graphBuilds": 1,
+    "layer": "camp",
+    "layout": [
+      1920,
+      1080
+    ],
+    "phase": "morning",
+    "reentry": true,
+    "sourceStarts": 3,
+    "transitions": 7,
+    "x": 286,
+    "z": -130
+  },
+  "viewportMatrix": [
+    {
+      "id": "1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-5/gate5-festival-active-1920x1080.png"
+    },
+    {
+      "id": "2560x1440",
+      "width": 2560,
+      "height": 1440,
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-5/gate5-festival-active-2560x1440.png"
+    },
+    {
+      "id": "3840x2160",
+      "width": 3840,
+      "height": 2160,
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-5/gate5-festival-active-3840x2160.png"
+    },
+    {
+      "id": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-5/gate5-festival-active-1440x900.png"
+    },
+    {
+      "id": "820x1180",
+      "width": 820,
+      "height": 1180,
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-5/gate5-festival-active-820x1180.png"
+    },
+    {
+      "id": "960x412",
+      "width": 960,
+      "height": 412,
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-5/gate5-festival-active-960x412.png"
+    },
+    {
+      "id": "375x812",
+      "width": 375,
+      "height": 812,
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-5/gate5-festival-active-375x812.png"
+    }
+  ],
+  "runtimeConsole": {
+    "errors": 0,
+    "warnings": [
+      "using deprecated parameters for the initialization function; pass a single object instead",
+      "using deprecated parameters for the initialization function; pass a single object instead"
+    ]
+  }
+}

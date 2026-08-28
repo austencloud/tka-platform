@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "route": "/test/flow-fest-sim",
+  "capturedAt": "2026-08-26T20:31:29.2650396Z",
+  "status": "gate-2-revision-candidate-ready-for-review",
+  "gateBoundary": {
+    "formalCurrentGate": 2,
+    "gate2Approval": null,
+    "gate3Advanced": false,
+    "reason": "Austen authorized an autonomous Gate 2 revision after rejecting the spatial feel. No unseen visual approval was inferred."
+  },
+  "coordinateAuthority": {
+    "terrain": "full-resolution 1 m DTM",
+    "orthophoto": "checked geospatial package",
+    "worldAxes": "x east, y up, z south",
+    "connectorVertices": "verbatim Gate 1 Austen trace",
+    "coordinatePayloadSha256": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d"
+  },
+  "siteFidelity": {
+    "lidarCanopyPeaks": 427,
+    "minimumCanopyPeakSpacingMeters": 7.615773105863909,
+    "canonicalPathSurfaces": 12,
+    "tracedConnectorSurfaces": 7,
+    "campRouteViolations": 0,
+    "sourceClassification": {
+      "terrain": "measured-dtm",
+      "canopy": "lidar-derived-local-canopy-peaks",
+      "paths": "canonical-route-surfaces-with-source-classification",
+      "festival": "authored-fictional-rehearsal"
+    }
+  },
+  "locomotionCapture": {
+    "cameraMode": "first_person",
+    "controllerReady": true,
+    "walk": {
+      "configuredMetersPerSecond": 4.2,
+      "inputSeconds": 1,
+      "observedHorizontalDistanceMeters": 4.268531363361404
+    },
+    "sprint": {
+      "configuredMultiplier": 1.8,
+      "inputSeconds": 1,
+      "observedHorizontalDistanceMeters": 7.690153769593949
+    },
+    "crouch": {
+      "input": "ControlLeft",
+      "observedCapsuleHalfHeightMeters": 0.25
+    },
+    "jump": {
+      "configuredForce": 5,
+      "observedBodyRiseMetersAtSample": 1.2539999999999996
+    }
+  },
+  "visibleCollision": {
+    "invisibleTopologyScreenActive": false,
+    "afternoonStaticVisibleObjects": 473,
+    "activeBodies": 1,
+    "campEstablishedVisibleObjects": 0,
+    "festivalActiveVisibleObjects": 0,
+    "policy": "Measured terrain plus colliders derived from objects visible in the current world state. Camp and festival fixture colliders switch with their visual state."
+  },
+  "vehicleStaging": {
+    "timing": null,
+    "mode": "untimed-contract-endpoint-staging",
+    "branches": {
+      "lower-tent": {
+        "unload": [286, -130],
+        "settled": [-110, -30]
+      },
+      "upper-tent": {
+        "unload": [-62, -74],
+        "settled": [-110, -30]
+      },
+      "car-camp": {
+        "unload": [255, -130],
+        "settled": [255, -130]
+      }
+    }
+  },
+  "verification": {
+    "focusedVitest": "6 files passed; 28 tests passed",
+    "svelteCheck": "0 errors and 0 warnings",
+    "runtimeConsoleErrors": 0,
+    "runtimeConsoleWarnings": [
+      "Existing Rapier initialization deprecation warning: pass a single object instead."
+    ],
+    "cameraHorizontalFovDegrees": 65,
+    "viewportInspection": "desktop, 4K, laptop, tablet portrait, phone landscape, and phone portrait captured after site readiness"
+  },
+  "captures": [
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/overnight-rehearsal/site-fidelity-1440x900.webp",
+      "bytes": 64524,
+      "sha256": "aaff0b40f50d3050bd548c3bec8c77db7f63dc064b56401e65456b3c16a5bc40"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/overnight-rehearsal/site-fidelity-1920x1080.webp",
+      "bytes": 85324,
+      "sha256": "b85b3fe66293ccfdf997050a28fa630014d0dc567d7d314d2364673e3147d6de"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/overnight-rehearsal/site-fidelity-2560x1440.webp",
+      "bytes": 120796,
+      "sha256": "9b45e201d5ddb38ca735c5ecbdc407b42a0be1283068fd00e4d59369e1266349"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/overnight-rehearsal/site-fidelity-375x667.webp",
+      "bytes": 20118,
+      "sha256": "5dc66f9305be3ffa26c8868092c5d90ced5c11f42613ef5367e837c5330b83b2"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/overnight-rehearsal/site-fidelity-3840x2160.webp",
+      "bytes": 183640,
+      "sha256": "3257533435d7e916131bf5ba3f3b6669f2cfb377d24899fc9de4ce805f17e966"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/overnight-rehearsal/site-fidelity-820x1180.webp",
+      "bytes": 44314,
+      "sha256": "a08f5e72d2bc4dfe56a6b43bea336d0f778fd105d50a96404cf3880240736e40"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/overnight-rehearsal/site-fidelity-960x412.webp",
+      "bytes": 32822,
+      "sha256": "527e559e54f290f6c332626187ee4d2924eaad93a9ec8aa333b1d26be22597ba"
+    }
+  ],
+  "sourceHashes": [
+    {
+      "path": "packages/camera-3d/src/lib/types.ts",
+      "sha256": "d2525fb2d5ad688ebb20837b991307f038c09c5a08c47029f3066920b5c2953f"
+    },
+    {
+      "path": "packages/camera-3d/src/lib/threlte-context-value.ts",
+      "sha256": "aab24bac9078e77f591bcab3258384698d102fbfade80ca81d26d49db7279c14"
+    },
+    {
+      "path": "packages/camera-3d/src/lib/components/UnifiedCameraController.svelte",
+      "sha256": "bdb5f943b172c26652c0c3b8ded8aaecefe14710e5fef3d86f70ef52a83cbfd5"
+    },
+    {
+      "path": "src/lib/shared/3d/physics/player-controller.ts",
+      "sha256": "25e94cc12190cb9f62ea8b8e2b2b2cde3070fe9a708e94c261c1ceb37234afa1"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/domain/flow-fest-simulation-contract.ts",
+      "sha256": "bcbf965909627f536a56e81619d0a44ede4df78aec152009d3376ace7116a954"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/state/flow-fest-progress.ts",
+      "sha256": "391b5fbae0d8b90a4b5e026a8c5a4a6d45652ba3ecb440641ff584ec3632116b"
+    },
+    {
+      "path": "src/routes/test/flow-fest-graybox/FlowFestGrayboxWalkScene.svelte",
+      "sha256": "4f334065bda3f99a2e56da2d1f7bceb2563ba7fb298f3aff27554396a0ce30f0"
+    },
+    {
+      "path": "src/routes/test/flow-fest-graybox/flow-fest-review-geometry.ts",
+      "sha256": "e151173940a6e6fae3af2bc3419727bc9812cfa807ccba9402ca09bbe90dc3e0"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/+page.svelte",
+      "sha256": "b3c40a159e1656a87b9a8a1d6bf52a47319ffffebab9ac342443905d173fa200"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/FlowFestProductionLayer.svelte",
+      "sha256": "f4a92b2ece19f693a4b7ce9a6bc7c828fc41fdbd2957f142c01db7b786ec9f07"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/flow-fest-production-geometry.ts",
+      "sha256": "8692abe12edfb94360a0b4c7e7790d08f598e7a6416bc4c261c0408bd74564fe"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/flow-fest-site-fidelity.ts",
+      "sha256": "d7e293fe231f0f52a2a036dd078625874ca56b07e54bf98317fb641fc3c1da22"
+    }
+  ],
+  "knownLimits": [
+    "LiDAR canopy peaks are deterministic vegetation candidates, not surveyed trunk centers or species claims.",
+    "The bridge and permanent structure footprints are not source-locked yet, so no guessed structure is presented as measured truth.",
+    "Vehicle legs stage exact registered endpoints without inventing a travel speed or claiming drivable vehicle support.",
+    "Festival tents, people, lights, and fire are authored rehearsal dressing; the fictional night heart remains hidden until the night state.",
+    "Phone captures verify layout only. Touch locomotion is not implemented."
+  ]
+}

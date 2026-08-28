@@ -1,0 +1,739 @@
+{
+  "schemaVersion": 2,
+  "sceneId": "flow-fest-sim-earth",
+  "gate": 3,
+  "capturedAt": "2026-08-26T23:47:50.741Z",
+  "coordinateFingerprint": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d",
+  "viewport": {
+    "width": 1920,
+    "height": 1080,
+    "devicePixelRatio": 1
+  },
+  "route": "/test/flow-fest-sim?gate3=1&camera=<id>&moment=<day|dusk|night>&branch=lower-tent",
+  "captures": [
+    {
+      "cameraId": "lower-gate",
+      "momentId": "day",
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/day-lower-gate.webp",
+      "camera": {
+        "id": "lower-gate",
+        "registeredPositionWorld": [340, 12.092426, -20],
+        "registeredTargetWorld": [320, 10.958095, -55],
+        "registeredHorizontalFovDegrees": 65,
+        "actualEyePositionWorld": [340, 12.092526512145996, -20],
+        "positionErrorMeters": 0.00010051214599648972,
+        "projection": {
+          "registeredHorizontalFovDegrees": 65,
+          "actualVerticalFovDegrees": 39.62472797791933,
+          "actualHorizontalFovDegrees": 65,
+          "aspect": 1.7683333333333333
+        }
+      },
+      "spatialLock": {
+        "canonicalPathSurfaces": 12,
+        "lidarCanopyPeaks": 427,
+        "contractCameraCount": 5
+      },
+      "counts": {
+        "interpretedTrees": 427,
+        "tents": 38,
+        "vehicles": 9,
+        "festivalPeople": 24,
+        "routeLanterns": 37,
+        "sitePathSurfaces": 12
+      },
+      "festivalCommunity": {
+        "spectators": 16,
+        "performers": 8,
+        "fireCenter": {
+          "x": 89,
+          "z": -113.5,
+          "y": 14.61505126953125
+        },
+        "ledCircleCenter": {
+          "x": 120,
+          "z": -103,
+          "y": 14.294586181640625
+        },
+        "avatarsReady": 0
+      },
+      "consoleErrors": 0
+    },
+    {
+      "cameraId": "lower-level",
+      "momentId": "day",
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/day-lower-level.webp",
+      "camera": {
+        "id": "lower-level",
+        "registeredPositionWorld": [300, 8.499339, -105],
+        "registeredTargetWorld": [255, 8.187831, -130],
+        "registeredHorizontalFovDegrees": 65,
+        "actualEyePositionWorld": [300, 8.499339179992676, -105],
+        "positionErrorMeters": 1.7999267498680638e-7,
+        "projection": {
+          "registeredHorizontalFovDegrees": 65,
+          "actualVerticalFovDegrees": 39.62472797791933,
+          "actualHorizontalFovDegrees": 65,
+          "aspect": 1.7683333333333333
+        }
+      },
+      "spatialLock": {
+        "canonicalPathSurfaces": 12,
+        "lidarCanopyPeaks": 427,
+        "contractCameraCount": 5
+      },
+      "counts": {
+        "interpretedTrees": 427,
+        "tents": 38,
+        "vehicles": 9,
+        "festivalPeople": 24,
+        "routeLanterns": 37,
+        "sitePathSurfaces": 12
+      },
+      "festivalCommunity": {
+        "spectators": 16,
+        "performers": 8,
+        "fireCenter": {
+          "x": 89,
+          "z": -113.5,
+          "y": 14.61505126953125
+        },
+        "ledCircleCenter": {
+          "x": 120,
+          "z": -103,
+          "y": 14.294586181640625
+        },
+        "avatarsReady": 0
+      },
+      "consoleErrors": 0
+    },
+    {
+      "cameraId": "upper-parking",
+      "momentId": "day",
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/day-upper-parking.webp",
+      "camera": {
+        "id": "upper-parking",
+        "registeredPositionWorld": [-130, 28.513934, -15],
+        "registeredTargetWorld": [-110, 27.757365, -30],
+        "registeredHorizontalFovDegrees": 65,
+        "actualEyePositionWorld": [-130, 28.51393325805664, -15],
+        "positionErrorMeters": 7.419433600830416e-7,
+        "projection": {
+          "registeredHorizontalFovDegrees": 65,
+          "actualVerticalFovDegrees": 39.62472797791933,
+          "actualHorizontalFovDegrees": 65,
+          "aspect": 1.7683333333333333
+        }
+      },
+      "spatialLock": {
+        "canonicalPathSurfaces": 12,
+        "lidarCanopyPeaks": 427,
+        "contractCameraCount": 5
+      },
+      "counts": {
+        "interpretedTrees": 427,
+        "tents": 38,
+        "vehicles": 9,
+        "festivalPeople": 24,
+        "routeLanterns": 37,
+        "sitePathSurfaces": 12
+      },
+      "festivalCommunity": {
+        "spectators": 16,
+        "performers": 8,
+        "fireCenter": {
+          "x": 89,
+          "z": -113.5,
+          "y": 14.61505126953125
+        },
+        "ledCircleCenter": {
+          "x": 120,
+          "z": -103,
+          "y": 14.294586181640625
+        },
+        "avatarsReady": 0
+      },
+      "consoleErrors": 0
+    },
+    {
+      "cameraId": "middle-earth",
+      "momentId": "day",
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/day-middle-earth.webp",
+      "camera": {
+        "id": "middle-earth",
+        "registeredPositionWorld": [78, 16.804225, -101],
+        "registeredTargetWorld": [100, 16.049686, -115],
+        "registeredHorizontalFovDegrees": 65,
+        "actualEyePositionWorld": [78, 16.804225044250487, -101],
+        "positionErrorMeters": 4.425048771850015e-8,
+        "projection": {
+          "registeredHorizontalFovDegrees": 65,
+          "actualVerticalFovDegrees": 39.62472797791933,
+          "actualHorizontalFovDegrees": 65,
+          "aspect": 1.7683333333333333
+        }
+      },
+      "spatialLock": {
+        "canonicalPathSurfaces": 12,
+        "lidarCanopyPeaks": 427,
+        "contractCameraCount": 5
+      },
+      "counts": {
+        "interpretedTrees": 427,
+        "tents": 38,
+        "vehicles": 9,
+        "festivalPeople": 24,
+        "routeLanterns": 37,
+        "sitePathSurfaces": 12
+      },
+      "festivalCommunity": {
+        "spectators": 16,
+        "performers": 8,
+        "fireCenter": {
+          "x": 89,
+          "z": -113.5,
+          "y": 14.61505126953125
+        },
+        "ledCircleCenter": {
+          "x": 120,
+          "z": -103,
+          "y": 14.294586181640625
+        },
+        "avatarsReady": 0
+      },
+      "consoleErrors": 0
+    },
+    {
+      "cameraId": "night-composition",
+      "momentId": "day",
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/day-night-composition.webp",
+      "camera": {
+        "id": "night-composition",
+        "registeredPositionWorld": [60, 17.459583, -99],
+        "registeredTargetWorld": [100, 16.049686, -115],
+        "registeredHorizontalFovDegrees": 65,
+        "actualEyePositionWorld": [60, 17.459583358764647, -99],
+        "positionErrorMeters": 3.5876464821171794e-7,
+        "projection": {
+          "registeredHorizontalFovDegrees": 65,
+          "actualVerticalFovDegrees": 39.62472797791933,
+          "actualHorizontalFovDegrees": 65,
+          "aspect": 1.7683333333333333
+        }
+      },
+      "spatialLock": {
+        "canonicalPathSurfaces": 12,
+        "lidarCanopyPeaks": 427,
+        "contractCameraCount": 5
+      },
+      "counts": {
+        "interpretedTrees": 427,
+        "tents": 38,
+        "vehicles": 9,
+        "festivalPeople": 24,
+        "routeLanterns": 37,
+        "sitePathSurfaces": 12
+      },
+      "festivalCommunity": {
+        "spectators": 16,
+        "performers": 8,
+        "fireCenter": {
+          "x": 89,
+          "z": -113.5,
+          "y": 14.61505126953125
+        },
+        "ledCircleCenter": {
+          "x": 120,
+          "z": -103,
+          "y": 14.294586181640625
+        },
+        "avatarsReady": 0
+      },
+      "consoleErrors": 0
+    },
+    {
+      "cameraId": "lower-gate",
+      "momentId": "dusk",
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/dusk-lower-gate.webp",
+      "camera": {
+        "id": "lower-gate",
+        "registeredPositionWorld": [340, 12.092426, -20],
+        "registeredTargetWorld": [320, 10.958095, -55],
+        "registeredHorizontalFovDegrees": 65,
+        "actualEyePositionWorld": [340, 12.092526512145996, -20],
+        "positionErrorMeters": 0.00010051214599648972,
+        "projection": {
+          "registeredHorizontalFovDegrees": 65,
+          "actualVerticalFovDegrees": 39.62472797791933,
+          "actualHorizontalFovDegrees": 65,
+          "aspect": 1.7683333333333333
+        }
+      },
+      "spatialLock": {
+        "canonicalPathSurfaces": 12,
+        "lidarCanopyPeaks": 427,
+        "contractCameraCount": 5
+      },
+      "counts": {
+        "interpretedTrees": 427,
+        "tents": 38,
+        "vehicles": 9,
+        "festivalPeople": 24,
+        "routeLanterns": 37,
+        "sitePathSurfaces": 12
+      },
+      "festivalCommunity": {
+        "spectators": 16,
+        "performers": 8,
+        "fireCenter": {
+          "x": 89,
+          "z": -113.5,
+          "y": 14.61505126953125
+        },
+        "ledCircleCenter": {
+          "x": 120,
+          "z": -103,
+          "y": 14.294586181640625
+        },
+        "avatarsReady": 0
+      },
+      "consoleErrors": 0
+    },
+    {
+      "cameraId": "lower-level",
+      "momentId": "dusk",
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/dusk-lower-level.webp",
+      "camera": {
+        "id": "lower-level",
+        "registeredPositionWorld": [300, 8.499339, -105],
+        "registeredTargetWorld": [255, 8.187831, -130],
+        "registeredHorizontalFovDegrees": 65,
+        "actualEyePositionWorld": [300, 8.499339179992676, -105],
+        "positionErrorMeters": 1.7999267498680638e-7,
+        "projection": {
+          "registeredHorizontalFovDegrees": 65,
+          "actualVerticalFovDegrees": 39.62472797791933,
+          "actualHorizontalFovDegrees": 65,
+          "aspect": 1.7683333333333333
+        }
+      },
+      "spatialLock": {
+        "canonicalPathSurfaces": 12,
+        "lidarCanopyPeaks": 427,
+        "contractCameraCount": 5
+      },
+      "counts": {
+        "interpretedTrees": 427,
+        "tents": 38,
+        "vehicles": 9,
+        "festivalPeople": 24,
+        "routeLanterns": 37,
+        "sitePathSurfaces": 12
+      },
+      "festivalCommunity": {
+        "spectators": 16,
+        "performers": 8,
+        "fireCenter": {
+          "x": 89,
+          "z": -113.5,
+          "y": 14.61505126953125
+        },
+        "ledCircleCenter": {
+          "x": 120,
+          "z": -103,
+          "y": 14.294586181640625
+        },
+        "avatarsReady": 0
+      },
+      "consoleErrors": 0
+    },
+    {
+      "cameraId": "upper-parking",
+      "momentId": "dusk",
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/dusk-upper-parking.webp",
+      "camera": {
+        "id": "upper-parking",
+        "registeredPositionWorld": [-130, 28.513934, -15],
+        "registeredTargetWorld": [-110, 27.757365, -30],
+        "registeredHorizontalFovDegrees": 65,
+        "actualEyePositionWorld": [
+          -130, 28.51103218078613, -15.000000953674316
+        ],
+        "positionErrorMeters": 0.0029018193705790153,
+        "projection": {
+          "registeredHorizontalFovDegrees": 65,
+          "actualVerticalFovDegrees": 39.62472797791933,
+          "actualHorizontalFovDegrees": 65,
+          "aspect": 1.7683333333333333
+        }
+      },
+      "spatialLock": {
+        "canonicalPathSurfaces": 12,
+        "lidarCanopyPeaks": 427,
+        "contractCameraCount": 5
+      },
+      "counts": {
+        "interpretedTrees": 427,
+        "tents": 38,
+        "vehicles": 9,
+        "festivalPeople": 24,
+        "routeLanterns": 37,
+        "sitePathSurfaces": 12
+      },
+      "festivalCommunity": {
+        "spectators": 16,
+        "performers": 8,
+        "fireCenter": {
+          "x": 89,
+          "z": -113.5,
+          "y": 14.61505126953125
+        },
+        "ledCircleCenter": {
+          "x": 120,
+          "z": -103,
+          "y": 14.294586181640625
+        },
+        "avatarsReady": 0
+      },
+      "consoleErrors": 0
+    },
+    {
+      "cameraId": "middle-earth",
+      "momentId": "dusk",
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/dusk-middle-earth.webp",
+      "camera": {
+        "id": "middle-earth",
+        "registeredPositionWorld": [78, 16.804225, -101],
+        "registeredTargetWorld": [100, 16.049686, -115],
+        "registeredHorizontalFovDegrees": 65,
+        "actualEyePositionWorld": [78, 16.804225044250487, -101],
+        "positionErrorMeters": 4.425048771850015e-8,
+        "projection": {
+          "registeredHorizontalFovDegrees": 65,
+          "actualVerticalFovDegrees": 39.62472797791933,
+          "actualHorizontalFovDegrees": 65,
+          "aspect": 1.7683333333333333
+        }
+      },
+      "spatialLock": {
+        "canonicalPathSurfaces": 12,
+        "lidarCanopyPeaks": 427,
+        "contractCameraCount": 5
+      },
+      "counts": {
+        "interpretedTrees": 427,
+        "tents": 38,
+        "vehicles": 9,
+        "festivalPeople": 24,
+        "routeLanterns": 37,
+        "sitePathSurfaces": 12
+      },
+      "festivalCommunity": {
+        "spectators": 16,
+        "performers": 8,
+        "fireCenter": {
+          "x": 89,
+          "z": -113.5,
+          "y": 14.61505126953125
+        },
+        "ledCircleCenter": {
+          "x": 120,
+          "z": -103,
+          "y": 14.294586181640625
+        },
+        "avatarsReady": 0
+      },
+      "consoleErrors": 0
+    },
+    {
+      "cameraId": "night-composition",
+      "momentId": "dusk",
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/dusk-night-composition.webp",
+      "camera": {
+        "id": "night-composition",
+        "registeredPositionWorld": [60, 17.459583, -99],
+        "registeredTargetWorld": [100, 16.049686, -115],
+        "registeredHorizontalFovDegrees": 65,
+        "actualEyePositionWorld": [60, 17.459583358764647, -99],
+        "positionErrorMeters": 3.5876464821171794e-7,
+        "projection": {
+          "registeredHorizontalFovDegrees": 65,
+          "actualVerticalFovDegrees": 39.62472797791933,
+          "actualHorizontalFovDegrees": 65,
+          "aspect": 1.7683333333333333
+        }
+      },
+      "spatialLock": {
+        "canonicalPathSurfaces": 12,
+        "lidarCanopyPeaks": 427,
+        "contractCameraCount": 5
+      },
+      "counts": {
+        "interpretedTrees": 427,
+        "tents": 38,
+        "vehicles": 9,
+        "festivalPeople": 24,
+        "routeLanterns": 37,
+        "sitePathSurfaces": 12
+      },
+      "festivalCommunity": {
+        "spectators": 16,
+        "performers": 8,
+        "fireCenter": {
+          "x": 89,
+          "z": -113.5,
+          "y": 14.61505126953125
+        },
+        "ledCircleCenter": {
+          "x": 120,
+          "z": -103,
+          "y": 14.294586181640625
+        },
+        "avatarsReady": 0
+      },
+      "consoleErrors": 0
+    },
+    {
+      "cameraId": "lower-gate",
+      "momentId": "night",
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/night-lower-gate.webp",
+      "camera": {
+        "id": "lower-gate",
+        "registeredPositionWorld": [340, 12.092426, -20],
+        "registeredTargetWorld": [320, 10.958095, -55],
+        "registeredHorizontalFovDegrees": 65,
+        "actualEyePositionWorld": [340, 12.092426376342774, -20],
+        "positionErrorMeters": 3.7634277383347126e-7,
+        "projection": {
+          "registeredHorizontalFovDegrees": 65,
+          "actualVerticalFovDegrees": 39.62472797791933,
+          "actualHorizontalFovDegrees": 65,
+          "aspect": 1.7683333333333333
+        }
+      },
+      "spatialLock": {
+        "canonicalPathSurfaces": 12,
+        "lidarCanopyPeaks": 427,
+        "contractCameraCount": 5
+      },
+      "counts": {
+        "interpretedTrees": 427,
+        "tents": 38,
+        "vehicles": 9,
+        "festivalPeople": 24,
+        "routeLanterns": 37,
+        "sitePathSurfaces": 12
+      },
+      "festivalCommunity": {
+        "spectators": 16,
+        "performers": 8,
+        "fireCenter": {
+          "x": 89,
+          "z": -113.5,
+          "y": 14.61505126953125
+        },
+        "ledCircleCenter": {
+          "x": 120,
+          "z": -103,
+          "y": 14.294586181640625
+        },
+        "avatarsReady": 24
+      },
+      "consoleErrors": 0
+    },
+    {
+      "cameraId": "lower-level",
+      "momentId": "night",
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/night-lower-level.webp",
+      "camera": {
+        "id": "lower-level",
+        "registeredPositionWorld": [300, 8.499339, -105],
+        "registeredTargetWorld": [255, 8.187831, -130],
+        "registeredHorizontalFovDegrees": 65,
+        "actualEyePositionWorld": [300, 8.499439315795899, -105],
+        "positionErrorMeters": 0.00010031579589764306,
+        "projection": {
+          "registeredHorizontalFovDegrees": 65,
+          "actualVerticalFovDegrees": 39.62472797791933,
+          "actualHorizontalFovDegrees": 65,
+          "aspect": 1.7683333333333333
+        }
+      },
+      "spatialLock": {
+        "canonicalPathSurfaces": 12,
+        "lidarCanopyPeaks": 427,
+        "contractCameraCount": 5
+      },
+      "counts": {
+        "interpretedTrees": 427,
+        "tents": 38,
+        "vehicles": 9,
+        "festivalPeople": 24,
+        "routeLanterns": 37,
+        "sitePathSurfaces": 12
+      },
+      "festivalCommunity": {
+        "spectators": 16,
+        "performers": 8,
+        "fireCenter": {
+          "x": 89,
+          "z": -113.5,
+          "y": 14.61505126953125
+        },
+        "ledCircleCenter": {
+          "x": 120,
+          "z": -103,
+          "y": 14.294586181640625
+        },
+        "avatarsReady": 24
+      },
+      "consoleErrors": 0
+    },
+    {
+      "cameraId": "upper-parking",
+      "momentId": "night",
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/night-upper-parking.webp",
+      "camera": {
+        "id": "upper-parking",
+        "registeredPositionWorld": [-130, 28.513934, -15],
+        "registeredTargetWorld": [-110, 27.757365, -30],
+        "registeredHorizontalFovDegrees": 65,
+        "actualEyePositionWorld": [
+          -130, 28.51103218078613, -15.000000953674316
+        ],
+        "positionErrorMeters": 0.0029018193705790153,
+        "projection": {
+          "registeredHorizontalFovDegrees": 65,
+          "actualVerticalFovDegrees": 39.62472797791933,
+          "actualHorizontalFovDegrees": 65,
+          "aspect": 1.7683333333333333
+        }
+      },
+      "spatialLock": {
+        "canonicalPathSurfaces": 12,
+        "lidarCanopyPeaks": 427,
+        "contractCameraCount": 5
+      },
+      "counts": {
+        "interpretedTrees": 427,
+        "tents": 38,
+        "vehicles": 9,
+        "festivalPeople": 24,
+        "routeLanterns": 37,
+        "sitePathSurfaces": 12
+      },
+      "festivalCommunity": {
+        "spectators": 16,
+        "performers": 8,
+        "fireCenter": {
+          "x": 89,
+          "z": -113.5,
+          "y": 14.61505126953125
+        },
+        "ledCircleCenter": {
+          "x": 120,
+          "z": -103,
+          "y": 14.294586181640625
+        },
+        "avatarsReady": 24
+      },
+      "consoleErrors": 0
+    },
+    {
+      "cameraId": "middle-earth",
+      "momentId": "night",
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/night-middle-earth.webp",
+      "camera": {
+        "id": "middle-earth",
+        "registeredPositionWorld": [78, 16.804225, -101],
+        "registeredTargetWorld": [100, 16.049686, -115],
+        "registeredHorizontalFovDegrees": 65,
+        "actualEyePositionWorld": [78, 16.804225044250487, -101],
+        "positionErrorMeters": 4.425048771850015e-8,
+        "projection": {
+          "registeredHorizontalFovDegrees": 65,
+          "actualVerticalFovDegrees": 39.62472797791933,
+          "actualHorizontalFovDegrees": 65,
+          "aspect": 1.7683333333333333
+        }
+      },
+      "spatialLock": {
+        "canonicalPathSurfaces": 12,
+        "lidarCanopyPeaks": 427,
+        "contractCameraCount": 5
+      },
+      "counts": {
+        "interpretedTrees": 427,
+        "tents": 38,
+        "vehicles": 9,
+        "festivalPeople": 24,
+        "routeLanterns": 37,
+        "sitePathSurfaces": 12
+      },
+      "festivalCommunity": {
+        "spectators": 16,
+        "performers": 8,
+        "fireCenter": {
+          "x": 89,
+          "z": -113.5,
+          "y": 14.61505126953125
+        },
+        "ledCircleCenter": {
+          "x": 120,
+          "z": -103,
+          "y": 14.294586181640625
+        },
+        "avatarsReady": 24
+      },
+      "consoleErrors": 0
+    },
+    {
+      "cameraId": "night-composition",
+      "momentId": "night",
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-3/frames/night-night-composition.webp",
+      "camera": {
+        "id": "night-composition",
+        "registeredPositionWorld": [60, 17.459583, -99],
+        "registeredTargetWorld": [100, 16.049686, -115],
+        "registeredHorizontalFovDegrees": 65,
+        "actualEyePositionWorld": [60, 17.459583358764647, -99],
+        "positionErrorMeters": 3.5876464821171794e-7,
+        "projection": {
+          "registeredHorizontalFovDegrees": 65,
+          "actualVerticalFovDegrees": 39.62472797791933,
+          "actualHorizontalFovDegrees": 65,
+          "aspect": 1.7683333333333333
+        }
+      },
+      "spatialLock": {
+        "canonicalPathSurfaces": 12,
+        "lidarCanopyPeaks": 427,
+        "contractCameraCount": 5
+      },
+      "counts": {
+        "interpretedTrees": 427,
+        "tents": 38,
+        "vehicles": 9,
+        "festivalPeople": 24,
+        "routeLanterns": 37,
+        "sitePathSurfaces": 12
+      },
+      "festivalCommunity": {
+        "spectators": 16,
+        "performers": 8,
+        "fireCenter": {
+          "x": 89,
+          "z": -113.5,
+          "y": 14.61505126953125
+        },
+        "ledCircleCenter": {
+          "x": 120,
+          "z": -103,
+          "y": 14.294586181640625
+        },
+        "avatarsReady": 24
+      },
+      "consoleErrors": 0
+    }
+  ]
+}

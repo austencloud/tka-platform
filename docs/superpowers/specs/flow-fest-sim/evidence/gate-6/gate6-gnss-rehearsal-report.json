@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "gate": 6,
+  "status": "passed",
+  "capturedAt": "2026-08-27T03:58:11Z",
+  "route": "/test/flow-fest-sim?gate6=1&capture=1",
+  "coordinateFingerprint": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d",
+  "coordinateAudit": {
+    "sourceCrs": "EPSG:26916",
+    "sourceDatum": "NAD83 / UTM zone 16N",
+    "deviceCoordinateSystem": "WGS84 latitude and longitude",
+    "worldFrame": "x east, y up, z south, metres",
+    "maximumRoundTripErrorMeters": 0.00005644565381013295,
+    "maximumAllowedRoundTripErrorMeters": 0.001,
+    "originWorldCoordinateMeters": {
+      "x": 0,
+      "z": 0
+    }
+  },
+  "syntheticReplay": {
+    "source": "The exact selected lower-tent arrival and return route points in gate2-runtime-contract.json",
+    "samples": 86,
+    "timingClaim": null,
+    "behavior": "Accepted fixes stage the existing Rapier player seam; the replay does not create an alternate movement or collision owner."
+  },
+  "acceptance": {
+    "nominal": {
+      "accuracyMeters": 4,
+      "quality": "nominal",
+      "accepted": true,
+      "playerRevisionAfter": 19,
+      "playerWorldMeters": {
+        "x": 326,
+        "z": -78
+      },
+      "retainedVisualFrameRevision": 12
+    },
+    "poorAccuracy": {
+      "accuracyMeters": 45,
+      "quality": "degraded-accuracy",
+      "accepted": false,
+      "playerRevisionAfter": 19,
+      "playerWorldMeters": {
+        "x": 326,
+        "z": -78
+      }
+    },
+    "stale": {
+      "ageMilliseconds": 30000,
+      "quality": "degraded-stale",
+      "accepted": false,
+      "playerRevisionAfter": 19,
+      "playerWorldMeters": {
+        "x": 326,
+        "z": -78
+      }
+    },
+    "maximumAcceptedAccuracyMeters": 18,
+    "staleAfterMilliseconds": 6000
+  },
+  "privacyBoundary": {
+    "permissionPolicy": "geolocation=(self)",
+    "userGestureRequired": true,
+    "deviceCoordinatesPersisted": false,
+    "deviceCoordinatesUploaded": false,
+    "captureDiagnosticsProductionVisible": false
+  },
+  "liveFieldTrackCaptured": false,
+  "checks": [
+    {
+      "name": "coordinate-round-trip",
+      "status": "passed",
+      "evidence": "All registered replay samples round-trip WGS84 to EPSG:26916 world coordinates within 0.000057 metres."
+    },
+    {
+      "name": "accepted-fix",
+      "status": "passed",
+      "evidence": "A nominal four-metre replay fix advanced the existing player stage seam and incremented its accepted revision."
+    },
+    {
+      "name": "poor-accuracy-held",
+      "status": "passed",
+      "evidence": "A 45 metre accuracy fix remained visible as degraded-accuracy while player revision and world position stayed unchanged."
+    },
+    {
+      "name": "stale-fix-held",
+      "status": "passed",
+      "evidence": "A 30 second old fix remained visible as degraded-stale while player revision and world position stayed unchanged."
+    },
+    {
+      "name": "privacy-boundary",
+      "status": "passed",
+      "evidence": "Live geolocation is same-origin, opt-in, session-only, and never persisted or uploaded by the feature owner."
+    }
+  ],
+  "knownLimit": "This is a deterministic registered-route rehearsal, not a real festival-day device track. Field multipath, phone antenna, battery, thermal behavior, and installation hardware remain unverified."
+}

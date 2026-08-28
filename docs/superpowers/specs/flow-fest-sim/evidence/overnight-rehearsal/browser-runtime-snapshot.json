@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "artifactClass": "operator-snapshot-not-formal-gate-evidence",
+  "capturedAt": "2026-08-26T09:23:25.075Z",
+  "url": "https://localhost:5173/test/flow-fest-sim",
+  "captureState": {
+    "branch": "lower-tent",
+    "phase": "night-free-roam",
+    "moment": "night",
+    "playerWorld": [60, 16.63, -99],
+    "physicalCapturePixels": [1920, 1080],
+    "cssViewport": {
+      "width": 2133,
+      "height": 1200,
+      "devicePixelRatio": 0.8999999632438005
+    }
+  },
+  "browser": {
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "platform": "Win32",
+    "deviceMemoryGiB": 32,
+    "hardwareConcurrency": 32,
+    "gpuVendor": "Google Inc. (NVIDIA)",
+    "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 (0x00002684) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+  },
+  "production": {
+    "contractFingerprint": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d",
+    "counts": {
+      "interpretedTrees": 647,
+      "tents": 38,
+      "vehicles": 9,
+      "festivalPeople": 36,
+      "routeLanterns": 37
+    },
+    "sourceClasses": {
+      "terrain": "measured-dtm",
+      "canopy": "interpreted-from-measured-high-returns",
+      "festival": "authored-fictional-rehearsal"
+    },
+    "collisionPolicy": "measured terrain plus one merged static collider derived from visible tree trunks, tents, vehicles, mast, and fire ring",
+    "collisionRegression": {
+      "capturedAt": "2026-08-26T16:58:34Z",
+      "invisibleTopologyScreenActive": false,
+      "topologyBarrierCellsActive": 0,
+      "activeProductionColliderBodies": 1,
+      "staticVisibleSolidObjects": 695,
+      "campEstablishedVisibleSolidObjects": 0,
+      "visibleSolidCounts": {
+        "treeTrunks": 647,
+        "tents": 38,
+        "vehicles": 9,
+        "festivalFixtures": 2
+      }
+    },
+    "campEstablished": true,
+    "spatialAudit": {
+      "campRouteViolations": 0,
+      "minimumTentCenterDistance": 3.1415426330422105,
+      "minimumVehicleCenterDistance": 5.773141830334144,
+      "minimumTentVehicleDistance": 4.383245648650278
+    }
+  },
+  "runtime": {
+    "locomotionRegression": {
+      "capturedAt": "2026-08-26T16:24:48.2798313Z",
+      "productionConfiguredMetersPerSecond": 4.2,
+      "productionObservedOneSecondDisplacementMeters": 4.1994485520138225,
+      "sprintEnabled": true,
+      "sprintMultiplier": 1.8,
+      "sprintExpectedMetersPerSecond": 7.56,
+      "sprintObservedOneSecondDisplacementMeters": 7.8022276936608765,
+      "crouchEnabled": true,
+      "crouchKeys": ["ControlLeft", "ControlRight", "KeyC"],
+      "observedCrouchBodyDropMeters": 0.3000001907348633,
+      "observedCrouchReleaseRecoveryMeters": 0.3000001907348633,
+      "jumpEnabled": true,
+      "jumpForce": 5,
+      "observedJumpRiseMeters": 1.3584775924682617,
+      "surveyConfiguredMetersPerSecond": 1.2,
+      "surveyBehaviorChanged": false,
+      "surveySprintEnabled": false,
+      "surveyCrouchEnabled": false,
+      "surveyJumpEnabled": false
+    },
+    "readinessMilliseconds": {
+      "sourceVerified": 181.7,
+      "geometryReady": 2139.5,
+      "collisionReady": 2416.3,
+      "playerReady": 2417.6
+    },
+    "missingColliderFrames": 0,
+    "frameSample": {
+      "samples": 240,
+      "p50Milliseconds": 16.7,
+      "p95Milliseconds": 16.7,
+      "p99Milliseconds": 16.8,
+      "drawCalls": 20,
+      "renderedTriangles": 2230364,
+      "programs": 17,
+      "geometries": 18,
+      "textures": 5
+    },
+    "terrain": {
+      "activeColliderMeshes": 25,
+      "triangles": 2097152
+    },
+    "cameraProjection": {
+      "registeredHorizontalFovDegrees": 65,
+      "actualHorizontalFovDegrees": 65,
+      "actualVerticalFovDegrees": 39.62472797791933,
+      "aspect": 1.7683333333333333
+    }
+  },
+  "limits": [
+    "This is one refresh-quantized desktop operator snapshot, not a portable-device or sustained thermal benchmark.",
+    "The physical screenshot was inspected during the run but could not be persisted by the browser tool's workspace policy."
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "gate": 5,
+  "status": "passed",
+  "capturedAt": "2026-08-27T02:22:08.741Z",
+  "classification": "inherited-measured-webgl-envelope",
+  "measurement": {
+    "source": "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-performance-report.json",
+    "reason": "Gate 5 changes the DOM journey rail, pure integration journal, persistence, and Web Audio gains. It adds no Three.js object, material, texture, light, shadow, collider, or animation-loop owner beyond the measured Gate 4 scene.",
+    "sampling": {
+      "method": "Foreground requestAnimationFrame intervals in the task-owned persistent Chrome tab",
+      "warmupFrames": 180,
+      "measuredFrames": 600,
+      "p50FrameMilliseconds": 16.7,
+      "p95FrameMilliseconds": 16.8,
+      "p99FrameMilliseconds": 16.8,
+      "maxFrameMilliseconds": 16.9
+    },
+    "renderer": {
+      "drawCalls": 78,
+      "renderedTriangles": 2815098,
+      "programs": 31,
+      "geometries": 126,
+      "textures": 149
+    },
+    "budgets": {
+      "desktopP95FrameMillisecondsMaximum": 17,
+      "desktopP99FrameMillisecondsMaximum": 33.5,
+      "settledHitchMillisecondsMaximum": 50,
+      "drawCallsMaximum": 100,
+      "visibleTrianglesMaximum": 4500000
+    }
+  },
+  "gate5RuntimeDiagnostics": {
+    "applicationErrors": 0,
+    "applicationWarnings": [
+      "using deprecated parameters for the initialization function; pass a single object instead",
+      "using deprecated parameters for the initialization function; pass a single object instead"
+    ],
+    "exactReviewViewports": [
+      "1920x1080",
+      "2560x1440",
+      "3840x2160",
+      "1440x900",
+      "820x1180",
+      "960x412",
+      "375x812"
+    ]
+  },
+  "checks": [
+    {
+      "name": "performance",
+      "status": "passed",
+      "evidence": "The unchanged WebGL production envelope remains 16.8 ms p95/p99, 78 draw calls, and 2.82 million rendered triangles. Gate 5 adds only DOM, pure state, persistence, and one already-running Web Audio graph."
+    },
+    {
+      "name": "lighting-budget",
+      "status": "passed",
+      "evidence": "Gate 5 introduces no Three.js light or shadow owner; the approved Gate 4 lighting budget remains unchanged."
+    },
+    {
+      "name": "runtime-console",
+      "status": "passed",
+      "evidence": "Zero application errors were recorded across the final Gate 5 task-owned Chrome navigation."
+    }
+  ]
+}

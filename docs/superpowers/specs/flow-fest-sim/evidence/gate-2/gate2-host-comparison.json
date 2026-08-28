@@ -1,0 +1,315 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "capturedAt": "2026-08-25T23:46:28Z",
+  "runtimeContract": {
+    "path": "static/data/flow-fest-sim/gate2-runtime-contract.json",
+    "sha256": "ff43b8373da6a6313923f275c85f4bfad2fc02e4b2dcdc5efeb8bf4bbc6968cf",
+    "coordinatePayloadSha256": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d"
+  },
+  "runtimeSourceFiles": [
+    {
+      "path": "src/routes/test/flow-fest-graybox/+page.svelte",
+      "sha256": "3819280a575be1871c74b21299f5d7d5a4652f1072cf50d35b8c658ba9a42ba6"
+    },
+    {
+      "path": "src/routes/test/flow-fest-graybox/FlowFestGrayboxWalkScene.svelte",
+      "sha256": "851a739b6040df17cb6e93f70c6f864667515f7ebd3113b04bdc3ee2e86171d8"
+    },
+    {
+      "path": "src/routes/test/flow-fest-graybox/flow-fest-terrain-host.ts",
+      "sha256": "91de8ca948160bd674982a774bdfd0d1c9bc002c4295dc81dac3af3dab306d91"
+    },
+    {
+      "path": "src/routes/test/flow-fest-graybox/flow-fest-runtime-contract.ts",
+      "sha256": "d696095c98b5284cbe93d59aae99fa2968539d09705c34efc2c3ad22f5a923aa"
+    },
+    {
+      "path": "src/routes/test/flow-fest-graybox/flow-fest-review-geometry.ts",
+      "sha256": "e151173940a6e6fae3af2bc3419727bc9812cfa807ccba9402ca09bbe90dc3e0"
+    },
+    {
+      "path": "packages/camera-3d/src/lib/components/UnifiedCameraController.svelte",
+      "sha256": "a4e84f4ac55ada79e53e1ca579de49e2da36ecbb6024870fb2b8afc358f75e99"
+    },
+    {
+      "path": "packages/camera-3d/src/lib/frame-delta.ts",
+      "sha256": "5c41136e36f4541fa750cd9648a37444aacf20ceceddd7beb61770bd14b10c3d"
+    },
+    {
+      "path": "packages/camera-3d/src/lib/threlte-context-value.ts",
+      "sha256": "aab24bac9078e77f591bcab3258384698d102fbfade80ca81d26d49db7279c14"
+    },
+    {
+      "path": "packages/camera-3d/src/lib/types.ts",
+      "sha256": "d2525fb2d5ad688ebb20837b991307f038c09c5a08c47029f3066920b5c2953f"
+    },
+    {
+      "path": "src/lib/shared/3d/physics/player-controller.ts",
+      "sha256": "25e94cc12190cb9f62ea8b8e2b2b2cde3070fe9a708e94c261c1ceb37234afa1"
+    }
+  ],
+  "sourceHashRefresh": {
+    "refreshedAt": "2026-08-27T04:38:00Z",
+    "reason": "The shared camera controller now accepts an opt-in bounded frame-delta limit for the production electric-unicycle fixed-step adapter. The Gate 2 survey route does not enable that adapter, so its default 100 ms cap, measured 1.2 m/s controller, first-person camera, terrain, barriers, collision, and host selection remain unchanged.",
+    "proof": [
+      "18/18 electric-unicycle and shared camera-frame focused regressions passed, including an eight-FPS fixed-step distance assertion.",
+      "svelte-check reported 0 errors and 0 warnings after the live-performer and EUC timing correction.",
+      "Gate 2 collision, topology, dynamic traversal, coordinate, and camera contracts remain mechanically verified by the scene-specific runtime verifier."
+    ]
+  },
+  "captureContext": {
+    "browser": "Chrome 151.0.0.0",
+    "os": "Windows 10 x64",
+    "hardwareConcurrency": 32,
+    "reportedDeviceMemoryGigabytes": 32,
+    "emulatedPixelSurface": {
+      "width": 1920,
+      "height": 1080,
+      "deviceScaleFactor": 1
+    },
+    "observedCssViewport": {
+      "width": 2133,
+      "height": 1200,
+      "devicePixelRatio": 0.8999999632438005
+    },
+    "sampling": {
+      "foregroundTab": true,
+      "hostIsolation": "Each host was measured alone; the other task-owned WebGL tab was navigated to about:blank.",
+      "warmupFrames": 120,
+      "measuredFrames": 240,
+      "sharedBrowser": true,
+      "interpretation": "Frame percentiles include normal shared-browser scheduling noise. Both hosts were measured in the same Chrome process and pixel surface."
+    }
+  },
+  "invariants": {
+    "sourceHeightSamples": 1050625,
+    "sourceSpacingMeters": 1,
+    "renderedTerrainTriangles": 2097152,
+    "renderColliderHeightAuthority": "the same full-resolution 1 m DTM samples",
+    "walkingSpeedMetersPerSecond": 1.2,
+    "sprintEnabled": false,
+    "jumpEnabled": false,
+    "crouchEnabled": false,
+    "noclipEnabled": false,
+    "eyeHeightMeters": 1.7,
+    "barrierOccupiedCellCount": 95459,
+    "barrierCellSizeMeters": 1,
+    "barrierPersonCorridorClearanceMeters": 1.12,
+    "barrierVehicleCorridorClearanceMeters": 2.9,
+    "auditedVehicleHalfWidthMeters": 1,
+    "barrierConservativeDilationMeters": 18,
+    "barrierMinimumHeightMeters": 4,
+    "barrierSourceClass": "interpreted-gameplay-from-measured-surface",
+    "dilationClassification": "explicit conservative gameplay invention around checked lidar occupancy; dilation-only cells are removed from all seven registered open zones"
+  },
+  "cameraProjectionAudit": {
+    "status": "passed",
+    "registeredHorizontalFovDegrees": 65,
+    "actualHorizontalFovDegrees": 65,
+    "actualVerticalFovDegreesAtCapturedAspect": 39.62472797791933,
+    "capturedAspect": 1.7683333333333333
+  },
+  "barrierTopologyAudit": {
+    "status": "passed",
+    "spawnUnobstructed": true,
+    "approvedPersonLegs": 132,
+    "obstructedApprovedLegs": [],
+    "approvedVehicleLegs": 54,
+    "obstructedApprovedVehicleLegs": [],
+    "connectors": {
+      "upperClearingToMiddleEarth": {
+        "connected": true,
+        "approvedDistanceMeters": 181.46644946564714,
+        "gridDistanceMeters": 185.02438661763983,
+        "smoothedNavigableDistanceMeters": 180.74388354857814,
+        "maximumDeviationFromApprovedMeters": 1.2038070669185739,
+        "maximumAllowedDeviationMeters": 2.5,
+        "withinApprovedCorridor": true,
+        "inCorridorGridDistanceMeters": 185.02438661763983,
+        "offCorridorChallengerGridDistanceMeters": 185.02438661763983,
+        "offCorridorChallengerIsShorter": false
+      },
+      "middleEarthToLowerClearing": {
+        "connected": true,
+        "approvedDistanceMeters": 201.47798704404445,
+        "gridDistanceMeters": 210.12489168102815,
+        "smoothedNavigableDistanceMeters": 201.01506307949654,
+        "maximumDeviationFromApprovedMeters": 2.1189277304333998,
+        "maximumAllowedDeviationMeters": 2.5,
+        "withinApprovedCorridor": true,
+        "inCorridorGridDistanceMeters": 210.12489168102815,
+        "offCorridorChallengerGridDistanceMeters": 210.12489168102815,
+        "offCorridorChallengerIsShorter": false
+      }
+    },
+    "zones": {
+      "lower-gate-zone": {
+        "sampledCells": 317,
+        "openCells": 240,
+        "openFraction": 0.7570977917981072,
+        "minimumRequiredOpenFraction": 0.5,
+        "passed": true
+      },
+      "upper-tent-zone": {
+        "sampledCells": 797,
+        "openCells": 797,
+        "openFraction": 1,
+        "minimumRequiredOpenFraction": 0.5,
+        "passed": true
+      },
+      "west-upper-parking-zone": {
+        "sampledCells": 1009,
+        "openCells": 1009,
+        "openFraction": 1,
+        "minimumRequiredOpenFraction": 0.5,
+        "passed": true
+      },
+      "middle-earth-zone": {
+        "sampledCells": 3063,
+        "openCells": 3043,
+        "openFraction": 0.9934704538034607,
+        "minimumRequiredOpenFraction": 0.95,
+        "passed": true
+      },
+      "lower-tent-zone": {
+        "sampledCells": 317,
+        "openCells": 292,
+        "openFraction": 0.9211356466876972,
+        "minimumRequiredOpenFraction": 0.5,
+        "passed": true
+      },
+      "car-camp-zone": {
+        "sampledCells": 1345,
+        "openCells": 1345,
+        "openFraction": 1,
+        "minimumRequiredOpenFraction": 0.95,
+        "passed": true
+      },
+      "night-heart-zone": {
+        "sampledCells": 441,
+        "openCells": 441,
+        "openFraction": 1,
+        "minimumRequiredOpenFraction": 0.5,
+        "passed": true
+      }
+    }
+  },
+  "hosts": [
+    {
+      "id": "bounded-static",
+      "renderColliderIdentity": true,
+      "renderColliderHeightParity": true,
+      "sourceVerificationMilliseconds": 838.3000000715256,
+      "geometryReadyMilliseconds": 4023.3000000715256,
+      "collisionReadyMilliseconds": 6444.200000047684,
+      "playerReadyMilliseconds": 6446.300000071526,
+      "terrainBuildMilliseconds": 219.29999995231628,
+      "renderMeshes": 1,
+      "candidateTerrainColliderMeshes": 1,
+      "activeTerrainColliderMeshesAtSpawn": 1,
+      "activeColliderMeshesIncludingBarrierAtSpawn": 2,
+      "vertices": 1050625,
+      "triangles": 2097152,
+      "geometryBytes": 46178324,
+      "frameMilliseconds": {
+        "p50": 16.700000000000728,
+        "p95": 66.79999999999927,
+        "p99": 100
+      },
+      "renderer": {
+        "drawCalls": 39,
+        "renderedTriangles": 2521052,
+        "programs": 6,
+        "geometries": 33,
+        "textures": 2
+      },
+      "collisionAudit": {
+        "registeredPersonWaypoints": 144,
+        "missingHits": 0,
+        "maximumAbsoluteDtmErrorMeters": 0.008398437499977263,
+        "missingColliderFrames": 0,
+        "status": "passed"
+      },
+      "dynamicTraversalAudit": {
+        "status": "passed",
+        "samples": 522,
+        "seamCrossings": 86,
+        "seamAdjacentProbes": 258,
+        "routeLegEndpointProbes": 264,
+        "colliderWindowTransitions": 0,
+        "missingColliderSamples": 0,
+        "missingGroundHits": 0,
+        "maximumAbsoluteDtmErrorMeters": 0.008398437499977263,
+        "minimumActiveTerrainColliders": 1,
+        "maximumActiveTerrainColliders": 1
+      }
+    },
+    {
+      "id": "chunked",
+      "renderColliderIdentity": false,
+      "renderColliderHeightParity": true,
+      "renderStrategy": "one full-resolution render batch with 32 m collision chunks",
+      "chunkSizeMeters": 32,
+      "colliderBufferMeters": 64,
+      "sourceVerificationMilliseconds": 832.2000000476837,
+      "geometryReadyMilliseconds": 3631.2000000476837,
+      "collisionReadyMilliseconds": 4233.899999976158,
+      "playerReadyMilliseconds": 4239.100000023842,
+      "terrainBuildMilliseconds": 312.60000002384186,
+      "renderMeshes": 1,
+      "candidateTerrainColliderMeshes": 1024,
+      "activeTerrainColliderMeshesAtSpawn": 25,
+      "activeColliderMeshesIncludingBarrierAtSpawn": 26,
+      "vertices": 1050625,
+      "triangles": 2097152,
+      "geometryBytes": 84725780,
+      "frameMilliseconds": {
+        "p50": 16.69999999999891,
+        "p95": 17,
+        "p99": 33.400000000001455
+      },
+      "renderer": {
+        "drawCalls": 39,
+        "renderedTriangles": 2521052,
+        "programs": 6,
+        "geometries": 33,
+        "textures": 2
+      },
+      "collisionAudit": {
+        "registeredPersonWaypoints": 144,
+        "missingHits": 0,
+        "maximumAbsoluteDtmErrorMeters": 0.008398437499977263,
+        "missingColliderFrames": 0,
+        "status": "passed"
+      },
+      "dynamicTraversalAudit": {
+        "status": "passed",
+        "samples": 522,
+        "seamCrossings": 86,
+        "seamAdjacentProbes": 258,
+        "routeLegEndpointProbes": 264,
+        "colliderWindowTransitions": 107,
+        "missingColliderSamples": 0,
+        "missingGroundHits": 0,
+        "maximumAbsoluteDtmErrorMeters": 0.008398437499977263,
+        "minimumActiveTerrainColliders": 25,
+        "maximumActiveTerrainColliders": 30
+      }
+    }
+  ],
+  "decision": {
+    "winner": "chunked",
+    "defaultRuntimeQuery": "/test/flow-fest-graybox",
+    "comparisonQuery": "/test/flow-fest-graybox?host=bounded-static",
+    "reason": "The 32 m collision host reaches a collision-ready player 2.21 seconds sooner, preserves the full-resolution render and collider height authority, passes 258 seam-adjacent and 264 route-endpoint probes across 107 real collider-window transitions, and keeps 25 to 30 terrain bodies active with no missing collider sample. Its isolated foreground p95 is 17.0 ms, below the 33.33 ms installation target; the bounded candidate records 66.8 ms.",
+    "rejectedFailureModes": [
+      "mounting all 1024 Rapier trimeshes at startup",
+      "physics skirts or invisible terrain walls",
+      "declaring readiness before the containing terrain collider exists",
+      "copying or downsampling the full-resolution runtime DTM",
+      "rendering 1,024 terrain chunks as separate draw calls",
+      "blocking any approved person or staged vehicle corridor with the interpreted lidar screen"
+    ]
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "gate": 4,
+  "capturedAt": "2026-08-27T00:49:01Z",
+  "route": "/test/flow-fest-sim?gate4=1",
+  "coordinateFingerprint": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d",
+  "branch": "lower-tent",
+  "interaction": "night-heart-fire-jam",
+  "steps": [
+    {
+      "id": "mounted-approach",
+      "input": "Gate 4 review-state hydration",
+      "fireJamState": "not-started",
+      "distanceToFireMeters": 12.5,
+      "wheelMustPark": true,
+      "canJoin": false,
+      "mounted": true,
+      "parkedColliderActive": false,
+      "audioUnlocked": false,
+      "audioPlaying": false
+    },
+    {
+      "id": "parked-wheel",
+      "input": "E",
+      "fireJamState": "not-started",
+      "distanceToFireMeters": 12.5,
+      "distanceToWheelMeters": 0.9200000000000017,
+      "wheelMustPark": false,
+      "canJoin": false,
+      "mounted": false,
+      "parkedColliderActive": true,
+      "audioUnlocked": false,
+      "audioPlaying": false
+    },
+    {
+      "id": "on-foot-interaction-boundary",
+      "input": "W for 1.1 seconds through the shared character controller",
+      "fireJamState": "not-started",
+      "distanceToFireMeters": 7.880187988296023,
+      "distanceToWheelMeters": 4.710529810968778,
+      "wheelMustPark": false,
+      "canJoin": true,
+      "mounted": false,
+      "parkedColliderActive": true,
+      "audioUnlocked": false,
+      "audioPlaying": false
+    },
+    {
+      "id": "active-response",
+      "input": "Join the fire jam",
+      "fireJamState": "active",
+      "distanceToFireMeters": 7.880187988296023,
+      "responseIntensity": 1,
+      "mounted": false,
+      "parkedColliderActive": true,
+      "audioUnlocked": true,
+      "audioPlaying": true,
+      "audioMix": {
+        "fire": 1,
+        "led": 0.37898317531587744,
+        "crowd": 0.64,
+        "master": 0.7
+      },
+      "community": {
+        "spectators": 16,
+        "performers": 8,
+        "avatarsReady": 24
+      }
+    },
+    {
+      "id": "completed-turn",
+      "input": "Finish your turn",
+      "fireJamState": "completed",
+      "distanceToFireMeters": 7.880187988296023,
+      "responseIntensity": 0.66,
+      "mounted": false,
+      "parkedColliderActive": true,
+      "audioUnlocked": true,
+      "audioPlaying": true
+    },
+    {
+      "id": "restored-after-reload",
+      "input": "Browser reload",
+      "fireJamState": "completed",
+      "distanceToFireMeters": 7.880187988296023,
+      "distanceToWheelMeters": 4.710529810968778,
+      "responseIntensity": 0.66,
+      "mounted": false,
+      "parkedColliderActive": true,
+      "audioUnlocked": false,
+      "audioPlaying": false,
+      "audioRestorePolicy": "Interaction and mix state persist; Web Audio correctly requires a new user gesture after reload."
+    }
+  ],
+  "collision": {
+    "mode": "visible-production",
+    "invisibleTopologyScreenActive": false,
+    "activeBodiesNearSlice": 3,
+    "staticVisibleObjects": 473,
+    "campEstablishedVisibleObjects": 1,
+    "festivalActiveVisibleObjects": 5
+  },
+  "checks": [
+    {
+      "name": "interaction-state",
+      "status": "passed",
+      "evidence": "A real browser input sequence advanced not-started to active to completed only after the rider parked and entered the 9.6 metre interaction boundary."
+    },
+    {
+      "name": "mobility-handoff",
+      "status": "passed",
+      "evidence": "The EUC dismounted at 12.5 metres, created its visible parked collider, and handed control back to the shared walking, sprint, crouch, and jump controller."
+    },
+    {
+      "name": "collision-response",
+      "status": "passed",
+      "evidence": "The parked wheel collider remained active while the player moved 4.71 metres away; visible production collision stayed enabled and the invisible topology screen stayed disabled."
+    },
+    {
+      "name": "audio-response",
+      "status": "passed",
+      "evidence": "The user-gesture Join action unlocked the procedural Web Audio bed and raised the fire, LED, and crowd mix with the same active state that drives the visible response."
+    },
+    {
+      "name": "state-persistence",
+      "status": "passed",
+      "evidence": "Reload restored the completed fire-jam state, player pose, parked EUC pose, and parked collider. Audio correctly stayed locked until another user gesture."
+    }
+  ]
+}

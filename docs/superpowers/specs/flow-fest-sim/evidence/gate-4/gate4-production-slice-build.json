@@ -1,0 +1,279 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "gate": 4,
+  "status": "ready-for-review",
+  "capturedAt": "2026-08-27T00:49:01Z",
+  "route": "/test/flow-fest-sim?gate4=1",
+  "coordinateFingerprint": "c244eaeb27504f3a1d0d461408ce209fd6eab650e9a6966d214676a05645a36d",
+  "slice": {
+    "branch": "lower-tent",
+    "moment": "night",
+    "interaction": "park EUC, enter the fire floor, join the responsive jam, complete the turn",
+    "spatialOwner": "Gate 2 full-resolution DTM, route, clearing, and collider contract",
+    "productionOwner": "Gate 3 measured-land-first visual hierarchy"
+  },
+  "delivered": [
+    "Third-person EUC approach with the established camera and one shared mobility state owner.",
+    "Visible parked-wheel collider plus the established walking, sprint, crouch, jump, and remount handoff.",
+    "Twenty-four production Avatar3D community members arranged as a 16-person perimeter and eight active artists.",
+    "One stateful fire-jam interaction with responsive fire, LED rings, performer energy, and a deterministic procedural sound bed.",
+    "Versioned progress and mobility hydration that restores the completed jam and the parked wheel collider after reload."
+  ],
+  "checks": [
+    {
+      "name": "interaction-state",
+      "status": "passed",
+      "evidence": "The captured state audit and H.264 walk show mounted approach, real parking, on-foot entry, active response, and completed turn."
+    },
+    {
+      "name": "runtime-console",
+      "status": "passed",
+      "evidence": "The final task-owned Chrome navigation recorded zero runtime errors. One existing Rapier initialization deprecation warning and one stylesheet @import issue remain non-blocking diagnostics."
+    },
+    {
+      "name": "performance",
+      "status": "passed",
+      "evidence": "The 600-frame foreground sample recorded 16.8 ms p95 and p99, 16.9 ms maximum, 78 draw calls, and 2.82 million rendered triangles."
+    },
+    {
+      "name": "state-persistence",
+      "status": "passed",
+      "evidence": "Reload restored the completed interaction, exact player pose, parked EUC pose, and active parked collider without autoplaying Web Audio."
+    },
+    {
+      "name": "collision-response",
+      "status": "passed",
+      "evidence": "The wheel creates collision only when parked; the production slice retains visible/collider parity with the invisible topology screen disabled."
+    },
+    {
+      "name": "audio-response",
+      "status": "passed",
+      "evidence": "The Join gesture unlocks a deterministic procedural fire, LED, and crowd mix driven by the same proximity and interaction state as the visible response."
+    }
+  ],
+  "videoProbe": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 2122,
+        "height": 1200,
+        "avg_frame_rate": "73680/2741",
+        "nb_frames": "1842"
+      }
+    ],
+    "format": {
+      "duration": "68.083000",
+      "size": "12834500"
+    }
+  },
+  "frameRead": [
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-fire-jam-active-1920x1080.png",
+      "width": 1920,
+      "height": 1080,
+      "meanChannelDeviation": 38.994910876231
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-fire-jam-completed-1920x1080.png",
+      "width": 1920,
+      "height": 1080,
+      "meanChannelDeviation": 38.492314377049404
+    }
+  ],
+  "viewportSheet": {
+    "width": 1654,
+    "height": 818,
+    "coverage": [
+      "2560x1440",
+      "3840x2160",
+      "1440x900",
+      "820x1180",
+      "960x412",
+      "375x812"
+    ]
+  },
+  "evidence": [
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-state-transition-audit.json",
+      "bytes": 4355,
+      "sha256": "42df535c0d339522e7e5399ee29f02054accc40730f312192d2037190f9ebe3e"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-performance-report.json",
+      "bytes": 2472,
+      "sha256": "417a8763dbc411fb701ee9b6ab08cad0416bd3062297b553d7352d5b72b89952"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-interaction-capture.mp4",
+      "bytes": 12834500,
+      "sha256": "b66965f57f7ad1f30fdbf0868c87e8977642536df3727fbf1cbf23fd6b6132f8"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-fire-jam-active-1920x1080.png",
+      "bytes": 1315019,
+      "sha256": "e2eeaeab86ab608da01ae8152570162a0e9ddb6e67aad8a816c283e882d20cf7"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-fire-jam-completed-1920x1080.png",
+      "bytes": 1306962,
+      "sha256": "bd54beeb58b29afbbdae256de0ff9eaf92e64631b5ff031ec70415b39d4fd721"
+    },
+    {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-viewport-contact-sheet.png",
+      "bytes": 3291852,
+      "sha256": "838cbf4ce5c828017d1d39946137f6651a5672a760270c786429752a0c8e65df"
+    }
+  ],
+  "sources": [
+    {
+      "path": "static/data/flow-fest-sim/gate2-runtime-contract.json",
+      "bytes": 77571,
+      "sha256": "ff43b8373da6a6313923f275c85f4bfad2fc02e4b2dcdc5efeb8bf4bbc6968cf"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/domain/flow-fest-electric-unicycle.ts",
+      "bytes": 15304,
+      "sha256": "806c2b955f17de5d74e1d7646a716429a35cf4a1a2346d1796dac053f886f62f"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/domain/flow-fest-fire-jam.ts",
+      "bytes": 2996,
+      "sha256": "861840d93f0c7e7d1211996a31050bc8c273a4b6d4bc4a43099dc5178519ed5a"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/domain/flow-fest-living-fire-jam.ts",
+      "bytes": 9223,
+      "sha256": "0b72eb1543fd960653288ec38595b3c98dce9f7d2820a6394ede93775118c5db"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/domain/flow-fest-site-audio.ts",
+      "bytes": 2631,
+      "sha256": "36e0c53288633aaf5363315f9f81851818a3e0f5deb439a0cc91a70de941101b"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/domain/flow-fest-integrated-world.ts",
+      "bytes": 7213,
+      "sha256": "f7f23db2a23755f56b1b4cd7285959a99665d978335345c7330c33eda88ac724"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/state/flow-fest-mobility-state.svelte.ts",
+      "bytes": 8020,
+      "sha256": "1cc24f6996546e919e00c0e39be1aceaf58d69ac71665a4de3be336e7f24e49b"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/state/flow-fest-progress.ts",
+      "bytes": 14930,
+      "sha256": "f418d4a65a3e12772c28692ff0db325607e0dde64f4a13c290acf9f52b96e408"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/services/flow-fest-electric-unicycle-drive.ts",
+      "bytes": 7140,
+      "sha256": "692ac9fcba08d9fc284def485bd80555d8a3c500720587328f2e8e856a3ff5b0"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/services/contracts/IFlowFestFireJamSoundscape.ts",
+      "bytes": 869,
+      "sha256": "488a5b7bf77c6c7adbd2e74b2f55970c3331dfc970fcdf565be47fff1dc6e67e"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/services/implementations/FlowFestFireJamSoundscape.ts",
+      "bytes": 10141,
+      "sha256": "39dfcacbffc3f1cae5d1b793e3626c0e21f24d3754466863c82be8d3c90180fa"
+    },
+    {
+      "path": "src/lib/features/flow-fest-sim/getFlowFestFireJamSoundscape.ts",
+      "bytes": 300,
+      "sha256": "28cad4faac4c6bfb444212f0b89bb8b4bc3006715cc5e2c83e3a534b138a04ae"
+    },
+    {
+      "path": "src/lib/shared/3d/performers/LiveSequencePerformer3D.svelte",
+      "bytes": 4301,
+      "sha256": "3781f5e241db3edb43a81e2c277639bcaee1acb6af876d9fad462d4fb9e859a1"
+    },
+    {
+      "path": "src/lib/shared/3d/effects/fire/volumetric-fire-mesh.ts",
+      "bytes": 13258,
+      "sha256": "ce6e6e54dda8a09f4cd4b618bb4bee24a907f0b092e7c40fec72a3e48ce0735a"
+    },
+    {
+      "path": "src/lib/shared/3d/effects/volumetric-fire/VolumetricFireComponent.svelte",
+      "bytes": 2041,
+      "sha256": "a4484784a468e050b9a2d168d84e451b6ee7bedad468650cdb03e6880c076b84"
+    },
+    {
+      "path": "src/lib/shared/animation-engine/domain/tip-effect-map.ts",
+      "bytes": 669,
+      "sha256": "3fd9bd47b21003cc15d6e144b1406b1d409512644335f9ff4421407bb86233ad"
+    },
+    {
+      "path": "src/lib/shared/combination/domain/demo-fixtures.ts",
+      "bytes": 14719,
+      "sha256": "0c559344a8522e5baf68f5a25dd85db471cf596b910f3d5b0f4eb7088b18da6d"
+    },
+    {
+      "path": "packages/camera-3d/src/lib/frame-delta.ts",
+      "bytes": 411,
+      "sha256": "5c41136e36f4541fa750cd9648a37444aacf20ceceddd7beb61770bd14b10c3d"
+    },
+    {
+      "path": "packages/camera-3d/src/lib/components/UnifiedCameraController.svelte",
+      "bytes": 33283,
+      "sha256": "a4e84f4ac55ada79e53e1ca579de49e2da36ecbb6024870fb2b8afc358f75e99"
+    },
+    {
+      "path": "src/routes/test/flow-fest-graybox/FlowFestGrayboxWalkScene.svelte",
+      "bytes": 53304,
+      "sha256": "851a739b6040df17cb6e93f70c6f864667515f7ebd3113b04bdc3ee2e86171d8"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/+page.svelte",
+      "bytes": 67211,
+      "sha256": "038fea6669acb6ab97c2f8aeda2dbe3457069a800a4efa5f8f8b38ba067b4063"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/FlowFestElectricUnicycle.svelte",
+      "bytes": 7392,
+      "sha256": "8a7b832c6a6e128e6786183b61e64f94361741fe0e4b831df987550e6bd693fa"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/FlowFestFestivalCommunity.svelte",
+      "bytes": 3794,
+      "sha256": "9c7d5a369bc424fd5171dc5b9af4ae8a53d6a8ca7dae7d378a2091f1cd44271b"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/FlowFestHeroFire.svelte",
+      "bytes": 3371,
+      "sha256": "840050a47c8bd17d9c256e2d613ba2f757788a8706f4010fcd263191dcb0937e"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/FlowFestProductionLayer.svelte",
+      "bytes": 15978,
+      "sha256": "bcae5d658d0a9a85ef69c528286f1cada0c06fd3c1ff4e067237ff00c4ebe2a0"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/flow-fest-production-geometry.ts",
+      "bytes": 33566,
+      "sha256": "d71ade04ecd2164cd03fc94d10937c33ab1eb7878f5ce50798d8fab3ec82fe0a"
+    },
+    {
+      "path": "src/routes/test/flow-fest-sim/flow-fest-visual-system.ts",
+      "bytes": 5676,
+      "sha256": "3f47e0d5d21428242be3888c306ed75135701e8c5b612230894b2ee41e2aca66"
+    },
+    {
+      "path": "tests/unit/flow-fest-living-fire-jam.test.ts",
+      "bytes": 3248,
+      "sha256": "ff8999a94f3fb2fbcb3bf47b46d10d193c65a239f34aad3e157b3dee74d49342"
+    }
+  ],
+  "knownLimits": [
+    "This is one representative night interaction slice, not the integrated multi-day festival world.",
+    "The bridge and permanent-structure footprints remain source-unlocked and absent.",
+    "Canopy clusters remain deterministic LiDAR interpretations rather than surveyed trunks or species.",
+    "The procedural mix proves state and distance response; final field-recorded ambience and a release audio mix remain outside Gate 4.",
+    "The desktop viewport sweep proves responsive presentation, not touch locomotion or target-installation performance."
+  ]
+}

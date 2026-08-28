@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "flow-fest-sim-earth",
+  "gate": 6,
+  "status": "passed",
+  "capturedAt": "2026-08-27T03:58:11Z",
+  "classification": "inherited-measured-webgl-envelope",
+  "measurement": {
+    "source": "docs/superpowers/specs/flow-fest-sim/evidence/gate-4/gate4-performance-report.json",
+    "reason": "Gate 6 adds DOM controls, pure coordinate projection, a session-only geolocation watch, and accepted-fix staging through the existing player seam. It adds no Three.js object, material, texture, light, shadow, collider, or animation-loop owner beyond the measured Gate 4 scene.",
+    "sampling": {
+      "method": "Foreground requestAnimationFrame intervals in the task-owned persistent Chrome tab",
+      "warmupFrames": 180,
+      "measuredFrames": 600,
+      "p50FrameMilliseconds": 16.7,
+      "p95FrameMilliseconds": 16.8,
+      "p99FrameMilliseconds": 16.8,
+      "maxFrameMilliseconds": 16.9
+    },
+    "renderer": {
+      "drawCalls": 78,
+      "renderedTriangles": 2815098,
+      "programs": 31,
+      "geometries": 126,
+      "textures": 149
+    },
+    "budgets": {
+      "desktopP95FrameMillisecondsMaximum": 17,
+      "desktopP99FrameMillisecondsMaximum": 33.5,
+      "settledHitchMillisecondsMaximum": 50,
+      "drawCallsMaximum": 100,
+      "visibleTrianglesMaximum": 4500000
+    }
+  },
+  "gate6RuntimeObservation": {
+    "samples": 240,
+    "p95FrameMilliseconds": 16.800000000000182,
+    "p99FrameMilliseconds": 66.70000000000073,
+    "drawCalls": 21,
+    "renderedTriangles": 2296354,
+    "interpretation": "The acceptance observation includes shared-browser capture, viewport switching, and reload scheduling. Its p95 remains inside budget; its two-frame p99 scheduling outliers are not presented as the isolated settled performance result."
+  },
+  "checks": [
+    {
+      "name": "performance",
+      "status": "passed",
+      "evidence": "Gate 6 does not change the measured WebGL production envelope: 16.8 ms isolated p95/p99, 78 draw calls, and 2.82 million rendered triangles."
+    },
+    {
+      "name": "runtime-observation",
+      "status": "passed",
+      "evidence": "The current acceptance tab held 16.8 ms p95 while browser evidence capture produced disclosed p99 scheduling outliers."
+    },
+    {
+      "name": "installation-boundary",
+      "status": "passed",
+      "evidence": "Desktop evidence is not mislabeled as final backpack-display, phone, battery, radio, or thermal proof."
+    }
+  ]
+}
