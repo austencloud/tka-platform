@@ -108,6 +108,36 @@ export interface FlowFestRuntimeContract {
   };
 }
 
+export function horizontalToVerticalFovDegrees(
+  horizontalFovDegrees: number,
+  aspect: number
+): number {
+  if (!Number.isFinite(aspect) || aspect <= 0) {
+    throw new Error("Flow Fest camera aspect must be positive");
+  }
+  return (
+    (2 *
+      Math.atan(Math.tan((horizontalFovDegrees * Math.PI) / 360) / aspect) *
+      180) /
+    Math.PI
+  );
+}
+
+export function verticalToHorizontalFovDegrees(
+  verticalFovDegrees: number,
+  aspect: number
+): number {
+  if (!Number.isFinite(aspect) || aspect <= 0) {
+    throw new Error("Flow Fest camera aspect must be positive");
+  }
+  return (
+    (2 *
+      Math.atan(Math.tan((verticalFovDegrees * Math.PI) / 360) * aspect) *
+      180) /
+    Math.PI
+  );
+}
+
 const REQUIRED_INPUT_HASHES = new Map([
   [
     "static/data/flow-fest-sim/terrain.manifest.json",

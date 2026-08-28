@@ -15,6 +15,10 @@ export interface FlowFestColliderMesh {
   name: string;
   vertices: Float32Array;
   indices: Uint32Array;
+  centerX: number;
+  centerZ: number;
+  halfExtentX: number;
+  halfExtentZ: number;
 }
 
 export interface FlowFestTerrainHostMetrics {
@@ -35,7 +39,80 @@ export interface FlowFestTerrainHost {
   dispose(): void;
 }
 
+export interface FlowFestChunkSeamTraversal {
+  seamCrossings: number;
+  seamAdjacentProbes: number;
+  endpointProbes: number;
+  probes: Array<{ x: number; z: number }>;
+}
+
 const CHUNK_SEGMENTS = 32;
+
+/**
+ * Register each chunk-grid crossing and probe five centimetres before, on,
+ * and after it. This is the deterministic traversal set used by the live
+ * Rapier audit, not a screenshot-only approximation of seam continuity.
+ */
+export function buildFlowFestChunkSeamTraversal(
+  start: { x: number; z: number },
+  end: { x: number; z: number },
+  worldBounds: { minX: number; minZ: number },
+  chunkSizeMeters = CHUNK_SEGMENTS,
+  epsilonMeters = 0.05
+): FlowFestChunkSeamTraversal {
+  const dx = end.x - start.x;
+  const dz = end.z - start.z;
+  const length = Math.hypot(dx, dz);
+  const seamParameters: number[] = [];
+  for (
+    let x =
+      Math.ceil(
+        (Math.min(start.x, end.x) - worldBounds.minX) / chunkSizeMeters
+      ) *
+        chunkSizeMeters +
+      worldBounds.minX;
+    x < Math.max(start.x, end.x);
+    x += chunkSizeMeters
+  ) {
+    if (Math.abs(dx) < 1e-9) break;
+    const t = (x - start.x) / dx;
+    if (t > 1e-9 && t < 1 - 1e-9) seamParameters.push(t);
+  }
+  for (
+    let z =
+      Math.ceil(
+        (Math.min(start.z, end.z) - worldBounds.minZ) / chunkSizeMeters
+      ) *
+        chunkSizeMeters +
+      worldBounds.minZ;
+    z < Math.max(start.z, end.z);
+    z += chunkSizeMeters
+  ) {
+    if (Math.abs(dz) < 1e-9) break;
+    const t = (z - start.z) / dz;
+    if (t > 1e-9 && t < 1 - 1e-9) seamParameters.push(t);
+  }
+  const epsilon = length > 0 ? epsilonMeters / length : 0;
+  const parameters = new Set<string>(["0.000000000000", "1.000000000000"]);
+  for (const seam of seamParameters) {
+    parameters.add(Math.max(0, seam - epsilon).toFixed(12));
+    parameters.add(seam.toFixed(12));
+    parameters.add(Math.min(1, seam + epsilon).toFixed(12));
+  }
+  const probes = [...parameters]
+    .sort()
+    .map(Number)
+    .map((t) => ({
+      x: start.x + dx * t,
+      z: start.z + dz * t,
+    }));
+  return {
+    seamCrossings: seamParameters.length,
+    seamAdjacentProbes: seamParameters.length * 3,
+    endpointProbes: 2,
+    probes,
+  };
+}
 
 /** Bilinear sampling in the exact north-to-south/east-to-west runtime grid. */
 export function sampleFlowFestTerrainWorldY(
@@ -102,24 +179,30 @@ export function buildFlowFestTerrainHost(
   let vertices = 0;
   let triangles = 0;
   let geometryBytes = 0;
+  const spacingX =
+    (terrain.worldBounds.maxX - terrain.worldBounds.minX) /
+    (terrain.heightmap.width - 1);
+  const spacingZ =
+    (terrain.worldBounds.maxZ - terrain.worldBounds.minZ) /
+    (terrain.heightmap.height - 1);
 
-  const windows =
+  const boundedWindow = {
+    startColumn: 0,
+    startRow: 0,
+    segmentColumns: terrain.heightmap.width - 1,
+    segmentRows: terrain.heightmap.height - 1,
+  };
+  const renderWindows = [boundedWindow];
+  const colliderWindows =
     mode === "bounded-static"
-      ? [
-          {
-            startColumn: 0,
-            startRow: 0,
-            segmentColumns: terrain.heightmap.width - 1,
-            segmentRows: terrain.heightmap.height - 1,
-          },
-        ]
+      ? renderWindows
       : buildChunkWindows(terrain.heightmap.width, terrain.heightmap.height);
 
-  for (const [index, window] of windows.entries()) {
+  for (const window of renderWindows) {
     const built = buildWindowGeometry(terrain, window);
     const geometry = new BufferGeometry();
     geometry.setAttribute("position", new BufferAttribute(built.positions, 3));
-    geometry.setAttribute("uv", new BufferAttribute(built.uvs, 2));
+    geometry.setAttribute("uv", new BufferAttribute(built.uvs!, 2));
     geometry.setIndex(new BufferAttribute(built.indices, 1));
     geometry.computeVertexNormals();
     geometry.computeBoundingBox();
@@ -129,28 +212,65 @@ export function buildFlowFestTerrainHost(
     mesh.name =
       mode === "bounded-static"
         ? "FFS_Terrain_Bounded"
-        : `FFS_Terrain_Chunk_${window.startColumn / CHUNK_SEGMENTS}_${window.startRow / CHUNK_SEGMENTS}`;
+        : "FFS_Terrain_ChunkedRenderBatch";
     mesh.receiveShadow = true;
     root.add(mesh);
 
-    colliders.push({
-      name: mesh.name,
-      // These are the same typed arrays mounted on the visible geometry.
-      vertices: built.positions,
-      indices: built.indices,
-    });
     vertices += built.positions.length / 3;
     triangles += built.indices.length / 3;
     geometryBytes +=
       built.positions.byteLength +
-      built.uvs.byteLength +
+      built.uvs!.byteLength +
       built.indices.byteLength;
+
+    if (mode === "bounded-static") {
+      colliders.push({
+        name: mesh.name,
+        // The bounded host shares the exact visible typed arrays.
+        vertices: built.positions,
+        indices: built.indices,
+        centerX:
+          terrain.worldBounds.minX +
+          window.startColumn * spacingX +
+          (window.segmentColumns * spacingX) / 2,
+        centerZ:
+          terrain.worldBounds.minZ +
+          window.startRow * spacingZ +
+          (window.segmentRows * spacingZ) / 2,
+        halfExtentX: (window.segmentColumns * spacingX) / 2,
+        halfExtentZ: (window.segmentRows * spacingZ) / 2,
+      });
+    }
+  }
+
+  if (mode === "chunked") {
+    for (const window of colliderWindows) {
+      const built = buildWindowGeometry(terrain, window, false);
+      colliders.push({
+        name: `FFS_Terrain_Chunk_${window.startColumn / CHUNK_SEGMENTS}_${window.startRow / CHUNK_SEGMENTS}`,
+        // Render batching changes draw ownership only. Every collider vertex
+        // is rebuilt from the same source sample and exact triangle winding.
+        vertices: built.positions,
+        indices: built.indices,
+        centerX:
+          terrain.worldBounds.minX +
+          window.startColumn * spacingX +
+          (window.segmentColumns * spacingX) / 2,
+        centerZ:
+          terrain.worldBounds.minZ +
+          window.startRow * spacingZ +
+          (window.segmentRows * spacingZ) / 2,
+        halfExtentX: (window.segmentColumns * spacingX) / 2,
+        halfExtentZ: (window.segmentRows * spacingZ) / 2,
+      });
+      geometryBytes += built.positions.byteLength + built.indices.byteLength;
+    }
   }
 
   const metrics: FlowFestTerrainHostMetrics = {
     mode,
     buildMilliseconds: performance.now() - startedAt,
-    renderMeshes: windows.length,
+    renderMeshes: renderWindows.length,
     colliderMeshes: colliders.length,
     vertices,
     triangles,
@@ -200,10 +320,11 @@ function buildChunkWindows(width: number, height: number): GridWindow[] {
 
 function buildWindowGeometry(
   terrain: ImportedTerrainDataV2,
-  window: GridWindow
+  window: GridWindow,
+  includeUvs = true
 ): {
   positions: Float32Array;
-  uvs: Float32Array;
+  uvs: Float32Array | null;
   indices: Uint32Array;
 } {
   const width = terrain.heightmap.width;
@@ -211,7 +332,7 @@ function buildWindowGeometry(
   const columns = window.segmentColumns + 1;
   const rows = window.segmentRows + 1;
   const positions = new Float32Array(columns * rows * 3);
-  const uvs = new Float32Array(columns * rows * 2);
+  const uvs = includeUvs ? new Float32Array(columns * rows * 2) : null;
   const indices = new Uint32Array(
     window.segmentColumns * window.segmentRows * 6
   );
@@ -233,9 +354,11 @@ function buildWindowGeometry(
         verticalOrigin;
       positions[positionOffset++] =
         terrain.worldBounds.minZ + sourceRow * spacing;
-      uvs[uvOffset++] = sourceColumn / (width - 1);
-      // The source image is north-up: its top row is the terrain's min Z.
-      uvs[uvOffset++] = 1 - sourceRow / (height - 1);
+      if (uvs) {
+        uvs[uvOffset++] = sourceColumn / (width - 1);
+        // The source image is north-up: its top row is the terrain's min Z.
+        uvs[uvOffset++] = 1 - sourceRow / (height - 1);
+      }
     }
   }
 

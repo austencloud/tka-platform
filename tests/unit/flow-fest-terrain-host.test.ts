@@ -3,6 +3,7 @@ import { Mesh } from "three";
 import type { ImportedTerrainDataV2 } from "$lib/shared/3d/procedural-engine/generation/real-terrain-zone";
 import {
   buildFlowFestTerrainHost,
+  buildFlowFestChunkSeamTraversal,
   sampleFlowFestTerrainWorldY,
 } from "../../src/routes/test/flow-fest-graybox/flow-fest-terrain-host";
 
@@ -73,7 +74,8 @@ describe("Flow Fest Gate 2 terrain hosts", () => {
     const terrain = makeTerrain(65, 33);
     const host = buildFlowFestTerrainHost(terrain, "chunked", null);
 
-    expect(host.metrics.renderMeshes).toBe(2);
+    expect(host.metrics.renderMeshes).toBe(1);
+    expect(host.metrics.colliderMeshes).toBe(2);
     const west = host.colliders[0]?.vertices;
     const east = host.colliders[1]?.vertices;
     expect(west).toBeDefined();
@@ -95,5 +97,26 @@ describe("Flow Fest Gate 2 terrain hosts", () => {
       4.375,
       6
     );
+  });
+
+  it("probes before, on, and after every crossed 32 metre chunk seam", () => {
+    const traversal = buildFlowFestChunkSeamTraversal(
+      { x: -45, z: -17 },
+      { x: 45, z: 47 },
+      { minX: -512, minZ: -512 }
+    );
+
+    expect(traversal.seamCrossings).toBe(5);
+    expect(traversal.seamAdjacentProbes).toBe(15);
+    expect(traversal.endpointProbes).toBe(2);
+    expect(traversal.probes).toHaveLength(17);
+    const xSeamDistances = traversal.probes
+      .map((point) => Math.hypot(point.x, point.z - 15))
+      .filter((distance) => distance <= 0.051)
+      .sort((a, b) => a - b);
+    expect(xSeamDistances).toHaveLength(3);
+    expect(xSeamDistances[0]).toBeCloseTo(0, 8);
+    expect(xSeamDistances[1]).toBeCloseTo(0.05, 5);
+    expect(xSeamDistances[2]).toBeCloseTo(0.05, 5);
   });
 });

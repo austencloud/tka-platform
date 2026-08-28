@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 2,
+  "sceneId": "flow-fest-sim-earth",
+  "referenceId": "hannon-west-entrance-august-2024-r2",
+  "coordinateAuthority": {
+    "worldFrame": "EPSG:26916 registered terrain; x east, y up, z south; metres",
+    "roadFeatureObjectId": 3019609,
+    "entranceLandmarkId": "camp-road-entrance",
+    "placementRule": "The exact August 2024 Street View panorama is projected into EPSG:26916 and snapped to ODOT road feature 3019609. The west-side drive bearing is corroborated by the identifiable junction in registered 2023 NAIP; every entrance fixture is a local offset from that shared anchor."
+  },
+  "sourceReference": {
+    "provider": "Google Street View",
+    "address": "8300 Co Hwy 24, College Corner, Ohio",
+    "imageryDate": "2024-08",
+    "panoramaId": "1Zay8yG4Mf31AxM3p0N25w",
+    "panoramaLatitude": 39.5904289,
+    "panoramaLongitude": -84.7819155,
+    "verifiedOn": "2026-08-27",
+    "referenceUrl": "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=39.5904289%2C-84.7819155&heading=305.36&pitch=-4&fov=78",
+    "storagePolicy": "Reference imagery is inspected in the ordinary Google Maps viewer and is not copied into the repository. Only authored simulation frames are stored."
+  },
+  "registration": {
+    "projectedCrs": "EPSG:26916",
+    "panoramaProjected": {
+      "easting": 690470.8110914272,
+      "northing": 4384649.85516934
+    },
+    "panoramaWorld": { "x": 328.8110914272, "z": -97.85516934 },
+    "roadSnapWorld": { "x": 328.2557337440163, "z": -98.15506248891917 },
+    "roadSnapOffsetMeters": 0.6311561273090756,
+    "roadTangentHeadingDegrees": 28.369046293,
+    "naipRasterObjectId": 146870,
+    "naipRuntimePixel": { "column": 1681.622, "row": 828.29 },
+    "evidenceRule": "Exact panorama metadata plus the identifiable west-side private-drive junction in the registered 2023 NAIP raster. No colored diagnostic overlay is source evidence."
+  },
+  "captureProfile": {
+    "viewportWidth": 1920,
+    "viewportHeight": 1080,
+    "devicePixelRatio": 1,
+    "defaultHorizontalFovDegrees": 65,
+    "simulationRoute": "/test/flow-fest-sim?reference=<view-id>&branch=lower-tent"
+  },
+  "siteLayout": {
+    "entranceWorld": { "x": 328.2557337440163, "z": -98.15506248891917 },
+    "driveInwardUnit": { "x": -0.8155320116040978, "z": -0.5787119646672026 },
+    "driveRightUnit": { "x": 0.5787119646672026, "z": -0.8155320116040978 },
+    "roadTangentUnit": { "x": 0.4751489147348839, "z": -0.8799053976571926 },
+    "driveway": {
+      "localPolygon": [
+        { "right": -7.5, "depth": 3.6 },
+        { "right": 7.5, "depth": 3.6 },
+        { "right": 6.0, "depth": 13.5 },
+        { "right": 4.6, "depth": 31.0 },
+        { "right": -4.6, "depth": 31.0 },
+        { "right": -6.0, "depth": 13.5 }
+      ],
+      "surface": "pale compacted gravel apron tapering into the private drive"
+    },
+    "gatehouse": {
+      "localCenter": { "right": 4.2, "depth": 22.0 },
+      "widthMeters": 8.2,
+      "depthMeters": 4.8,
+      "wallHeightMeters": 2.65,
+      "ridgeHeightMeters": 3.9,
+      "sourceConfidence": "street-view-observed-proportion; footprint remains approximate"
+    },
+    "fence": {
+      "inwardOffsetMeters": 4.0,
+      "driveGapHalfWidthMeters": 7.2,
+      "leftRunMeters": 43.0,
+      "rightRunMeters": 64.0,
+      "postSpacingMeters": 2.75,
+      "rails": 3,
+      "sourceConfidence": "street-view-observed layout aligned to the official road tangent"
+    },
+    "gateSign": {
+      "localCenter": { "right": -9.4, "depth": 6.3 },
+      "label": "GATE 1"
+    },
+    "utility": {
+      "primaryRoadOffsetMeters": 13.5,
+      "inwardOffsetMeters": 3.2,
+      "poleHeightMeters": 10.8,
+      "spanOffsetsMeters": [-38.0, 13.5, 58.0]
+    }
+  },
+  "views": [
+    {
+      "id": "entrance-front",
+      "label": "Direct entrance / front",
+      "camera": {
+        "id": "entrance-front",
+        "label": "Direct entrance / front",
+        "horizontalFovDegrees": 65,
+        "positionWorld": [328.811, 8.6, -97.855],
+        "targetWorld": [312.745, 8.2, -114.312]
+      },
+      "sourceView": {
+        "panoramaId": "1Zay8yG4Mf31AxM3p0N25w",
+        "headingDegrees": 305.36,
+        "pitchDegrees": -4.0,
+        "fovDegrees": 78,
+        "method": "Exact August 2024 panorama pose; heading is clockwise from true north per the Google Maps URL contract."
+      },
+      "expectedScreenRegions": [
+        "gatehouse and porch in the center-right third",
+        "broad gravel drive across the lower center",
+        "clean fence break framing both sides of the drive",
+        "road paint crossing the foreground with the west-side entrance beyond it"
+      ],
+      "baselineDiscrepancies": [
+        "No gatehouse, porch, vending machine, fence, gate sign, utility poles, wires, or road paint existed.",
+        "The player avatar and EUC dominated the capture instead of a locked road-facing composition.",
+        "Overlapping path ribbons formed an abstract angular junction rather than a gravel apron meeting a country road."
+      ]
+    },
+    {
+      "id": "entrance-road-right",
+      "label": "Road-right approach",
+      "camera": {
+        "id": "entrance-road-right",
+        "label": "Road-right approach",
+        "horizontalFovDegrees": 65,
+        "positionWorld": [344.886, 8.6, -128.952],
+        "targetWorld": [312.745, 8.2, -114.312]
+      },
+      "sourceView": {
+        "panoramaId": "1Zay8yG4Mf31AxM3p0N25w",
+        "headingDegrees": 350.36,
+        "pitchDegrees": -8.55,
+        "fovDegrees": 90,
+        "method": "Exact verified August 2024 shared view."
+      },
+      "expectedScreenRegions": [
+        "gatehouse low in the left third",
+        "gate sign and driveway break near center",
+        "tall utility pole and overhead wires near center-right",
+        "long white fence run and road continuing through the right third"
+      ],
+      "baselineDiscrepancies": [
+        "The current scene read as a generic field without the long fence or utility rhythm.",
+        "The public road lacked white edge lines and double yellow center lines.",
+        "No modest building mass anchored the drive entrance."
+      ]
+    },
+    {
+      "id": "entrance-road-left",
+      "label": "Road-left approach",
+      "camera": {
+        "id": "entrance-road-left",
+        "label": "Road-left approach",
+        "horizontalFovDegrees": 65,
+        "positionWorld": [311.626, 8.6, -67.358],
+        "targetWorld": [312.745, 8.2, -114.312]
+      },
+      "sourceView": {
+        "panoramaId": "1Zay8yG4Mf31AxM3p0N25w",
+        "headingDegrees": 285.36,
+        "pitchDegrees": -5.0,
+        "fovDegrees": 90,
+        "method": "Verified panorama rotated left to study the opposite fence run, drive break, and gatehouse offset."
+      },
+      "expectedScreenRegions": [
+        "white fence run leading toward the entrance",
+        "drive break and pale apron centered",
+        "gatehouse offset beyond the opening rather than blocking it",
+        "open lawn and mature deciduous canopy behind"
+      ],
+      "baselineDiscrepancies": [
+        "The drive break could not be read because no fence established its edges.",
+        "The existing path ribbons did not resolve into a road-to-apron-to-private-drive sequence."
+      ]
+    },
+    {
+      "id": "entrance-gatehouse-close",
+      "label": "Gatehouse detail",
+      "camera": {
+        "id": "entrance-gatehouse-close",
+        "label": "Gatehouse detail",
+        "horizontalFovDegrees": 54,
+        "positionWorld": [322.547, 8.1, -102.206],
+        "targetWorld": [312.745, 8.2, -114.312]
+      },
+      "sourceView": {
+        "panoramaId": "1Zay8yG4Mf31AxM3p0N25w",
+        "headingDegrees": 305.36,
+        "pitchDegrees": -2.0,
+        "fovDegrees": 48,
+        "method": "Direct entrance angle zoomed to the porch frontage."
+      },
+      "expectedScreenRegions": [
+        "low white gable and porch structure across the upper half",
+        "two dark front windows and central door",
+        "red Coca-Cola vending machine on the right frontage",
+        "gate sign and gravel texture retained as secondary context"
+      ],
+      "baselineDiscrepancies": [
+        "No close-range architectural or brand-color anchor existed.",
+        "The scene had no porch depth, frontage rhythm, or human-scale entrance detail."
+      ]
+    }
+  ]
+}

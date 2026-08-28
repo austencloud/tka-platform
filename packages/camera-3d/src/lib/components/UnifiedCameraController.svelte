@@ -6,6 +6,7 @@
     CameraMode,
     getNextCameraMode,
     isGameMode,
+    resolveAllowedCameraMode,
     type PhysicsProvider,
     type AvatarState,
   } from "../types";
@@ -17,6 +18,7 @@
   import { normalizeCameraFrameDelta } from "../frame-delta";
   import { createInputCapabilities } from "../input-capabilities";
   import { collectCameraColliders } from "../camera-collider-index";
+  import { resolveThrelteContextValue } from "../threlte-context-value";
   import {
     CLEAN_FLY_INTERACTION,
     flushFlyInteraction,
@@ -35,6 +37,8 @@
     sprintMultiplier?: number;
     jumpForce?: number;
     gravity?: number;
+    /** Bounded catch-up for movement owners that perform fixed substeps. */
+    maximumFrameDeltaSeconds?: number;
     /** Camera height above the physics body's centre in first person. */
     firstPersonCameraOffset?: number;
     /** Review harnesses can lock locomotion to one measured walking speed. */
@@ -110,7 +114,10 @@
   const { renderer, camera, scene } = useThrelte();
 
   const _initMode = $derived(
-    cameraPreferences.getModeForDestination(destinationId)
+    resolveAllowedCameraMode(
+      cameraPreferences.getModeForDestination(destinationId),
+      allowedModes
+    )
   );
   let mode = $state<CameraMode>(CameraMode.ORBIT);
   $effect.pre(() => {
@@ -398,7 +405,8 @@
   }
 
   function handlePointerLockChange() {
-    const canvas = cachedCanvas ?? renderer.current?.domElement;
+    const canvas =
+      cachedCanvas ?? resolveThrelteContextValue(renderer)?.domElement;
     if (!canvas) return;
     const wasLocked = isPointerLocked;
     isPointerLocked = document.pointerLockElement === canvas;
@@ -433,7 +441,8 @@
     }
     props.onModeChange?.(mode);
     if (isGameMode(mode) && inputCaps.canUsePointerLock()) {
-      const canvas = cachedCanvas ?? renderer.current?.domElement;
+      const canvas =
+        cachedCanvas ?? resolveThrelteContextValue(renderer)?.domElement;
       if (canvas?.isConnected) {
         requestPointerLockSafely(canvas);
       }
@@ -449,7 +458,9 @@
 
   function findCanvas(): HTMLCanvasElement | null {
     return (
-      (renderer.current?.domElement as HTMLCanvasElement | undefined) ??
+      (resolveThrelteContextValue(renderer)?.domElement as
+        | HTMLCanvasElement
+        | undefined) ??
       document.querySelector<HTMLCanvasElement>("canvas[data-engine]") ??
       null
     );
@@ -550,13 +561,17 @@
   });
 
   useTask((delta) => {
-    if (!enabled || !camera.current) return;
+    const activeCamera = resolveThrelteContextValue(camera);
+    if (!enabled || !activeCamera) return;
 
     // Background tabs, debugger pauses, and renderer handoffs can produce a
     // negative or abnormally large task delta. A negative limit makes the
     // zero-input movement clamp divide by zero and poisons the camera with
     // NaN coordinates. Normalize once at the frame boundary.
-    const frameDelta = normalizeCameraFrameDelta(delta);
+    const frameDelta = normalizeCameraFrameDelta(
+      delta,
+      props.maximumFrameDeltaSeconds
+    );
 
     if (mode === CameraMode.ORBIT) {
       avatarState.setMoveInput({ x: 0, z: 0 });
@@ -578,10 +593,10 @@
       targetZ = avatarState.position.z;
     }
 
-    if (camera.current instanceof PerspectiveCamera) {
-      if (camera.current.far < 10000) {
-        camera.current.far = 10000;
-        camera.current.updateProjectionMatrix();
+    if (activeCamera instanceof PerspectiveCamera) {
+      if (activeCamera.far < 10000) {
+        activeCamera.far = 10000;
+        activeCamera.updateProjectionMatrix();
       }
     }
 
@@ -611,7 +626,7 @@
     const isCrouching = enableCrouch && keys.has("KeyC");
     const hasMovementInput = forwardInput !== 0 || strafeInput !== 0;
 
-    const cam = camera.current;
+    const cam = activeCamera;
     const _forward = new Vector3();
     const _right = new Vector3();
     const _forward3D = new Vector3();
@@ -769,18 +784,19 @@
       const camX = targetX + Math.sin(yaw) * cfg.forwardOffset;
       const camY = targetY + cfg.height - crouchHeightOffset;
       const camZ = targetZ + Math.cos(yaw) * cfg.forwardOffset;
-      camera.current.position.set(camX, camY, camZ);
+      activeCamera.position.set(camX, camY, camZ);
       const lookDistance = 100;
       const lookX = camX + Math.sin(yaw) * lookDistance * Math.cos(pitch);
       const lookY = camY - Math.sin(pitch) * lookDistance;
       const lookZ = camZ + Math.cos(yaw) * lookDistance * Math.cos(pitch);
-      camera.current.lookAt(lookX, lookY, lookZ);
+      activeCamera.lookAt(lookX, lookY, lookZ);
     } else {
       const cfg = SETTINGS.thirdPerson;
       const cosPitch = Math.cos(pitch);
       let targetDistance = desiredDistance;
 
-      const sceneToCast = (scene as any)?.current ?? scene;
+      const sceneToCast = resolveThrelteContextValue(scene);
+      if (!sceneToCast) return;
       if (sceneToCast?.children) {
         rayOrigin.set(targetX, targetY + cfg.lookAtHeight, targetZ);
         const dCamX = targetX - Math.sin(yaw) * desiredDistance * cosPitch;
@@ -849,8 +865,8 @@
         smoothedLookZ += (lookTargetZ - smoothedLookZ) * dampFactor;
       }
 
-      camera.current.position.set(smoothedCamX, smoothedCamY, smoothedCamZ);
-      camera.current.lookAt(smoothedLookX, smoothedLookY, smoothedLookZ);
+      activeCamera.position.set(smoothedCamX, smoothedCamY, smoothedCamZ);
+      activeCamera.lookAt(smoothedLookX, smoothedLookY, smoothedLookZ);
     }
   });
 

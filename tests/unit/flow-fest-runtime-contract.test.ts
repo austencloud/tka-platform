@@ -3,10 +3,15 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { ImportedTerrainDataV2 } from "$lib/shared/3d/procedural-engine/generation/real-terrain-zone";
 import {
+  horizontalToVerticalFovDegrees,
   parseFlowFestRuntimeContract,
+  verticalToHorizontalFovDegrees,
   type FlowFestRuntimeContract,
 } from "../../src/routes/test/flow-fest-graybox/flow-fest-runtime-contract";
-import { buildFlowFestLidarBarrierGeometry } from "../../src/routes/test/flow-fest-graybox/flow-fest-review-geometry";
+import {
+  auditFlowFestBarrierTopology,
+  buildFlowFestLidarBarrierGeometry,
+} from "../../src/routes/test/flow-fest-graybox/flow-fest-review-geometry";
 
 const contractPath = resolve(
   process.cwd(),
@@ -92,6 +97,16 @@ function readTerrain(): ImportedTerrainDataV2 {
 }
 
 describe("Flow Fest Gate 2 runtime contract", () => {
+  it("preserves the registered horizontal lens across review aspects", () => {
+    for (const aspect of [16 / 9, 4 / 3, 375 / 812, 2560 / 1440]) {
+      const vertical = horizontalToVerticalFovDegrees(65, aspect);
+      expect(verticalToHorizontalFovDegrees(vertical, aspect)).toBeCloseTo(
+        65,
+        10
+      );
+    }
+  });
+
   it("locks approved walking timing and leaves vehicle timing unclaimed", () => {
     const contract = readContract();
     for (const branch of Object.values(contract.routes.arrivalBranches)) {
@@ -123,7 +138,7 @@ describe("Flow Fest Gate 2 runtime contract", () => {
     ).toBeCloseTo(3.324154, 5);
   });
 
-  it("derives visible collision proxies while carving every traced vertex", () => {
+  it("derives one visible collider mesh from the full measured occupancy mask", () => {
     const contract = readContract();
     const terrain = readTerrain();
     const bytes = readFileSync(
@@ -139,37 +154,63 @@ describe("Flow Fest Gate 2 runtime contract", () => {
       terrain,
       surface
     );
-    const positions = barriers.vertices;
-    const traces = [
-      ...contract.connectorTraces.upperClearingToMiddleEarth.vertices,
-      ...contract.connectorTraces.middleEarthToLowerClearing.vertices,
-    ];
-
-    expect(barriers.proxyCount).toBeGreaterThan(100);
+    expect(barriers.occupiedCellCount).toBe(95_459);
+    expect(barriers.occupancyWidth).toBe(541);
+    expect(barriers.occupancyHeight).toBe(211);
+    expect(barriers.cellSizeMeters).toBe(1);
+    expect(barriers.corridorClearanceMeters).toBeCloseTo(1.12, 8);
+    expect(barriers.vehicleCorridorClearanceMeters).toBeCloseTo(2.9, 8);
+    expect(barriers.vehicleHalfWidthMeters).toBe(1);
+    expect(barriers.conservativeDilationMeters).toBe(18);
+    expect(barriers.occupancy.reduce((total, cell) => total + cell, 0)).toBe(
+      barriers.occupiedCellCount
+    );
     expect(barriers.mesh.geometry.getAttribute("position").array).toBe(
       barriers.vertices
     );
     expect(barriers.mesh.geometry.getIndex()?.array).toBe(barriers.indices);
-    for (const point of traces) {
-      const floatsPerProxy = barriers.verticesPerProxy * 3;
-      for (
-        let offset = 0;
-        offset < positions.length;
-        offset += floatsPerProxy
-      ) {
-        const xs: number[] = [];
-        const zs: number[] = [];
-        for (let vertex = 0; vertex < barriers.verticesPerProxy; vertex += 1) {
-          xs.push(positions[offset + vertex * 3]!);
-          zs.push(positions[offset + vertex * 3 + 2]!);
-        }
-        const inside =
-          point.x >= Math.min(...xs) - 0.4 &&
-          point.x <= Math.max(...xs) + 0.4 &&
-          point.z >= Math.min(...zs) - 0.4 &&
-          point.z <= Math.max(...zs) + 0.4;
-        expect(inside).toBe(false);
-      }
+    barriers.mesh.geometry.dispose();
+  });
+
+  it("keeps every person and vehicle corridor plus each clearing open without an off-corridor challenger", () => {
+    const contract = readContract();
+    const terrain = readTerrain();
+    const bytes = readFileSync(
+      resolve(process.cwd(), "static/data/flow-fest-sim/surface-offset.u16")
+    );
+    const surface = new Uint16Array(
+      bytes.buffer,
+      bytes.byteOffset,
+      bytes.byteLength / Uint16Array.BYTES_PER_ELEMENT
+    );
+    const barriers = buildFlowFestLidarBarrierGeometry(
+      contract,
+      terrain,
+      surface
+    );
+    const audit = auditFlowFestBarrierTopology(contract, barriers);
+    expect(audit.status).toBe("passed");
+    expect(audit.spawnUnobstructed).toBe(true);
+    expect(audit.approvedPersonLegs).toBeGreaterThan(100);
+    expect(audit.obstructedApprovedLegs).toEqual([]);
+    expect(audit.approvedVehicleLegs).toBeGreaterThan(50);
+    expect(audit.obstructedApprovedVehicleLegs).toEqual([]);
+    for (const connector of Object.values(audit.connectors)) {
+      expect(connector.connected).toBe(true);
+      expect(connector.withinApprovedCorridor).toBe(true);
+      expect(connector.maximumDeviationFromApprovedMeters).toBeLessThanOrEqual(
+        connector.maximumAllowedDeviationMeters
+      );
+      expect(connector.offCorridorChallengerIsShorter).toBe(false);
+      expect(
+        connector.offCorridorChallengerGridDistanceMeters
+      ).toBeGreaterThanOrEqual(connector.inCorridorGridDistanceMeters!);
+    }
+    for (const zone of Object.values(audit.zones)) {
+      expect(zone.passed).toBe(true);
+      expect(zone.openFraction).toBeGreaterThanOrEqual(
+        zone.minimumRequiredOpenFraction
+      );
     }
     barriers.mesh.geometry.dispose();
   });

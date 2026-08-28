@@ -8,7 +8,7 @@ export interface FlowFestGrayboxReadyDetails {
   vertices: number;
   triangles: number;
   geometryBytes: number;
-  barrierProxies: number;
+  barrierCells: number;
   spawnGroundY: number;
   eyeHeightMeters: number;
 }
