@@ -23,3 +23,11 @@ export function buildConceptPlaceHref(id: string): string {
   writeConceptPlaceId(url, id);
   return `${url.pathname}${url.search}`;
 }
+
+export function shouldResumeSavedConcept(
+  routeConceptId: string | null,
+  routePlaceId: string | null,
+  allowResume: boolean
+): boolean {
+  return allowResume && routeConceptId === null && routePlaceId === null;
+}

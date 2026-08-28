@@ -30,6 +30,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
   } from "./domain/concept-routes";
   import {
     readConceptPlaceId,
+    shouldResumeSavedConcept,
     writeConceptPlaceId,
   } from "./domain/concept-place-routes";
   import {
@@ -199,7 +200,13 @@ Navigation via bottom tabs (mobile-first UX pattern)
       return;
     }
 
-    if (!routeConceptId && restoreSavedConcept) {
+    if (
+      shouldResumeSavedConcept(
+        routeConceptId,
+        routePlaceId,
+        restoreSavedConcept
+      )
+    ) {
       const savedConceptId = getActiveConceptId();
       const savedConcept = savedConceptId
         ? getConceptById(savedConceptId)
