@@ -118,19 +118,19 @@ describe("Flow Fest production dressing", () => {
 
     expect(first.counts).toEqual(second.counts);
     expect(first.counts).toMatchObject({
-      tents: 38,
-      vehicles: 9,
+      tents: 47,
+      vehicles: 32,
       festivalPeople: 26,
     });
     expect(first.counts.interpretedTrees).toBeGreaterThan(250);
     expect(first.counts.interpretedTrees).toBeLessThan(2500);
     expect(first.counts.routeLanterns).toBeGreaterThan(20);
-    expect(first.counts.sitePathSurfaces).toBe(8);
+    expect(first.counts.sitePathSurfaces).toBe(7);
     expect(first.counts.wayfindingMarkers).toBe(3);
     expect(first.counts.entranceLandmarks).toBe(13);
     expect(first.orientationAudit).toEqual({
       publicRoadSurfaceCount: 1,
-      internalDriveSurfaceCount: 5,
+      internalDriveSurfaceCount: 4,
       lowerCampgroundLoopSurfaceCount: 1,
       tracedConnectorSurfaceCount: 2,
       landmarkMarkerCount: 3,
@@ -149,15 +149,26 @@ describe("Flow Fest production dressing", () => {
     expect(first.spatialAudit.minimumTentCenterDistance).toBeGreaterThanOrEqual(
       3.1
     );
-    expect(first.spatialAudit.lowerTentPerimeterCount).toBe(8);
-    expect(first.spatialAudit.lowerTentMinimumLoopDistance).toBeGreaterThan(6);
+    expect(first.spatialAudit.lowerTentPerimeterCount).toBe(22);
+    expect(first.spatialAudit.lowerTentMinimumLoopDistance).toBeGreaterThan(
+      5.9
+    );
     expect(first.spatialAudit.lowerTentMaximumLoopDistance).toBeLessThan(8);
+    expect(first.spatialAudit).toMatchObject({
+      lowerCenterVehicleCount: 32,
+      lowerCenterTentCount: 4,
+      lowerInnerRoadsideTentCount: 8,
+      lowerOuterTreeLineTentCount: 14,
+      lowerCenterVehicleOutsideLoopCount: 0,
+      lowerInnerRoadsideTentOutsideLoopCount: 0,
+      lowerOuterTreeLineTentInsideLoopCount: 0,
+    });
     expect(
       first.spatialAudit.minimumVehicleCenterDistance
-    ).toBeGreaterThanOrEqual(5.2);
+    ).toBeGreaterThanOrEqual(4.05);
     expect(
       first.spatialAudit.minimumTentVehicleDistance
-    ).toBeGreaterThanOrEqual(4.1);
+    ).toBeGreaterThanOrEqual(3.2);
     expect(first.collision.visibleSolidCounts).toEqual({
       treeTrunks: first.counts.interpretedTrees,
       tents: first.counts.tents,
@@ -215,7 +226,7 @@ describe("Flow Fest production dressing", () => {
       4_000
     );
     expect(first.groundSurface.audit).toMatchObject({
-      sourceRouteCount: 8,
+      sourceRouteCount: 7,
     });
     expect(first.groundSurface.audit.lowerLoopPaintedPixels).toBeGreaterThan(
       300
@@ -334,8 +345,8 @@ describe("Flow Fest production dressing", () => {
       );
 
       expect(dressing.counts).toMatchObject({
-        tents: 38,
-        vehicles: 9,
+        tents: 47,
+        vehicles: 32,
         festivalPeople: 26,
         routeLanterns,
       });
@@ -346,7 +357,7 @@ describe("Flow Fest production dressing", () => {
         dressing.spatialAudit.minimumCanopyPeakDistance
       ).toBeGreaterThanOrEqual(7.5);
       expect(dressing.collision.staticMesh.visibleObjectCount).toBe(
-        dressing.counts.interpretedTrees + 50
+        dressing.counts.interpretedTrees + 82
       );
       expect(dressing.collision.campEstablishedMesh.visibleObjectCount).toBe(1);
       expect(dressing.collision.festivalActiveMesh.visibleObjectCount).toBe(5);

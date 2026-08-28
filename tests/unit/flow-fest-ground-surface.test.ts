@@ -78,7 +78,7 @@ describe("Flow Fest registered ground surface", () => {
     expect(dominantFamily(mask, woodland)).toBe("litter");
     expect(dominantFamily(mask, damp)).toBe("damp");
     expect(mask.audit.lowerLoopPaintedPixels).toBeGreaterThan(80);
-    expect(mask.audit.sourceRouteCount).toBe(8);
+    expect(mask.audit.sourceRouteCount).toBe(7);
   });
 });
 
