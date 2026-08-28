@@ -22,76 +22,31 @@
   },
   "geometry_m": {
     "finger_ring_inside_diameter_m": 0.022,
-    "finger_ring_center_x": -0.0026,
+    "finger_ring_center_x": 0.0,
     "finger_ring_center_y": 0.06,
-    "grip_ring_center_x": 0.000278,
+    "grip_ring_center_x": 0.0,
     "grip_ring_center_y": -0.007628,
     "cradle_join": [-0.0525, -0.004],
     "cradle_bottom_y": -0.076,
     "side_weld_bosses": [
       {
         "name": "Left",
-        "center": [-0.051872, -0.00335, 0.00075],
+        "center": [-0.05215, -0.00335, 0.00075],
         "half_extents": [0.0065, 0.0064, 0.004],
         "phase": 1.12
       },
       {
         "name": "Right",
-        "center": [0.052428, -0.00335, 0.00075],
+        "center": [0.05215, -0.00335, 0.00075],
         "half_extents": [0.0065, 0.0064, 0.004],
         "phase": 1.12
       }
     ],
-    "finger_ring_braces": [
-      {
-        "name": "Left",
-        "points": [
-          [-0.0128, 0.0518, 0.0],
-          [-0.01586, 0.0475, 0.0],
-          [-0.019722, 0.0432, 0.0]
-        ]
-      },
-      {
-        "name": "Right",
-        "points": [
-          [0.0076, 0.0518, 0.0],
-          [0.01354, 0.0475, 0.0],
-          [0.020278, 0.0432, 0.0]
-        ]
-      }
-    ],
-    "finger_ring_weld_bosses": [
-      {
-        "name": "UpperLeft",
-        "center": [-0.0089, 0.07305, 0.0004],
-        "half_extents": [0.00275, 0.00295, 0.0025],
-        "phase": 0.84
-      },
-      {
-        "name": "UpperRight",
-        "center": [0.0037, 0.07305, 0.0004],
-        "half_extents": [0.00275, 0.00295, 0.0025],
-        "phase": 0.84
-      },
-      {
-        "name": "LowerLeft",
-        "center": [-0.0128, 0.0518, 0.00035],
-        "half_extents": [0.0026, 0.0027, 0.0024],
-        "phase": 1.46
-      },
-      {
-        "name": "LowerRight",
-        "center": [0.0076, 0.0518, 0.00035],
-        "half_extents": [0.0026, 0.0027, 0.0024],
-        "phase": 1.46
-      },
-      {
-        "name": "Lower",
-        "center": [-0.0026, 0.047, 0.0018],
-        "half_extents": [0.0026, 0.0025, 0.0024],
-        "phase": 2.82
-      }
-    ],
+    "finger_ring_bottom_weld": {
+      "center": [0.0, 0.0462, 0.0004],
+      "radius": 0.0018
+    },
+    "center_petal_root": [-0.0064, 0.0715],
     "wick_roll_length_m": 0.05,
     "wick_roll_lengths_m": [0.053505, 0.045583, 0.050441, 0.050414, 0.054937],
     "wick_diameters_m": [0.032269, 0.03342, 0.028984, 0.034468, 0.03479],
@@ -370,8 +325,8 @@
   },
   "calibration": {
     "method": "front-on 1800 px product photograph; horizontal and vertical axes calibrated independently to the published 480 x 350 mm envelope",
-    "symmetry": "left and right rails traced independently so the reconstruction preserves the photographed hand-formed asymmetry",
-    "finger_ring": "22 mm inside diameter with the photographed 2.6 mm leftward hand-formed offset",
+    "symmetry": "left and right photograph traces are averaged onto one mirrored centerline design; hand-wrapped wick silhouettes remain independently measured",
+    "finger_ring": "22 mm inside diameter centered on the mirrored grip assembly",
     "wick_roll": "all five hand-wrapped rolls were segmented and measured independently from the calibrated photograph; the nominal tape width remains the published 50 mm",
     "wick_mount": "two 4 mm frame tines run parallel to each independently measured wick axis, enter through the inward-facing end cap, and continue inside the roll",
     "wick_diameter_m": 0.028

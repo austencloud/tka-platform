@@ -51,16 +51,11 @@ const reference = JSON.parse(
       half_extents: [number, number, number];
       phase: number;
     }[];
-    finger_ring_braces: {
-      name: "Left" | "Right";
-      points: [number, number, number][];
-    }[];
-    finger_ring_weld_bosses: {
-      name: "UpperLeft" | "UpperRight" | "LowerLeft" | "LowerRight" | "Lower";
+    finger_ring_bottom_weld: {
       center: [number, number, number];
-      half_extents: [number, number, number];
-      phase: number;
-    }[];
+      radius: number;
+    };
+    center_petal_root: [number, number];
     wick_roll_length_m: number;
     wick_roll_lengths_m: number[];
     wick_diameters_m: number[];
@@ -90,7 +85,7 @@ describe("Medium Lotus five-wick fire fan", () => {
       grip_stock_diameter_m: 0.007,
     });
     expect(reference.geometry_m.finger_ring_inside_diameter_m).toBe(0.022);
-    expect(reference.geometry_m.finger_ring_center_x).toBe(-0.0026);
+    expect(reference.geometry_m.finger_ring_center_x).toBe(0);
     expect(reference.geometry_m.finger_ring_center_y).toBe(0.06);
     expect(reference.geometry_m.wick_roll_length_m).toBe(0.05);
     expect(reference.calibration.wick_diameter_m).toBe(0.028);
@@ -112,7 +107,7 @@ describe("Medium Lotus five-wick fire fan", () => {
     expect(reference.pixel_scale_m[1]).toBeCloseTo(0.35 / (1503 - 310), 12);
   });
 
-  it("builds five complete petals from independently traced left and right rails", () => {
+  it("builds five complete petals from one averaged mirrored frame", () => {
     const expectedPaths = [
       "center_petal",
       "upper_outer_petal",
@@ -134,16 +129,18 @@ describe("Medium Lotus five-wick fire fan", () => {
         expect(pathPoints.length).toBeGreaterThanOrEqual(18);
       }
     }
-    expect(reference.calibration.symmetry).toContain("traced independently");
+    expect(reference.calibration.symmetry).toContain("averaged");
+    expect(reference.calibration.symmetry).toContain("mirrored");
     expect(builder).toContain('add_empty("Fan_Lotus", root)');
     expect(builder).toContain('parent["tka_frame_path_count"] = 10');
+    expect(builder).toContain("mirrored_anchor_pair(");
     expect(builder).toContain('f"Fan_Lotus_{readable_name}_Left"');
     expect(builder).toContain('f"Fan_Lotus_{readable_name}_Right"');
   });
 
   it("preserves the Russian grip, finger ring, lower cradle, and woven Kevlar", () => {
     expect(reference.geometry_m.finger_ring_center_y).toBeCloseTo(0.06, 7);
-    expect(reference.geometry_m.grip_ring_center_x).toBeCloseTo(0.000278, 9);
+    expect(reference.geometry_m.grip_ring_center_x).toBe(0);
     expect(reference.geometry_m.grip_ring_center_y).toBeCloseTo(-0.007628, 9);
     expect(reference.geometry_m.cradle_bottom_y).toBeCloseTo(-0.076, 7);
     expect(builder).toContain('"Fan_Lotus_GripRing"');
@@ -262,11 +259,11 @@ describe("Medium Lotus five-wick fire fan", () => {
     expect(builder).toContain("Fan_Lotus_SideWeld_");
   });
 
-  it("forms the two finger-ring triangles with real braces and weld shoulders", () => {
-    expect(reference.geometry_m.finger_ring_braces).toHaveLength(2);
-    expect(reference.geometry_m.finger_ring_weld_bosses).toHaveLength(5);
-    expect(builder).toContain("Fan_Lotus_FingerBrace_");
-    expect(builder).toContain("Fan_Lotus_FingerWeld_");
+  it("keeps the finger-ring junction centered without crossing braces", () => {
+    expect(reference.geometry_m.finger_ring_bottom_weld.radius).toBe(0.0018);
+    expect(builder).not.toContain("Fan_Lotus_FingerBrace_");
+    expect(builder).toContain('"Fan_Lotus_FingerWeld_Lower"');
+    expect(builder).not.toContain("finger_ring_weld_bosses");
   });
 
   it("keeps four build tiles balanced in wide and narrow picker containers", () => {

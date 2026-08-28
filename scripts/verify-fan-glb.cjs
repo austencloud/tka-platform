@@ -302,7 +302,7 @@ invariant(
   "Lotus fan finger ring no longer matches the calibrated photograph"
 );
 invariant(
-  Math.abs(lotusGroup.extras?.tka_grip_ring_center_m?.[0] - 0.000278) < 1e-7 &&
+  Math.abs(lotusGroup.extras?.tka_grip_ring_center_m?.[0]) < 1e-7 &&
     Math.abs(lotusGroup.extras?.tka_grip_ring_center_m?.[1] + 0.007628) < 1e-7,
   "Lotus fan grip ring no longer keeps its measured offset below the hand pivot"
 );
@@ -323,7 +323,8 @@ invariant(
 );
 invariant(
   lotusGroup.extras?.tka_petal_count === 5 &&
-    lotusGroup.extras?.tka_frame_path_count === 10,
+    lotusGroup.extras?.tka_frame_path_count === 10 &&
+    lotusGroup.extras?.tka_frame_symmetry === "mirrored averaged rail pairs",
   "Lotus fan no longer carries five complete two-sided petals"
 );
 invariant(
@@ -333,16 +334,14 @@ invariant(
   "Lotus fan is missing the two built-up grip junction welds"
 );
 invariant(
-  lotusGroup.extras?.tka_finger_ring_brace_count === 2 &&
-    lotusGroup.extras?.tka_finger_ring_weld_count === 5 &&
-    nodeIndexByName.has("Fan_Lotus_FingerBrace_Left") &&
-    nodeIndexByName.has("Fan_Lotus_FingerBrace_Right") &&
-    nodeIndexByName.has("Fan_Lotus_FingerWeld_UpperLeft") &&
-    nodeIndexByName.has("Fan_Lotus_FingerWeld_UpperRight") &&
-    nodeIndexByName.has("Fan_Lotus_FingerWeld_LowerLeft") &&
-    nodeIndexByName.has("Fan_Lotus_FingerWeld_LowerRight") &&
-    nodeIndexByName.has("Fan_Lotus_FingerWeld_Lower"),
-  "Lotus fan is missing the braced and welded finger-ring triangles"
+  lotusGroup.extras?.tka_finger_ring_brace_count === 0 &&
+    lotusGroup.extras?.tka_finger_ring_weld_count === 1 &&
+    !nodeIndexByName.has("Fan_Lotus_FingerBrace_Left") &&
+    !nodeIndexByName.has("Fan_Lotus_FingerBrace_Right") &&
+    nodeIndexByName.has("Fan_Lotus_FingerWeld_Lower") &&
+    !nodeIndexByName.has("Fan_Lotus_FingerWeld_UpperLeft") &&
+    !nodeIndexByName.has("Fan_Lotus_FingerWeld_LowerLeft"),
+  "Lotus finger ring is not joined by one centered weld without crossing braces"
 );
 invariant(
   lotusGroup.extras?.tka_wick_mount ===

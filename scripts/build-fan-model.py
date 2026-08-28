@@ -711,6 +711,53 @@ def quadratic_curve(
     return points
 
 
+def resample_anchors(
+    anchors: list[list[float]], sample_count: int
+) -> list[Vector]:
+    """Resample a photographed rail so its opposite side can share each station."""
+    points = [Vector(point) for point in anchors]
+    cumulative = [0.0]
+    for start, end in zip(points, points[1:]):
+        cumulative.append(cumulative[-1] + (end - start).length)
+    total_length = cumulative[-1]
+    if total_length <= 0:
+        return [points[0].copy() for _ in range(sample_count)]
+
+    samples: list[Vector] = []
+    segment_index = 0
+    for sample_index in range(sample_count):
+        target = total_length * sample_index / (sample_count - 1)
+        while (
+            segment_index < len(points) - 2
+            and cumulative[segment_index + 1] < target
+        ):
+            segment_index += 1
+        segment_length = cumulative[segment_index + 1] - cumulative[segment_index]
+        progress = (
+            0.0
+            if segment_length <= 0
+            else (target - cumulative[segment_index]) / segment_length
+        )
+        samples.append(points[segment_index].lerp(points[segment_index + 1], progress))
+    return samples
+
+
+def mirrored_anchor_pair(
+    left_anchors: list[list[float]],
+    right_anchors: list[list[float]],
+) -> tuple[list[list[float]], list[list[float]]]:
+    """Average the two photographed rails into one deliberately mirrored design."""
+    sample_count = max(len(left_anchors), len(right_anchors))
+    left_samples = resample_anchors(left_anchors, sample_count)
+    right_samples = resample_anchors(right_anchors, sample_count)
+    left = [
+        [(left_point.x - right_point.x) / 2, (left_point.y + right_point.y) / 2]
+        for left_point, right_point in zip(left_samples, right_samples)
+    ]
+    right = [[-x, y] for x, y in left]
+    return left, right
+
+
 def catmull_rom_curve(
     anchors: list[tuple[float, float]], *, segments_per_span: int = 12
 ) -> list[tuple[float, float, float]]:
@@ -1247,11 +1294,10 @@ def build_lotus_frame(
     parent["tka_reference_symmetry"] = reference["calibration"]["symmetry"]
     parent["tka_petal_count"] = 5
     parent["tka_frame_path_count"] = 10
+    parent["tka_frame_symmetry"] = "mirrored averaged rail pairs"
     parent["tka_side_weld_boss_count"] = len(geometry["side_weld_bosses"])
-    parent["tka_finger_ring_brace_count"] = len(geometry["finger_ring_braces"])
-    parent["tka_finger_ring_weld_count"] = len(
-        geometry["finger_ring_weld_bosses"]
-    )
+    parent["tka_finger_ring_brace_count"] = 0
+    parent["tka_finger_ring_weld_count"] = 1
     parent["tka_wick_centers_m"] = [list(centre) for centre in wick_centres]
     parent["tka_wick_directions_m"] = [
         list(direction) for direction in wick_directions
@@ -1291,27 +1337,16 @@ def build_lotus_frame(
             parent,
         )
     )
-    for brace in geometry["finger_ring_braces"]:
-        objects.append(
-            add_round_rod(
-                f"Fan_Lotus_FingerBrace_{brace['name']}",
-                brace["points"],
-                LOTUS_FRAME_RADIUS_M,
-                steel,
-                parent,
-            )
+    bottom_weld = geometry["finger_ring_bottom_weld"]
+    objects.append(
+        add_weld_bead(
+            "Fan_Lotus_FingerWeld_Lower",
+            tuple(bottom_weld["center"]),
+            bottom_weld["radius"],
+            steel,
+            parent,
         )
-    for boss in geometry["finger_ring_weld_bosses"]:
-        objects.append(
-            add_weld_boss(
-                f"Fan_Lotus_FingerWeld_{boss['name']}",
-                tuple(boss["center"]),
-                tuple(boss["half_extents"]),
-                boss["phase"],
-                steel,
-                parent,
-            )
-        )
+    )
 
     cradle_join_x = abs(geometry["cradle_join"][0])
     cradle_join_y = geometry["cradle_join"][1]
@@ -1425,15 +1460,25 @@ def build_lotus_frame(
     seated_right_paths: dict[str, list[list[float]]] = {}
     for path_name in left_frame_paths:
         readable_name = "".join(part.title() for part in path_name.split("_"))
+        left_symmetric, right_symmetric = mirrored_anchor_pair(
+            left_frame_paths[path_name],
+            right_frame_paths[path_name],
+        )
+        if path_name == "center_petal":
+            left_symmetric[0] = geometry["center_petal_root"]
+            right_symmetric[0] = [
+                -geometry["center_petal_root"][0],
+                geometry["center_petal_root"][1],
+            ]
         left_anchors = (
-            left_frame_paths[path_name]
+            left_symmetric
             if path_name == "center_petal"
-            else seat_in_grip_ring(left_frame_paths[path_name])
+            else seat_in_grip_ring(left_symmetric)
         )
         right_anchors = (
-            right_frame_paths[path_name]
+            right_symmetric
             if path_name == "center_petal"
-            else seat_in_grip_ring(right_frame_paths[path_name])
+            else seat_in_grip_ring(right_symmetric)
         )
         seated_left_paths[path_name] = left_anchors
         seated_right_paths[path_name] = right_anchors
