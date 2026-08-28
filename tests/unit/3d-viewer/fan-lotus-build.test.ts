@@ -1,0 +1,308 @@
+import fs from "node:fs";
+import path from "node:path";
+
+import { describe, expect, it } from "vitest";
+
+const root = process.cwd();
+const builder = fs.readFileSync(
+  path.join(root, "scripts", "build-fan-model.py"),
+  "utf8"
+);
+const vectorReference = fs.readFileSync(
+  path.join(root, "scripts", "assets", "lotus-fire-reference.svg"),
+  "utf8"
+);
+const picker = fs.readFileSync(
+  path.join(
+    root,
+    "src",
+    "lib",
+    "shared",
+    "3d",
+    "components",
+    "controls",
+    "ScenePropPicker.svelte"
+  ),
+  "utf8"
+);
+const reference = JSON.parse(
+  fs.readFileSync(
+    path.join(root, "scripts", "assets", "lotus-fire-reference.json"),
+    "utf8"
+  )
+) as {
+  source_image_px: [number, number];
+  fan_bbox_px: { left: number; top: number; right: number; bottom: number };
+  pivot_px: [number, number];
+  published_dimensions_m: [number, number];
+  pixel_scale_m: [number, number];
+  vector_reference: string;
+  published_construction: {
+    spinning_ring_inside_diameter_m: number;
+    wick_length_m: number;
+    frame_stock_diameter_m: number;
+    grip_stock_diameter_m: number;
+  };
+  geometry_m: {
+    finger_ring_inside_diameter_m: number;
+    finger_ring_center_x: number;
+    finger_ring_center_y: number;
+    grip_ring_center_x: number;
+    grip_ring_center_y: number;
+    cradle_bottom_y: number;
+    side_weld_bosses: {
+      name: "Left" | "Right";
+      center: [number, number, number];
+      half_extents: [number, number, number];
+      phase: number;
+    }[];
+    finger_ring_bottom_weld: {
+      center: [number, number, number];
+      radius: number;
+    };
+    wick_roll_length_m: number;
+    wick_roll_lengths_m: number[];
+    wick_diameters_m: number[];
+    wick_tine_half_spacing_m: number;
+    wick_tine_straight_length_m: number;
+    wick_tine_blend_length_m: number;
+    wick_tine_insertion_depth_m: number;
+    wick_centers_m: [number, number][];
+    wick_directions: [number, number][];
+  };
+  calibration: {
+    symmetry: string;
+    wick_diameter_m: number;
+    wick_mount: string;
+  };
+};
+
+describe("Medium Lotus five-wick fire fan", () => {
+  it("keeps the published physical envelope, stock, grip, and wicks", () => {
+    expect(reference.published_dimensions_m).toEqual([0.48, 0.35]);
+    expect(reference.published_construction).toMatchObject({
+      spinning_ring_inside_diameter_m: 0.092075,
+      wick_length_m: 0.05,
+      frame_stock_diameter_m: 0.004,
+      grip_stock_diameter_m: 0.007,
+    });
+    expect(reference.geometry_m.finger_ring_inside_diameter_m).toBe(0.022);
+    expect(reference.geometry_m.finger_ring_center_x).toBe(0);
+    expect(reference.geometry_m.finger_ring_center_y).toBe(0.06);
+    expect(reference.geometry_m.wick_roll_length_m).toBe(0.05);
+    expect(reference.calibration.wick_diameter_m).toBe(0.028);
+    expect(builder).toContain("LOTUS_WIDTH_M = 0.48");
+    expect(builder).toContain("LOTUS_HEIGHT_M = 0.35");
+    expect(builder).toContain("LOTUS_RING_DIAMETER_M = 0.092075");
+  });
+
+  it("calibrates the clean product photograph to the published dimensions", () => {
+    expect(reference.source_image_px).toEqual([1800, 1800]);
+    expect(reference.fan_bbox_px).toEqual({
+      left: 45,
+      top: 310,
+      right: 1769,
+      bottom: 1503,
+    });
+    expect(reference.pivot_px).toEqual([900, 1230]);
+    expect(reference.pixel_scale_m[0]).toBeCloseTo(0.48 / (1769 - 45), 12);
+    expect(reference.pixel_scale_m[1]).toBeCloseTo(0.35 / (1503 - 310), 12);
+  });
+
+  it("builds five complete petals from mirrored SVG paths", () => {
+    const expectedPathIds = [
+      "center-petal-left",
+      "center-petal-right",
+      "upper-outer-petal-left",
+      "upper-outer-petal-right",
+      "upper-inner-petal-left",
+      "upper-inner-petal-right",
+      "lower-outer-petal-left",
+      "lower-outer-petal-right",
+      "lower-inner-petal-left",
+      "lower-inner-petal-right",
+    ];
+    const paths = new Map(
+      [...vectorReference.matchAll(/<path id="([^"]+)" d="([^"]+)"\/>/g)].map(
+        (match) => [match[1], match[2]]
+      )
+    );
+    expect([...paths.keys()]).toEqual(expectedPathIds);
+    expect(reference.vector_reference).toBe(
+      "scripts/assets/lotus-fire-reference.svg"
+    );
+    expect(reference.calibration.symmetry).toContain("cubic Beziers");
+    expect(reference.calibration.symmetry).toContain("reflected exactly");
+
+    for (const leftId of expectedPathIds.filter((id) => id.endsWith("-left"))) {
+      const rightId = leftId.replace(/-left$/, "-right");
+      const leftNumbers = paths
+        .get(leftId)
+        ?.match(/-?\d+(?:\.\d+)?/g)
+        ?.map(Number);
+      const rightNumbers = paths
+        .get(rightId)
+        ?.match(/-?\d+(?:\.\d+)?/g)
+        ?.map(Number);
+      expect(rightNumbers).toHaveLength(leftNumbers?.length ?? 0);
+      for (let index = 0; index < (leftNumbers?.length ?? 0); index += 2) {
+        expect(rightNumbers?.[index]).toBeCloseTo(480 - leftNumbers![index], 4);
+        expect(rightNumbers?.[index + 1]).toBeCloseTo(
+          leftNumbers![index + 1],
+          4
+        );
+      }
+    }
+
+    expect(builder).toContain('add_empty("Fan_Lotus", root)');
+    expect(builder).toContain('parent["tka_frame_path_count"] = 10');
+    expect(builder).toContain("bpy.ops.import_curve.svg");
+    expect(builder).toContain("interpolate_bezier(");
+    expect(builder).not.toContain("mirrored_anchor_pair(");
+    expect(builder).toContain('f"Fan_Lotus_{readable_name}_Left"');
+    expect(builder).toContain('f"Fan_Lotus_{readable_name}_Right"');
+  });
+
+  it("preserves the Russian grip, finger ring, lower cradle, and woven Kevlar", () => {
+    expect(reference.geometry_m.finger_ring_center_y).toBeCloseTo(0.06, 7);
+    expect(reference.geometry_m.grip_ring_center_x).toBe(0);
+    expect(reference.geometry_m.grip_ring_center_y).toBeCloseTo(-0.007628, 9);
+    expect(reference.geometry_m.cradle_bottom_y).toBeCloseTo(-0.076, 7);
+    expect(builder).toContain('"Fan_Lotus_GripRing"');
+    expect(builder).toContain('"Fan_Lotus_FingerRing"');
+    expect(builder).toContain('"Fan_Lotus_LowerCradle"');
+    expect(builder).toContain('"constant-radius circle"');
+    expect(builder).toContain("add_woven_cylinder_between(");
+    expect(builder).toContain("write_rgba_png(");
+    expect(builder).toContain('nodes.new("ShaderNodeNormalMap")');
+    expect(builder).toContain('f"Fan_Lotus_Wick_{index}"');
+  });
+
+  it("seats ten parallel wire tines through the five inward-facing wick caps", () => {
+    expect(reference.geometry_m).toMatchObject({
+      wick_tine_half_spacing_m: 0.004,
+      wick_tine_straight_length_m: 0.009,
+      wick_tine_blend_length_m: 0.022,
+      wick_tine_insertion_depth_m: 0.01,
+    });
+    expect(reference.calibration.wick_mount).toContain(
+      "enter through the inward-facing end cap"
+    );
+    expect(builder).toContain(
+      'parent["tka_wick_mount"] = "paired axial tines through inward-facing end caps"'
+    );
+    expect(builder).toContain('rod["tka_wick_tine_neck_m"]');
+    expect(builder).toContain('rod["tka_wick_tine_entry_m"]');
+    expect(builder).toContain("neck.lerp(entry, step / 8)");
+  });
+
+  it("joins the centre lotus petal to the photographed finger-ring shoulders", () => {
+    const fingerRingInnerRadius =
+      reference.geometry_m.finger_ring_inside_diameter_m / 2;
+    const fingerRingOuterRadius =
+      fingerRingInnerRadius +
+      reference.published_construction.frame_stock_diameter_m;
+
+    for (const pathId of ["center-petal-left", "center-petal-right"]) {
+      const pathData = vectorReference.match(
+        new RegExp(`<path id="${pathId}" d="M ([^ ]+) ([^ ]+)`)
+      );
+      expect(pathData).not.toBeNull();
+      const startX = (Number(pathData?.[1]) - 240) / 1000;
+      const startY = (270 - Number(pathData?.[2])) / 1000;
+      const offsetFromFingerRing = Math.hypot(
+        startX - reference.geometry_m.finger_ring_center_x,
+        startY - reference.geometry_m.finger_ring_center_y
+      );
+      expect(offsetFromFingerRing).toBeGreaterThan(fingerRingInnerRadius);
+      expect(offsetFromFingerRing).toBeLessThanOrEqual(
+        fingerRingOuterRadius + 0.0035
+      );
+    }
+  });
+
+  it("keeps all five measured wick rolls inside the photographed soft envelope", () => {
+    expect(reference.geometry_m.wick_centers_m).toEqual([
+      [-0.21183, 0.081127],
+      [-0.165372, 0.214802],
+      [-0.001687, 0.242065],
+      [0.162503, 0.218212],
+      [0.212362, 0.08209],
+    ]);
+    expect(reference.geometry_m.wick_directions).toHaveLength(5);
+    expect(reference.geometry_m.wick_roll_lengths_m).toEqual([
+      0.053505, 0.045583, 0.050441, 0.050414, 0.054937,
+    ]);
+    expect(reference.geometry_m.wick_diameters_m).toEqual([
+      0.032269, 0.03342, 0.028984, 0.034468, 0.03479,
+    ]);
+    const topY =
+      (reference.pivot_px[1] - reference.fan_bbox_px.top) *
+      reference.pixel_scale_m[1];
+    const bottomY =
+      (reference.pivot_px[1] - reference.fan_bbox_px.bottom) *
+      reference.pixel_scale_m[1];
+    reference.geometry_m.wick_centers_m.forEach(([x, y], index) => {
+      const [directionX, directionY] =
+        reference.geometry_m.wick_directions[index];
+      const wickHalf = reference.geometry_m.wick_roll_lengths_m[index] / 2;
+      const wickRadius = reference.geometry_m.wick_diameters_m[index] / 2;
+      expect(Math.hypot(directionX, directionY)).toBeCloseTo(1, 5);
+      const horizontalExtent =
+        Math.abs(directionX) * wickHalf + Math.abs(directionY) * wickRadius;
+      const verticalExtent =
+        Math.abs(directionY) * wickHalf + Math.abs(directionX) * wickRadius;
+      expect(Math.abs(x) + horizontalExtent).toBeLessThan(
+        reference.published_dimensions_m[0] / 2 + 0.005
+      );
+      expect(y + verticalExtent).toBeLessThan(topY + 0.002);
+      expect(y - verticalExtent).toBeGreaterThan(bottomY - 0.002);
+    });
+  });
+
+  it("builds the asymmetric side welds as bosses instead of pin-head beads", () => {
+    expect(reference.geometry_m.side_weld_bosses).toHaveLength(2);
+    expect(
+      reference.geometry_m.side_weld_bosses.map(({ name }) => name)
+    ).toEqual(["Left", "Right"]);
+    for (const boss of reference.geometry_m.side_weld_bosses) {
+      expect(boss.half_extents[0]).toBeGreaterThan(
+        reference.published_construction.grip_stock_diameter_m / 2
+      );
+      expect(boss.half_extents[1]).toBeGreaterThan(
+        reference.published_construction.grip_stock_diameter_m / 2
+      );
+      expect(boss.half_extents[2]).toBeGreaterThan(
+        reference.published_construction.frame_stock_diameter_m / 2
+      );
+    }
+    expect(reference.geometry_m.side_weld_bosses[0].half_extents).toEqual(
+      reference.geometry_m.side_weld_bosses[1].half_extents
+    );
+    expect(reference.geometry_m.side_weld_bosses[0].center[1]).toBe(
+      reference.geometry_m.side_weld_bosses[1].center[1]
+    );
+    expect(builder).toContain("add_weld_boss(");
+    expect(builder).toContain("Fan_Lotus_SideWeld_");
+  });
+
+  it("keeps the finger-ring junction clear of fake crossing braces", () => {
+    expect(reference.geometry_m.finger_ring_bottom_weld.radius).toBe(0.0018);
+    expect(vectorReference).not.toContain("finger-triangle-brace");
+    expect(builder).not.toContain("Fan_Lotus_FingerBrace_");
+    expect(builder).toContain('"Fan_Lotus_FingerWeld_Lower"');
+    expect(builder).not.toContain("finger_ring_weld_bosses");
+  });
+
+  it("keeps traced rail geometry owned by the vector reference", () => {
+    expect(reference.geometry_m).not.toHaveProperty("left_frame_paths");
+    expect(reference.geometry_m).not.toHaveProperty("right_frame_paths");
+    expect(reference.geometry_m).not.toHaveProperty("center_petal_root");
+  });
+
+  it("keeps four build tiles balanced in wide and narrow picker containers", () => {
+    expect(picker).toContain("--build-option-count: 4");
+    expect(picker).toContain("@container (max-width: 499px)");
+    expect(picker).toContain("--build-option-count: 2");
+  });
+});

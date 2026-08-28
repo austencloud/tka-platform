@@ -116,6 +116,7 @@ let isInputFocused = $state(false);
     <div class="input-container">
       <input
         bind:this={inputElement}
+        name="generation-word"
         type="text"
         class="word-field"
         placeholder="A-Z"

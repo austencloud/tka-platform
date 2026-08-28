@@ -43,6 +43,7 @@ even when Svelte recreates the component instance.
     getArrowOrientationTransitionDirection,
     type ArrowRotationAnimationDirection,
   } from "../services/arrow-orientation-transition";
+  import { applyColorToSvg as applyDisplayColor } from "$lib/shared/utils/svg-color-utils";
 
   let {
     motionData,
@@ -61,6 +62,7 @@ even when Svelte recreates the component instance.
     // the user's global setting is light mode.
     darkMode = undefined,
     renderPart = undefined,
+    colorOverride = undefined,
   } = $props<{
     motionData: MotionData;
     arrowAssets: ArrowAssets;
@@ -77,7 +79,38 @@ even when Svelte recreates the component instance.
     /** Dark mode override. When set, overrides global AnimationVisibilityStateManager detection. */
     darkMode?: boolean;
     renderPart?: "shaft" | "tip";
+    /** Optional display-only color. The motion remains blue/red semantically. */
+    colorOverride?: string;
   }>();
+
+  const colorSuffix = $derived(colorOverride?.replace(/[^a-z0-9]/gi, "") ?? "");
+  const displayedImageSrc = $derived(
+    colorOverride
+      ? applyDisplayColor(arrowAssets.imageSrc, colorOverride, {
+          transformStroke: true,
+          makeClassNamesUnique: true,
+          colorSuffix,
+        })
+      : arrowAssets.imageSrc
+  );
+  const displayedShaftSrc = $derived(
+    colorOverride && arrowAssets.shaftSrc
+      ? applyDisplayColor(arrowAssets.shaftSrc, colorOverride, {
+          transformStroke: true,
+          makeClassNamesUnique: true,
+          colorSuffix,
+        })
+      : arrowAssets.shaftSrc
+  );
+  const displayedTipSrc = $derived(
+    colorOverride && arrowAssets.tipSrc
+      ? applyDisplayColor(arrowAssets.tipSrc, colorOverride, {
+          transformStroke: true,
+          makeClassNamesUnique: true,
+          colorSuffix,
+        })
+      : arrowAssets.tipSrc
+  );
 
   // Get centralized visibility manager for dark mode state and cached colors
   const visibilityManager = getAnimationVisibilityManager();
@@ -494,12 +527,12 @@ even when Svelte recreates the component instance.
       transform="translate({-safeCenter.x}, {-safeCenter.y})"
       filter={!isSelected ? `url(#${haloId})` : undefined}
     >
-      {#if renderPart === "shaft" && arrowAssets.shaftSrc}
-        {@html arrowAssets.shaftSrc}
-      {:else if renderPart === "tip" && arrowAssets.tipSrc}
-        {@html arrowAssets.tipSrc}
+      {#if renderPart === "shaft" && displayedShaftSrc}
+        {@html displayedShaftSrc}
+      {:else if renderPart === "tip" && displayedTipSrc}
+        {@html displayedTipSrc}
       {:else}
-        {@html arrowAssets.imageSrc}
+        {@html displayedImageSrc}
       {/if}
     </g>
 

@@ -68,6 +68,9 @@ describe("prop studio build previews", () => {
     expect(builds.find((option) => option.id === "fire")?.image).toContain(
       "fan-fire-covered"
     );
+    expect(builds.find((option) => option.id === "lotus")?.image).toBe(
+      "/images/props/build-previews/fan-lotus-bare-complete.webp"
+    );
 
     const frames = fanFramePreviewOptions("bare");
     expect(frames.map((option) => option.image)).toEqual([
@@ -89,6 +92,7 @@ describe("prop studio build previews", () => {
       "fan-pictograph-front.webp",
       "fan-fire-bare-complete.webp",
       "fan-fire-covered-complete.webp",
+      "fan-lotus-bare-complete.webp",
       "fan-day-black-bare-complete.webp",
       "fan-day-black-covered-complete.webp",
       "fan-day-white-bare-complete.webp",

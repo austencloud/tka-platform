@@ -98,7 +98,9 @@
     showFanAppearance && build.fanBuild === "day"
   );
   const showFanCover = $derived(
-    showFanAppearance && build.fanBuild !== "pictograph"
+    showFanAppearance &&
+      build.fanBuild !== "pictograph" &&
+      build.fanBuild !== "lotus"
   );
   const showBuildControls = $derived(
     showFinishes || showFanAppearance || selectedFamily !== undefined
@@ -123,20 +125,19 @@
   );
 
   const fanBuildContext = $derived(
-    build.fanBuild === "day" ? "Day fan" : "Fire fan"
+    build.fanBuild === "day"
+      ? "Day fan"
+      : build.fanBuild === "lotus"
+        ? "Lotus fan"
+        : "Fire fan"
   );
   const finishOptions = $derived(
     finishPreviewOptions(currentProp ?? PropType.TRIAD)
   );
   const fanBuildOptions = $derived(
-    fanBuildPreviewOptions(
-      build.fanFrameColor,
-      build.fanCover
-    )
+    fanBuildPreviewOptions(build.fanFrameColor, build.fanCover)
   );
-  const fanFrameOptions = $derived(
-    fanFramePreviewOptions(build.fanCover)
-  );
+  const fanFrameOptions = $derived(fanFramePreviewOptions(build.fanCover));
   const fanCoverOptions = $derived(
     fanCoverPreviewOptions(
       build.fanBuild === "day" ? "day" : "fire",
@@ -184,7 +185,9 @@
 
   const buildLayoutMotion = createLayoutMotion({
     getRoot: () => buildStageElement,
-    groups: [{ selector: "[data-build-layout-key]", datasetKey: "buildLayoutKey" }],
+    groups: [
+      { selector: "[data-build-layout-key]", datasetKey: "buildLayoutKey" },
+    ],
     getDuration: () => motionDuration(DURATION.emphasis),
   });
 
@@ -213,10 +216,7 @@
   });
 </script>
 
-<div
-  class="scene-prop-picker"
-  style:--prop-picker-accent={accentColor || null}
->
+<div class="scene-prop-picker" style:--prop-picker-accent={accentColor || null}>
   <div
     bind:this={buildStageElement}
     class="build-stage"
@@ -462,8 +462,21 @@
   }
 
   .fan-build-primary {
+    --build-option-count: 4;
     grid-column: 1 / -1;
     grid-row: 1;
+  }
+
+  @container (max-width: 499px) {
+    .fan-build-primary {
+      --build-option-count: 2;
+    }
+  }
+
+  @container (min-width: 620px) and (max-width: 759px) {
+    .fan-build-layout.has-customization .fan-build-primary {
+      --build-option-count: 2;
+    }
   }
 
   .fan-customization {

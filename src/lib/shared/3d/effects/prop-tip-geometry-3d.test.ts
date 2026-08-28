@@ -13,11 +13,13 @@ import {
 import {
   FAN_DAY_RIM_POINTS_M,
   FAN_FIRE_WICK_CENTERS_M,
+  FAN_LOTUS_WICK_CENTERS_M,
 } from "./prop-build-tip-geometry-3d";
 import { resolvePropTipAnchors3D } from "./prop-tip-geometry-3d";
 
 const PICTOGRAPH = { fanBuild: "pictograph", finish: "day" } as const;
 const FIRE = { fanBuild: "fire", finish: "fire" } as const;
+const LOTUS = { fanBuild: "lotus", finish: "fire" } as const;
 const DAY = { fanBuild: "day", finish: "day" } as const;
 
 /** `Prop3D.svelte` scales the whole prop group for every "big" variant. */
@@ -56,6 +58,16 @@ describe("resolvePropTipAnchors3D", () => {
     const anchors = resolvePropTipAnchors3D(PropType.FAN, 0.5, DAY);
     expect(anchors).toEqual(
       FAN_DAY_RIM_POINTS_M.map((offset) => ({
+        effectTipIndex: 1,
+        offset: { ...offset },
+      }))
+    );
+  });
+
+  it("places all five Lotus emitters at the measured wick centres", () => {
+    const anchors = resolvePropTipAnchors3D(PropType.FAN, 0.5, LOTUS);
+    expect(anchors).toEqual(
+      FAN_LOTUS_WICK_CENTERS_M.map((offset) => ({
         effectTipIndex: 1,
         offset: { ...offset },
       }))

@@ -2587,15 +2587,18 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..97055067c88b72cc4cd4d4abfa5d6567
 +    if (!scene) return;
 +
 +    const fire = scene.getObjectByName("Fan_Fire");
++    const lotus = scene.getObjectByName("Fan_Lotus");
 +    const day = scene.getObjectByName("Fan_Day");
 +    const cover = scene.getObjectByName("Fan_Cover");
 +    const isFire = build.fanBuild === "fire";
++    const isLotus = build.fanBuild === "lotus";
 +    const isDay = build.fanBuild === "day";
 +    const isCovered =
-+      build.fanBuild !== "pictograph" &&
++      (isFire || isDay) &&
 +      build.fanCover === "covered";
 +
 +    if (fire) fire.visible = isFire;
++    if (lotus) lotus.visible = isLotus;
 +    if (day) day.visible = isDay;
 +    if (cover) cover.visible = isCovered;
 +
@@ -13638,15 +13641,18 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..97055067c88b72cc4cd4d4abfa5d6567
 +    if (!scene) return;
 +
 +    const fire = scene.getObjectByName("Fan_Fire");
++    const lotus = scene.getObjectByName("Fan_Lotus");
 +    const day = scene.getObjectByName("Fan_Day");
 +    const cover = scene.getObjectByName("Fan_Cover");
 +    const isFire = build.fanBuild === "fire";
++    const isLotus = build.fanBuild === "lotus";
 +    const isDay = build.fanBuild === "day";
 +    const isCovered =
-+      build.fanBuild !== "pictograph" &&
++      (isFire || isDay) &&
 +      build.fanCover === "covered";
 +
 +    if (fire) fire.visible = isFire;
++    if (lotus) lotus.visible = isLotus;
 +    if (day) day.visible = isDay;
 +    if (cover) cover.visible = isCovered;
 +
@@ -23687,7 +23693,7 @@ index 0000000000000000000000000000000000000000..0d07824a7a76598d6a9d50dbec17dc64
 +import { PropType } from "../domain/enums/PropType";
 +
 +export type PropFinish = "fire" | "day";
-+export type FanBuild = "pictograph" | "fire" | "day";
++export type FanBuild = "pictograph" | "fire" | "lotus" | "day";
 +export type FanFrameColor = "black" | "white";
 +export type FanCover = "bare" | "covered";
 +
