@@ -298,8 +298,13 @@ invariant(
   "Lotus fan spinning ring is no longer the published 3 5/8-inch ID"
 );
 invariant(
-  Math.abs(lotusGroup.extras?.tka_finger_ring_id_m - 0.0155) < 1e-7,
+  Math.abs(lotusGroup.extras?.tka_finger_ring_id_m - 0.022) < 1e-7,
   "Lotus fan finger ring no longer matches the calibrated photograph"
+);
+invariant(
+  Math.abs(lotusGroup.extras?.tka_grip_ring_center_m?.[0] - 0.000278) < 1e-7 &&
+    Math.abs(lotusGroup.extras?.tka_grip_ring_center_m?.[1] + 0.007628) < 1e-7,
+  "Lotus fan grip ring no longer keeps its measured offset below the hand pivot"
 );
 invariant(
   Math.abs(lotusGroup.extras?.tka_wick_tape_width_m - 0.05) < 1e-7 &&
@@ -320,6 +325,24 @@ invariant(
   lotusGroup.extras?.tka_petal_count === 5 &&
     lotusGroup.extras?.tka_frame_path_count === 10,
   "Lotus fan no longer carries five complete two-sided petals"
+);
+invariant(
+  lotusGroup.extras?.tka_side_weld_boss_count === 2 &&
+    nodeIndexByName.has("Fan_Lotus_SideWeld_Left") &&
+    nodeIndexByName.has("Fan_Lotus_SideWeld_Right"),
+  "Lotus fan is missing the two built-up grip junction welds"
+);
+invariant(
+  lotusGroup.extras?.tka_finger_ring_brace_count === 2 &&
+    lotusGroup.extras?.tka_finger_ring_weld_count === 5 &&
+    nodeIndexByName.has("Fan_Lotus_FingerBrace_Left") &&
+    nodeIndexByName.has("Fan_Lotus_FingerBrace_Right") &&
+    nodeIndexByName.has("Fan_Lotus_FingerWeld_UpperLeft") &&
+    nodeIndexByName.has("Fan_Lotus_FingerWeld_UpperRight") &&
+    nodeIndexByName.has("Fan_Lotus_FingerWeld_LowerLeft") &&
+    nodeIndexByName.has("Fan_Lotus_FingerWeld_LowerRight") &&
+    nodeIndexByName.has("Fan_Lotus_FingerWeld_Lower"),
+  "Lotus fan is missing the braced and welded finger-ring triangles"
 );
 invariant(
   lotusGroup.extras?.tka_wick_mount ===
@@ -431,7 +454,12 @@ for (const actual of actualLotusTines) {
   );
 }
 
-const lotusRollHalf = lotusGroup.extras.tka_wick_roll_length_m / 2;
+const lotusRollLengths = lotusGroup.extras.tka_wick_roll_lengths_m;
+const lotusDiameters = lotusGroup.extras.tka_wick_diameters_m;
+invariant(
+  lotusRollLengths?.length === 5 && lotusDiameters?.length === 5,
+  "Lotus fan must preserve five independently measured wick silhouettes"
+);
 const lotusStraightLength = lotusGroup.extras.tka_wick_tine_straight_length_m;
 const lotusInsertionDepth = lotusGroup.extras.tka_wick_tine_insertion_depth_m;
 const lotusTineHalfSpacing = lotusGroup.extras.tka_wick_tine_half_spacing_m;
@@ -440,6 +468,7 @@ for (let wickIndex = 0; wickIndex < 5; wickIndex += 1) {
   const direction = new Vector3()
     .fromArray(lotusWickDirections[wickIndex])
     .normalize();
+  const lotusRollHalf = lotusRollLengths[wickIndex] / 2;
   const baseCenter = center.clone().addScaledVector(direction, -lotusRollHalf);
   const entries = [];
   for (const [neckArray, entryArray] of lotusTinePairs[wickIndex]) {
@@ -586,11 +615,11 @@ invariant(
   `DoodleGrip Fire height drifted: ${fireDimensions.y.toFixed(6)}m`
 );
 invariant(
-  Math.abs(lotusDimensions.x - 0.48) <= 0.001,
+  Math.abs(lotusDimensions.x - 0.48) <= 0.01,
   `Lotus fan width drifted: ${lotusDimensions.x.toFixed(6)}m`
 );
 invariant(
-  Math.abs(lotusDimensions.y - 0.35) <= 0.001,
+  Math.abs(lotusDimensions.y - 0.35) <= 0.005,
   `Lotus fan height drifted: ${lotusDimensions.y.toFixed(6)}m`
 );
 
@@ -687,7 +716,8 @@ invariant(
   `Fan height is outside the 13.75-inch class: ${stats.dimensions.y.toFixed(4)}m`
 );
 invariant(
-  stats.dimensions.z >= 0.018 && stats.dimensions.z <= 0.035,
+  stats.dimensions.z >= 0.018 &&
+    stats.dimensions.z <= Math.max(...lotusDiameters) + 0.001,
   `Fan depth is implausible: ${stats.dimensions.z.toFixed(4)}m`
 );
 

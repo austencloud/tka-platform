@@ -180,7 +180,7 @@ def make_woven_wick_material(name: str) -> bpy.types.Material:
             fibre = 0.006 * math.sin(math.tau * (47 * u + 31 * v))
             shade = 0.88 + 0.12 * height + fibre
             heights.append(height)
-            colors.extend((1.0 * shade, 0.97 * shade, 0.82 * shade, 1.0))
+            colors.extend((1.0 * shade, 0.95 * shade, 0.72 * shade, 1.0))
 
     normals: list[float] = []
     strength = 2.15
@@ -238,6 +238,14 @@ def make_woven_wick_material(name: str) -> bpy.types.Material:
     color_texture.interpolation = "Linear"
     color_texture.extension = "REPEAT"
     links.new(color_texture.outputs["Color"], principled.inputs["Base Color"])
+    emission_color = principled.inputs.get("Emission Color")
+    emission_strength = principled.inputs.get("Emission Strength")
+    if emission_color is not None and emission_strength is not None:
+        # Kevlar scatters the studio light through a pale, fibrous surface.
+        # A restrained self-fill keeps that soft cream body from collapsing
+        # to grey in the dark runtime scene without making an unlit wick glow.
+        links.new(color_texture.outputs["Color"], emission_color)
+        emission_strength.default_value = 0.65
 
     normal_texture = nodes.new("ShaderNodeTexImage")
     normal_texture.name = f"{name}_NormalTexture"
@@ -477,8 +485,8 @@ def add_woven_cylinder_between(
     material: bpy.types.Material,
     parent: bpy.types.Object,
     *,
-    radial_segments: int = 48,
-    axial_segments: int = 32,
+    radial_segments: int = 40,
+    axial_segments: int = 28,
 ) -> bpy.types.Object:
     """Build one rolled wick whose crossed Kevlar weave catches real light."""
     direction = end - start
@@ -488,7 +496,6 @@ def add_woven_cylinder_between(
     relief = 0.0003
     for axial_index in range(axial_segments + 1):
         t = axial_index / axial_segments
-        z = (t - 0.5) * length
         edge_fade = min(1.0, t * 8, (1 - t) * 8)
         for radial_index in range(radial_segments):
             angle = math.tau * radial_index / radial_segments
@@ -499,10 +506,23 @@ def add_woven_cylinder_between(
             edge_fray = (1 - edge_fade) * 0.00028 * (
                 0.65 * math.sin(7 * angle) + 0.35 * math.sin(17 * angle)
             )
+            handmade_roll = 0.00016 * (
+                0.6 * math.sin(3 * angle + t * 5.1)
+                + 0.4 * math.sin(7 * angle - t * 3.7)
+            )
+            end_sign = -1.0 if t < 0.5 else 1.0
+            axial_fray = (
+                end_sign
+                * (1 - edge_fade)
+                * 0.00055
+                * (0.55 * math.sin(5 * angle) + 0.45 * math.sin(13 * angle))
+            )
+            z = (t - 0.5) * length + axial_fray
             woven_radius = (
                 radius
                 + relief * edge_fade * (stitch_height - 0.42)
                 + edge_fray
+                + handmade_roll
             )
             vertices.append(
                 (
@@ -592,6 +612,40 @@ def add_weld_bead(
     obj.name = name
     obj.scale.z = 0.72
     obj.parent = parent
+    return finish_mesh(obj, material)
+
+
+def add_weld_boss(
+    name: str,
+    centre: tuple[float, float, float],
+    half_extents: tuple[float, float, float],
+    phase: float,
+    material: bpy.types.Material,
+    parent: bpy.types.Object,
+) -> bpy.types.Object:
+    """Build the broad, hand-laid weld where the Lotus frame meets its grip."""
+    bpy.ops.mesh.primitive_ico_sphere_add(
+        subdivisions=2,
+        radius=1.0,
+        location=centre,
+    )
+    obj = bpy.context.object
+    obj.name = name
+    for vertex in obj.data.vertices:
+        direction = vertex.co.normalized()
+        angle = math.atan2(direction.y, direction.x)
+        silhouette = (
+            1.0
+            + 0.09 * math.sin(3 * angle + phase)
+            + 0.045 * math.sin(7 * angle - phase * 0.7)
+        )
+        crown = 1.0 + 0.06 * math.sin(5 * angle + phase * 1.3)
+        vertex.co.x = direction.x * half_extents[0] * silhouette
+        vertex.co.y = direction.y * half_extents[1] * silhouette
+        vertex.co.z = direction.z * half_extents[2] * crown
+    obj.parent = parent
+    obj["tka_weld_half_extents_m"] = list(half_extents)
+    obj["tka_weld_phase"] = phase
     return finish_mesh(obj, material)
 
 
@@ -1104,25 +1158,18 @@ def build_lotus_frame(
     if published["grip_stock_diameter_m"] != LOTUS_GRIP_RADIUS_M * 2:
         raise ValueError("Lotus grip stock no longer matches the published 7 mm wire")
 
-    outer_x, outer_y = geometry["outer_wick_center"]
-    diagonal_x, diagonal_y = geometry["diagonal_wick_center"]
-    centre_y = geometry["center_wick_center_y"]
     wick_roll_length = geometry["wick_roll_length_m"]
-    wick_half = wick_roll_length / 2
+    wick_roll_lengths = geometry["wick_roll_lengths_m"]
+    wick_diameters = geometry["wick_diameters_m"]
+    if len(wick_roll_lengths) != 5 or len(wick_diameters) != 5:
+        raise ValueError("Lotus reference must describe five measured wick rolls")
+    wick_halves = [length / 2 for length in wick_roll_lengths]
     wick_centres = [
-        Vector((-outer_x, outer_y, 0.0)),
-        Vector((-diagonal_x, diagonal_y, 0.0)),
-        Vector((0.0, centre_y, 0.0)),
-        Vector((diagonal_x, diagonal_y, 0.0)),
-        Vector((outer_x, outer_y, 0.0)),
+        Vector((*centre, 0.0)) for centre in geometry["wick_centers_m"]
     ]
-    outer_direction_x, outer_direction_y = geometry["outer_wick_direction"]
     wick_directions = [
-        Vector((-outer_direction_x, outer_direction_y, 0.0)).normalized(),
-        Vector((0.0, 1.0, 0.0)),
-        Vector((0.0, 1.0, 0.0)),
-        Vector((0.0, 1.0, 0.0)),
-        Vector((outer_direction_x, outer_direction_y, 0.0)).normalized(),
+        Vector((*direction, 0.0)).normalized()
+        for direction in geometry["wick_directions"]
     ]
     tine_half_spacing = geometry["wick_tine_half_spacing_m"]
     tine_straight_length = geometry["wick_tine_straight_length_m"]
@@ -1132,6 +1179,7 @@ def build_lotus_frame(
     def wick_tine_pair(
         centre: Vector,
         direction: Vector,
+        wick_half: float,
     ) -> tuple[tuple[Vector, Vector], tuple[Vector, Vector]]:
         """Return two axial neck/entry pairs for one rolled wick."""
         wick_base = centre - direction * wick_half
@@ -1145,8 +1193,12 @@ def build_lotus_frame(
         return pairs[0], pairs[1]
 
     wick_tine_pairs = [
-        wick_tine_pair(centre, direction)
-        for centre, direction in zip(wick_centres, wick_directions)
+        wick_tine_pair(centre, direction, wick_half)
+        for centre, direction, wick_half in zip(
+            wick_centres,
+            wick_directions,
+            wick_halves,
+        )
     ]
     left_path_tines = {
         "center_petal": wick_tine_pairs[2][0],
@@ -1155,13 +1207,30 @@ def build_lotus_frame(
         "lower_outer_petal": wick_tine_pairs[0][0],
         "lower_inner_petal": wick_tine_pairs[0][1],
     }
+    right_path_tines = {
+        "center_petal": wick_tine_pairs[2][1],
+        "upper_outer_petal": wick_tine_pairs[3][1],
+        "upper_inner_petal": wick_tine_pairs[3][0],
+        "lower_outer_petal": wick_tine_pairs[4][1],
+        "lower_inner_petal": wick_tine_pairs[4][0],
+    }
 
     parent["tka_build"] = "Home of Poi Medium Lotus five-wick fire fan"
     parent["tka_dimensions_m"] = [LOTUS_WIDTH_M, LOTUS_HEIGHT_M]
     parent["tka_spinning_ring_id_m"] = LOTUS_RING_DIAMETER_M
     parent["tka_finger_ring_id_m"] = geometry["finger_ring_inside_diameter_m"]
+    parent["tka_finger_ring_center_m"] = [
+        geometry["finger_ring_center_x"],
+        geometry["finger_ring_center_y"],
+    ]
+    parent["tka_grip_ring_center_m"] = [
+        geometry["grip_ring_center_x"],
+        geometry["grip_ring_center_y"],
+    ]
     parent["tka_wick_tape_width_m"] = published["wick_length_m"]
     parent["tka_wick_roll_length_m"] = wick_roll_length
+    parent["tka_wick_roll_lengths_m"] = wick_roll_lengths
+    parent["tka_wick_diameters_m"] = wick_diameters
     parent["tka_wick_diameter_m"] = reference["calibration"]["wick_diameter_m"]
     parent["tka_wick_mount"] = "paired axial tines through inward-facing end caps"
     parent["tka_wick_tine_half_spacing_m"] = tine_half_spacing
@@ -1178,6 +1247,11 @@ def build_lotus_frame(
     parent["tka_reference_symmetry"] = reference["calibration"]["symmetry"]
     parent["tka_petal_count"] = 5
     parent["tka_frame_path_count"] = 10
+    parent["tka_side_weld_boss_count"] = len(geometry["side_weld_bosses"])
+    parent["tka_finger_ring_brace_count"] = len(geometry["finger_ring_braces"])
+    parent["tka_finger_ring_weld_count"] = len(
+        geometry["finger_ring_weld_bosses"]
+    )
     parent["tka_wick_centers_m"] = [list(centre) for centre in wick_centres]
     parent["tka_wick_directions_m"] = [
         list(direction) for direction in wick_directions
@@ -1190,7 +1264,11 @@ def build_lotus_frame(
     objects.append(
         add_torus(
             "Fan_Lotus_GripRing",
-            (0.0, 0.0, 0.0),
+            (
+                geometry["grip_ring_center_x"],
+                geometry["grip_ring_center_y"],
+                0.0,
+            ),
             LOTUS_RING_DIAMETER_M / 2,
             LOTUS_GRIP_RADIUS_M,
             LOTUS_GRIP_RADIUS_M * 2,
@@ -1201,7 +1279,11 @@ def build_lotus_frame(
     objects.append(
         add_torus(
             "Fan_Lotus_FingerRing",
-            (0.0, geometry["finger_ring_center_y"], 0.0),
+            (
+                geometry["finger_ring_center_x"],
+                geometry["finger_ring_center_y"],
+                0.0,
+            ),
             geometry["finger_ring_inside_diameter_m"] / 2,
             LOTUS_FRAME_RADIUS_M,
             LOTUS_FRAME_RADIUS_M * 2,
@@ -1209,6 +1291,27 @@ def build_lotus_frame(
             parent,
         )
     )
+    for brace in geometry["finger_ring_braces"]:
+        objects.append(
+            add_round_rod(
+                f"Fan_Lotus_FingerBrace_{brace['name']}",
+                brace["points"],
+                LOTUS_FRAME_RADIUS_M,
+                steel,
+                parent,
+            )
+        )
+    for boss in geometry["finger_ring_weld_bosses"]:
+        objects.append(
+            add_weld_boss(
+                f"Fan_Lotus_FingerWeld_{boss['name']}",
+                tuple(boss["center"]),
+                tuple(boss["half_extents"]),
+                boss["phase"],
+                steel,
+                parent,
+            )
+        )
 
     cradle_join_x = abs(geometry["cradle_join"][0])
     cradle_join_y = geometry["cradle_join"][1]
@@ -1242,14 +1345,28 @@ def build_lotus_frame(
         )
     )
 
-    frame_paths = geometry["left_frame_paths"]
-    for path_name, anchors in frame_paths.items():
-        readable_name = "".join(part.title() for part in path_name.split("_"))
-        neck, entry = left_path_tines[path_name]
+    ring_centerline_radius = LOTUS_RING_DIAMETER_M / 2 + LOTUS_GRIP_RADIUS_M
+    grip_ring_center = Vector(
+        (geometry["grip_ring_center_x"], geometry["grip_ring_center_y"])
+    )
+
+    def seat_in_grip_ring(anchors: list[list[float]]) -> list[list[float]]:
+        """Hide a rail's open construction end inside its photographed weld."""
+        direction = (Vector(anchors[0]) - grip_ring_center).normalized()
+        start = grip_ring_center + direction * ring_centerline_radius
+        return [[start.x, start.y], *anchors[1:]]
+
+    def build_frame_rod(
+        name: str,
+        anchors: list[list[float]],
+        neck: Vector,
+        entry: Vector,
+    ) -> bpy.types.Object:
+        """Blend one photographed rail into its measured axial wick tine."""
         direction = (entry - neck).normalized()
         traced_path = catmull_rom_curve(
             [tuple(point) for point in anchors],
-            segments_per_span=5,
+            segments_per_span=4,
         )
         cut_index = 1
         for index in range(len(traced_path) - 2, 0, -1):
@@ -1259,9 +1376,9 @@ def build_lotus_frame(
                 cut_index = index
                 break
 
-        left_path = traced_path[: cut_index + 1]
-        core_end = Vector(left_path[-1])
-        tangent_sample = Vector(left_path[max(0, len(left_path) - 5)])
+        path = traced_path[: cut_index + 1]
+        core_end = Vector(path[-1])
+        tangent_sample = Vector(path[max(0, len(path) - 5)])
         core_tangent = (core_end - tangent_sample).normalized()
         transition_distance = (neck - core_end).length
         start_handle = min(
@@ -1272,7 +1389,7 @@ def build_lotus_frame(
             tine_blend_length * 0.7,
             transition_distance * 0.4,
         )
-        left_path.extend(
+        path.extend(
             cubic_bezier_curve(
                 (core_end.x, core_end.y),
                 (
@@ -1287,41 +1404,77 @@ def build_lotus_frame(
                 segments=24,
             )[1:]
         )
-        left_path.extend(
+        path.extend(
             tuple(neck.lerp(entry, step / 8))
             for step in range(1, 9)
         )
-        right_path = [(-x, y, z) for x, y, z in left_path]
-        left_rod = add_round_rod(
-            f"Fan_Lotus_{readable_name}_Left",
-            left_path,
+        rod = add_round_rod(
+            name,
+            path,
             LOTUS_FRAME_RADIUS_M,
             steel,
             parent,
         )
-        right_rod = add_round_rod(
-            f"Fan_Lotus_{readable_name}_Right",
-            right_path,
-            LOTUS_FRAME_RADIUS_M,
-            steel,
-            parent,
-        )
-        left_rod["tka_wick_tine_neck_m"] = list(neck)
-        left_rod["tka_wick_tine_entry_m"] = list(entry)
-        right_rod["tka_wick_tine_neck_m"] = [-neck.x, neck.y, neck.z]
-        right_rod["tka_wick_tine_entry_m"] = [-entry.x, entry.y, entry.z]
-        objects.extend((left_rod, right_rod))
+        rod["tka_wick_tine_neck_m"] = list(neck)
+        rod["tka_wick_tine_entry_m"] = list(entry)
+        return rod
 
-    center_petal_start = frame_paths["center_petal"][0]
-    inner_petal_start = frame_paths["upper_inner_petal"][0]
+    left_frame_paths = geometry["left_frame_paths"]
+    right_frame_paths = geometry["right_frame_paths"]
+    seated_left_paths: dict[str, list[list[float]]] = {}
+    seated_right_paths: dict[str, list[list[float]]] = {}
+    for path_name in left_frame_paths:
+        readable_name = "".join(part.title() for part in path_name.split("_"))
+        left_anchors = (
+            left_frame_paths[path_name]
+            if path_name == "center_petal"
+            else seat_in_grip_ring(left_frame_paths[path_name])
+        )
+        right_anchors = (
+            right_frame_paths[path_name]
+            if path_name == "center_petal"
+            else seat_in_grip_ring(right_frame_paths[path_name])
+        )
+        seated_left_paths[path_name] = left_anchors
+        seated_right_paths[path_name] = right_anchors
+        objects.append(
+            build_frame_rod(
+                f"Fan_Lotus_{readable_name}_Left",
+                left_anchors,
+                *left_path_tines[path_name],
+            )
+        )
+        objects.append(
+            build_frame_rod(
+                f"Fan_Lotus_{readable_name}_Right",
+                right_anchors,
+                *right_path_tines[path_name],
+            )
+        )
+
+    for boss in geometry["side_weld_bosses"]:
+        objects.append(
+            add_weld_boss(
+                f"Fan_Lotus_SideWeld_{boss['name']}",
+                tuple(boss["center"]),
+                tuple(boss["half_extents"]),
+                boss["phase"],
+                steel,
+                parent,
+            )
+        )
+
     weld_points = [
-        (-cradle_join_x, cradle_join_y, 0.0),
-        (cradle_join_x, cradle_join_y, 0.0),
-        (*center_petal_start, 0.0),
-        (-center_petal_start[0], center_petal_start[1], 0.0),
-        (*inner_petal_start, 0.0),
-        (-inner_petal_start[0], inner_petal_start[1], 0.0),
-        (0.0, geometry["finger_ring_center_y"] - 0.0145, 0.0),
+        *(
+            (*paths[path_name][0], 0.0)
+            for paths in (seated_left_paths, seated_right_paths)
+            for path_name in (
+                "upper_outer_petal",
+                "upper_inner_petal",
+                "lower_outer_petal",
+                "lower_inner_petal",
+            )
+        ),
     ]
     for index, point in enumerate(weld_points, start=1):
         objects.append(
@@ -1334,16 +1487,21 @@ def build_lotus_frame(
             )
         )
 
-    wick_radius = reference["calibration"]["wick_diameter_m"] / 2
-    for index, (centre, direction) in enumerate(
-        zip(wick_centres, wick_directions), start=1
+    for index, (centre, direction, wick_half, wick_diameter) in enumerate(
+        zip(
+            wick_centres,
+            wick_directions,
+            wick_halves,
+            wick_diameters,
+        ),
+        start=1,
     ):
         objects.append(
             add_woven_cylinder_between(
                 f"Fan_Lotus_Wick_{index}",
                 centre - direction * wick_half,
                 centre + direction * wick_half,
-                wick_radius,
+                wick_diameter / 2,
                 wick,
                 parent,
             )
@@ -1454,14 +1612,8 @@ def build_asset() -> tuple[
     ]
     lotus_reference = json.loads(LOTUS_FIRE_REFERENCE.read_text())
     lotus_geometry = lotus_reference["geometry_m"]
-    lotus_outer_x, lotus_outer_y = lotus_geometry["outer_wick_center"]
-    lotus_diagonal_x, lotus_diagonal_y = lotus_geometry["diagonal_wick_center"]
     root["tka_lotus_wick_centers_m"] = [
-        [-lotus_outer_x, lotus_outer_y, 0.0],
-        [-lotus_diagonal_x, lotus_diagonal_y, 0.0],
-        [0.0, lotus_geometry["center_wick_center_y"], 0.0],
-        [lotus_diagonal_x, lotus_diagonal_y, 0.0],
-        [lotus_outer_x, lotus_outer_y, 0.0],
+        [*centre, 0.0] for centre in lotus_geometry["wick_centers_m"]
     ]
 
     groups = {
