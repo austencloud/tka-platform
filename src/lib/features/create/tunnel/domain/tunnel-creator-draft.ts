@@ -12,9 +12,10 @@ import {
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
 import type { TunnelRelationshipRule } from "./tunnel-relationship-rule";
 
-export const TUNNEL_CREATOR_DRAFT_VERSION = 4;
+export const TUNNEL_CREATOR_DRAFT_VERSION = 5;
 
 export type TunnelSourceOrigin = "picked" | "generated";
+export type TunnelWorkflowMode = "seeded" | "custom";
 export type TunnelWorkspacePanel = "settings" | "pairing" | "generation" | null;
 
 /** The saved tunnel an editing session is holding. `poster` is carried so the
@@ -49,6 +50,7 @@ export interface TunnelPerformerSourceDraft {
 
 export interface TunnelCreatorDraft {
   version: typeof TUNNEL_CREATOR_DRAFT_VERSION;
+  workflow: TunnelWorkflowMode;
   mode: "separate" | "linked";
   composition: TunnelComposition | null;
   relationship: TunnelRelationshipRule;
@@ -111,6 +113,18 @@ const SourceStatesSchema = z.array(
 
 const TunnelCreatorDraftSchema = z.object({
   version: z.literal(TUNNEL_CREATOR_DRAFT_VERSION),
+  workflow: z.enum(["seeded", "custom"]),
+  mode: z.enum(["separate", "linked"]),
+  composition: TunnelCompositionSchema.nullable(),
+  relationship: RelationshipSchema,
+  sourceStates: SourceStatesSchema,
+  workspace: WorkspaceSchema,
+  editingTunnel: EditingTunnelSchema,
+  presentation: TunnelSnapshotSchema.nullable(),
+});
+
+const VersionFourTunnelCreatorDraftSchema = z.object({
+  version: z.literal(4),
   mode: z.enum(["separate", "linked"]),
   composition: TunnelCompositionSchema.nullable(),
   relationship: RelationshipSchema,
@@ -157,11 +171,21 @@ export function parseTunnelCreatorDraft(
   const parsed = TunnelCreatorDraftSchema.safeParse(value);
   if (parsed.success) return parsed.data as unknown as TunnelCreatorDraft;
 
+  const versionFour = VersionFourTunnelCreatorDraftSchema.safeParse(value);
+  if (versionFour.success) {
+    return {
+      ...versionFour.data,
+      version: TUNNEL_CREATOR_DRAFT_VERSION,
+      workflow: inferLegacyWorkflow(versionFour.data.composition),
+    } as unknown as TunnelCreatorDraft;
+  }
+
   const versionThree = VersionThreeTunnelCreatorDraftSchema.safeParse(value);
   if (versionThree.success) {
     return {
       ...versionThree.data,
       version: TUNNEL_CREATOR_DRAFT_VERSION,
+      workflow: inferLegacyWorkflow(versionThree.data.composition),
       presentation: null,
     } as unknown as TunnelCreatorDraft;
   }
@@ -171,6 +195,7 @@ export function parseTunnelCreatorDraft(
     return {
       ...versionTwo.data,
       version: TUNNEL_CREATOR_DRAFT_VERSION,
+      workflow: inferLegacyWorkflow(versionTwo.data.composition),
       workspace: { activePanel: null, generationTargetId: null },
       presentation: null,
     } as unknown as TunnelCreatorDraft;
@@ -182,8 +207,27 @@ export function parseTunnelCreatorDraft(
   return {
     ...versionOne.data,
     version: TUNNEL_CREATOR_DRAFT_VERSION,
+    workflow: inferLegacyWorkflow(versionOne.data.composition),
     sourceStates: [],
     workspace: { activePanel: null, generationTargetId: null },
     presentation: null,
   } as unknown as TunnelCreatorDraft;
+}
+
+function inferLegacyWorkflow(
+  composition: TunnelComposition | null
+): TunnelWorkflowMode {
+  const performers = composition?.performers ?? [];
+  if (performers.length < 2) return "seeded";
+  const leadId = performers[0]?.id;
+  return leadId &&
+    performers
+      .slice(1)
+      .every(
+        (performer) =>
+          performer.source.kind === "derived" &&
+          performer.source.performerId === leadId
+      )
+    ? "seeded"
+    : "custom";
 }

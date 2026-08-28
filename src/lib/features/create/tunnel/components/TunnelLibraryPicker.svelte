@@ -288,6 +288,8 @@
       <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
       <span class="sr-only">Search tunnels by name, prop, or formation</span>
       <input
+        id="tunnel-library-search"
+        name="tunnel-library-search"
         type="search"
         bind:value={query}
         placeholder="Name, prop, or formation"
@@ -308,7 +310,12 @@
     <label class="sort-field">
       <span class="sr-only">Sort tunnels</span>
       <i class="fas fa-arrow-down-wide-short" aria-hidden="true"></i>
-      <select bind:value={sort} aria-label="Sort tunnels">
+      <select
+        id="tunnel-library-sort"
+        name="tunnel-library-sort"
+        bind:value={sort}
+        aria-label="Sort tunnels"
+      >
         <option value="recent">Recent</option>
         <option value="name">Name</option>
         <option value="performers">Most authored</option>

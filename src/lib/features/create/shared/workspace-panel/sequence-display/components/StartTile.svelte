@@ -21,6 +21,8 @@
     isTimelineMode = false,
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
+    blueColorOverride = undefined,
+    redColorOverride = undefined,
     onContentReady = undefined,
   } = $props<{
     startPosition: StartPositionData | StepData;
@@ -37,6 +39,8 @@
      *  settings) — same convention as StepCell/PictographContainer. */
     bluePropTypeOverride?: PropType;
     redPropTypeOverride?: PropType;
+    blueColorOverride?: string;
+    redColorOverride?: string;
     /** Forwarded from the inner cell — see StepCell's onContentReady. */
     onContentReady?: () => void;
   }>();
@@ -83,6 +87,8 @@
     {animationEpoch}
     {bluePropTypeOverride}
     {redPropTypeOverride}
+    {blueColorOverride}
+    {redColorOverride}
     {onContentReady}
   />
 </div>

@@ -32,7 +32,10 @@ Card-based architecture with integrated Generate button:
   import CustomizeDrawer from "./modals/CustomizeDrawer.svelte";
   import PresetDrawer from "./presets/PresetDrawer.svelte";
   import { createFavoriteState } from "../state/favorite-state.svelte";
-  import { captureSetupSnapshot } from "../domain/setup-snapshot";
+  import {
+    captureSetupSnapshot,
+    type SetupSnapshot,
+  } from "../domain/setup-snapshot";
   import type { ActiveSetupSource } from "../domain/models/favorite-config";
   import type { GeneratorHelpId } from "$lib/shared/create/domain/generator-help-content";
   import { generateTourState } from "$lib/shared/onboarding/state/generate-tour-state.svelte";
@@ -68,12 +71,18 @@ Card-based architecture with integrated Generate button:
     sequenceState,
     isDesktop = false,
     generateCurrent = $bindable(null),
+    captureCurrentSetup = $bindable(null),
+    applySetup = $bindable(null),
     generationAnimationTarget = null,
   }: {
     sequenceState: SequenceState;
     isDesktop?: boolean;
     /** Programmatic access to the exact recipe used by the Generate card. */
     generateCurrent?: (() => Promise<void>) | null;
+    /** Read/apply hooks for embedded workbenches that persist performer-scoped
+     * generator provenance without duplicating Generate's config state. */
+    captureCurrentSetup?: (() => SetupSnapshot) | null;
+    applySetup?: ((setup: SetupSnapshot) => void) | null;
     /** Optional embedded workbench that owns this generation's reveal. */
     generationAnimationTarget?: GenerationAnimationTarget | null;
   } = $props();
@@ -218,6 +227,26 @@ Card-based architecture with integrated Generate button:
     generateCurrent = generateCurrentRecipe;
     return () => {
       generateCurrent = null;
+    };
+  });
+
+  function captureCurrentSetupSnapshot(): SetupSnapshot {
+    return captureSetupSnapshot(configState.config, startEndState.options);
+  }
+
+  function applySetupSnapshot(setup: SetupSnapshot): void {
+    configState.updateConfig(setup.config);
+    startEndState.setGridMode(setup.config.gridMode);
+    if (setup.startEndOptions) startEndState.setOptions(setup.startEndOptions);
+    else startEndState.resetOptions(setup.config.gridMode);
+  }
+
+  $effect(() => {
+    captureCurrentSetup = captureCurrentSetupSnapshot;
+    applySetup = applySetupSnapshot;
+    return () => {
+      captureCurrentSetup = null;
+      applySetup = null;
     };
   });
 
