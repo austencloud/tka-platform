@@ -108,25 +108,25 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
   id: "blackglass-inferno",
   label: "Blackglass Inferno",
   sky: {
-    topColor: "#030507",
-    midColor: "#120809",
-    bottomColor: "#7a1d0c",
+    topColor: "#020508",
+    midColor: "#11151a",
+    bottomColor: "#70200e",
   },
-  fog: { color: "#170b0b", density: 0.0069 },
+  fog: { color: "#160d0e", density: 0.0049 },
   lavaRivers: {
-    baseColor: "#c92a04",
-    hotColor: "#ffb12b",
+    baseColor: "#e33a05",
+    hotColor: "#ffd05b",
     crustColor: "#070303",
-    flowSpeed: 0.052,
-    warpIntensity: 0.62,
-    crustCoverage: 0.54,
+    flowSpeed: 0.06,
+    warpIntensity: 0.68,
+    crustCoverage: 0.46,
   },
   volcanicHaze: {
     enabled: true,
-    color1: "#b33a15",
-    color2: "#110405",
-    opacity: 0.28,
-    scale: 3.1,
+    color1: "#7b2b16",
+    color2: "#090b0f",
+    opacity: 0.19,
+    scale: 2.7,
     animationSpeed: 0.022,
     lightningInterval: 7.5,
     lightningIntensity: 0.16,
@@ -161,24 +161,24 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
     spin: false,
   },
   hemisphereLight: {
-    skyColor: "#78878d",
-    groundColor: "#4d170c",
-    intensity: 1.12,
+    skyColor: "#8799a2",
+    groundColor: "#5a1c0d",
+    intensity: 1.32,
   },
   skyLight: {
     enabled: true,
     color: "#ffd2b0",
-    intensity: 1.62,
+    intensity: 2.05,
     position: [-18, 24, -10],
   },
   rig: {
     id: "blackglass-inferno",
     label: "Blackglass Inferno",
     directionals: [
-      { position: [18, 15, 18], color: "#ffc18c", intensity: 0.58 },
-      { position: [-20, 10, 12], color: "#769bb0", intensity: 1.04 },
-      { position: [0, 24, -6], color: "#ffeadb", intensity: 0.3 },
-      { position: [-34, 20, 90], color: "#c33a18", intensity: 0.55 },
+      { position: [18, 15, 18], color: "#ffc18c", intensity: 0.72 },
+      { position: [-20, 10, 12], color: "#7fa9bd", intensity: 1.22 },
+      { position: [0, 24, -6], color: "#ffeadb", intensity: 0.38 },
+      { position: [-34, 20, 90], color: "#c84620", intensity: 0.68 },
     ],
     points: [
       {
@@ -220,6 +220,12 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
     heatFields: [
       { position: { x: 14, z: 2 }, radius: 3.4, height: 5.2, intensity: 0.035 },
       { position: { x: 8, z: 40 }, radius: 4.8, height: 8, intensity: 0.028 },
+      {
+        position: { x: -12, z: -72 },
+        radius: 5.4,
+        height: 7.5,
+        intensity: 0.024,
+      },
       { position: { x: -25, z: 145 }, radius: 9, height: 15, intensity: 0.024 },
     ],
     plumes: [
@@ -234,7 +240,7 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
         motionScale: 0.7,
       },
       {
-        position: [27, 15, 60],
+        position: [34, 15, -74],
         count: 24,
         area: { width: 8, height: 18, depth: 8 },
         speed: 0.026,
@@ -257,7 +263,7 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
     materials: {
       world: {
         tint: "#11191c",
-        tintBlend: 0.13,
+        tintBlend: 0.08,
         emissive: "#3a0903",
         emissiveBlend: 0.08,
         emissiveIntensity: 0.16,
@@ -266,7 +272,7 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
       },
       playableSurface: {
         tint: "#141a1c",
-        tintBlend: 0.14,
+        tintBlend: 0.09,
         emissive: "#681704",
         emissiveBlend: 0.025,
         emissiveIntensity: 0.05,
@@ -275,7 +281,7 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
       },
       meshyGeology: {
         tint: "#151a1c",
-        tintBlend: 0.13,
+        tintBlend: 0.08,
         emissive: "#4a0d03",
         emissiveBlend: 0.06,
         emissiveIntensity: 0.14,

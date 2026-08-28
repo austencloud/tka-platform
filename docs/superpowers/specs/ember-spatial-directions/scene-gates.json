@@ -423,27 +423,31 @@
         },
         {
           "kind": "editable-source",
-          "path": "blender/ember-volcanic-world-production-slice-r9.blend"
+          "path": "blender/ember-volcanic-world-production-slice-r10.blend"
         },
         {
           "kind": "coordinate-manifest",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-surface-r9/ember-volcanic-world-production-slice-r9-report.json"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-report.json"
         },
         {
           "kind": "review-contact-sheet",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-surface-r9/ember-volcanic-world-production-slice-r9-orbit-board.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-orbit-board.webp"
+        },
+        {
+          "kind": "adversarial-review-angle",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-audience.png"
         }
       ],
       "checks": [
         {
           "name": "artifact-budget",
           "status": "passed",
-          "evidence": "The R9 report records 197,898 triangles, a 49,345-triangle largest mesh, 6.156 m minimum structural clearance, and the optimized shipping GLB is 4,488,452 bytes."
+          "evidence": "The R10 report records 197,898 triangles, a 49,345-triangle largest mesh, 6.156 m minimum structural clearance, eleven registered review cameras, and the optimized shipping GLB is 4,467,892 bytes."
         },
         {
           "name": "focused-tests",
           "status": "passed",
-          "evidence": "The Ember production contract, Ember ground detail, and shared forest detail suites pass 14 tests with one historical todo."
+          "evidence": "The Ember production contract, atmosphere look, and ground-detail suites pass 16 tests with one historical todo."
         },
         {
           "name": "typecheck",

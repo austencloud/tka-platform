@@ -32,12 +32,12 @@
         vUv.x * 22.0
         + sin(vUv.y * 6.28318) * 0.8
         - uTime * 1.45
-      ) * 0.021;
+      ) * 0.034;
       float convectionRoll = sin(
         vUv.x * 8.5
         - vUv.y * 5.0
         - uTime * 0.52
-      ) * 0.013;
+      ) * 0.018;
       pos.y += (travellingFold + convectionRoll) * bankWeight;
       vec4 worldPosition = modelMatrix * vec4(pos, 1.0);
       vWorldPosition = worldPosition.xyz;
@@ -106,8 +106,8 @@
       float contactBreakup = noise(
         vec2(vUv.x * 84.0 - uTime * 0.026, vUv.y * 9.0)
       );
-      float crustThreshold = 0.69
-        - uCrustCoverage * 0.11
+      float crustThreshold = 0.705
+        - uCrustCoverage * 0.09
         - bankCooling * (0.085 + contactBreakup * 0.025);
       float crust = smoothstep(crustThreshold - 0.045, crustThreshold + 0.035, plateField);
       float fracture = 1.0 - smoothstep(0.018, 0.058, abs(plateField - crustThreshold));
@@ -122,8 +122,8 @@
       vec3 molten = mix(
         uBaseColor,
         uHotColor,
-        pow(heat, 2.4) * (0.2 + center * 0.25)
-          + convectionCell * (0.045 + center * 0.035)
+        pow(heat, 1.85) * (0.28 + center * 0.34)
+          + convectionCell * (0.07 + center * 0.055)
       );
 
       vec3 surfaceNormal = normalize(cross(
@@ -150,14 +150,20 @@
       cooledCrust += vec3(0.055, 0.072, 0.078)
         * crustFresnel
         * (0.12 + broadFlow * 0.08);
-      vec3 color = mix(molten, cooledCrust, crust * 0.985);
-      color += uHotColor * fracture * (0.11 + center * 0.09);
+      vec3 color = mix(molten, cooledCrust, crust * 0.91);
+      color += uHotColor * fracture * (0.28 + center * 0.22);
       float medialLead = smoothstep(0.72, 0.92, fbm(warpedUv * vec2(0.38, 0.76) + 13.4));
-      color += uHotColor * medialLead * pow(center, 3.0) * (1.0 - crust) * 0.1;
+      float travellingLead = smoothstep(
+        0.68,
+        0.9,
+        fbm(warpedUv * vec2(0.46, 0.82) + vec2(-uTime * 0.09, 27.0))
+      );
+      color += uHotColor * medialLead * pow(center, 2.4) * (1.0 - crust) * 0.18;
+      color += uHotColor * travellingLead * fracture * (0.08 + center * 0.1);
       color += uHotColor
         * convectionCell
         * (1.0 - crust)
-        * (0.018 + center * 0.022);
+        * (0.028 + center * 0.035);
 
       float bank = smoothstep(0.0, 0.13, vUv.y)
         * (1.0 - smoothstep(0.87, 1.0, vUv.y));
@@ -237,8 +243,8 @@
       <T.PointLight
         position={[light.x, light.y + 0.7, light.z]}
         color={index % 2 === 0 ? config.hotColor : config.baseColor}
-        intensity={index === river.lightPositions.length - 1 ? 92 : 64}
-        distance={index === river.lightPositions.length - 1 ? 23 : 19}
+        intensity={index === river.lightPositions.length - 1 ? 122 : 86}
+        distance={index === river.lightPositions.length - 1 ? 28 : 23}
         decay={2}
       />
     {/each}

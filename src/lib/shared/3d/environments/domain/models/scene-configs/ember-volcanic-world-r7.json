@@ -1,5 +1,5 @@
 {
-  "revision": "ember-geological-world-gate4-r8",
+  "revision": "ember-living-caldera-gate4-r10",
   "authorityTrackerItem": "s3cxnp6hOLBVQR5dDF42",
   "derivedFromTrackerItem": "ZSnkB98pb0wz6PO17XKp",
   "lavaRiver": {
@@ -35,7 +35,7 @@
     "nearMaterialEndsAtDistance": 66.0,
     "middleMaterialEndsAtDistance": 126.0,
     "actionFloorRadius": 10.8,
-    "direction": "breached-caldera-terraces",
+    "direction": "living-caldera",
     "seed": 6301
   },
   "distantVent": {

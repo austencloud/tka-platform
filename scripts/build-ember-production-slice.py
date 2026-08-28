@@ -41,11 +41,15 @@ R9_PRODUCTION_EVIDENCE_DIR = SPEC_DIR / "evidence" / "gate-4-surface-r9"
 R9_PRODUCTION_BLEND_PATH = PROJECT_ROOT / "blender" / "ember-volcanic-world-production-slice-r9.blend"
 R9_PRODUCTION_REPORT_PATH = R9_PRODUCTION_EVIDENCE_DIR / "ember-volcanic-world-production-slice-r9-report.json"
 R9_RUNTIME_TEXTURE_DIR = PROJECT_ROOT / "static" / "textures" / "ember-surface-r9"
+R10_PRODUCTION_EVIDENCE_DIR = SPEC_DIR / "evidence" / "gate-4-living-caldera-r10"
+R10_PRODUCTION_BLEND_PATH = PROJECT_ROOT / "blender" / "ember-volcanic-world-production-slice-r10.blend"
+R10_PRODUCTION_REPORT_PATH = R10_PRODUCTION_EVIDENCE_DIR / "ember-volcanic-world-production-slice-r10-report.json"
 R8_TERRAIN_DIRECTIONS = (
     "breached-caldera-terraces",
     "collapsed-lava-delta",
     "basalt-badlands",
 )
+PRODUCTION_TERRAIN_DIRECTIONS = (*R8_TERRAIN_DIRECTIONS, "living-caldera")
 R9_SURFACE_DIRECTIONS = (
     "fresh-flow-field",
     "ash-choked-caldera",
@@ -1943,6 +1947,78 @@ def r8_geological_height(
             + micro_relief * 0.82
         )
 
+    if direction == "living-caldera":
+        # R10 closes the visual gap left by the R8 terrain. The production
+        # country had strong geology north of the performer, but the audience
+        # side was a broad, nearly flat apron. Offset caldera shoulders now
+        # occupy every quadrant while two eroded river breaches keep the world
+        # open and directional instead of turning it into a circular arena.
+        north_west_wall = math.exp(
+            -(((x + 116.0) / 50.0) ** 2 + ((runtime_z - 82.0) / 92.0) ** 2)
+        ) * 31.0
+        north_east_wall = math.exp(
+            -(((x - 124.0) / 48.0) ** 2 + ((runtime_z - 72.0) / 88.0) ** 2)
+        ) * 29.0
+        north_west_crown = math.exp(
+            -(((x + 72.0) / 38.0) ** 2 + ((runtime_z - 168.0) / 36.0) ** 2)
+        ) * 27.0
+        north_east_crown = math.exp(
+            -(((x - 88.0) / 40.0) ** 2 + ((runtime_z - 174.0) / 38.0) ** 2)
+        ) * 31.0
+
+        south_west_wall = math.exp(
+            -(((x + 126.0) / 54.0) ** 2 + ((runtime_z + 92.0) / 66.0) ** 2)
+        ) * 36.0
+        south_east_wall = math.exp(
+            -(((x - 132.0) / 56.0) ** 2 + ((runtime_z + 84.0) / 68.0) ** 2)
+        ) * 33.0
+        south_west_bench = math.exp(
+            -(((x + 62.0) / 34.0) ** 2 + ((runtime_z + 62.0) / 48.0) ** 2)
+        ) * 14.5
+        south_east_bench = math.exp(
+            -(((x - 72.0) / 36.0) ** 2 + ((runtime_z + 68.0) / 46.0) ** 2)
+        ) * 16.5
+
+        west_scarp = math.exp(
+            -(((x + 166.0) / 34.0) ** 2 + ((runtime_z - 2.0) / 120.0) ** 2)
+        ) * 23.0
+        east_scarp = math.exp(
+            -(((x - 168.0) / 36.0) ** 2 + ((runtime_z + 8.0) / 124.0) ** 2)
+        ) * 21.0
+
+        flank_weight = smoothstep(30.0, 112.0, abs(x))
+        raw_terraces = flank_weight * max(0.0, 1.0 - abs(runtime_z) / 210.0) * 7.8
+        terrace_step = 1.35
+        terraced = math.floor(raw_terraces / terrace_step) * terrace_step
+
+        north_breach = math.exp(
+            -(((x + 2.0) / 38.0) ** 2 + ((runtime_z - 150.0) / 56.0) ** 2)
+        ) * 8.0
+        south_breach = math.exp(
+            -(((x - 2.0) / 42.0) ** 2 + ((runtime_z + 120.0) / 46.0) ** 2)
+        ) * 9.0
+        crown_breakup = (
+            max(0.0, math.sin(x * 0.055 + runtime_z * 0.019 + seed_phase)) ** 3
+        ) * smoothstep(72.0, 176.0, radial_distance) * 3.6
+
+        return base + terrain_weight * (
+            north_west_wall
+            + north_east_wall
+            + north_west_crown
+            + north_east_crown
+            + south_west_wall
+            + south_east_wall
+            + south_west_bench
+            + south_east_bench
+            + west_scarp
+            + east_scarp
+            + terraced
+            + crown_breakup
+            - north_breach
+            - south_breach
+            + micro_relief * 0.92
+        )
+
     if direction == "collapsed-lava-delta":
         # Wide overlapping flow lobes read as a field assembled by successive
         # eruptions. Sharp fronts and braided troughs make this intentionally
@@ -2001,7 +2077,7 @@ def create_volcanic_basin(
     near_material_end = float(specification["nearMaterialEndsAtDistance"])
     middle_material_end = float(specification["middleMaterialEndsAtDistance"])
     action_floor_radius = float(specification["actionFloorRadius"])
-    if direction in R8_TERRAIN_DIRECTIONS:
+    if direction in PRODUCTION_TERRAIN_DIRECTIONS:
         # The responsive deck tops out well inside this transition zone. R7's
         # 23 m dead-flat moat made the shelf read as a floating vignette.
         action_floor_radius = 10.8
@@ -2026,7 +2102,7 @@ def create_volcanic_basin(
             )
             terrain_weight = terrain_weight * terrain_weight * (3.0 - 2.0 * terrain_weight)
 
-            if direction in R8_TERRAIN_DIRECTIONS:
+            if direction in PRODUCTION_TERRAIN_DIRECTIONS:
                 height = r8_geological_height(
                     direction,
                     x,
@@ -2813,7 +2889,7 @@ def build_production_geometry(
     lava = create_plain_material("Ember_Live_Fissure", (1.0, 0.085, 0.008, 1.0), 0.38, emission_strength=2.15)
     mineral_color = (
         (0.058, 0.048, 0.036, 1.0)
-        if terrain_direction in R8_TERRAIN_DIRECTIONS
+        if terrain_direction in PRODUCTION_TERRAIN_DIRECTIONS
         else (0.16, 0.095, 0.032, 1.0)
     )
     mineral = create_plain_material("Ember_Mineral_Ochre", mineral_color, 0.96)
@@ -2838,7 +2914,7 @@ def build_production_geometry(
         scaled_outline(SHELF_OUTLINE, 1.018),
         0.21,
         0.04,
-        blackglass if terrain_direction in R8_TERRAIN_DIRECTIONS else mineral,
+        blackglass if terrain_direction in PRODUCTION_TERRAIN_DIRECTIONS else mineral,
         production,
         "shelf-stratum",
         "upper-stratum",
@@ -2857,7 +2933,7 @@ def build_production_geometry(
     )
     create_surface_field(SHELF_OUTLINE, blackglass, production)
     create_shelf_edge_talus(SHELF_OUTLINE, blackglass, mineral, production)
-    if terrain_direction in R8_TERRAIN_DIRECTIONS:
+    if terrain_direction in PRODUCTION_TERRAIN_DIRECTIONS:
         create_stage_crust_transition(blackglass, near_caldera, production)
 
     fissures = [
@@ -3243,6 +3319,10 @@ def create_qa_scene(qa: bpy.types.Collection) -> dict[str, bpy.types.Object]:
         "rear-left": ((-27.0, -49.0, 24.0), (0.0, -10.0, 4.25), "PERSP", 50.0),
         "left": ((-20.0, 0.0, 7.5), (0.0, -3.5, 2.25), "PERSP", 45.0),
         "front-left": ((-14.8, 14.8, 8.0), (0.2, -5.8, 2.45), "PERSP", 43.0),
+        # This camera reproduces the low audience-side review angle that exposed
+        # R9's empty southern apron. It stays registered so future terrain
+        # passes cannot hide that quadrant behind elevated orbit cameras.
+        "audience": ((-3.32, -28.41, 2.35), (-4.71, 4.75, 0.72), "PERSP", 50.0),
         "detail": ((10.8, 0.8, 6.9), HERO_CENTER, "PERSP", 52.0),
         "plan": ((0.0, -8.0, 135.0), (0.0, -8.0, 0.0), "ORTHO", 230.0),
     }
@@ -3516,6 +3596,7 @@ def export_production(production: bpy.types.Collection) -> None:
     if REVISION in {
         "ember-geological-world-gate4-r8",
         "ember-fresh-rift-surface-gate4-r9",
+        "ember-living-caldera-gate4-r10",
     }:
         # The shipped source stays below GitHub's 100 MiB hard limit. All image
         # pixels are deterministic build products or live in the four tracked
@@ -3619,17 +3700,23 @@ def scene_report(
             "gate4MeshyGeologyTrackerItem": "ZSnkB98pb0wz6PO17XKp",
             "gate3GeologicalWorldTrackerItem": (
                 "s3cxnp6hOLBVQR5dDF42"
-                if terrain_direction in R8_TERRAIN_DIRECTIONS
+                if terrain_direction in PRODUCTION_TERRAIN_DIRECTIONS
                 else None
             ),
             "gate3SurfaceEcologyTrackerItem": (
                 "uXmi4z9lL7zCiNq5ULCp"
-                if REVISION == "ember-fresh-rift-surface-gate4-r9"
+                if REVISION in {
+                    "ember-fresh-rift-surface-gate4-r9",
+                    "ember-living-caldera-gate4-r10",
+                }
                 else None
             ),
             "gate4SurfaceEcologyTrackerItem": (
                 "ahPuPwh34G3FeqvUEHsB"
-                if REVISION == "ember-fresh-rift-surface-gate4-r9"
+                if REVISION in {
+                    "ember-fresh-rift-surface-gate4-r9",
+                    "ember-living-caldera-gate4-r10",
+                }
                 else None
             ),
         },
@@ -3685,7 +3772,9 @@ def scene_report(
             "heroCenterRuntimeXYZ": [HERO_CENTER[0], HERO_CENTER[2], -HERO_CENTER[1]],
             "heroInPositiveRuntimeZFarField": True,
             "selectedDirection": (
-                "Fresh Rift over Breached Caldera Terraces"
+                "Living Caldera with Fresh Rift ecology"
+                if REVISION == "ember-living-caldera-gate4-r10"
+                else "Fresh Rift over Breached Caldera Terraces"
                 if REVISION == "ember-fresh-rift-surface-gate4-r9"
                 else "Breached Caldera Terraces"
                 if terrain_direction == "breached-caldera-terraces"
@@ -3693,7 +3782,11 @@ def scene_report(
             ),
             "terrainDirection": terrain_direction,
             "revisionDirection": (
-                "A four-family volcanic ecology with young lava crust, iron-rich "
+                "A continuous four-sided caldera whose offset walls, north and south "
+                "river breaches, audience-side benches, and registered low review camera "
+                "carry the Fresh Rift ecology through every orbit quadrant"
+                if REVISION == "ember-living-caldera-gate4-r10"
+                else "A four-family volcanic ecology with young lava crust, iron-rich "
                 "river-contact alteration, fractured basalt scarps, and sheltered ash "
                 "blended across the preserved breached-caldera terrain"
                 if REVISION == "ember-fresh-rift-surface-gate4-r9"
@@ -3714,6 +3807,12 @@ def scene_report(
             "collapsedLavaBankRiverEdgeClearanceMeters": round(
                 lava_bank_edge_clearance, 4
             ),
+            "continuousOrbitDepthBands": (
+                ["foreground", "midground", "north-rim", "south-rim"]
+                if terrain_direction == "living-caldera"
+                else []
+            ),
+            "registeredReviewCameras": list(cameras),
         },
         "geometry": {
             "meshObjectCount": len(mesh_objects),
@@ -3774,6 +3873,8 @@ def main() -> None:
     terrain_direction = "r7-continuous-basin"
     filename_revision = "r7"
     build_r9_production = "--r9-production" in arguments
+    build_r10_production = "--r10-production" in arguments
+    build_surface_production = build_r9_production or build_r10_production
     if "--r8-production" in arguments:
         EVIDENCE_DIR = R8_PRODUCTION_EVIDENCE_DIR
         BLEND_PATH = R8_PRODUCTION_BLEND_PATH
@@ -3788,6 +3889,13 @@ def main() -> None:
         REVISION = "ember-fresh-rift-surface-gate4-r9"
         terrain_direction = "breached-caldera-terraces"
         filename_revision = "r9"
+    if build_r10_production:
+        EVIDENCE_DIR = R10_PRODUCTION_EVIDENCE_DIR
+        BLEND_PATH = R10_PRODUCTION_BLEND_PATH
+        REPORT_PATH = R10_PRODUCTION_REPORT_PATH
+        REVISION = "ember-living-caldera-gate4-r10"
+        terrain_direction = "living-caldera"
+        filename_revision = "r10"
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     TEXTURE_DIR.mkdir(parents=True, exist_ok=True)
     clean_scene()
@@ -3797,8 +3905,8 @@ def main() -> None:
     geometry = build_production_geometry(production, terrain_direction)
     surface_assets: dict[str, object] | None = None
     surface_family_counts: dict[str, int] | None = None
-    if build_r9_production:
-        print("[ember-r9] applying the approved Fresh Rift ecology", flush=True)
+    if build_surface_production:
+        print("[ember-r10] applying the approved Fresh Rift ecology", flush=True)
         direction = "fresh-rift-synthesis"
         surface_materials = create_r9_surface_materials(direction)
         blended_terrain = create_r9_blended_terrain_material(
@@ -3825,7 +3933,7 @@ def main() -> None:
     print("[ember-r7] exporting production asset", flush=True)
     export_production(production)
     report = scene_report(production, cameras, renders, terrain_direction)
-    if build_r9_production:
+    if build_surface_production:
         report["surfaceEcology"] = {
             "direction": "fresh-rift-synthesis",
             "approvalTrackerItem": "ahPuPwh34G3FeqvUEHsB",
