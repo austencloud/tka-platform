@@ -103,7 +103,12 @@ describe("buugeng chirality is owned by the prop picker", () => {
     const sheet = read(SHEET_PATH);
     expect(sheet).toContain("isBuugengFamilyProp");
     expect(sheet).toContain("needsChiralityChoice");
-    expect(sheet).toContain("autoClose && !needsChiralityChoice");
+    // The host callback may close the bound state itself. The sheet must
+    // explicitly restore it after onSelect rather than merely skip its own
+    // auto-close branch.
+    expect(sheet).toMatch(
+      /onSelect\(propType\);\s*if \(needsChiralityChoice\) \{\s*isOpen = true;\s*return;/
+    );
   });
 
   it("puts chirality before the prop catalogue in compact drawers", () => {
