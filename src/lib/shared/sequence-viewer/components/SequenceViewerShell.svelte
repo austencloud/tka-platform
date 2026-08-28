@@ -145,6 +145,7 @@
     navigation?: { label: string };
     tunnelComposition?: TunnelComposition | null;
     tunnelSaveTarget?: TunnelSaveTarget | null;
+    onTunnelSaved?: import("../tunnel/tunnel-snapshot").TunnelSavedCallback;
     /** Route-owned context placed between the canonical header and viewer body. */
     contextContent?: Snippet;
     /** The full-page sequence route keeps its immersive transport overlay. */
@@ -172,6 +173,7 @@
     shareOnOpen = false,
     tunnelComposition = null,
     tunnelSaveTarget = null,
+    onTunnelSaved,
   }: Props = $props();
 
   const scanInstrumentationEnabled = isScanVisit();
@@ -607,6 +609,7 @@
               sequence={ctx.effectiveSequence}
               {tunnelComposition}
               {tunnelSaveTarget}
+              {onTunnelSaved}
               renderMode={ctx.renderMode}
               isExporting={interactions.videoBusy}
               bpm={ctx.bpmLocal}

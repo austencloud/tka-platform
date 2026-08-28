@@ -22,6 +22,14 @@
   import ShapeMatrixTunnelSourcePicker from "./ShapeMatrixTunnelSourcePicker.svelte";
   import type { ModeRealization } from "$lib/shared/shape-matrix/services/build-mode-realizations";
 
+  let {
+    onOpenLibrary,
+    collectionCount = 0,
+  }: {
+    onOpenLibrary: () => void;
+    collectionCount?: number;
+  } = $props();
+
   type TunnelInspector = "settings" | "pairing" | "generation";
 
   const creator = getTunnelCreatorContext();
@@ -342,19 +350,34 @@
         </div>
       {/if}
 
-      <div class="settings-trigger">
-        <PanelButton
-          variant="secondary"
-          onclick={toggleSettings}
-          ariaExpanded={settingsOpen}
-          ariaLabel={settingsOpen
-            ? "Close tunnel settings"
-            : "Open tunnel settings"}
-        >
-          <i class="fas fa-sliders" aria-hidden="true"></i>
-          <span>Tunnel settings</span>
-          <i class="fas fa-chevron-right" aria-hidden="true"></i>
-        </PanelButton>
+      <div class="workspace-actions">
+        <div class="library-trigger">
+          <PanelButton
+            variant="secondary"
+            onclick={onOpenLibrary}
+            ariaLabel={`Open your ${collectionCount} saved ${collectionCount === 1 ? "tunnel" : "tunnels"}`}
+          >
+            <i class="fas fa-folder-open" aria-hidden="true"></i>
+            <span class="library-label">Your tunnels</span>
+            <span class="library-count" aria-hidden="true"
+              >{collectionCount}</span
+            >
+          </PanelButton>
+        </div>
+        <div class="settings-trigger">
+          <PanelButton
+            variant="secondary"
+            onclick={toggleSettings}
+            ariaExpanded={settingsOpen}
+            ariaLabel={settingsOpen
+              ? "Close tunnel settings"
+              : "Open tunnel settings"}
+          >
+            <i class="fas fa-sliders" aria-hidden="true"></i>
+            <span>Tunnel settings</span>
+            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+          </PanelButton>
+        </div>
       </div>
     </header>
 
@@ -660,10 +683,37 @@
     font-size: var(--font-size-compact, 12px);
   }
 
+  .workspace-actions {
+    display: flex;
+    align-items: center;
+    flex: 0 1 auto;
+    gap: var(--settings-spacing-sm, 8px);
+    min-width: 0;
+    margin-left: auto;
+  }
+
+  .library-trigger,
   .settings-trigger {
     flex: 0 1 auto;
     min-width: 0;
-    margin-left: auto;
+  }
+
+  .library-count {
+    display: inline-grid;
+    min-width: 1.65rem;
+    min-height: 1.65rem;
+    padding-inline: 5px;
+    place-items: center;
+    border-radius: 999px;
+    color: var(--theme-text);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 14%,
+      var(--theme-panel-bg)
+    );
+    font-size: var(--font-size-compact, 12px);
+    font-variant-numeric: tabular-nums;
+    font-weight: 750;
   }
 
   .settings-trigger :global(.panel-btn) {
@@ -1049,7 +1099,7 @@
       flex-wrap: wrap;
     }
 
-    .settings-trigger {
+    .workspace-actions {
       margin-left: auto;
     }
 
@@ -1088,6 +1138,7 @@
     }
 
     .title-block p,
+    .library-label,
     .settings-trigger :global(.panel-btn span),
     .settings-trigger :global(.panel-btn .fa-chevron-right) {
       display: none;
@@ -1098,10 +1149,26 @@
       height: 32px;
     }
 
+    .library-trigger :global(.panel-btn),
     .settings-trigger :global(.panel-btn) {
       width: var(--min-touch-target, 48px);
       min-width: var(--min-touch-target, 48px);
       padding: 0;
+    }
+
+    .library-trigger :global(.panel-btn) {
+      position: relative;
+    }
+
+    .library-count {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 1.25rem;
+      min-height: 1.25rem;
+      padding-inline: 3px;
+      border: 1px solid var(--theme-panel-bg);
+      font-size: 10px;
     }
 
     .stage-controls {
