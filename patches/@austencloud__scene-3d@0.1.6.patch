@@ -11128,7 +11128,7 @@ diff --git a/dist/lib/state/user-proportions-state.svelte.d.ts.map b/dist/lib/st
 deleted file mode 100644
 index a8fd5a41c1434bf568841daf28c8443ba1515e65..0000000000000000000000000000000000000000
 diff --git a/src/lib/components/Avatar3D.svelte b/src/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..14cd26ea2e0e8f75f5786bfe2c294eb96c3a7ad0 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df41cbb87f0 100644
 --- a/src/lib/components/Avatar3D.svelte
 +++ b/src/lib/components/Avatar3D.svelte
 @@ -16,29 +16,42 @@
@@ -11729,7 +11729,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..14cd26ea2e0e8f75f5786bfe2c294eb9
            })
            .catch((err) => {
              console.warn(
-@@ -444,18 +808,23 @@
+@@ -444,18 +808,39 @@
          const turnsBase = "/animations/turns/";
          const probeUrl = `${turnsBase}turn-left-90.glb`;
          const rootForTurns = cachedRoot;
@@ -11752,17 +11752,33 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..14cd26ea2e0e8f75f5786bfe2c294eb9
 +                  glbUrl: `${turnsBase}turn-left-90.glb`,
 +                  contactUrl: `${turnsBase}turn-left-90.contact.json`,
 +                  clipName: "turn-left-90",
++                  includeSpine: false,
 +                },
 +                {
 +                  angleDeg: -90,
 +                  glbUrl: `${turnsBase}turn-right-90.glb`,
 +                  contactUrl: `${turnsBase}turn-right-90.contact.json`,
 +                  clipName: "turn-right-90",
++                  includeSpine: false,
++                },
++                {
++                  angleDeg: 180,
++                  glbUrl: `${turnsBase}turn-left-180.glb`,
++                  contactUrl: `${turnsBase}turn-left-180.contact.json`,
++                  clipName: "turn-left-180",
++                  includeSpine: false,
++                },
++                {
++                  angleDeg: -180,
++                  glbUrl: `${turnsBase}turn-right-180.glb`,
++                  contactUrl: `${turnsBase}turn-right-180.contact.json`,
++                  clipName: "turn-right-180",
++                  includeSpine: false,
 +                },
                ])
                .then(() => {
                  // Register turn clip contact curves so FootPlanter can query them
-@@ -476,7 +845,13 @@
+@@ -476,7 +861,13 @@
        // ikSolver, which is still used by arm IK elsewhere in this file).
        // Gated on enableFootPlanting - off by default so the museum FPS player
        // (which wants responsive code-driven movement) isn't affected.
@@ -11777,7 +11793,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..14cd26ea2e0e8f75f5786bfe2c294eb9
          footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
        }
  
-@@ -502,6 +877,16 @@
+@@ -502,6 +893,16 @@
        }
      } finally {
        isLoading = false;
@@ -11794,7 +11810,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..14cd26ea2e0e8f75f5786bfe2c294eb9
      }
    }
  
-@@ -587,25 +972,30 @@
+@@ -587,25 +988,30 @@
  
      // Disable spine twist in dual-wheel mode - wide lateral IK targets
      // twist the torso and shift the feet on the ground.
@@ -11836,7 +11852,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..14cd26ea2e0e8f75f5786bfe2c294eb9
  
          // Feed state to LocomotionAnimator for clip selection
          locomotionAnimator.setActiveState?.(stateOutput.state);
-@@ -627,6 +1017,15 @@
+@@ -627,6 +1033,15 @@
          });
        }
        locomotionAnimator.update(delta);
@@ -11852,7 +11868,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..14cd26ea2e0e8f75f5786bfe2c294eb9
  
        // Turn clip overlay - when a turn is active, overwrite lower-body
        // and spine bones with the turn clip's authored pose at the current
-@@ -639,20 +1038,50 @@
+@@ -639,20 +1054,52 @@
        if (turnRequestProp && turnAnimator?.isReady() && skeletonService) {
          const sample = turnAnimator.sample(turnRequestProp);
          const bones = skeletonService.getState().bones;
@@ -11860,7 +11876,9 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..14cd26ea2e0e8f75f5786bfe2c294eb9
 +          turnRequestProp.poseWeight === undefined
 +            ? turnPoseWeight(turnRequestProp.phase)
 +            : Math.max(0, Math.min(1, turnRequestProp.poseWeight));
-+        onTurnYawSample?.(sample.yawDelta);
++        if (sample.clipName || !turnRequestProp.requireAuthored) {
++          onTurnYawSample?.(sample.yawDelta);
++        }
  
 -        // Apply bone rotations - overwrite animation pose for lower body
 -        for (const [boneName, quat] of sample.boneRotations) {
@@ -11914,7 +11932,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..14cd26ea2e0e8f75f5786bfe2c294eb9
            }
          }
  
-@@ -681,7 +1110,11 @@
+@@ -681,7 +1128,11 @@
        // displacement needs the same conversion.
        if (rootMotionExtractor?.isReady() && onRootMotion) {
          const localDelta = rootMotionExtractor.extract();
@@ -11927,7 +11945,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..14cd26ea2e0e8f75f5786bfe2c294eb9
            // Convert Mixamo centimeters to scene units.
            // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
            // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
-@@ -708,28 +1141,90 @@
+@@ -708,28 +1159,90 @@
        // clips without authored curves. Gated on enableFootPlanting so the
        // museum FPS player stays fully code-driven.
        if (enableFootPlanting && footPlanter?.isReady()) {
@@ -12023,7 +12041,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..14cd26ea2e0e8f75f5786bfe2c294eb9
      }
  
      if (redPropAnchorRef && redPropState) {
-@@ -737,6 +1232,10 @@
+@@ -737,6 +1250,10 @@
        redPropAnchorRef.getWorldPosition(redIKTarget);
      } else if (redPropState) {
        redIKTarget.copy(redPropState.worldPosition);
@@ -12034,7 +12052,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..14cd26ea2e0e8f75f5786bfe2c294eb9
      }
  
      const blueWorldProp = bluePropState
-@@ -746,15 +1245,74 @@
+@@ -746,15 +1263,74 @@
        ? { ...redPropState, worldPosition: redIKTarget }
        : null;
  
@@ -12109,7 +12127,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..14cd26ea2e0e8f75f5786bfe2c294eb9
      // 2b. Collision detection - run after IK so bones are at final positions
      if (collisionDetector.enabled && skeletonService) {
        const state = skeletonService.getState();
-@@ -867,20 +1425,15 @@
+@@ -867,20 +1443,15 @@
    // transparent with depth-write off so the fade blends correctly.
    $effect(() => {
      if (!cachedRoot) return;
@@ -12136,7 +12154,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..14cd26ea2e0e8f75f5786bfe2c294eb9
      // Dispose locomotion animator, state machine, and foot planter
      if (locomotionAnimator) {
        locomotionAnimator.dispose();
-@@ -913,13 +1466,19 @@
+@@ -913,13 +1484,19 @@
  </script>
  
  {#if visible}
@@ -12163,7 +12181,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..14cd26ea2e0e8f75f5786bfe2c294eb9
      <T.Group
        name={`PERFORMER_${id}`}
        position={[position.x, position.y ?? 0, position.z]}
-@@ -950,6 +1509,7 @@
+@@ -950,6 +1527,7 @@
        preventing visual glitches during avatar swap.
      -->
      <T.Group
@@ -18408,10 +18426,19 @@ index 2627f729e9f27d0eafff53491ea15d219472ac24..9978035424ef915241040845a6806a4f
    ): SpineTwistResult;
  }
 diff --git a/src/lib/services/contracts/ITurnAnimator.ts b/src/lib/services/contracts/ITurnAnimator.ts
-index f906b396cdb9f1a924c617f9a44c5978f9cfd46b..21b24b3bcc8d1eaa0eef5035db3503dbefc5dd85 100644
+index f906b396cdb9f1a924c617f9a44c5978f9cfd46b..d78c415dce9399f16b6c8654b88ba70ac93d8c82 100644
 --- a/src/lib/services/contracts/ITurnAnimator.ts
 +++ b/src/lib/services/contracts/ITurnAnimator.ts
-@@ -27,6 +27,10 @@ export interface TurnRequest {
+@@ -20,6 +20,8 @@ import type { Quaternion, Vector3 } from "three";
+  * Input to a turn sample. The consumer computes this from its own clock.
+  */
+ export interface TurnRequest {
++  /** Stable host-owned identity for diagnostics and scrub-safe scheduling. */
++  planId?: string;
+   /** Heading at phase 0, in radians (0 = +Z toward audience). */
+   fromHeading: number;
+   /** Heading at phase 1, in radians. */
+@@ -27,6 +29,13 @@ export interface TurnRequest {
    /** Phase 0→1 within the turn. 0 = start pose, 1 = end pose.
     *  Can go backward (scrubbing). Values outside [0,1] are clamped. */
    phase: number;
@@ -18419,10 +18446,13 @@ index f906b396cdb9f1a924c617f9a44c5978f9cfd46b..21b24b3bcc8d1eaa0eef5035db3503db
 +   *  decides how the authored pose enters and releases around contact-safe
 +   *  boundaries. Omitted callers retain the legacy phase envelope. */
 +  poseWeight?: number;
++  /** Refuse the yaw-only fallback when the requested authored coverage is
++   *  absent. A missing clip must not masquerade as a valid footless turn. */
++  requireAuthored?: boolean;
  }
  
  /**
-@@ -40,7 +44,8 @@ export interface TurnSample {
+@@ -40,7 +49,8 @@ export interface TurnSample {
     *  Keys are canonical bone names without prefix (e.g. "Hips", "LeftUpLeg").
     *  Only lower-body + spine bones are included. */
    boneRotations: Map<string, Quaternion>;
@@ -19697,7 +19727,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..d91ad70510d271c5cd4414e2fd9ecc5c
      this.state = {
        isLoaded: false,
 diff --git a/src/lib/services/implementations/ClipBasedTurnAnimator.ts b/src/lib/services/implementations/ClipBasedTurnAnimator.ts
-index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..3792d9cfa504bf8ed21bd25711f1ed4a2a8833d6 100644
+index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..a2cde2dada0e28f612e0a683532b902b90f7c79a 100644
 --- a/src/lib/services/implementations/ClipBasedTurnAnimator.ts
 +++ b/src/lib/services/implementations/ClipBasedTurnAnimator.ts
 @@ -19,10 +19,14 @@
@@ -19727,21 +19757,36 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..3792d9cfa504bf8ed21bd25711f1ed4a
    /** Hips world-space position per frame (for root motion extraction). */
    hipsPositions: Vector3[];
    /** Per-frame left foot contact: 0=airborne, 1=planted. */
-@@ -148,7 +155,8 @@ function bakeClip(
+@@ -102,6 +109,9 @@ export interface TurnClipManifestEntry {
+   glbUrl: string;
+   /** Optional URL of a JSON sidecar with { leftFoot, rightFoot } arrays. */
+   contactUrl?: string;
++  /** Keep the live locomotion torso when source and target spine bind axes do
++   *  not agree. The lower body and root tracks still own the turn. */
++  includeSpine?: boolean;
+ }
+ 
+ // ---------------------------------------------------------------------------
+@@ -148,7 +158,12 @@ function bakeClip(
    modelPrefix: string,
    angleDeg: number,
    contactLeft: number[],
 -  contactRight: number[]
 +  contactRight: number[],
++  rootYaw: number[] = [],
++  rootX: number[] = [],
++  rootZ: number[] = [],
++  includeSpine: boolean = true,
 +  clipName: string = clip.name
  ): BakedTurnClip {
    const clipPrefix = detectClipPrefix(clip);
    const frameCount = Math.max(2, Math.ceil(clip.duration * BAKE_FPS) + 1);
-@@ -157,7 +165,10 @@ function bakeClip(
+@@ -157,7 +172,11 @@ function bakeClip(
  
    // Build empty frame arrays for each wanted bone
    for (const bone of TURN_BONE_NAMES) {
 -    boneFrames.set(bone, Array.from({ length: frameCount }, () => new Quaternion()));
++    if (!includeSpine && bone.startsWith("Spine")) continue;
 +    boneFrames.set(
 +      bone,
 +      Array.from({ length: frameCount }, () => new Quaternion())
@@ -19749,7 +19794,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..3792d9cfa504bf8ed21bd25711f1ed4a
    }
    for (let i = 0; i < frameCount; i++) {
      hipsPositions.push(new Vector3());
-@@ -169,7 +180,9 @@ function bakeClip(
+@@ -169,10 +188,12 @@ function bakeClip(
  
      const rawBoneName = track.name.slice(0, dotIdx);
      const property = track.name.slice(dotIdx + 1);
@@ -19758,9 +19803,14 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..3792d9cfa504bf8ed21bd25711f1ed4a
 +      ? rawBoneName.slice(clipPrefix.length)
 +      : rawBoneName;
  
-     if (property === "quaternion" && TURN_BONE_NAMES.has(coreName)) {
-       const frames = boneFrames.get(coreName)!;
-@@ -230,9 +243,9 @@ function bakeClip(
+-    if (property === "quaternion" && TURN_BONE_NAMES.has(coreName)) {
+-      const frames = boneFrames.get(coreName)!;
++    const frames = boneFrames.get(coreName);
++    if (property === "quaternion" && frames) {
+       // QuaternionKeyframeTrack stores interleaved [x,y,z,w] values
+       const values = (track as QuaternionKeyframeTrack).values as Float32Array;
+       const times = track.times as Float32Array;
+@@ -230,9 +251,9 @@ function bakeClip(
          const tHi = times[hi] ?? lastTime;
          const blend = tHi > tLo ? (t - tLo) / (tHi - tLo) : 0;
          hipsPositions[f]!.set(
@@ -19773,20 +19823,35 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..3792d9cfa504bf8ed21bd25711f1ed4a
          );
        }
      }
-@@ -245,18 +258,156 @@ function bakeClip(
+@@ -245,18 +266,187 @@ function bakeClip(
      return [...arr, ...Array<number>(len - arr.length).fill(last)];
    };
  
 +  const hipsFrames = boneFrames.get("Hips") ?? [];
-+  const yawFrames: number[] = [];
++  const derivedYawFrames: number[] = [];
 +  if (hipsFrames.length > 0) {
 +    _tmpEuler.setFromQuaternion(hipsFrames[0]!, "XYZ");
 +    const startYaw = _tmpEuler.z;
 +    for (const frame of hipsFrames) {
 +      _tmpEuler.setFromQuaternion(frame, "XYZ");
-+      yawFrames.push(wrapAngle(_tmpEuler.z - startYaw));
++      derivedYawFrames.push(wrapAngle(_tmpEuler.z - startYaw));
 +    }
 +  }
++
++  const yawFrames = padArray(
++    rootYaw.length > 0 ? rootYaw : derivedYawFrames,
++    frameCount
++  );
++  const rootMotionFrames =
++    rootX.length > 0 && rootZ.length > 0
++      ? Array.from({ length: frameCount }, (_, index) =>
++          new Vector3(
++            rootX[Math.min(index, rootX.length - 1)] ?? 0,
++            rootZ[Math.min(index, rootZ.length - 1)] ?? 0,
++            0
++          )
++        )
++      : hipsPositions;
 +
    return {
      angleDeg,
@@ -19795,8 +19860,9 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..3792d9cfa504bf8ed21bd25711f1ed4a
      duration: clip.duration,
      frameCount,
      boneFrames,
+-    hipsPositions,
 +    yawFrames,
-     hipsPositions,
++    hipsPositions: rootMotionFrames,
      contactLeft: padArray(contactLeft, frameCount),
      contactRight: padArray(contactRight, frameCount),
    };
@@ -19862,6 +19928,12 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..3792d9cfa504bf8ed21bd25711f1ed4a
 +interface ContactSidecar {
 +  leftFoot: number[];
 +  rightFoot: number[];
++  /** Optional source-authored unwrapped root tracks. CMU BVH uses a different
++   *  axis basis from Mixamo, so these avoid guessing yaw or planar axes from
++   *  exported Hips transforms. */
++  rootYaw?: number[];
++  rootX?: number[];
++  rootZ?: number[];
 +}
 +
 +const contactSidecarLoads = new Map<string, Promise<ContactSidecar>>();
@@ -19898,11 +19970,17 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..3792d9cfa504bf8ed21bd25711f1ed4a
 +
 +      let contactLeft: number[] = [];
 +      let contactRight: number[] = [];
++      let rootYaw: number[] = [];
++      let rootX: number[] = [];
++      let rootZ: number[] = [];
 +      if (entry.contactUrl) {
 +        try {
 +          const contact = await loadContactSidecar(entry.contactUrl);
 +          contactLeft = contact.leftFoot;
 +          contactRight = contact.rightFoot;
++          rootYaw = contact.rootYaw ?? [];
++          rootX = contact.rootX ?? [];
++          rootZ = contact.rootZ ?? [];
 +        } catch {
 +          console.warn(
 +            `[ClipBasedTurnAnimator] Could not load contact sidecar: ${entry.contactUrl}`
@@ -19916,6 +19994,10 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..3792d9cfa504bf8ed21bd25711f1ed4a
 +        entry.angleDeg,
 +        contactLeft,
 +        contactRight,
++        rootYaw,
++        rootX,
++        rootZ,
++        entry.includeSpine !== false,
 +        entry.clipName
 +      );
 +    })
@@ -19931,7 +20013,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..3792d9cfa504bf8ed21bd25711f1ed4a
  // ---------------------------------------------------------------------------
  // Sampling helpers
  // ---------------------------------------------------------------------------
-@@ -287,6 +438,15 @@ function sampleContactAtPhase(curve: number[], phase: number): number {
+@@ -287,6 +477,15 @@ function sampleContactAtPhase(curve: number[], phase: number): number {
    return curve[i0]! * (1 - t) + curve[i1]! * t;
  }
  
@@ -19947,7 +20029,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..3792d9cfa504bf8ed21bd25711f1ed4a
  // ---------------------------------------------------------------------------
  // Main class
  // ---------------------------------------------------------------------------
-@@ -313,36 +473,13 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
+@@ -313,36 +512,13 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
      manifest: TurnClipManifestEntry[]
    ): Promise<void> {
      const modelPrefix = detectModelPrefix(modelRoot);
@@ -19989,7 +20071,22 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..3792d9cfa504bf8ed21bd25711f1ed4a
    }
  
    // -------------------------------------------------------------------------
-@@ -381,12 +518,21 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
+@@ -362,9 +538,12 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
+     const clip = this.findClip(totalAngle);
+ 
+     if (!clip) {
+-      // Linear fallback - no bone data available
++      // Legacy consumers may still opt into yaw-only correction. Locomotion
++      // planners that promise visible foot placements fail closed instead.
+       return {
+-        yawDelta: totalAngle * clampedPhase,
++        yawDelta: request.requireAuthored
++          ? 0
++          : totalAngle * clampedPhase,
+         boneRotations: new Map(),
+         hipsPosition: null,
+         leftFootContact: 0,
+@@ -381,12 +560,21 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
        boneRotations.set(boneName, out);
      }
  
@@ -20013,7 +20110,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..3792d9cfa504bf8ed21bd25711f1ed4a
        // Frame 0 yaw
        _tmpEuler.setFromQuaternion(hipsFrames[0]!, "XYZ");
        const yaw0 = _tmpEuler.z;
-@@ -407,11 +553,17 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
+@@ -407,11 +595,17 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
          clip.hipsPositions[i0]!,
          clip.hipsPositions[i1]!,
          t
@@ -20034,7 +20131,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..3792d9cfa504bf8ed21bd25711f1ed4a
  
      return {
        yawDelta,
-@@ -471,7 +623,11 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
+@@ -471,7 +665,11 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
        // Break ties by preferring the clip whose raw angle is closer to totalAngle
        // (avoids the +π / -π ambiguity where wrapAngle collapses both to 0 distance)
        const absRaw = Math.abs(rawDiff);
