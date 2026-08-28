@@ -1,6 +1,6 @@
 # Ember Spatial Directions
 
-Status: Geological World Gate 4 R8 ready for review; approval unset
+Status: Surface Ecology Gate 3 R9 ready for review; Gate 4 paused
 
 Date: 2026-08-25
 
@@ -10,8 +10,8 @@ Current regression authority: museum trackers `rn25Qau62kXyyOJpgm7Z`,
 `QRHbwRQLhM7Zn9LyYHOd`, `gME4uHJawz9dtTlirRl8`,
 `kqMUPC5UpCHjj7ts9atQ`, `5otAzYdNg5Wp5E27mgfo`,
 `nu73zqvPJRxio4T2sWz7`, `ATURN84Ov2hmjWUndebl`,
-`ZSnkB98pb0wz6PO17XKp`, `sDKmB6cUEXLfHgz4DGd4`, and
-`s3cxnp6hOLBVQR5dDF42`
+`ZSnkB98pb0wz6PO17XKp`, `sDKmB6cUEXLfHgz4DGd4`,
+`s3cxnp6hOLBVQR5dDF42`, and `uXmi4z9lL7zCiNq5ULCp`
 
 ## Why this exists
 
@@ -270,3 +270,34 @@ four-performer growth proof, and frame report live in
 `evidence/gate-4-terrain-r8/`. The R7 geology, Blackglass Inferno atmosphere,
 seventeen-point runtime river, front-stage heading, 4.5 m action clearance, and
 remaining 40 Meshy credits are preserved.
+
+## R9 volcanic surface ecology track
+
+Museum tracker `uXmi4z9lL7zCiNq5ULCp` reopens Gate 3 around the remaining
+material failure. R8 solved the world-scale terrain silhouette, but the same
+`weathered-basalt` color, roughness, and normal maps still skin the columnar
+hero and all three depth bands. The result reads as one rippled procedural
+material even when the underlying geometry is strong.
+
+R9 holds the entire R8 spatial and lighting contract fixed and compares three
+independent material ecosystems from the same four cameras:
+
+- **Fresh Flow Field:** roped pahoehoe, a'a clinker, fractured basalt, and
+  sheltered windborne ash.
+- **Ash-Choked Caldera:** compacted ash, lapilli fall, exposed basalt scarps,
+  and lava-baked contact crust.
+- **Hydrothermal Rift:** wet obsidian, iron oxide drainage, localized sulfur
+  sinter, and steam-bleached basalt.
+
+The director synthesis, **Fresh Rift**, combines Fresh Flow's coherent young
+lava base with Hydrothermal Rift's iron response only at the river and contact
+zones. It rejects broad sulfur fields and the Ash direction's full-scene gray
+blanket. The terrain proof uses a smooth per-vertex four-family mask rather
+than visible material islands. Cooled shelf fissures receive geological crust
+instead of an unlit black surface.
+
+Sixteen registered renders, the four-direction board, editable Blender target,
+and deterministic build report live in `evidence/gate-3-surface-r9/`. The
+adversarial ledger recommends Fresh Rift, but Gate 3 approval remains unset.
+No runtime shader, shipping GLB, or Meshy task changed; Gate 4 resumes only
+after the registered visual target is approved.

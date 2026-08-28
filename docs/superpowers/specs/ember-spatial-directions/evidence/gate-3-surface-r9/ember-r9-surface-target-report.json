@@ -1,0 +1,294 @@
+{
+  "revision": "ember-surface-ecology-gate3-r9",
+  "authorityTrackerItem": "uXmi4z9lL7zCiNq5ULCp",
+  "fixedElements": {
+    "terrainDirection": "breached-caldera-terraces",
+    "actionClearanceMeters": 4.5,
+    "lavaRiverControlPointsRuntimeXZHeight": [
+      [
+        -20.0,
+        156.0,
+        15.2
+      ],
+      [
+        -25.0,
+        132.0,
+        12.7
+      ],
+      [
+        -20.0,
+        108.0,
+        10.6
+      ],
+      [
+        -17.0,
+        82.0,
+        8.7
+      ],
+      [
+        -12.0,
+        67.0,
+        6.5
+      ],
+      [
+        -4.0,
+        52.0,
+        4.4
+      ],
+      [
+        8.0,
+        40.0,
+        2.9
+      ],
+      [
+        11.0,
+        29.0,
+        1.9
+      ],
+      [
+        10.0,
+        19.0,
+        1.1
+      ],
+      [
+        12.0,
+        11.0,
+        0.55
+      ],
+      [
+        14.0,
+        2.0,
+        0.25
+      ],
+      [
+        12.0,
+        -8.0,
+        0.1
+      ],
+      [
+        8.0,
+        -24.0,
+        -0.02
+      ],
+      [
+        -1.0,
+        -43.0,
+        -0.12
+      ],
+      [
+        -14.0,
+        -64.0,
+        -0.18
+      ],
+      [
+        -10.0,
+        -91.0,
+        -0.24
+      ],
+      [
+        2.0,
+        -122.0,
+        -0.32
+      ]
+    ],
+    "meshyGeology": [
+      "hero-columnar-escarpment",
+      "collapsed-lava-bank",
+      "obsidian-fumarole-talus",
+      "distant-breached-caldera"
+    ],
+    "atmosphere": "blackglass-inferno",
+    "registeredCameras": [
+      "hero",
+      "front-right",
+      "right",
+      "rear-right",
+      "rear",
+      "rear-left",
+      "left",
+      "front-left",
+      "detail",
+      "plan"
+    ]
+  },
+  "directions": {
+    "fresh-flow-field": {
+      "families": [
+        {
+          "index": 0,
+          "slug": "roped-pahoehoe",
+          "label": "Roped pahoehoe",
+          "pattern": "rope"
+        },
+        {
+          "index": 1,
+          "slug": "aa-clinker",
+          "label": "A'a clinker",
+          "pattern": "clinker"
+        },
+        {
+          "index": 2,
+          "slug": "fractured-basalt",
+          "label": "Fresh fractured basalt",
+          "pattern": "fracture"
+        },
+        {
+          "index": 3,
+          "slug": "windborne-ash",
+          "label": "Windborne ash pockets",
+          "pattern": "ash"
+        }
+      ],
+      "assignedPolygonCounts": {
+        "0": 6065,
+        "1": 37492,
+        "2": 50765,
+        "3": 81713
+      }
+    },
+    "ash-choked-caldera": {
+      "families": [
+        {
+          "index": 0,
+          "slug": "compacted-ash",
+          "label": "Compacted ash blanket",
+          "pattern": "ash"
+        },
+        {
+          "index": 1,
+          "slug": "lapilli-fall",
+          "label": "Lapilli fall",
+          "pattern": "lapilli"
+        },
+        {
+          "index": 2,
+          "slug": "exposed-basalt",
+          "label": "Exposed basalt scarps",
+          "pattern": "fracture"
+        },
+        {
+          "index": 3,
+          "slug": "lava-baked-crust",
+          "label": "Lava-baked ash crust",
+          "pattern": "sinter"
+        }
+      ],
+      "assignedPolygonCounts": {
+        "0": 55004,
+        "1": 39326,
+        "2": 51141,
+        "3": 30564
+      }
+    },
+    "hydrothermal-rift": {
+      "families": [
+        {
+          "index": 0,
+          "slug": "wet-obsidian",
+          "label": "Wet obsidian",
+          "pattern": "wet"
+        },
+        {
+          "index": 1,
+          "slug": "iron-oxide",
+          "label": "Iron oxide drainage",
+          "pattern": "oxide"
+        },
+        {
+          "index": 2,
+          "slug": "sulfur-sinter",
+          "label": "Sulfur sinter",
+          "pattern": "sinter"
+        },
+        {
+          "index": 3,
+          "slug": "steam-bleached-basalt",
+          "label": "Steam-bleached basalt",
+          "pattern": "bleached"
+        }
+      ],
+      "assignedPolygonCounts": {
+        "0": 20255,
+        "1": 34537,
+        "2": 33475,
+        "3": 87768
+      }
+    },
+    "fresh-rift-synthesis": {
+      "families": [
+        {
+          "index": 0,
+          "slug": "roped-pahoehoe",
+          "label": "Roped pahoehoe",
+          "pattern": "rope"
+        },
+        {
+          "index": 1,
+          "slug": "iron-contact-crust",
+          "label": "Iron-rich contact crust",
+          "pattern": "oxide"
+        },
+        {
+          "index": 2,
+          "slug": "fractured-basalt",
+          "label": "Fresh fractured basalt",
+          "pattern": "fracture"
+        },
+        {
+          "index": 3,
+          "slug": "windborne-ash",
+          "label": "Windborne ash pockets",
+          "pattern": "ash"
+        }
+      ],
+      "assignedPolygonCounts": {
+        "0": 5332,
+        "1": 38019,
+        "2": 50758,
+        "3": 81926
+      }
+    }
+  },
+  "comparisonStructure": {
+    "independentDirections": [
+      "fresh-flow-field",
+      "ash-choked-caldera",
+      "hydrothermal-rift"
+    ],
+    "directorSynthesis": "fresh-rift-synthesis",
+    "synthesisRationale": "Fresh Flow Field supplies the coherent young-lava base. Hydrothermal Rift contributes only restrained iron-rich contact zones at the river and lava banks; broad sulfur color fields are rejected."
+  },
+  "renders": {
+    "fresh-flow-field": {
+      "hero": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-fresh-flow-field-hero.png",
+      "front-right": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-fresh-flow-field-front-right.png",
+      "left": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-fresh-flow-field-left.png",
+      "rear": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-fresh-flow-field-rear.png"
+    },
+    "ash-choked-caldera": {
+      "hero": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-ash-choked-caldera-hero.png",
+      "front-right": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-ash-choked-caldera-front-right.png",
+      "left": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-ash-choked-caldera-left.png",
+      "rear": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-ash-choked-caldera-rear.png"
+    },
+    "hydrothermal-rift": {
+      "hero": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-hydrothermal-rift-hero.png",
+      "front-right": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-hydrothermal-rift-front-right.png",
+      "left": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-hydrothermal-rift-left.png",
+      "rear": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-hydrothermal-rift-rear.png"
+    },
+    "fresh-rift-synthesis": {
+      "hero": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-fresh-rift-synthesis-hero.png",
+      "front-right": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-fresh-rift-synthesis-front-right.png",
+      "left": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-fresh-rift-synthesis-left.png",
+      "rear": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-fresh-rift-synthesis-rear.png"
+    }
+  },
+  "editableSource": "scripts/build-ember-production-slice.py --r9-surface-targets",
+  "blend": "blender/ember-surface-ecology-r9-targets.blend",
+  "blendBytes": 9473008,
+  "blendSha256": "b9c95d794c7bbcd244f7a3545ab1065300a24b801bad0f1cd7f735e085b830fb",
+  "productionBoundary": "Gate 3 evidence only. No runtime asset, shader owner, or production material was changed before Austen selects a registered direction.",
+  "meshyCreditsSpent": 0,
+  "meshyCreditsReserved": 40
+}

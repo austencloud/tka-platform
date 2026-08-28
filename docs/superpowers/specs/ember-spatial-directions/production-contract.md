@@ -1,6 +1,6 @@
 # Ember Broken Rift production contract
 
-**Status:** Gate 4 Geological World R8 slice ready for review; approval unset
+**Status:** Gate 3 Surface Ecology R9 ready for review; Gate 4 paused
 
 **Scene ID:** `ember-broken-rift`
 
@@ -14,7 +14,8 @@
 `gME4uHJawz9dtTlirRl8`, `kqMUPC5UpCHjj7ts9atQ`,
 `5otAzYdNg5Wp5E27mgfo`, `nu73zqvPJRxio4T2sWz7`,
 `ATURN84Ov2hmjWUndebl`, `ZSnkB98pb0wz6PO17XKp`,
-`sDKmB6cUEXLfHgz4DGd4`, and `s3cxnp6hOLBVQR5dDF42`.
+`sDKmB6cUEXLfHgz4DGd4`, `s3cxnp6hOLBVQR5dDF42`, and
+`uXmi4z9lL7zCiNq5ULCp`.
 
 ## Outcome
 
@@ -384,6 +385,37 @@ stage owner, and 4.5 m protected action radius.
 - Gate result: Gate 3 is approved by Austen's “Sick. Send it.” authorization.
   Gate 4 implementation and verification are complete; visual approval remains
   unset pending review of the production result.
+
+### Volcanic Surface Ecology R9 target result
+
+Museum tracker `uXmi4z9lL7zCiNq5ULCp` authorizes a new registered surface
+comparison while preserving R8's terrain, atmosphere, geology, lava route,
+responsive stage, performer heading, and action clearance.
+
+- Independent directions: Fresh Flow Field, Ash-Choked Caldera, and
+  Hydrothermal Rift.
+- Director synthesis: Fresh Rift. It keeps roped young lava, fractured basalt,
+  and sheltered ash as the world-wide hierarchy, then confines iron-rich
+  hydrothermal response to lava-distance contact zones.
+- Rejected full-scene languages: Ash-Choked Caldera restores the low-contrast
+  graybox read; Hydrothermal Rift adds strong light interaction but allows
+  sulfur and color accents to compete with Ember's lava hierarchy.
+- Material proof: each direction uses four color, roughness, and normal-map
+  families. The continuous basin blends them with a smooth per-vertex RGBA mask
+  instead of hard material islands.
+- Capability relationship: the production plan composes the existing shared
+  `masked-ground-detail-material.ts` owner through an Ember-local adapter. It
+  does not establish a second world-space ground-detail implementation.
+- Registered evidence:
+  `evidence/gate-3-surface-r9/ember-r9-surface-target-board.jpg`, sixteen
+  camera-registered source renders, the candidate decision ledger, and
+  `ember-r9-surface-target-report.json`.
+- Editable target: `blender/ember-surface-ecology-r9-targets.blend`; all texture
+  pixels rebuild deterministically with
+  `scripts/build-ember-production-slice.py --r9-surface-targets`.
+- Credit result: no Meshy calls; all 40 remaining credits stay reserved.
+- Gate result: ready for review. Gate 4 is deliberately pending, and no runtime
+  shader, optimized GLB, or shipping scene material changed in this pass.
 
 ## Gate 5: Integrated room
 
