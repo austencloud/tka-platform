@@ -30,6 +30,11 @@
      * left its editor instead of resetting the workspace.
      */
     fixedSize?: string;
+    /**
+     * Start at a CSS length while leaving the resize handle active. The first
+     * drag turns that preferred allocation into the user's saved flex sizes.
+     */
+    preferredSize?: string;
     /** Whether the handle after this panel is available (default: true). */
     resizable?: boolean;
     /** Panel ID for tracking */
@@ -73,6 +78,7 @@
   let containerRef = $state<HTMLDivElement | null>(null);
   let dragStartSizes = $state<number[]>([]);
   let activeDragIndex = $state<number | null>(null);
+  let manuallySizedPanels = $state<Set<string | number>>(new Set());
 
   // Initialize sizes from panel defaults - only when panel count changes
   // Use untrack to prevent reactive cascade when sizes is bindable
@@ -87,7 +93,28 @@
 
   // Handle resize start
   function handleDragStart(index: number) {
-    dragStartSizes = [...sizes];
+    const renderedSizes = containerRef
+      ? Array.from(
+          containerRef.querySelectorAll<HTMLElement>(":scope > .panel-wrapper")
+        ).map((panel) =>
+          direction === "horizontal" ? panel.clientWidth : panel.clientHeight
+        )
+      : [];
+
+    // A preferred panel begins at content height, not at its stored flex
+    // ratio. Starting the drag from the rendered pixels prevents the first
+    // pointer movement from snapping it back to that stale ratio.
+    dragStartSizes =
+      renderedSizes.length === panels.length ? renderedSizes : [...sizes];
+    sizes = [...dragStartSizes];
+
+    const nextManuallySizedPanels = new Set(manuallySizedPanels);
+    for (const panelIndex of [index, index + 1]) {
+      if (panels[panelIndex]?.preferredSize) {
+        nextManuallySizedPanels.add(panels[panelIndex]?.id ?? panelIndex);
+      }
+    }
+    manuallySizedPanels = nextManuallySizedPanels;
     activeDragIndex = index;
   }
 
@@ -194,9 +221,17 @@
   // Get flex style for a panel
   function getFlexStyle(index: number): string {
     const fixedSize = panels[index]?.fixedSize;
-    return fixedSize
-      ? `flex-grow: 0; flex-shrink: 0; flex-basis: ${fixedSize}`
-      : `flex-grow: ${sizes[index] ?? 1}; flex-shrink: 1; flex-basis: 0px`;
+    if (fixedSize) {
+      return `flex-grow: 0; flex-shrink: 0; flex-basis: ${fixedSize}`;
+    }
+
+    const panelKey = panels[index]?.id ?? index;
+    const preferredSize = panels[index]?.preferredSize;
+    if (preferredSize && !manuallySizedPanels.has(panelKey)) {
+      return `flex-grow: 0; flex-shrink: 0; flex-basis: ${preferredSize}`;
+    }
+
+    return `flex-grow: ${sizes[index] ?? 1}; flex-shrink: 1; flex-basis: 0px`;
   }
 </script>
 

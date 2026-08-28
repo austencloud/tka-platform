@@ -41,6 +41,9 @@ describe("canonical layout motion", () => {
 
     expect(panels).toContain("transition:flexPresence");
     expect(panels).toContain("transition:growFade");
+    expect(panels).toContain("preferredSize?: string");
+    expect(panels).toContain(":scope > .panel-wrapper");
+    expect(panels).toContain("manuallySizedPanels.has(panelKey)");
     expect(panels).toContain("flex-grow var(--transition-emphasis)");
     expect(panels).toContain(".panel-group.dragging .panel-wrapper");
     expect(panels).toContain("transition: none");
@@ -53,6 +56,8 @@ describe("canonical layout motion", () => {
     );
 
     expect(stage).toContain("content: timelinePanel");
+    expect(stage).toContain("preferredSize:");
+    expect(stage).toContain("--stage-timeline-content-size");
     expect(stage).toContain(
       'mode={timelineDisclosure === "editor" ? "editor" : "dock"}'
     );

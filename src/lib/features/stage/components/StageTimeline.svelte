@@ -775,7 +775,7 @@
 
   .timeline-toolbar {
     display: grid;
-    min-height: 3.75rem;
+    min-height: var(--stage-timeline-toolbar-size, 3.75rem);
     flex: 0 0 auto;
     grid-template-columns: minmax(10rem, 1fr) auto minmax(10rem, 1fr);
     align-items: center;
@@ -902,10 +902,12 @@
        else is going, so a chip sitting on the final count has somewhere to be
        drawn instead of being clipped by the lane it ends. */
     grid-template-columns: 7rem minmax(var(--timeline-width), 1fr);
-    grid-auto-rows: 3.5rem;
+    grid-auto-rows: var(--stage-timeline-lane-size, 3.5rem);
     /* 3.5rem keeps the set chip's 2.75rem touch target intact inside its
        0.35rem inset, and matches the performer lane height. */
-    grid-template-rows: 2.25rem 3.5rem;
+    grid-template-rows:
+      var(--stage-timeline-ruler-size, 2.25rem)
+      var(--stage-timeline-lane-size, 3.5rem);
   }
 
   .ruler-label,
@@ -937,7 +939,7 @@
   }
 
   .ruler {
-    height: 2.25rem;
+    height: var(--stage-timeline-ruler-size, 2.25rem);
     overflow: hidden;
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: #11131c;
