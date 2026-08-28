@@ -1,8 +1,8 @@
 import type { OrchestratorContext } from "../domain/viewer-orchestrator-context";
 import { VIDEO_UPLOAD_ENABLED } from "../config/viewer-feature-flags";
 
-// One profile since the /q scan page adopted SequenceViewerShell (the drawer's
-// chrome verbatim) — the hand-rolled "scan" funnel profile is gone. The param
+// One profile since every viewer destination adopted SequenceViewerShell (the
+// same chrome verbatim) — the hand-rolled "scan" funnel profile is gone. The param
 // survives so call sites read explicitly.
 export type ViewerHeaderProfile = "full";
 
