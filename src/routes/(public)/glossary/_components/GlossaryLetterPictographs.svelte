@@ -22,28 +22,40 @@
   const pictographs = $derived(letters.map(resolvePictograph));
 </script>
 
-<div class="letter-pictographs">
-  {#each pictographs as pictograph (pictograph.label)}
-    <a
-      class="letter-pictograph"
-      href={pictograph.href}
-      aria-label={`Open letter ${pictograph.label} in the Letter Codex`}
-    >
-      <CodexCell
-        cell={pictograph.cell}
-        theme="dark"
-        showName={false}
-        showTransition={false}
-      />
-    </a>
-  {/each}
+<div class="letter-pictographs-shell">
+  <div class="letter-pictographs">
+    {#each pictographs as pictograph (pictograph.label)}
+      <a
+        class="letter-pictograph"
+        href={pictograph.href}
+        aria-label={`Open letter ${pictograph.label} in the Letter Codex`}
+      >
+        <CodexCell
+          cell={pictograph.cell}
+          theme="dark"
+          showName={false}
+          showTransition={false}
+        />
+      </a>
+    {/each}
+  </div>
 </div>
 
 <style>
+  .letter-pictographs-shell {
+    container-type: inline-size;
+  }
+
   .letter-pictographs {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 6.75rem), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 5.25rem), 1fr));
     gap: 0.65rem;
+  }
+
+  @container (min-width: 16rem) {
+    .letter-pictographs {
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 6.75rem), 1fr));
+    }
   }
 
   .letter-pictograph {
