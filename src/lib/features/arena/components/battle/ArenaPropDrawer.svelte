@@ -14,18 +14,11 @@
     isOpen = $bindable(false),
     selectedPropType,
     onSelect,
-    onClose,
   }: {
     isOpen: boolean;
     selectedPropType: PropType;
     onSelect: (propType: PropType) => void;
-    onClose: () => void;
   } = $props();
-
-  function handleSelect(propType: PropType) {
-    onSelect(propType);
-    onClose();
-  }
 </script>
 
 <PropSelectionSheet
@@ -33,5 +26,5 @@
   {selectedPropType}
   color="blue"
   title={t('arena_battle_prop_title')}
-  onSelect={handleSelect}
+  {onSelect}
 />

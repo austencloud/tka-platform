@@ -11,7 +11,6 @@
   import { onMount, onDestroy } from "svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
   import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import BentoPropGrid from "./BentoPropGrid.svelte";
@@ -26,7 +25,6 @@
     onSelect,
     showTabs = false,
     activeTab = $bindable<"blue" | "red">("blue"),
-    autoClose = true,
     showCatDogToggle = false,
     catDogEnabled = false,
     onCatDogToggle,
@@ -41,8 +39,6 @@
     showTabs?: boolean;
     /** Active tab when showTabs is true */
     activeTab?: "blue" | "red";
-    /** Auto-close after selection. Set false when parent manages closing (e.g. cat/dog flow). */
-    autoClose?: boolean;
     /** Show a cat/dog mode toggle in the drawer header */
     showCatDogToggle?: boolean;
     /** Current cat/dog mode state (read by toggle) */
@@ -81,21 +77,10 @@
   function handlePropSelect(propType: PropType) {
     const hapticService = getHapticFeedback();
     hapticService?.trigger("selection");
-    // Buugeng is not fully chosen until its per-hand A/B controls are visible.
-    // Some hosts finish their ordinary prop flow by closing the bound drawer
-    // inside onSelect. Reassert the open state after that callback so choosing
-    // a Buugeng style advances to chirality instead of dismissing the picker.
-    const needsChiralityChoice = Boolean(
-      chirality && isBuugengFamilyProp(propType)
-    );
+    // Selection updates the live prop preview while the picker stays available
+    // for comparison. Closing is always a separate action: backdrop, X,
+    // Escape, or drag-dismiss.
     onSelect(propType);
-    if (needsChiralityChoice) {
-      isOpen = true;
-      return;
-    }
-    if (autoClose) {
-      isOpen = false;
-    }
   }
 
   function handleTabChange(tab: "blue" | "red") {
