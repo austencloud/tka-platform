@@ -1,16 +1,17 @@
-<!-- Two-step editor for exact prop versions and the optional Profile prop. -->
+<!-- Two-step editor for prop skills and the optional featured profile skill. -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import {
-    ensureProfilePropFamily,
     getLegacyProfileProps,
     getProfilePropFamily,
+    getProfilePropFamilyByRepresentative,
     getProfilePropLabel,
-    isProfilePropChoice,
+    normalizeProfileSelection,
+    normalizeProfileSkill,
+    normalizeProfileSkills,
     removeProfileProp,
-    toggleProfilePropVariant,
-    uniqueProfileProps,
+    toggleProfileSkill,
   } from "$lib/shared/community/domain/profile-prop-catalog";
   import type { PropPreferenceState } from "$lib/shared/community/state/prop-preference-state.svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
@@ -39,26 +40,31 @@
   const accountSetupState = tryGetAccountSetupContext();
 
   const legacyProps = $derived(getLegacyProfileProps(draftProps));
-  const profilePropChoices = $derived(draftProps.filter(isProfilePropChoice));
+  const profilePropChoices = $derived(normalizeProfileSkills(draftProps));
   const primaryLabel = $derived(
     step === "profile-prop"
       ? "Save"
-      : draftProps.length > 1
+      : profilePropChoices.length > 1
         ? "Continue"
         : "Done"
   );
 
   function resetDraft(): void {
-    draftProps = uniqueProfileProps(propState.propsISpinWith);
+    draftProps = normalizeProfileSelection(propState.propsISpinWith);
+    const normalizedFavorite = propState.favoriteProp
+      ? normalizeProfileSkill(propState.favoriteProp)
+      : null;
     draftProfileProp =
-      propState.favoriteProp &&
-      isProfilePropChoice(propState.favoriteProp) &&
-      draftProps.includes(propState.favoriteProp)
-        ? propState.favoriteProp
+      normalizedFavorite && draftProps.includes(normalizedFavorite)
+        ? normalizedFavorite
         : null;
+    const initialFamily = getProfilePropFamily(
+      draftProfileProp ?? draftProps[0]
+    );
     activeFamily =
-      getProfilePropFamily(draftProfileProp ?? draftProps[0])?.representative ??
-      null;
+      initialFamily && initialFamily.choices.length > 1
+        ? initialFamily.representative
+        : null;
     step = "props";
     saveFailed = false;
     propState.clearError();
@@ -97,14 +103,27 @@
   }
 
   function handleFamilySelect(representative: PropType): void {
-    draftProps = ensureProfilePropFamily(draftProps, representative);
-    activeFamily = representative;
+    const family = getProfilePropFamilyByRepresentative(representative);
+    if (!family) return;
+
+    if (family.choices.length > 1) {
+      activeFamily = representative;
+      triggerHaptic("selection");
+      return;
+    }
+
+    const skill = family.choices[0]?.prop;
+    if (!skill) return;
+    const removing = draftProps.includes(skill);
+    draftProps = toggleProfileSkill(draftProps, skill);
+    if (removing && draftProfileProp === skill) draftProfileProp = null;
+    activeFamily = null;
     noteDraftChange();
   }
 
-  function handleVariantToggle(prop: PropType): void {
+  function handleSkillToggle(prop: PropType): void {
     const removing = draftProps.includes(prop);
-    draftProps = toggleProfilePropVariant(draftProps, prop);
+    draftProps = toggleProfileSkill(draftProps, prop);
     if (removing && draftProfileProp === prop) draftProfileProp = null;
     activeFamily = getProfilePropFamily(prop)?.representative ?? activeFamily;
     noteDraftChange();
@@ -117,8 +136,8 @@
   }
 
   function handlePropsPrimary(): void {
-    if (draftProps.length === 0 || submitting) return;
-    if (draftProps.length === 1) {
+    if (profilePropChoices.length === 0 || submitting) return;
+    if (profilePropChoices.length === 1) {
       void persistDraft(null);
       return;
     }
@@ -136,7 +155,7 @@
   }
 
   async function persistDraft(profileProp: PropType | null): Promise<void> {
-    if (submitting || draftProps.length === 0) return;
+    if (submitting || profilePropChoices.length === 0) return;
     submitting = true;
     saveFailed = false;
     let saved = false;
@@ -183,12 +202,12 @@
       <h2 class="modal-title">
         {step === "props"
           ? "Which props do you spin?"
-          : "Which prop should represent you?"}
+          : "Which skill should lead your profile?"}
       </h2>
       <p class="modal-description">
         {step === "props"
-          ? "Choose each prop family and the versions you actually spin. These appear on your public creator profile and support prop-based discovery."
-          : "Choose the exact prop shown on creator cards and your public profile, or choose No preference."}
+          ? "Choose the prop skills you practice. These appear on your public creator profile and support prop-based discovery."
+          : "This only chooses the skill shown beside your name on creator cards. It does not change your full list or app features."}
       </p>
       <button
         type="button"
@@ -211,7 +230,7 @@
           onclick={saveFailed
             ? () =>
                 void persistDraft(
-                  draftProps.length === 1 ? null : draftProfileProp
+                  profilePropChoices.length === 1 ? null : draftProfileProp
                 )
             : () => void reloadPreferences()}
           disabled={submitting || propState.loading}
@@ -231,7 +250,7 @@
         {activeFamily}
         disabled={submitting || propState.loading}
         onselectfamily={handleFamilySelect}
-        ontogglevariant={handleVariantToggle}
+        ontoggleskill={handleSkillToggle}
       />
 
       {#if legacyProps.length > 0}
@@ -275,10 +294,10 @@
 
   {#snippet footer()}
     <SelectionFooterBar
-      selectedProps={draftProps}
+      selectedProps={profilePropChoices}
       saving={submitting}
       {primaryLabel}
-      primaryDisabled={step === "props" && draftProps.length === 0}
+      primaryDisabled={step === "props" && profilePropChoices.length === 0}
       onprimary={step === "props"
         ? handlePropsPrimary
         : () => void persistDraft(draftProfileProp)}

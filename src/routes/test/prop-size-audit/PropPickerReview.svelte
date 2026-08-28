@@ -6,12 +6,13 @@
 
   let isOpen = $state(true);
   let selectedProps = $state<PropType[]>([
-    PropType.STAFF,
-    PropType.FAN,
-    PropType.CLUB,
+    PropType.BIGSTAFF,
+    PropType.BIGFAN,
+    PropType.TORCH,
+    PropType.SICKLES,
     PropType.CHICKEN,
   ]);
-  let favoriteProp = $state<PropType | null>(PropType.STAFF);
+  let favoriteProp = $state<PropType | null>(PropType.TORCH);
   let favoriteCatdog = $state<CatdogCombo | null>(null);
   let saving = $state(false);
   let error = $state<string | null>(null);

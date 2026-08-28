@@ -1,13 +1,12 @@
-<!-- One profile prop family. Selecting it reveals the registered variations. -->
+<!-- One profile skill. Hoop is the only family that opens a size choice. -->
 <script lang="ts">
   import type { ProfilePropFamily } from "$lib/shared/community/domain/profile-prop-catalog";
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
-  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   interface Props {
     family: ProfilePropFamily;
-    selectedVariants: PropType[];
+    selectedChoices: PropType[];
     active: boolean;
     disabled?: boolean;
     onselect: (representative: PropType) => void;
@@ -15,25 +14,22 @@
 
   let {
     family,
-    selectedVariants,
+    selectedChoices,
     active,
     disabled = false,
     onselect,
   }: Props = $props();
 
-  const selected = $derived(selectedVariants.length > 0);
+  const selected = $derived(selectedChoices.length > 0);
+  const hasChoices = $derived(family.choices.length > 1);
   const previewProp = $derived(
-    selectedVariants[selectedVariants.length - 1] ?? family.representative
+    selectedChoices[selectedChoices.length - 1] ?? family.representative
   );
   const selectionSummary = $derived(
-    selectedVariants
-      .map((prop) => getPropTypeDisplayInfo(prop).label)
+    family.choices
+      .filter((choice) => selectedChoices.includes(choice.prop))
+      .map((choice) => choice.label)
       .join(", ")
-  );
-  const selectionDetail = $derived(
-    selectedVariants.length === 1 && selectionSummary === family.label
-      ? "1 version selected"
-      : selectionSummary
   );
 </script>
 
@@ -53,7 +49,7 @@
       useSavedOverrides={false}
     />
     {#if selected}
-      <span class="selection-count">{selectedVariants.length}</span>
+      <span class="selection-mark"><i class="fas fa-check"></i></span>
     {:else}
       <span class="add-mark"><i class="fas fa-plus"></i></span>
     {/if}
@@ -61,14 +57,14 @@
   <span class="card-copy">
     <strong>{family.label}</strong>
     <small
-      >{selected
-        ? selectionDetail
-        : `${family.variants.length} ${family.variants.length === 1 ? "version" : "versions"}`}</small
+      >{selected && hasChoices ? selectionSummary : family.description}</small
     >
   </span>
-  <span class="detail-cue" aria-hidden="true">
-    <i class="fas fa-chevron-right"></i>
-  </span>
+  {#if hasChoices}
+    <span class="detail-cue" aria-hidden="true">
+      <i class="fas fa-chevron-right"></i>
+    </span>
+  {/if}
 </button>
 
 <style>
@@ -141,7 +137,7 @@
     height: 80%;
   }
 
-  .selection-count,
+  .selection-mark,
   .add-mark {
     position: absolute;
     top: -0.25rem;

@@ -1,9 +1,9 @@
-<!-- Profile-eligible prop families with a shared variation detail stage. -->
+<!-- Profile skill families. Only families with real skill splits open details. -->
 <script lang="ts">
   import {
     PROFILE_PROP_FAMILIES,
     getProfilePropFamilyByRepresentative,
-    getSelectedFamilyVariants,
+    getSelectedFamilyChoices,
   } from "$lib/shared/community/domain/profile-prop-catalog";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import PropFamilyCard from "./PropFamilyCard.svelte";
@@ -14,7 +14,7 @@
     activeFamily: PropType | null;
     disabled?: boolean;
     onselectfamily: (representative: PropType) => void;
-    ontogglevariant: (propType: PropType) => void;
+    ontoggleskill: (propType: PropType) => void;
   }
 
   let {
@@ -22,7 +22,7 @@
     activeFamily,
     disabled = false,
     onselectfamily,
-    ontogglevariant,
+    ontoggleskill,
   }: Props = $props();
 
   const coreFamilies = PROFILE_PROP_FAMILIES.filter(
@@ -42,7 +42,7 @@
   <section class="family-section" aria-labelledby="core-prop-families">
     <header class="section-heading">
       <span id="core-prop-families">Prop families</span>
-      <small>Choose a family, then select the versions you spin.</small>
+      <small>Choose each skill. Hoop asks for size.</small>
     </header>
     <div
       class="family-grid core-grid"
@@ -52,7 +52,7 @@
       {#each coreFamilies as family (family.representative)}
         <PropFamilyCard
           {family}
-          selectedVariants={getSelectedFamilyVariants(selectedProps, family)}
+          selectedChoices={getSelectedFamilyChoices(selectedProps, family)}
           active={activeFamily === family.representative}
           {disabled}
           onselect={onselectfamily}
@@ -76,7 +76,7 @@
       {#each specialtyFamilies as family (family.representative)}
         <PropFamilyCard
           {family}
-          selectedVariants={getSelectedFamilyVariants(selectedProps, family)}
+          selectedChoices={getSelectedFamilyChoices(selectedProps, family)}
           active={activeFamily === family.representative}
           {disabled}
           onselect={onselectfamily}
@@ -85,12 +85,12 @@
     </div>
   </section>
 
-  {#if activeFamilyInfo}
+  {#if activeFamilyInfo && activeFamilyInfo.choices.length > 1}
     <PropVariantPicker
       family={activeFamilyInfo}
       {selectedProps}
       {disabled}
-      ontoggle={ontogglevariant}
+      ontoggle={ontoggleskill}
     />
   {/if}
 </div>

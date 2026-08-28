@@ -1,8 +1,7 @@
-<!-- Multi-select versions for the currently focused profile prop family. -->
+<!-- Multi-select skill choices for families where the distinction matters. -->
 <script lang="ts">
   import type { ProfilePropFamily } from "$lib/shared/community/domain/profile-prop-catalog";
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
-  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   interface Props {
@@ -16,15 +15,15 @@
 
   const selectedSet = $derived(new Set(selectedProps));
   const selectedCount = $derived(
-    family.variants.filter((variant) => selectedSet.has(variant)).length
+    family.choices.filter((choice) => selectedSet.has(choice.prop)).length
   );
 </script>
 
 <section class="variant-picker" aria-labelledby="active-family-title">
   <header class="variant-heading">
     <span>
-      <span class="variant-kicker">{family.label} versions</span>
-      <strong id="active-family-title">Which ones do you spin?</strong>
+      <span class="variant-kicker">{family.label} sizes</span>
+      <strong id="active-family-title">Which sizes do you spin?</strong>
     </span>
     <span class="variant-count">
       {selectedCount === 0 ? "None selected" : `${selectedCount} selected`}
@@ -32,26 +31,25 @@
   </header>
 
   <div class="variant-grid" role="group" aria-labelledby="active-family-title">
-    {#each family.variants as prop (prop)}
-      {@const info = getPropTypeDisplayInfo(prop)}
-      {@const selected = selectedSet.has(prop)}
+    {#each family.choices as choice (choice.prop)}
+      {@const selected = selectedSet.has(choice.prop)}
       <button
         type="button"
         class="variant-card"
         class:selected
         aria-pressed={selected}
-        aria-label={`${info.label}${selected ? " (selected)" : ""}`}
-        onclick={() => ontoggle(prop)}
+        aria-label={`${choice.label}${selected ? " (selected)" : ""}`}
+        onclick={() => ontoggle(choice.prop)}
         {disabled}
       >
         <span class="variant-art" aria-hidden="true">
           <PropCompositionPreview
-            propType={prop}
+            propType={choice.prop}
             size={96}
             useSavedOverrides={false}
           />
         </span>
-        <span class="variant-label">{info.label}</span>
+        <span class="variant-label">{choice.label}</span>
         {#if selected}
           <span class="selected-mark" aria-hidden="true">
             <i class="fas fa-check"></i>

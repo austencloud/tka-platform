@@ -1,4 +1,4 @@
-<!-- Optional presentation step for the persisted favoriteProp field. -->
+<!-- Optional presentation step for the skill featured beside a creator name. -->
 <script lang="ts">
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getProfilePropLabel } from "$lib/shared/community/domain/profile-prop-catalog";
@@ -17,7 +17,7 @@
 <div
   class="profile-prop-picker"
   role="group"
-  aria-label="Choose a Profile prop"
+  aria-label="Choose a featured prop skill"
 >
   {#each selectedProps as prop (prop)}
     {@const label = getProfilePropLabel(prop)}
@@ -28,7 +28,7 @@
       onclick={() => onselect(prop)}
       {disabled}
       aria-pressed={value === prop}
-      aria-label={`Use ${label} as your Profile prop`}
+      aria-label={`Feature ${label} on your profile`}
     >
       {#if value === prop}
         <span class="selection-mark" aria-hidden="true">
@@ -63,7 +63,7 @@
       <i class="fas fa-layer-group"></i>
     </span>
     <span class="profile-prop-label">No preference</span>
-    <span class="profile-prop-note">Show all my props instead</span>
+    <span class="profile-prop-note">Do not feature one skill</span>
   </button>
 </div>
 

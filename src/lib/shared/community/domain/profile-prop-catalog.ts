@@ -1,90 +1,204 @@
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import {
-  getAllVariations,
-  getBasePropType,
-  getPropTypeDisplayInfo,
-  isPremiumCosmeticProp,
-  isPropActive,
-} from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 
 export type ProfilePropGroup = "core" | "specialty";
+
+/** A skill a creator can meaningfully claim, independent of its render asset. */
+export interface ProfilePropSkillChoice {
+  prop: PropType;
+  label: string;
+  members: readonly PropType[];
+}
 
 export interface ProfilePropFamily {
   representative: PropType;
   label: string;
+  description: string;
   group: ProfilePropGroup;
-  variants: readonly PropType[];
+  choices: readonly ProfilePropSkillChoice[];
 }
 
-interface ProfilePropFamilyDefinition {
-  representative: PropType;
-  label: string;
-  group: ProfilePropGroup;
+function skill(
+  prop: PropType,
+  label: string,
+  members: readonly PropType[]
+): ProfilePropSkillChoice {
+  return { prop, label, members };
 }
 
-const FAMILY_DEFINITIONS: readonly ProfilePropFamilyDefinition[] = [
-  { representative: PropType.STAFF, label: "Staff", group: "core" },
-  { representative: PropType.CLUB, label: "Club", group: "core" },
-  { representative: PropType.FAN, label: "Fan", group: "core" },
-  { representative: PropType.BUUGENG, label: "Buugeng", group: "core" },
-  { representative: PropType.MINIHOOP, label: "Hoop", group: "core" },
-  { representative: PropType.TRIAD, label: "Triad", group: "core" },
+/**
+ * Account setup records transferable prop skills, not every asset the renderer
+ * can draw. Hoop size is the sole split because mini and large hoops require
+ * meaningfully different technique. Everything else folds into one skill.
+ */
+export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
+  {
+    representative: PropType.STAFF,
+    label: "Staff",
+    description: "Staffs and batons",
+    group: "core",
+    choices: [
+      skill(PropType.STAFF, "Staff", [
+        PropType.STAFF,
+        PropType.SIMPLESTAFF,
+        PropType.BIGSTAFF,
+        PropType.STAFF2,
+        PropType.CAPSULE_BATON,
+        PropType.FIRE_DOUBLE_STAFF,
+        PropType.ENERGY_STAFF,
+      ]),
+    ],
+  },
+  {
+    representative: PropType.CLUB,
+    label: "Club",
+    description: "Clubs and torches",
+    group: "core",
+    choices: [
+      skill(PropType.CLUB, "Club", [
+        PropType.CLUB,
+        PropType.TORCH,
+        PropType.BIGCLUB,
+        PropType.BIGTORCH,
+      ]),
+    ],
+  },
+  {
+    representative: PropType.FAN,
+    label: "Fan",
+    description: "All fan styles",
+    group: "core",
+    choices: [skill(PropType.FAN, "Fan", [PropType.FAN, PropType.BIGFAN])],
+  },
+  {
+    representative: PropType.BUUGENG,
+    label: "Buugeng",
+    description: "All buugeng styles",
+    group: "core",
+    choices: [
+      skill(PropType.BUUGENG, "Buugeng", [
+        PropType.BUUGENG,
+        PropType.BIGBUUGENG,
+      ]),
+    ],
+  },
+  {
+    representative: PropType.MINIHOOP,
+    label: "Hoop",
+    description: "Choose mini, big, or both",
+    group: "core",
+    choices: [
+      skill(PropType.MINIHOOP, "Mini Hoop", [PropType.MINIHOOP]),
+      skill(PropType.BIGHOOP, "Big Hoop", [PropType.BIGHOOP]),
+    ],
+  },
+  {
+    representative: PropType.TRIAD,
+    label: "Triad",
+    description: "Triads and trigengs",
+    group: "core",
+    choices: [
+      skill(PropType.TRIAD, "Triad", [
+        PropType.TRIAD,
+        PropType.BIGTRIAD,
+        PropType.TRIGENG,
+      ]),
+    ],
+  },
   {
     representative: PropType.TRIQUETRA,
     label: "Triquetra",
+    description: "All triquetra styles",
     group: "core",
+    choices: [
+      skill(PropType.TRIQUETRA, "Triquetra", [
+        PropType.TRIQUETRA,
+        PropType.TRIQUETRA2,
+      ]),
+    ],
   },
-  { representative: PropType.SWORD, label: "Sword", group: "core" },
+  {
+    representative: PropType.SWORD,
+    label: "Sword",
+    description: "Swords and lightsabers",
+    group: "core",
+    choices: [
+      skill(PropType.SWORD, "Sword", [PropType.SWORD, PropType.ENERGY_SABER]),
+    ],
+  },
   {
     representative: PropType.DOUBLESTAR,
     label: "Double Star",
+    description: "All sizes",
     group: "specialty",
+    choices: [
+      skill(PropType.DOUBLESTAR, "Double Star", [
+        PropType.DOUBLESTAR,
+        PropType.BIGDOUBLESTAR,
+      ]),
+    ],
   },
   {
     representative: PropType.EIGHTRINGS,
     label: "Eight Rings",
+    description: "All sizes",
     group: "specialty",
+    choices: [
+      skill(PropType.EIGHTRINGS, "Eight Rings", [
+        PropType.EIGHTRINGS,
+        PropType.BIGEIGHTRINGS,
+      ]),
+    ],
   },
 ] as const;
 
-function activeProfileVariants(representative: PropType): PropType[] {
-  return getAllVariations(representative).filter(
-    (prop) => isPropActive(prop) && !isPremiumCosmeticProp(prop)
-  );
+const FAMILY_BY_REPRESENTATIVE = new Map(
+  PROFILE_PROP_FAMILIES.map((family) => [family.representative, family])
+);
+
+const SKILL_BY_MEMBER = new Map<PropType, ProfilePropSkillChoice>();
+const FAMILY_BY_MEMBER = new Map<PropType, ProfilePropFamily>();
+for (const family of PROFILE_PROP_FAMILIES) {
+  for (const choice of family.choices) {
+    for (const member of choice.members) {
+      SKILL_BY_MEMBER.set(member, choice);
+      FAMILY_BY_MEMBER.set(member, family);
+    }
+  }
 }
 
-export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] =
-  FAMILY_DEFINITIONS.map((family) => ({
-    ...family,
-    variants: activeProfileVariants(family.representative),
-  }));
-
-const FAMILY_BY_VARIANT = new Map<PropType, ProfilePropFamily>(
+const CANONICAL_PROFILE_SKILLS = new Set(
   PROFILE_PROP_FAMILIES.flatMap((family) =>
-    family.variants.map((variant) => [variant, family] as const)
+    family.choices.map((choice) => choice.prop)
   )
 );
+
+// Sickles were previously inherited from the Sword render family. They are not
+// a setup skill and should not survive the next profile-selection save.
+const REMOVED_PROFILE_PROPS = new Set<PropType>([PropType.SICKLES]);
 
 export function getProfilePropFamily(
   prop: PropType
 ): ProfilePropFamily | undefined {
-  return FAMILY_BY_VARIANT.get(prop);
+  return FAMILY_BY_MEMBER.get(prop);
 }
 
 export function getProfilePropFamilyByRepresentative(
   representative: PropType
 ): ProfilePropFamily | undefined {
-  return PROFILE_PROP_FAMILIES.find(
-    (family) => family.representative === representative
-  );
+  return FAMILY_BY_REPRESENTATIVE.get(representative);
 }
 
 export function getProfilePropLabel(prop: PropType): string {
-  return getPropTypeDisplayInfo(prop).label;
+  return SKILL_BY_MEMBER.get(prop)?.label ?? getPropTypeDisplayInfo(prop).label;
 }
 
 export function isProfilePropChoice(prop: PropType): boolean {
-  return FAMILY_BY_VARIANT.has(prop);
+  return CANONICAL_PROFILE_SKILLS.has(prop);
+}
+
+export function normalizeProfileSkill(prop: PropType): PropType | null {
+  return SKILL_BY_MEMBER.get(prop)?.prop ?? null;
 }
 
 export function uniqueProfileProps(props: readonly PropType[]): PropType[] {
@@ -92,37 +206,48 @@ export function uniqueProfileProps(props: readonly PropType[]): PropType[] {
 }
 
 export function getLegacyProfileProps(props: readonly PropType[]): PropType[] {
-  return uniqueProfileProps(props).filter((prop) => !isProfilePropChoice(prop));
+  return uniqueProfileProps(props).filter(
+    (prop) => !SKILL_BY_MEMBER.has(prop) && !REMOVED_PROFILE_PROPS.has(prop)
+  );
 }
 
-export function getSelectedFamilyVariants(
+export function normalizeProfileSkills(props: readonly PropType[]): PropType[] {
+  return uniqueProfileProps(
+    props
+      .map(normalizeProfileSkill)
+      .filter((prop): prop is PropType => prop !== null)
+  );
+}
+
+/** Canonical skills plus safe opaque values from profiles created before setup. */
+export function normalizeProfileSelection(
+  props: readonly PropType[]
+): PropType[] {
+  return uniqueProfileProps([
+    ...normalizeProfileSkills(props),
+    ...getLegacyProfileProps(props),
+  ]);
+}
+
+export function getSelectedFamilyChoices(
   props: readonly PropType[],
   family: ProfilePropFamily
 ): PropType[] {
-  const selected = new Set(props);
-  return family.variants.filter((variant) => selected.has(variant));
+  const selected = new Set(normalizeProfileSkills(props));
+  return family.choices
+    .map((choice) => choice.prop)
+    .filter((prop) => selected.has(prop));
 }
 
-export function ensureProfilePropFamily(
-  props: readonly PropType[],
-  representative: PropType
-): PropType[] {
-  const family = getProfilePropFamilyByRepresentative(representative);
-  if (!family) return uniqueProfileProps(props);
-  if (getSelectedFamilyVariants(props, family).length > 0) {
-    return uniqueProfileProps(props);
-  }
-  return uniqueProfileProps([...props, family.representative]);
-}
-
-export function toggleProfilePropVariant(
+export function toggleProfileSkill(
   props: readonly PropType[],
   prop: PropType
 ): PropType[] {
-  if (!isProfilePropChoice(prop)) return uniqueProfileProps(props);
-  return props.includes(prop)
-    ? uniqueProfileProps(props.filter((selected) => selected !== prop))
-    : uniqueProfileProps([...props, prop]);
+  if (!isProfilePropChoice(prop)) return normalizeProfileSelection(props);
+  const normalized = normalizeProfileSelection(props);
+  return normalized.includes(prop)
+    ? normalized.filter((selected) => selected !== prop)
+    : [...normalized, prop];
 }
 
 export function removeProfileProp(
@@ -133,5 +258,5 @@ export function removeProfileProp(
 }
 
 export function profileFamilyRepresentative(prop: PropType): PropType {
-  return getProfilePropFamily(prop)?.representative ?? getBasePropType(prop);
+  return getProfilePropFamily(prop)?.representative ?? prop;
 }

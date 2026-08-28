@@ -27,6 +27,10 @@
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import { getEffectiveProp } from "$lib/shared/community/domain/get-effective-prop";
   import {
+    normalizeProfileSkill,
+    normalizeProfileSkills,
+  } from "$lib/shared/community/domain/profile-prop-catalog";
+  import {
     joinedLabel,
     activeLabel,
   } from "$lib/features/creators/domain/profile-tenure";
@@ -66,17 +70,22 @@
     userProfile.profileColor || "var(--theme-accent)"
   );
 
+  const curatedProps = $derived(
+    normalizeProfileSkills(userProfile.propsISpinWith ?? [])
+  );
+  const featuredProp = $derived(
+    userProfile.favoriteProp
+      ? normalizeProfileSkill(userProfile.favoriteProp)
+      : null
+  );
+
   // Settings-derived prop shown when the user never curated a props list
   const fallbackProp = $derived(
-    !userProfile.propsISpinWith?.length ? getEffectiveProp(userProfile) : null
+    curatedProps.length === 0 ? getEffectiveProp(userProfile) : null
   );
 
   const shownProps = $derived(
-    userProfile.propsISpinWith?.length
-      ? userProfile.propsISpinWith
-      : fallbackProp
-        ? [fallbackProp]
-        : []
+    curatedProps.length ? curatedProps : fallbackProp ? [fallbackProp] : []
   );
 
   const joined = $derived(joinedLabel(userProfile.joinedDate));
@@ -153,14 +162,14 @@
           {#each shownProps as prop (prop)}
             <div
               class="profile-prop-icon"
-              class:favorite={prop === userProfile.favoriteProp}
+              class:favorite={prop === featuredProp}
               title={getPropTypeDisplayInfo(prop).label}
             >
               <img
                 src={getPropTypeDisplayInfo(prop).image}
                 alt={getPropTypeDisplayInfo(prop).label}
               />
-              {#if prop === userProfile.favoriteProp}
+              {#if prop === featuredProp}
                 <span class="favorite-star" aria-label="Profile prop"
                   >&#9733;</span
                 >
