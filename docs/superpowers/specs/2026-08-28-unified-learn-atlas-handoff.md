@@ -90,9 +90,8 @@ is [`active/2026-08-28-unified-learn-atlas-design.md`](active/2026-08-28-unified
 
 - No implementation is in flight. The verified landing polish commit
   `8cd3cfa4b1` was fast-forwarded into `main` on 2026-08-28.
-- The task-owned 5188 preview and Chrome DevTools tab may be closed after the
-  handoff commit is integrated; they were kept alive through the final rebase
-  check.
+- The task-owned 5188 preview was stopped and its Chrome DevTools tab was
+  closed after the final rebase check.
 
 ## Loose ends (ranked)
 
