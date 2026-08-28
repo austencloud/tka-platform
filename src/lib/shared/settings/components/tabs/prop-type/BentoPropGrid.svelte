@@ -451,7 +451,14 @@
     overflow-y: auto;
     border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
     border-radius: 14px;
-    background: var(--theme-card-bg, #0c0e16);
+    /* Theme cards are translucent over the animated app background. This
+       chooser needs an opaque floor so the prop grid beneath cannot compete
+       with its five style choices; the theme card still supplies the tint. */
+    background-color: #0c0e16;
+    background-image: linear-gradient(
+      var(--theme-card-bg, transparent),
+      var(--theme-card-bg, transparent)
+    );
     box-shadow: 0 16px 52px var(--theme-shadow, rgba(0, 0, 0, 0.62));
   }
 
