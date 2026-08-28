@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "product": "Home of Poi Medium Lotus Fire Fan",
   "source": "https://www.homeofpoi.com/en/shop/listItems/Medium-Lotus-Fire-Fans",
   "source_image": "https://www.threeworlds.com.au/cdn/shop/products/lotus_fire_fans2.png?v=1654825026&width=1800",
@@ -27,18 +27,18 @@
     "finger_ring_center_y": 0.06,
     "grip_ring_center_x": 0.0,
     "grip_ring_center_y": -0.007628,
-    "cradle_join": [-0.0525, -0.004],
-    "cradle_bottom_y": -0.076,
+    "cradle_join": [-0.04944, -0.004518],
+    "cradle_bottom_y": -0.077796,
     "side_weld_bosses": [
       {
         "name": "Left",
-        "center": [-0.05215, -0.00335, 0.00075],
+        "center": [-0.04944, -0.004518, 0.00075],
         "half_extents": [0.0065, 0.0064, 0.004],
         "phase": 1.12
       },
       {
         "name": "Right",
-        "center": [0.05215, -0.00335, 0.00075],
+        "center": [0.04944, -0.004518, 0.00075],
         "half_extents": [0.0065, 0.0064, 0.004],
         "phase": 1.12
       }
@@ -70,8 +70,9 @@
     ]
   },
   "calibration": {
-    "method": "front-on 1800 px product photograph; horizontal and vertical axes calibrated independently to the published 480 x 350 mm envelope",
-    "symmetry": "the clearer photographed left rail centerlines are authored as cubic Beziers and reflected exactly across the grip centerline; hand-wrapped wick silhouettes remain independently measured",
+    "method": "Austen-authored Illustrator Bezier centerlines aligned from the traced grip circle to the published 3 5/8 inch ring ID; the front-on 1800 px product photograph still calibrates the 480 x 350 mm envelope",
+    "symmetry": "five hand-traced right rail centerlines are preserved as sparse cubic Beziers and reflected exactly across the grip centerline; hand-wrapped wick silhouettes remain independently measured",
+    "lower_cradle": "the traced secondary circle is opened at its two intersections with the grip ring, retaining only the lower U-shaped rail",
     "finger_ring": "22 mm inside diameter centered on the mirrored grip assembly",
     "wick_roll": "all five hand-wrapped rolls were segmented and measured independently from the calibrated photograph; the nominal tape width remains the published 50 mm",
     "wick_mount": "two 4 mm frame tines run parallel to each independently measured wick axis, enter through the inward-facing end cap, and continue inside the roll",

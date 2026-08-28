@@ -339,13 +339,16 @@ invariant(
 );
 invariant(
   lotusGroup.extras?.tka_finger_ring_brace_count === 0 &&
-    lotusGroup.extras?.tka_finger_ring_weld_count === 1 &&
+    lotusGroup.extras?.tka_finger_ring_weld_count === 3 &&
+    lotusGroup.extras?.tka_rail_root_weld_count === 10 &&
     !nodeIndexByName.has("Fan_Lotus_FingerBrace_Left") &&
     !nodeIndexByName.has("Fan_Lotus_FingerBrace_Right") &&
     nodeIndexByName.has("Fan_Lotus_FingerWeld_Lower") &&
-    !nodeIndexByName.has("Fan_Lotus_FingerWeld_UpperLeft") &&
-    !nodeIndexByName.has("Fan_Lotus_FingerWeld_LowerLeft"),
-  "Lotus finger ring is not centered above the rail-formed triangles"
+    Array.from(
+      { length: 10 },
+      (_, index) => `Fan_Lotus_Weld_${index + 1}`
+    ).every((name) => nodeIndexByName.has(name)),
+  "Lotus traced rail roots are missing their symmetric welds"
 );
 invariant(
   lotusGroup.extras?.tka_wick_mount ===

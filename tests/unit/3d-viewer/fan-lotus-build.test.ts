@@ -71,7 +71,9 @@ const reference = JSON.parse(
     wick_directions: [number, number][];
   };
   calibration: {
+    method: string;
     symmetry: string;
+    lower_cradle: string;
     wick_diameter_m: number;
     wick_mount: string;
   };
@@ -133,6 +135,9 @@ describe("Medium Lotus five-wick fire fan", () => {
     );
     expect(reference.calibration.symmetry).toContain("cubic Beziers");
     expect(reference.calibration.symmetry).toContain("reflected exactly");
+    expect(reference.calibration.method).toContain(
+      "Austen-authored Illustrator"
+    );
 
     for (const leftId of expectedPathIds.filter((id) => id.endsWith("-left"))) {
       const rightId = leftId.replace(/-left$/, "-right");
@@ -167,7 +172,8 @@ describe("Medium Lotus five-wick fire fan", () => {
     expect(reference.geometry_m.finger_ring_center_y).toBeCloseTo(0.06, 7);
     expect(reference.geometry_m.grip_ring_center_x).toBe(0);
     expect(reference.geometry_m.grip_ring_center_y).toBeCloseTo(-0.007628, 9);
-    expect(reference.geometry_m.cradle_bottom_y).toBeCloseTo(-0.076, 7);
+    expect(reference.geometry_m.cradle_bottom_y).toBeCloseTo(-0.077796, 7);
+    expect(reference.calibration.lower_cradle).toContain("lower U-shaped rail");
     expect(builder).toContain('"Fan_Lotus_GripRing"');
     expect(builder).toContain('"Fan_Lotus_FingerRing"');
     expect(builder).toContain('"Fan_Lotus_LowerCradle"');
@@ -196,29 +202,49 @@ describe("Medium Lotus five-wick fire fan", () => {
     expect(builder).toContain("neck.lerp(entry, step / 8)");
   });
 
-  it("joins the centre lotus petal to the photographed finger-ring shoulders", () => {
-    const fingerRingInnerRadius =
-      reference.geometry_m.finger_ring_inside_diameter_m / 2;
-    const fingerRingOuterRadius =
-      fingerRingInnerRadius +
-      reference.published_construction.frame_stock_diameter_m;
+  it("seats the traced rail roots on the grip and finger-ring circles", () => {
+    const gripCenterlineRadius =
+      reference.published_construction.spinning_ring_inside_diameter_m / 2 +
+      reference.published_construction.grip_stock_diameter_m / 2;
+    const fingerRingCenterlineRadius =
+      reference.geometry_m.finger_ring_inside_diameter_m / 2 +
+      reference.published_construction.frame_stock_diameter_m / 2;
 
-    for (const pathId of ["center-petal-left", "center-petal-right"]) {
+    const rootDistance = (pathId: string, centerX: number, centerY: number) => {
       const pathData = vectorReference.match(
         new RegExp(`<path id="${pathId}" d="M ([^ ]+) ([^ ]+)`)
       );
       expect(pathData).not.toBeNull();
       const startX = (Number(pathData?.[1]) - 240) / 1000;
       const startY = (270 - Number(pathData?.[2])) / 1000;
-      const offsetFromFingerRing = Math.hypot(
-        startX - reference.geometry_m.finger_ring_center_x,
-        startY - reference.geometry_m.finger_ring_center_y
-      );
-      expect(offsetFromFingerRing).toBeGreaterThan(fingerRingInnerRadius);
-      expect(offsetFromFingerRing).toBeLessThanOrEqual(
-        fingerRingOuterRadius + 0.0035
-      );
+      return Math.hypot(startX - centerX, startY - centerY);
+    };
+
+    for (const pathId of ["center-petal-left", "center-petal-right"]) {
+      expect(
+        rootDistance(
+          pathId,
+          reference.geometry_m.grip_ring_center_x,
+          reference.geometry_m.grip_ring_center_y
+        )
+      ).toBeCloseTo(gripCenterlineRadius, 2);
     }
+
+    for (const pathId of [
+      "upper-inner-petal-left",
+      "upper-inner-petal-right",
+    ]) {
+      expect(
+        rootDistance(
+          pathId,
+          reference.geometry_m.finger_ring_center_x,
+          reference.geometry_m.finger_ring_center_y
+        )
+      ).toBeCloseTo(fingerRingCenterlineRadius, 2);
+    }
+
+    expect(builder).toContain('parent["tka_rail_root_weld_count"] = 10');
+    expect(builder).toContain('parent["tka_finger_ring_weld_count"] = 3');
   });
 
   it("keeps all five measured wick rolls inside the photographed soft envelope", () => {
@@ -260,7 +286,7 @@ describe("Medium Lotus five-wick fire fan", () => {
     });
   });
 
-  it("builds the asymmetric side welds as bosses instead of pin-head beads", () => {
+  it("builds symmetrical side welds as bosses instead of pin-head beads", () => {
     expect(reference.geometry_m.side_weld_bosses).toHaveLength(2);
     expect(
       reference.geometry_m.side_weld_bosses.map(({ name }) => name)
@@ -281,6 +307,12 @@ describe("Medium Lotus five-wick fire fan", () => {
     );
     expect(reference.geometry_m.side_weld_bosses[0].center[1]).toBe(
       reference.geometry_m.side_weld_bosses[1].center[1]
+    );
+    expect(reference.geometry_m.side_weld_bosses[0].center[0]).toBe(
+      -reference.geometry_m.side_weld_bosses[1].center[0]
+    );
+    expect(reference.geometry_m.side_weld_bosses[0].phase).toBe(
+      reference.geometry_m.side_weld_bosses[1].phase
     );
     expect(builder).toContain("add_weld_boss(");
     expect(builder).toContain("Fan_Lotus_SideWeld_");
