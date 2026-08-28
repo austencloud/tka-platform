@@ -55,6 +55,13 @@ const reference = JSON.parse(
       center: [number, number, number];
       radius: number;
     };
+    finger_ring_triangle_half: {
+      outer_grip_join: [number, number];
+      brace_control_1: [number, number];
+      brace_control_2: [number, number];
+      inner_grip_join: [number, number];
+      apex: [number, number];
+    };
     center_petal_root: [number, number];
     wick_roll_length_m: number;
     wick_roll_lengths_m: number[];
@@ -261,9 +268,17 @@ describe("Medium Lotus five-wick fire fan", () => {
 
   it("keeps the finger-ring junction centered without crossing braces", () => {
     expect(reference.geometry_m.finger_ring_bottom_weld.radius).toBe(0.0018);
-    expect(builder).not.toContain("Fan_Lotus_FingerBrace_");
+    expect(reference.geometry_m.finger_ring_triangle_half).toEqual({
+      outer_grip_join: [-0.034, 0.0284],
+      brace_control_1: [-0.027, 0.0355],
+      brace_control_2: [-0.018, 0.047],
+      inner_grip_join: [-0.0145, 0.03974],
+      apex: [-0.013, 0.0525],
+    });
+    expect(builder).toContain("Fan_Lotus_FingerBrace_");
     expect(builder).toContain('"Fan_Lotus_FingerWeld_Lower"');
     expect(builder).not.toContain("finger_ring_weld_bosses");
+    expect(builder).toContain('triangle_half["apex"]');
   });
 
   it("keeps four build tiles balanced in wide and narrow picker containers", () => {

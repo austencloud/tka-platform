@@ -1296,8 +1296,11 @@ def build_lotus_frame(
     parent["tka_frame_path_count"] = 10
     parent["tka_frame_symmetry"] = "mirrored averaged rail pairs"
     parent["tka_side_weld_boss_count"] = len(geometry["side_weld_bosses"])
-    parent["tka_finger_ring_brace_count"] = 0
+    parent["tka_finger_ring_brace_count"] = 2
     parent["tka_finger_ring_weld_count"] = 1
+    parent["tka_finger_ring_triangle_half_m"] = geometry[
+        "finger_ring_triangle_half"
+    ]
     parent["tka_wick_centers_m"] = [list(centre) for centre in wick_centres]
     parent["tka_wick_directions_m"] = [
         list(direction) for direction in wick_directions
@@ -1347,6 +1350,28 @@ def build_lotus_frame(
             parent,
         )
     )
+    triangle_half = geometry["finger_ring_triangle_half"]
+    left_triangle_brace = cubic_bezier_curve(
+        tuple(triangle_half["outer_grip_join"]),
+        tuple(triangle_half["brace_control_1"]),
+        tuple(triangle_half["brace_control_2"]),
+        tuple(triangle_half["apex"]),
+        segments=24,
+    )
+    right_triangle_brace = [(-x, y, z) for x, y, z in left_triangle_brace]
+    for name, points in (
+        ("Left", left_triangle_brace),
+        ("Right", right_triangle_brace),
+    ):
+        objects.append(
+            add_round_rod(
+                f"Fan_Lotus_FingerBrace_{name}",
+                points,
+                LOTUS_FRAME_RADIUS_M,
+                steel,
+                parent,
+            )
+        )
 
     cradle_join_x = abs(geometry["cradle_join"][0])
     cradle_join_y = geometry["cradle_join"][1]
@@ -1470,14 +1495,34 @@ def build_lotus_frame(
                 -geometry["center_petal_root"][0],
                 geometry["center_petal_root"][1],
             ]
+        elif path_name == "upper_inner_petal":
+            left_symmetric = [triangle_half["apex"], *left_symmetric[2:]]
+            right_symmetric = [
+                [-triangle_half["apex"][0], triangle_half["apex"][1]],
+                *right_symmetric[2:],
+            ]
+        elif path_name == "lower_inner_petal":
+            left_symmetric[:2] = [
+                triangle_half["inner_grip_join"],
+                triangle_half["apex"],
+            ]
+            right_symmetric[:2] = [
+                [
+                    -triangle_half["inner_grip_join"][0],
+                    triangle_half["inner_grip_join"][1],
+                ],
+                [-triangle_half["apex"][0], triangle_half["apex"][1]],
+            ]
         left_anchors = (
             left_symmetric
-            if path_name == "center_petal"
+            if path_name
+            in ("center_petal", "upper_inner_petal", "lower_inner_petal")
             else seat_in_grip_ring(left_symmetric)
         )
         right_anchors = (
             right_symmetric
-            if path_name == "center_petal"
+            if path_name
+            in ("center_petal", "upper_inner_petal", "lower_inner_petal")
             else seat_in_grip_ring(right_symmetric)
         )
         seated_left_paths[path_name] = left_anchors
