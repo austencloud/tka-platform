@@ -183,4 +183,34 @@ describe("walk patterns", () => {
     expect(blendingOut.turnRequest?.poseWeight).toBeGreaterThan(0);
     expect(blendingOut.turnRequest?.poseWeight).toBeLessThan(1);
   });
+
+  it("drives shuttle reversals through opposite authored 180-degree plans", () => {
+    const shuttle = walkPattern("shuttle");
+
+    const left = shuttle.tick(6.4333333333, 1);
+    expect(left.turnRequest).toMatchObject({
+      planId: "shuttle:outbound-turn",
+      fromHeading: 0,
+      toHeading: Math.PI,
+      requireAuthored: true,
+    });
+    expect(left.turnRequest?.phase).toBeCloseTo(0.5, 8);
+    expect(left.turnRequest?.poseWeight).toBe(1);
+    expect(left.isMoving).toBe(false);
+
+    const right = shuttle.tick(13.95, 1);
+    expect(right.turnRequest).toMatchObject({
+      planId: "shuttle:return-turn",
+      fromHeading: Math.PI,
+      toHeading: 0,
+      requireAuthored: true,
+    });
+    expect(right.turnRequest?.phase).toBeCloseTo(0.5, 8);
+    expect(right.facing).toBeCloseTo(Math.PI / 2, 8);
+
+    const release = shuttle.tick(7.3666666667, 1);
+    expect(release.turnRequest?.phase).toBe(1);
+    expect(release.turnRequest?.poseWeight).toBeGreaterThan(0);
+    expect(release.turnRequest?.poseWeight).toBeLessThan(1);
+  });
 });

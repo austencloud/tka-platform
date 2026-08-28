@@ -64,8 +64,11 @@ const STILL = { x: 0, z: 0 };
 
 /** Metres out and back on the straight-line patterns. */
 const RUN = 4;
-/** Seconds an about-face takes. Slow enough to watch, fast enough to be one. */
-const TURN_TIME = 1.6;
+/** Authored clip time before the outgoing pose releases to locomotion. */
+const QUARTER_TURN_SECONDS = 1;
+const ABOUT_FACE_SECONDS = 50 / 30;
+const TURN_ENTRY_SECONDS = 0.18;
+const TURN_RELEASE_SECONDS = 0.25;
 /** A pause between legs, so each seam is approached from a settled stand. */
 const PAUSE = 0.8;
 
@@ -84,7 +87,7 @@ const go = (
   rate = 1
 ): WalkTick => ({ facing, isMoving: true, rate, direction, phase });
 
-/** Ease in and out, so a scripted turn is not itself a discontinuity. */
+/** Ease an authored pose across its contact-safe entry and release windows. */
 function smooth(u: number): number {
   const c = Math.min(1, Math.max(0, u));
   return c * c * (3 - 2 * c);
@@ -116,12 +119,39 @@ function totalSeconds(legs: readonly Leg[]): number {
   return legs.reduce((sum, leg) => sum + leg.seconds, 0);
 }
 
-/** Sweep the facing from one heading to another across the leg. */
-function turnLeg(from: number, to: number, phase: string): Leg {
+/**
+ * Ask the shared turn owner for visible foot placements and authored root yaw.
+ *
+ * Facing still follows the request for path math and diagnostics, but the rig
+ * promotes the clip's yaw curve to the performer root. `requireAuthored`
+ * prevents a missing asset from quietly becoming the old footless spin.
+ */
+function turnLeg(from: number, to: number, phase: string, planId: string): Leg {
+  const turnAngle = to - from;
+  const clipSeconds =
+    Math.abs(turnAngle) > Math.PI * 0.75
+      ? ABOUT_FACE_SECONDS
+      : QUARTER_TURN_SECONDS;
   return {
-    seconds: TURN_TIME,
-    at: (u) =>
-      stand(from + (to - from) * smooth(u / TURN_TIME), phase),
+    seconds: clipSeconds + TURN_RELEASE_SECONDS,
+    at: (u) => {
+      const turnPhase = Math.min(1, u / clipSeconds);
+      const poseWeight =
+        u <= clipSeconds
+          ? smooth(u / TURN_ENTRY_SECONDS)
+          : 1 - smooth((u - clipSeconds) / TURN_RELEASE_SECONDS);
+      return {
+        ...stand(from + turnAngle * turnPhase, phase),
+        turnRequest: {
+          planId,
+          fromHeading: from,
+          toHeading: to,
+          phase: turnPhase,
+          poseWeight,
+          requireAuthored: true,
+        },
+      };
+    },
   };
 }
 
@@ -175,7 +205,6 @@ export function stepOf(tick: WalkTick, speed: number, dt: number): WalkStep {
   };
 }
 
-
 /** Out, about-face, back. The plainest walk there is, plus its two ends. */
 const shuttle: WalkPattern = {
   id: "shuttle",
@@ -190,11 +219,11 @@ function shuttleLegs(speed: number): Leg[] {
     pauseLeg(0, "standing"),
     travelLeg(speed, RUN, 0, AHEAD, "walking out"),
     pauseLeg(0, "arriving"),
-    turnLeg(0, Math.PI, "about-face"),
+    turnLeg(0, Math.PI, "about-face left", "shuttle:outbound-turn"),
     pauseLeg(Math.PI, "settling"),
     travelLeg(speed, RUN, Math.PI, AHEAD, "walking back"),
     pauseLeg(Math.PI, "arriving"),
-    turnLeg(Math.PI, TAU, "about-face"),
+    turnLeg(Math.PI, 0, "about-face right", "shuttle:return-turn"),
   ];
 }
 
@@ -349,7 +378,14 @@ function startStopLegs(speed: number): Leg[] {
     legs.push(pauseLeg(facing, "stopped"));
     legs.push(travelLeg(speed, 2, facing, AHEAD, "walking"));
     legs.push(pauseLeg(facing, "stopping"));
-    legs.push(turnLeg(facing, facing + Math.PI / 2, "turning the corner"));
+    legs.push(
+      turnLeg(
+        facing,
+        facing + Math.PI / 2,
+        "turning the corner",
+        `start-stop:corner-${corner + 1}`
+      )
+    );
   }
   return legs;
 }
@@ -440,9 +476,7 @@ const pivot: WalkPattern = {
         turnElapsed <= PIVOT_CLIP_SECONDS
           ? smooth(turnElapsed / PIVOT_ENTRY_SECONDS)
           : 1 -
-            smooth(
-              (turnElapsed - PIVOT_CLIP_SECONDS) / PIVOT_RELEASE_SECONDS
-            );
+            smooth((turnElapsed - PIVOT_CLIP_SECONDS) / PIVOT_RELEASE_SECONDS);
       return {
         ...stand(
           fromHeading + (toHeading - fromHeading) * phase,
