@@ -53,14 +53,12 @@ is [`active/2026-08-28-unified-learn-atlas-design.md`](active/2026-08-28-unified
 
 ## In flight
 
-- Branch: `codex/unified-learn-atlas`
-- Worktree: `E:/tka-platform-unified-learn-atlas`
-- Latest implementation commit: `7c8d41a42f`
-- Live proof tab: in-app browser at
-  `http://127.0.0.1:5187/learn/concepts?place=1.1`
-- The task-owned 5187 Vite process exists only for verification and must be
-  stopped before worktree cleanup. The primary 5173 dev server was not running
-  at the end of this slice; do not start or restart it from a shell.
+- No implementation is in flight. The verified implementation commit
+  `7c8d41a42f` and the first handoff update `92f57e2f55` were fast-forwarded
+  into `main` on 2026-08-28.
+- The task-owned 5187 preview and worktree were used only for verification and
+  are safe to remove. The primary 5173 dev server was not running at the end of
+  this slice; do not start or restart it from a shell.
 
 ## Loose ends (ranked)
 
