@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { onMount } from "svelte";
   import { Canvas, T } from "@threlte/core";
   import { AgXToneMapping, Color, PCFSoftShadowMap } from "three";
@@ -13,12 +14,11 @@
     STRESS_POSE_IDS,
   } from "./avatar-bakeoff-data";
 
-  const query = new URLSearchParams(
-    typeof window === "undefined" ? "" : window.location.search
+  const candidateId = $derived(
+    parseCandidateId(page.url.searchParams.get("candidate"))
   );
-  const candidateId = parseCandidateId(query.get("candidate"));
-  const poseId = parseStressPoseId(query.get("pose"));
-  const candidate = BAKEOFF_CANDIDATES[candidateId];
+  const poseId = $derived(parseStressPoseId(page.url.searchParams.get("pose")));
+  const candidate = $derived(BAKEOFF_CANDIDATES[candidateId]);
   const background = new Color("#171a20");
 
   let diagnostics = $state<AvatarBakeoffDiagnostics>({
@@ -115,11 +115,13 @@
       <T.DirectionalLight position={[-4, 3, 2]} intensity={1.55} color="#dbeafe" />
       <T.DirectionalLight position={[0, 3, -4]} intensity={1.6} color="#fef3c7" />
 
-      <CandidateAvatarStage
-        modelUrl={candidate.modelUrl}
-        pose={poseId}
-        onDiagnostics={(next) => (diagnostics = next)}
-      />
+      {#key `${candidateId}:${poseId}`}
+        <CandidateAvatarStage
+          modelUrl={candidate.modelUrl}
+          pose={poseId}
+          onDiagnostics={(next) => (diagnostics = next)}
+        />
+      {/key}
 
       <T.Mesh rotation.x={-Math.PI / 2} receiveShadow>
         <T.CircleGeometry args={[2.15, 72]} />
@@ -131,7 +133,7 @@
   <aside class="diagnostics" aria-live="polite">
     <div class="status-row">
       <span class:ready={diagnostics.status === "ready"}>{diagnostics.status}</span>
-      <strong>{poseId}</strong>
+      <strong>Static · {poseId}</strong>
     </div>
 
     <p class="candidate-note">{candidate.note}</p>
