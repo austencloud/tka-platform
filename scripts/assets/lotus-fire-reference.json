@@ -29,8 +29,6 @@
     "outer_wick_direction": [0.523, 0.852],
     "diagonal_wick_center": [0.168, 0.227],
     "center_wick_center_y": 0.246,
-    "wick_attachment_inset_m": 0.004,
-    "wick_attachment_half_spacing_m": 0.004,
     "left_frame_paths": {
       "center_petal": [
         [-0.03, 0.041],
@@ -73,7 +71,6 @@
     "method": "front-on 1800 px product photograph; horizontal and vertical axes calibrated independently to the published 480 x 350 mm envelope",
     "symmetry": "right side mirrored from the traced left-side frame paths",
     "finger_ring": "25 mm inside diameter measured from the calibrated product photograph",
-    "wick_attachment": "paired 4 mm rails terminate inside the inward-facing circular base of every wick",
     "wick_diameter_m": 0.028
   }
 }

@@ -1093,33 +1093,6 @@ def build_lotus_frame(
         Vector((0.0, 1.0, 0.0)),
         Vector((outer_direction_x, outer_direction_y, 0.0)).normalized(),
     ]
-    wick_half = LOTUS_WICK_LENGTH_M / 2
-    attachment_inset = geometry["wick_attachment_inset_m"]
-    attachment_half_spacing = geometry["wick_attachment_half_spacing_m"]
-
-    def wick_attachment_pair(
-        centre: Vector, direction: Vector
-    ) -> tuple[Vector, Vector]:
-        """Place both rails inside the wick's inward-facing circular base."""
-        wick_base = centre - direction * wick_half
-        transverse = Vector((-direction.y, direction.x, 0.0)).normalized()
-        insertion_centre = wick_base + direction * attachment_inset
-        return (
-            insertion_centre + transverse * attachment_half_spacing,
-            insertion_centre - transverse * attachment_half_spacing,
-        )
-
-    wick_attachment_pairs = [
-        wick_attachment_pair(centre, direction)
-        for centre, direction in zip(wick_centres, wick_directions)
-    ]
-    left_path_attachments = {
-        "center_petal": wick_attachment_pairs[2][0],
-        "upper_outer_petal": wick_attachment_pairs[1][0],
-        "upper_inner_petal": wick_attachment_pairs[1][1],
-        "lower_outer_petal": wick_attachment_pairs[0][0],
-        "lower_inner_petal": wick_attachment_pairs[0][1],
-    }
 
     parent["tka_build"] = "Home of Poi Medium Lotus five-wick fire fan"
     parent["tka_dimensions_m"] = [LOTUS_WIDTH_M, LOTUS_HEIGHT_M]
@@ -1137,12 +1110,6 @@ def build_lotus_frame(
     parent["tka_petal_count"] = 5
     parent["tka_frame_path_count"] = 10
     parent["tka_wick_centers_m"] = [list(centre) for centre in wick_centres]
-    parent["tka_wick_attachment_inset_m"] = attachment_inset
-    parent["tka_wick_attachment_half_spacing_m"] = attachment_half_spacing
-    parent["tka_wick_attachment_pairs_m"] = [
-        [list(attachment) for attachment in pair]
-        for pair in wick_attachment_pairs
-    ]
 
     objects.append(
         add_torus(
@@ -1202,34 +1169,26 @@ def build_lotus_frame(
     frame_paths = geometry["left_frame_paths"]
     for path_name, anchors in frame_paths.items():
         readable_name = "".join(part.title() for part in path_name.split("_"))
-        attachment = left_path_attachments[path_name]
-        corrected_anchors = [
-            *[tuple(point) for point in anchors[:-1]],
-            (attachment.x, attachment.y),
-        ]
-        left_path = catmull_rom_curve(corrected_anchors)
+        left_path = catmull_rom_curve([tuple(point) for point in anchors])
         right_path = [(-x, y, z) for x, y, z in left_path]
-        left_rod = add_round_rod(
-            f"Fan_Lotus_{readable_name}_Left",
-            left_path,
-            LOTUS_FRAME_RADIUS_M,
-            steel,
-            parent,
+        objects.append(
+            add_round_rod(
+                f"Fan_Lotus_{readable_name}_Left",
+                left_path,
+                LOTUS_FRAME_RADIUS_M,
+                steel,
+                parent,
+            )
         )
-        right_rod = add_round_rod(
-            f"Fan_Lotus_{readable_name}_Right",
-            right_path,
-            LOTUS_FRAME_RADIUS_M,
-            steel,
-            parent,
+        objects.append(
+            add_round_rod(
+                f"Fan_Lotus_{readable_name}_Right",
+                right_path,
+                LOTUS_FRAME_RADIUS_M,
+                steel,
+                parent,
+            )
         )
-        left_rod["tka_wick_attachment_m"] = list(attachment)
-        right_rod["tka_wick_attachment_m"] = [
-            -attachment.x,
-            attachment.y,
-            attachment.z,
-        ]
-        objects.extend((left_rod, right_rod))
 
     weld_points = [
         (-cradle_join_x, cradle_join_y, 0.0),
@@ -1255,6 +1214,7 @@ def build_lotus_frame(
     for index, (centre, direction) in enumerate(
         zip(wick_centres, wick_directions), start=1
     ):
+        wick_half = LOTUS_WICK_LENGTH_M / 2
         objects.append(
             add_woven_cylinder_between(
                 f"Fan_Lotus_Wick_{index}",
