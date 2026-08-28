@@ -5,7 +5,7 @@ quiz/components/PictographToLetterQuiz.svelte.
 Shows a pictograph, asks the player to identify the letter. This component
 owns question loading and its own per-question feedback flow (unchanged from
 the legacy quiz); the arcade session engine (arcade-session-state.svelte.ts)
-owns scoring, streak, and level completion. Each answer is reported via
+owns scoring, streak, and challenge completion. Each answer is reported via
 session.submitAnswer() with the exact QuizAnswerEvent shape gap detection
 depends on.
 -->
@@ -61,7 +61,7 @@ depends on.
   let currentGap = $state<DetectedGap | null>(null);
 
   // Fixed answer slots - using indices keeps components persistent for smooth
-  // transitions. Slot count follows the level's optionCount constraint.
+  // transitions. Slot count follows the challenge's optionCount constraint.
   const answerSlots = Array.from(
     { length: constraints.optionCount ?? 4 },
     (_, i) => i
@@ -117,7 +117,9 @@ depends on.
     // Detect misconception gap on wrong answers
     currentGap = null;
     if (!isCorrect && questionData) {
-      const selectedOption = questionData.answerOptions.find((o) => o.id === optionId);
+      const selectedOption = questionData.answerOptions.find(
+        (o) => o.id === optionId
+      );
       const correctOption = questionData.answerOptions.find((o) => o.isCorrect);
       const gap = detectSingleError({
         isCorrect: false,
@@ -138,7 +140,9 @@ depends on.
     }, 100);
 
     if (questionData) {
-      const selectedOption = questionData.answerOptions.find((o) => o.id === optionId);
+      const selectedOption = questionData.answerOptions.find(
+        (o) => o.id === optionId
+      );
       const correctOption = questionData.answerOptions.find((o) => o.isCorrect);
       session.submitAnswer({
         isCorrect,
@@ -156,7 +160,7 @@ depends on.
   }
 
   async function handleNextQuestion() {
-    // The engine may have completed the level (last question in fixed mode,
+    // The engine may have completed the challenge (last question in fixed mode,
     // or the countdown clock hit 0) while this timer was pending — stop the
     // self-advance loop instead of generating a question nobody will see.
     if (session.phase.name !== "playing") return;

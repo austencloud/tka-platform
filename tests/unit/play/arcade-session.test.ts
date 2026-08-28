@@ -3,7 +3,7 @@ import { createArcadeSession } from "$lib/features/learn/play/state/arcade-sessi
 import { scoreAnswer } from "$lib/features/learn/play/domain/scoring";
 import type {
   GameDefinition,
-  LevelDefinition,
+  ChallengeDefinition,
 } from "$lib/features/learn/play/domain/arcade-types";
 import type { QuizAnswerEvent } from "$lib/features/learn/quiz/domain/models/quiz-models";
 
@@ -34,7 +34,8 @@ const GAME: GameDefinition = {
   accentColor: "#000",
   quizType: "pictograph_to_letter" as never,
   capabilities: { scoring: "quiz" },
-  levels: [],
+  curriculum: { status: "unclassified" },
+  challenges: [],
 };
 
 const DELIBERATE_GAME: GameDefinition = {
@@ -47,30 +48,30 @@ const DELIBERATE_GAME: GameDefinition = {
   },
 };
 
-function fixedLevel(questionCount: number): LevelDefinition {
+function fixedChallenge(questionCount: number): ChallengeDefinition {
   return {
-    levelNumber: 1,
-    title: "Test Level",
+    challengeNumber: 1,
+    title: "Test Challenge",
     mode: { kind: "fixed", questionCount },
     constraints: {},
     stars: { one: 100, two: 500, three: 1000 },
   };
 }
 
-function survivalLevel(maxMisses: number): LevelDefinition {
+function survivalChallenge(maxMisses: number): ChallengeDefinition {
   return {
-    levelNumber: 2,
-    title: "Survival Level",
+    challengeNumber: 2,
+    title: "Survival Challenge",
     mode: { kind: "survival", maxMisses },
     constraints: {},
     stars: { one: 100, two: 500, three: 1000 },
   };
 }
 
-function countdownLevel(seconds: number): LevelDefinition {
+function countdownChallenge(seconds: number): ChallengeDefinition {
   return {
-    levelNumber: 3,
-    title: "Countdown Level",
+    challengeNumber: 3,
+    title: "Countdown Challenge",
     mode: { kind: "countdown", seconds },
     constraints: {},
     stars: { one: 100, two: 500, three: 1000 },
@@ -84,7 +85,7 @@ describe("createArcadeSession", () => {
 
   it("right answer increments score by scoreAnswer amount and streak by 1", () => {
     const session = createArcadeSession();
-    session.startLevel(GAME, fixedLevel(5));
+    session.startChallenge(GAME, fixedChallenge(5));
     session.markQuestionShown();
 
     const expected = scoreAnswer({
@@ -100,7 +101,7 @@ describe("createArcadeSession", () => {
 
   it("wrong answer zeros streak, increments misses, adds 0 points", () => {
     const session = createArcadeSession();
-    session.startLevel(GAME, fixedLevel(5));
+    session.startChallenge(GAME, fixedChallenge(5));
     session.markQuestionShown();
     session.submitAnswer(evt(true)); // build up a streak first
     expect(session.streak).toBe(1);
@@ -115,8 +116,8 @@ describe("createArcadeSession", () => {
 
   it("fixed mode completes after N answers with correct grade + stars", () => {
     const session = createArcadeSession();
-    const level = fixedLevel(2);
-    session.startLevel(GAME, level);
+    const challenge = fixedChallenge(2);
+    session.startChallenge(GAME, challenge);
 
     session.markQuestionShown();
     session.submitAnswer(evt(true));
@@ -131,14 +132,14 @@ describe("createArcadeSession", () => {
     expect(session.phase.result.totalCount).toBe(2);
     expect(session.phase.result.grade).toBe("S"); // 100% accuracy
     expect(session.phase.result.starsEarned).toBe(
-      computeExpectedStars(session.score, level)
+      computeExpectedStars(session.score, challenge)
     );
   });
 
   it("supports untimed scoring and game-controlled final feedback", () => {
     const session = createArcadeSession();
-    const level = fixedLevel(1);
-    session.startLevel(DELIBERATE_GAME, level);
+    const challenge = fixedChallenge(1);
+    session.startChallenge(DELIBERATE_GAME, challenge);
     session.markQuestionShown();
 
     session.submitAnswer(evt(true));
@@ -153,7 +154,7 @@ describe("createArcadeSession", () => {
 
   it("keeps progress on the answered question until the next question is shown", () => {
     const session = createArcadeSession();
-    session.startLevel(GAME, fixedLevel(2));
+    session.startChallenge(GAME, fixedChallenge(2));
 
     session.markQuestionShown();
     expect(session.questionIndex).toBe(0);
@@ -169,17 +170,17 @@ describe("createArcadeSession", () => {
 
   function computeExpectedStars(
     score: number,
-    level: LevelDefinition
+    challenge: ChallengeDefinition
   ): 0 | 1 | 2 | 3 {
-    if (score >= level.stars.three) return 3;
-    if (score >= level.stars.two) return 2;
-    if (score >= level.stars.one) return 1;
+    if (score >= challenge.stars.three) return 3;
+    if (score >= challenge.stars.two) return 2;
+    if (score >= challenge.stars.one) return 1;
     return 0;
   }
 
   it("survival completes at maxMisses", () => {
     const session = createArcadeSession();
-    session.startLevel(GAME, survivalLevel(2));
+    session.startChallenge(GAME, survivalChallenge(2));
 
     session.markQuestionShown();
     session.submitAnswer(evt(false));
@@ -198,7 +199,7 @@ describe("createArcadeSession", () => {
   it("countdown completes when clock hits 0", () => {
     vi.useFakeTimers();
     const session = createArcadeSession();
-    session.startLevel(GAME, countdownLevel(1));
+    session.startChallenge(GAME, countdownChallenge(1));
 
     expect(session.phase.name).toBe("playing");
     expect(session.timeRemaining).toBe(1);
@@ -210,7 +211,7 @@ describe("createArcadeSession", () => {
 
   it("longestStreak survives a streak reset", () => {
     const session = createArcadeSession();
-    session.startLevel(GAME, fixedLevel(10));
+    session.startChallenge(GAME, fixedChallenge(10));
 
     session.markQuestionShown();
     session.submitAnswer(evt(true));
@@ -231,7 +232,7 @@ describe("createArcadeSession", () => {
   it("quitToHub stops the clock and returns to hub", () => {
     vi.useFakeTimers();
     const session = createArcadeSession();
-    session.startLevel(GAME, countdownLevel(10));
+    session.startChallenge(GAME, countdownChallenge(10));
     session.quitToHub();
     expect(session.phase.name).toBe("hub");
 

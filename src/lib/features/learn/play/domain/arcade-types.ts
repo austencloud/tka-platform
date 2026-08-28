@@ -1,13 +1,14 @@
 /**
  * Play Arcade domain types.
  *
- * A "game" is a registry entry with a ladder of levels. A "level" pins the
+ * A "game" is a registry entry with a ladder of challenges. A "challenge" pins the
  * question constraints, the win condition, and star thresholds. Session
  * results are computed by the engine (scoring.ts) — games never self-score
  * beyond reporting per-question correctness.
  */
 import type { QuizType } from "../../quiz/domain/enums/quiz-enums";
 import type { QuizAnswerEvent } from "../../quiz/domain/models/quiz-models";
+import type { MajorLevel } from "@tka/domain";
 
 export type GameId =
   | "pictograph-to-letter"
@@ -72,7 +73,7 @@ export type ArcadeRoundEvent<TMetrics = unknown> =
 
 /**
  * Correctness without narrowing. Both branches carry it — the choice branch
- * inside its QuizAnswerEvent, the performance branch at the top level — so
+ * inside its QuizAnswerEvent, the performance branch at the top challenge — so
  * every reader (accuracy, misses, grade) goes through here instead of
  * duplicating the `kind` check.
  */
@@ -81,7 +82,7 @@ export function roundIsCorrect(round: ArcadeRoundEvent): boolean {
 }
 
 /** Win condition: answer N questions, or survive a countdown clock. */
-export type LevelMode =
+export type ChallengeMode =
   | { kind: "fixed"; questionCount: number }
   | { kind: "countdown"; seconds: number }
   | { kind: "survival"; maxMisses: number };
@@ -98,12 +99,12 @@ export interface QuestionConstraints {
   paceEndSeconds?: number;
   /** Sequence length for the mandala game family (8-count to start; raise for harder tiers). */
   stepCount?: number;
-  /** Bridge-game question family for this level. */
+  /** Bridge-game question family for this challenge. */
   bridgeTask?: BridgeTask;
 
   // --- Performance (trace-paths) constraints ---------------------------
   // All optional: quiz games never set them, and the trace game reads them
-  // with its own defaults so a half-specified level still plays.
+  // with its own defaults so a half-specified challenge still plays.
 
   /** How many hands the round arms. 1 = one hand at a time, 2 = both together. */
   handCount?: 1 | 2;
@@ -128,13 +129,28 @@ export interface StarThresholds {
   three: number;
 }
 
-export interface LevelDefinition {
-  levelNumber: number; // 1-based
+export interface ChallengeDefinition {
+  challengeNumber: number; // 1-based
   title: string;
-  mode: LevelMode;
+  mode: ChallengeMode;
   constraints: QuestionConstraints;
   stars: StarThresholds;
 }
+
+/**
+ * Curriculum placement is an editorial decision, never something inferred
+ * from a game's question pool. A reviewed game can span official TKA levels,
+ * attach to individual concepts, or both. Until that review happens the game
+ * remains playable from the arcade but cannot be presented as level practice.
+ */
+export type GameCurriculumClassification =
+  | { status: "unclassified" }
+  | {
+      status: "reviewed";
+      tkaLevels: MajorLevel[];
+      conceptIds: string[];
+      evidence: string[];
+    };
 
 export interface GameDefinition {
   id: GameId;
@@ -149,7 +165,8 @@ export interface GameDefinition {
    */
   quizType?: QuizType;
   capabilities: GameCapabilities;
-  levels: LevelDefinition[];
+  curriculum: GameCurriculumClassification;
+  challenges: ChallengeDefinition[];
 }
 
 /**
@@ -182,7 +199,7 @@ export interface AnswerRecord extends RoundRecord {
 
 export interface ArcadeSessionResult {
   gameId: GameId;
-  levelNumber: number;
+  challengeNumber: number;
   score: number;
   correctCount: number;
   totalCount: number;
@@ -201,9 +218,9 @@ export type Grade = "S" | "A" | "B" | "C" | "D";
 export interface GameProgress {
   bestScore: number;
   bestGrade: Grade | null;
-  /** starsByLevel["1"] = 0-3 */
-  starsByLevel: Record<string, 0 | 1 | 2 | 3>;
-  levelsUnlocked: number; // highest unlocked level number
+  /** starsByChallenge["1"] = 0-3 */
+  starsByChallenge: Record<string, 0 | 1 | 2 | 3>;
+  challengesUnlocked: number; // highest unlocked challenge number
   totalPlays: number;
 }
 

@@ -76,9 +76,7 @@ export interface BridgeRepairQuestion extends BaseBridgeQuestion {
 }
 
 export type WordBridgeQuestion =
-  | BridgeValidityQuestion
-  | BridgeCountQuestion
-  | BridgeRepairQuestion;
+  BridgeValidityQuestion | BridgeCountQuestion | BridgeRepairQuestion;
 
 export interface BuildWordBridgeDeckOptions {
   task: BridgeTask;
@@ -155,7 +153,7 @@ const COMMON_WORD_SEEDS = [
 
 // `@tka/domain` is a built workspace package. The runtime guard keeps this
 // source-compatible with a checkout whose shared node_modules junction still
-// points at an older package build; the common catalog still fills each level.
+// points at an older package build; the common catalog still fills each challenge.
 const exportedBridgeFreeShort = Reflect.get(
   TkaDomain,
   "BRIDGE_FREE_SHORT"
@@ -198,7 +196,7 @@ function pathConnects(
 /**
  * Analyze one parsed word against the canonical transition graph.
  * Invalid letters and unreachable pairs remain distinct from bridge-needed
- * pairs so Level 1 never teaches "unavailable" as a false answer.
+ * pairs so Challenge 1 never teaches "unavailable" as a false answer.
  */
 export function analyzeWordTransitions(
   word: string,

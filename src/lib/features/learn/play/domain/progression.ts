@@ -1,8 +1,13 @@
 /**
  * Pure progression rules: stars from score thresholds, best-tracking,
- * level unlocks (>=1 star unlocks the next level), lastUpdated-wins merge.
+ * challenge unlocks (>=1 star unlocks the next challenge), lastUpdated-wins merge.
  */
-import type { GameProgress, Grade, PlayProgress, StarThresholds } from "./arcade-types";
+import type {
+  GameProgress,
+  Grade,
+  PlayProgress,
+  StarThresholds,
+} from "./arcade-types";
 
 export function computeStars(score: number, t: StarThresholds): 0 | 1 | 2 | 3 {
   if (score >= t.three) return 3;
@@ -19,28 +24,39 @@ export function betterGrade(a: Grade | null, b: Grade): Grade {
 }
 
 export function emptyGameProgress(): GameProgress {
-  return { bestScore: 0, bestGrade: null, starsByLevel: {}, levelsUnlocked: 1, totalPlays: 0 };
+  return {
+    bestScore: 0,
+    bestGrade: null,
+    starsByChallenge: {},
+    challengesUnlocked: 1,
+    totalPlays: 0,
+  };
 }
 
 export function applyResult(
   progress: GameProgress,
-  result: { levelNumber: number; score: number; starsEarned: 0 | 1 | 2 | 3; grade: Grade }
+  result: {
+    challengeNumber: number;
+    score: number;
+    starsEarned: 0 | 1 | 2 | 3;
+    grade: Grade;
+  }
 ): GameProgress {
-  const key = String(result.levelNumber);
-  const prevStars = progress.starsByLevel[key] ?? 0;
-  const starsByLevel = {
-    ...progress.starsByLevel,
+  const key = String(result.challengeNumber);
+  const prevStars = progress.starsByChallenge[key] ?? 0;
+  const starsByChallenge = {
+    ...progress.starsByChallenge,
     [key]: Math.max(prevStars, result.starsEarned) as 0 | 1 | 2 | 3,
   };
   const unlocked =
     result.starsEarned >= 1
-      ? Math.max(progress.levelsUnlocked, result.levelNumber + 1)
-      : progress.levelsUnlocked;
+      ? Math.max(progress.challengesUnlocked, result.challengeNumber + 1)
+      : progress.challengesUnlocked;
   return {
     bestScore: Math.max(progress.bestScore, result.score),
     bestGrade: betterGrade(progress.bestGrade, result.grade),
-    starsByLevel,
-    levelsUnlocked: unlocked,
+    starsByChallenge,
+    challengesUnlocked: unlocked,
     totalPlays: progress.totalPlays + 1,
   };
 }

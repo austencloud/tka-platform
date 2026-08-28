@@ -95,7 +95,9 @@ owns back-navigation chrome — the legacy QuizBackButton is gone.
     // Detect misconception gap on wrong answers
     currentGap = null;
     if (!isCorrect && questionData) {
-      const selectedOption = questionData.answerOptions.find((o) => o.id === optionId);
+      const selectedOption = questionData.answerOptions.find(
+        (o) => o.id === optionId
+      );
       const correctOption = questionData.answerOptions.find((o) => o.isCorrect);
       const gap = detectSingleError({
         isCorrect: false,
@@ -116,7 +118,9 @@ owns back-navigation chrome — the legacy QuizBackButton is gone.
     }, 100);
 
     if (questionData) {
-      const selectedOption = questionData.answerOptions.find((o) => o.id === optionId);
+      const selectedOption = questionData.answerOptions.find(
+        (o) => o.id === optionId
+      );
       const correctOption = questionData.answerOptions.find((o) => o.isCorrect);
       session.submitAnswer({
         isCorrect,
@@ -172,7 +176,10 @@ owns back-navigation chrome — the legacy QuizBackButton is gone.
       {/key}
 
       <div class="answer-section">
-        <div class="answer-grid" class:six-up={questionData.answerOptions.length > 4}>
+        <div
+          class="answer-grid"
+          class:six-up={questionData.answerOptions.length > 4}
+        >
           {#each questionData.answerOptions as option (option.id)}
             <QuizPictographButton
               pictograph={option.content as PictographData}
@@ -224,7 +231,7 @@ owns back-navigation chrome — the legacy QuizBackButton is gone.
     width: 100%;
   }
 
-  /* Six-option levels: 3-up columns keep the grid to two rows so the stage
+  /* Six-option challenges: 3-up columns keep the grid to two rows so the stage
      never scrolls mid-question. */
   .answer-grid.six-up {
     grid-template-columns: repeat(3, 1fr);

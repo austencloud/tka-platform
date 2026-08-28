@@ -1,9 +1,9 @@
 <!--
-LevelPicker — the level ladder for one arcade game.
+ChallengePicker — the challenge ladder for one arcade game.
 
-Rendered by PlayHub at phase "level-select". Pure presentation: every phase
-mutation goes through the arcade session (startLevel / quitToHub) — PlayHub
-owns the view-transition wrapping. Locked levels stay real buttons
+Rendered by PlayHub at phase "challenge-select". Pure presentation: every phase
+mutation goes through the arcade session (startChallenge / quitToHub) — PlayHub
+owns the view-transition wrapping. Locked challenges stay real buttons
 (aria-disabled) so they remain discoverable; they just refuse the click.
 
 Below 1024px this is the original stacked list: back + title/tagline + best
@@ -22,8 +22,8 @@ tree, so exactly one heading is ever announced.
     GameDefinition,
     GameProgress,
     Grade,
-    LevelDefinition,
-    LevelMode,
+    ChallengeDefinition,
+    ChallengeMode,
   } from "../domain/arcade-types";
   import { getArcadeSession } from "../state/arcade-session-state.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
@@ -37,9 +37,12 @@ tree, so exactly one heading is ever announced.
   const Preview = $derived(getGamePreview(game.id));
 
   const totalStars = $derived(
-    Object.values(progress.starsByLevel).reduce<number>((sum, s) => sum + s, 0)
+    Object.values(progress.starsByChallenge).reduce<number>(
+      (sum, s) => sum + s,
+      0
+    )
   );
-  const maxStars = $derived(game.levels.length * 3);
+  const maxStars = $derived(game.challenges.length * 3);
 
   /* Same grade palette as GameCard / Train's PersonalBests+SessionHistory so
      a grade letter means the same color everywhere in the app. */
@@ -58,7 +61,7 @@ tree, so exactly one heading is ever announced.
     }
   }
 
-  function modeSummary(mode: LevelMode): string {
+  function modeSummary(mode: ChallengeMode): string {
     switch (mode.kind) {
       case "fixed":
         return `${mode.questionCount} questions`;
@@ -69,25 +72,25 @@ tree, so exactly one heading is ever announced.
     }
   }
 
-  function starsFor(level: LevelDefinition): number {
-    return progress.starsByLevel[String(level.levelNumber)] ?? 0;
+  function starsFor(challenge: ChallengeDefinition): number {
+    return progress.starsByChallenge[String(challenge.challengeNumber)] ?? 0;
   }
 
-  function isLocked(level: LevelDefinition): boolean {
-    return level.levelNumber > progress.levelsUnlocked;
+  function isLocked(challenge: ChallengeDefinition): boolean {
+    return challenge.challengeNumber > progress.challengesUnlocked;
   }
 
-  function levelLabel(level: LevelDefinition): string {
-    if (isLocked(level)) {
-      return `Level ${level.levelNumber}: ${level.title} — locked`;
+  function challengeLabel(challenge: ChallengeDefinition): string {
+    if (isLocked(challenge)) {
+      return `Challenge ${challenge.challengeNumber}: ${challenge.title} — locked`;
     }
-    return `Level ${level.levelNumber}: ${level.title}, ${modeSummary(level.mode)}, ${starsFor(level)} of 3 stars`;
+    return `Challenge ${challenge.challengeNumber}: ${challenge.title}, ${modeSummary(challenge.mode)}, ${starsFor(challenge)} of 3 stars`;
   }
 
-  function handleLevelClick(level: LevelDefinition) {
-    if (isLocked(level)) return;
+  function handleChallengeClick(challenge: ChallengeDefinition) {
+    if (isLocked(challenge)) return;
     getHapticFeedback().trigger("selection");
-    session.startLevel(game, level);
+    session.startChallenge(game, challenge);
   }
 
   function handleBack() {
@@ -116,114 +119,118 @@ tree, so exactly one heading is ever announced.
 {/snippet}
 
 <div class="picker-shell">
-<div class="level-picker" style="--game-accent: {game.accentColor}">
-  <header class="picker-header">
-    <button
-      type="button"
-      class="back-button"
-      onclick={handleBack}
-      aria-label="Back to games"
-    >
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M19 12H5M12 19l-7-7 7-7" />
-      </svg>
-    </button>
-    <div class="header-text">
-      <h2 class="game-title">{game.title}</h2>
-      <p class="game-tagline">{game.tagline}</p>
-    </div>
-    <div class="best-badge">
-      <span class="best-label">Best</span>
-      <span class="best-value">
-        {progress.totalPlays > 0 ? progress.bestScore : "—"}
-      </span>
-    </div>
-  </header>
-
-  <div class="identity-column">
-    <div class="preview-stage" aria-hidden="true">
-      <Preview accent={game.accentColor} />
-    </div>
-    <h2 class="identity-title">{game.title}</h2>
-    <p class="identity-tagline">{game.tagline}</p>
-    <div class="stats-block">
-      <div class="best-stat">
-        <span class="best-stat-label">Best</span>
-        <span class="best-stat-value">
-          {progress.totalPlays > 0 ? progress.bestScore.toLocaleString() : "—"}
-        </span>
-        {#if progress.bestGrade}
-          <span
-            class="grade-chip"
-            style="--grade-color: {gradeColor(progress.bestGrade)}"
-            >{progress.bestGrade}</span
-          >
-        {/if}
-      </div>
-      <div class="stars-stat">★ {totalStars} / {maxStars}</div>
-    </div>
-  </div>
-
-  <div class="level-ladder">
-    {#each game.levels as level (level.levelNumber)}
-      {@const locked = isLocked(level)}
-      {@const earned = starsFor(level)}
+  <div class="challenge-picker" style="--game-accent: {game.accentColor}">
+    <header class="picker-header">
       <button
         type="button"
-        class="level-row"
-        class:locked
-        aria-disabled={locked}
-        aria-label={levelLabel(level)}
-        onclick={() => handleLevelClick(level)}
+        class="back-button"
+        onclick={handleBack}
+        aria-label="Back to games"
       >
-        <span class="level-number" aria-hidden="true">{level.levelNumber}</span>
-        <span class="level-info">
-          <span class="level-title">{level.title}</span>
-          <span class="level-mode">{modeSummary(level.mode)}</span>
-        </span>
-        <span class="level-status" aria-hidden="true">
-          {#if locked}
-            <svg
-              class="lock-glyph"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <rect x="4" y="11" width="16" height="10" rx="2" />
-              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-            </svg>
-          {:else}
-            <span class="star-row">
-              {@render starIcon(earned >= 1)}
-              {@render starIcon(earned >= 2)}
-              {@render starIcon(earned >= 3)}
-            </span>
-          {/if}
-        </span>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
       </button>
-    {/each}
+      <div class="header-text">
+        <h2 class="game-title">{game.title}</h2>
+        <p class="game-tagline">{game.tagline}</p>
+      </div>
+      <div class="best-badge">
+        <span class="best-label">Best</span>
+        <span class="best-value">
+          {progress.totalPlays > 0 ? progress.bestScore : "—"}
+        </span>
+      </div>
+    </header>
+
+    <div class="identity-column">
+      <div class="preview-stage" aria-hidden="true">
+        <Preview accent={game.accentColor} />
+      </div>
+      <h2 class="identity-title">{game.title}</h2>
+      <p class="identity-tagline">{game.tagline}</p>
+      <div class="stats-block">
+        <div class="best-stat">
+          <span class="best-stat-label">Best</span>
+          <span class="best-stat-value">
+            {progress.totalPlays > 0
+              ? progress.bestScore.toLocaleString()
+              : "—"}
+          </span>
+          {#if progress.bestGrade}
+            <span
+              class="grade-chip"
+              style="--grade-color: {gradeColor(progress.bestGrade)}"
+              >{progress.bestGrade}</span
+            >
+          {/if}
+        </div>
+        <div class="stars-stat">★ {totalStars} / {maxStars}</div>
+      </div>
+    </div>
+
+    <div class="challenge-ladder">
+      {#each game.challenges as challenge (challenge.challengeNumber)}
+        {@const locked = isLocked(challenge)}
+        {@const earned = starsFor(challenge)}
+        <button
+          type="button"
+          class="challenge-row"
+          class:locked
+          aria-disabled={locked}
+          aria-label={challengeLabel(challenge)}
+          onclick={() => handleChallengeClick(challenge)}
+        >
+          <span class="challenge-number" aria-hidden="true"
+            >{challenge.challengeNumber}</span
+          >
+          <span class="challenge-info">
+            <span class="challenge-title">{challenge.title}</span>
+            <span class="challenge-mode">{modeSummary(challenge.mode)}</span>
+          </span>
+          <span class="challenge-status" aria-hidden="true">
+            {#if locked}
+              <svg
+                class="lock-glyph"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="4" y="11" width="16" height="10" rx="2" />
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+              </svg>
+            {:else}
+              <span class="star-row">
+                {@render starIcon(earned >= 1)}
+                {@render starIcon(earned >= 2)}
+                {@render starIcon(earned >= 3)}
+              </span>
+            {/if}
+          </span>
+        </button>
+      {/each}
+    </div>
   </div>
-</div>
 </div>
 
 <style>
   /* Scroll owner: fills whatever the mode panel gives it. margin-block: auto
-     on .level-picker below centers the ladder vertically only when there's
+     on .challenge-picker below centers the ladder vertically only when there's
      spare height (4K); on a short viewport the auto margins resolve to 0
      and it scrolls exactly as before. */
   .picker-shell {
@@ -234,7 +241,7 @@ tree, so exactly one heading is ever announced.
     flex-direction: column;
   }
 
-  .level-picker {
+  .challenge-picker {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-lg, 1rem);
@@ -324,13 +331,13 @@ tree, so exactly one heading is ever announced.
   }
 
   /* Ladder */
-  .level-ladder {
+  .challenge-ladder {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm, 0.5rem);
   }
 
-  .level-row {
+  .challenge-row {
     display: flex;
     align-items: center;
     gap: var(--spacing-md, 0.75rem);
@@ -348,23 +355,23 @@ tree, so exactly one heading is ever announced.
       filter var(--duration-fast, 150ms) ease;
   }
 
-  .level-row:hover:not(.locked) {
+  .challenge-row:hover:not(.locked) {
     transform: translateY(-2px);
     border-color: color-mix(in srgb, var(--game-accent) 45%, transparent);
     filter: brightness(1.1);
   }
 
-  .level-row:active:not(.locked) {
+  .challenge-row:active:not(.locked) {
     transform: translateY(0);
     filter: brightness(0.95);
   }
 
-  .level-row.locked {
+  .challenge-row.locked {
     cursor: not-allowed;
     opacity: 0.45;
   }
 
-  .level-number {
+  .challenge-number {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -379,7 +386,7 @@ tree, so exactly one heading is ever announced.
     font-variant-numeric: tabular-nums;
   }
 
-  .level-info {
+  .challenge-info {
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -387,23 +394,23 @@ tree, so exactly one heading is ever announced.
     gap: 0.125rem;
   }
 
-  .level-title {
+  .challenge-title {
     font-size: var(--font-size-base, 1rem);
     font-weight: 600;
     color: var(--theme-text, #ffffff);
   }
 
-  .level-mode {
+  .challenge-mode {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-variant-numeric: tabular-nums;
   }
 
-  .level-status {
+  .challenge-status {
     display: flex;
     align-items: center;
     flex-shrink: 0;
-    /* Same footprint for lock glyph and star row — no shift when a level unlocks */
+    /* Same footprint for lock glyph and star row — no shift when a challenge unlocks */
     min-width: 56px;
     justify-content: flex-end;
   }
@@ -431,7 +438,7 @@ tree, so exactly one heading is ever announced.
      fluidly via clamp()/vw so it doesn't wait for a 2560+ gate that may
      never fire for him. */
   @media (min-width: 1024px) {
-    .level-picker {
+    .challenge-picker {
       max-width: clamp(900px, 72vw, 1500px);
       gap: clamp(1.5rem, 2vw, 2rem);
       padding: clamp(2rem, 2.5vw, 3rem);
@@ -439,7 +446,8 @@ tree, so exactly one heading is ever announced.
       border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
       border-radius: 24px;
       box-shadow:
-        0 32px 80px -32px color-mix(in srgb, var(--game-accent) 32%, transparent),
+        0 32px 80px -32px
+          color-mix(in srgb, var(--game-accent) 32%, transparent),
         0 2px 0 0 color-mix(in srgb, var(--game-accent) 12%, transparent) inset;
       display: grid;
       grid-template-columns: clamp(320px, 26vw, 480px) 1fr;
@@ -551,7 +559,7 @@ tree, so exactly one heading is ever announced.
       color: var(--theme-text-dim, rgba(255, 255, 255, 0.8));
     }
 
-    .level-ladder {
+    .challenge-ladder {
       grid-area: ladder;
       gap: clamp(0.5rem, 0.8vw, 0.75rem);
     }
@@ -559,28 +567,28 @@ tree, so exactly one heading is ever announced.
     /* Rows read as a real ladder on a big display, not a cramped mobile
        list: taller rows, bigger number badge and star glyphs, fluid via
        clamp()/vw so growth is continuous instead of jumping at 2560. */
-    .level-row {
+    .challenge-row {
       min-height: clamp(76px, 5vw, 92px);
       padding: clamp(0.75rem, 1vw, 1.25rem) clamp(1rem, 1.5vw, 1.5rem);
       border-radius: 14px;
       gap: clamp(0.75rem, 1.2vw, 1.25rem);
     }
 
-    .level-number {
+    .challenge-number {
       width: 44px;
       height: 44px;
       font-size: var(--font-size-lg, 1.125rem);
     }
 
-    .level-title {
+    .challenge-title {
       font-size: clamp(1.125rem, 1vw, 1.375rem);
     }
 
-    .level-mode {
+    .challenge-mode {
       font-size: var(--font-size-sm, 0.875rem);
     }
 
-    .level-status {
+    .challenge-status {
       min-width: 100px;
     }
 
@@ -601,11 +609,11 @@ tree, so exactly one heading is ever announced.
 
   @media (prefers-reduced-motion: reduce) {
     .back-button,
-    .level-row {
+    .challenge-row {
       transition: none;
     }
 
-    .level-row:hover:not(.locked) {
+    .challenge-row:hover:not(.locked) {
       transform: none;
     }
   }
