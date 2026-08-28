@@ -137,7 +137,7 @@ export function buildFlowFestEntranceScene(
       utilityPoles:
         FLOW_FEST_ENTRANCE_REFERENCE.siteLayout.utility.spanOffsetsMeters
           .length,
-      roadMarkingRibbons: 4,
+      roadMarkingRibbons: 5,
     },
     audit: {
       entranceAnchorErrorMeters,
@@ -230,55 +230,79 @@ function buildRoadMarkings(
 
   const markings = [
     {
-      id: "west-edge",
+      id: "roadside-edge",
       offset: road.widthMeters / 2 - 0.22,
       width: 0.12,
       color: "#eeeadd",
+      breakAtDriveway: false,
     },
     {
-      id: "east-edge",
+      id: "camp-edge",
       offset: -(road.widthMeters / 2 - 0.22),
       width: 0.12,
       color: "#eeeadd",
+      breakAtDriveway: true,
     },
-    { id: "center-left", offset: 0.11, width: 0.095, color: "#d7ad3f" },
-    { id: "center-right", offset: -0.11, width: 0.095, color: "#d7ad3f" },
+    {
+      id: "center-left",
+      offset: 0.11,
+      width: 0.095,
+      color: "#d7ad3f",
+      breakAtDriveway: false,
+    },
+    {
+      id: "center-right",
+      offset: -0.11,
+      width: 0.095,
+      color: "#d7ad3f",
+      breakAtDriveway: false,
+    },
   ];
 
   for (const marking of markings) {
-    const points = offsetPolyline(road.points, marking.offset);
-    const segment: FlowFestRuntimeSegment = {
-      id: `entrance-road-paint-${marking.id}`,
-      mode: "vehicle",
-      widthMeters: marking.width,
-      lengthMeters: polylineLength(points),
-      sourceClasses: ["street-view-observed-road-marking"],
-      pathClass: "official-road-derived-marking",
-      points: points.map(
-        (point): FlowFestRuntimePoint => ({
-          ...point,
-          sourceTerrainY: 0,
-          reviewTerrainY: 0,
+    const offsetPoints = offsetPolyline(road.points, marking.offset);
+    const runs = marking.breakAtDriveway
+      ? splitPolylineAroundPoint(
+          offsetPoints,
+          FLOW_FEST_ENTRANCE_REFERENCE.siteLayout.entranceWorld,
+          FLOW_FEST_ENTRANCE_REFERENCE.siteLayout.fence
+            .driveGapHalfWidthMeters + 1.1
+        )
+      : [offsetPoints];
+    runs.forEach((points, runIndex) => {
+      const segment: FlowFestRuntimeSegment = {
+        id: `entrance-road-paint-${marking.id}-${runIndex + 1}`,
+        mode: "vehicle",
+        widthMeters: marking.width,
+        lengthMeters: polylineLength(points),
+        sourceClasses: ["street-view-observed-road-marking"],
+        pathClass: "official-road-derived-marking",
+        points: points.map(
+          (point): FlowFestRuntimePoint => ({
+            ...point,
+            sourceTerrainY: 0,
+            reviewTerrainY: 0,
+          })
+        ),
+      };
+      const mesh = new Mesh(
+        buildFlowFestTerrainRibbonGeometry(terrain, segment, 0.104),
+        new MeshStandardMaterial({
+          color: marking.color,
+          roughness: 0.92,
+          metalness: 0,
+          polygonOffset: true,
+          polygonOffsetFactor: -3,
+          polygonOffsetUnits: -3,
         })
-      ),
-    };
-    const mesh = new Mesh(
-      buildFlowFestTerrainRibbonGeometry(terrain, segment, 0.104),
-      new MeshStandardMaterial({
-        color: marking.color,
-        roughness: 0.92,
-        metalness: 0,
-        polygonOffset: true,
-        polygonOffsetFactor: -3,
-        polygonOffsetUnits: -3,
-      })
-    );
-    mesh.name = `FFS_EntranceRoadPaint_${marking.id}_ODOTAligned`;
-    mesh.receiveShadow = true;
-    mesh.userData.roadLabel = FLOW_FEST_PUBLIC_ROAD_SOURCE.label;
-    mesh.userData.roadFeatureObjectId =
-      FLOW_FEST_PUBLIC_ROAD_SOURCE.featureObjectId;
-    group.add(mesh);
+      );
+      mesh.name = `FFS_EntranceRoadPaint_${marking.id}_${runIndex + 1}_ODOTAligned`;
+      mesh.receiveShadow = true;
+      mesh.userData.roadLabel = FLOW_FEST_PUBLIC_ROAD_SOURCE.label;
+      mesh.userData.roadFeatureObjectId =
+        FLOW_FEST_PUBLIC_ROAD_SOURCE.featureObjectId;
+      group.add(mesh);
+    });
   }
   return group;
 }
@@ -701,6 +725,96 @@ function offsetPolyline(points: WorldPoint[], offset: number): WorldPoint[] {
       z: point.z + (dx / length) * offset,
     };
   });
+}
+
+function splitPolylineAroundPoint(
+  points: WorldPoint[],
+  point: WorldPoint,
+  gapHalfLength: number
+): WorldPoint[][] {
+  const distances = [0];
+  for (let index = 1; index < points.length; index += 1) {
+    distances.push(
+      distances[index - 1]! +
+        Math.hypot(
+          points[index]!.x - points[index - 1]!.x,
+          points[index]!.z - points[index - 1]!.z
+        )
+    );
+  }
+  let nearestDistance = 0;
+  let nearestError = Number.POSITIVE_INFINITY;
+  for (let index = 1; index < points.length; index += 1) {
+    const start = points[index - 1]!;
+    const end = points[index]!;
+    const dx = end.x - start.x;
+    const dz = end.z - start.z;
+    const lengthSquared = dx * dx + dz * dz;
+    const ratio =
+      lengthSquared === 0
+        ? 0
+        : Math.max(
+            0,
+            Math.min(
+              1,
+              ((point.x - start.x) * dx + (point.z - start.z) * dz) /
+                lengthSquared
+            )
+          );
+    const projected = { x: start.x + dx * ratio, z: start.z + dz * ratio };
+    const error = Math.hypot(point.x - projected.x, point.z - projected.z);
+    if (error >= nearestError) continue;
+    nearestError = error;
+    nearestDistance = distances[index - 1]! + Math.hypot(dx, dz) * ratio;
+  }
+  const total = distances.at(-1) ?? 0;
+  const gapStart = Math.max(0, nearestDistance - gapHalfLength);
+  const gapEnd = Math.min(total, nearestDistance + gapHalfLength);
+  return [
+    slicePolylineAtDistances(points, distances, 0, gapStart),
+    slicePolylineAtDistances(points, distances, gapEnd, total),
+  ].filter((run) => run.length >= 2);
+}
+
+function slicePolylineAtDistances(
+  points: WorldPoint[],
+  distances: number[],
+  startDistance: number,
+  endDistance: number
+): WorldPoint[] {
+  const sampledStart = samplePolylineAtDistance(
+    points,
+    distances,
+    startDistance
+  );
+  const sampledEnd = samplePolylineAtDistance(points, distances, endDistance);
+  const interior = points.filter(
+    (_point, index) =>
+      distances[index]! > startDistance && distances[index]! < endDistance
+  );
+  return [sampledStart, ...interior, sampledEnd];
+}
+
+function samplePolylineAtDistance(
+  points: WorldPoint[],
+  distances: number[],
+  target: number
+): WorldPoint {
+  for (let index = 1; index < distances.length; index += 1) {
+    if (distances[index]! < target) continue;
+    const startDistance = distances[index - 1]!;
+    const span = distances[index]! - startDistance;
+    const ratio = span === 0 ? 0 : (target - startDistance) / span;
+    return {
+      x:
+        points[index - 1]!.x +
+        (points[index]!.x - points[index - 1]!.x) * ratio,
+      z:
+        points[index - 1]!.z +
+        (points[index]!.z - points[index - 1]!.z) * ratio,
+    };
+  }
+  return { ...points.at(-1)! };
 }
 
 function polylineLength(points: WorldPoint[]): number {

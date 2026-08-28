@@ -213,7 +213,7 @@ describe("Flow Fest minimap", () => {
       kind: "public-road",
     });
     expect(
-      identifyFlowFestPlanLocation(plan, { x: 280, z: -145 })
+      identifyFlowFestPlanLocation(plan, { x: 320, z: -145 })
     ).toMatchObject({
       id: "lower-level",
       label: "Lower level",

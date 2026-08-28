@@ -23,8 +23,9 @@ describe("Flow Fest entrance reference", () => {
     ).toBe(4);
     expect(
       FLOW_FEST_ENTRANCE_REVIEW_CAMERAS.every(
-        (camera) =>
-          camera.horizontalFovDegrees >= 50 && camera.horizontalFovDegrees <= 70
+        (camera, index) =>
+          camera.horizontalFovDegrees ===
+          FLOW_FEST_ENTRANCE_REFERENCE.views[index]?.sourceView.fovDegrees
       )
     ).toBe(true);
   });

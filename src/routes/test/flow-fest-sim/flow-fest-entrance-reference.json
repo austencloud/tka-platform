@@ -65,8 +65,8 @@
       "sourceConfidence": "street-view-observed-proportion; footprint remains approximate"
     },
     "fence": {
-      "inwardOffsetMeters": 4.0,
-      "driveGapHalfWidthMeters": 7.2,
+      "inwardOffsetMeters": 8.5,
+      "driveGapHalfWidthMeters": 6.0,
       "leftRunMeters": 43.0,
       "rightRunMeters": 64.0,
       "postSpacingMeters": 2.75,
@@ -91,9 +91,9 @@
       "camera": {
         "id": "entrance-front",
         "label": "Direct entrance / front",
-        "horizontalFovDegrees": 65,
+        "horizontalFovDegrees": 78,
         "positionWorld": [328.811, 8.6, -97.855],
-        "targetWorld": [312.745, 8.2, -114.312]
+        "targetWorld": [313.576, 7.15, -108.572]
       },
       "sourceView": {
         "panoramaId": "1Zay8yG4Mf31AxM3p0N25w",
@@ -120,7 +120,7 @@
       "camera": {
         "id": "entrance-road-right",
         "label": "Road-right approach",
-        "horizontalFovDegrees": 65,
+        "horizontalFovDegrees": 90,
         "positionWorld": [344.886, 8.6, -128.952],
         "targetWorld": [312.745, 8.2, -114.312]
       },
@@ -149,7 +149,7 @@
       "camera": {
         "id": "entrance-road-left",
         "label": "Road-left approach",
-        "horizontalFovDegrees": 65,
+        "horizontalFovDegrees": 90,
         "positionWorld": [311.626, 8.6, -67.358],
         "targetWorld": [312.745, 8.2, -114.312]
       },
@@ -177,7 +177,7 @@
       "camera": {
         "id": "entrance-gatehouse-close",
         "label": "Gatehouse detail",
-        "horizontalFovDegrees": 54,
+        "horizontalFovDegrees": 48,
         "positionWorld": [322.547, 8.1, -102.206],
         "targetWorld": [312.745, 8.2, -114.312]
       },

@@ -166,6 +166,10 @@ export const FLOW_FEST_ENTRANCE_APRON_JOIN = Object.freeze({
   x: 302.97424138428926,
   z: -116.09513339360245,
 });
+export const FLOW_FEST_LOWER_CHECK_IN = Object.freeze({
+  x: 298.791509455475,
+  z: -115.384673252792,
+});
 
 export const FLOW_FEST_ENTRANCE_REGISTRATION = Object.freeze({
   panoramaId: "1Zay8yG4Mf31AxM3p0N25w",
@@ -228,7 +232,6 @@ function buildInternalDrives(
   contract: FlowFestRuntimeContract
 ): FlowFestCampPlanLine[] {
   const lowerAccess = requiredSegment(contract, "lower-tent-unload");
-  const checkIn = requiredZone(contract, "lower-gate-zone");
   return [
     {
       id: "camp-road-entrance-to-check-in",
@@ -239,10 +242,10 @@ function buildInternalDrives(
       points: [
         FLOW_FEST_CAMP_ROAD_ENTRANCE,
         FLOW_FEST_ENTRANCE_APRON_JOIN,
-        checkIn.center,
+        FLOW_FEST_LOWER_CHECK_IN,
       ],
       sourceNote:
-        "West-side junction registered from exact August 2024 Street View panorama metadata to ODOT road feature 3019609, then corroborated by the identifiable junction in the 2023 public-domain NAIP orthophoto. The route beyond the apron remains an imagery interpretation to the provisional check-in marker.",
+        "West-side junction registered from exact August 2024 Street View panorama metadata to ODOT road feature 3019609, then corroborated by the identifiable junction in the 2023 public-domain NAIP orthophoto. The check-in gameplay marker is placed on the driveway center beside the observed gatehouse and remains Austen-correctable.",
     },
     {
       id: "check-in-to-lower-level",
@@ -380,7 +383,6 @@ function buildLandmarks(
   contract: FlowFestRuntimeContract,
   selectedCampZoneId: string
 ): FlowFestCampPlanLandmark[] {
-  const checkIn = requiredZone(contract, "lower-gate-zone");
   const parking = requiredZone(contract, "west-upper-parking-zone");
   const lower = requiredZone(contract, "lower-tent-zone");
   const middle = requiredZone(contract, "middle-earth-zone");
@@ -403,10 +405,10 @@ function buildLandmarks(
       mapLabel: "Check-in",
       evidence: "festival-placement",
       kind: "check-in",
-      position: checkIn.center,
+      position: FLOW_FEST_LOWER_CHECK_IN,
       approachRadiusMeters: 14,
       sourceNote:
-        "Austen established check-in at the lower-level gate. The exact marker coordinate remains a gameplay placement pending field trace.",
+        "Austen established check-in at the lower-level gate. The marker is constrained to the registered west-side driveway beside the Street View-observed gatehouse; its exact operational stopping point remains Austen-correctable.",
     },
     {
       id: "west-parking-gate",

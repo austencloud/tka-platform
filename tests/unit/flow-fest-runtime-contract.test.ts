@@ -154,7 +154,7 @@ describe("Flow Fest Gate 2 runtime contract", () => {
       terrain,
       surface
     );
-    expect(barriers.occupiedCellCount).toBe(95_459);
+    expect(barriers.occupiedCellCount).toBe(95_588);
     expect(barriers.occupancyWidth).toBe(541);
     expect(barriers.occupancyHeight).toBe(211);
     expect(barriers.cellSizeMeters).toBe(1);

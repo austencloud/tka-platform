@@ -40,7 +40,7 @@
         "id": "lower-gate-check-in",
         "number": 1,
         "label": "Lower gate check-in",
-        "position": { "x": 340, "z": -20 },
+        "position": { "x": 298.791509, "z": -115.384673 },
         "action": "Check in at the gate beside lower-level parking and choose a camping type.",
         "firstFocus": "A physical orientation board because measured surface occluders screen all three named tiers.",
         "understanding": "This is the single arrival checkpoint, not the final vehicle destination.",
@@ -51,7 +51,11 @@
         "number": 2,
         "label": "Lower tent unload",
         "position": { "x": 286, "z": -130 },
-        "pathFromPrevious": [[340, -20], [338, -50], [326, -78], [312, -103], [297, -121], [286, -130]],
+        "pathFromPrevious": [
+          [298.791509, -115.384673],
+          [297, -121],
+          [286, -130]
+        ],
         "action": "Drive to a representative lower-tier perimeter site and unload the tent and gear.",
         "firstFocus": "Tent sites associated with the lower tier's perimeter rather than its open middle.",
         "understanding": "The campsite is home, but an ordinary tent-camping vehicle cannot remain here.",
@@ -61,8 +65,12 @@
         "id": "lower-gate-return",
         "number": 3,
         "label": "Return through lower gate",
-        "position": { "x": 340, "z": -20 },
-        "pathFromPrevious": [[286, -130], [297, -121], [312, -103], [326, -78], [338, -50], [340, -20]],
+        "position": { "x": 298.791509, "z": -115.384673 },
+        "pathFromPrevious": [
+          [286, -130],
+          [297, -121],
+          [298.791509, -115.384673]
+        ],
         "action": "Get back in the unloaded car and return through the lower gate.",
         "firstFocus": "The same checkpoint now functioning as a traffic-control hinge.",
         "understanding": "Parking is a separate trip after campsite selection.",
@@ -73,7 +81,25 @@
         "number": 4,
         "label": "West upper parking",
         "position": { "x": -110, "z": -30 },
-        "pathFromPrevious": [[340, -20], [350, 5], [300, 10], [220, 10], [140, 10], [70, 10], [40, 10], [22, -18], [-20, -45], [-62, -74], [-90, -50], [-110, -30]],
+        "pathFromPrevious": [
+          [298.791509, -115.384673],
+          [302.974241, -116.095133],
+          [328.255734, -98.155062],
+          [321.8, -86.2],
+          [310, -61.9],
+          [303.5, -49.7],
+          [294.9, -37.9],
+          [280.2, -24.4],
+          [256.3, -11.2],
+          [213.2, -2.1],
+          [161.2, 2.6],
+          [122.4, 5.3],
+          [22, 11.2],
+          [-20, -45],
+          [-62, -74],
+          [-90, -50],
+          [-110, -30]
+        ],
         "action": "Park in the field on the west side of the upper tier.",
         "firstFocus": "A wide parking field and the remembered direction of camp.",
         "understanding": "The vehicle relocation ritual is complete.",
@@ -84,7 +110,39 @@
         "number": 5,
         "label": "Lower tent home on foot",
         "position": { "x": 286, "z": -130 },
-        "pathFromPrevious": [[-110, -30], [-90, -50], [-62, -74], [-61.3, -73.8], [-7.3, -74.6], [-0.2, -71.7], [8, -66.4], [15, -64.3], [33.6, -63.5], [41, -65.1], [52.1, -73], [62, -81.6], [81, -103.1], [89.7, -108], [93, -108.8], [99.2, -113.4], [102.5, -113.8], [114.9, -114.2], [129.3, -112.1], [152.8, -106.8], [182.9, -102.2], [209.7, -95.2], [220.9, -93.6], [243.6, -93.2], [248.5, -97.7], [255.1, -108.8], [262.5, -116.3], [276.6, -123.7], [279.9, -124.5], [286.9, -129.9], [286, -130]],
+        "pathFromPrevious": [
+          [-110, -30],
+          [-90, -50],
+          [-62, -74],
+          [-61.3, -73.8],
+          [-7.3, -74.6],
+          [-0.2, -71.7],
+          [8, -66.4],
+          [15, -64.3],
+          [33.6, -63.5],
+          [41, -65.1],
+          [52.1, -73],
+          [62, -81.6],
+          [81, -103.1],
+          [89.7, -108],
+          [93, -108.8],
+          [99.2, -113.4],
+          [102.5, -113.8],
+          [114.9, -114.2],
+          [129.3, -112.1],
+          [152.8, -106.8],
+          [182.9, -102.2],
+          [209.7, -95.2],
+          [220.9, -93.6],
+          [243.6, -93.2],
+          [248.5, -97.7],
+          [255.1, -108.8],
+          [262.5, -116.3],
+          [276.6, -123.7],
+          [279.9, -124.5],
+          [286.9, -129.9],
+          [286, -130]
+        ],
         "pathClass": "open-tier approaches composed with Austen-traced canopy-hidden upper-to-middle and middle-to-lower connectors",
         "sourceType": "austen-traced",
         "action": "Walk from upper parking back to the lower-tier campsite.",
@@ -97,7 +155,23 @@
         "number": 6,
         "label": "Proceed to Middle Earth",
         "position": { "x": 102.5, "z": -113.8 },
-        "pathFromPrevious": [[286, -130], [286.9, -129.9], [279.9, -124.5], [276.6, -123.7], [262.5, -116.3], [255.1, -108.8], [248.5, -97.7], [243.6, -93.2], [220.9, -93.6], [209.7, -95.2], [182.9, -102.2], [152.8, -106.8], [129.3, -112.1], [114.9, -114.2], [102.5, -113.8]],
+        "pathFromPrevious": [
+          [286, -130],
+          [286.9, -129.9],
+          [279.9, -124.5],
+          [276.6, -123.7],
+          [262.5, -116.3],
+          [255.1, -108.8],
+          [248.5, -97.7],
+          [243.6, -93.2],
+          [220.9, -93.6],
+          [209.7, -95.2],
+          [182.9, -102.2],
+          [152.8, -106.8],
+          [129.3, -112.1],
+          [114.9, -114.2],
+          [102.5, -113.8]
+        ],
         "pathClass": "Austen-traced clear connector beneath canopy",
         "sourceType": "austen-traced",
         "action": "Leave camp on foot and retrace the connector into the middle activity tier.",
@@ -110,7 +184,10 @@
         "number": 7,
         "label": "Useful task",
         "position": { "x": 118, "z": -108 },
-        "pathFromPrevious": [[102.5, -113.8], [118, -108]],
+        "pathFromPrevious": [
+          [102.5, -113.8],
+          [118, -108]
+        ],
         "action": "Complete one bounded volunteer task in the south-east interior of Middle Earth.",
         "firstFocus": "People changing the same ordinary field the player entered after setting camp.",
         "understanding": "The festival is made by participation.",
@@ -121,7 +198,12 @@
         "number": 8,
         "label": "First-night choice",
         "position": { "x": 60, "z": -99 },
-        "pathFromPrevious": [[118, -108], [100, -110], [80, -105], [60, -99]],
+        "pathFromPrevious": [
+          [118, -108],
+          [100, -110],
+          [80, -105],
+          [60, -99]
+        ],
         "action": "Witness Middle Earth change after dusk, then choose to watch, practice, join, wander, or return to camp.",
         "firstFocus": "The same visible activity tier now functioning as the fictional night heart; the reveal is temporal.",
         "understanding": "The arrival ritual has become free festival life.",
@@ -133,19 +215,72 @@
         "journeyId": "lower-tent",
         "fromStopId": "first-night-choice",
         "campPosition": { "x": 286, "z": -130 },
-        "waypoints": [[60, -99], [80, -105], [102.5, -113.8], [114.9, -114.2], [129.3, -112.1], [152.8, -106.8], [182.9, -102.2], [209.7, -95.2], [220.9, -93.6], [243.6, -93.2], [248.5, -97.7], [255.1, -108.8], [262.5, -116.3], [276.6, -123.7], [279.9, -124.5], [286.9, -129.9], [286, -130]]
+        "waypoints": [
+          [60, -99],
+          [80, -105],
+          [102.5, -113.8],
+          [114.9, -114.2],
+          [129.3, -112.1],
+          [152.8, -106.8],
+          [182.9, -102.2],
+          [209.7, -95.2],
+          [220.9, -93.6],
+          [243.6, -93.2],
+          [248.5, -97.7],
+          [255.1, -108.8],
+          [262.5, -116.3],
+          [276.6, -123.7],
+          [279.9, -124.5],
+          [286.9, -129.9],
+          [286, -130]
+        ]
       },
       {
         "journeyId": "upper-tent",
         "fromStopId": "first-night-choice",
         "campPosition": { "x": -62, "z": -74 },
-        "waypoints": [[60, -99], [80, -105], [99.2, -113.4], [93, -108.8], [89.7, -108], [81, -103.1], [62, -81.6], [52.1, -73], [41, -65.1], [33.6, -63.5], [15, -64.3], [8, -66.4], [-0.2, -71.7], [-7.3, -74.6], [-61.3, -73.8], [-62, -74]]
+        "waypoints": [
+          [60, -99],
+          [80, -105],
+          [99.2, -113.4],
+          [93, -108.8],
+          [89.7, -108],
+          [81, -103.1],
+          [62, -81.6],
+          [52.1, -73],
+          [41, -65.1],
+          [33.6, -63.5],
+          [15, -64.3],
+          [8, -66.4],
+          [-0.2, -71.7],
+          [-7.3, -74.6],
+          [-61.3, -73.8],
+          [-62, -74]
+        ]
       },
       {
         "journeyId": "car-camp",
         "fromStopId": "first-night-choice",
         "campPosition": { "x": 255, "z": -130 },
-        "waypoints": [[60, -99], [80, -105], [102.5, -113.8], [114.9, -114.2], [129.3, -112.1], [152.8, -106.8], [182.9, -102.2], [209.7, -95.2], [220.9, -93.6], [243.6, -93.2], [248.5, -97.7], [255.1, -108.8], [262.5, -116.3], [276.6, -123.7], [279.9, -124.5], [286.9, -129.9], [255, -130]]
+        "waypoints": [
+          [60, -99],
+          [80, -105],
+          [102.5, -113.8],
+          [114.9, -114.2],
+          [129.3, -112.1],
+          [152.8, -106.8],
+          [182.9, -102.2],
+          [209.7, -95.2],
+          [220.9, -93.6],
+          [243.6, -93.2],
+          [248.5, -97.7],
+          [255.1, -108.8],
+          [262.5, -116.3],
+          [276.6, -123.7],
+          [279.9, -124.5],
+          [286.9, -129.9],
+          [255, -130]
+        ]
       }
     ],
     "alternativeJourneys": [
@@ -156,12 +291,114 @@
         "campPosition": { "x": -62, "z": -74 },
         "vehicleOutcome": "relocated-to-west-upper-parking",
         "segments": [
-          { "id": "gate-to-upper-unload", "mode": "vehicle", "waypoints": [[340, -20], [350, 5], [300, 10], [220, 10], [140, 10], [70, 10], [40, 10], [22, -18], [-20, -45], [-62, -74]] },
-          { "id": "upper-unload-to-gate", "mode": "vehicle", "waypoints": [[-62, -74], [-20, -45], [22, -18], [40, 10], [140, 10], [220, 10], [300, 10], [350, 5], [340, -20]] },
-          { "id": "gate-to-west-parking", "mode": "vehicle", "waypoints": [[340, -20], [350, 5], [300, 10], [220, 10], [140, 10], [70, 10], [40, 10], [22, -18], [-20, -45], [-62, -74], [-90, -50], [-110, -30]] },
-          { "id": "parking-to-upper-camp", "mode": "person", "pathClass": "open-upper-tier", "waypoints": [[-110, -30], [-90, -50], [-62, -74]] },
-          { "id": "upper-camp-to-middle-earth", "mode": "person", "pathClass": "Austen-traced direct tree-line connector", "sourceType": "austen-traced", "waypoints": [[-62, -74], [-61.3, -73.8], [-7.3, -74.6], [-0.2, -71.7], [8, -66.4], [15, -64.3], [33.6, -63.5], [41, -65.1], [52.1, -73], [62, -81.6], [81, -103.1], [89.7, -108], [93, -108.8], [99.2, -113.4]] },
-          { "id": "middle-earth-to-night-choice", "mode": "person", "waypoints": [[99.2, -113.4], [118, -108], [100, -110], [80, -105], [60, -99]] }
+          {
+            "id": "gate-to-upper-unload",
+            "mode": "vehicle",
+            "waypoints": [
+              [298.791509, -115.384673],
+              [302.974241, -116.095133],
+              [328.255734, -98.155062],
+              [321.8, -86.2],
+              [310, -61.9],
+              [303.5, -49.7],
+              [294.9, -37.9],
+              [280.2, -24.4],
+              [256.3, -11.2],
+              [213.2, -2.1],
+              [161.2, 2.6],
+              [122.4, 5.3],
+              [22, 11.2],
+              [-20, -45],
+              [-62, -74]
+            ]
+          },
+          {
+            "id": "upper-unload-to-gate",
+            "mode": "vehicle",
+            "waypoints": [
+              [-62, -74],
+              [-20, -45],
+              [22, 11.2],
+              [122.4, 5.3],
+              [161.2, 2.6],
+              [213.2, -2.1],
+              [256.3, -11.2],
+              [280.2, -24.4],
+              [294.9, -37.9],
+              [303.5, -49.7],
+              [310, -61.9],
+              [321.8, -86.2],
+              [328.255734, -98.155062],
+              [302.974241, -116.095133],
+              [298.791509, -115.384673]
+            ]
+          },
+          {
+            "id": "gate-to-west-parking",
+            "mode": "vehicle",
+            "waypoints": [
+              [298.791509, -115.384673],
+              [302.974241, -116.095133],
+              [328.255734, -98.155062],
+              [321.8, -86.2],
+              [310, -61.9],
+              [303.5, -49.7],
+              [294.9, -37.9],
+              [280.2, -24.4],
+              [256.3, -11.2],
+              [213.2, -2.1],
+              [161.2, 2.6],
+              [122.4, 5.3],
+              [22, 11.2],
+              [-20, -45],
+              [-62, -74],
+              [-90, -50],
+              [-110, -30]
+            ]
+          },
+          {
+            "id": "parking-to-upper-camp",
+            "mode": "person",
+            "pathClass": "open-upper-tier",
+            "waypoints": [
+              [-110, -30],
+              [-90, -50],
+              [-62, -74]
+            ]
+          },
+          {
+            "id": "upper-camp-to-middle-earth",
+            "mode": "person",
+            "pathClass": "Austen-traced direct tree-line connector",
+            "sourceType": "austen-traced",
+            "waypoints": [
+              [-62, -74],
+              [-61.3, -73.8],
+              [-7.3, -74.6],
+              [-0.2, -71.7],
+              [8, -66.4],
+              [15, -64.3],
+              [33.6, -63.5],
+              [41, -65.1],
+              [52.1, -73],
+              [62, -81.6],
+              [81, -103.1],
+              [89.7, -108],
+              [93, -108.8],
+              [99.2, -113.4]
+            ]
+          },
+          {
+            "id": "middle-earth-to-night-choice",
+            "mode": "person",
+            "waypoints": [
+              [99.2, -113.4],
+              [118, -108],
+              [100, -110],
+              [80, -105],
+              [60, -99]
+            ]
+          }
         ]
       },
       {
@@ -171,48 +408,300 @@
         "campPosition": { "x": 255, "z": -130 },
         "vehicleOutcome": "stays-at-campsite",
         "segments": [
-          { "id": "gate-to-car-camp", "mode": "vehicle", "waypoints": [[340, -20], [338, -50], [326, -78], [307, -105], [280, -123], [255, -130]] },
-          { "id": "car-camp-to-middle-earth", "mode": "person", "pathClass": "open lower-tier approach plus Austen-traced connector beneath canopy", "sourceType": "austen-traced", "waypoints": [[255, -130], [286.9, -129.9], [279.9, -124.5], [276.6, -123.7], [262.5, -116.3], [255.1, -108.8], [248.5, -97.7], [243.6, -93.2], [220.9, -93.6], [209.7, -95.2], [182.9, -102.2], [152.8, -106.8], [129.3, -112.1], [114.9, -114.2], [102.5, -113.8]] },
-          { "id": "middle-earth-to-night-choice", "mode": "person", "waypoints": [[102.5, -113.8], [118, -108], [100, -110], [80, -105], [60, -99]] }
+          {
+            "id": "gate-to-car-camp",
+            "mode": "vehicle",
+            "waypoints": [
+              [298.791509, -115.384673],
+              [297, -121],
+              [280, -126],
+              [255, -130]
+            ]
+          },
+          {
+            "id": "car-camp-to-middle-earth",
+            "mode": "person",
+            "pathClass": "open lower-tier approach plus Austen-traced connector beneath canopy",
+            "sourceType": "austen-traced",
+            "waypoints": [
+              [255, -130],
+              [286.9, -129.9],
+              [279.9, -124.5],
+              [276.6, -123.7],
+              [262.5, -116.3],
+              [255.1, -108.8],
+              [248.5, -97.7],
+              [243.6, -93.2],
+              [220.9, -93.6],
+              [209.7, -95.2],
+              [182.9, -102.2],
+              [152.8, -106.8],
+              [129.3, -112.1],
+              [114.9, -114.2],
+              [102.5, -113.8]
+            ]
+          },
+          {
+            "id": "middle-earth-to-night-choice",
+            "mode": "person",
+            "waypoints": [
+              [102.5, -113.8],
+              [118, -108],
+              [100, -110],
+              [80, -105],
+              [60, -99]
+            ]
+          }
         ]
       }
     ]
   },
   "storyFrames": [
-    { "number": "A", "routeStopIds": ["lower-gate-check-in"], "label": "Check in low", "position": { "x": 340, "z": -20 }, "action": "Stop at the lower gate and complete check-in.", "firstFocus": "Gate crew, lower parking, and a physical tier map.", "understanding": "Every arrival begins on the lower level.", "nextCue": "Choose how and where to camp." },
-    { "number": "B", "routeStopIds": ["lower-gate-check-in"], "label": "Choose camp", "position": { "x": 340, "z": -20 }, "action": "Choose lower tent, upper tent, or lower car camping.", "firstFocus": "Three choices with different vehicle consequences.", "understanding": "Middle Earth is never a campsite.", "nextCue": "Drive directly to the selected site." },
-    { "number": "C", "routeStopIds": ["lower-tent-unload"], "label": "Make home", "position": { "x": 286, "z": -130 }, "action": "Unload at a tent site or settle the car-camping site.", "firstFocus": "Lower tent sites use the outer part of the lower clearing; car camping uses an authored open-middle zone based on Austen's placement.", "understanding": "The selected branch becomes the return destination.", "nextCue": "Car campers stay; tent campers must relocate the car." },
-    { "number": "D", "routeStopIds": ["lower-gate-return"], "label": "Return to the car", "position": { "x": 340, "z": -20 }, "action": "Tent campers get back in the unloaded car and return through the lower gate.", "firstFocus": "Traffic flow back toward the road.", "understanding": "Unloading and parking are separate phases.", "nextCue": "Drive uphill toward upper parking." },
-    { "number": "E", "routeStopIds": ["west-upper-parking"], "label": "Park west and high", "position": { "x": -110, "z": -30 }, "action": "Tent campers park in the west field on the upper tier.", "firstFocus": "A vehicle storage field far from some campsites.", "understanding": "Only the car-camping branch keeps the vehicle at home.", "nextCue": "Walk back to the selected campsite." },
-    { "number": "F", "routeStopIds": [], "planReference": "UPPER BRANCH CAMP", "label": "Return on foot", "position": { "x": -62, "z": -74 }, "action": "Walk from parking to the upper or lower tent campsite; car campers are already home.", "firstFocus": "The vertical relationship among parking and both camping tiers.", "understanding": "The player learns the site through the return walk, crossing Middle Earth on the lower-tent example.", "nextCue": "Settle, repack, and leave camp as a pedestrian." },
-    { "number": "G", "routeStopIds": ["middle-earth-arrival"], "label": "Return to Middle Earth", "position": { "x": 102.5, "z": -113.8 }, "action": "Proceed from the chosen camp into the shared activity tier.", "firstFocus": "Fire circle, stage, people, and workshops rather than arrival logistics.", "understanding": "The player may have crossed this ground while walking home; returning as a participant ends the logistics tutorial.", "nextCue": "Follow people, sound, tasks, and classes." },
-    { "number": "H", "routeStopIds": ["community-task", "first-night-choice"], "label": "First-night agency", "position": { "x": 60, "z": -99 }, "action": "After participating, choose what to do and remember the route back to the selected camp.", "firstFocus": "A temporal transformation of familiar Middle Earth.", "understanding": "The chosen campsite remains persistent across free play.", "nextCue": "Watch, practice, join, wander, or go home." }
+    {
+      "number": "A",
+      "routeStopIds": ["lower-gate-check-in"],
+      "label": "Check in low",
+      "position": { "x": 298.791509, "z": -115.384673 },
+      "action": "Stop at the lower gate and complete check-in.",
+      "firstFocus": "Gate crew, lower parking, and a physical tier map.",
+      "understanding": "Every arrival begins on the lower level.",
+      "nextCue": "Choose how and where to camp."
+    },
+    {
+      "number": "B",
+      "routeStopIds": ["lower-gate-check-in"],
+      "label": "Choose camp",
+      "position": { "x": 298.791509, "z": -115.384673 },
+      "action": "Choose lower tent, upper tent, or lower car camping.",
+      "firstFocus": "Three choices with different vehicle consequences.",
+      "understanding": "Middle Earth is never a campsite.",
+      "nextCue": "Drive directly to the selected site."
+    },
+    {
+      "number": "C",
+      "routeStopIds": ["lower-tent-unload"],
+      "label": "Make home",
+      "position": { "x": 286, "z": -130 },
+      "action": "Unload at a tent site or settle the car-camping site.",
+      "firstFocus": "Lower tent sites use the outer part of the lower clearing; car camping uses an authored open-middle zone based on Austen's placement.",
+      "understanding": "The selected branch becomes the return destination.",
+      "nextCue": "Car campers stay; tent campers must relocate the car."
+    },
+    {
+      "number": "D",
+      "routeStopIds": ["lower-gate-return"],
+      "label": "Return to the car",
+      "position": { "x": 298.791509, "z": -115.384673 },
+      "action": "Tent campers get back in the unloaded car and return through the lower gate.",
+      "firstFocus": "Traffic flow back toward the road.",
+      "understanding": "Unloading and parking are separate phases.",
+      "nextCue": "Drive uphill toward upper parking."
+    },
+    {
+      "number": "E",
+      "routeStopIds": ["west-upper-parking"],
+      "label": "Park west and high",
+      "position": { "x": -110, "z": -30 },
+      "action": "Tent campers park in the west field on the upper tier.",
+      "firstFocus": "A vehicle storage field far from some campsites.",
+      "understanding": "Only the car-camping branch keeps the vehicle at home.",
+      "nextCue": "Walk back to the selected campsite."
+    },
+    {
+      "number": "F",
+      "routeStopIds": [],
+      "planReference": "UPPER BRANCH CAMP",
+      "label": "Return on foot",
+      "position": { "x": -62, "z": -74 },
+      "action": "Walk from parking to the upper or lower tent campsite; car campers are already home.",
+      "firstFocus": "The vertical relationship among parking and both camping tiers.",
+      "understanding": "The player learns the site through the return walk, crossing Middle Earth on the lower-tent example.",
+      "nextCue": "Settle, repack, and leave camp as a pedestrian."
+    },
+    {
+      "number": "G",
+      "routeStopIds": ["middle-earth-arrival"],
+      "label": "Return to Middle Earth",
+      "position": { "x": 102.5, "z": -113.8 },
+      "action": "Proceed from the chosen camp into the shared activity tier.",
+      "firstFocus": "Fire circle, stage, people, and workshops rather than arrival logistics.",
+      "understanding": "The player may have crossed this ground while walking home; returning as a participant ends the logistics tutorial.",
+      "nextCue": "Follow people, sound, tasks, and classes."
+    },
+    {
+      "number": "H",
+      "routeStopIds": ["community-task", "first-night-choice"],
+      "label": "First-night agency",
+      "position": { "x": 60, "z": -99 },
+      "action": "After participating, choose what to do and remember the route back to the selected camp.",
+      "firstFocus": "A temporal transformation of familiar Middle Earth.",
+      "understanding": "The chosen campsite remains persistent across free play.",
+      "nextCue": "Watch, practice, join, wander, or go home."
+    }
   ],
   "zones": [
-    { "id": "lower-gate-zone", "label": "Lower gate check-in", "class": "invention", "shape": "circle", "center": { "x": 340, "z": -20 }, "radiusMeters": 10 },
-    { "id": "upper-tent-zone", "label": "Upper tent camping", "class": "invention", "shape": "circle", "center": { "x": -62, "z": -74 }, "radiusMeters": 16 },
-    { "id": "west-upper-parking-zone", "label": "West upper parking", "class": "invention", "shape": "circle", "center": { "x": -110, "z": -30 }, "radiusMeters": 18 },
-    { "id": "middle-earth-zone", "label": "Middle Earth: no camping", "class": "interpreted", "shape": "surface-open-region", "center": { "x": 100, "z": -115 }, "seed": { "x": 100, "z": -115 }, "searchRadiusXMeters": 35, "searchRadiusZMeters": 28, "minimumEnvelopeOpenFraction": 0.95 },
-    { "id": "lower-tent-zone", "label": "Lower tent perimeter example", "class": "invention", "shape": "circle", "center": { "x": 286, "z": -130 }, "radiusMeters": 10 },
-    { "id": "car-camp-zone", "label": "Car camping: open middle", "class": "invention", "shape": "surface-open-region", "center": { "x": 255, "z": -130 }, "seed": { "x": 255, "z": -130 }, "searchRadiusXMeters": 24, "searchRadiusZMeters": 18, "minimumEnvelopeOpenFraction": 0.95 },
-    { "id": "night-heart-zone", "label": "Fictional night heart", "class": "invention", "shape": "circle", "center": { "x": 100, "z": -115 }, "radiusMeters": 12, "targetHeightMeters": 8 }
+    {
+      "id": "lower-gate-zone",
+      "label": "Lower gate check-in",
+      "class": "invention",
+      "shape": "circle",
+      "center": { "x": 298.791509, "z": -115.384673 },
+      "radiusMeters": 10
+    },
+    {
+      "id": "upper-tent-zone",
+      "label": "Upper tent camping",
+      "class": "invention",
+      "shape": "circle",
+      "center": { "x": -62, "z": -74 },
+      "radiusMeters": 16
+    },
+    {
+      "id": "west-upper-parking-zone",
+      "label": "West upper parking",
+      "class": "invention",
+      "shape": "circle",
+      "center": { "x": -110, "z": -30 },
+      "radiusMeters": 18
+    },
+    {
+      "id": "middle-earth-zone",
+      "label": "Middle Earth: no camping",
+      "class": "interpreted",
+      "shape": "surface-open-region",
+      "center": { "x": 100, "z": -115 },
+      "seed": { "x": 100, "z": -115 },
+      "searchRadiusXMeters": 35,
+      "searchRadiusZMeters": 28,
+      "minimumEnvelopeOpenFraction": 0.95
+    },
+    {
+      "id": "lower-tent-zone",
+      "label": "Lower tent perimeter example",
+      "class": "invention",
+      "shape": "circle",
+      "center": { "x": 286, "z": -130 },
+      "radiusMeters": 18
+    },
+    {
+      "id": "car-camp-zone",
+      "label": "Car camping: open middle",
+      "class": "invention",
+      "shape": "surface-open-region",
+      "center": { "x": 255, "z": -130 },
+      "seed": { "x": 255, "z": -130 },
+      "searchRadiusXMeters": 24,
+      "searchRadiusZMeters": 18,
+      "minimumEnvelopeOpenFraction": 0.95
+    },
+    {
+      "id": "night-heart-zone",
+      "label": "Fictional night heart",
+      "class": "invention",
+      "shape": "circle",
+      "center": { "x": 100, "z": -115 },
+      "radiusMeters": 12,
+      "targetHeightMeters": 8
+    }
   ],
   "sightlines": [
-    { "id": "gate-to-lower-camp", "label": "Lower gate to lower camping", "from": { "x": 340, "z": -20, "heightMeters": 1.7 }, "to": { "x": 255, "z": -130, "heightMeters": 1.7 }, "expected": "occluded", "purpose": "The gate needs a tier map and volunteers; the lower camp is not directly readable." },
-    { "id": "gate-to-middle-earth", "label": "Lower gate to Middle Earth", "from": { "x": 340, "z": -20, "heightMeters": 1.7 }, "to": { "x": 100, "z": -115, "heightMeters": 1.7 }, "expected": "occluded", "purpose": "Arrival logistics remain distinct from festival activity space." },
-    { "id": "gate-to-upper-camp", "label": "Lower gate to upper camping", "from": { "x": 340, "z": -20, "heightMeters": 1.7 }, "to": { "x": -62, "z": -74, "heightMeters": 1.7 }, "expected": "occluded", "purpose": "Upper camping must be learned by road direction rather than direct view." },
-    { "id": "parking-to-upper-camp", "label": "West parking to upper camp", "from": { "x": -110, "z": -30, "heightMeters": 1.7 }, "to": { "x": -62, "z": -74, "heightMeters": 1.7 }, "expected": "clear", "purpose": "The short upper-camp return is legible from parking." },
-    { "id": "parking-to-lower-camp", "label": "West parking to lower camp", "from": { "x": -110, "z": -30, "heightMeters": 1.7 }, "to": { "x": 255, "z": -130, "heightMeters": 1.7 }, "expected": "occluded", "purpose": "The lower-camp return requires remembered path cues." },
-    { "id": "lower-camp-to-middle", "label": "Lower camping to Middle Earth", "from": { "x": 255, "z": -130, "heightMeters": 1.7 }, "to": { "x": 100, "z": -115, "heightMeters": 1.7 }, "expected": "occluded", "purpose": "Middle Earth is a distinct destination reached through a connector." },
-    { "id": "upper-camp-to-middle", "label": "Upper camping to Middle Earth", "from": { "x": -62, "z": -74, "heightMeters": 1.7 }, "to": { "x": 100, "z": -115, "heightMeters": 1.7 }, "expected": "occluded", "purpose": "The upper and middle tiers remain spatially distinct." },
-    { "id": "night-composition", "label": "Dusk composition to Middle Earth", "from": { "x": 60, "z": -99, "heightMeters": 1.7 }, "to": { "x": 100, "z": -115, "heightMeters": 1.7 }, "expected": "clear", "neighborhoodRadiusMeters": 3, "purpose": "A stable open-ground camera frames a temporal lighting reveal without depending on mast height." }
+    {
+      "id": "gate-to-lower-camp",
+      "label": "Lower gate to lower camping",
+      "from": { "x": 298.791509, "z": -115.384673, "heightMeters": 1.7 },
+      "to": { "x": 255, "z": -130, "heightMeters": 1.7 },
+      "expected": "occluded",
+      "purpose": "The gate needs a tier map and volunteers; the lower camp is not directly readable."
+    },
+    {
+      "id": "gate-to-middle-earth",
+      "label": "Lower gate to Middle Earth",
+      "from": { "x": 298.791509, "z": -115.384673, "heightMeters": 1.7 },
+      "to": { "x": 100, "z": -115, "heightMeters": 1.7 },
+      "expected": "occluded",
+      "purpose": "Arrival logistics remain distinct from festival activity space."
+    },
+    {
+      "id": "gate-to-upper-camp",
+      "label": "Lower gate to upper camping",
+      "from": { "x": 298.791509, "z": -115.384673, "heightMeters": 1.7 },
+      "to": { "x": -62, "z": -74, "heightMeters": 1.7 },
+      "expected": "occluded",
+      "purpose": "Upper camping must be learned by road direction rather than direct view."
+    },
+    {
+      "id": "parking-to-upper-camp",
+      "label": "West parking to upper camp",
+      "from": { "x": -110, "z": -30, "heightMeters": 1.7 },
+      "to": { "x": -62, "z": -74, "heightMeters": 1.7 },
+      "expected": "clear",
+      "purpose": "The short upper-camp return is legible from parking."
+    },
+    {
+      "id": "parking-to-lower-camp",
+      "label": "West parking to lower camp",
+      "from": { "x": -110, "z": -30, "heightMeters": 1.7 },
+      "to": { "x": 255, "z": -130, "heightMeters": 1.7 },
+      "expected": "occluded",
+      "purpose": "The lower-camp return requires remembered path cues."
+    },
+    {
+      "id": "lower-camp-to-middle",
+      "label": "Lower camping to Middle Earth",
+      "from": { "x": 255, "z": -130, "heightMeters": 1.7 },
+      "to": { "x": 100, "z": -115, "heightMeters": 1.7 },
+      "expected": "occluded",
+      "purpose": "Middle Earth is a distinct destination reached through a connector."
+    },
+    {
+      "id": "upper-camp-to-middle",
+      "label": "Upper camping to Middle Earth",
+      "from": { "x": -62, "z": -74, "heightMeters": 1.7 },
+      "to": { "x": 100, "z": -115, "heightMeters": 1.7 },
+      "expected": "occluded",
+      "purpose": "The upper and middle tiers remain spatially distinct."
+    },
+    {
+      "id": "night-composition",
+      "label": "Dusk composition to Middle Earth",
+      "from": { "x": 60, "z": -99, "heightMeters": 1.7 },
+      "to": { "x": 100, "z": -115, "heightMeters": 1.7 },
+      "expected": "clear",
+      "neighborhoodRadiusMeters": 3,
+      "purpose": "A stable open-ground camera frames a temporal lighting reveal without depending on mast height."
+    }
   ],
   "reviewCameras": [
-    { "id": "lower-gate", "label": "Lower gate check-in", "position": { "x": 340, "z": -20, "eyeHeightMeters": 1.7 }, "target": { "x": 320, "z": -55, "heightMeters": 1.7 } },
-    { "id": "lower-level", "label": "Lower camping choices", "position": { "x": 300, "z": -105, "eyeHeightMeters": 1.7 }, "target": { "x": 255, "z": -130, "heightMeters": 1.2 } },
-    { "id": "upper-parking", "label": "West upper parking", "position": { "x": -130, "z": -15, "eyeHeightMeters": 1.7 }, "target": { "x": -110, "z": -30, "heightMeters": 1.2 } },
-    { "id": "middle-earth", "label": "Middle Earth relationship", "position": { "x": 78, "z": -101, "eyeHeightMeters": 1.7 }, "target": { "x": 100, "z": -115, "heightMeters": 1.7 } },
-    { "id": "night-composition", "label": "First-night composition", "position": { "x": 60, "z": -99, "eyeHeightMeters": 1.7 }, "target": { "x": 100, "z": -115, "heightMeters": 1.7 } }
+    {
+      "id": "lower-gate",
+      "label": "Lower gate check-in",
+      "position": { "x": 298.791509, "z": -115.384673, "eyeHeightMeters": 1.7 },
+      "target": { "x": 286, "z": -130, "heightMeters": 1.7 }
+    },
+    {
+      "id": "lower-level",
+      "label": "Lower camping choices",
+      "position": { "x": 300, "z": -105, "eyeHeightMeters": 1.7 },
+      "target": { "x": 255, "z": -130, "heightMeters": 1.2 }
+    },
+    {
+      "id": "upper-parking",
+      "label": "West upper parking",
+      "position": { "x": -130, "z": -15, "eyeHeightMeters": 1.7 },
+      "target": { "x": -110, "z": -30, "heightMeters": 1.2 }
+    },
+    {
+      "id": "middle-earth",
+      "label": "Middle Earth relationship",
+      "position": { "x": 78, "z": -101, "eyeHeightMeters": 1.7 },
+      "target": { "x": 100, "z": -115, "heightMeters": 1.7 }
+    },
+    {
+      "id": "night-composition",
+      "label": "First-night composition",
+      "position": { "x": 60, "z": -99, "eyeHeightMeters": 1.7 },
+      "target": { "x": 100, "z": -115, "heightMeters": 1.7 }
+    }
   ],
   "evidenceClasses": {
     "measured": "DTM elevation, lidar surface height, orthophoto registration, scale, and coordinate transforms.",
@@ -221,7 +710,14 @@
     "interpreted": "Tier-scale open ground, road centerlines traced from public imagery, and surface screens; field confirmation required.",
     "invention": "Festival placements, interactions, night transformation, and exact proposed coordinates beyond what public terrain or Austen's first-person account establishes."
   },
-  "claimSchemaMapping": { "measured": "literal", "austenObservedTopology": "literal for route logic", "austenTracedCenterlines": "literal for the recorded user trace over the orthophoto; not a field survey", "interpreted": "invention until field verified", "invention": "invention", "metaphorUsage": "none in Gate 1" },
+  "claimSchemaMapping": {
+    "measured": "literal",
+    "austenObservedTopology": "literal for route logic",
+    "austenTracedCenterlines": "literal for the recorded user trace over the orthophoto; not a field survey",
+    "interpreted": "invention until field verified",
+    "invention": "invention",
+    "metaphorUsage": "none in Gate 1"
+  },
   "knownUnknowns": [
     "Austen's memory is authoritative for the arrival topology. His two connector traces are source-locked as orthophoto drawings, not centimetre-accurate field survey; all other exact Gate 1 placements remain registered proposals for comprehension review.",
     "Lower tent camping is represented by a perimeter example point, not a claim that every perimeter location is usable.",

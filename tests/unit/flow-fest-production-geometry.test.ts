@@ -126,17 +126,17 @@ describe("Flow Fest production dressing", () => {
     expect(first.counts.interpretedTrees).toBeLessThan(2500);
     expect(first.counts.routeLanterns).toBeGreaterThan(20);
     expect(first.counts.sitePathSurfaces).toBe(7);
-    expect(first.counts.wayfindingMarkers).toBe(5);
-    expect(first.counts.entranceLandmarks).toBe(12);
+    expect(first.counts.wayfindingMarkers).toBe(3);
+    expect(first.counts.entranceLandmarks).toBe(13);
     expect(first.orientationAudit).toEqual({
       publicRoadSurfaceCount: 1,
       internalDriveSurfaceCount: 4,
       tracedConnectorSurfaceCount: 2,
-      landmarkMarkerCount: 5,
+      landmarkMarkerCount: 3,
       officialRoadFeatureObjectId: 3019609,
       entranceAnchorErrorMeters: 0,
       streetViewReferenceViewCount: 4,
-      roadMarkingSurfaceCount: 4,
+      roadMarkingSurfaceCount: 5,
     });
     expect(first.spatialAudit).toMatchObject({ campRouteViolations: 0 });
     expect(first.spatialAudit.minimumCanopyPeakDistance).toBeGreaterThanOrEqual(
@@ -241,7 +241,7 @@ describe("Flow Fest production dressing", () => {
     ).toBeTruthy();
     expect(
       first.root.getObjectByName("FFS_EntranceRoadPaint_ODOTAligned")?.children
-    ).toHaveLength(4);
+    ).toHaveLength(5);
     const playerTent = first.root.getObjectByName(
       "FFS_PlayerTent_lower-tent_Authored"
     );

@@ -98,6 +98,7 @@ export interface FlowFestProductionDressing {
     forestGroundLifeRouteIntrusions: number;
   };
   setCampEstablished(visible: boolean): void;
+  setCampDressingVisible(visible: boolean): void;
   setFestivalActive(visible: boolean): void;
   dispose(): void;
 }
@@ -260,6 +261,7 @@ export function buildFlowFestProductionDressing(
         forestEcology.audit.groundLifeRouteIntrusions,
     },
     setCampEstablished: camp.setEstablished,
+    setCampDressingVisible: camp.setDressingVisible,
     setFestivalActive: (visible) => {
       festival.group.visible = visible;
     },
@@ -512,7 +514,7 @@ function buildFlowFestWayfinding(
   const landmarks = plan.landmarks.filter(
     (landmark) =>
       landmark.id !== "camp-road-entrance" &&
-      ["entrance", "check-in", "parking-gate", "parking", "clearing"].includes(
+      ["entrance", "check-in", "parking-gate", "parking"].includes(
         landmark.kind
       )
   );
@@ -605,6 +607,7 @@ function buildCampClusters(
     | "minimumTentVehicleDistance"
   >;
   setEstablished(visible: boolean): void;
+  setDressingVisible(visible: boolean): void;
 } {
   const group = new Group();
   group.name = "FFS_AuthoredFestivalCamps";
@@ -785,6 +788,9 @@ function buildCampClusters(
     },
     setEstablished: (visible) => {
       playerTent.visible = visible;
+    },
+    setDressingVisible: (visible) => {
+      group.visible = visible;
     },
   };
 }

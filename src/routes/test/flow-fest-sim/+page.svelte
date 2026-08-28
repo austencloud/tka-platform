@@ -70,7 +70,10 @@
   } from "../flow-fest-graybox/flow-fest-runtime-contract";
   import FlowFestProductionLayer from "./FlowFestProductionLayer.svelte";
   import FlowFestHud from "./FlowFestHud.svelte";
-  import { createFlowFestCampPlan } from "./flow-fest-camp-plan";
+  import {
+    createFlowFestCampPlan,
+    FLOW_FEST_LOWER_CHECK_IN,
+  } from "./flow-fest-camp-plan";
   import {
     FLOW_FEST_ENTRANCE_REFERENCE,
     FLOW_FEST_ENTRANCE_REVIEW_CAMERAS,
@@ -133,7 +136,11 @@
   let festivalCommunity = $state<
     FlowFestProductionDressing["festivalCommunity"] | null
   >(null);
-  let position = $state({ x: 340, y: 12, z: -20 });
+  let position = $state({
+    x: FLOW_FEST_LOWER_CHECK_IN.x,
+    y: 12,
+    z: FLOW_FEST_LOWER_CHECK_IN.z,
+  });
   let listenerYaw = $state(0);
   let resetToken = $state(0);
   let cameraToken = $state(0);
@@ -429,13 +436,13 @@
       | "lower-gate"
       | "selected-camp"
       | "festival"
-      | "east-entrance"
+      | "camp-entrance"
       | "parking-gate"
   ): void {
     if (!contract || !progress?.branch) return;
     const plan = createFlowFestCampPlan(contract, progress.branch);
     const planLandmark =
-      area === "east-entrance"
+      area === "camp-entrance"
         ? plan.landmarks.find(
             (candidate) => candidate.id === "camp-road-entrance"
           )
@@ -1127,6 +1134,7 @@
           fireJamState={progress?.fireJamState}
           {fireJamEnergy}
           playerPosition={position}
+          showCampDressing={!entranceReferenceReview.enabled}
           onReady={(details) => {
             productionReady = details;
             productionCollision = details.collision;
@@ -1262,7 +1270,7 @@
       onRestart={() =>
         gate5Review ? restartIntegratedJourney() : (resetToken += 1)}
       onReviewGate={() => stageGate5ReviewArea("lower-gate")}
-      onReviewEntrance={() => stageGate5ReviewArea("east-entrance")}
+      onReviewEntrance={() => stageGate5ReviewArea("camp-entrance")}
       onReviewParkingGate={() => stageGate5ReviewArea("parking-gate")}
       onReviewCamp={() => stageGate5ReviewArea("selected-camp")}
       onReviewFestival={() => stageGate5ReviewArea("festival")}

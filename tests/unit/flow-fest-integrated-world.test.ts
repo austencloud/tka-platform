@@ -44,9 +44,12 @@ describe("Flow Fest Gate 5 integrated world", () => {
             ? "upper-tent-zone"
             : "car-camp-zone";
       const camp = contract.zones.find((zone) => zone.id === campZoneId)!;
+      const lowerGate = contract.zones.find(
+        (zone) => zone.id === "lower-gate-zone"
+      )!;
 
       expect(
-        identifyFlowFestIntegratedArea(contract, branch, { x: 340, z: -20 })
+        identifyFlowFestIntegratedArea(contract, branch, lowerGate.center)
       ).toBe("lower-gate");
       expect(
         identifyFlowFestIntegratedArea(contract, branch, camp.center)

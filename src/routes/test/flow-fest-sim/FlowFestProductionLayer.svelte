@@ -40,6 +40,7 @@
     fireJamState?: FlowFestFireJamState;
     fireJamEnergy?: number;
     playerPosition?: { x: number; y: number; z: number };
+    showCampDressing?: boolean;
     onForestCullingSample?: (details: InstanceFrustumCullingStats) => void;
     onReady?: (
       details: FlowFestProductionDressing["counts"] & {
@@ -159,6 +160,7 @@
       return;
     }
     next.setCampEstablished(campEstablished);
+    next.setCampDressingVisible(props.showCampDressing !== false);
     next.setFestivalActive(festivalActive);
     dressing?.dispose();
     dressing = next;
@@ -333,6 +335,7 @@
 
   $effect(() => {
     dressing?.setCampEstablished(campEstablished);
+    dressing?.setCampDressingVisible(props.showCampDressing !== false);
     dressing?.setFestivalActive(festivalActive);
     const proof = (globalThis as Record<string, unknown>)
       .__flowFestProduction as Record<string, unknown> | undefined;

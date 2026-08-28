@@ -145,7 +145,7 @@ const REQUIRED_INPUT_HASHES = new Map([
   ],
   [
     "docs/superpowers/specs/flow-fest-sim/flow-fest-site-plan.json",
-    "8a2710c76062c736999eb98b2b24e28a1727d88d56b40afcfc77343ad3e2e2b7",
+    "e4408ef29ff201f2c244d25e888a274905150880d58ff158493e8e1891eb4070",
   ],
   [
     "docs/superpowers/specs/flow-fest-sim/austen-traced-connectors.json",
@@ -253,9 +253,13 @@ export function parseFlowFestRuntimeContract(
     }
   }
 
+  const lowerGate = contract.zones?.find(
+    (zone) => zone.id === "lower-gate-zone"
+  );
   if (
-    contract.spawn?.positionWorld?.[0] !== 340 ||
-    contract.spawn.positionWorld[2] !== -20 ||
+    !lowerGate ||
+    contract.spawn?.positionWorld?.[0] !== lowerGate.center.x ||
+    contract.spawn.positionWorld[2] !== lowerGate.center.z ||
     contract.spawn.eyeHeightMeters !== 1.7 ||
     contract.reviewCameras?.length !== 5 ||
     contract.zones?.length !== 7 ||

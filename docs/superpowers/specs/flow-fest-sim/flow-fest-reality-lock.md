@@ -1,6 +1,31 @@
 # Flow Fest Sim Reality Lock
 
-**Status:** Active production gate
+**Status:** Implementation verified; awaiting Austen's landmark correction pass
+
+## Verified implementation checkpoint
+
+- The north-up Ground Truth authoring view renders the registered 2023 NAIP
+  raster, locks the official ODOT road, and keeps every editable camp-plan move
+  as a reversible proposal with its prior coordinate and evidence class.
+- The arrival network now enters from the registered west-side junction. Check-in,
+  lower unload, return, official-road travel, and the west parking branch all
+  consume the shared plan instead of the rejected east-side route.
+- The entrance composition has four reproducible cameras: direct, road-right,
+  road-left, and gatehouse detail. Reference mode removes fictional festival
+  dressing so it cannot contaminate the comparison.
+- The camp-side white edge line breaks at the driveway, clearing wayfinding no
+  longer obstructs the rider camera, and road/connector exclusions remain shared
+  with deterministic vegetation and collision generation.
+- Runtime coordinate fingerprint:
+  `095e62e917cfaa0160f814aa605f86d7a7e4e1701d1303edf0070fbc09e1847f`.
+- Verification: 31 focused tests; `svelte-check` with zero errors and zero
+  warnings; live journey replay; four locked entrance views; 1920, 2560, 3840,
+  1440, tablet, compact landscape, and phone portrait viewports; no application
+  console errors.
+
+The gate remains open because Austen has explicitly rejected prior diagnostic
+point placement. His next saved Ground Truth proposal must be reviewed against
+the pinned evidence before any moved landmark becomes authoritative.
 
 ## Outcome
 

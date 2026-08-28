@@ -110,11 +110,11 @@ describe("Flow Fest Forest ecology integration", () => {
     expect(first.grass.slice(0, 120)).toEqual(second.grass.slice(0, 120));
     expect(first.groundLife).toEqual(second.groundLife);
     expect(first.audit).toMatchObject({
-      measuredCanopyPlacements: 427,
+      measuredCanopyPlacements: 440,
       sourceTreeFamilies: 11,
-      plantFactoryTreePlacements: 265,
-      grassPlacements: 20_798,
-      groundLifePlacements: 19,
+      plantFactoryTreePlacements: 269,
+      grassPlacements: 22_217,
+      groundLifePlacements: 20,
     });
   });
 
@@ -131,7 +131,7 @@ describe("Flow Fest Forest ecology integration", () => {
       grassRouteIntrusions: 0,
       groundLifeRouteIntrusions: 0,
     });
-    expect(ecology.trees).toHaveLength(427);
+    expect(ecology.trees).toHaveLength(440);
     expect(ecology.grass.length).toBeGreaterThan(20_000);
     expect(ecology.groundLife.length).toBeGreaterThan(0);
     expect(
