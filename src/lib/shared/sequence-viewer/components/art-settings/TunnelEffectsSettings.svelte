@@ -67,16 +67,17 @@
     );
   }
 
-  // Rainbow vs Uniform copy coloring (controller.spectrum), shown in Effects.
+  // Hand colors match the choreography cards. Spectrum remains an explicit
+  // instance-coloring appearance for saved tunnels that already authored it.
   const colorOptions = [
-    { value: "rainbow", label: "Rainbow" },
-    { value: "uniform", label: "Uniform" },
+    { value: "uniform", label: "Pictograph hands" },
+    { value: "rainbow", label: "Spectrum copies" },
   ];
 </script>
 
 <div class="section-pad">
-  <!-- Rainbow (every copy fans across the spectrum) vs Uniform (base blue/red).
-           A real tunnel color mode, formerly in the retired Cast section. -->
+  <!-- This is performed presentation state, so existing Spectrum saves reopen
+       unchanged even though new creator sessions begin with hand colors. -->
   <div class="rt-section colors-row">
     <span class="rt-section-label">Colors</span>
     <SegmentedControl
@@ -96,8 +97,8 @@
     {#if !dense}
       <p class="section-hint">
         {controller.spectrum
-          ? "Each copy fans across the spectrum."
-          : "Every copy uses the base blue/red."}
+          ? "Stage hues identify generated copies; card hand identity stays blue Left and red Right."
+          : "Stage props exactly match the blue Left and red Right pictographs."}
       </p>
     {/if}
   </div>

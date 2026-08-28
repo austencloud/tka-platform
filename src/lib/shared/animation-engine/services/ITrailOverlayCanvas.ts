@@ -17,7 +17,7 @@ export interface TrailOverlayRenderParams {
   tunnelSpectrum?: boolean;
   /** Spotlight: the selected performer (0 = base "you", k = copy arm k), or null.
    *  When set, every other layer's trail dims. Default null (no spotlight). */
-  tunnelSelectedLayer?: number | null;
+  tunnelSelectedLayer?: number | readonly number[] | null;
   /** Raw prop states - overlay reads positions directly (fire-renderer pattern) */
   blueProp?: PropState | null;
   redProp?: PropState | null;
