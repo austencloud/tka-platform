@@ -38,11 +38,11 @@
     { id: "night-composition", label: "Night view" },
   ];
 
+  const requestedHost = browser
+    ? new URLSearchParams(window.location.search).get("host")
+    : null;
   const hostMode: FlowFestTerrainHostMode =
-    browser &&
-    new URLSearchParams(window.location.search).get("host") === "chunked"
-      ? "chunked"
-      : "bounded-static";
+    requestedHost === "bounded-static" ? "bounded-static" : "chunked";
 
   let selectedBranch = $state<FlowFestBranchId>("lower-tent");
   let resetToken = $state(0);
@@ -85,7 +85,7 @@
   data-player-x={position.x.toFixed(3)}
   data-player-y={position.y.toFixed(3)}
   data-player-z={position.z.toFixed(3)}
-  data-barrier-proxies={ready?.barrierProxies ?? 0}
+  data-barrier-cells={ready?.barrierCells ?? 0}
   data-eye-height={ready?.eyeHeightMeters ?? 0}
 >
   <div class="viewport" aria-label="Flow Fest Sim measured terrain graybox">
@@ -133,7 +133,7 @@
       <strong
         >{hostMode === "bounded-static"
           ? "Bounded host"
-          : "32 m chunk host"}</strong
+          : "32 m collision host"}</strong
       >
       {#if ready}
         <small>
