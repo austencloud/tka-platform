@@ -12,39 +12,41 @@ const materialProfiles = [
     normalScale: 0.34,
   },
   {
-    prefix: "Ember_Columnar_Cap_PBR",
-    tint: [1.0, 0.92, 0.78, 1.0],
-    roughnessFloor: 0.68,
-    metallicCeiling: 0.03,
-    normalScale: 0.42,
-  },
-  {
     prefix: "Ember_Ground_Blackglass_PBR",
-    tint: [0.82, 0.9, 1.0, 1.0],
-    roughnessFloor: 0.82,
-    metallicCeiling: 0.06,
-    normalScale: 0.24,
+    tint: [0.38, 0.48, 0.56, 1.0],
+    roughnessFloor: 0.5,
+    roughnessCeiling: 0.68,
+    metallicFloor: 0.09,
+    metallicCeiling: 0.14,
+    normalScale: 0.2,
   },
   {
     prefix: "Ember_Near_Caldera_PBR",
-    tint: [0.82, 0.9, 0.88, 1.0],
+    tint: [0.58, 0.64, 0.62, 1.0],
     roughnessFloor: 0.86,
     metallicCeiling: 0.02,
     normalScale: 0.3,
   },
   {
     prefix: "Ember_Middle_Caldera_PBR",
-    tint: [0.9, 0.96, 0.94, 1.0],
+    tint: [0.68, 0.72, 0.69, 1.0],
     roughnessFloor: 0.9,
     metallicCeiling: 0.01,
     normalScale: 0.2,
   },
   {
     prefix: "Ember_Far_Caldera_PBR",
-    tint: [1.0, 1.0, 0.96, 1.0],
+    tint: [0.78, 0.8, 0.75, 1.0],
     roughnessFloor: 0.94,
     metallicCeiling: 0.0,
     normalScale: 0.12,
+  },
+  {
+    prefix: "Ember_Meshy_Geology_PBR",
+    tint: [0.58, 0.64, 0.62, 1.0],
+    roughnessFloor: 0.84,
+    metallicCeiling: 0.025,
+    normalScale: 0.46,
   },
 ];
 
@@ -61,11 +63,23 @@ function applyEmberMaterialProfile(document) {
     material.setBaseColorFactor(
       base.map((channel, index) => Math.min(1, channel * profile.tint[index]))
     );
+    const roughness = Math.max(
+      profile.roughnessFloor,
+      material.getRoughnessFactor()
+    );
     material.setRoughnessFactor(
-      Math.max(profile.roughnessFloor, material.getRoughnessFactor())
+      profile.roughnessCeiling === undefined
+        ? roughness
+        : Math.min(profile.roughnessCeiling, roughness)
+    );
+    const metallic = Math.min(
+      profile.metallicCeiling,
+      material.getMetallicFactor()
     );
     material.setMetallicFactor(
-      Math.min(profile.metallicCeiling, material.getMetallicFactor())
+      profile.metallicFloor === undefined
+        ? metallic
+        : Math.max(profile.metallicFloor, metallic)
     );
     if (material.getNormalTexture()) {
       material.setNormalScale(profile.normalScale);
@@ -85,13 +99,13 @@ function applyEmberMaterialProfile(document) {
 }
 
 const runtimeOutput = "static/models/ember/ember-production-slice.glb";
-const versionedOutput = "static/models/ember/ember-production-slice-r6.glb";
+const versionedOutput = "static/models/ember/ember-production-slice-r7.glb";
 
 await optimizeGltfKtx2({
   input: "static/models/ember/ember-production-slice_raw.glb",
   output: runtimeOutput,
   temporaryStem: "ember-production-slice",
-  label: "Ember volcanic world, Columnar Furnace, and blackglass shelf",
+  label: "Ember volcanic world, Meshy geology ensemble, and blackglass shelf",
   textureSize: 1024,
   materialTextureSize: 512,
   simplifyRatio: 0.92,
@@ -100,4 +114,4 @@ await optimizeGltfKtx2({
 });
 
 await copyFile(runtimeOutput, versionedOutput);
-console.log(`  preserved reversible R6 asset: ${versionedOutput}`);
+console.log(`  preserved reversible R7 asset: ${versionedOutput}`);

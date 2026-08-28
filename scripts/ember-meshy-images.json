@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "sceneId": "ember-broken-rift",
+  "imageRoot": "assets/meshy-refs/ember",
+  "outputDirectory": "static/models/ember/meshy-candidates",
+  "statePath": "blender/ember-meshy-image-tasks-r7.json",
+  "aiModel": "meshy-7",
+  "imageOrder": ["front.png", "right.png", "back.png"],
+  "shouldTexture": false,
+  "shouldRemesh": false,
+  "estimatedCreditsPerAsset": 20,
+  "maxCredits": 140,
+  "assets": [
+    {
+      "id": "hero-columnar-escarpment-a",
+      "imageFolder": "hero-columnar-escarpment",
+      "label": "Columnar escarpment candidate A",
+      "family": "hero-columnar-escarpment",
+      "targetHeightMetres": 18,
+      "maximumIntegratedTriangles": 48000
+    },
+    {
+      "id": "hero-columnar-escarpment-b",
+      "imageFolder": "hero-columnar-escarpment",
+      "label": "Columnar escarpment candidate B",
+      "family": "hero-columnar-escarpment",
+      "targetHeightMetres": 18,
+      "maximumIntegratedTriangles": 48000
+    },
+    {
+      "id": "collapsed-lava-bank-a",
+      "imageFolder": "collapsed-lava-bank",
+      "label": "Collapsed lava-bank candidate A",
+      "family": "collapsed-lava-bank",
+      "targetHeightMetres": 3,
+      "maximumIntegratedTriangles": 28000
+    },
+    {
+      "id": "collapsed-lava-bank-b",
+      "imageFolder": "collapsed-lava-bank",
+      "label": "Collapsed lava-bank candidate B",
+      "family": "collapsed-lava-bank",
+      "targetHeightMetres": 3,
+      "maximumIntegratedTriangles": 28000
+    },
+    {
+      "id": "obsidian-fumarole-talus-a",
+      "imageFolder": "obsidian-fumarole-talus",
+      "label": "Obsidian fumarole-talus candidate A",
+      "family": "obsidian-fumarole-talus",
+      "targetHeightMetres": 4,
+      "maximumIntegratedTriangles": 32000
+    },
+    {
+      "id": "obsidian-fumarole-talus-b",
+      "imageFolder": "obsidian-fumarole-talus",
+      "label": "Obsidian fumarole-talus candidate B",
+      "family": "obsidian-fumarole-talus",
+      "targetHeightMetres": 4,
+      "maximumIntegratedTriangles": 32000
+    },
+    {
+      "id": "distant-breached-caldera",
+      "imageFolder": "distant-breached-caldera",
+      "label": "Distant breached-caldera massif",
+      "family": "distant-breached-caldera",
+      "targetHeightMetres": 24,
+      "maximumIntegratedTriangles": 36000
+    }
+  ]
+}

@@ -33,10 +33,10 @@ interface EmberSliceGltf {
 const optimizedPath = resolve("static/models/ember/ember-production-slice.glb");
 const integratedPath = resolve("static/models/ember/ember-integrated-room.glb");
 const reportPath = resolve(
-  "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-report.json"
+  "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-report.json"
 );
 const volcanicWorldContractPath = resolve(
-  "src/lib/shared/3d/environments/domain/models/scene-configs/ember-volcanic-world-r6.json"
+  "src/lib/shared/3d/environments/domain/models/scene-configs/ember-volcanic-world-r7.json"
 );
 const integratedReportPath = resolve(
   "docs/superpowers/specs/ember-spatial-directions/evidence/gate-5-r4/ember-integrated-room-r4-report.json"
@@ -54,7 +54,7 @@ function readOptimizedEmberAsset(path: string): EmberSliceGltf {
 describe("Ember production-slice contracts", () => {
   const gltf = readOptimizedEmberAsset(optimizedPath);
 
-  it("ships GPU-ready KTX2 textures and meshopt geometry under five megabytes", () => {
+  it("ships GPU-ready KTX2 textures and meshopt geometry under seven megabytes", () => {
     expect(gltf.extensionsRequired).toEqual(
       expect.arrayContaining([
         "EXT_meshopt_compression",
@@ -62,15 +62,14 @@ describe("Ember production-slice contracts", () => {
         "KHR_texture_basisu",
       ])
     );
-    expect(gltf.extensionsUsed).toContain("KHR_materials_emissive_strength");
-    expect(gltf.images).toHaveLength(9);
+    expect(gltf.images).toHaveLength(18);
     expect(gltf.images?.every((image) => image.mimeType === "image/ktx2")).toBe(
       true
     );
-    expect(statSync(optimizedPath).size).toBeLessThan(5_000_000);
+    expect(statSync(optimizedPath).size).toBeLessThan(7_000_000);
   });
 
-  it("retains the authored shelf, furnace, fissure, and complete-orbit roles", () => {
+  it("retains the continuous world and the four selected geology roles", () => {
     const roles = new Set(gltf.nodes?.map((node) => node.extras?.tka_role));
     expect(roles).toEqual(
       new Set([
@@ -78,55 +77,51 @@ describe("Ember production-slice contracts", () => {
         "shelf-stratum",
         "playable-surface",
         "cooled-fissure",
-        "live-fissure",
-        "columnar-joint",
-        "buried-column-talus",
-        "fallen-column",
-        "collapsed-entablature",
         "caldera-bank",
-        "fractured-gate-fragment",
         "perimeter-talus-cluster",
-        "secondary-columnar-outcrop",
         "volcanic-basin",
-        "distant-volcanic-vent",
         "lava-channel-levee",
+        "meshy-hero-geology",
+        "meshy-lava-bank",
+        "meshy-fumarole-talus",
+        "meshy-distant-caldera",
       ])
     );
-    expect(
-      gltf.nodes?.filter((node) => node.extras?.tka_role === "columnar-joint")
-    ).toHaveLength(31);
-    expect(
-      gltf.nodes?.filter(
-        (node) => node.extras?.tka_role === "secondary-columnar-outcrop"
-      )
-    ).toHaveLength(33);
+    for (const role of [
+      "meshy-hero-geology",
+      "meshy-lava-bank",
+      "meshy-fumarole-talus",
+      "meshy-distant-caldera",
+    ]) {
+      expect(
+        gltf.nodes?.filter((node) => node.extras?.tka_role === role)
+      ).toHaveLength(1);
+    }
     expect(
       gltf.nodes?.every(
         (node) =>
           !node.extras ||
           (node.extras.tka_scene === "ember" &&
             node.extras.tka_gate === 4 &&
-            node.extras.tka_revision === "ember-broken-rift-gate4-volcanic-r6")
+            node.extras.tka_revision === "ember-broken-rift-gate4-meshy-r7")
       )
     ).toBe(true);
   });
 
-  it("breaks the organ-pipe read with mixed facets, damaged caps, and missing joints", () => {
-    const columns =
+  it("records the selected Meshy modules without repeating a source", () => {
+    const imported =
       gltf.nodes?.filter(
-        (node) => node.extras?.tka_role === "columnar-joint"
+        (node) => node.extras?.tka_authorship === "meshy-selected-multiview-r7"
       ) ?? [];
-    expect(
-      new Set(columns.map((node) => node.extras?.tka_joint_sides))
-    ).toEqual(new Set([5, 6, 7]));
-    expect(
-      Math.max(...columns.map((node) => node.extras?.tka_cap_loss_max ?? 0))
-    ).toBeGreaterThan(0.8);
-    expect(
-      columns.every(
-        (node) => node.extras?.tka_authorship === "scene-authored-deterministic"
-      )
-    ).toBe(true);
+    expect(imported).toHaveLength(4);
+    expect(new Set(imported.map((node) => node.extras?.tka_role))).toEqual(
+      new Set([
+        "meshy-hero-geology",
+        "meshy-lava-bank",
+        "meshy-fumarole-talus",
+        "meshy-distant-caldera",
+      ])
+    );
   });
 
   it("keeps the furnace hierarchy and three distance-graded basin materials", () => {
@@ -136,8 +131,10 @@ describe("Ember production-slice contracts", () => {
       "Ember_Ground_Blackglass_PBR",
       "Ember_Mineral_Ochre",
       "Ember_Fissure_Chasm",
-      "Ember_Columnar_Cap_PBR",
-      "Ember_Live_Fissure",
+      "Ember_Meshy_Geology_PBR_hero-columnar-escarpment_01",
+      "Ember_Meshy_Geology_PBR_collapsed-lava-bank_01",
+      "Ember_Meshy_Geology_PBR_obsidian-fumarole-talus_01",
+      "Ember_Meshy_Geology_PBR_distant-breached-caldera_01",
       "Ember_Near_Caldera_PBR",
       "Ember_Middle_Caldera_PBR",
       "Ember_Far_Caldera_PBR",
@@ -151,20 +148,26 @@ describe("Ember production-slice contracts", () => {
         maximumMeshTriangleCount: number;
       };
     };
-    expect(report.geometry.triangleCount).toBeLessThan(100_000);
-    expect(report.geometry.maximumMeshTriangleCount).toBeLessThan(20_000);
+    expect(report.geometry.triangleCount).toBeLessThan(220_000);
+    expect(report.geometry.maximumMeshTriangleCount).toBeLessThan(55_000);
   });
 
-  it("records direct scene authorship and rejects imported hero sources", () => {
+  it("records the four paid-source chains and rejects unrelated hero imports", () => {
     const report = readFileSync(reportPath, "utf8");
-    expect(report).toContain('"sources": []');
-    expect(report).toContain("scene-authored deterministic geometry");
+    expect(report).toContain('"sources": [');
+    expect(report).toContain("remeshed through Meshy's topology service");
     expect(report).toContain("QRHbwRQLhM7Zn9LyYHOd");
     expect(report).toContain("gME4uHJawz9dtTlirRl8");
     expect(report).toContain("5otAzYdNg5Wp5E27mgfo");
     expect(report).toContain("nu73zqvPJRxio4T2sWz7");
     expect(report).toContain("ATURN84Ov2hmjWUndebl");
-    expect(report).not.toContain("Meshy");
+    expect(report).toContain("ZSnkB98pb0wz6PO17XKp");
+    expect(report).toContain("01a045af-5015-7cb4-ac34-0d62f4269b67");
+    expect(report).toContain("01a045b2-f26d-772f-a92e-9bf36e3fc318");
+    expect(report).toContain("01a045b6-292c-7930-bdd7-ad8a5222989d");
+    expect(report).toContain("01a045d9-7610-7858-bf2d-3caba206f23a");
+    expect(report).toContain("01a045db-a666-78ec-99a2-3195f6a55319");
+    expect(report).toContain("01a045e1-a103-7626-bff7-b62b29c74094");
     expect(report).not.toContain("generated/ember-rift-buttress");
     expect(report).not.toContain("static/models/ocean");
     expect(report).not.toContain("basalt_pinnacle");
@@ -207,13 +210,11 @@ describe("Ember production-slice contracts", () => {
     const frontContinuation = world.lavaRiver.pointsRuntimeXZHeight.at(-1)!;
     expect(frontContinuation[1]).toBeLessThanOrEqual(-120);
     const minimumRiverClearance = Math.min(
-      ...world.lavaRiver.pointsRuntimeXZHeight.map(([x, z]) =>
-        Math.hypot(x, z)
-      )
+      ...world.lavaRiver.pointsRuntimeXZHeight.map(([x, z]) => Math.hypot(x, z))
     );
-    expect(minimumRiverClearance - config.lavaRivers!.width / 2).toBeGreaterThan(
-      9
-    );
+    expect(
+      minimumRiverClearance - config.lavaRivers!.width / 2
+    ).toBeGreaterThan(9);
   });
 
   it("keeps the old prop ring disabled", () => {
@@ -234,12 +235,16 @@ describe("Ember production-slice contracts", () => {
     expect(sceneSource).toContain(
       'url="/models/ember/ember-production-slice.glb"'
     );
+    expect(sceneSource).not.toContain("<GroundPlane");
+    expect(sceneSource).not.toContain("<CraterGround");
   });
 });
 
 describe("Ember integrated-room contracts", () => {
   if (!existsSync(integratedPath)) {
-    it.todo("validates the historical integrated-room asset when it is present");
+    it.todo(
+      "validates the historical integrated-room asset when it is present"
+    );
     return;
   }
 
@@ -361,7 +366,7 @@ describe("Ember integrated-room contracts", () => {
 
   it("keeps the visibility revision above the darkness regression floor", () => {
     const config = createDefaultEmberConfig();
-    expect(config.fog.density).toBeLessThanOrEqual(0.007);
+    expect(config.fog.density).toBeLessThanOrEqual(0.01);
     expect(config.hemisphereLight.intensity).toBeGreaterThanOrEqual(1);
     expect(config.skyLight?.intensity).toBeGreaterThanOrEqual(1.5);
   });

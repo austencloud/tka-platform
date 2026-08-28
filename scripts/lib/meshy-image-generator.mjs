@@ -49,7 +49,9 @@ async function fetchWithRetry(url, options, attempts = 6) {
     }
     if (attempt < attempts) {
       const delay = Math.min(10_000, 1000 * 2 ** (attempt - 1));
-      console.warn(`Meshy retry ${attempt}/${attempts - 1} in ${delay / 1000}s`);
+      console.warn(
+        `Meshy retry ${attempt}/${attempts - 1} in ${delay / 1000}s`
+      );
       await new Promise((resolveDelay) => setTimeout(resolveDelay, delay));
     }
   }
@@ -107,13 +109,30 @@ function mimeFor(extension) {
   return extension === ".png" ? "image/png" : "image/jpeg";
 }
 
-async function loadImages(directory) {
+export function sortMeshyImageNames(names, preferredOrder = []) {
+  if (preferredOrder.length === 0) return [...names].sort();
+  const rank = new Map(
+    preferredOrder.map((name, index) => [name.toLowerCase(), index])
+  );
+  return [...names].sort((left, right) => {
+    const leftRank = rank.get(left.toLowerCase()) ?? Number.MAX_SAFE_INTEGER;
+    const rightRank = rank.get(right.toLowerCase()) ?? Number.MAX_SAFE_INTEGER;
+    return leftRank - rightRank || left.localeCompare(right);
+  });
+}
+
+export async function loadMeshyInputImages(directory, preferredOrder) {
   if (!existsSync(directory)) return [];
-  const names = (await readdir(directory))
-    .filter((name) => IMAGE_EXTENSIONS.has(extname(name).toLowerCase()))
-    .sort();
+  const names = sortMeshyImageNames(
+    (await readdir(directory)).filter((name) =>
+      IMAGE_EXTENSIONS.has(extname(name).toLowerCase())
+    ),
+    preferredOrder
+  );
   if (names.length > 4) {
-    throw new Error(`${directory} contains ${names.length} images; Meshy accepts 1-4.`);
+    throw new Error(
+      `${directory} contains ${names.length} images; Meshy accepts 1-4.`
+    );
   }
   return Promise.all(
     names.map(async (name) => {
@@ -129,16 +148,14 @@ async function loadImages(directory) {
   );
 }
 
-function taskBody(manifest, asset, images) {
+export function createMeshyImageTaskBody(manifest, asset, images) {
+  const aiModel = asset.aiModel ?? manifest.aiModel ?? "meshy-6";
+  const shouldTexture = asset.shouldTexture ?? manifest.shouldTexture ?? true;
+  const shouldRemesh = asset.shouldRemesh ?? manifest.shouldRemesh ?? true;
   const body = {
-    ai_model: manifest.aiModel ?? "meshy-6",
-    enable_pbr: true,
-    should_texture: true,
-    texture_resolution: asset.textureResolution ?? "2k",
-    texture_prompt: asset.texturePrompt,
-    remove_lighting: true,
-    should_remesh: true,
-    target_polycount: asset.polycount ?? manifest.polycount ?? 30_000,
+    ai_model: aiModel,
+    should_texture: shouldTexture,
+    should_remesh: shouldRemesh,
     target_formats: ["glb"],
     auto_size: true,
     origin_at: "bottom",
@@ -146,10 +163,40 @@ function taskBody(manifest, asset, images) {
     alpha_thumbnail: true,
     moderation: true,
   };
-  if (images.length === 1) {
-    return { url: SINGLE_URL, body: { ...body, model_type: "standard", image_url: images[0].dataUri } };
+
+  if (shouldTexture) {
+    body.enable_pbr = asset.enablePbr ?? manifest.enablePbr ?? true;
+    body.texture_resolution =
+      asset.textureResolution ?? manifest.textureResolution ?? "2k";
+    if (asset.texturePrompt) body.texture_prompt = asset.texturePrompt;
+
+    // Meshy 7 no longer accepts this control. Neutral references and a later
+    // material pass keep its captured illumination out of the shipped scene.
+    if (aiModel === "meshy-6") {
+      body.remove_lighting =
+        asset.removeLighting ?? manifest.removeLighting ?? true;
+    }
   }
-  return { url: MULTI_URL, body: { ...body, image_urls: images.map((image) => image.dataUri) } };
+
+  if (shouldRemesh) {
+    body.topology = asset.topology ?? manifest.topology ?? "triangle";
+    body.target_polycount = asset.polycount ?? manifest.polycount ?? 30_000;
+  }
+
+  if (images.length === 1) {
+    return {
+      url: SINGLE_URL,
+      body: {
+        ...body,
+        model_type: asset.modelType ?? manifest.modelType ?? "standard",
+        image_url: images[0].dataUri,
+      },
+    };
+  }
+  return {
+    url: MULTI_URL,
+    body: { ...body, image_urls: images.map((image) => image.dataUri) },
+  };
 }
 
 function inputSignature(manifest, asset, images) {
@@ -167,7 +214,9 @@ function inputSignature(manifest, asset, images) {
 
 function validateGlb(bytes, label) {
   if (bytes.length < 12 || bytes.subarray(0, 4).toString("ascii") !== "glTF") {
-    throw new Error(`${label} is not a valid binary glTF (${bytes.length} bytes).`);
+    throw new Error(
+      `${label} is not a valid binary glTF (${bytes.length} bytes).`
+    );
   }
 }
 
@@ -188,7 +237,10 @@ export async function runMeshyImageGeneration({
   const args = process.argv.slice(2);
   const onlyIndex = args.indexOf("--only");
   const only = onlyIndex >= 0 ? args[onlyIndex + 1] : null;
-  const selected = manifest.assets.filter((asset) => !only || asset.id === only);
+  const dryRun = args.includes("--dry-run");
+  const selected = manifest.assets.filter(
+    (asset) => !only || asset.id === only
+  );
   if (selected.length === 0) throw new Error(`Unknown asset: ${only}`);
 
   const key = await readEnvValue("MESHY_API_KEY");
@@ -211,9 +263,15 @@ export async function runMeshyImageGeneration({
 
   const prepared = [];
   for (const asset of selected) {
-    const images = await loadImages(resolve(imageRoot, asset.id));
+    const imageDirectory = resolve(imageRoot, asset.imageFolder ?? asset.id);
+    const images = await loadMeshyInputImages(
+      imageDirectory,
+      asset.imageOrder ?? manifest.imageOrder
+    );
     if (images.length === 0) {
-      console.warn(`skip ${asset.id}: no reference images in ${resolve(imageRoot, asset.id)}`);
+      console.warn(
+        `skip ${asset.id}: no reference images in ${imageDirectory}`
+      );
       continue;
     }
     const signature = inputSignature(manifest, asset, images);
@@ -232,7 +290,9 @@ export async function runMeshyImageGeneration({
   }
 
   const pending = prepared.filter(({ output }) => !existsSync(output));
-  const unsubmitted = pending.filter(({ asset }) => !state.assets[asset.id]?.taskId);
+  const unsubmitted = pending.filter(
+    ({ asset }) => !state.assets[asset.id]?.taskId
+  );
   const estimatedCredits =
     unsubmitted.length * (manifest.estimatedCreditsPerAsset ?? 30);
   const balanceResponse = await fetchWithRetry(BALANCE_URL, { headers: auth });
@@ -256,6 +316,33 @@ export async function runMeshyImageGeneration({
     `Meshy balance ${balanceJson.balance}; up to ${estimatedCredits} new credits for ${unsubmitted.length} unsubmitted assets.`
   );
 
+  if (dryRun) {
+    for (const { asset, images, output } of prepared) {
+      const { url, body } = createMeshyImageTaskBody(manifest, asset, images);
+      console.log(
+        JSON.stringify(
+          {
+            asset: asset.id,
+            endpoint: url === SINGLE_URL ? "image-to-3d" : "multi-image-to-3d",
+            output,
+            imageNames: images.map(({ name }) => name),
+            request: {
+              ...body,
+              image_url: body.image_url ? "<data-uri>" : undefined,
+              image_urls: body.image_urls?.map(() => "<data-uri>"),
+            },
+            alreadySubmitted: Boolean(state.assets[asset.id]?.taskId),
+            alreadyDownloaded: existsSync(output),
+          },
+          null,
+          2
+        )
+      );
+    }
+    console.log("\nDry run: nothing submitted and no credits spent.");
+    return;
+  }
+
   const failed = [];
   for (const item of prepared) {
     const { asset, images, signature, output } = item;
@@ -269,12 +356,15 @@ export async function runMeshyImageGeneration({
       console.log(`\n=== ${asset.id} ===`);
       const assetState = state.assets[asset.id] ?? {
         inputSignature: signature,
-        imageSha256: Object.fromEntries(images.map((image) => [image.name, image.sha256])),
+        imageSha256: Object.fromEntries(
+          images.map((image) => [image.name, image.sha256])
+        ),
       };
       state.assets[asset.id] = assetState;
-      const { url, body } = taskBody(manifest, asset, images);
+      const { url, body } = createMeshyImageTaskBody(manifest, asset, images);
       if (!assetState.taskId) {
-        assetState.endpoint = images.length === 1 ? "image-to-3d" : "multi-image-to-3d";
+        assetState.endpoint =
+          images.length === 1 ? "image-to-3d" : "multi-image-to-3d";
         assetState.taskId = await submitPaidTask(url, body, jsonHeaders);
         assetState.submittedAt = new Date().toISOString();
         await saveState();
@@ -282,11 +372,18 @@ export async function runMeshyImageGeneration({
       } else {
         console.log(`Resuming ${assetState.endpoint}: ${assetState.taskId}`);
       }
-      const complete = await waitForTask(url, assetState.taskId, asset.id, auth);
+      const complete = await waitForTask(
+        url,
+        assetState.taskId,
+        asset.id,
+        auth
+      );
       const glbUrl = complete.model_urls?.glb;
-      if (!glbUrl) throw new Error(`No GLB URL: ${JSON.stringify(complete.model_urls)}`);
+      if (!glbUrl)
+        throw new Error(`No GLB URL: ${JSON.stringify(complete.model_urls)}`);
       const response = await fetchWithRetry(glbUrl);
-      if (!response.ok) throw new Error(`GLB download failed: ${response.status}`);
+      if (!response.ok)
+        throw new Error(`GLB download failed: ${response.status}`);
       const bytes = Buffer.from(await response.arrayBuffer());
       validateGlb(bytes, asset.id);
       await mkdir(dirname(output), { recursive: true });
@@ -302,7 +399,9 @@ export async function runMeshyImageGeneration({
         bytes: bytes.length,
       });
       await saveState();
-      console.log(`Downloaded ${output} (${(bytes.length / 1024 / 1024).toFixed(1)} MB)`);
+      console.log(
+        `Downloaded ${output} (${(bytes.length / 1024 / 1024).toFixed(1)} MB)`
+      );
     } catch (error) {
       console.error(`\n${asset.id} FAILED: ${error.message}`);
       failed.push(asset.id);

@@ -10,8 +10,6 @@
     type MeshStandardMaterial,
     type Object3D,
   } from "three";
-  import GroundPlane from "../primitives/GroundPlane.svelte";
-  import CraterGround from "./ember/CraterGround.svelte";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
   import VolumetricFireComponent from "../../effects/volumetric-fire/VolumetricFireComponent.svelte";
@@ -32,7 +30,7 @@
   import ObsidianPlatform from "./ember/ObsidianPlatform.svelte";
   import { resolveCircularStageRadius } from "../domain/performer-stage-bounds";
   import GltfAsset from "../primitives/GltfAsset.svelte";
-  import volcanicWorldR6 from "../domain/models/scene-configs/ember-volcanic-world-r6.json";
+  import volcanicWorldR7 from "../domain/models/scene-configs/ember-volcanic-world-r7.json";
 
   interface Props {
     config?: EmberSceneConfig;
@@ -236,25 +234,6 @@
   bottomColor={activeConfig.sky.bottomColor}
 />
 
-<!-- Volcanic ground with crater -->
-{#if activeConfig.lavaPool.enabled && activeConfig.lavaPool.craterDepth}
-  <CraterGround
-    groundColor={activeConfig.ground.color}
-    groundSize={activeConfig.ground.size}
-    groundOpacity={activeConfig.ground.opacity ?? 1}
-    craterPosition={activeConfig.lavaPool.position}
-    craterRadius={activeConfig.lavaPool.radius}
-    craterDepth={activeConfig.lavaPool.craterDepth}
-    wallColor={activeConfig.lavaPool.craterWallColor ?? "#1a0806"}
-  />
-{:else}
-  <GroundPlane
-    color={activeConfig.ground.color}
-    size={activeConfig.ground.size}
-    opacity={activeConfig.ground.opacity ?? 1}
-  />
-{/if}
-
 <!-- Lava cracks overlay on ground -->
 <LavaCracks
   config={activeConfig.lavaCracks}
@@ -264,7 +243,7 @@
 <!-- Lava pool with domain-warped shader -->
 <LavaPool config={activeConfig.lavaPool} />
 
-<!-- Gate 4 R6: continuous terrain carries the furnace through every orbit sector. -->
+<!-- Gate 4 R7 owns the complete ground surface; a second flat ground plane made the world read as a graybox. -->
 <GltfAsset
   url="/models/ember/ember-production-slice.glb"
   position={[0, groundY, 0]}
@@ -451,9 +430,9 @@
 
 <!-- One distant plume makes the 100 m vent read as a working volcano, not a prop. -->
 <T.Group
-  position.x={volcanicWorldR6.distantVent.centerRuntimeXZ[0]}
-  position.y={groundY + volcanicWorldR6.distantVent.height + 10}
-  position.z={volcanicWorldR6.distantVent.centerRuntimeXZ[1]}
+  position.x={volcanicWorldR7.distantVent.centerRuntimeXZ[0]}
+  position.y={groundY + volcanicWorldR7.distantVent.height + 10}
+  position.z={volcanicWorldR7.distantVent.centerRuntimeXZ[1]}
 >
   <FallingParticles
     type="smoke"
@@ -470,9 +449,9 @@
 </T.Group>
 
 <T.PointLight
-  position.x={volcanicWorldR6.distantVent.centerRuntimeXZ[0]}
-  position.y={groundY + volcanicWorldR6.distantVent.height * 0.72}
-  position.z={volcanicWorldR6.distantVent.centerRuntimeXZ[1]}
+  position.x={volcanicWorldR7.distantVent.centerRuntimeXZ[0]}
+  position.y={groundY + volcanicWorldR7.distantVent.height * 0.72}
+  position.z={volcanicWorldR7.distantVent.centerRuntimeXZ[1]}
   color="#ff3d0d"
   intensity={92}
   distance={34}
@@ -506,9 +485,9 @@
 
 <!-- Local heat reveals the faults without washing the whole scene orange. -->
 <T.PointLight
-  position={[-5.0, groundY + 8.0, 9.0]}
-  color="#d3d7cc"
-  intensity={260}
+  position={[-7.0, groundY + 8.0, 14.0]}
+  color="#a9c1bd"
+  intensity={145}
   distance={36}
   decay={2}
 />

@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "sourceStatePath": "blender/ember-meshy-retexture-tasks-r7.json",
+  "statePath": "blender/ember-meshy-remesh-tasks-r7.json",
+  "outputDirectory": "static/models/ember/meshy-candidates",
+  "topology": "triangle",
+  "estimatedCreditsPerAsset": 5,
+  "maxCredits": 20,
+  "assets": [
+    {
+      "id": "hero-columnar-escarpment-b-meshy-remesh",
+      "sourceAssetId": "hero-columnar-escarpment-b-textured",
+      "targetPolycount": 48000
+    },
+    {
+      "id": "collapsed-lava-bank-b-meshy-remesh",
+      "sourceAssetId": "collapsed-lava-bank-b-textured",
+      "targetPolycount": 28000
+    },
+    {
+      "id": "obsidian-fumarole-talus-b-meshy-remesh",
+      "sourceAssetId": "obsidian-fumarole-talus-b-textured",
+      "targetPolycount": 32000
+    },
+    {
+      "id": "distant-breached-caldera-meshy-remesh",
+      "sourceAssetId": "distant-breached-caldera-textured",
+      "targetPolycount": 36000
+    }
+  ]
+}
