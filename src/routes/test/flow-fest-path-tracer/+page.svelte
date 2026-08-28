@@ -26,23 +26,50 @@
     validateFlowFestPlanCorrectionSubmission,
     type FlowFestPlanCorrectionProposal,
   } from "./_lib/flow-fest-camp-plan-corrections";
+  import {
+    FLOW_FEST_LOWER_LAYOUT_FEATURES,
+    cloneFlowFestLowerLayoutDraft,
+    createFlowFestLowerLayoutSubmission,
+    emptyFlowFestLowerLayoutDraft,
+    flowFestLowerLayoutReadiness,
+    getFlowFestLowerLayoutFeaturePoints,
+    parseStoredFlowFestLowerLayoutDraft,
+    replaceFlowFestLowerLayoutFeature,
+    validateFlowFestLowerLayoutSubmission,
+    type FlowFestLowerLayoutDraft,
+    type FlowFestLowerLayoutFeatureId,
+  } from "./_lib/flow-fest-lower-layout";
   import { loadFlowFestRuntimeContract } from "../flow-fest-graybox/flow-fest-runtime-contract";
   import {
     createFlowFestCampPlan,
     type FlowFestCampPlan,
   } from "../flow-fest-sim/flow-fest-camp-plan";
 
-  type WorkspaceMode = "paths" | "plan";
+  type WorkspaceMode = "layout" | "paths" | "plan";
   type InteractionMode = "draw" | "place" | "pan";
   type NoticeKind = "quiet" | "success" | "error";
 
   const STORAGE_KEY = "flow-fest-path-tracer-v1";
   const PLAN_STORAGE_KEY = "flow-fest-camp-plan-corrections-v1";
+  const LOWER_LAYOUT_STORAGE_KEY = "flow-fest-lower-campground-layout-v1";
+  const LOWER_LAYOUT_VIEW = {
+    x: 1270,
+    y: 520,
+    width: 700,
+    height: 362.963,
+  } as const;
+  const LOWER_LAYOUT_BOUNDS = {
+    x: 1100,
+    y: 450,
+    width: 900,
+    height: 466.667,
+  } as const;
   const WORKSPACE_OPTIONS: Array<{
     value: WorkspaceMode;
     label: string;
     tone: "accent";
   }> = [
+    { value: "layout", label: "Lower campground", tone: "accent" },
     { value: "paths", label: "Hidden paths", tone: "accent" },
     { value: "plan", label: "Camp plan", tone: "accent" },
   ];
@@ -65,9 +92,9 @@
       tone: "accent",
     },
   ];
-  let workspaceMode = $state<WorkspaceMode>("plan");
+  let workspaceMode = $state<WorkspaceMode>("layout");
   let activePath = $state<FlowFestPathId>("upper-to-middle");
-  let interactionMode = $state<InteractionMode>("place");
+  let interactionMode = $state<InteractionMode>("draw");
   let traces = $state<FlowFestImageTraces>(emptyFlowFestTraces());
   let draft = $state<ImagePoint[]>([]);
   let draftPath = $state<FlowFestPathId | null>(null);
@@ -81,9 +108,15 @@
   let proposals = $state<FlowFestPlanCorrectionProposal[]>([]);
   let activeFeatureId = $state("camp-road-entrance");
   let proposalNote = $state("");
+  let lowerLayout = $state<FlowFestLowerLayoutDraft>(
+    emptyFlowFestLowerLayoutDraft()
+  );
+  let activeLayoutFeatureId =
+    $state<FlowFestLowerLayoutFeatureId>("lower-road-loop");
+  let draftLayoutFeature = $state<FlowFestLowerLayoutFeatureId | null>(null);
   let svgElement = $state<SVGSVGElement | null>(null);
   let mapInteractionElement = $state<HTMLButtonElement | null>(null);
-  let view = $state({ ...FLOW_FEST_TRACE_VIEW });
+  let view = $state({ ...LOWER_LAYOUT_VIEW });
 
   const history: Record<FlowFestPathId, ImagePoint[][]> = {
     "upper-to-middle": [],
@@ -97,6 +130,7 @@
     viewY: number;
   } | null = null;
   let proposalHistory: FlowFestPlanCorrectionProposal[][] = [];
+  let lowerLayoutHistory: FlowFestLowerLayoutDraft[] = [];
 
   const upperReady = $derived(traces["upper-to-middle"].length >= 2);
   const lowerReady = $derived(traces["middle-to-lower"].length >= 2);
@@ -109,10 +143,16 @@
           { value: "place", label: "Move marker", tone: "accent" },
           { value: "pan", label: "Pan", tone: "accent" },
         ]
-      : [
-          { value: "draw", label: "Draw", tone: "accent" },
-          { value: "pan", label: "Pan", tone: "accent" },
-        ]
+      : workspaceMode === "layout" &&
+          activeLayoutFeatureId === "lower-loop-entrance"
+        ? [
+            { value: "place", label: "Place point", tone: "accent" },
+            { value: "pan", label: "Pan", tone: "accent" },
+          ]
+        : [
+            { value: "draw", label: "Draw", tone: "accent" },
+            { value: "pan", label: "Pan", tone: "accent" },
+          ]
   );
   const editableFeatures = $derived(
     plan ? listEditableFlowFestPlanFeatures(plan) : []
@@ -130,12 +170,31 @@
         proposal.targetKind === activeFeature?.targetKind
     ) ?? null
   );
+  const activeLayoutFeature = $derived(
+    FLOW_FEST_LOWER_LAYOUT_FEATURES.find(
+      (feature) => feature.id === activeLayoutFeatureId
+    )!
+  );
+  const lowerLayoutStatus = $derived(flowFestLowerLayoutReadiness(lowerLayout));
+  const lowerLayoutReadyCount = $derived(
+    Object.values(lowerLayoutStatus).filter(Boolean).length
+  );
+  const activeLayoutPoints = $derived(
+    getFlowFestLowerLayoutFeaturePoints(lowerLayout, activeLayoutFeatureId)
+  );
 
   onMount(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const restored = parseStoredTraces(stored);
       if (restored) traces = restored;
+    }
+    const storedLowerLayout = window.localStorage.getItem(
+      LOWER_LAYOUT_STORAGE_KEY
+    );
+    if (storedLowerLayout) {
+      const restored = parseStoredFlowFestLowerLayoutDraft(storedLowerLayout);
+      if (restored) lowerLayout = restored;
     }
     void loadPlan();
   });
@@ -157,10 +216,17 @@
         );
         if (validation.valid) proposals = validation.value.proposals;
       }
-      notice = proposals.length
-        ? `Restored ${proposals.length} camp-plan correction${proposals.length === 1 ? "" : "s"}.`
-        : "Camp plan loaded. Select a feature, then place its proposed correction.";
-      noticeKind = proposals.length ? "success" : "quiet";
+      if (workspaceMode === "layout") {
+        notice = lowerLayoutReadyCount
+          ? `Restored ${lowerLayoutReadyCount} of 4 lower campground truths.`
+          : activeLayoutFeature.instruction;
+        noticeKind = lowerLayoutReadyCount ? "success" : "quiet";
+      } else {
+        notice = proposals.length
+          ? `Restored ${proposals.length} camp-plan correction${proposals.length === 1 ? "" : "s"}.`
+          : "Camp plan loaded. Select a feature, then place its proposed correction.";
+        noticeKind = proposals.length ? "success" : "quiet";
+      }
     } catch (cause) {
       reportFailure(
         "The registered camp plan could not be loaded.",
@@ -227,13 +293,38 @@
     }
   }
 
+  function persistLowerLayout(): void {
+    try {
+      window.localStorage.setItem(
+        LOWER_LAYOUT_STORAGE_KEY,
+        JSON.stringify(lowerLayout)
+      );
+    } catch (cause) {
+      reportFailure(
+        "The lower campground layout remains on screen, but this browser could not preserve it across a refresh.",
+        cause,
+        "persistLowerLayout"
+      );
+    }
+  }
+
   function switchWorkspace(next: WorkspaceMode): void {
     workspaceMode = next;
-    interactionMode = next === "plan" ? "place" : "draw";
+    interactionMode =
+      next === "plan" ||
+      (next === "layout" && activeLayoutFeatureId === "lower-loop-entrance")
+        ? "place"
+        : "draw";
+    view =
+      next === "layout"
+        ? { ...LOWER_LAYOUT_VIEW }
+        : { ...FLOW_FEST_TRACE_VIEW };
     notice =
       next === "plan"
         ? "Plan mode previews corrections without overwriting the current authority."
-        : "Path mode keeps both traced connectors independently.";
+        : next === "layout"
+          ? "Lower campground mode keeps the road, camping zones, and entrance independent."
+          : "Path mode keeps both traced connectors independently.";
     noticeKind = "quiet";
   }
 
@@ -246,6 +337,11 @@
     return points
       .map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`)
       .join(" ");
+  }
+
+  function closedPointsAttribute(points: readonly ImagePoint[]): string {
+    if (points.length === 0) return "";
+    return pointsAttribute([...points, points[0]!]);
   }
 
   function worldPointsAttribute(
@@ -276,6 +372,41 @@
     notice =
       "Drag anywhere on the imagery to propose the selected feature's corrected center.";
     noticeKind = "quiet";
+  }
+
+  function chooseLayoutFeature(featureId: FlowFestLowerLayoutFeatureId): void {
+    activeLayoutFeatureId = featureId;
+    interactionMode = featureId === "lower-loop-entrance" ? "place" : "draw";
+    notice = FLOW_FEST_LOWER_LAYOUT_FEATURES.find(
+      (feature) => feature.id === featureId
+    )!.instruction;
+    noticeKind = "quiet";
+  }
+
+  function rememberLowerLayout(): void {
+    lowerLayoutHistory.push(cloneFlowFestLowerLayoutDraft(lowerLayout));
+    if (lowerLayoutHistory.length > 20) lowerLayoutHistory.shift();
+  }
+
+  function updateLayoutFeatureNote(value: string): void {
+    lowerLayout = {
+      ...lowerLayout,
+      featureNotes: {
+        ...lowerLayout.featureNotes,
+        [activeLayoutFeatureId]: value,
+      },
+    };
+    persistLowerLayout();
+  }
+
+  function updateLayoutOverallNote(value: string): void {
+    lowerLayout = { ...lowerLayout, overallNote: value };
+    persistLowerLayout();
+  }
+
+  function updateTentBandWidth(value: number): void {
+    lowerLayout = { ...lowerLayout, tentBandWidthMeters: value };
+    persistLowerLayout();
   }
 
   function updateProposalNote(): void {
@@ -316,6 +447,29 @@
       notice = `Drawing ${activePath === "upper-to-middle" ? "upper to middle" : "middle to lower"}. Release to keep it.`;
       noticeKind = "quiet";
     } else if (
+      interactionMode === "draw" &&
+      workspaceMode === "layout" &&
+      activeLayoutFeature.geometry !== "point"
+    ) {
+      rememberLowerLayout();
+      draftLayoutFeature = activeLayoutFeatureId;
+      draft = [point];
+      notice = `Drawing ${activeLayoutFeature.label.toLowerCase()}. Release to keep this layer.`;
+      noticeKind = "quiet";
+    } else if (
+      interactionMode === "place" &&
+      workspaceMode === "layout" &&
+      activeLayoutFeature.geometry === "point"
+    ) {
+      rememberLowerLayout();
+      lowerLayout = replaceFlowFestLowerLayoutFeature(
+        lowerLayout,
+        activeLayoutFeatureId,
+        [point]
+      );
+      notice = "Placing the lower loop entrance. Release to keep it.";
+      noticeKind = "quiet";
+    } else if (
       interactionMode === "place" &&
       workspaceMode === "plan" &&
       activeFeature
@@ -349,7 +503,10 @@
 
   function handlePointerMove(event: PointerEvent): void {
     if (!svgElement || event.pointerId !== pointerId) return;
-    if (interactionMode === "draw" && draftPath) {
+    if (
+      interactionMode === "draw" &&
+      (draftPath !== null || draftLayoutFeature !== null)
+    ) {
       const rect = svgElement.getBoundingClientRect();
       const raw =
         typeof event.getCoalescedEvents === "function"
@@ -368,6 +525,20 @@
         }
       }
       if (added.length > 0) draft = [...draft, ...added];
+      return;
+    }
+    if (
+      interactionMode === "place" &&
+      workspaceMode === "layout" &&
+      activeLayoutFeature.geometry === "point"
+    ) {
+      const next = pointFromEvent(event);
+      if (!next) return;
+      lowerLayout = replaceFlowFestLowerLayoutFeature(
+        lowerLayout,
+        activeLayoutFeatureId,
+        [next]
+      );
       return;
     }
     if (
@@ -414,6 +585,35 @@
           "That was only a click, so the previous path was left untouched.";
         noticeKind = "quiet";
       }
+    } else if (interactionMode === "draw" && draftLayoutFeature) {
+      const featureId = draftLayoutFeature;
+      const feature = FLOW_FEST_LOWER_LAYOUT_FEATURES.find(
+        (candidate) => candidate.id === featureId
+      )!;
+      const minimumPoints = feature.geometry === "polygon" ? 3 : 2;
+      if (draft.length >= minimumPoints && traceLengthMeters(draft) >= 2) {
+        lowerLayout = replaceFlowFestLowerLayoutFeature(
+          lowerLayout,
+          featureId,
+          simplifyTrace(draft, 1.1)
+        );
+        persistLowerLayout();
+        notice = `${feature.label} kept. The other lower campground layers were not changed.`;
+        noticeKind = "success";
+      } else {
+        lowerLayoutHistory.pop();
+        notice =
+          "That gesture was too short, so the previous layer was left untouched.";
+        noticeKind = "quiet";
+      }
+    } else if (
+      interactionMode === "place" &&
+      workspaceMode === "layout" &&
+      activeLayoutFeature.geometry === "point"
+    ) {
+      persistLowerLayout();
+      notice = "Lower loop entrance kept as Austen-annotated evidence.";
+      noticeKind = "success";
     } else if (
       interactionMode === "place" &&
       workspaceMode === "plan" &&
@@ -430,11 +630,21 @@
     }
     draft = [];
     draftPath = null;
+    draftLayoutFeature = null;
     panOrigin = null;
   }
 
   function handlePointerCancel(event: PointerEvent): void {
     if (!svgElement || event.pointerId !== pointerId) return;
+    if (
+      workspaceMode === "layout" &&
+      (draftLayoutFeature !== null ||
+        (interactionMode === "place" &&
+          activeLayoutFeature.geometry === "point"))
+    ) {
+      const previous = lowerLayoutHistory.pop();
+      if (previous) lowerLayout = previous;
+    }
     const releasedPointerId = pointerId;
     pointerId = null;
     if (mapInteractionElement?.hasPointerCapture(releasedPointerId)) {
@@ -442,21 +652,31 @@
     }
     draft = [];
     draftPath = null;
+    draftLayoutFeature = null;
     panOrigin = null;
     notice = "The interrupted gesture ended. Saved work is unchanged.";
     noticeKind = "quiet";
   }
 
   function handleMapKeydown(event: KeyboardEvent): void {
-    if (event.key !== "Escape" || !draftPath) return;
+    if (
+      event.key !== "Escape" ||
+      (draftPath === null && draftLayoutFeature === null)
+    )
+      return;
+    if (draftLayoutFeature !== null) lowerLayoutHistory.pop();
     draft = [];
     draftPath = null;
+    draftLayoutFeature = null;
     notice = "The current stroke was discarded.";
     noticeKind = "quiet";
   }
 
   function clampView(): void {
-    const bounds = FLOW_FEST_TRACE_VIEW;
+    const bounds =
+      workspaceMode === "layout"
+        ? LOWER_LAYOUT_BOUNDS
+        : FLOW_FEST_TRACE_VIEW;
     view.width = Math.max(216, Math.min(bounds.width, view.width));
     view.height = view.width * (bounds.height / bounds.width);
     view.x = Math.max(
@@ -485,7 +705,10 @@
   }
 
   function resetView(): void {
-    view = { ...FLOW_FEST_TRACE_VIEW };
+    view =
+      workspaceMode === "layout"
+        ? { ...LOWER_LAYOUT_VIEW }
+        : { ...FLOW_FEST_TRACE_VIEW };
   }
 
   function undoActiveTrace(): void {
@@ -515,6 +738,19 @@
     noticeKind = "success";
   }
 
+  function undoLowerLayout(): void {
+    const previous = lowerLayoutHistory.pop();
+    if (!previous) {
+      notice = "There is no earlier lower campground edit in this session.";
+      noticeKind = "quiet";
+      return;
+    }
+    lowerLayout = previous;
+    persistLowerLayout();
+    notice = "Restored the previous lower campground layout.";
+    noticeKind = "success";
+  }
+
   function clearActiveCorrection(): void {
     if (!activeFeature) return;
     proposalHistory.push(
@@ -539,6 +775,18 @@
     traces[activePath] = [];
     persistTraces();
     notice = "Cleared only the active path. Undo Trace will restore it.";
+    noticeKind = "quiet";
+  }
+
+  function clearActiveLayoutFeature(): void {
+    rememberLowerLayout();
+    lowerLayout = replaceFlowFestLowerLayoutFeature(
+      lowerLayout,
+      activeLayoutFeatureId,
+      []
+    );
+    persistLowerLayout();
+    notice = `Cleared ${activeLayoutFeature.label.toLowerCase()} only. Undo will restore it.`;
     noticeKind = "quiet";
   }
 
@@ -646,16 +894,82 @@
     }
   }
 
+  function currentLowerLayoutSubmission() {
+    if (!coordinateFingerprint) {
+      notice = "The registered coordinate frame is still loading.";
+      noticeKind = "error";
+      return null;
+    }
+    const submission = createFlowFestLowerLayoutSubmission(
+      lowerLayout,
+      coordinateFingerprint
+    );
+    const validation = validateFlowFestLowerLayoutSubmission(
+      submission,
+      coordinateFingerprint
+    );
+    if (!validation.valid) {
+      notice = validation.error;
+      noticeKind = "error";
+      return null;
+    }
+    return validation.value;
+  }
+
+  async function saveLowerLayoutForCodex(): Promise<void> {
+    const submission = currentLowerLayoutSubmission();
+    if (!submission) return;
+    saving = true;
+    notice = "Saving the registered lower campground layout for Codex…";
+    noticeKind = "quiet";
+    try {
+      const response = await fetch(
+        "/test/flow-fest-path-tracer/save-lower-layout",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(submission),
+        }
+      );
+      const result = (await response.json()) as {
+        ok?: boolean;
+        path?: string;
+        error?: string;
+      };
+      if (!response.ok || !result.ok) {
+        throw new Error(
+          result.error ?? `Save failed with HTTP ${response.status}`
+        );
+      }
+      notice = `Saved the lower campground truth at ${result.path}.`;
+      noticeKind = "success";
+    } catch (cause) {
+      reportFailure(
+        "The lower campground layout could not be written to the Flow Fest spec folder.",
+        cause,
+        "saveLowerLayout"
+      );
+    } finally {
+      saving = false;
+    }
+  }
+
   async function copyCoordinates(): Promise<void> {
     const submission =
-      workspaceMode === "plan" ? currentPlanSubmission() : currentSubmission();
+      workspaceMode === "plan"
+        ? currentPlanSubmission()
+        : workspaceMode === "layout"
+          ? currentLowerLayoutSubmission()
+          : currentSubmission();
     if (!submission) return;
     try {
       await navigator.clipboard.writeText(JSON.stringify(submission, null, 2));
       notice =
         workspaceMode === "plan"
           ? "Copied the registered correction proposal as JSON."
-          : "Copied both registered paths as JSON.";
+          : workspaceMode === "layout"
+            ? "Copied the registered lower campground layout as JSON."
+            : "Copied both registered paths as JSON.";
       noticeKind = "success";
     } catch (cause) {
       reportFailure(
@@ -680,18 +994,31 @@
     <div class="title-block">
       <p class="eyebrow">Flow Fest Sim · Reality Lock</p>
       <h1>
-        {workspaceMode === "plan"
-          ? "Place the camp on Earth"
-          : "Draw the paths that the trees hide"}
+        {workspaceMode === "layout"
+          ? "Show me the lower campground"
+          : workspaceMode === "plan"
+            ? "Place the camp on Earth"
+            : "Draw the paths that the trees hide"}
       </h1>
       <p class="lede">
-        {workspaceMode === "plan"
-          ? "The official road is locked. Every camp correction keeps the old coordinate and its evidence trail."
-          : "Each stroke replaces only its selected route. Your other route remains on the map, and both survive a refresh."}
+        {workspaceMode === "layout"
+          ? "Trace the actual loop, tent perimeter, car-camping interior, and entrance as four independent layers. Nothing here silently becomes authoritative."
+          : workspaceMode === "plan"
+            ? "The official road is locked. Every camp correction keeps the old coordinate and its evidence trail."
+            : "Each stroke replaces only its selected route. Your other route remains on the map, and both survive a refresh."}
       </p>
     </div>
     <div class="completion" aria-label="Authoring status">
-      {#if workspaceMode === "plan"}
+      {#if workspaceMode === "layout"}
+        {#each FLOW_FEST_LOWER_LAYOUT_FEATURES as feature}
+          <span class:ready={lowerLayoutStatus[feature.id]}>
+            <span class={`status-dot layout ${feature.id}`} aria-hidden="true"
+            ></span>
+            {feature.label}
+            {lowerLayoutStatus[feature.id] ? "ready" : "missing"}
+          </span>
+        {/each}
+      {:else if workspaceMode === "plan"}
         <span class:ready={Boolean(plan)}>
           <span class="status-dot authority" aria-hidden="true"></span>
           {plan ? "Shared plan loaded" : "Loading plan"}
@@ -739,6 +1066,28 @@
             ariaLabelledby="path-picker-label"
           />
         </div>
+      {:else if workspaceMode === "layout"}
+        <div class="control-group feature-picker">
+          <label for="lower-layout-feature">Lower campground truth</label>
+          <select
+            id="lower-layout-feature"
+            value={activeLayoutFeatureId}
+            onchange={(event) =>
+              chooseLayoutFeature(
+                event.currentTarget.value as FlowFestLowerLayoutFeatureId
+              )}
+          >
+            {#each FLOW_FEST_LOWER_LAYOUT_FEATURES as feature}
+              <option value={feature.id}>
+                {lowerLayoutStatus[feature.id] ? "✓" : "○"}
+                {feature.label}
+              </option>
+            {/each}
+          </select>
+          <span class="evidence-readout">
+            Austen annotation · pinned 2023 aerial
+          </span>
+        </div>
       {:else}
         <div class="control-group feature-picker">
           <label for="plan-feature">Feature to correct</label>
@@ -772,7 +1121,23 @@
       </div>
 
       <div class="instructions">
-        {#if workspaceMode === "plan"}
+        {#if workspaceMode === "layout"}
+          <p>
+            <strong>{activeLayoutFeature.label}:</strong>
+            {activeLayoutFeature.instruction}
+          </p>
+          <p>
+            <strong>Other colors stay visible:</strong> editing this layer never erases
+            another layer.
+          </p>
+          <p>
+            <strong>Dashed white:</strong> current sim context only. It is not accepted
+            ground truth.
+          </p>
+          <p>
+            <strong>Pan:</strong> move after zooming. The mouse wheel also zooms.
+          </p>
+        {:else if workspaceMode === "plan"}
           <p>
             <strong>Move marker:</strong> drag the selected feature to its real center.
           </p>
@@ -804,23 +1169,78 @@
         <PanelButton onclick={() => zoom(1.25)}>Zoom out</PanelButton>
         <PanelButton onclick={resetView}>Reset view</PanelButton>
         <PanelButton
-          onclick={workspaceMode === "plan"
-            ? undoPlanCorrection
-            : undoActiveTrace}
+          onclick={workspaceMode === "layout"
+            ? undoLowerLayout
+            : workspaceMode === "plan"
+              ? undoPlanCorrection
+              : undoActiveTrace}
         >
-          {workspaceMode === "plan" ? "Undo move" : "Undo trace"}
+          {workspaceMode === "layout"
+            ? "Undo edit"
+            : workspaceMode === "plan"
+              ? "Undo move"
+              : "Undo trace"}
         </PanelButton>
         <PanelButton
-          onclick={workspaceMode === "plan"
-            ? clearActiveCorrection
-            : clearActiveTrace}
+          onclick={workspaceMode === "layout"
+            ? clearActiveLayoutFeature
+            : workspaceMode === "plan"
+              ? clearActiveCorrection
+              : clearActiveTrace}
         >
           Clear active
         </PanelButton>
         <PanelButton onclick={copyCoordinates}>Copy JSON</PanelButton>
       </div>
 
-      {#if workspaceMode === "plan"}
+      {#if workspaceMode === "layout"}
+        <div class="layout-readout">
+          <div class="layout-progress" aria-label="Lower campground completion">
+            <strong>{lowerLayoutReadyCount} of 4 truths mapped</strong>
+            <span
+              >{activeLayoutPoints.length} captured point{activeLayoutPoints.length ===
+              1
+                ? ""
+                : "s"}</span
+            >
+          </div>
+          {#if activeLayoutFeatureId === "tent-perimeter-band"}
+            <label for="tent-band-width">
+              Tent-band width · {lowerLayout.tentBandWidthMeters.toFixed(0)} m
+            </label>
+            <input
+              id="tent-band-width"
+              type="range"
+              min="2"
+              max="30"
+              step="1"
+              value={lowerLayout.tentBandWidthMeters}
+              oninput={(event) =>
+                updateTentBandWidth(Number(event.currentTarget.value))}
+            />
+          {/if}
+          <label for="layout-feature-note">What should Codex understand?</label>
+          <textarea
+            id="layout-feature-note"
+            value={lowerLayout.featureNotes[activeLayoutFeatureId]}
+            maxlength="500"
+            placeholder="Example: the road runs inside this tent line, not through it."
+            oninput={(event) =>
+              updateLayoutFeatureNote(event.currentTarget.value)}
+          ></textarea>
+          <label for="layout-overall-note"
+            >Anything about the whole lower level?</label
+          >
+          <textarea
+            id="layout-overall-note"
+            value={lowerLayout.overallNote}
+            maxlength="1000"
+            placeholder="Describe circulation, exceptions, or relationships the shapes alone cannot show."
+            oninput={(event) =>
+              updateLayoutOverallNote(event.currentTarget.value)}
+          ></textarea>
+        </div>
+      {:else if workspaceMode === "plan"}
         <div class="plan-readout">
           <span class="lock-row"
             ><span aria-hidden="true">◆</span> Camden College Corner Rd · locked</span
@@ -873,20 +1293,28 @@
         <PanelButton
           variant="primary"
           fullWidth={true}
-          onclick={workspaceMode === "plan" ? savePlanForCodex : saveForCodex}
+          onclick={workspaceMode === "layout"
+            ? saveLowerLayoutForCodex
+            : workspaceMode === "plan"
+              ? savePlanForCodex
+              : saveForCodex}
           disabled={saving}
           ariaBusy={saving}
         >
           {saving
             ? "Saving…"
-            : workspaceMode === "plan"
-              ? "Save correction proposal"
-              : "Save both paths for Codex"}
+            : workspaceMode === "layout"
+              ? "Send lower layout to Codex"
+              : workspaceMode === "plan"
+                ? "Save correction proposal"
+                : "Save both paths for Codex"}
         </PanelButton>
         <p class="save-hint">
-          {workspaceMode === "plan"
-            ? "Saving never silently promotes a coordinate. Codex reviews the proposal against the pinned evidence first."
-            : "This button stays available. If a path is missing, it says which one instead of silently disabling itself."}
+          {workspaceMode === "layout"
+            ? "The button stays available. If a truth is missing, it names exactly what still needs drawing."
+            : workspaceMode === "plan"
+              ? "Saving never silently promotes a coordinate. Codex reviews the proposal against the pinned evidence first."
+              : "This button stays available. If a path is missing, it says which one instead of silently disabling itself."}
         </p>
       </div>
     </aside>
@@ -895,17 +1323,24 @@
       <div class="map-heading">
         <div>
           <span class="active-label">
-            {workspaceMode === "plan"
-              ? `Correcting ${activeFeature?.label ?? "camp plan"}`
-              : `Editing ${activePath === "upper-to-middle" ? "Upper → Middle" : "Middle → Lower"}`}
+            {workspaceMode === "layout"
+              ? `Mapping ${activeLayoutFeature.label}`
+              : workspaceMode === "plan"
+                ? `Correcting ${activeFeature?.label ?? "camp plan"}`
+                : `Editing ${activePath === "upper-to-middle" ? "Upper → Middle" : "Middle → Lower"}`}
           </span>
-          <span class="source-label"
-            >2023 NAIP · north up · 0.5 m per source pixel</span
-          >
+          <span class="source-label">
+            {workspaceMode === "layout"
+              ? "2023 NAIP · north up · dashed white = current sim draft"
+              : "2023 NAIP · north up · 0.5 m per source pixel"}
+          </span>
         </div>
         <span class="mode-label"
           >{interactionMode === "draw"
-            ? "Drag to draw"
+            ? activeLayoutFeature.geometry === "polygon" &&
+              workspaceMode === "layout"
+              ? "Drag around the area"
+              : "Drag to draw"
             : interactionMode === "place"
               ? "Drag to place"
               : "Drag to pan"}</span
@@ -943,7 +1378,86 @@
             preserveAspectRatio="none"
           />
 
-          {#if workspaceMode === "plan" && previewPlan}
+          {#if workspaceMode === "layout"}
+            {#if previewPlan}
+              <g
+                class="layout-plan-context"
+                aria-label="Current sim context, not ground truth"
+              >
+                {#each previewPlan.publicRoads as road}
+                  <polyline points={worldPointsAttribute(road.points)} />
+                {/each}
+                {#each previewPlan.internalDrives as drive}
+                  <polyline points={worldPointsAttribute(drive.points)} />
+                {/each}
+              </g>
+            {/if}
+            <g
+              class="lower-layout"
+              aria-label="Austen lower campground annotations"
+            >
+              {#if lowerLayout.carCampingArea.length > 0}
+                <polygon
+                  class="layout-car-area"
+                  class:active={activeLayoutFeatureId === "car-camping-area"}
+                  points={closedPointsAttribute(lowerLayout.carCampingArea)}
+                />
+              {/if}
+              {#if lowerLayout.tentPerimeterBand.length > 0}
+                <polyline
+                  class="layout-tent-band"
+                  class:active={activeLayoutFeatureId === "tent-perimeter-band"}
+                  stroke-width={lowerLayout.tentBandWidthMeters * 2}
+                  points={pointsAttribute(lowerLayout.tentPerimeterBand)}
+                />
+                <polyline
+                  class="layout-tent-centerline"
+                  points={pointsAttribute(lowerLayout.tentPerimeterBand)}
+                />
+              {/if}
+              {#if lowerLayout.lowerRoadLoop.length > 0}
+                <polyline
+                  class="layout-road-loop"
+                  class:active={activeLayoutFeatureId === "lower-road-loop"}
+                  points={closedPointsAttribute(lowerLayout.lowerRoadLoop)}
+                />
+              {/if}
+              {#if lowerLayout.lowerLoopEntrance}
+                <g
+                  class="layout-entrance"
+                  class:active={activeLayoutFeatureId === "lower-loop-entrance"}
+                  transform={`translate(${lowerLayout.lowerLoopEntrance.x} ${lowerLayout.lowerLoopEntrance.y})`}
+                >
+                  <path d="M 0 -10 L 10 0 L 0 10 L -10 0 Z" />
+                  <text x="14" y="-12">Loop entrance</text>
+                </g>
+              {/if}
+            </g>
+            {#if draftLayoutFeature}
+              {#if draftLayoutFeature === "car-camping-area"}
+                <polygon
+                  class="layout-draft car"
+                  points={closedPointsAttribute(draft)}
+                />
+              {:else}
+                <polyline
+                  class="layout-draft"
+                  class:road={draftLayoutFeature === "lower-road-loop"}
+                  class:tent={draftLayoutFeature === "tent-perimeter-band"}
+                  points={pointsAttribute(draft)}
+                />
+              {/if}
+            {/if}
+            <g
+              class="layout-scale"
+              transform={`translate(${view.x + 22} ${view.y + view.height - 22})`}
+            >
+              <line x1="0" y1="0" x2="50" y2="0" />
+              <line x1="0" y1="-5" x2="0" y2="5" />
+              <line x1="50" y1="-5" x2="50" y2="5" />
+              <text x="25" y="-9" text-anchor="middle">25 m</text>
+            </g>
+          {:else if workspaceMode === "plan" && previewPlan}
             <g class="plan-regions" aria-label="Camp plan regions">
               {#each previewPlan.regions as region}
                 {#if region.shape === "ellipse" && region.center}
@@ -1089,7 +1603,11 @@
   >
     <span class="notice-dot" aria-hidden="true"></span>
     {notice}
-    {#if bothReady && noticeKind === "quiet"}
+    {#if workspaceMode === "layout" && lowerLayoutReadyCount === 4 && noticeKind === "quiet"}
+      <span class="ready-copy"
+        >All four lower campground truths can be sent.</span
+      >
+    {:else if workspaceMode === "paths" && bothReady && noticeKind === "quiet"}
       <span class="ready-copy">Both paths can be saved.</span>
     {/if}
   </footer>
@@ -1099,6 +1617,10 @@
   .trace-page {
     --upper-trace: var(--prop-blue, #67a7ff);
     --lower-trace: var(--semantic-success, #5ee6a8);
+    --layout-road: #68b9ff;
+    --layout-tent: #72e49a;
+    --layout-car: #ff9b47;
+    --layout-gate: #ffd65a;
     box-sizing: border-box;
     width: min(var(--shell-w, 92vw), calc(100% - 2rem));
     min-height: 100dvh;
@@ -1180,6 +1702,22 @@
     background: var(--semantic-success, #5ee6a8);
   }
 
+  .status-dot.lower-road-loop {
+    background: var(--layout-road);
+  }
+
+  .status-dot.tent-perimeter-band {
+    background: var(--layout-tent);
+  }
+
+  .status-dot.car-camping-area {
+    background: var(--layout-car);
+  }
+
+  .status-dot.lower-loop-entrance {
+    background: var(--layout-gate);
+  }
+
   .route-dot {
     display: inline-block;
     width: 0.75rem;
@@ -1226,13 +1764,15 @@
   }
 
   .feature-picker label,
-  .plan-readout label {
+  .plan-readout label,
+  .layout-readout label {
     font-size: var(--font-size-sm, 0.875rem);
     font-weight: 500;
   }
 
   .feature-picker select,
-  .plan-readout textarea {
+  .plan-readout textarea,
+  .layout-readout textarea {
     box-sizing: border-box;
     width: 100%;
     min-height: var(--min-touch-target, 44px);
@@ -1299,6 +1839,41 @@
     font-size: var(--font-size-sm, 0.875rem);
   }
 
+  .layout-readout {
+    display: grid;
+    gap: 0.55rem;
+    max-height: 24rem;
+    overflow-y: auto;
+    padding: 0.85rem;
+    border-radius: var(--radius-md, 0.5rem);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  .layout-progress {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    color: var(--theme-text-dim, rgba(245, 242, 235, 0.74));
+    font-variant-numeric: tabular-nums;
+  }
+
+  .layout-progress strong {
+    color: var(--theme-text, #f5f2eb);
+  }
+
+  .layout-readout textarea {
+    min-height: 4.25rem;
+    padding: 0.55rem 0.65rem;
+    resize: vertical;
+  }
+
+  .layout-readout input[type="range"] {
+    width: 100%;
+    min-height: var(--min-touch-target, 44px);
+    accent-color: var(--layout-tent);
+  }
+
   .plan-readout > span {
     color: var(--theme-text-dim, rgba(245, 242, 235, 0.74));
     font-variant-numeric: tabular-nums;
@@ -1345,6 +1920,7 @@
 
   .map-panel {
     display: flex;
+    align-self: start;
     min-width: 0;
     min-height: 0;
     flex-direction: column;
@@ -1472,6 +2048,102 @@
     stroke: var(--theme-panel-bg, #12121c);
     stroke-width: 2;
     paint-order: stroke;
+  }
+
+  .layout-plan-context polyline {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.62);
+    stroke-width: 3;
+    stroke-dasharray: 7 6;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .layout-car-area {
+    fill: var(--layout-car);
+    fill-opacity: 0.24;
+    stroke: var(--layout-car);
+    stroke-width: 4;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .layout-tent-band {
+    fill: none;
+    stroke: var(--layout-tent);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.3;
+  }
+
+  .layout-tent-centerline {
+    fill: none;
+    stroke: var(--layout-tent);
+    stroke-width: 4;
+    stroke-dasharray: 8 6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .layout-road-loop {
+    fill: none;
+    stroke: var(--layout-road);
+    stroke-width: 7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .layout-car-area.active,
+  .layout-tent-band.active,
+  .layout-road-loop.active,
+  .layout-entrance.active {
+    filter: drop-shadow(0 0 5px var(--theme-panel-bg, #12121c));
+  }
+
+  .layout-entrance path {
+    fill: var(--layout-gate);
+    stroke: var(--theme-panel-bg, #12121c);
+    stroke-width: 3;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .layout-entrance text,
+  .layout-scale text {
+    fill: var(--theme-text, #f5f2eb);
+    stroke: var(--theme-panel-bg, #12121c);
+    stroke-width: 5;
+    paint-order: stroke;
+    font-size: 0.9rem;
+    font-weight: 650;
+    pointer-events: none;
+  }
+
+  .layout-draft {
+    fill: none;
+    stroke: var(--layout-road);
+    stroke-width: 6;
+    stroke-dasharray: 10 7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .layout-draft.tent {
+    stroke: var(--layout-tent);
+  }
+
+  .layout-draft.car {
+    fill: var(--layout-car);
+    fill-opacity: 0.18;
+    stroke: var(--layout-car);
+  }
+
+  .layout-scale line {
+    stroke: var(--theme-text, #f5f2eb);
+    stroke-width: 3;
+    vector-effect: non-scaling-stroke;
   }
 
   .plan-regions ellipse,
@@ -1616,7 +2288,7 @@
     color: var(--semantic-success, #5ee6a8);
   }
 
-  @media (max-width: 1679px) {
+  @media (max-width: 1100px) {
     .workspace {
       grid-template-columns: 1fr;
     }
