@@ -38,6 +38,8 @@ const HOSTS: Record<string, string> = {
     "src/lib/features/create/shared/components/coordinators/StepEditorCoordinator.svelte",
   "settings prop type tab":
     "src/lib/shared/settings/components/tabs/PropTypeTab.svelte",
+  "sequence viewer props panel":
+    "src/lib/shared/sequence-viewer/components/SequenceViewerShell.svelte",
   "tunnel settings panel":
     "src/lib/features/create/tunnel/components/TunnelLayout.svelte",
   "viewer tunnel art settings":
@@ -101,7 +103,20 @@ describe("buugeng chirality is owned by the prop picker", () => {
     const sheet = read(SHEET_PATH);
     expect(sheet).toContain("isBuugengFamilyProp");
     expect(sheet).toContain("needsChiralityChoice");
-    expect(sheet).toContain("autoClose && !needsChiralityChoice");
+    // The host callback may close the bound state itself. The sheet must
+    // explicitly restore it after onSelect rather than merely skip its own
+    // auto-close branch.
+    expect(sheet).toMatch(
+      /onSelect\(propType\);\s*if \(needsChiralityChoice\) \{\s*isOpen = true;\s*return;/
+    );
+  });
+
+  it("puts chirality before the prop catalogue in compact drawers", () => {
+    const grid = read(GRID_PATH);
+    expect(grid).toContain("class:flat");
+    expect(grid).toMatch(
+      /\.prop-grid-root\.flat \.chirality-dock\s*\{\s*order: -1;/
+    );
   });
 
   it("no seam ever writes one hand's chirality onto the other", () => {

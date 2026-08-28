@@ -173,6 +173,13 @@
     }
   }
 
+  function selectStartingMaterial(
+    material: StudioStarter["startingMaterial"]
+  ): void {
+    startingMaterial = material;
+    moveStep(1);
+  }
+
   function moveStep(direction: -1 | 1): void {
     const next = guideSteps[currentStepIndex + direction];
     if (next) currentStep = next;
@@ -300,65 +307,32 @@
         </div>
       {:else}
         <div class="starter-surface guide-surface">
-          <header>
-            <div>
-              <div class="eyebrow">Build from empty</div>
-              <h1>One decision at a time</h1>
-            </div>
-            <span class="step-count" aria-live="polite">
-              Step {currentStepIndex + 1} of {guideSteps.length}
-            </span>
-          </header>
-
-          <div
-            class="progress"
-            aria-hidden="true"
-            style:--guide-step-count={guideSteps.length}
-          >
-            {#each guideSteps as step, index (step)}
-              <span
-                class:complete={index < currentStepIndex}
-                class:active={step === currentStep}
-              ></span>
-            {/each}
-          </div>
-
           <div class="guide-body">
             <Crossfade key={currentStep} animateHeight>
               <section class="step-content" aria-live="polite">
                 {#if currentStep === "material"}
-                  <h2>What should they perform?</h2>
-                  <p>
-                    Start with something ready, or choose from your library.
-                  </p>
-                  <div class="choice-grid two">
+                  <div class="choice-grid two" aria-label="Choose a sequence">
                     <button
                       type="button"
-                      class="choice-card"
+                      class="choice-card material-choice"
                       class:chosen={startingMaterial === "recommended"}
                       aria-pressed={startingMaterial === "recommended"}
-                      onclick={() => (startingMaterial = "recommended")}
+                      onclick={() => selectStartingMaterial("recommended")}
                     >
-                      <i class="fas fa-wand-magic-sparkles" aria-hidden="true"
-                      ></i>
-                      <strong>Recommended flow</strong>
-                      <span>A short loop that reads clearly in 3D.</span>
+                      <strong>Pick one for me</strong>
                     </button>
                     <button
                       type="button"
-                      class="choice-card"
+                      class="choice-card material-choice"
                       class:chosen={startingMaterial === "choose-sequence"}
                       aria-pressed={startingMaterial === "choose-sequence"}
-                      onclick={() => (startingMaterial = "choose-sequence")}
+                      onclick={() => selectStartingMaterial("choose-sequence")}
                     >
-                      <i class="fas fa-folder-open" aria-hidden="true"></i>
-                      <strong>Pick a sequence</strong>
-                      <span>Your library opens after the stage is built.</span>
+                      <strong>Pick one</strong>
                     </button>
                   </div>
                 {:else if currentStep === "cast"}
                   <h2>Who is on stage?</h2>
-                  <p>Choose the smallest cast that tells your idea.</p>
                   <div class="choice-grid three">
                     {#each castOptions as option (option.count)}
                       <button
@@ -376,7 +350,6 @@
                   </div>
                 {:else if currentStep === "formation"}
                   <h2>How should they begin?</h2>
-                  <p>The precise floor editor stays available after setup.</p>
                   <div class="choice-grid three">
                     {#each formationOptions as option (option.id)}
                       <button
@@ -393,7 +366,6 @@
                   </div>
                 {:else if currentStep === "prop"}
                   <h2>What are they holding?</h2>
-                  <p>You can tune each performer separately after setup.</p>
                   <div class="choice-grid three">
                     {#each propOptions as option (option.id)}
                       <button
@@ -410,7 +382,6 @@
                   </div>
                 {:else}
                   <h2>Where are they performing?</h2>
-                  <p>This becomes the world around your finished cast.</p>
                   <div class="choice-grid worlds">
                     {#each sceneOptions as option (option.id)}
                       <button
@@ -432,27 +403,29 @@
 
           <footer>
             <PanelButton disabled={applying} onclick={back}>Back</PanelButton>
-            {#if currentStepIndex < guideSteps.length - 1}
-              <PanelButton
-                variant="primary"
-                disabled={!canContinue || applying}
-                onclick={() => moveStep(1)}>Next</PanelButton
-              >
-            {:else}
-              <PanelButton
-                variant="primary"
-                disabled={!canContinue || applying}
-                ariaBusy={applying}
-                onclick={() => void applyGuided()}
-              >
-                <i
-                  class="fas {applying
-                    ? 'fa-circle-notch fa-spin'
-                    : 'fa-wand-magic-sparkles'}"
-                  aria-hidden="true"
-                ></i>
-                Bring them on stage
-              </PanelButton>
+            {#if currentStep !== "material"}
+              {#if currentStepIndex < guideSteps.length - 1}
+                <PanelButton
+                  variant="primary"
+                  disabled={!canContinue || applying}
+                  onclick={() => moveStep(1)}>Next</PanelButton
+                >
+              {:else}
+                <PanelButton
+                  variant="primary"
+                  disabled={!canContinue || applying}
+                  ariaBusy={applying}
+                  onclick={() => void applyGuided()}
+                >
+                  <i
+                    class="fas {applying
+                      ? 'fa-circle-notch fa-spin'
+                      : 'fa-wand-magic-sparkles'}"
+                    aria-hidden="true"
+                  ></i>
+                  Bring them on stage
+                </PanelButton>
+              {/if}
             {/if}
           </footer>
         </div>
@@ -586,52 +559,6 @@
     font-size: var(--font-size-compact, 0.75rem);
   }
 
-  header {
-    display: flex;
-    align-items: start;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-
-  header > div {
-    display: grid;
-    min-width: 0;
-    gap: 0.375rem;
-  }
-
-  .step-count {
-    flex: none;
-    min-width: 6.75rem;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 0.75rem);
-    font-variant-numeric: tabular-nums;
-    text-align: right;
-  }
-
-  .progress {
-    display: grid;
-    grid-template-columns: repeat(var(--guide-step-count), minmax(0, 1fr));
-    gap: 0.375rem;
-    min-height: 0.25rem;
-  }
-
-  .progress span {
-    height: 0.25rem;
-    border-radius: 999px;
-    background: var(--theme-stroke-strong);
-    transition:
-      background-color var(--duration-normal, 200ms) ease,
-      opacity var(--duration-normal, 200ms) ease;
-  }
-
-  .progress span.complete {
-    background: color-mix(in srgb, var(--theme-accent) 58%, transparent);
-  }
-
-  .progress span.active {
-    background: var(--theme-accent);
-  }
-
   .guide-body {
     min-width: 0;
   }
@@ -681,6 +608,12 @@
   .choice-card.compact {
     justify-items: center;
     min-height: 5.75rem;
+    text-align: center;
+  }
+
+  .choice-card.material-choice {
+    justify-items: center;
+    min-height: 4.75rem;
     text-align: center;
   }
 
@@ -774,7 +707,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .progress span,
     .choice-card {
       transition: none;
     }

@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, it, expect } from "vitest";
 import {
   parseTurnsTuple,
@@ -10,18 +12,31 @@ import {
   getSlotOffsetX,
 } from "../turn-tuple-parser";
 
-describe("quarter-turn number", () => {
-  it("preserves 0.25 in both turn slots", () => {
-    const result = parseTurnsTuple("(0.25, 0.25)");
+const LEVEL_4_QUARTER_VALUES = [0.25, 0.75, 1.25, 1.75, 2.25, 2.75] as const;
 
-    expect(result.top).toBe(0.25);
-    expect(result.bottom).toBe(0.25);
-  });
+describe("Level 4 quarter-turn numbers", () => {
+  it.each(LEVEL_4_QUARTER_VALUES)(
+    "preserves %s in both turn slots",
+    (turns) => {
+      const result = parseTurnsTuple(`(${turns}, ${turns})`);
 
-  it("resolves the dedicated glyph and its natural width", () => {
-    expect(getTurnNumberImagePath(0.25)).toBe("/images/numbers/0.25.svg");
-    expect(getTurnNumberWidth(0.25)).toBe(120);
-  });
+      expect(result.top).toBe(turns);
+      expect(result.bottom).toBe(turns);
+    }
+  );
+
+  it.each(LEVEL_4_QUARTER_VALUES)(
+    "resolves the dedicated %s glyph at its natural width",
+    (turns) => {
+      const imagePath = getTurnNumberImagePath(turns);
+      const assetPath = resolve(`static${imagePath}`);
+
+      expect(imagePath).toBe(`/images/numbers/${turns}.svg`);
+      expect(getTurnNumberWidth(turns)).toBe(120);
+      expect(existsSync(assetPath), assetPath).toBe(true);
+      expect(readFileSync(assetPath, "utf8")).toContain('viewBox="0 0 120 45"');
+    }
+  );
 });
 
 // Coverage for the halved-motion token ("/" suffix) added in

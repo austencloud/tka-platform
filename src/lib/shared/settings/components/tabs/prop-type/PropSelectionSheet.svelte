@@ -81,14 +81,19 @@
   function handlePropSelect(propType: PropType) {
     const hapticService = getHapticFeedback();
     hapticService?.trigger("selection");
-    onSelect(propType);
     // Buugeng is not fully chosen until its per-hand A/B controls are visible.
-    // Keep the sheet open for that second decision; every other prop preserves
-    // the host's existing auto-close behavior.
+    // Some hosts finish their ordinary prop flow by closing the bound drawer
+    // inside onSelect. Reassert the open state after that callback so choosing
+    // a Buugeng style advances to chirality instead of dismissing the picker.
     const needsChiralityChoice = Boolean(
       chirality && isBuugengFamilyProp(propType)
     );
-    if (autoClose && !needsChiralityChoice) {
+    onSelect(propType);
+    if (needsChiralityChoice) {
+      isOpen = true;
+      return;
+    }
+    if (autoClose) {
       isOpen = false;
     }
   }

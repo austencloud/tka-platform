@@ -177,6 +177,7 @@
   class="prop-grid-root"
   class:panel={variant === "panel"}
   class:inline={variant === "inline"}
+  class:flat
 >
   {#if variant === "panel"}
     <header class="grid-header">
@@ -508,6 +509,13 @@
   .chirality-dock {
     flex: 0 0 auto;
     min-width: 0;
+  }
+
+  /* The flat picker is the compact/mobile drawer. Chirality is part of
+     choosing Buugeng, so surface it before the prop catalogue instead of
+     making the user scroll through every prop to find the A/B controls. */
+  .prop-grid-root.flat .chirality-dock {
+    order: -1;
   }
 
   /* Paid labels include the product family name. At the narrowest picker

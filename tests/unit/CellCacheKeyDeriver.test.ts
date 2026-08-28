@@ -128,13 +128,13 @@ function makeBoxBetaStep(
   };
 }
 
-function makeQuarterTurnPictograph(): PictographData {
+function makeQuarterTurnPictograph(turns = 0.25): PictographData {
   const pictograph = makeBoxBetaStep(
     GridLocation.NORTHEAST,
     GridLocation.SOUTHWEST,
     GridLocation.SOUTHEAST
   );
-  pictograph.motions.blue.turns = 0.25;
+  pictograph.motions.blue.turns = turns;
   return pictograph;
 }
 
@@ -230,6 +230,21 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
       expect(key).toMatch(/^lsp11-/);
       expect(key).toContain('"turnGlyphRevision":"quarter-turn-glyph-v1"');
     });
+
+    it.each([0.75, 1.25, 1.75, 2.25, 2.75])(
+      "rekeys raster cells that display the completed %s tuple glyph",
+      (turns) => {
+        const key = deriver.deriveCacheKey(
+          makeQuarterTurnPictograph(turns),
+          undefined,
+          false,
+          makeOptions({ showTKA: true })
+        );
+
+        expect(key).toMatch(/^lsp11-/);
+        expect(key).toContain('"turnGlyphRevision":"quarter-turn-glyph-v2"');
+      }
+    );
 
     it("preserves existing keys when the TKA tuple is hidden", () => {
       const key = deriver.deriveCacheKey(
