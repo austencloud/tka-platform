@@ -2460,7 +2460,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..97055067c88b72cc4cd4d4abfa5d6567
 
    let {
      propState,
-@@ -33,156 +56,112 @@
+@@ -33,156 +56,115 @@
      thickness,
      isActivePlayer = false,
      scale = 1,
@@ -13514,7 +13514,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..97055067c88b72cc4cd4d4abfa5d6567
 
    let {
      propState,
-@@ -33,156 +56,112 @@
+@@ -33,156 +56,115 @@
      thickness,
      isActivePlayer = false,
      scale = 1,

@@ -37,6 +37,7 @@
     parseGeospatialTerrainManifest,
   } from "$lib/shared/3d/procedural-engine/generation/geospatial-terrain";
   import { buildFlowFestEntranceGradedTerrain } from "../flow-fest-sim/flow-fest-entrance-terrain";
+  import { FLOW_FEST_CAMP_PLAN_BOUNDS } from "../flow-fest-sim/flow-fest-camp-plan";
   import {
     createPhysicsWorldState,
     createRigidBody,
@@ -1087,7 +1088,14 @@
       terrainHost = buildFlowFestTerrainHost(
         loadedTerrain,
         props.hostMode,
-        texture
+        texture,
+        props.hostMode === "chunked"
+          ? {
+              fullDetailBounds: FLOW_FEST_CAMP_PLAN_BOUNDS,
+              fullDetailPaddingMeters: 32,
+              farSampleStep: 2,
+            }
+          : undefined
       );
       overlay = buildFlowFestReviewOverlay(
         loadedContract,
@@ -1245,10 +1253,11 @@
         terrain: {
           sourceSamples: loadedTerrain.heightmap.heights.length,
           renderColliderIdentity: props.hostMode === "bounded-static",
-          renderColliderHeightParity: true,
+          renderColliderHeightParity: props.hostMode === "bounded-static",
+          fullDetailColliderHeightParity: true,
           renderStrategy:
             props.hostMode === "chunked"
-              ? "one full-resolution render batch with 32 m collision chunks"
+              ? "one crack-free adaptive render batch: 1 m campground detail, 2 m far field, and 32 m full-resolution collision chunks"
               : "one full-resolution visible/collider mesh",
           cameraCollisionStrategy: "rapier-active-chunk-broadphase",
           candidateColliderMeshes: terrainHost.metrics.colliderMeshes,

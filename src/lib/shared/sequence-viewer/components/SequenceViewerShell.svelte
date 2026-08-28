@@ -59,6 +59,7 @@
     buildThumbnailUrl,
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+  import { createGlobalChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { sendToStickerLab } from "$lib/shared/sequence-viewer/services/send-to-sticker-lab";
   import { getSequenceMotionProfile } from "$lib/shared/foundation/services/sequence-motion-profile";
@@ -786,6 +787,7 @@
                     renderMode={ctx.renderMode}
                     playbackMode={ctx.playbackMode}
                     selectedPropType={ctx.bluePropType}
+                    propChirality={createGlobalChiralitySeam()}
                     sequence={ctx.effectiveSequence}
                     showInlineExportProgress={false}
                     showTempoControls={false}

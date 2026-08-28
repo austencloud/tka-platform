@@ -329,7 +329,6 @@
       bind:isOpen={propDrawerOpen}
       selectedPropType={matchupPropType}
       onSelect={handlePropSelect}
-      onClose={() => (propDrawerOpen = false)}
     />
   {:else}
     <div class="battle-empty" role="status">

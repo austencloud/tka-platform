@@ -60,19 +60,38 @@ is [`active/2026-08-28-unified-learn-atlas-design.md`](active/2026-08-28-unified
   1440x900, 1920x1080, 2560x1440, and 3840x2160. There was no horizontal
   overflow, the root remained 16px at compact and 4K widths, and the console
   reported no errors.
+- The landing hierarchy and responsive composition were corrected in
+  `8cd3cfa4b1`. The course introduction and current lesson now form one launch
+  zone, Continue is the only saturated primary action, and the Guide plus
+  selected Atlas resources remain available without competing for the first
+  click. The current lesson category no longer collapses into a thin sliver.
+- The Atlas detail layout in `8cd3cfa4b1` uses the real shared Diamond and Box
+  grids at a readable bounded size, compact resource actions, a rail wide enough
+  to preserve every concept name, and a compact reference card for places such
+  as 1.4 that do not have an honest visual preview. It no longer stretches
+  controls or empty detail surfaces across the available width.
+- Verification for `8cd3cfa4b1` is green after rebasing onto the then-current
+  `main`: `svelte-check` reported 0 errors and 0 warnings, and the focused
+  concept-place suites passed 11/11 tests. Live checks covered 375x667,
+  960x412, 820x1180, 1440x900, 1920x1080, 2560x1440, and 3840x2160. The 1.4
+  deep link retained its selection, all checked widths had zero page overflow,
+  the root stayed 16px, and the console reported no errors. The broader landing
+  morph suite still has its pre-existing `/glossary` participant failure on
+  both the task branch and the baseline `main` checkout.
 
 ## Believed done - unverified
 
-- The revised route and 1.4 lesson have objective responsive and interaction
-  proof, but Austen has not yet completed the required human confidence pass.
-  Do not mark any lesson `CONFIRMED` from the automated checks.
+- The revised route, 1.4 lesson, and landing hierarchy have objective responsive
+  and interaction proof, but Austen has not yet completed the required human
+  confidence pass on the latest layout. Do not mark any lesson `CONFIRMED` from
+  the automated checks.
 
 ## In flight
 
-- No implementation is in flight. The verified 1.4 implementation commit
-  `8e946a002f` was fast-forwarded into `main` on 2026-08-28.
+- No implementation is in flight. The verified landing polish commit
+  `8cd3cfa4b1` was fast-forwarded into `main` on 2026-08-28.
 - The task-owned 5188 preview was stopped and its Chrome DevTools tab was
-  closed after verification.
+  closed after the final rebase check.
 
 ## Loose ends (ranked)
 

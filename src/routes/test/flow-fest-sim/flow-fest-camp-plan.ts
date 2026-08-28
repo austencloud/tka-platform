@@ -25,7 +25,10 @@ export type FlowFestCampPlanLandmarkKind =
   | "camp";
 
 export type FlowFestCampPlanRegionKind =
-  "clearing" | "parking-field" | "crop-field" | "woodland";
+  | "clearing"
+  | "parking-field"
+  | "crop-field"
+  | "woodland";
 
 export interface FlowFestCampPlanLine {
   id: string;
@@ -255,7 +258,7 @@ export const FLOW_FEST_CAMDEN_COLLEGE_CORNER_ROAD = Object.freeze([
   { x: 370, z: -157.5 },
 ] satisfies Array<Pick<FlowFestRuntimePoint, "x" | "z">>);
 
-const ORIENTATION_BOUNDS = Object.freeze({
+export const FLOW_FEST_CAMP_PLAN_BOUNDS = Object.freeze({
   minX: -170,
   maxX: 380,
   minZ: -180,
@@ -673,7 +676,7 @@ export function createFlowFestCampPlan(
     FLOW_FEST_LOWER_CAMPGROUND_LOOP
   );
   return {
-    bounds: { ...ORIENTATION_BOUNDS },
+    bounds: { ...FLOW_FEST_CAMP_PLAN_BOUNDS },
     publicRoads: [
       {
         id: "odot-camden-college-corner-road",

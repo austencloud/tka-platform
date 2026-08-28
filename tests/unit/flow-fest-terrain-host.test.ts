@@ -91,6 +91,42 @@ describe("Flow Fest Gate 2 terrain hosts", () => {
     host.dispose();
   });
 
+  it("keeps the campground on the full grid while decimating only the far field", () => {
+    const terrain = makeTerrain(65, 65);
+    const host = buildFlowFestTerrainHost(terrain, "chunked", null, {
+      fullDetailBounds: { minX: 16, maxX: 48, minZ: 16, maxZ: 48 },
+      farSampleStep: 2,
+    });
+    const mesh = host.root.children[0] as Mesh;
+    const positions = Array.from(
+      mesh.geometry.getAttribute("position").array as Float32Array
+    );
+    const renderedPoints = new Set<string>();
+    for (let offset = 0; offset < positions.length; offset += 3) {
+      renderedPoints.add(`${positions[offset]}:${positions[offset + 2]}`);
+    }
+
+    expect(host.metrics.triangles).toBeLessThan(64 * 64 * 2);
+    expect(host.metrics.triangles).toBeGreaterThan(32 * 32 * 2);
+    expect(host.metrics.fullDetailBounds).toEqual({
+      minX: 16,
+      maxX: 48,
+      minZ: 16,
+      maxZ: 48,
+    });
+    expect(renderedPoints.has("17:17")).toBe(true);
+    expect(renderedPoints.has("1:1")).toBe(false);
+    expect(mesh.geometry.getAttribute("normal").count).toBe(
+      mesh.geometry.getAttribute("position").count
+    );
+    expect(mesh.geometry.getIndex()!.count % 3).toBe(0);
+    expect(
+      Math.max(...Array.from(mesh.geometry.getIndex()!.array))
+    ).toBeLessThan(mesh.geometry.getAttribute("position").count);
+    expect(host.colliders).toHaveLength(4);
+    host.dispose();
+  });
+
   it("samples the meter grid in the declared +X east, +Z south frame", () => {
     const terrain = makeTerrain(33, 33);
     expect(sampleFlowFestTerrainWorldY(terrain, 4, 8)).toBeCloseTo(4, 6);

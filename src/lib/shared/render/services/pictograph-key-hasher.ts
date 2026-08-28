@@ -65,7 +65,9 @@ interface PictographKeyInput {
 }
 
 const BETA_SHIFT_MAP_REVISION = "beta-shift-map-v2";
-const QUARTER_TURN_GLYPH_REVISION = "quarter-turn-glyph-v1";
+const FIRST_QUARTER_TURN_GLYPH_REVISION = "quarter-turn-glyph-v1";
+const COMPLETE_QUARTER_TURN_GLYPH_REVISION = "quarter-turn-glyph-v2";
+const COMPLETED_QUARTER_TURN_VALUES = new Set([0.75, 1.25, 1.75, 2.25, 2.75]);
 const PROP_APPEARANCE_REVISIONS: Readonly<Record<string, string>> = {
   // The original club raster was a single flat silhouette. The regular-club
   // material artwork changes those pixels without changing PropType.CLUB, so
@@ -145,9 +147,10 @@ export function getPictographGeometryRevision(
 }
 
 /**
- * Rekeys only pictographs whose rasterized TKA tuple changed when the 0.25
- * number asset was introduced. Older lsp11/lsp12 blobs were rendered before
- * that glyph existed and otherwise remain valid cache hits forever.
+ * Rekeys only pictographs whose rasterized TKA tuple changed when quarter-turn
+ * number assets were introduced. The original 0.25 asset keeps its established
+ * revision; the remaining Level 4 values use v2 so cached blank columns cannot
+ * survive after their assets become available.
  */
 export function getTurnGlyphRevision(
   data: StepData | PictographData,
@@ -155,12 +158,17 @@ export function getTurnGlyphRevision(
 ): string | undefined {
   if (!showTKA) return undefined;
 
-  const usesQuarterTurn = Object.values(data.motions ?? {}).some((motion) => {
-    if (!motion || motion.isVisible === false) return false;
-    return Number(motion.turns) === 0.25;
-  });
+  const visibleTurns = Object.values(data.motions ?? {}).flatMap((motion) =>
+    !motion || motion.isVisible === false ? [] : [Number(motion.turns)]
+  );
 
-  return usesQuarterTurn ? QUARTER_TURN_GLYPH_REVISION : undefined;
+  if (visibleTurns.some((turns) => COMPLETED_QUARTER_TURN_VALUES.has(turns))) {
+    return COMPLETE_QUARTER_TURN_GLYPH_REVISION;
+  }
+
+  return visibleTurns.includes(0.25)
+    ? FIRST_QUARTER_TURN_GLYPH_REVISION
+    : undefined;
 }
 
 /**

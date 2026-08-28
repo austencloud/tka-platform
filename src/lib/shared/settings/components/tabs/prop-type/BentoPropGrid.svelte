@@ -23,7 +23,7 @@
     isPremiumCosmeticProp,
   } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import { Popover } from "bits-ui";
-  import { flyFade } from "$lib/shared/transitions/motion";
+  import { flyFade, growFade } from "$lib/shared/transitions/motion";
   import PropTypeButton from "./PropTypeButton.svelte";
   import PropChiralityRow from "./PropChiralityRow.svelte";
   import type { PropChiralitySeam } from "./prop-chirality-seam";
@@ -177,6 +177,7 @@
   class="prop-grid-root"
   class:panel={variant === "panel"}
   class:inline={variant === "inline"}
+  class:flat
 >
   {#if variant === "panel"}
     <header class="grid-header">
@@ -323,11 +324,13 @@
   </div>
 
   {#if chirality && isBuugengFamilyProp(selectedPropType)}
-    <PropChiralityRow
-      propType={selectedPropType}
-      hands={chirality.hands}
-      onChange={chirality.onChange}
-    />
+    <div class="chirality-dock" transition:growFade={{ axis: "y" }}>
+      <PropChiralityRow
+        propType={selectedPropType}
+        hands={chirality.hands}
+        onChange={chirality.onChange}
+      />
+    </div>
   {/if}
 
   {#if premiumNudgeFor}
@@ -501,6 +504,18 @@
     width: 100%;
     max-height: none;
     box-shadow: 0 8px 24px var(--theme-shadow, rgba(0, 0, 0, 0.42));
+  }
+
+  .chirality-dock {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  /* The flat picker is the compact/mobile drawer. Chirality is part of
+     choosing Buugeng, so surface it before the prop catalogue instead of
+     making the user scroll through every prop to find the A/B controls. */
+  .prop-grid-root.flat .chirality-dock {
+    order: -1;
   }
 
   /* Paid labels include the product family name. At the narrowest picker

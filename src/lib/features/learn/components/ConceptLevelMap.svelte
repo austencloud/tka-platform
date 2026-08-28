@@ -135,11 +135,11 @@
           {#if selectedPlace.id === "1.1"}
             <div class="grid-preview" aria-label="Diamond and Box grids">
               <figure>
-                <LessonGridDisplay type="diamond" size="small" />
+                <LessonGridDisplay type="diamond" size="medium" />
                 <figcaption>Diamond</figcaption>
               </figure>
               <figure>
-                <LessonGridDisplay type="box" size="small" />
+                <LessonGridDisplay type="box" size="medium" />
                 <figcaption>Box</figcaption>
               </figure>
             </div>
@@ -216,7 +216,7 @@
 
   .atlas-body {
     display: grid;
-    grid-template-columns: minmax(15rem, 0.72fr) minmax(0, 1.28fr);
+    grid-template-columns: clamp(20rem, 30cqw, 28rem) minmax(0, 1fr);
     gap: clamp(1rem, 3cqw, 2rem);
     align-items: start;
   }
@@ -425,28 +425,31 @@
   }
 
   .place-detail {
+    align-self: start;
     min-width: 0;
-    min-height: 100%;
     padding: clamp(1rem, 3cqw, 1.5rem);
     background: color-mix(in srgb, var(--theme-card-bg) 82%, transparent);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
   }
 
+  .place-detail article {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+  }
+
   .grid-preview {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 17.5rem));
+    justify-content: start;
     gap: 0.75rem;
-    margin-top: 1rem;
+    margin: 0;
   }
 
   .grid-preview figure {
     min-width: 0;
     margin: 0;
-    padding: 0.625rem;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 12px;
   }
 
   .grid-preview figcaption {
@@ -496,10 +499,10 @@
   }
 
   .resource-actions {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 0.625rem;
-    margin-top: 1rem;
+    margin: 0;
   }
 
   .resource-action {
@@ -508,6 +511,9 @@
     align-items: flex-start;
     justify-content: center;
     gap: 0.2rem;
+    flex: 0 1 auto;
+    width: fit-content;
+    max-width: 22rem;
     min-height: var(--min-touch-target, 44px);
     padding: 0.7rem 0.875rem;
     border-radius: 10px;
@@ -525,9 +531,23 @@
   }
 
   .resource-action.primary {
-    background: var(--theme-accent, #7c3aed);
-    border: 1px solid var(--theme-accent, #7c3aed);
-    color: var(--theme-text-on-accent, #fff);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #7c3aed) 12%,
+      var(--theme-card-bg)
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #7c3aed) 62%, var(--theme-stroke));
+    color: var(--theme-text);
+  }
+
+  .resource-action.primary:hover {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #7c3aed) 19%,
+      var(--theme-card-bg)
+    );
+    border-color: var(--theme-accent, #7c3aed);
   }
 
   .resource-action.secondary {
@@ -548,9 +568,42 @@
   }
 
   .unmapped-note {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--theme-stroke);
+    margin: 0;
+  }
+
+  @container (min-width: 70rem) {
+    .place-detail:not(:has(.grid-preview)) {
+      max-width: 36rem;
+    }
+
+    .place-detail article {
+      grid-template-columns: minmax(13rem, 0.7fr) minmax(24rem, 1.3fr);
+      grid-template-areas:
+        "heading preview"
+        "heading actions";
+      column-gap: clamp(1.5rem, 3cqw, 3rem);
+      align-items: start;
+    }
+
+    .place-detail article:not(:has(.grid-preview)) {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "heading"
+        "actions";
+    }
+
+    .place-heading {
+      grid-area: heading;
+    }
+
+    .grid-preview {
+      grid-area: preview;
+    }
+
+    .resource-actions,
+    .unmapped-note {
+      grid-area: actions;
+    }
   }
 
   @container (max-width: 56rem) {
@@ -604,8 +657,10 @@
       text-align: left;
     }
 
-    .resource-actions {
-      grid-template-columns: 1fr;
+    .resource-action {
+      flex: 1 1 14rem;
+      width: auto;
+      max-width: none;
     }
   }
 

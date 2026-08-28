@@ -38,6 +38,8 @@ const HOSTS: Record<string, string> = {
     "src/lib/features/create/shared/components/coordinators/StepEditorCoordinator.svelte",
   "settings prop type tab":
     "src/lib/shared/settings/components/tabs/PropTypeTab.svelte",
+  "sequence viewer props panel":
+    "src/lib/shared/sequence-viewer/components/SequenceViewerShell.svelte",
   "tunnel settings panel":
     "src/lib/features/create/tunnel/components/TunnelLayout.svelte",
   "viewer tunnel art settings":
@@ -94,6 +96,51 @@ describe("buugeng chirality is owned by the prop picker", () => {
     const row = read(ROW_PATH);
     expect(row).toMatch(/\{#each hands as/);
     expect(row).toContain("onChange(state.hand,");
+    expect(row).toContain('state.hand === "red" ? "Red prop" : "Blue prop"');
+  });
+
+  it("keeps the prop sheet open after every selection", () => {
+    const sheet = read(SHEET_PATH);
+    const selectionHandler = sheet.slice(
+      sheet.indexOf("function handlePropSelect"),
+      sheet.indexOf("function handleTabChange")
+    );
+    expect(selectionHandler).toContain("onSelect(propType)");
+    expect(selectionHandler).not.toContain("isOpen = false");
+    expect(sheet).not.toContain("autoClose");
+  });
+
+  it("no prop-sheet host dismisses from its selection callback", () => {
+    const main = read(
+      "src/lib/shared/application/components/MainApplication.svelte"
+    );
+    const mainHandler = main.slice(
+      main.indexOf("function handleGlobalPropSelect"),
+      main.indexOf("function handleCatDogToggle")
+    );
+    expect(mainHandler).not.toContain("propDrawerState.close()");
+
+    const stepEditor = read(
+      "src/lib/features/create/shared/components/coordinators/StepEditorCoordinator.svelte"
+    );
+    const stepHandler = stepEditor.slice(
+      stepEditor.indexOf("function handlePropSelect"),
+      stepEditor.indexOf("function handlePushUndoSnapshot")
+    );
+    expect(stepHandler).not.toContain("propSheetOpen = false");
+
+    const arena = read(
+      "src/lib/features/arena/components/battle/ArenaPropDrawer.svelte"
+    );
+    expect(arena).not.toContain("onClose");
+  });
+
+  it("puts chirality before the prop catalogue in compact drawers", () => {
+    const grid = read(GRID_PATH);
+    expect(grid).toContain("class:flat");
+    expect(grid).toMatch(
+      /\.prop-grid-root\.flat \.chirality-dock\s*\{\s*order: -1;/
+    );
   });
 
   it("no seam ever writes one hand's chirality onto the other", () => {
@@ -119,9 +166,12 @@ describe("buugeng chirality is owned by the prop picker", () => {
     expect(tab).not.toContain("redBuugengFlipped = blueBuugengFlipped");
   });
 
-  it.each(Object.entries(HOSTS))("%s passes a chirality seam", (_name, file) => {
-    expect(read(file)).toMatch(/chirality(=\{|Seam\(|\})|propChirality=\{/);
-  });
+  it.each(Object.entries(HOSTS))(
+    "%s passes a chirality seam",
+    (_name, file) => {
+      expect(read(file)).toMatch(/chirality(=\{|Seam\(|\})|propChirality=\{/);
+    }
+  );
 
   it.each(Object.entries(NON_HOSTS))(
     "%s does not expose chirality",

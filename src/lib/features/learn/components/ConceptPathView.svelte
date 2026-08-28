@@ -206,51 +206,52 @@ Shows:
 </script>
 
 <div class="concept-path">
-  <header class="course-intro" style:view-transition-name="launchpad-guide">
-    <div>
-      <span class="course-kicker">Learn by doing</span>
-      <h1>Interactive TKA lessons</h1>
-      <p>
-        Start with the grid and build toward reading words. Each lesson gives
-        you one thing to play with at a time.
-      </p>
-    </div>
-    <a class="read-guide-link" href="/guide">
-      <i class="fa-solid fa-book-open" aria-hidden="true"></i>
-      <span>Read the Guide</span>
-    </a>
-  </header>
-
-  <!-- Main content area -->
-  <div class="main-content">
-    {#if isJourneyComplete}
-      <!-- Celebration state -->
-      <div class="completion-celebration">
-        <div class="celebration-icon">
-          <i class="fa-solid fa-trophy" aria-hidden="true"></i>
-        </div>
-        <h2>Level 1 Complete!</h2>
-        <p>You've completed every interactive lesson currently available.</p>
-        <button class="review-button" onclick={() => (showAllConcepts = true)}>
-          <i class="fa-solid fa-rotate" aria-hidden="true"></i>
-          Review Concepts
-        </button>
+  <section class="launch-zone" aria-labelledby="course-title">
+    <header class="course-intro" style:view-transition-name="launchpad-guide">
+      <div>
+        <span class="course-kicker">Learn by doing</span>
+        <h1 id="course-title">Interactive TKA lessons</h1>
+        <p>
+          Start with the grid and build toward reading words. Each lesson gives
+          you one thing to play with at a time.
+        </p>
       </div>
-    {:else}
-      <!-- Hero Card -->
-      <HeroConceptCard
-        concept={currentConcept()}
-        status={currentConceptStatus}
-        onStart={handleConceptStart}
-      />
+      <a class="read-guide-link" href="/guide">
+        <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+        <span>Read the Guide</span>
+      </a>
+    </header>
 
-      <!-- Journey position -->
-      <ConceptContext
-        previousConcept={previousConcept()}
-        nextConcept={nextUpConcept()}
-      />
-    {/if}
-  </div>
+    <div class="main-content">
+      {#if isJourneyComplete}
+        <div class="completion-celebration">
+          <div class="celebration-icon">
+            <i class="fa-solid fa-trophy" aria-hidden="true"></i>
+          </div>
+          <h2>Level 1 Complete!</h2>
+          <p>You've completed every interactive lesson currently available.</p>
+          <button
+            class="review-button"
+            onclick={() => (showAllConcepts = true)}
+          >
+            <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+            Review Concepts
+          </button>
+        </div>
+      {:else}
+        <HeroConceptCard
+          concept={currentConcept()}
+          status={currentConceptStatus}
+          onStart={handleConceptStart}
+        />
+
+        <ConceptContext
+          previousConcept={previousConcept()}
+          nextConcept={nextUpConcept()}
+        />
+      {/if}
+    </div>
+  </section>
 
   <div class="level-map-slot">
     <ConceptLevelMap
@@ -322,12 +323,12 @@ Shows:
   .concept-path {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: clamp(1rem, 1.5cqw, 1.5rem);
     padding: 1.5rem;
     padding-bottom: 5rem;
     min-height: 100%;
     overflow-y: auto;
-    max-width: 1200px;
+    max-width: min(100%, 110rem);
     margin: 0 auto;
     width: 100%;
 
@@ -336,15 +337,21 @@ Shows:
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
+  .launch-zone {
+    display: grid;
+    gap: clamp(1rem, 2cqw, 1.75rem);
+    padding: clamp(1rem, 2cqw, 1.5rem);
+    background: var(--theme-panel-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 16px;
+  }
+
   .course-intro {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1.5rem;
-    padding: 1.25rem 1.5rem;
-    background: var(--theme-panel-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 16px;
+    padding: 0.25rem;
   }
 
   .course-intro > div {
@@ -422,7 +429,7 @@ Shows:
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    max-width: 600px;
+    max-width: 52rem;
     margin: 0 auto;
     width: 100%;
   }
@@ -585,16 +592,32 @@ Shows:
     }
   }
 
-  @container learn-tab (min-width: 1800px) {
-    .concept-path {
-      gap: clamp(1.25rem, 1.5cqw, 2rem);
-      max-width: min(2800px, 92cqw);
-      padding: clamp(2rem, 3cqw, 4rem);
-      font-size: clamp(16px, calc(16px + (100cqw - 1680px) * 8 / 2160), 24px);
+  @container learn-tab (min-width: 70rem) {
+    .launch-zone {
+      grid-template-columns: minmax(20rem, 0.78fr) minmax(34rem, 1.22fr);
+      align-items: center;
+    }
+
+    .course-intro {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .read-guide-link {
+      align-self: flex-start;
     }
 
     .main-content {
-      max-width: 760px;
+      max-width: none;
+      margin: 0;
+    }
+  }
+
+  @container learn-tab (min-width: 1800px) {
+    .concept-path {
+      gap: clamp(1.25rem, 1.5cqw, 2rem);
+      max-width: min(110rem, 92cqw);
+      padding: clamp(2rem, 2.5cqw, 3rem);
     }
 
     .level-map-slot {
