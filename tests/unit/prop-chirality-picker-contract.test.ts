@@ -99,16 +99,40 @@ describe("buugeng chirality is owned by the prop picker", () => {
     expect(row).toContain('state.hand === "red" ? "Red prop" : "Blue prop"');
   });
 
-  it("keeps an auto-closing sheet open for the chirality choice", () => {
+  it("keeps the prop sheet open after every selection", () => {
     const sheet = read(SHEET_PATH);
-    expect(sheet).toContain("isBuugengFamilyProp");
-    expect(sheet).toContain("needsChiralityChoice");
-    // The host callback may close the bound state itself. The sheet must
-    // explicitly restore it after onSelect rather than merely skip its own
-    // auto-close branch.
-    expect(sheet).toMatch(
-      /onSelect\(propType\);\s*if \(needsChiralityChoice\) \{\s*isOpen = true;\s*return;/
+    const selectionHandler = sheet.slice(
+      sheet.indexOf("function handlePropSelect"),
+      sheet.indexOf("function handleTabChange")
     );
+    expect(selectionHandler).toContain("onSelect(propType)");
+    expect(selectionHandler).not.toContain("isOpen = false");
+    expect(sheet).not.toContain("autoClose");
+  });
+
+  it("no prop-sheet host dismisses from its selection callback", () => {
+    const main = read(
+      "src/lib/shared/application/components/MainApplication.svelte"
+    );
+    const mainHandler = main.slice(
+      main.indexOf("function handleGlobalPropSelect"),
+      main.indexOf("function handleCatDogToggle")
+    );
+    expect(mainHandler).not.toContain("propDrawerState.close()");
+
+    const stepEditor = read(
+      "src/lib/features/create/shared/components/coordinators/StepEditorCoordinator.svelte"
+    );
+    const stepHandler = stepEditor.slice(
+      stepEditor.indexOf("function handlePropSelect"),
+      stepEditor.indexOf("function handlePushUndoSnapshot")
+    );
+    expect(stepHandler).not.toContain("propSheetOpen = false");
+
+    const arena = read(
+      "src/lib/features/arena/components/battle/ArenaPropDrawer.svelte"
+    );
+    expect(arena).not.toContain("onClose");
   });
 
   it("puts chirality before the prop catalogue in compact drawers", () => {
