@@ -36,6 +36,8 @@
     // Prop type overrides for demo/preview rendering (bypasses global settings)
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
+    blueColorOverride = undefined,
+    redColorOverride = undefined,
     transitionKey = null,
     onContentReady = undefined,
   } = $props<{
@@ -63,6 +65,10 @@
     bluePropTypeOverride?: PropType;
     /** Override prop type for red hand. Bypasses global settings for demo/preview rendering. */
     redPropTypeOverride?: PropType;
+    /** Display-only color for the blue-hand prop and arrow. */
+    blueColorOverride?: string;
+    /** Display-only color for the red-hand prop and arrow. */
+    redColorOverride?: string;
     /** Stable history identity used to preserve prop and arrow motion through reordering. */
     transitionKey?: string | null;
     /**
@@ -342,6 +348,8 @@
     {transitionKey}
     {bluePropTypeOverride}
     {redPropTypeOverride}
+    {blueColorOverride}
+    {redColorOverride}
     onReady={onContentReady}
     readyEpoch={animationEpoch}
   />

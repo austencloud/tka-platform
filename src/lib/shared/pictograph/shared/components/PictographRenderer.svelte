@@ -60,6 +60,8 @@ Usage:
     // Motion visibility (hides arrows + props for that hand)
     blueMotionVisible = true,
     redMotionVisible = true,
+    blueColorOverride = undefined,
+    redColorOverride = undefined,
     // Core visibility controls
     showGrid = true,
     showTKA = true,
@@ -135,6 +137,9 @@ Usage:
     blueMotionVisible?: boolean;
     /** Hide red hand arrows + props when false */
     redMotionVisible?: boolean;
+    /** Display-only hand colors for Tunnel performer cards. */
+    blueColorOverride?: string;
+    redColorOverride?: string;
     /** Master toggle for grid visibility */
     showGrid?: boolean;
     showTKA?: boolean;
@@ -458,6 +463,9 @@ Usage:
               directPositioning={propPositionOverrides?.[color] !== undefined}
               {propRenderContext}
               darkMode={darkMode ?? false}
+              colorOverride={color === "blue"
+                ? blueColorOverride
+                : redColorOverride}
             />
           </g>
         {/if}
@@ -483,6 +491,9 @@ Usage:
                   {transitionKey}
                   {darkMode}
                   renderPart="shaft"
+                  colorOverride={color === "blue"
+                    ? blueColorOverride
+                    : redColorOverride}
                 />
               </g>
             {/if}
@@ -503,6 +514,9 @@ Usage:
                   {transitionKey}
                   {darkMode}
                   renderPart="tip"
+                  colorOverride={color === "blue"
+                    ? blueColorOverride
+                    : redColorOverride}
                 />
               </g>
             {/if}
@@ -524,6 +538,9 @@ Usage:
                   {cellIndex}
                   {transitionKey}
                   {darkMode}
+                  colorOverride={color === "blue"
+                    ? blueColorOverride
+                    : redColorOverride}
                 />
               </g>
             {/if}

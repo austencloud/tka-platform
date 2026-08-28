@@ -173,7 +173,7 @@ describe("tunnel creator edit state", () => {
     ).toEqual({ lead: 2, partner: 2, third: 2, fourth: 2 });
   });
 
-  it("adds stable performer cards up to the formation and schema ceilings", () => {
+  it("keeps normal authoring to four stable performer cards", () => {
     const state = createState({
       openComposition: vi.fn(),
       initialFormation: { ...DEFAULT_CONFIG, fold: 8, speedOverrides: {} },
@@ -186,13 +186,13 @@ describe("tunnel creator edit state", () => {
 
     while (state.canAddPerformer) expect(state.addPerformer()).not.toBeNull();
 
-    expect(state.performerSlots).toHaveLength(8);
+    expect(state.performerSlots).toHaveLength(4);
     expect(state.performerSlots.slice(0, 2).map((slot) => slot.id)).toEqual(
       initialIds
     );
-    expect(new Set(state.performerSlots.map((slot) => slot.id)).size).toBe(8);
+    expect(new Set(state.performerSlots.map((slot) => slot.id)).size).toBe(4);
     expect(state.addPerformer()).toBeNull();
-    expect(state.addPerformerBlockedReason).toContain("eight");
+    expect(state.addPerformerBlockedReason).toContain("four");
 
     const restored = createState({
       openComposition: vi.fn(),
@@ -201,6 +201,71 @@ describe("tunnel creator edit state", () => {
     expect(restored.performerSlots.map((slot) => slot.id)).toEqual(
       state.performerSlots.map((slot) => slot.id)
     );
+  });
+
+  it("preserves legacy casts above the four-performer authoring ceiling", () => {
+    const initial = composition();
+    for (let index = 4; index <= 6; index += 1) {
+      initial.performers.push({
+        id: `legacy-${index}`,
+        label: `Performer ${index}`,
+        source: {
+          kind: "derived",
+          performerId: "lead",
+          transforms: [],
+        },
+        timing: { stepOffset: index - 1, speed: 1 },
+      });
+    }
+    initial.formation = { ...DEFAULT_CONFIG, fold: 8, speedOverrides: {} };
+
+    const state = createState({
+      openComposition: vi.fn(),
+      initialComposition: initial,
+    });
+
+    expect(state.performerSlots).toHaveLength(6);
+    expect(
+      state.previewCompositionWithFormation(initial.formation)?.performers
+    ).toHaveLength(6);
+    expect(state.canAddPerformer).toBe(false);
+    expect(state.addPerformerBlockedReason).toContain("preserved");
+  });
+
+  it("builds a seeded canon as real linked performers with distributed offsets", () => {
+    const state = createState({
+      openComposition: vi.fn(),
+      initialFormation: { ...DEFAULT_CONFIG, fold: 4, speedOverrides: {} },
+      createId: (() => {
+        let id = 0;
+        return () => `canon-${++id}`;
+      })(),
+    });
+    const leadId = state.performerIdAt(0)!;
+    state.setPerformerSequence(leadId, {
+      ...sequence,
+      steps: Array.from({ length: 16 }, (_, index) => ({
+        id: `step-${index}`,
+      })),
+    } as unknown as SequenceData);
+
+    state.setWorkflow("seeded");
+    expect(state.setPerformerCount(4)).toBe(true);
+
+    const performers = state.previewCompositionWithFormation({
+      ...DEFAULT_CONFIG,
+      fold: 4,
+      speedOverrides: {},
+    })!.performers;
+    expect(performers).toHaveLength(4);
+    expect(performers.slice(1).map((performer) => performer.source)).toEqual([
+      { kind: "derived", performerId: leadId, transforms: [] },
+      { kind: "derived", performerId: leadId, transforms: [] },
+      { kind: "derived", performerId: leadId, transforms: [] },
+    ]);
+    expect(performers.map((performer) => performer.timing.stepOffset)).toEqual([
+      0, 4, 8, 12,
+    ]);
   });
 
   it("keeps derived lineage valid while reordering and removing cards", () => {
@@ -320,6 +385,7 @@ describe("tunnel creator edit state", () => {
     const performerOne = composition().performers[0];
     const draft: TunnelCreatorDraft = {
       version: TUNNEL_CREATOR_DRAFT_VERSION,
+      workflow: "custom",
       mode: "separate",
       composition: {
         ...composition(),
