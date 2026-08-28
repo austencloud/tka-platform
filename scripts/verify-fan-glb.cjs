@@ -320,6 +320,51 @@ invariant(
   "Lotus fan no longer carries five complete two-sided petals"
 );
 invariant(
+  Math.abs(lotusGroup.extras?.tka_wick_attachment_inset_m - 0.004) < 1e-7,
+  "Lotus rails no longer enter four millimetres into the wick bases"
+);
+invariant(
+  Math.abs(lotusGroup.extras?.tka_wick_attachment_half_spacing_m - 0.004) <
+    1e-7,
+  "Lotus paired rails no longer use the measured base spacing"
+);
+const lotusAttachmentPairs = lotusGroup.extras?.tka_wick_attachment_pairs_m;
+invariant(
+  Array.isArray(lotusAttachmentPairs) &&
+    lotusAttachmentPairs.length === 5 &&
+    lotusAttachmentPairs.every(
+      (pair) =>
+        Array.isArray(pair) &&
+        pair.length === 2 &&
+        pair.every((attachment) => attachment.length === 3)
+    ),
+  "Lotus fan must preserve two bottom-cap attachments for every wick"
+);
+const lotusAttachmentNodes = nodes
+  .map((node, index) => ({ node, index }))
+  .filter(({ node }) => node.extras?.tka_wick_attachment_m);
+invariant(
+  lotusAttachmentNodes.length === 10,
+  "Every Lotus petal rail must record its wick-base attachment"
+);
+for (const { node, index } of lotusAttachmentNodes) {
+  const attachment = new Vector3().fromArray(
+    node.extras.tka_wick_attachment_m
+  );
+  const bounds = stats.meshBounds.get(index);
+  invariant(bounds, `${node.name} has no mesh bounds`);
+  for (const axis of ["x", "y", "z"]) {
+    invariant(
+      attachment[axis] >= bounds.minimum[axis] - 1e-5 &&
+        attachment[axis] <= bounds.maximum[axis] + 1e-5,
+      `${node.name} does not physically reach its wick-base attachment`
+    );
+  }
+}
+console.log(
+  "FAN_LOTUS_WICK_ATTACHMENTS=verified-10-rails-inside-5-base-caps"
+);
+invariant(
   dayPlate.extras?.tka_trace_contours === 18,
   "Day fan is not the 18-contour product-image trace"
 );

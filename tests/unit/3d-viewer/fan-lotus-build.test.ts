@@ -43,11 +43,18 @@ const reference = JSON.parse(
     finger_ring_center_y: number;
     cradle_bottom_y: number;
     outer_wick_center: [number, number];
+    outer_wick_direction: [number, number];
     diagonal_wick_center: [number, number];
     center_wick_center_y: number;
+    wick_attachment_inset_m: number;
+    wick_attachment_half_spacing_m: number;
     left_frame_paths: Record<string, [number, number][]>;
   };
-  calibration: { symmetry: string; wick_diameter_m: number };
+  calibration: {
+    symmetry: string;
+    wick_attachment: string;
+    wick_diameter_m: number;
+  };
 };
 
 describe("Medium Lotus five-wick fire fan", () => {
@@ -121,6 +128,28 @@ describe("Medium Lotus five-wick fire fan", () => {
     expect(
       outerX + reference.published_construction.wick_length_m / 2
     ).toBeLessThan(reference.published_dimensions_m[0] / 2 + 0.002);
+  });
+
+  it("terminates every paired rail inside the inward-facing wick base", () => {
+    const inset = reference.geometry_m.wick_attachment_inset_m;
+    const halfSpacing = reference.geometry_m.wick_attachment_half_spacing_m;
+    const wickRadius = reference.calibration.wick_diameter_m / 2;
+
+    expect(inset).toBe(0.004);
+    expect(halfSpacing).toBe(0.004);
+    expect(inset).toBeGreaterThan(0);
+    expect(inset).toBeLessThan(
+      reference.published_construction.wick_length_m / 2
+    );
+    expect(halfSpacing + 0.002).toBeLessThan(wickRadius);
+    expect(reference.calibration.wick_attachment).toContain(
+      "inward-facing circular base"
+    );
+    expect(builder).toContain("wick_base = centre - direction * wick_half");
+    expect(builder).toContain(
+      "insertion_centre = wick_base + direction * attachment_inset"
+    );
+    expect(builder).toContain('left_rod["tka_wick_attachment_m"]');
   });
 
   it("keeps four build tiles balanced in wide and narrow picker containers", () => {
