@@ -290,7 +290,7 @@ invariant(
 );
 invariant(
   JSON.stringify(lotusGroup.extras?.tka_reference_pivot_px) ===
-    JSON.stringify([900, 1235]),
+    JSON.stringify([900, 1230]),
   "Lotus fan pivot moved away from the Russian grip centre"
 );
 invariant(
@@ -298,12 +298,14 @@ invariant(
   "Lotus fan spinning ring is no longer the published 3 5/8-inch ID"
 );
 invariant(
-  Math.abs(lotusGroup.extras?.tka_finger_ring_id_m - 0.025) < 1e-7,
-  "Lotus fan finger ring no longer matches the photographed 25mm opening"
+  Math.abs(lotusGroup.extras?.tka_finger_ring_id_m - 0.0155) < 1e-7,
+  "Lotus fan finger ring no longer matches the calibrated photograph"
 );
 invariant(
-  Math.abs(lotusGroup.extras?.tka_wick_length_m - 0.05) < 1e-7,
-  "Lotus fan no longer uses the published 50mm wicks"
+  Math.abs(lotusGroup.extras?.tka_wick_tape_width_m - 0.05) < 1e-7 &&
+    Math.abs(lotusGroup.extras?.tka_wick_roll_length_m - 0.05) < 1e-7 &&
+    Math.abs(lotusGroup.extras?.tka_wick_diameter_m - 0.028) < 1e-7,
+  "Lotus fan wick roll no longer matches the calibrated 50 x 28mm body"
 );
 invariant(
   Math.abs(lotusGroup.extras?.tka_frame_stock_diameter_m - 0.004) < 1e-7 &&
@@ -318,6 +320,11 @@ invariant(
   lotusGroup.extras?.tka_petal_count === 5 &&
     lotusGroup.extras?.tka_frame_path_count === 10,
   "Lotus fan no longer carries five complete two-sided petals"
+);
+invariant(
+  lotusGroup.extras?.tka_wick_mount ===
+    "paired axial tines through inward-facing end caps",
+  "Lotus wire is no longer mounted through the five inward-facing wick caps"
 );
 invariant(
   dayPlate.extras?.tka_trace_contours === 18,
@@ -378,6 +385,96 @@ for (let index = 1; index <= 5; index += 1) {
   );
 }
 
+const lotusTinePairs = lotusGroup.extras?.tka_wick_tine_pairs_m;
+const lotusWickCenters = lotusGroup.extras?.tka_wick_centers_m;
+const lotusWickDirections = lotusGroup.extras?.tka_wick_directions_m;
+invariant(
+  lotusTinePairs?.length === 5 &&
+    lotusWickCenters?.length === 5 &&
+    lotusWickDirections?.length === 5,
+  "Lotus wick mounting metadata must describe five paired axial mounts"
+);
+const expectedLotusTines = lotusTinePairs.flat();
+const actualLotusTines = nodes
+  .map((node, nodeIndex) => ({ node, nodeIndex }))
+  .filter(({ node }) => node.extras?.tka_wick_tine_neck_m)
+  .map(({ node, nodeIndex }) => ({
+    nodeIndex,
+    neck: node.extras.tka_wick_tine_neck_m,
+    entry: node.extras.tka_wick_tine_entry_m,
+  }));
+invariant(
+  expectedLotusTines.length === 10 && actualLotusTines.length === 10,
+  "Lotus fan must carry ten independently verifiable wick tines"
+);
+
+const pointsMatch = (left, right, tolerance = 1e-7) =>
+  left.every((value, axis) => Math.abs(value - right[axis]) < tolerance);
+for (const actual of actualLotusTines) {
+  invariant(
+    expectedLotusTines.some(
+      ([neck, entry]) =>
+        pointsMatch(actual.neck, neck) && pointsMatch(actual.entry, entry)
+    ),
+    `Lotus tine node ${nodes[actual.nodeIndex].name} drifted from its measured mount pair`
+  );
+  const bounds = stats.meshBounds.get(actual.nodeIndex);
+  const entry = new Vector3().fromArray(actual.entry);
+  invariant(
+    entry.x >= bounds.minimum.x - 0.0021 &&
+      entry.x <= bounds.maximum.x + 0.0021 &&
+      entry.y >= bounds.minimum.y - 0.0021 &&
+      entry.y <= bounds.maximum.y + 0.0021 &&
+      entry.z >= bounds.minimum.z - 0.0021 &&
+      entry.z <= bounds.maximum.z + 0.0021,
+    `Lotus tine node ${nodes[actual.nodeIndex].name} does not physically reach its wick entry point`
+  );
+}
+
+const lotusRollHalf = lotusGroup.extras.tka_wick_roll_length_m / 2;
+const lotusStraightLength = lotusGroup.extras.tka_wick_tine_straight_length_m;
+const lotusInsertionDepth = lotusGroup.extras.tka_wick_tine_insertion_depth_m;
+const lotusTineHalfSpacing = lotusGroup.extras.tka_wick_tine_half_spacing_m;
+for (let wickIndex = 0; wickIndex < 5; wickIndex += 1) {
+  const center = new Vector3().fromArray(lotusWickCenters[wickIndex]);
+  const direction = new Vector3()
+    .fromArray(lotusWickDirections[wickIndex])
+    .normalize();
+  const baseCenter = center.clone().addScaledVector(direction, -lotusRollHalf);
+  const entries = [];
+  for (const [neckArray, entryArray] of lotusTinePairs[wickIndex]) {
+    const neck = new Vector3().fromArray(neckArray);
+    const entry = new Vector3().fromArray(entryArray);
+    const axialRun = entry.clone().sub(neck);
+    invariant(
+      Math.abs(
+        axialRun.length() - (lotusStraightLength + lotusInsertionDepth)
+      ) < 1e-7 && axialRun.clone().normalize().dot(direction) > 0.999999,
+      `Lotus wick ${wickIndex + 1} has a tine that is not axial below the cap`
+    );
+    const entryOffset = entry.clone().sub(baseCenter);
+    const insertion = entryOffset.dot(direction);
+    const transverse = entryOffset
+      .clone()
+      .addScaledVector(direction, -insertion)
+      .length();
+    invariant(
+      Math.abs(insertion - lotusInsertionDepth) < 1e-7 &&
+        Math.abs(transverse - lotusTineHalfSpacing) < 1e-7,
+      `Lotus wick ${wickIndex + 1} tine misses the inward-facing base cap`
+    );
+    entries.push(entry);
+  }
+  invariant(
+    Math.abs(entries[0].distanceTo(entries[1]) - lotusTineHalfSpacing * 2) <
+      1e-7,
+    `Lotus wick ${wickIndex + 1} tines no longer preserve their paired spacing`
+  );
+}
+console.log(
+  "FAN_LOTUS_WICK_MOUNTS=verified-10-axial-tines-through-5-base-caps"
+);
+
 const requiredMaterials = [
   "TKA_Fan_Fire_Steel",
   "TKA_Fan_Lotus_Powdercoat",
@@ -425,7 +522,7 @@ invariant(
   Number.isInteger(
     lotusWickMaterial.pbrMetallicRoughness?.baseColorTexture?.index
   ),
-  "Lotus Kevlar is missing its embedded crossed-thread color texture"
+  "Lotus Kevlar is missing its embedded row-braided color texture"
 );
 invariant(
   Number.isInteger(lotusWickMaterial.normalTexture?.index) &&

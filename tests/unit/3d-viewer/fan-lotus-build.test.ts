@@ -42,12 +42,22 @@ const reference = JSON.parse(
     finger_ring_inside_diameter_m: number;
     finger_ring_center_y: number;
     cradle_bottom_y: number;
+    wick_roll_length_m: number;
+    wick_tine_half_spacing_m: number;
+    wick_tine_straight_length_m: number;
+    wick_tine_blend_length_m: number;
+    wick_tine_insertion_depth_m: number;
     outer_wick_center: [number, number];
+    outer_wick_direction: [number, number];
     diagonal_wick_center: [number, number];
     center_wick_center_y: number;
     left_frame_paths: Record<string, [number, number][]>;
   };
-  calibration: { symmetry: string; wick_diameter_m: number };
+  calibration: {
+    symmetry: string;
+    wick_diameter_m: number;
+    wick_mount: string;
+  };
 };
 
 describe("Medium Lotus five-wick fire fan", () => {
@@ -59,7 +69,8 @@ describe("Medium Lotus five-wick fire fan", () => {
       frame_stock_diameter_m: 0.004,
       grip_stock_diameter_m: 0.007,
     });
-    expect(reference.geometry_m.finger_ring_inside_diameter_m).toBe(0.025);
+    expect(reference.geometry_m.finger_ring_inside_diameter_m).toBe(0.0155);
+    expect(reference.geometry_m.wick_roll_length_m).toBe(0.05);
     expect(reference.calibration.wick_diameter_m).toBe(0.028);
     expect(builder).toContain("LOTUS_WIDTH_M = 0.48");
     expect(builder).toContain("LOTUS_HEIGHT_M = 0.35");
@@ -74,7 +85,7 @@ describe("Medium Lotus five-wick fire fan", () => {
       right: 1769,
       bottom: 1503,
     });
-    expect(reference.pivot_px).toEqual([900, 1235]);
+    expect(reference.pivot_px).toEqual([900, 1230]);
     expect(reference.pixel_scale_m[0]).toBeCloseTo(0.48 / (1769 - 45), 12);
     expect(reference.pixel_scale_m[1]).toBeCloseTo(0.35 / (1503 - 310), 12);
   });
@@ -100,7 +111,7 @@ describe("Medium Lotus five-wick fire fan", () => {
   });
 
   it("preserves the Russian grip, finger ring, lower cradle, and woven Kevlar", () => {
-    expect(reference.geometry_m.finger_ring_center_y).toBeCloseTo(0.0715, 7);
+    expect(reference.geometry_m.finger_ring_center_y).toBeCloseTo(0.0675, 7);
     expect(reference.geometry_m.cradle_bottom_y).toBeCloseTo(-0.076, 7);
     expect(builder).toContain('"Fan_Lotus_GripRing"');
     expect(builder).toContain('"Fan_Lotus_FingerRing"');
@@ -110,6 +121,43 @@ describe("Medium Lotus five-wick fire fan", () => {
     expect(builder).toContain("write_rgba_png(");
     expect(builder).toContain('nodes.new("ShaderNodeNormalMap")');
     expect(builder).toContain('f"Fan_Lotus_Wick_{index}"');
+  });
+
+  it("seats ten parallel wire tines through the five inward-facing wick caps", () => {
+    expect(reference.geometry_m).toMatchObject({
+      wick_tine_half_spacing_m: 0.004,
+      wick_tine_straight_length_m: 0.009,
+      wick_tine_blend_length_m: 0.022,
+      wick_tine_insertion_depth_m: 0.01,
+    });
+    expect(reference.calibration.wick_mount).toContain(
+      "enter through the inward-facing end cap"
+    );
+    expect(builder).toContain(
+      'parent["tka_wick_mount"] = "paired axial tines through inward-facing end caps"'
+    );
+    expect(builder).toContain('left_rod["tka_wick_tine_neck_m"]');
+    expect(builder).toContain('left_rod["tka_wick_tine_entry_m"]');
+    expect(builder).toContain("neck.lerp(entry, step / 8)");
+  });
+
+  it("joins the centre lotus petal to the photographed finger-ring shoulders", () => {
+    const [startX, startY] =
+      reference.geometry_m.left_frame_paths.center_petal[0];
+    const offsetFromFingerRing = Math.hypot(
+      startX,
+      startY - reference.geometry_m.finger_ring_center_y
+    );
+    const fingerRingInnerRadius =
+      reference.geometry_m.finger_ring_inside_diameter_m / 2;
+    const fingerRingOuterRadius =
+      fingerRingInnerRadius +
+      reference.published_construction.frame_stock_diameter_m;
+
+    expect(offsetFromFingerRing).toBeGreaterThan(fingerRingInnerRadius);
+    expect(offsetFromFingerRing).toBeLessThanOrEqual(
+      fingerRingOuterRadius + 0.0005
+    );
   });
 
   it("keeps all five measured wick centres inside the published envelope", () => {
