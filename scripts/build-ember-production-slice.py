@@ -37,6 +37,10 @@ R8_PRODUCTION_BLEND_PATH = PROJECT_ROOT / "blender" / "ember-volcanic-world-prod
 R8_PRODUCTION_REPORT_PATH = R8_PRODUCTION_EVIDENCE_DIR / "ember-volcanic-world-production-slice-r8-report.json"
 R9_SURFACE_TARGET_EVIDENCE_DIR = SPEC_DIR / "evidence" / "gate-3-surface-r9"
 R9_SURFACE_TARGET_BLEND_PATH = PROJECT_ROOT / "blender" / "ember-surface-ecology-r9-targets.blend"
+R9_PRODUCTION_EVIDENCE_DIR = SPEC_DIR / "evidence" / "gate-4-surface-r9"
+R9_PRODUCTION_BLEND_PATH = PROJECT_ROOT / "blender" / "ember-volcanic-world-production-slice-r9.blend"
+R9_PRODUCTION_REPORT_PATH = R9_PRODUCTION_EVIDENCE_DIR / "ember-volcanic-world-production-slice-r9-report.json"
+R9_RUNTIME_TEXTURE_DIR = PROJECT_ROOT / "static" / "textures" / "ember-surface-r9"
 R8_TERRAIN_DIRECTIONS = (
     "breached-caldera-terraces",
     "collapsed-lava-delta",
@@ -393,9 +397,8 @@ def smooth_noise(values: np.ndarray, passes: int) -> np.ndarray:
     return result
 
 
-def save_texture(name: str, pixels: np.ndarray, colorspace: str = "sRGB") -> bpy.types.Image:
+def write_png(texture_path: Path, pixels: np.ndarray) -> None:
     height, width, _ = pixels.shape
-    texture_path = TEXTURE_DIR / f"{name}.png"
     rgba = np.rint(np.clip(pixels, 0.0, 1.0) * 255.0).astype(np.uint8)
     scanlines = b"".join(b"\x00" + row.tobytes() for row in rgba)
 
@@ -407,12 +410,18 @@ def save_texture(name: str, pixels: np.ndarray, colorspace: str = "sRGB") -> bpy
             + struct.pack(">I", zlib.crc32(kind + payload) & 0xFFFFFFFF)
         )
 
+    texture_path.parent.mkdir(parents=True, exist_ok=True)
     texture_path.write_bytes(
         b"\x89PNG\r\n\x1a\n"
         + png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
         + png_chunk(b"IDAT", zlib.compress(scanlines, 9))
         + png_chunk(b"IEND", b"")
     )
+
+
+def save_texture(name: str, pixels: np.ndarray, colorspace: str = "sRGB") -> bpy.types.Image:
+    texture_path = TEXTURE_DIR / f"{name}.png"
+    write_png(texture_path, pixels)
     image = bpy.data.images.load(str(texture_path), check_existing=False)
     image.name = name
     image.colorspace_settings.name = colorspace
@@ -881,6 +890,147 @@ def create_r9_blended_terrain_material(
     material["tka_surface_direction"] = direction
     material["tka_surface_mask"] = "R9SurfaceMask"
     return material
+
+
+def publish_r9_runtime_surface_assets(
+    family_materials: list[bpy.types.Material],
+    river: list[Vector],
+    size: int = 1024,
+) -> dict[str, object]:
+    """Publish the selected families and one smooth world-space ecology mask."""
+
+    R9_RUNTIME_TEXTURE_DIR.mkdir(parents=True, exist_ok=True)
+    runtime_names = (
+        "young-lava.png",
+        "iron-contact.png",
+        "fractured-basalt.png",
+        "sheltered-ash.png",
+    )
+    published: list[dict[str, object]] = []
+    for material, runtime_name in zip(family_materials, runtime_names, strict=True):
+        image = r9_material_image(material, "_Color")
+        source = Path(bpy.path.abspath(image.filepath))
+        destination = R9_RUNTIME_TEXTURE_DIR / runtime_name
+        destination.write_bytes(source.read_bytes())
+        published.append(
+            {
+                "path": destination.relative_to(PROJECT_ROOT).as_posix(),
+                "bytes": destination.stat().st_size,
+                "sha256": sha256(destination),
+            }
+        )
+
+    terrain = WORLD_CONTRACT["terrain"]
+    x_min, x_max = (float(value) for value in terrain["runtimeXRange"])
+    z_min, z_max = (float(value) for value in terrain["runtimeZRange"])
+    x_values = np.linspace(x_min, x_max, size, dtype=np.float32)
+    z_values = np.linspace(z_min, z_max, size, dtype=np.float32)
+    grid_x, grid_z = np.meshgrid(x_values, z_values)
+
+    # The runtime river follows a centripetal spline. The Blender builder has
+    # already sampled that contract densely, so the mask measures against the
+    # same curve rather than a second hand-authored approximation.
+    river_points = np.array(
+        [(float(point.x), float(-point.y)) for point in river],
+        dtype=np.float32,
+    )
+    river_distance = np.full(grid_x.shape, np.inf, dtype=np.float32)
+    for start, end in zip(river_points, river_points[1:]):
+        segment_x = float(end[0] - start[0])
+        segment_z = float(end[1] - start[1])
+        length_squared = max(segment_x * segment_x + segment_z * segment_z, 0.0001)
+        projection = np.clip(
+            ((grid_x - start[0]) * segment_x + (grid_z - start[1]) * segment_z)
+            / length_squared,
+            0.0,
+            1.0,
+        )
+        closest_x = start[0] + projection * segment_x
+        closest_z = start[1] + projection * segment_z
+        distance = np.sqrt((grid_x - closest_x) ** 2 + (grid_z - closest_z) ** 2)
+        river_distance = np.minimum(river_distance, distance)
+
+    def field_smoothstep(edge_start: float, edge_end: float, values: np.ndarray) -> np.ndarray:
+        blend = np.clip((values - edge_start) / (edge_end - edge_start), 0.0, 1.0)
+        return blend * blend * (3.0 - 2.0 * blend)
+
+    contact = 1.0 - field_smoothstep(5.0, 14.5, river_distance)
+    drainage = 0.62 + 0.38 * (
+        0.5
+        + 0.5
+        * np.sin(grid_x * 0.19 + grid_z * 0.055 + np.sin(grid_z * 0.031) * 2.4)
+    )
+    contact *= drainage
+
+    caldera_x = (grid_x + 10.0) / 1.13
+    caldera_z = (grid_z - 74.0) / 0.84
+    caldera_radius = np.sqrt(caldera_x * caldera_x + caldera_z * caldera_z)
+    angle = np.arctan2(caldera_z, caldera_x)
+    rim = np.exp(-((caldera_radius - 102.0) / 23.0) ** 2)
+    broken_arc = 0.22 + 0.78 * field_smoothstep(
+        -0.62,
+        0.18,
+        np.sin(angle + 0.42),
+    )
+    west_scarp = np.exp(
+        -(((grid_x + 72.0) / 31.0) ** 2 + ((grid_z - 38.0) / 76.0) ** 2)
+    )
+    east_scarp = np.exp(
+        -(((grid_x - 96.0) / 42.0) ** 2 + ((grid_z - 64.0) / 88.0) ** 2)
+    )
+    fractured = np.clip(
+        rim * broken_arc * 1.2
+        + west_scarp * 0.78
+        + east_scarp * 0.84
+        + np.abs(np.sin(grid_x * 0.044 - grid_z * 0.071)) * 0.12,
+        0.0,
+        1.0,
+    )
+
+    pocket_phase = (
+        0.5
+        + 0.5
+        * np.sin(grid_x * 0.027 + grid_z * 0.046 + np.sin(grid_x * 0.018) * 3.1)
+    )
+    ash = field_smoothstep(0.49, 0.79, pocket_phase)
+    ash *= (1.0 - fractured * 0.72) * (1.0 - contact * 0.88)
+    ash *= 0.48 + 0.52 * field_smoothstep(26.0, 142.0, np.hypot(grid_x, grid_z))
+
+    young_flow = 0.5 + 0.5 * np.sin(
+        grid_x * 0.031 - grid_z * 0.024 + np.sin(grid_z * 0.018) * 2.2
+    )
+    raw_weights = np.stack(
+        (
+            0.86 + young_flow * 0.28,
+            0.04 + contact * 1.75,
+            0.12 + fractured * 1.35,
+            0.08 + ash * 1.25,
+        ),
+        axis=2,
+    )
+    weights = raw_weights / np.maximum(raw_weights.sum(axis=2, keepdims=True), 0.0001)
+    alpha = np.ones((size, size, 1), dtype=np.float32)
+    mask_pixels = np.concatenate((weights[:, :, :3], alpha), axis=2)
+    mask_path = R9_RUNTIME_TEXTURE_DIR / "fresh-rift-family-mask.png"
+    write_png(mask_path, mask_pixels)
+
+    return {
+        "detailTextures": published,
+        "familyMask": {
+            "path": mask_path.relative_to(PROJECT_ROOT).as_posix(),
+            "bytes": mask_path.stat().st_size,
+            "sha256": sha256(mask_path),
+            "resolution": [size, size],
+            "worldOriginRuntimeXZ": [x_min, z_min],
+            "worldSizeRuntimeXZ": [x_max - x_min, z_max - z_min],
+            "channels": {
+                "red": "young-lava",
+                "green": "iron-contact",
+                "blue": "fractured-basalt",
+                "implicitFourth": "sheltered-ash",
+            },
+        },
+    }
 
 
 def create_plain_material(
@@ -2867,7 +3017,7 @@ def apply_r9_surface_direction(
             "meshy-distant-caldera": 3,
         },
         "fresh-rift-synthesis": {
-            "cooled-fissure": 2,
+            "cooled-fissure": 1,
             "lava-channel-levee": 1,
             "meshy-hero-geology": 2,
             "meshy-lava-bank": 1,
@@ -3342,7 +3492,10 @@ def export_production(production: bpy.types.Collection) -> None:
         export_apply=True,
         use_selection=True,
     )
-    if REVISION == "ember-geological-world-gate4-r8":
+    if REVISION in {
+        "ember-geological-world-gate4-r8",
+        "ember-fresh-rift-surface-gate4-r9",
+    }:
         # The shipped source stays below GitHub's 100 MiB hard limit. All image
         # pixels are deterministic build products or live in the four tracked
         # Meshy source GLBs, so geometry/material graphs remain editable while
@@ -3433,6 +3586,16 @@ def scene_report(
                 if terrain_direction in R8_TERRAIN_DIRECTIONS
                 else None
             ),
+            "gate3SurfaceEcologyTrackerItem": (
+                "uXmi4z9lL7zCiNq5ULCp"
+                if REVISION == "ember-fresh-rift-surface-gate4-r9"
+                else None
+            ),
+            "gate4SurfaceEcologyTrackerItem": (
+                "ahPuPwh34G3FeqvUEHsB"
+                if REVISION == "ember-fresh-rift-surface-gate4-r9"
+                else None
+            ),
         },
         "sources": [
             {
@@ -3486,13 +3649,19 @@ def scene_report(
             "heroCenterRuntimeXYZ": [HERO_CENTER[0], HERO_CENTER[2], -HERO_CENTER[1]],
             "heroInPositiveRuntimeZFarField": True,
             "selectedDirection": (
-                "Breached Caldera Terraces"
+                "Fresh Rift over Breached Caldera Terraces"
+                if REVISION == "ember-fresh-rift-surface-gate4-r9"
+                else "Breached Caldera Terraces"
                 if terrain_direction == "breached-caldera-terraces"
                 else "Fractured Columnar Chasm"
             ),
             "terrainDirection": terrain_direction,
             "revisionDirection": (
-                "An asymmetrical breached caldera with collapsed terraces, an embedded "
+                "A four-family volcanic ecology with young lava crust, iron-rich "
+                "river-contact alteration, fractured basalt scarps, and sheltered ash "
+                "blended across the preserved breached-caldera terrain"
+                if REVISION == "ember-fresh-rift-surface-gate4-r9"
+                else "An asymmetrical breached caldera with collapsed terraces, an embedded "
                 "blackglass action shelf, protected Meshy formations, and a river-cut "
                 "travel saddle"
                 if terrain_direction == "breached-caldera-terraces"
@@ -3561,6 +3730,7 @@ def main() -> None:
         return
     terrain_direction = "r7-continuous-basin"
     filename_revision = "r7"
+    build_r9_production = "--r9-production" in arguments
     if "--r8-production" in arguments:
         EVIDENCE_DIR = R8_PRODUCTION_EVIDENCE_DIR
         BLEND_PATH = R8_PRODUCTION_BLEND_PATH
@@ -3568,13 +3738,42 @@ def main() -> None:
         REVISION = "ember-geological-world-gate4-r8"
         terrain_direction = "breached-caldera-terraces"
         filename_revision = "r8"
+    if build_r9_production:
+        EVIDENCE_DIR = R9_PRODUCTION_EVIDENCE_DIR
+        BLEND_PATH = R9_PRODUCTION_BLEND_PATH
+        REPORT_PATH = R9_PRODUCTION_REPORT_PATH
+        REVISION = "ember-fresh-rift-surface-gate4-r9"
+        terrain_direction = "breached-caldera-terraces"
+        filename_revision = "r9"
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     TEXTURE_DIR.mkdir(parents=True, exist_ok=True)
     clean_scene()
     production = make_collection("EMBER_PRODUCTION_SLICE")
     qa = make_collection("EMBER_QA")
     print("[ember-r7] building production geometry", flush=True)
-    build_production_geometry(production, terrain_direction)
+    geometry = build_production_geometry(production, terrain_direction)
+    surface_assets: dict[str, object] | None = None
+    surface_family_counts: dict[str, int] | None = None
+    if build_r9_production:
+        print("[ember-r9] applying the approved Fresh Rift ecology", flush=True)
+        direction = "fresh-rift-synthesis"
+        surface_materials = create_r9_surface_materials(direction)
+        blended_terrain = create_r9_blended_terrain_material(
+            direction,
+            surface_materials,
+        )
+        river = sample_river_centerline()
+        surface_family_counts = apply_r9_surface_direction(
+            production,
+            direction,
+            surface_materials,
+            blended_terrain,
+            river,
+        )
+        surface_assets = publish_r9_runtime_surface_assets(
+            surface_materials,
+            river,
+        )
     print("[ember-r7] configuring QA scene", flush=True)
     configure_render()
     cameras = create_qa_scene(qa)
@@ -3583,6 +3782,15 @@ def main() -> None:
     print("[ember-r7] exporting production asset", flush=True)
     export_production(production)
     report = scene_report(production, cameras, renders, terrain_direction)
+    if build_r9_production:
+        report["surfaceEcology"] = {
+            "direction": "fresh-rift-synthesis",
+            "approvalTrackerItem": "ahPuPwh34G3FeqvUEHsB",
+            "familyPolygonCounts": surface_family_counts,
+            "runtimeAssets": surface_assets,
+            "materialOwner": "src/lib/shared/3d/environments/primitives/masked-ground-detail-material.ts",
+            "sceneAdapter": "src/lib/shared/3d/environments/scenes/ember/ember-ground-detail.ts",
+        }
     REPORT_PATH.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2))
 

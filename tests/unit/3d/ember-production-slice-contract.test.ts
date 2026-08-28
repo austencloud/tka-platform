@@ -34,7 +34,7 @@ interface EmberSliceGltf {
 const optimizedPath = resolve("static/models/ember/ember-production-slice.glb");
 const integratedPath = resolve("static/models/ember/ember-integrated-room.glb");
 const reportPath = resolve(
-  "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-terrain-r8/ember-volcanic-world-production-slice-r8-report.json"
+  "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-surface-r9/ember-volcanic-world-production-slice-r9-report.json"
 );
 const volcanicWorldContractPath = resolve(
   "src/lib/shared/3d/environments/domain/models/scene-configs/ember-volcanic-world-r7.json"
@@ -63,7 +63,7 @@ describe("Ember production-slice contracts", () => {
         "KHR_texture_basisu",
       ])
     );
-    expect(gltf.images).toHaveLength(18);
+    expect(gltf.images).toHaveLength(12);
     expect(gltf.images?.every((image) => image.mimeType === "image/ktx2")).toBe(
       true
     );
@@ -105,7 +105,7 @@ describe("Ember production-slice contracts", () => {
           !node.extras ||
           (node.extras.tka_scene === "ember" &&
             node.extras.tka_gate === 4 &&
-            node.extras.tka_revision === "ember-geological-world-gate4-r8")
+            node.extras.tka_revision === "ember-fresh-rift-surface-gate4-r9")
       )
     ).toBe(true);
   });
@@ -126,20 +126,16 @@ describe("Ember production-slice contracts", () => {
     );
   });
 
-  it("keeps the furnace hierarchy and three distance-graded basin materials", () => {
-    expect(gltf.materials?.map((material) => material.name)).toEqual([
-      "Ember_Ash_Deposit",
-      "Ember_Columnar_Basalt_PBR",
-      "Ember_Ground_Blackglass_PBR",
-      "Ember_Near_Caldera_PBR",
-      "Ember_Fissure_Chasm",
-      "Ember_Meshy_Geology_PBR_hero-columnar-escarpment_01",
-      "Ember_Meshy_Geology_PBR_collapsed-lava-bank_01",
-      "Ember_Meshy_Geology_PBR_obsidian-fumarole-talus_01",
-      "Ember_Meshy_Geology_PBR_distant-breached-caldera_01",
-      "Ember_Middle_Caldera_PBR",
-      "Ember_Far_Caldera_PBR",
-    ]);
+  it("ships only the approved Fresh Rift material families", () => {
+    expect(new Set(gltf.materials?.map((material) => material.name))).toEqual(
+      new Set([
+        "Ember_R9_fresh-rift-synthesis_roped-pahoehoe",
+        "Ember_R9_fresh-rift-synthesis_fractured-basalt",
+        "Ember_R9_fresh-rift-synthesis_iron-contact-crust",
+        "Ember_R9_fresh-rift-synthesis_windborne-ash",
+        "Ember_R9_fresh-rift-synthesis_Blended_Terrain",
+      ])
+    );
   });
 
   it("rejects runaway per-object subdivision before export", () => {
@@ -164,6 +160,7 @@ describe("Ember production-slice contracts", () => {
     expect(report).toContain("ATURN84Ov2hmjWUndebl");
     expect(report).toContain("ZSnkB98pb0wz6PO17XKp");
     expect(report).toContain("s3cxnp6hOLBVQR5dDF42");
+    expect(report).toContain("ahPuPwh34G3FeqvUEHsB");
     expect(report).toContain("01a045af-5015-7cb4-ac34-0d62f4269b67");
     expect(report).toContain("01a045b2-f26d-772f-a92e-9bf36e3fc318");
     expect(report).toContain("01a045b6-292c-7930-bdd7-ad8a5222989d");
@@ -173,6 +170,12 @@ describe("Ember production-slice contracts", () => {
     expect(report).not.toContain("generated/ember-rift-buttress");
     expect(report).not.toContain("static/models/ocean");
     expect(report).not.toContain("basalt_pinnacle");
+    expect(report).toContain(
+      "static/textures/ember-surface-r9/fresh-rift-family-mask.png"
+    );
+    expect(report).toContain(
+      "src/lib/shared/3d/environments/primitives/masked-ground-detail-material.ts"
+    );
   });
 
   it("uses one shared volcanic-world contract for the static channel and runtime river", () => {
@@ -210,9 +213,9 @@ describe("Ember production-slice contracts", () => {
     expect(world.terrain.runtimeZRange[1]).toBeGreaterThanOrEqual(180);
     expect(world.terrain.direction).toBe("breached-caldera-terraces");
     expect(world.terrain.actionFloorRadius).toBe(10.8);
-    expect(
-      getCanonicalPerformerStageBounds(8).radius
-    ).toBeLessThan(world.terrain.actionFloorRadius);
+    expect(getCanonicalPerformerStageBounds(8).radius).toBeLessThan(
+      world.terrain.actionFloorRadius
+    );
 
     const frontContinuation = world.lavaRiver.pointsRuntimeXZHeight.at(-1)!;
     expect(frontContinuation[1]).toBeLessThanOrEqual(-120);

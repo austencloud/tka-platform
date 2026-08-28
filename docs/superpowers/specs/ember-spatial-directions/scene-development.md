@@ -1,6 +1,6 @@
 # Ember Spatial Directions
 
-Status: Surface Ecology Gate 3 R9 ready for review; Gate 4 paused
+Status: Fresh Rift approved at Gate 3; Gate 4 production in progress
 
 Date: 2026-08-25
 
@@ -11,7 +11,8 @@ Current regression authority: museum trackers `rn25Qau62kXyyOJpgm7Z`,
 `kqMUPC5UpCHjj7ts9atQ`, `5otAzYdNg5Wp5E27mgfo`,
 `nu73zqvPJRxio4T2sWz7`, `ATURN84Ov2hmjWUndebl`,
 `ZSnkB98pb0wz6PO17XKp`, `sDKmB6cUEXLfHgz4DGd4`,
-`s3cxnp6hOLBVQR5dDF42`, and `uXmi4z9lL7zCiNq5ULCp`
+`s3cxnp6hOLBVQR5dDF42`, `uXmi4z9lL7zCiNq5ULCp`, and
+`ahPuPwh34G3FeqvUEHsB`
 
 ## Why this exists
 
@@ -298,6 +299,18 @@ instead of an unlit black surface.
 
 Sixteen registered renders, the four-direction board, editable Blender target,
 and deterministic build report live in `evidence/gate-3-surface-r9/`. The
-adversarial ledger recommends Fresh Rift, but Gate 3 approval remains unset.
-No runtime shader, shipping GLB, or Meshy task changed; Gate 4 resumes only
-after the registered visual target is approved.
+adversarial ledger recommends Fresh Rift. Austen approved that registered
+target on 2026-08-28 and explicitly authorized Blender work in tracker
+`ahPuPwh34G3FeqvUEHsB`. Gate 4 now carries the selected ecology into the
+editable production source, the existing shared world-space detail owner, and
+the live Ember environment while preserving the R8 spatial contract.
+
+The authored Gate 4 slice is now built. Its editable R9 Blender source retains
+the R8 terrain and four Meshy landmarks, while the shipping 4.28 MiB GLB uses
+five Fresh Rift materials and twelve KTX2 maps. A 1,024-square world mask maps
+young lava, river-contact iron, fractured scarps, and sheltered ash across the
+full 380 by 335 m country. The runtime scene composes the existing shared
+masked-ground-detail shader and assigns atmospheric treatment by semantic
+geology role. Automated verification is green; live Viewer3D visual,
+interaction, console, and frame-time evidence remains the boundary before Gate
+4 can become ready for review.

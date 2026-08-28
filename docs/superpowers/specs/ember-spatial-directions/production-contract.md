@@ -1,6 +1,6 @@
 # Ember Broken Rift production contract
 
-**Status:** Gate 3 Surface Ecology R9 ready for review; Gate 4 paused
+**Status:** Fresh Rift approved at Gate 3; Gate 4 production in progress
 
 **Scene ID:** `ember-broken-rift`
 
@@ -14,8 +14,8 @@
 `gME4uHJawz9dtTlirRl8`, `kqMUPC5UpCHjj7ts9atQ`,
 `5otAzYdNg5Wp5E27mgfo`, `nu73zqvPJRxio4T2sWz7`,
 `ATURN84Ov2hmjWUndebl`, `ZSnkB98pb0wz6PO17XKp`,
-`sDKmB6cUEXLfHgz4DGd4`, `s3cxnp6hOLBVQR5dDF42`, and
-`uXmi4z9lL7zCiNq5ULCp`.
+`sDKmB6cUEXLfHgz4DGd4`, `s3cxnp6hOLBVQR5dDF42`,
+`uXmi4z9lL7zCiNq5ULCp`, and `ahPuPwh34G3FeqvUEHsB`.
 
 ## Outcome
 
@@ -414,8 +414,42 @@ responsive stage, performer heading, and action clearance.
   pixels rebuild deterministically with
   `scripts/build-ember-production-slice.py --r9-surface-targets`.
 - Credit result: no Meshy calls; all 40 remaining credits stay reserved.
-- Gate result: ready for review. Gate 4 is deliberately pending, and no runtime
-  shader, optimized GLB, or shipping scene material changed in this pass.
+- Gate result: Austen approved Fresh Rift on 2026-08-28 in museum tracker
+  `ahPuPwh34G3FeqvUEHsB`, authorizing the Gate 4 Blender and runtime pass.
+
+### Volcanic Surface Ecology R9 production slice
+
+Gate 4 carries the approved four-family ecology into the preserved R8 breached
+caldera rather than rebuilding its terrain or introducing another material
+system.
+
+- Editable source:
+  `blender/ember-volcanic-world-production-slice-r9.blend`.
+- Deterministic build and report:
+  `scripts/build-ember-production-slice.py --r9-production` and
+  `evidence/gate-4-surface-r9/ember-volcanic-world-production-slice-r9-report.json`.
+- Runtime assets: the 4,488,452-byte shipping and reversible GLBs at
+  `static/models/ember/ember-production-slice.glb` and
+  `static/models/ember/ember-production-slice-r9.glb`, plus a 1,024-square
+  world mask and four color-detail families under
+  `static/textures/ember-surface-r9/`.
+- Delivery profile: 87 meshes, 197,898 triangles, a 49,345-triangle largest
+  mesh, 6.156 m minimum structural clearance, 12 KTX2 maps, Meshopt
+  compression, and mesh quantization.
+- Capability relationship: `EmberGroundDetail.svelte` loads the ecology maps;
+  `ember-ground-detail.ts` supplies Ember's bounds, families, and role policy;
+  the existing shared `masked-ground-detail-material.ts` remains the sole
+  shader owner.
+- Scene integration: material treatment now follows semantic geology roles so
+  the R9 names cannot silently fall back to the stale world tint. The responsive
+  stage, front-stage performer heading, Meshy landmarks, river route, and 4.5 m
+  action clearance are unchanged.
+- Verification complete: Svelte check reports zero errors and zero warnings;
+  the focused production, Ember-detail, and shared-detail suites report 14
+  passing tests with one historical todo; the scene-gate validator passes.
+- Verification outstanding: the live Viewer3D hero, bounded 25 m orbit,
+  one-to-four performer growth, console, performance sample, and responsive
+  viewport sweep. Gate 4 remains in progress until those frames are judged.
 
 ## Gate 5: Integrated room
 

@@ -3,7 +3,7 @@
   "sceneId": "ember-broken-rift",
   "title": "Ember Broken Rift",
   "domainProofRequired": false,
-  "currentGate": 3,
+  "currentGate": 4,
   "authority": {
     "experienceSpec": "docs/superpowers/specs/ember-spatial-directions/look-development.md",
     "roomShellSource": "src/lib/shared/3d/environments/scenes/EmberScene.svelte",
@@ -26,7 +26,8 @@
       "ZSnkB98pb0wz6PO17XKp",
       "sDKmB6cUEXLfHgz4DGd4",
       "s3cxnp6hOLBVQR5dDF42",
-      "uXmi4z9lL7zCiNq5ULCp"
+      "uXmi4z9lL7zCiNq5ULCp",
+      "ahPuPwh34G3FeqvUEHsB"
     ]
   },
   "sequenceFingerprints": [],
@@ -372,7 +373,7 @@
     },
     {
       "id": "registered-visual-target",
-      "status": "ready-for-review",
+      "status": "approved",
       "evidence": [
         {
           "kind": "locked-camera-set",
@@ -404,13 +405,64 @@
           "evidence": "The continuous terrain uses a smooth per-vertex four-family mask rather than hard material islands. The R8 geometry, action clearance, atmosphere, Meshy landmarks, river path, and stage contract remain unchanged."
         }
       ],
-      "approval": null
+      "approval": {
+        "approvedBy": "Austen",
+        "approvedAt": "2026-08-28T19:09:09.090Z",
+        "quote": "approved, But as you work on it I am curious what the triple A target will be, I'm more than happy to allow you to get in my blender and blend up whatever you feel you want to",
+        "museumTrackerItem": "ahPuPwh34G3FeqvUEHsB",
+        "visualComprehensionConfirmed": true
+      }
     },
     {
       "id": "production-slice",
-      "status": "pending",
-      "evidence": [],
-      "checks": [],
+      "status": "in-progress",
+      "evidence": [
+        {
+          "kind": "vertical-slice-build",
+          "path": "static/models/ember/ember-production-slice.glb"
+        },
+        {
+          "kind": "editable-source",
+          "path": "blender/ember-volcanic-world-production-slice-r9.blend"
+        },
+        {
+          "kind": "coordinate-manifest",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-surface-r9/ember-volcanic-world-production-slice-r9-report.json"
+        },
+        {
+          "kind": "review-contact-sheet",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-surface-r9/ember-volcanic-world-production-slice-r9-orbit-board.png"
+        }
+      ],
+      "checks": [
+        {
+          "name": "artifact-budget",
+          "status": "passed",
+          "evidence": "The R9 report records 197,898 triangles, a 49,345-triangle largest mesh, 6.156 m minimum structural clearance, and the optimized shipping GLB is 4,488,452 bytes."
+        },
+        {
+          "name": "focused-tests",
+          "status": "passed",
+          "evidence": "The Ember production contract, Ember ground detail, and shared forest detail suites pass 14 tests with one historical todo."
+        },
+        {
+          "name": "typecheck",
+          "status": "passed",
+          "evidence": "svelte-check reports zero errors and zero warnings."
+        },
+        {
+          "name": "interaction-state",
+          "status": "pending"
+        },
+        {
+          "name": "runtime-console",
+          "status": "pending"
+        },
+        {
+          "name": "performance",
+          "status": "pending"
+        }
+      ],
       "approval": null
     },
     {
