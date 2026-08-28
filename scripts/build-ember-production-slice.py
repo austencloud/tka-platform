@@ -13,6 +13,7 @@ import json
 import math
 import random
 import struct
+import sys
 import zlib
 from pathlib import Path
 
@@ -29,6 +30,198 @@ BLEND_PATH = PROJECT_ROOT / "blender" / "ember-volcanic-world-production-slice-r
 RAW_GLB_PATH = PROJECT_ROOT / "static" / "models" / "ember" / "ember-production-slice_raw.glb"
 REPORT_PATH = EVIDENCE_DIR / "ember-volcanic-world-production-slice-r7-report.json"
 REVISION = "ember-broken-rift-gate4-meshy-r7"
+R8_TARGET_EVIDENCE_DIR = SPEC_DIR / "evidence" / "gate-3-terrain-r8"
+R8_TARGET_BLEND_PATH = PROJECT_ROOT / "blender" / "ember-geological-world-r8-targets.blend"
+R8_PRODUCTION_EVIDENCE_DIR = SPEC_DIR / "evidence" / "gate-4-terrain-r8"
+R8_PRODUCTION_BLEND_PATH = PROJECT_ROOT / "blender" / "ember-volcanic-world-production-slice-r8.blend"
+R8_PRODUCTION_REPORT_PATH = R8_PRODUCTION_EVIDENCE_DIR / "ember-volcanic-world-production-slice-r8-report.json"
+R9_SURFACE_TARGET_EVIDENCE_DIR = SPEC_DIR / "evidence" / "gate-3-surface-r9"
+R9_SURFACE_TARGET_BLEND_PATH = PROJECT_ROOT / "blender" / "ember-surface-ecology-r9-targets.blend"
+R9_PRODUCTION_EVIDENCE_DIR = SPEC_DIR / "evidence" / "gate-4-surface-r9"
+R9_PRODUCTION_BLEND_PATH = PROJECT_ROOT / "blender" / "ember-volcanic-world-production-slice-r9.blend"
+R9_PRODUCTION_REPORT_PATH = R9_PRODUCTION_EVIDENCE_DIR / "ember-volcanic-world-production-slice-r9-report.json"
+R9_RUNTIME_TEXTURE_DIR = PROJECT_ROOT / "static" / "textures" / "ember-surface-r9"
+R8_TERRAIN_DIRECTIONS = (
+    "breached-caldera-terraces",
+    "collapsed-lava-delta",
+    "basalt-badlands",
+)
+R9_SURFACE_DIRECTIONS = (
+    "fresh-flow-field",
+    "ash-choked-caldera",
+    "hydrothermal-rift",
+    "fresh-rift-synthesis",
+)
+R9_SURFACE_FAMILIES = {
+    "fresh-flow-field": (
+        {
+            "slug": "roped-pahoehoe",
+            "label": "Roped pahoehoe",
+            "pattern": "rope",
+            "dark": (0.006, 0.011, 0.012),
+            "light": (0.075, 0.086, 0.083),
+            "accent": (0.16, 0.045, 0.009),
+            "roughness": (0.47, 0.79),
+            "normal": 27.0,
+        },
+        {
+            "slug": "aa-clinker",
+            "label": "A'a clinker",
+            "pattern": "clinker",
+            "dark": (0.025, 0.018, 0.015),
+            "light": (0.135, 0.1, 0.072),
+            "accent": (0.24, 0.065, 0.012),
+            "roughness": (0.76, 0.98),
+            "normal": 34.0,
+        },
+        {
+            "slug": "fractured-basalt",
+            "label": "Fresh fractured basalt",
+            "pattern": "fracture",
+            "dark": (0.011, 0.021, 0.023),
+            "light": (0.105, 0.125, 0.12),
+            "accent": (0.19, 0.075, 0.022),
+            "roughness": (0.64, 0.92),
+            "normal": 30.0,
+        },
+        {
+            "slug": "windborne-ash",
+            "label": "Windborne ash pockets",
+            "pattern": "ash",
+            "dark": (0.035, 0.039, 0.038),
+            "light": (0.14, 0.135, 0.12),
+            "accent": (0.18, 0.125, 0.065),
+            "roughness": (0.91, 0.995),
+            "normal": 8.0,
+        },
+    ),
+    "ash-choked-caldera": (
+        {
+            "slug": "compacted-ash",
+            "label": "Compacted ash blanket",
+            "pattern": "ash",
+            "dark": (0.05, 0.052, 0.05),
+            "light": (0.185, 0.175, 0.155),
+            "accent": (0.23, 0.17, 0.09),
+            "roughness": (0.94, 1.0),
+            "normal": 7.0,
+        },
+        {
+            "slug": "lapilli-fall",
+            "label": "Lapilli fall",
+            "pattern": "lapilli",
+            "dark": (0.028, 0.026, 0.023),
+            "light": (0.145, 0.122, 0.1),
+            "accent": (0.24, 0.09, 0.022),
+            "roughness": (0.84, 0.99),
+            "normal": 24.0,
+        },
+        {
+            "slug": "exposed-basalt",
+            "label": "Exposed basalt scarps",
+            "pattern": "fracture",
+            "dark": (0.009, 0.019, 0.022),
+            "light": (0.105, 0.135, 0.135),
+            "accent": (0.17, 0.065, 0.02),
+            "roughness": (0.73, 0.95),
+            "normal": 25.0,
+        },
+        {
+            "slug": "lava-baked-crust",
+            "label": "Lava-baked ash crust",
+            "pattern": "sinter",
+            "dark": (0.04, 0.015, 0.009),
+            "light": (0.19, 0.065, 0.018),
+            "accent": (0.36, 0.105, 0.012),
+            "roughness": (0.72, 0.96),
+            "normal": 20.0,
+        },
+    ),
+    "hydrothermal-rift": (
+        {
+            "slug": "wet-obsidian",
+            "label": "Wet obsidian",
+            "pattern": "wet",
+            "dark": (0.004, 0.011, 0.014),
+            "light": (0.105, 0.19, 0.2),
+            "accent": (0.18, 0.32, 0.3),
+            "roughness": (0.28, 0.66),
+            "normal": 15.0,
+        },
+        {
+            "slug": "iron-oxide",
+            "label": "Iron oxide drainage",
+            "pattern": "oxide",
+            "dark": (0.045, 0.014, 0.007),
+            "light": (0.22, 0.055, 0.012),
+            "accent": (0.42, 0.13, 0.014),
+            "roughness": (0.68, 0.94),
+            "normal": 19.0,
+        },
+        {
+            "slug": "sulfur-sinter",
+            "label": "Sulfur sinter",
+            "pattern": "sinter",
+            "dark": (0.035, 0.03, 0.006),
+            "light": (0.15, 0.13, 0.035),
+            "accent": (0.24, 0.19, 0.05),
+            "roughness": (0.82, 0.99),
+            "normal": 16.0,
+        },
+        {
+            "slug": "steam-bleached-basalt",
+            "label": "Steam-bleached basalt",
+            "pattern": "bleached",
+            "dark": (0.065, 0.075, 0.072),
+            "light": (0.19, 0.205, 0.185),
+            "accent": (0.15, 0.205, 0.19),
+            "roughness": (0.86, 0.995),
+            "normal": 13.0,
+        },
+    ),
+    "fresh-rift-synthesis": (
+        {
+            "slug": "roped-pahoehoe",
+            "label": "Roped pahoehoe",
+            "pattern": "rope",
+            "dark": (0.006, 0.011, 0.012),
+            "light": (0.075, 0.086, 0.083),
+            "accent": (0.16, 0.045, 0.009),
+            "roughness": (0.47, 0.79),
+            "normal": 27.0,
+        },
+        {
+            "slug": "iron-contact-crust",
+            "label": "Iron-rich contact crust",
+            "pattern": "oxide",
+            "dark": (0.035, 0.013, 0.007),
+            "light": (0.19, 0.05, 0.012),
+            "accent": (0.34, 0.105, 0.012),
+            "roughness": (0.7, 0.94),
+            "normal": 19.0,
+        },
+        {
+            "slug": "fractured-basalt",
+            "label": "Fresh fractured basalt",
+            "pattern": "fracture",
+            "dark": (0.011, 0.021, 0.023),
+            "light": (0.105, 0.125, 0.12),
+            "accent": (0.19, 0.075, 0.022),
+            "roughness": (0.64, 0.92),
+            "normal": 30.0,
+        },
+        {
+            "slug": "windborne-ash",
+            "label": "Windborne ash pockets",
+            "pattern": "ash",
+            "dark": (0.035, 0.039, 0.038),
+            "light": (0.14, 0.135, 0.12),
+            "accent": (0.18, 0.125, 0.065),
+            "roughness": (0.91, 0.995),
+            "normal": 8.0,
+        },
+    ),
+}
 MESHY_GEOLOGY_DIR = PROJECT_ROOT / "static" / "models" / "ember" / "meshy-geology"
 WORLD_CONTRACT_PATH = (
     PROJECT_ROOT
@@ -204,9 +397,8 @@ def smooth_noise(values: np.ndarray, passes: int) -> np.ndarray:
     return result
 
 
-def save_texture(name: str, pixels: np.ndarray, colorspace: str = "sRGB") -> bpy.types.Image:
+def write_png(texture_path: Path, pixels: np.ndarray) -> None:
     height, width, _ = pixels.shape
-    texture_path = TEXTURE_DIR / f"{name}.png"
     rgba = np.rint(np.clip(pixels, 0.0, 1.0) * 255.0).astype(np.uint8)
     scanlines = b"".join(b"\x00" + row.tobytes() for row in rgba)
 
@@ -218,12 +410,18 @@ def save_texture(name: str, pixels: np.ndarray, colorspace: str = "sRGB") -> bpy
             + struct.pack(">I", zlib.crc32(kind + payload) & 0xFFFFFFFF)
         )
 
+    texture_path.parent.mkdir(parents=True, exist_ok=True)
     texture_path.write_bytes(
         b"\x89PNG\r\n\x1a\n"
         + png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
         + png_chunk(b"IDAT", zlib.compress(scanlines, 9))
         + png_chunk(b"IEND", b"")
     )
+
+
+def save_texture(name: str, pixels: np.ndarray, colorspace: str = "sRGB") -> bpy.types.Image:
+    texture_path = TEXTURE_DIR / f"{name}.png"
+    write_png(texture_path, pixels)
     image = bpy.data.images.load(str(texture_path), check_existing=False)
     image.name = name
     image.colorspace_settings.name = colorspace
@@ -337,6 +535,135 @@ def create_basalt_textures(
     )
 
 
+def normalize_field(values: np.ndarray) -> np.ndarray:
+    minimum = float(values.min())
+    extent = float(values.max()) - minimum
+    return (values - minimum) / max(extent, 0.0001)
+
+
+def create_r9_surface_textures(
+    direction: str,
+    family_index: int,
+    size: int = 512,
+) -> tuple[bpy.types.Image, bpy.types.Image, bpy.types.Image]:
+    """Bake one of the four material families used by an R9 visual target."""
+
+    specification = R9_SURFACE_FAMILIES[direction][family_index]
+    seed = 290_000 + R9_SURFACE_DIRECTIONS.index(direction) * 10_000 + family_index * 137
+    rng = np.random.default_rng(seed)
+    fine = smooth_noise(rng.random((size, size), dtype=np.float32), 2)
+    medium = smooth_noise(rng.random((size, size), dtype=np.float32), 7)
+    broad = smooth_noise(rng.random((size, size), dtype=np.float32), 20)
+    x_values = np.linspace(0.0, math.tau * 8.0, size, dtype=np.float32)
+    y_values = np.linspace(0.0, math.tau * 8.0, size, dtype=np.float32)
+    x, y = np.meshgrid(x_values, y_values)
+    pattern = str(specification["pattern"])
+
+    if pattern == "rope":
+        rope_a = np.exp(
+            -np.abs(
+                np.sin(y * 0.37 + np.sin(x * 0.15 + broad * 3.0) * 2.2 + medium * 5.5)
+            )
+            * 4.5
+        )
+        rope_b = np.exp(
+            -np.abs(np.sin(x * 0.18 + y * 0.22 + broad * 7.0)) * 6.0
+        )
+        folded = normalize_field(rope_a * 0.74 + rope_b * 0.26)
+        height = broad * 0.43 + medium * 0.2 + fine * 0.08 + folded * 0.29
+        accent_mask = smooth_noise(
+            np.clip((0.34 - folded) * 3.0, 0.0, 1.0)
+            * np.clip((0.55 - broad) * 5.0, 0.0, 1.0),
+            3,
+        )
+    elif pattern == "clinker":
+        blocks = np.clip((medium - 0.44) * 4.8, 0.0, 1.0)
+        shards = np.clip((fine - 0.49) * 10.0, 0.0, 1.0)
+        height = broad * 0.24 + medium * 0.28 + blocks * 0.33 + shards * 0.15
+        accent_mask = smooth_noise(blocks * np.clip((0.56 - broad) * 5.0, 0.0, 1.0), 2)
+    elif pattern == "fracture":
+        crack_a = np.exp(-np.abs(np.sin(x * 0.31 + np.sin(y * 0.17) * 1.8)) * 15.0)
+        crack_b = np.exp(-np.abs(np.sin(y * 0.27 - x * 0.09 + broad * 4.0)) * 17.0)
+        cracks = np.clip(crack_a + crack_b, 0.0, 1.0)
+        height = broad * 0.47 + medium * 0.33 + fine * 0.12 - cracks * 0.28
+        accent_mask = smooth_noise(cracks * np.clip((0.58 - medium) * 5.0, 0.0, 1.0), 1)
+    elif pattern == "ash":
+        dunes = 0.5 + 0.5 * np.sin(y * 0.09 + np.sin(x * 0.11) * 1.5 + broad * 4.0)
+        height = broad * 0.7 + medium * 0.2 + fine * 0.035 + dunes * 0.065
+        accent_mask = smooth_noise(np.clip((medium - 0.555) * 7.0, 0.0, 1.0), 5)
+    elif pattern == "lapilli":
+        pebbles = np.clip((fine - 0.505) * 15.0, 0.0, 1.0)
+        clusters = np.clip((medium - 0.47) * 5.5, 0.0, 1.0)
+        height = broad * 0.34 + medium * 0.22 + pebbles * clusters * 0.44
+        accent_mask = smooth_noise(pebbles * np.clip((0.6 - broad) * 5.5, 0.0, 1.0), 1)
+    elif pattern == "sinter":
+        pools = 0.5 + 0.5 * np.sin(
+            np.sqrt((x - 18.0) ** 2 + (y - 27.0) ** 2) * 0.9 + broad * 6.0
+        )
+        crust = np.power(np.clip(pools, 0.0, 1.0), 2.0)
+        height = broad * 0.39 + medium * 0.2 + crust * 0.32 + fine * 0.09
+        accent_mask = smooth_noise(np.clip((crust - 0.42) * 2.4, 0.0, 1.0), 2)
+    elif pattern == "wet":
+        glass = 0.5 + 0.5 * np.sin(x * 0.12 - y * 0.07 + broad * 8.0)
+        height = broad * 0.57 + medium * 0.24 + fine * 0.07 + glass * 0.12
+        accent_mask = smooth_noise(np.clip((broad - 0.53) * 8.0, 0.0, 1.0), 4)
+    elif pattern == "oxide":
+        drainage = 0.5 + 0.5 * np.sin(x * 0.13 + np.sin(y * 0.075) * 2.0 + broad * 7.0)
+        height = broad * 0.43 + medium * 0.31 + fine * 0.08 + drainage * 0.18
+        accent_mask = smooth_noise(
+            np.clip((drainage - 0.52) * 4.4, 0.0, 1.0)
+            * np.clip((0.6 - medium) * 6.0, 0.0, 1.0),
+            2,
+        )
+    elif pattern == "bleached":
+        plumes = 0.5 + 0.5 * np.sin(x * 0.08 + y * 0.045 + broad * 7.0)
+        height = broad * 0.54 + medium * 0.27 + fine * 0.07 + plumes * 0.12
+        accent_mask = smooth_noise(np.clip((plumes - 0.56) * 4.2, 0.0, 1.0), 5)
+    else:
+        raise ValueError(f"Unknown R9 surface pattern: {pattern}")
+
+    height = normalize_field(height)
+    dark = np.array(specification["dark"], dtype=np.float32)
+    light = np.array(specification["light"], dtype=np.float32)
+    accent = np.array(specification["accent"], dtype=np.float32)
+    color_mix = np.clip((height - 0.08) * 1.06, 0.0, 1.0)[:, :, None]
+    color_rgb = dark[None, None, :] * (1.0 - color_mix) + light[None, None, :] * color_mix
+    accent_strength = 0.34 if pattern == "sinter" else 0.26
+    accent_weight = np.clip(accent_mask, 0.0, 1.0)[:, :, None] * accent_strength
+    color_rgb = color_rgb * (1.0 - accent_weight) + accent[None, None, :] * accent_weight
+    macro_variation = (0.89 + broad[:, :, None] * 0.21).astype(np.float32)
+    color_rgb *= macro_variation
+
+    alpha = np.ones((size, size, 1), dtype=np.float32)
+    color = np.concatenate((color_rgb, alpha), axis=2)
+    rough_min, rough_max = (float(value) for value in specification["roughness"])
+    roughness_value = np.clip(
+        rough_min + (rough_max - rough_min) * (0.22 + fine * 0.31 + medium * 0.47),
+        rough_min,
+        rough_max,
+    )
+    if pattern == "wet":
+        roughness_value -= accent_mask * 0.16
+    roughness_value = np.clip(roughness_value, 0.18, 1.0)
+    roughness = np.concatenate(
+        (np.repeat(roughness_value[:, :, None], 3, axis=2), alpha), axis=2
+    )
+
+    gradient_y, gradient_x = np.gradient(height)
+    normal_scale = float(specification["normal"])
+    normal = np.dstack(
+        (-gradient_x * normal_scale, -gradient_y * normal_scale, np.ones_like(height))
+    )
+    normal /= np.linalg.norm(normal, axis=2, keepdims=True)
+    normal_map = np.concatenate((normal * 0.5 + 0.5, alpha), axis=2)
+    prefix = f"r9-{direction}-{specification['slug']}"
+    return (
+        save_texture(f"{prefix}-color", color),
+        save_texture(f"{prefix}-roughness", roughness, "Non-Color"),
+        save_texture(f"{prefix}-normal", normal_map, "Non-Color"),
+    )
+
+
 def create_texture_material(
     name: str,
     role: str,
@@ -393,6 +720,317 @@ def create_blackglass_material(
         metallic=0.04,
         normal_strength=0.36,
     )
+
+
+def create_r9_surface_materials(direction: str) -> list[bpy.types.Material]:
+    materials: list[bpy.types.Material] = []
+    for family_index, specification in enumerate(R9_SURFACE_FAMILIES[direction]):
+        textures = create_r9_surface_textures(direction, family_index)
+        rough_min, rough_max = (float(value) for value in specification["roughness"])
+        material = create_texture_material(
+            f"Ember_R9_{direction}_{specification['slug']}",
+            f"r9-surface-{direction}-{specification['slug']}",
+            textures,
+            base_color=(*specification["light"], 1.0),
+            roughness=(rough_min + rough_max) * 0.5,
+            metallic=0.075 if specification["pattern"] == "wet" else 0.012,
+            normal_strength=0.58 if specification["pattern"] != "ash" else 0.24,
+        )
+        material["tka_surface_direction"] = direction
+        material["tka_surface_family_index"] = family_index
+        material["tka_surface_family_label"] = specification["label"]
+        materials.append(material)
+    return materials
+
+
+def r9_material_image(
+    material: bpy.types.Material,
+    suffix: str,
+) -> bpy.types.Image:
+    for node in material.node_tree.nodes:
+        if node.bl_idname == "ShaderNodeTexImage" and node.name.endswith(suffix):
+            if node.image is None:
+                break
+            return node.image
+    raise RuntimeError(f"Missing {suffix} texture node on {material.name}")
+
+
+def create_r9_blended_terrain_material(
+    direction: str,
+    family_materials: list[bpy.types.Material],
+) -> bpy.types.Material:
+    """Blend the four target families through a smooth per-vertex RGBA mask."""
+
+    material = bpy.data.materials.new(f"Ember_R9_{direction}_Blended_Terrain")
+    material.use_nodes = True
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
+    nodes.clear()
+    output = nodes.new("ShaderNodeOutputMaterial")
+    output.location = (980.0, 0.0)
+    bsdf = nodes.new("ShaderNodeBsdfPrincipled")
+    bsdf.location = (690.0, 0.0)
+    bsdf.inputs["Metallic"].default_value = 0.018
+    links.new(bsdf.outputs["BSDF"], output.inputs["Surface"])
+
+    vertex_color = nodes.new("ShaderNodeVertexColor")
+    vertex_color.layer_name = "R9SurfaceMask"
+    vertex_color.location = (-1120.0, 520.0)
+    separate = nodes.new("ShaderNodeSeparateColor")
+    separate.mode = "RGB"
+    separate.location = (-900.0, 520.0)
+    links.new(vertex_color.outputs["Color"], separate.inputs["Color"])
+    weights = [
+        separate.outputs["Red"],
+        separate.outputs["Green"],
+        separate.outputs["Blue"],
+    ]
+    sum_rg = nodes.new("ShaderNodeMath")
+    sum_rg.operation = "ADD"
+    sum_rg.location = (-690.0, 620.0)
+    links.new(weights[0], sum_rg.inputs[0])
+    links.new(weights[1], sum_rg.inputs[1])
+    sum_rgb = nodes.new("ShaderNodeMath")
+    sum_rgb.operation = "ADD"
+    sum_rgb.location = (-510.0, 620.0)
+    links.new(sum_rg.outputs[0], sum_rgb.inputs[0])
+    links.new(weights[2], sum_rgb.inputs[1])
+    fourth = nodes.new("ShaderNodeMath")
+    fourth.operation = "SUBTRACT"
+    fourth.use_clamp = True
+    fourth.inputs[0].default_value = 1.0
+    fourth.location = (-320.0, 620.0)
+    links.new(sum_rgb.outputs[0], fourth.inputs[1])
+    weights.append(fourth.outputs[0])
+
+    weighted_colors: list[bpy.types.NodeSocket] = []
+    weighted_normals: list[bpy.types.NodeSocket] = []
+    weighted_roughness: list[bpy.types.NodeSocket] = []
+    for family_index, family_material in enumerate(family_materials):
+        vertical = 300.0 - family_index * 260.0
+        color_image = nodes.new("ShaderNodeTexImage")
+        color_image.image = r9_material_image(family_material, "_Color")
+        color_image.extension = "REPEAT"
+        color_image.location = (-1120.0, vertical)
+        roughness_image = nodes.new("ShaderNodeTexImage")
+        roughness_image.image = r9_material_image(family_material, "_Roughness")
+        roughness_image.extension = "REPEAT"
+        roughness_image.location = (-1120.0, vertical - 80.0)
+        normal_image = nodes.new("ShaderNodeTexImage")
+        normal_image.image = r9_material_image(family_material, "_Normal")
+        normal_image.extension = "REPEAT"
+        normal_image.location = (-1120.0, vertical - 160.0)
+
+        color_multiply = nodes.new("ShaderNodeMixRGB")
+        color_multiply.blend_type = "MULTIPLY"
+        color_multiply.inputs[0].default_value = 1.0
+        color_multiply.location = (-690.0, vertical)
+        links.new(color_image.outputs["Color"], color_multiply.inputs[1])
+        links.new(weights[family_index], color_multiply.inputs[2])
+        weighted_colors.append(color_multiply.outputs["Color"])
+
+        roughness_to_value = nodes.new("ShaderNodeRGBToBW")
+        roughness_to_value.location = (-890.0, vertical - 80.0)
+        links.new(roughness_image.outputs["Color"], roughness_to_value.inputs["Color"])
+        roughness_multiply = nodes.new("ShaderNodeMath")
+        roughness_multiply.operation = "MULTIPLY"
+        roughness_multiply.location = (-690.0, vertical - 80.0)
+        links.new(roughness_to_value.outputs["Val"], roughness_multiply.inputs[0])
+        links.new(weights[family_index], roughness_multiply.inputs[1])
+        weighted_roughness.append(roughness_multiply.outputs[0])
+
+        normal_multiply = nodes.new("ShaderNodeMixRGB")
+        normal_multiply.blend_type = "MULTIPLY"
+        normal_multiply.inputs[0].default_value = 1.0
+        normal_multiply.location = (-690.0, vertical - 160.0)
+        links.new(normal_image.outputs["Color"], normal_multiply.inputs[1])
+        links.new(weights[family_index], normal_multiply.inputs[2])
+        weighted_normals.append(normal_multiply.outputs["Color"])
+
+    def add_color_outputs(
+        sockets: list[bpy.types.NodeSocket],
+        y: float,
+    ) -> bpy.types.NodeSocket:
+        current = sockets[0]
+        for index, socket in enumerate(sockets[1:], start=1):
+            add = nodes.new("ShaderNodeMixRGB")
+            add.blend_type = "ADD"
+            add.inputs[0].default_value = 1.0
+            add.location = (-340.0 + index * 150.0, y)
+            links.new(current, add.inputs[1])
+            links.new(socket, add.inputs[2])
+            current = add.outputs["Color"]
+        return current
+
+    def add_value_outputs(
+        sockets: list[bpy.types.NodeSocket],
+        y: float,
+    ) -> bpy.types.NodeSocket:
+        current = sockets[0]
+        for index, socket in enumerate(sockets[1:], start=1):
+            add = nodes.new("ShaderNodeMath")
+            add.operation = "ADD"
+            add.location = (-340.0 + index * 150.0, y)
+            links.new(current, add.inputs[0])
+            links.new(socket, add.inputs[1])
+            current = add.outputs[0]
+        return current
+
+    color_output = add_color_outputs(weighted_colors, 250.0)
+    normal_output = add_color_outputs(weighted_normals, -250.0)
+    roughness_output = add_value_outputs(weighted_roughness, -20.0)
+    normal_map = nodes.new("ShaderNodeNormalMap")
+    normal_map.inputs["Strength"].default_value = 0.46
+    normal_map.location = (440.0, -230.0)
+    links.new(normal_output, normal_map.inputs["Color"])
+    links.new(color_output, bsdf.inputs["Base Color"])
+    links.new(roughness_output, bsdf.inputs["Roughness"])
+    links.new(normal_map.outputs["Normal"], bsdf.inputs["Normal"])
+    material["tka_material_role"] = f"r9-surface-{direction}-blended-terrain"
+    material["tka_surface_direction"] = direction
+    material["tka_surface_mask"] = "R9SurfaceMask"
+    return material
+
+
+def publish_r9_runtime_surface_assets(
+    family_materials: list[bpy.types.Material],
+    river: list[Vector],
+    size: int = 1024,
+) -> dict[str, object]:
+    """Publish the selected families and one smooth world-space ecology mask."""
+
+    R9_RUNTIME_TEXTURE_DIR.mkdir(parents=True, exist_ok=True)
+    runtime_names = (
+        "young-lava.png",
+        "iron-contact.png",
+        "fractured-basalt.png",
+        "sheltered-ash.png",
+    )
+    published: list[dict[str, object]] = []
+    for material, runtime_name in zip(family_materials, runtime_names, strict=True):
+        image = r9_material_image(material, "_Color")
+        source = Path(bpy.path.abspath(image.filepath))
+        destination = R9_RUNTIME_TEXTURE_DIR / runtime_name
+        destination.write_bytes(source.read_bytes())
+        published.append(
+            {
+                "path": destination.relative_to(PROJECT_ROOT).as_posix(),
+                "bytes": destination.stat().st_size,
+                "sha256": sha256(destination),
+            }
+        )
+
+    terrain = WORLD_CONTRACT["terrain"]
+    x_min, x_max = (float(value) for value in terrain["runtimeXRange"])
+    z_min, z_max = (float(value) for value in terrain["runtimeZRange"])
+    x_values = np.linspace(x_min, x_max, size, dtype=np.float32)
+    z_values = np.linspace(z_min, z_max, size, dtype=np.float32)
+    grid_x, grid_z = np.meshgrid(x_values, z_values)
+
+    # The runtime river follows a centripetal spline. The Blender builder has
+    # already sampled that contract densely, so the mask measures against the
+    # same curve rather than a second hand-authored approximation.
+    river_points = np.array(
+        [(float(point.x), float(-point.y)) for point in river],
+        dtype=np.float32,
+    )
+    river_distance = np.full(grid_x.shape, np.inf, dtype=np.float32)
+    for start, end in zip(river_points, river_points[1:]):
+        segment_x = float(end[0] - start[0])
+        segment_z = float(end[1] - start[1])
+        length_squared = max(segment_x * segment_x + segment_z * segment_z, 0.0001)
+        projection = np.clip(
+            ((grid_x - start[0]) * segment_x + (grid_z - start[1]) * segment_z)
+            / length_squared,
+            0.0,
+            1.0,
+        )
+        closest_x = start[0] + projection * segment_x
+        closest_z = start[1] + projection * segment_z
+        distance = np.sqrt((grid_x - closest_x) ** 2 + (grid_z - closest_z) ** 2)
+        river_distance = np.minimum(river_distance, distance)
+
+    def field_smoothstep(edge_start: float, edge_end: float, values: np.ndarray) -> np.ndarray:
+        blend = np.clip((values - edge_start) / (edge_end - edge_start), 0.0, 1.0)
+        return blend * blend * (3.0 - 2.0 * blend)
+
+    contact = 1.0 - field_smoothstep(5.0, 14.5, river_distance)
+    drainage = 0.62 + 0.38 * (
+        0.5
+        + 0.5
+        * np.sin(grid_x * 0.19 + grid_z * 0.055 + np.sin(grid_z * 0.031) * 2.4)
+    )
+    contact *= drainage
+
+    caldera_x = (grid_x + 10.0) / 1.13
+    caldera_z = (grid_z - 74.0) / 0.84
+    caldera_radius = np.sqrt(caldera_x * caldera_x + caldera_z * caldera_z)
+    angle = np.arctan2(caldera_z, caldera_x)
+    rim = np.exp(-((caldera_radius - 102.0) / 23.0) ** 2)
+    broken_arc = 0.22 + 0.78 * field_smoothstep(
+        -0.62,
+        0.18,
+        np.sin(angle + 0.42),
+    )
+    west_scarp = np.exp(
+        -(((grid_x + 72.0) / 31.0) ** 2 + ((grid_z - 38.0) / 76.0) ** 2)
+    )
+    east_scarp = np.exp(
+        -(((grid_x - 96.0) / 42.0) ** 2 + ((grid_z - 64.0) / 88.0) ** 2)
+    )
+    fractured = np.clip(
+        rim * broken_arc * 1.2
+        + west_scarp * 0.78
+        + east_scarp * 0.84
+        + np.abs(np.sin(grid_x * 0.044 - grid_z * 0.071)) * 0.12,
+        0.0,
+        1.0,
+    )
+
+    pocket_phase = (
+        0.5
+        + 0.5
+        * np.sin(grid_x * 0.027 + grid_z * 0.046 + np.sin(grid_x * 0.018) * 3.1)
+    )
+    ash = field_smoothstep(0.49, 0.79, pocket_phase)
+    ash *= (1.0 - fractured * 0.72) * (1.0 - contact * 0.88)
+    ash *= 0.48 + 0.52 * field_smoothstep(26.0, 142.0, np.hypot(grid_x, grid_z))
+
+    young_flow = 0.5 + 0.5 * np.sin(
+        grid_x * 0.031 - grid_z * 0.024 + np.sin(grid_z * 0.018) * 2.2
+    )
+    raw_weights = np.stack(
+        (
+            0.86 + young_flow * 0.28,
+            0.04 + contact * 1.75,
+            0.12 + fractured * 1.35,
+            0.08 + ash * 1.25,
+        ),
+        axis=2,
+    )
+    weights = raw_weights / np.maximum(raw_weights.sum(axis=2, keepdims=True), 0.0001)
+    alpha = np.ones((size, size, 1), dtype=np.float32)
+    mask_pixels = np.concatenate((weights[:, :, :3], alpha), axis=2)
+    mask_path = R9_RUNTIME_TEXTURE_DIR / "fresh-rift-family-mask.png"
+    write_png(mask_path, mask_pixels)
+
+    return {
+        "detailTextures": published,
+        "familyMask": {
+            "path": mask_path.relative_to(PROJECT_ROOT).as_posix(),
+            "bytes": mask_path.stat().st_size,
+            "sha256": sha256(mask_path),
+            "resolution": [size, size],
+            "worldOriginRuntimeXZ": [x_min, z_min],
+            "worldSizeRuntimeXZ": [x_max - x_min, z_max - z_min],
+            "channels": {
+                "red": "young-lava",
+                "green": "iron-contact",
+                "blue": "fractured-basalt",
+                "implicitFourth": "sheltered-ash",
+            },
+        },
+    }
 
 
 def create_plain_material(
@@ -808,6 +1446,42 @@ def create_shelf_edge_talus(
         tag(obj, "shelf-stratum", f"shelf-edge-talus-{index + 1:02d}")
 
 
+def create_stage_crust_transition(
+    blackglass: bpy.types.Material,
+    basalt: bpy.types.Material,
+    collection: bpy.types.Collection,
+) -> list[bpy.types.Object]:
+    """Bury the authored floor inside overlapping volcanic crust plates."""
+
+    plate_specs = [
+        ("Front_Left", [(-14.2, 10.2), (-5.8, 10.8), (-3.5, 6.0), (-8.2, 4.6), (-12.8, 6.1)], 0.44, blackglass),
+        ("Front_Center", [(-6.2, 11.4), (5.4, 11.0), (4.0, 6.0), (-2.0, 5.75), (-5.5, 7.1)], 0.4, basalt),
+        ("Front_Right", [(4.6, 10.9), (14.1, 8.6), (11.7, 3.5), (7.2, 2.7), (5.3, 6.0)], 0.46, blackglass),
+        ("East", [(11.4, 5.0), (14.6, -2.2), (10.6, -8.4), (6.2, -6.0), (7.2, -0.2)], 0.36, basalt),
+        ("Rear_Right", [(10.8, -6.2), (7.1, -13.3), (0.8, -12.1), (2.9, -8.2), (6.5, -8.0)], 0.42, blackglass),
+        ("Rear_Center", [(4.0, -12.8), (-5.2, -13.8), (-5.9, -8.4), (-0.8, -7.8), (3.4, -9.0)], 0.34, basalt),
+        ("Rear_Left", [(-4.6, -13.1), (-12.8, -9.0), (-10.7, -3.6), (-6.0, -4.8), (-5.7, -8.5)], 0.4, blackglass),
+        ("West", [(-12.2, -7.8), (-15.0, -0.4), (-12.6, 6.8), (-7.8, 4.8), (-7.0, -0.8)], 0.38, basalt),
+    ]
+    plates: list[bpy.types.Object] = []
+    for index, (label, outline, top, material) in enumerate(plate_specs, start=1):
+        plate = create_extruded_polygon(
+            f"Ember_Stage_Crust_{label}",
+            ensure_counter_clockwise(outline),
+            top,
+            top - (0.38 + (index % 3) * 0.07),
+            material,
+            collection,
+            "stage-crust-transition",
+            f"stage-crust-transition-{index:02d}",
+            bevel=0.08,
+        )
+        plate.rotation_euler.z = math.radians(math.sin(index * 1.77) * 1.2)
+        plate["tka_radial_clearance"] = min(math.hypot(x, y) for x, y in outline)
+        plates.append(plate)
+    return plates
+
+
 def create_columnar_joint(
     name: str,
     location: tuple[float, float, float],
@@ -1202,10 +1876,118 @@ def river_distance_and_height(x: float, y: float, river: list[Vector]) -> tuple[
     return nearest_distance, nearest_height
 
 
+def smoothstep(edge_start: float, edge_end: float, value: float) -> float:
+    if edge_start == edge_end:
+        return 0.0
+    normalized = max(0.0, min(1.0, (value - edge_start) / (edge_end - edge_start)))
+    return normalized * normalized * (3.0 - 2.0 * normalized)
+
+
+def r8_geological_height(
+    direction: str,
+    x: float,
+    runtime_z: float,
+    radial_distance: float,
+    terrain_weight: float,
+    seed_phase: float,
+) -> float:
+    """Shape the three Gate 3 terrain directions around one locked action shelf."""
+
+    base = -0.36 + terrain_weight * (0.32 + radial_distance * 0.009)
+    micro_relief = (
+        math.sin(x * 0.151 + runtime_z * 0.103 + seed_phase) * 0.34
+        + math.sin(x * 0.071 - runtime_z * 0.173) * 0.22
+        + math.sin((x - runtime_z) * 0.029 - seed_phase * 0.4) * 0.27
+    )
+
+    if direction == "breached-caldera-terraces":
+        # A long breached valley reads as exterior country from the audience
+        # camera. The former radial rim formed a continuous arena wall, even
+        # with a mathematical saddle cut into it. These separated scarps keep
+        # the caldera scale on both flanks while preserving a sky-backed travel
+        # corridor along the lava river.
+        west_scarp = math.exp(
+            -(((x + 118.0) / 48.0) ** 2 + ((runtime_z - 62.0) / 102.0) ** 2)
+        ) * 27.0
+        east_scarp = math.exp(
+            -(((x - 126.0) / 46.0) ** 2 + ((runtime_z - 54.0) / 96.0) ** 2)
+        ) * 24.0
+        west_rear_mass = math.exp(
+            -(((x + 78.0) / 40.0) ** 2 + ((runtime_z - 164.0) / 40.0) ** 2)
+        ) * 21.0
+        east_rear_mass = math.exp(
+            -(((x - 92.0) / 42.0) ** 2 + ((runtime_z - 170.0) / 44.0) ** 2)
+        ) * 24.0
+        west_bench = math.exp(
+            -(((x + 52.0) / 30.0) ** 2 + ((runtime_z - 72.0) / 74.0) ** 2)
+        ) * 9.0
+        east_bench = math.exp(
+            -(((x - 64.0) / 34.0) ** 2 + ((runtime_z - 86.0) / 78.0) ** 2)
+        ) * 10.5
+        flank_weight = smoothstep(32.0, 108.0, abs(x))
+        raw_terraces = flank_weight * max(0.0, 1.0 - abs(runtime_z - 70.0) / 170.0) * 6.5
+        terrace_step = 1.65
+        terraced = math.floor(raw_terraces / terrace_step) * terrace_step
+        breach = math.exp(
+            -(((x - 1.0) / 42.0) ** 2 + ((runtime_z - 132.0) / 68.0) ** 2)
+        ) * 5.5
+        return base + terrain_weight * (
+            west_scarp
+            + east_scarp
+            + west_rear_mass
+            + east_rear_mass
+            + west_bench
+            + east_bench
+            + terraced
+            - breach
+            + micro_relief * 0.82
+        )
+
+    if direction == "collapsed-lava-delta":
+        # Wide overlapping flow lobes read as a field assembled by successive
+        # eruptions. Sharp fronts and braided troughs make this intentionally
+        # lower and more horizontal than the caldera direction.
+        fan_distance = math.hypot(x * 0.78, runtime_z - 112.0)
+        fan_angle = math.atan2(x, 112.0 - runtime_z)
+        fan_mask = smoothstep(176.0, 36.0, fan_distance)
+        lobe_phase = fan_distance * 0.115 + math.sin(fan_angle * 5.0) * 1.8
+        lobe_fronts = max(0.0, math.sin(lobe_phase)) ** 4
+        delta = fan_mask * (8.0 + lobe_fronts * 6.5)
+        braided = (
+            math.exp(-((x - 34.0 - math.sin(runtime_z * 0.035) * 18.0) / 16.0) ** 2)
+            + math.exp(-((x + 48.0 + math.sin(runtime_z * 0.028 + 1.4) * 15.0) / 20.0) ** 2)
+        ) * smoothstep(-30.0, 145.0, runtime_z)
+        far_wall = math.exp(-(((x + 12.0) / 118.0) ** 2 + ((runtime_z - 176.0) / 32.0) ** 2)) * 22.0
+        flank_left = math.exp(-(((x + 145.0) / 44.0) ** 2 + ((runtime_z - 48.0) / 98.0) ** 2)) * 14.0
+        flank_right = math.exp(-(((x - 136.0) / 48.0) ** 2 + ((runtime_z - 18.0) / 92.0) ** 2)) * 12.0
+        return base + terrain_weight * (
+            delta - braided * 4.2 + far_wall + flank_left + flank_right + micro_relief * 0.72
+        )
+
+    if direction == "basalt-badlands":
+        # Eroded radial ribs and alternating gullies create the most aggressive
+        # silhouette, with one broad rear saddle keeping the world traversable.
+        warped_x = x + math.sin(runtime_z * 0.025) * 18.0
+        rib_wave = math.sin(warped_x * 0.071 + runtime_z * 0.017 + 0.5)
+        ribs = max(0.0, rib_wave) ** 5
+        crossing_ribs = max(0.0, math.sin(x * 0.027 - runtime_z * 0.061 - 1.2)) ** 7
+        north_weight = smoothstep(18.0, 172.0, runtime_z)
+        badlands = (ribs * 14.0 + crossing_ribs * 8.0) * (0.42 + north_weight * 0.82)
+        left_massif = math.exp(-(((x + 118.0) / 40.0) ** 2 + ((runtime_z - 92.0) / 74.0) ** 2)) * 27.0
+        right_massif = math.exp(-(((x - 116.0) / 38.0) ** 2 + ((runtime_z - 76.0) / 68.0) ** 2)) * 24.0
+        travel_saddle = math.exp(-(((x - 20.0) / 45.0) ** 2 + ((runtime_z - 146.0) / 40.0) ** 2)) * 9.0
+        return base + terrain_weight * (
+            badlands + left_massif + right_massif - travel_saddle + micro_relief * 0.9
+        )
+
+    raise ValueError(f"Unknown R8 terrain direction: {direction}")
+
+
 def create_volcanic_basin(
     materials: list[bpy.types.Material],
     collection: bpy.types.Collection,
     river: list[Vector],
+    direction: str = "r7-continuous-basin",
 ) -> bpy.types.Object:
     """Build one continuous exterior basin instead of concentric backdrop rings."""
 
@@ -1219,6 +2001,10 @@ def create_volcanic_basin(
     near_material_end = float(specification["nearMaterialEndsAtDistance"])
     middle_material_end = float(specification["middleMaterialEndsAtDistance"])
     action_floor_radius = float(specification["actionFloorRadius"])
+    if direction in R8_TERRAIN_DIRECTIONS:
+        # The responsive deck tops out well inside this transition zone. R7's
+        # 23 m dead-flat moat made the shelf read as a floating vignette.
+        action_floor_radius = 10.8
     seed = int(specification["seed"])
     vertices: list[tuple[float, float, float]] = []
     faces: list[tuple[int, int, int, int]] = []
@@ -1240,55 +2026,48 @@ def create_volcanic_basin(
             )
             terrain_weight = terrain_weight * terrain_weight * (3.0 - 2.0 * terrain_weight)
 
-            # The shelf sits inside one landmass, not in a circular arena.
-            # Offset provinces provide near, middle, and far overlap; the low
-            # saddles between them remain visible routes into the larger world.
-            height = -0.32 + terrain_weight * (0.45 + radial_distance * 0.014)
-            for ridge_x, ridge_z, ridge_width_x, ridge_width_z, ridge_height in (
-                (-92.0, -82.0, 48.0, 40.0, 17.0),
-                (82.0, -98.0, 54.0, 43.0, 19.0),
-                (-148.0, -5.0, 48.0, 66.0, 22.0),
-                (148.0, 30.0, 50.0, 64.0, 20.0),
-                (-108.0, 102.0, 57.0, 51.0, 20.0),
-                (86.0, 120.0, 52.0, 49.0, 24.0),
-                (-50.0, 174.0, 62.0, 42.0, 27.0),
-                (78.0, 178.0, 64.0, 39.0, 21.0),
-            ):
-                ridge_distance = ((x - ridge_x) / ridge_width_x) ** 2
-                ridge_distance += ((runtime_z - ridge_z) / ridge_width_z) ** 2
-                height += terrain_weight * math.exp(-ridge_distance * 1.85) * ridge_height
-
-            for pass_x, pass_z, pass_width_x, pass_width_z, pass_depth in (
-                (-3.0, -108.0, 38.0, 88.0, 9.0),
-                (108.0, -18.0, 34.0, 72.0, 7.0),
-                (-22.0, 164.0, 38.0, 54.0, 8.0),
-            ):
-                pass_distance = ((x - pass_x) / pass_width_x) ** 2
-                pass_distance += ((runtime_z - pass_z) / pass_width_z) ** 2
-                height -= terrain_weight * math.exp(-pass_distance * 2.0) * pass_depth
-
-            height += terrain_weight * (
-                math.sin(x * 0.061 + runtime_z * 0.039 + seed_phase) * 0.78
-                + math.sin(x * 0.127 - runtime_z * 0.083) * 0.34
-                + math.sin((x + runtime_z) * 0.021 - seed_phase * 0.35) * 0.62
-            )
-
-            # Cooling scarps and collapsed flow fronts break the broad hills
-            # into volcanic strata. Squared positive lobes keep the detail
-            # local instead of adding uniform high-frequency noise.
-            cooling_fold = max(
-                0.0,
-                math.sin(x * 0.118 + runtime_z * 0.074 + seed_phase * 0.27)
-                + math.sin(x * 0.041 - runtime_z * 0.133 - 1.7) * 0.62,
-            )
-            flow_front = max(
-                0.0,
-                math.sin(math.hypot(x + 34.0, runtime_z - 22.0) * 0.19 + 0.8),
-            )
-            height += terrain_weight * (
-                cooling_fold * cooling_fold * 1.35
-                + flow_front * flow_front * 0.72
-            )
+            if direction in R8_TERRAIN_DIRECTIONS:
+                height = r8_geological_height(
+                    direction,
+                    x,
+                    runtime_z,
+                    radial_distance,
+                    terrain_weight,
+                    seed_phase,
+                )
+                # The fixed Meshy silhouettes must emerge from the country,
+                # not be guillotined by a later terrain pass. Local erosion
+                # bowls retain their bases while the surrounding benches rise.
+                for asset_x, asset_z, inner_radius, outer_radius, bed_height in (
+                    (-24.0, 24.0, 14.0, 27.0, -0.22),
+                    (28.0, 6.0, 5.0, 10.0, -0.18),
+                    (19.0, 15.0, 6.2, 13.0, -0.2),
+                ):
+                    asset_distance = math.hypot(x - asset_x, runtime_z - asset_z)
+                    asset_blend = 1.0 - smoothstep(inner_radius, outer_radius, asset_distance)
+                    if asset_blend > 0.0:
+                        height = height * (1.0 - asset_blend) + bed_height * asset_blend
+            else:
+                # R7 is retained as a reconstruction path and before image.
+                height = -0.32 + terrain_weight * (0.45 + radial_distance * 0.014)
+                for ridge_x, ridge_z, ridge_width_x, ridge_width_z, ridge_height in (
+                    (-92.0, -82.0, 48.0, 40.0, 17.0),
+                    (82.0, -98.0, 54.0, 43.0, 19.0),
+                    (-148.0, -5.0, 48.0, 66.0, 22.0),
+                    (148.0, 30.0, 50.0, 64.0, 20.0),
+                    (-108.0, 102.0, 57.0, 51.0, 20.0),
+                    (86.0, 120.0, 52.0, 49.0, 24.0),
+                    (-50.0, 174.0, 62.0, 42.0, 27.0),
+                    (78.0, 178.0, 64.0, 39.0, 21.0),
+                ):
+                    ridge_distance = ((x - ridge_x) / ridge_width_x) ** 2
+                    ridge_distance += ((runtime_z - ridge_z) / ridge_width_z) ** 2
+                    height += terrain_weight * math.exp(-ridge_distance * 1.85) * ridge_height
+                height += terrain_weight * (
+                    math.sin(x * 0.061 + runtime_z * 0.039 + seed_phase) * 0.78
+                    + math.sin(x * 0.127 - runtime_z * 0.083) * 0.34
+                    + math.sin((x + runtime_z) * 0.021 - seed_phase * 0.35) * 0.62
+                )
 
             distance, river_height = river_distance_and_height(x, y, river)
             channel_influence = max(0.0, 1.0 - distance / (channel_half_width + 5.2))
@@ -1309,10 +2088,11 @@ def create_volcanic_basin(
             faces.append((a, b, c, d))
             material_indices.append(material_index)
 
-    mesh = bpy.data.meshes.new("Ember_Volcanic_Basin_Mesh")
+    suffix = direction.replace("-", "_")
+    mesh = bpy.data.meshes.new(f"Ember_Volcanic_Basin_{suffix}_Mesh")
     mesh.from_pydata(vertices, [], faces)
     mesh.update()
-    obj = bpy.data.objects.new("Ember_Volcanic_Basin", mesh)
+    obj = bpy.data.objects.new(f"Ember_Volcanic_Basin_{suffix}", mesh)
     collection.objects.link(obj)
     for material in materials:
         obj.data.materials.append(material)
@@ -1320,7 +2100,8 @@ def create_volcanic_basin(
         polygon.use_smooth = True
         polygon.material_index = material_index
     project_uv(obj, 4.6)
-    tag(obj, "volcanic-basin", "continuous-volcanic-basin")
+    tag(obj, "volcanic-basin", f"continuous-volcanic-basin-{direction}")
+    obj["tka_terrain_direction"] = direction
     obj["tka_depth_layers"] = "near,middle,far"
     obj["tka_authorship"] = "scene-authored-deterministic"
     return obj
@@ -1920,12 +2701,16 @@ def create_meshy_geology_ensemble(
 ) -> dict[str, object]:
     """Place the three approved formations once, with authored country between them."""
 
+    # The columnar formation is a framing escarpment, not a shrine. Its former
+    # near-centre placement stopped both the eye and the lava route. Cropping a
+    # larger mass into the right edge makes the authored detail feel like one
+    # exposed face of a much larger volcanic country.
     hero = import_meshy_geology(
         "hero-columnar-escarpment.glb",
         "Ember_Meshy_Columnar_Escarpment",
-        (-8.5, -27.0, -0.62),
-        12.5,
-        180.0,
+        (-24.0, -24.0, -0.62),
+        19.0,
+        158.0,
         "meshy-hero-geology",
         "hero-columnar-escarpment",
         "01a04587-db17-7a2a-b386-849e70d03b4e",
@@ -1934,7 +2719,7 @@ def create_meshy_geology_ensemble(
     lava_bank = import_meshy_geology(
         "collapsed-lava-bank.glb",
         "Ember_Meshy_Collapsed_Lava_Bank",
-        (16.0, -1.6, -0.34),
+        (28.0, -6.0, -0.34),
         3.4,
         22.0,
         "meshy-lava-bank",
@@ -1945,9 +2730,9 @@ def create_meshy_geology_ensemble(
     fumarole = import_meshy_geology(
         "obsidian-fumarole-talus.glb",
         "Ember_Meshy_Obsidian_Fumarole_Talus",
-        (-13.0, -11.0, -0.42),
-        3.7,
-        -18.0,
+        (19.0, -15.0, -0.42),
+        5.4,
+        24.0,
         "meshy-fumarole-talus",
         "obsidian-fumarole-talus",
         "01a0458e-5a9d-7d9c-a115-d569ba60119a",
@@ -1956,9 +2741,9 @@ def create_meshy_geology_ensemble(
     distant_caldera = import_meshy_geology(
         "distant-breached-caldera.glb",
         "Ember_Meshy_Distant_Breached_Caldera",
-        (-25.0, -145.0, 2.0),
-        24.0,
-        180.0,
+        (108.0, -158.0, 2.0),
+        22.0,
+        172.0,
         "meshy-distant-caldera",
         "distant-breached-caldera",
         "01a045d9-7610-7858-bf2d-3caba206f23a",
@@ -1980,6 +2765,7 @@ def create_meshy_geology_ensemble(
 
 def build_production_geometry(
     production: bpy.types.Collection,
+    terrain_direction: str = "r7-continuous-basin",
 ) -> dict[str, object]:
     print("[ember-r7] baking blackglass textures", flush=True)
     textures = create_blackglass_textures()
@@ -2025,7 +2811,12 @@ def build_production_geometry(
     )
     chasm = create_plain_material("Ember_Fissure_Chasm", (0.002, 0.003, 0.005, 1.0), 1.0)
     lava = create_plain_material("Ember_Live_Fissure", (1.0, 0.085, 0.008, 1.0), 0.38, emission_strength=2.15)
-    mineral = create_plain_material("Ember_Mineral_Ochre", (0.16, 0.095, 0.032, 1.0), 0.96)
+    mineral_color = (
+        (0.058, 0.048, 0.036, 1.0)
+        if terrain_direction in R8_TERRAIN_DIRECTIONS
+        else (0.16, 0.095, 0.032, 1.0)
+    )
+    mineral = create_plain_material("Ember_Mineral_Ochre", mineral_color, 0.96)
     ash = create_plain_material("Ember_Ash_Deposit", (0.035, 0.048, 0.047, 1.0), 0.985)
 
     create_caldera_banks(SHELF_OUTLINE, ash, columnar_basalt, production)
@@ -2047,7 +2838,7 @@ def build_production_geometry(
         scaled_outline(SHELF_OUTLINE, 1.018),
         0.21,
         0.04,
-        mineral,
+        blackglass if terrain_direction in R8_TERRAIN_DIRECTIONS else mineral,
         production,
         "shelf-stratum",
         "upper-stratum",
@@ -2066,6 +2857,8 @@ def build_production_geometry(
     )
     create_surface_field(SHELF_OUTLINE, blackglass, production)
     create_shelf_edge_talus(SHELF_OUTLINE, blackglass, mineral, production)
+    if terrain_direction in R8_TERRAIN_DIRECTIONS:
+        create_stage_crust_transition(blackglass, near_caldera, production)
 
     fissures = [
         [(-7.2, 5.6), (-6.35, 4.35), (-6.1, 3.15), (-5.45, 2.15), (-5.6, 0.9), (-5.15, -0.15), (-5.3, -1.45), (-4.85, -2.8), (-4.95, -4.0), (-4.5, -5.2), (-3.8, -6.9)],
@@ -2111,7 +2904,10 @@ def build_production_geometry(
     print("[ember-r7] authoring surrounding volcanic country and lava channel", flush=True)
     river = sample_river_centerline()
     volcanic_basin = create_volcanic_basin(
-        [near_caldera, middle_caldera, far_caldera], production, river
+        [near_caldera, middle_caldera, far_caldera],
+        production,
+        river,
+        terrain_direction,
     )
     distant_vent = [furnace["distantCaldera"]]
     levees = create_lava_channel_levees(near_caldera, production, river)
@@ -2132,6 +2928,192 @@ def build_production_geometry(
             "farCaldera": far_caldera,
         },
     }
+
+
+def r9_basin_family_index(
+    direction: str,
+    x: float,
+    y: float,
+    slope: float,
+    river: list[Vector],
+) -> int:
+    runtime_z = -y
+    radial_distance = math.hypot(x, runtime_z)
+    river_distance, _ = river_distance_and_height(x, y, river)
+    phase = (
+        math.sin(x * 0.087 + runtime_z * 0.041)
+        + math.sin(x * 0.029 - runtime_z * 0.071 + 1.7)
+    ) * 0.5
+
+    if direction == "fresh-flow-field":
+        if river_distance < 7.6:
+            return 0
+        if slope > 0.26:
+            return 2
+        if radial_distance < 82.0 and phase > -0.18:
+            return 0
+        if phase > 0.28:
+            return 1
+        return 3
+    if direction == "ash-choked-caldera":
+        if river_distance < 9.5:
+            return 3
+        if slope > 0.23:
+            return 2
+        if phase > 0.26 and radial_distance < 136.0:
+            return 1
+        return 0
+    if direction == "hydrothermal-rift":
+        fumarole_distance = math.hypot(x + 13.0, runtime_z - 11.0)
+        if fumarole_distance < 14.0:
+            return 2
+        if river_distance < 10.0:
+            return 1
+        if slope > 0.3:
+            return 3
+        return 0
+    if direction == "fresh-rift-synthesis":
+        if river_distance < 9.2:
+            return 1
+        if slope > 0.26:
+            return 2
+        if radial_distance < 82.0 and phase > -0.18:
+            return 0
+        if phase > 0.32:
+            return 1
+        return 3
+    raise ValueError(f"Unknown R9 surface direction: {direction}")
+
+
+def assign_single_surface_family(
+    obj: bpy.types.Object,
+    material: bpy.types.Material,
+) -> int:
+    obj.data.materials.clear()
+    obj.data.materials.append(material)
+    for polygon in obj.data.polygons:
+        polygon.material_index = 0
+    return len(obj.data.polygons)
+
+
+def apply_r9_surface_direction(
+    production: bpy.types.Collection,
+    direction: str,
+    materials: list[bpy.types.Material],
+    blended_terrain: bpy.types.Material,
+    river: list[Vector],
+) -> dict[str, int]:
+    """Apply a four-family ecology without altering the approved R8 geometry."""
+
+    family_counts = {str(index): 0 for index in range(4)}
+    stage_family = {
+        "fresh-flow-field": 0,
+        "ash-choked-caldera": 0,
+        "hydrothermal-rift": 0,
+        "fresh-rift-synthesis": 0,
+    }[direction]
+    role_family = {
+        "fresh-flow-field": {
+            "cooled-fissure": 2,
+            "lava-channel-levee": 1,
+            "meshy-hero-geology": 2,
+            "meshy-lava-bank": 1,
+            "meshy-fumarole-talus": 3,
+            "meshy-distant-caldera": 3,
+        },
+        "ash-choked-caldera": {
+            "cooled-fissure": 2,
+            "lava-channel-levee": 3,
+            "meshy-hero-geology": 2,
+            "meshy-lava-bank": 3,
+            "meshy-fumarole-talus": 1,
+            "meshy-distant-caldera": 0,
+        },
+        "hydrothermal-rift": {
+            "cooled-fissure": 0,
+            "lava-channel-levee": 1,
+            "meshy-hero-geology": 3,
+            "meshy-lava-bank": 1,
+            "meshy-fumarole-talus": 2,
+            "meshy-distant-caldera": 3,
+        },
+        "fresh-rift-synthesis": {
+            "cooled-fissure": 1,
+            "lava-channel-levee": 1,
+            "meshy-hero-geology": 2,
+            "meshy-lava-bank": 1,
+            "meshy-fumarole-talus": 3,
+            "meshy-distant-caldera": 3,
+        },
+    }[direction]
+    stage_roles = {
+        "playable-shelf",
+        "playable-surface",
+        "shelf-stratum",
+        "stage-crust-transition",
+    }
+    excluded_roles = {"live-fissure"}
+
+    for obj in production.all_objects:
+        if obj.type != "MESH":
+            continue
+        role = str(obj.get("tka_role", ""))
+        if not role or role in excluded_roles:
+            continue
+        if role == "volcanic-basin":
+            obj.data.materials.clear()
+            obj.data.materials.append(blended_terrain)
+            existing_attribute = obj.data.color_attributes.get("R9SurfaceMask")
+            if existing_attribute is not None:
+                obj.data.color_attributes.remove(existing_attribute)
+            surface_mask = obj.data.color_attributes.new(
+                name="R9SurfaceMask",
+                type="FLOAT_COLOR",
+                domain="CORNER",
+            )
+            for polygon in obj.data.polygons:
+                center = polygon.center
+                family_index = r9_basin_family_index(
+                    direction,
+                    float(center.x),
+                    float(center.y),
+                    1.0 - abs(float(polygon.normal.z)),
+                    river,
+                )
+                polygon.material_index = 0
+                family_counts[str(family_index)] += 1
+                for loop_index in polygon.loop_indices:
+                    vertex = obj.data.vertices[obj.data.loops[loop_index].vertex_index]
+                    vertex_family = r9_basin_family_index(
+                        direction,
+                        float(vertex.co.x),
+                        float(vertex.co.y),
+                        1.0 - abs(float(vertex.normal.z)),
+                        river,
+                    )
+                    surface_mask.data[loop_index].color = (
+                        1.0 if vertex_family == 0 else 0.0,
+                        1.0 if vertex_family == 1 else 0.0,
+                        1.0 if vertex_family == 2 else 0.0,
+                        1.0,
+                    )
+            continue
+
+        if role in stage_roles:
+            family_index = stage_family
+        elif role in role_family:
+            family_index = role_family[role]
+        elif "talus" in role or "rubble" in role or "collapsed" in role:
+            family_index = 1
+        elif "column" in role or "basalt" in role or "outcrop" in role:
+            family_index = 2
+        else:
+            family_index = stage_family
+        family_counts[str(family_index)] += assign_single_surface_family(
+            obj, materials[family_index]
+        )
+
+    return family_counts
 
 
 def point_camera(camera: bpy.types.Object, target: tuple[float, float, float]) -> None:
@@ -2255,7 +3237,10 @@ def create_qa_scene(qa: bpy.types.Collection) -> dict[str, bpy.types.Object]:
         # instead of proving a composed back and silhouette.
         "rear-right": ((27.0, -49.0, 14.0), (0.0, -10.0, 3.5), "PERSP", 50.0),
         "rear": ((0.0, -54.0, 15.0), (0.0, -12.0, 3.5), "PERSP", 50.0),
-        "rear-left": ((-27.0, -49.0, 14.0), (0.0, -10.0, 3.5), "PERSP", 50.0),
+        # The breached-caldera west bench rises beneath this sector. Lift the
+        # registered proof camera above the bench so the orbit judges the
+        # composed terrain instead of clipping through its surface.
+        "rear-left": ((-27.0, -49.0, 24.0), (0.0, -10.0, 4.25), "PERSP", 50.0),
         "left": ((-20.0, 0.0, 7.5), (0.0, -3.5, 2.25), "PERSP", 45.0),
         "front-left": ((-14.8, 14.8, 8.0), (0.2, -5.8, 2.45), "PERSP", 43.0),
         "detail": ((10.8, 0.8, 6.9), HERO_CENTER, "PERSP", 52.0),
@@ -2298,10 +3283,13 @@ def configure_render() -> None:
     scene.world = world
 
 
-def render_evidence(cameras: dict[str, bpy.types.Object]) -> dict[str, str]:
+def render_evidence(
+    cameras: dict[str, bpy.types.Object],
+    filename_revision: str = "r7",
+) -> dict[str, str]:
     renders: dict[str, str] = {}
     for name, camera in cameras.items():
-        output = EVIDENCE_DIR / f"ember-volcanic-world-production-slice-r7-{name}.png"
+        output = EVIDENCE_DIR / f"ember-volcanic-world-production-slice-{filename_revision}-{name}.png"
         bpy.context.scene.camera = camera
         bpy.context.scene.render.filepath = str(output)
         bpy.ops.render.render(write_still=True)
@@ -2309,10 +3297,207 @@ def render_evidence(cameras: dict[str, bpy.types.Object]) -> dict[str, str]:
     return renders
 
 
+def render_r8_target_evidence(
+    cameras: dict[str, bpy.types.Object],
+    terrain_objects: dict[str, bpy.types.Object],
+) -> dict[str, dict[str, str]]:
+    R8_TARGET_EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+    scene = bpy.context.scene
+    scene.render.resolution_x = 1280
+    scene.render.resolution_y = 720
+    target_cameras = ("hero", "front-right", "left", "rear")
+    renders: dict[str, dict[str, str]] = {}
+    for direction, terrain in terrain_objects.items():
+        for candidate in terrain_objects.values():
+            candidate.hide_render = candidate is not terrain
+        renders[direction] = {}
+        for camera_name in target_cameras:
+            output = R8_TARGET_EVIDENCE_DIR / f"ember-r8-{direction}-{camera_name}.png"
+            scene.camera = cameras[camera_name]
+            scene.render.filepath = str(output)
+            bpy.ops.render.render(write_still=True)
+            renders[direction][camera_name] = output.relative_to(PROJECT_ROOT).as_posix()
+    for terrain in terrain_objects.values():
+        terrain.hide_render = False
+    return renders
+
+
+def build_r8_target_set() -> None:
+    R8_TARGET_EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+    TEXTURE_DIR.mkdir(parents=True, exist_ok=True)
+    clean_scene()
+    production = make_collection("EMBER_PRODUCTION_SLICE")
+    qa = make_collection("EMBER_QA")
+    print("[ember-r8] building shared R7 geology and first terrain direction", flush=True)
+    geometry = build_production_geometry(production, R8_TERRAIN_DIRECTIONS[0])
+    river = sample_river_centerline()
+    terrain_materials = [
+        geometry["materials"]["nearCaldera"],
+        geometry["materials"]["middleCaldera"],
+        geometry["materials"]["farCaldera"],
+    ]
+    terrain_objects = {R8_TERRAIN_DIRECTIONS[0]: geometry["volcanicBasin"]}
+    for direction in R8_TERRAIN_DIRECTIONS[1:]:
+        print(f"[ember-r8] building {direction}", flush=True)
+        terrain_objects[direction] = create_volcanic_basin(
+            terrain_materials,
+            production,
+            river,
+            direction,
+        )
+    configure_render()
+    cameras = create_qa_scene(qa)
+    print("[ember-r8] rendering registered target set", flush=True)
+    renders = render_r8_target_evidence(cameras, terrain_objects)
+    R8_TARGET_BLEND_PATH.parent.mkdir(parents=True, exist_ok=True)
+    bpy.ops.wm.save_as_mainfile(filepath=str(R8_TARGET_BLEND_PATH), compress=True)
+    report = {
+        "revision": "ember-geological-world-gate3-r8",
+        "authorityTrackerItem": "s3cxnp6hOLBVQR5dDF42",
+        "fixedElements": {
+            "actionClearanceMeters": ACTION_RADIUS,
+            "lavaRiverControlPointsRuntimeXZHeight": RIVER_POINTS_RUNTIME,
+            "meshyGeology": [
+                "hero-columnar-escarpment",
+                "collapsed-lava-bank",
+                "obsidian-fumarole-talus",
+                "distant-breached-caldera",
+            ],
+            "registeredCameras": list(cameras),
+        },
+        "directions": list(R8_TERRAIN_DIRECTIONS),
+        "renders": renders,
+        "blend": R8_TARGET_BLEND_PATH.relative_to(PROJECT_ROOT).as_posix(),
+    }
+    report_path = R8_TARGET_EVIDENCE_DIR / "ember-r8-terrain-target-report.json"
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(report, indent=2))
+
+
+def render_r9_surface_target_evidence(
+    production: bpy.types.Collection,
+    cameras: dict[str, bpy.types.Object],
+) -> tuple[dict[str, dict[str, str]], dict[str, dict[str, int]]]:
+    R9_SURFACE_TARGET_EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+    scene = bpy.context.scene
+    scene.render.resolution_x = 1280
+    scene.render.resolution_y = 720
+    target_cameras = ("hero", "front-right", "left", "rear")
+    river = sample_river_centerline()
+    renders: dict[str, dict[str, str]] = {}
+    family_counts: dict[str, dict[str, int]] = {}
+    for direction in R9_SURFACE_DIRECTIONS:
+        print(f"[ember-r9] baking and applying {direction}", flush=True)
+        materials = create_r9_surface_materials(direction)
+        blended_terrain = create_r9_blended_terrain_material(direction, materials)
+        for material in materials:
+            material.use_fake_user = True
+        blended_terrain.use_fake_user = True
+        family_counts[direction] = apply_r9_surface_direction(
+            production, direction, materials, blended_terrain, river
+        )
+        renders[direction] = {}
+        for camera_name in target_cameras:
+            output = (
+                R9_SURFACE_TARGET_EVIDENCE_DIR
+                / f"ember-r9-{direction}-{camera_name}.png"
+            )
+            scene.camera = cameras[camera_name]
+            scene.render.filepath = str(output)
+            bpy.ops.render.render(write_still=True)
+            renders[direction][camera_name] = output.relative_to(PROJECT_ROOT).as_posix()
+    return renders, family_counts
+
+
+def build_r9_surface_target_set() -> None:
+    R9_SURFACE_TARGET_EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+    TEXTURE_DIR.mkdir(parents=True, exist_ok=True)
+    clean_scene()
+    production = make_collection("EMBER_PRODUCTION_SLICE")
+    qa = make_collection("EMBER_QA")
+    print("[ember-r9] rebuilding the approved R8 world", flush=True)
+    build_production_geometry(production, "breached-caldera-terraces")
+    configure_render()
+    cameras = create_qa_scene(qa)
+    print("[ember-r9] rendering the registered surface target set", flush=True)
+    renders, family_counts = render_r9_surface_target_evidence(production, cameras)
+
+    # The visual-target source stays small and editable. Texture pixels are
+    # deterministic builder products, so the Blend retains geometry, cameras,
+    # material-family graphs, and labels while this script remains the lossless
+    # reconstruction path for every map.
+    for image in list(bpy.data.images):
+        bpy.data.images.remove(image, do_unlink=True)
+    R9_SURFACE_TARGET_BLEND_PATH.parent.mkdir(parents=True, exist_ok=True)
+    bpy.ops.wm.save_as_mainfile(
+        filepath=str(R9_SURFACE_TARGET_BLEND_PATH), compress=True
+    )
+
+    report = {
+        "revision": "ember-surface-ecology-gate3-r9",
+        "authorityTrackerItem": "uXmi4z9lL7zCiNq5ULCp",
+        "fixedElements": {
+            "terrainDirection": "breached-caldera-terraces",
+            "actionClearanceMeters": ACTION_RADIUS,
+            "lavaRiverControlPointsRuntimeXZHeight": RIVER_POINTS_RUNTIME,
+            "meshyGeology": [
+                "hero-columnar-escarpment",
+                "collapsed-lava-bank",
+                "obsidian-fumarole-talus",
+                "distant-breached-caldera",
+            ],
+            "atmosphere": "blackglass-inferno",
+            "registeredCameras": list(cameras),
+        },
+        "directions": {
+            direction: {
+                "families": [
+                    {
+                        "index": index,
+                        "slug": specification["slug"],
+                        "label": specification["label"],
+                        "pattern": specification["pattern"],
+                    }
+                    for index, specification in enumerate(
+                        R9_SURFACE_FAMILIES[direction]
+                    )
+                ],
+                "assignedPolygonCounts": family_counts[direction],
+            }
+            for direction in R9_SURFACE_DIRECTIONS
+        },
+        "comparisonStructure": {
+            "independentDirections": list(R9_SURFACE_DIRECTIONS[:3]),
+            "directorSynthesis": R9_SURFACE_DIRECTIONS[3],
+            "synthesisRationale": (
+                "Fresh Flow Field supplies the coherent young-lava base. "
+                "Hydrothermal Rift contributes only restrained iron-rich contact "
+                "zones at the river and lava banks; broad sulfur color fields are rejected."
+            ),
+        },
+        "renders": renders,
+        "editableSource": "scripts/build-ember-production-slice.py --r9-surface-targets",
+        "blend": R9_SURFACE_TARGET_BLEND_PATH.relative_to(PROJECT_ROOT).as_posix(),
+        "blendBytes": R9_SURFACE_TARGET_BLEND_PATH.stat().st_size,
+        "blendSha256": sha256(R9_SURFACE_TARGET_BLEND_PATH),
+        "productionBoundary": (
+            "Gate 3 evidence only. No runtime asset, shader owner, or production "
+            "material was changed before Austen selects a registered direction."
+        ),
+        "meshyCreditsSpent": 0,
+        "meshyCreditsReserved": 40,
+    }
+    report_path = (
+        R9_SURFACE_TARGET_EVIDENCE_DIR
+        / "ember-r9-surface-target-report.json"
+    )
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(report, indent=2))
+
+
 def export_production(production: bpy.types.Collection) -> None:
     BLEND_PATH.parent.mkdir(parents=True, exist_ok=True)
     RAW_GLB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH))
     bpy.ops.object.select_all(action="DESELECT")
     for obj in production.all_objects:
         obj.select_set(True)
@@ -2328,12 +3513,24 @@ def export_production(production: bpy.types.Collection) -> None:
         export_apply=True,
         use_selection=True,
     )
+    if REVISION in {
+        "ember-geological-world-gate4-r8",
+        "ember-fresh-rift-surface-gate4-r9",
+    }:
+        # The shipped source stays below GitHub's 100 MiB hard limit. All image
+        # pixels are deterministic build products or live in the four tracked
+        # Meshy source GLBs, so geometry/material graphs remain editable while
+        # the builder is the lossless texture reconstruction path.
+        for image in list(bpy.data.images):
+            bpy.data.images.remove(image, do_unlink=True)
+    bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH), compress=True)
 
 
 def scene_report(
     production: bpy.types.Collection,
     cameras: dict[str, bpy.types.Object],
     renders: dict[str, str],
+    terrain_direction: str = "r7-continuous-basin",
 ) -> dict[str, object]:
     mesh_objects = [obj for obj in production.all_objects if obj.type == "MESH"]
     minimum, maximum = combined_bounds(mesh_objects)
@@ -2393,6 +3590,21 @@ def scene_report(
         )
         for obj in structural_objects
     )
+    lava_bank = next(
+        obj for obj in mesh_objects if obj.get("tka_role") == "meshy-lava-bank"
+    )
+    river = sample_river_centerline()
+    lava_bank_centerline_clearance = min(
+        river_distance_and_height(
+            (lava_bank.matrix_world @ vertex.co).x,
+            (lava_bank.matrix_world @ vertex.co).y,
+            river,
+        )[0]
+        for vertex in lava_bank.data.vertices
+    )
+    lava_bank_edge_clearance = lava_bank_centerline_clearance - (
+        float(WORLD_CONTRACT["lavaRiver"]["width"]) * 0.5
+    )
     return {
         "revision": REVISION,
         "blenderVersion": bpy.app.version_string,
@@ -2405,6 +3617,21 @@ def scene_report(
             "gate4VolcanicWorldTrackerItem": "nu73zqvPJRxio4T2sWz7",
             "gate4ContinuityTrackerItem": "ATURN84Ov2hmjWUndebl",
             "gate4MeshyGeologyTrackerItem": "ZSnkB98pb0wz6PO17XKp",
+            "gate3GeologicalWorldTrackerItem": (
+                "s3cxnp6hOLBVQR5dDF42"
+                if terrain_direction in R8_TERRAIN_DIRECTIONS
+                else None
+            ),
+            "gate3SurfaceEcologyTrackerItem": (
+                "uXmi4z9lL7zCiNq5ULCp"
+                if REVISION == "ember-fresh-rift-surface-gate4-r9"
+                else None
+            ),
+            "gate4SurfaceEcologyTrackerItem": (
+                "ahPuPwh34G3FeqvUEHsB"
+                if REVISION == "ember-fresh-rift-surface-gate4-r9"
+                else None
+            ),
         },
         "sources": [
             {
@@ -2457,14 +3684,36 @@ def scene_report(
             "heroCenterBlenderXYZ": list(HERO_CENTER),
             "heroCenterRuntimeXYZ": [HERO_CENTER[0], HERO_CENTER[2], -HERO_CENTER[1]],
             "heroInPositiveRuntimeZFarField": True,
-            "selectedDirection": "Fractured Columnar Chasm",
+            "selectedDirection": (
+                "Fresh Rift over Breached Caldera Terraces"
+                if REVISION == "ember-fresh-rift-surface-gate4-r9"
+                else "Breached Caldera Terraces"
+                if terrain_direction == "breached-caldera-terraces"
+                else "Fractured Columnar Chasm"
+            ),
+            "terrainDirection": terrain_direction,
             "revisionDirection": (
-                "Meshy-authored blackglass escarpment, collapsed lava banks, fumarole "
+                "A four-family volcanic ecology with young lava crust, iron-rich "
+                "river-contact alteration, fractured basalt scarps, and sheltered ash "
+                "blended across the preserved breached-caldera terrain"
+                if REVISION == "ember-fresh-rift-surface-gate4-r9"
+                else "An asymmetrical breached caldera with collapsed terraces, an embedded "
+                "blackglass action shelf, protected Meshy formations, and a river-cut "
+                "travel saddle"
+                if terrain_direction == "breached-caldera-terraces"
+                else "Meshy-authored blackglass escarpment, collapsed lava banks, fumarole "
                 "talus, and a breached distant caldera inside continuous volcanic "
                 "country and a through-frame river"
             ),
             "performerFacing": "negative-runtime-z-toward-front-stage-audience",
             "lavaRiverControlPointsRuntimeXZHeight": RIVER_POINTS_RUNTIME,
+            "collapsedLavaBankCenterRuntimeXZ": [
+                round(lava_bank.location.x, 4),
+                round(-lava_bank.location.y, 4),
+            ],
+            "collapsedLavaBankRiverEdgeClearanceMeters": round(
+                lava_bank_edge_clearance, 4
+            ),
         },
         "geometry": {
             "meshObjectCount": len(mesh_objects),
@@ -2514,21 +3763,77 @@ def scene_report(
 
 
 def main() -> None:
+    global BLEND_PATH, EVIDENCE_DIR, REPORT_PATH, REVISION
+    arguments = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
+    if "--r8-targets" in arguments:
+        build_r8_target_set()
+        return
+    if "--r9-surface-targets" in arguments:
+        build_r9_surface_target_set()
+        return
+    terrain_direction = "r7-continuous-basin"
+    filename_revision = "r7"
+    build_r9_production = "--r9-production" in arguments
+    if "--r8-production" in arguments:
+        EVIDENCE_DIR = R8_PRODUCTION_EVIDENCE_DIR
+        BLEND_PATH = R8_PRODUCTION_BLEND_PATH
+        REPORT_PATH = R8_PRODUCTION_REPORT_PATH
+        REVISION = "ember-geological-world-gate4-r8"
+        terrain_direction = "breached-caldera-terraces"
+        filename_revision = "r8"
+    if build_r9_production:
+        EVIDENCE_DIR = R9_PRODUCTION_EVIDENCE_DIR
+        BLEND_PATH = R9_PRODUCTION_BLEND_PATH
+        REPORT_PATH = R9_PRODUCTION_REPORT_PATH
+        REVISION = "ember-fresh-rift-surface-gate4-r9"
+        terrain_direction = "breached-caldera-terraces"
+        filename_revision = "r9"
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     TEXTURE_DIR.mkdir(parents=True, exist_ok=True)
     clean_scene()
     production = make_collection("EMBER_PRODUCTION_SLICE")
     qa = make_collection("EMBER_QA")
     print("[ember-r7] building production geometry", flush=True)
-    build_production_geometry(production)
+    geometry = build_production_geometry(production, terrain_direction)
+    surface_assets: dict[str, object] | None = None
+    surface_family_counts: dict[str, int] | None = None
+    if build_r9_production:
+        print("[ember-r9] applying the approved Fresh Rift ecology", flush=True)
+        direction = "fresh-rift-synthesis"
+        surface_materials = create_r9_surface_materials(direction)
+        blended_terrain = create_r9_blended_terrain_material(
+            direction,
+            surface_materials,
+        )
+        river = sample_river_centerline()
+        surface_family_counts = apply_r9_surface_direction(
+            production,
+            direction,
+            surface_materials,
+            blended_terrain,
+            river,
+        )
+        surface_assets = publish_r9_runtime_surface_assets(
+            surface_materials,
+            river,
+        )
     print("[ember-r7] configuring QA scene", flush=True)
     configure_render()
     cameras = create_qa_scene(qa)
     print("[ember-r7] rendering evidence", flush=True)
-    renders = render_evidence(cameras)
+    renders = render_evidence(cameras, filename_revision)
     print("[ember-r7] exporting production asset", flush=True)
     export_production(production)
-    report = scene_report(production, cameras, renders)
+    report = scene_report(production, cameras, renders, terrain_direction)
+    if build_r9_production:
+        report["surfaceEcology"] = {
+            "direction": "fresh-rift-synthesis",
+            "approvalTrackerItem": "ahPuPwh34G3FeqvUEHsB",
+            "familyPolygonCounts": surface_family_counts,
+            "runtimeAssets": surface_assets,
+            "materialOwner": "src/lib/shared/3d/environments/primitives/masked-ground-detail-material.ts",
+            "sceneAdapter": "src/lib/shared/3d/environments/scenes/ember/ember-ground-detail.ts",
+        }
     REPORT_PATH.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2))
 

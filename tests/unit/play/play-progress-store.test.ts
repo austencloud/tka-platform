@@ -16,7 +16,7 @@ function baseResult(
 ): Omit<ArcadeSessionResult, "isNewBest"> {
   return {
     gameId: "speed-blitz",
-    levelNumber: 1,
+    challengeNumber: 1,
     score: 900,
     correctCount: 8,
     totalCount: 10,
@@ -43,8 +43,8 @@ describe("createPlayProgressStore", () => {
     expect(store.getGameProgress("speed-blitz")).toEqual({
       bestScore: 0,
       bestGrade: null,
-      starsByLevel: {},
-      levelsUnlocked: 1,
+      starsByChallenge: {},
+      challengesUnlocked: 1,
       totalPlays: 0,
     });
 
@@ -63,6 +63,33 @@ describe("createPlayProgressStore", () => {
     expect(raw).not.toBeNull();
     const parsed = JSON.parse(raw!);
     expect(parsed.games["speed-blitz"].bestScore).toBe(900);
+    expect(parsed.games["speed-blitz"]).toHaveProperty("starsByChallenge");
+    expect(parsed.games["speed-blitz"]).toHaveProperty("challengesUnlocked");
+    expect(parsed.games["speed-blitz"]).not.toHaveProperty("starsByLevel");
+    expect(parsed.games["speed-blitz"]).not.toHaveProperty("levelsUnlocked");
+  });
+
+  it("migrates legacy game-level progress from localStorage", () => {
+    localStorage.setItem(
+      "tka_play_progress",
+      JSON.stringify({
+        games: {
+          "speed-blitz": {
+            bestScore: 1500,
+            bestGrade: "A",
+            starsByLevel: { "1": 3, "2": 1 },
+            levelsUnlocked: 3,
+            totalPlays: 8,
+          },
+        },
+        lastUpdated: "2026-08-01T12:00:00.000Z",
+      })
+    );
+
+    const progress = createPlayProgressStore().getGameProgress("speed-blitz");
+
+    expect(progress.starsByChallenge).toEqual({ "1": 3, "2": 1 });
+    expect(progress.challengesUnlocked).toBe(3);
   });
 
   it("keeps best score/stars on a worse repeat result; isNewBest false", () => {
@@ -74,7 +101,7 @@ describe("createPlayProgressStore", () => {
 
     expect(isNewBest).toBe(false);
     expect(progress.bestScore).toBe(900);
-    expect(progress.starsByLevel["1"]).toBe(2);
+    expect(progress.starsByChallenge["1"]).toBe(2);
     expect(progress.totalPlays).toBe(2);
   });
 
@@ -101,7 +128,10 @@ describe("createPlayProgressStore", () => {
     expect(mockFirestoreSet).toHaveBeenCalledWith(
       "users/user-1/playProgress",
       "current",
-      expect.objectContaining({ games: expect.any(Object), lastUpdated: expect.any(String) }),
+      expect.objectContaining({
+        games: expect.any(Object),
+        lastUpdated: expect.any(String),
+      }),
       { merge: true }
     );
   });
@@ -117,8 +147,8 @@ describe("createPlayProgressStore", () => {
           "speed-blitz": {
             bestScore: 9999,
             bestGrade: "S",
-            starsByLevel: { "1": 3 },
-            levelsUnlocked: 4,
+            starsByChallenge: { "1": 3 },
+            challengesUnlocked: 4,
             totalPlays: 20,
           },
         },
@@ -131,6 +161,30 @@ describe("createPlayProgressStore", () => {
       expect(store.getGameProgress("speed-blitz").totalPlays).toBe(20);
     });
 
+    it("migrates legacy game-level progress from Firestore", async () => {
+      const store = createPlayProgressStore();
+      mockFirestoreGet.mockResolvedValue({
+        id: "current",
+        games: {
+          "speed-blitz": {
+            bestScore: 2400,
+            bestGrade: "S",
+            starsByLevel: { "1": 3, "2": 2 },
+            levelsUnlocked: 3,
+            totalPlays: 12,
+          },
+        },
+        lastUpdated: "2099-01-01T00:00:00.000Z",
+      });
+
+      await store.initializeForUser("user-1");
+
+      expect(store.getGameProgress("speed-blitz")).toMatchObject({
+        starsByChallenge: { "1": 3, "2": 2 },
+        challengesUnlocked: 3,
+      });
+    });
+
     it("keeps local and pushes to Firestore when local lastUpdated is newer than remote", async () => {
       const store = createPlayProgressStore();
       store.recordResult(baseResult({ score: 100 })); // local lastUpdated = now (recent)
@@ -141,8 +195,8 @@ describe("createPlayProgressStore", () => {
           "speed-blitz": {
             bestScore: 1,
             bestGrade: "D",
-            starsByLevel: {},
-            levelsUnlocked: 1,
+            starsByChallenge: {},
+            challengesUnlocked: 1,
             totalPlays: 1,
           },
         },

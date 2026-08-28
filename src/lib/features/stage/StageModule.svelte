@@ -28,7 +28,11 @@
   import { FILM_DIRECTOR_ROUTE } from "$lib/features/film-director/domain/film-director-link";
   import { consumeSceneStudioHandoff } from "$lib/features/scene-3d-collection/services/open-3d-scene";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-  import { flyFade, motionDuration } from "$lib/shared/transitions/motion";
+  import {
+    flyFade,
+    growFade,
+    motionDuration,
+  } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { FormationPresetId } from "./domain/stage-types";
@@ -132,6 +136,14 @@
   const timelineDisclosure = $derived<TimelineDisclosure>(
     starterVisible ? "hidden" : timelineExpanded ? "editor" : "dock"
   );
+
+  const timelineContentSize = $derived.by(() => {
+    const lanes = Array.from(
+      { length: choreography.performers.length + 1 },
+      () => "var(--stage-timeline-lane-size)"
+    );
+    return `calc(1px + var(--stage-timeline-toolbar-size) + var(--stage-timeline-ruler-size) + ${lanes.join(" + ")})`;
+  });
 
   const sequenceIds = $derived.by(() => {
     const ids = new Set<string>([sharedSequenceId]);
@@ -358,10 +370,7 @@
     return [
       stage,
       {
-        content:
-          timelineDisclosure === "editor"
-            ? timelineEditorPanel
-            : timelineDockPanel,
+        content: timelinePanel,
         defaultSize: 1.2,
         minSize: 200,
         maxSize: 360,
@@ -369,8 +378,12 @@
           timelineDisclosure === "dock"
             ? "var(--stage-timeline-dock-size)"
             : compactTimelineWorkspace.current
-              ? "var(--stage-timeline-sheet-size)"
+              ? "min(var(--stage-timeline-content-size), var(--stage-timeline-sheet-size))"
               : undefined,
+        preferredSize:
+          timelineDisclosure === "editor" && !compactTimelineWorkspace.current
+            ? "min(var(--stage-timeline-content-size), var(--stage-timeline-editor-max-size))"
+            : undefined,
         id: "timeline",
       },
     ];
@@ -562,12 +575,22 @@
 
 {#snippet stageOverlay()}
   {#if chartRaised}
-    <div class="drill-layer" aria-label="Drill chart">
+    <div
+      class="drill-layer"
+      aria-label="Drill chart"
+      transition:flyFade={{ duration: DURATION.emphasis, y: 12 }}
+    >
       <div class="drill-chart">
         <FormationOverlay {editMode} />
       </div>
       {#if activeSet}
-        <div class="drill-inspector">
+        <div
+          class="drill-inspector"
+          transition:growFade={{
+            duration: DURATION.emphasis,
+            axis: "x",
+          }}
+        >
           <SetProperties {editMode} />
         </div>
       {/if}
@@ -583,13 +606,22 @@
   {/if}
 
   {#if sequenceLoadState === "loading"}
-    <div class="load-notice" role="status" aria-live="polite">
+    <div
+      class="load-notice"
+      role="status"
+      aria-live="polite"
+      transition:flyFade={{ duration: DURATION.normal }}
+    >
       <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
       <strong>Preparing the performance</strong>
       <span>Loading the sequence and performer rigs</span>
     </div>
   {:else if sequenceLoadState === "error"}
-    <div class="load-notice error" role="alert">
+    <div
+      class="load-notice error"
+      role="alert"
+      transition:flyFade={{ duration: DURATION.normal }}
+    >
       <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
       <strong>Sequence failed to load</strong>
       <span>{sequenceLoadError ?? "The catalog entry is unavailable."}</span>
@@ -662,22 +694,13 @@
   </div>
 {/snippet}
 
-{#snippet timelineDockPanel()}
+{#snippet timelinePanel()}
   <StageTimeline
     {editMode}
     sequences={resolvedSequences}
     bind:timelineLens
-    mode="dock"
+    mode={timelineDisclosure === "editor" ? "editor" : "dock"}
     onExpand={() => openChoreography()}
-  />
-{/snippet}
-
-{#snippet timelineEditorPanel()}
-  <StageTimeline
-    {editMode}
-    sequences={resolvedSequences}
-    bind:timelineLens
-    mode="editor"
     onCollapse={collapseChoreography}
   />
 {/snippet}
@@ -687,6 +710,7 @@
   role="main"
   aria-label="Stage"
   data-edit-history-shortcut-scope
+  style:--stage-timeline-content-size={timelineContentSize}
 >
   <EditHistoryShortcutBridge
     onUndo={stageState.undo}
@@ -722,6 +746,10 @@
   .stage-module {
     --stage-timeline-dock-size: 4.25rem;
     --stage-timeline-sheet-size: min(66cqh, 26rem);
+    --stage-timeline-editor-max-size: 22.5rem;
+    --stage-timeline-toolbar-size: 4.25rem;
+    --stage-timeline-ruler-size: 2.25rem;
+    --stage-timeline-lane-size: 3.5rem;
     display: flex;
     width: 100%;
     height: 100%;

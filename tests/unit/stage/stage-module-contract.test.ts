@@ -105,12 +105,18 @@ describe("One Stage ownership", () => {
     );
     expect(stage).toContain('timelineDisclosure === "hidden"');
     expect(stage).toContain('timelineDisclosure === "dock"');
-    expect(stage).toContain('mode="dock"');
-    expect(stage).toContain('mode="editor"');
+    expect(stage).toContain("content: timelinePanel");
+    expect(stage).toContain(
+      'mode={timelineDisclosure === "editor" ? "editor" : "dock"}'
+    );
     expect(starter).toContain("onVisibilityChange(!dismissed)");
     expect(starter).toContain("Keep this example and choreograph it");
     expect(timeline).toContain('{#if mode === "editor"}');
-    expect(timeline).toContain("grid-auto-rows: 3.5rem");
+    expect(stage).toContain("preferredSize:");
+    expect(stage).toContain("--stage-timeline-content-size");
+    expect(timeline).toContain(
+      "grid-auto-rows: var(--stage-timeline-lane-size, 3.5rem)"
+    );
     expect(timeline).not.toContain("grid-auto-rows: minmax(3.5rem, 1fr)");
   });
 

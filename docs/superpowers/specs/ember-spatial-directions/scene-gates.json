@@ -23,7 +23,11 @@
       "5otAzYdNg5Wp5E27mgfo",
       "nu73zqvPJRxio4T2sWz7",
       "ATURN84Ov2hmjWUndebl",
-      "ZSnkB98pb0wz6PO17XKp"
+      "ZSnkB98pb0wz6PO17XKp",
+      "sDKmB6cUEXLfHgz4DGd4",
+      "s3cxnp6hOLBVQR5dDF42",
+      "uXmi4z9lL7zCiNq5ULCp",
+      "ahPuPwh34G3FeqvUEHsB"
     ]
   },
   "sequenceFingerprints": [],
@@ -37,10 +41,10 @@
     {
       "id": "C-002",
       "class": "invention",
-      "statement": "The Columnar Furnace sits within one continuous exterior-scale volcanic basin while a distant vent and open lava channel establish far depth outside the 4.5 m action radius without forming a uniform enclosure.",
+      "statement": "The Columnar Furnace rises from an offset breached caldera whose collapsed terraces, open travel saddle, embedded stage crust, and through-frame lava channel establish continuous foreground, midground, and far terrain outside the protected 4.5 m action radius.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/scene-development.md",
-        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r6/ember-volcanic-world-production-slice-r6-orbit-board.png"
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-terrain-r8/ember-volcanic-world-production-slice-r8-orbit-board.png"
       ]
     },
     {
@@ -49,6 +53,15 @@
       "statement": "Blue-black basalt and rough obsidian dominate the frame; orange is confined to fissures and the banked, crusted river, with restrained mineral ochre as a secondary accent.",
       "evidence": [
         "docs/superpowers/specs/ember-spatial-directions/look-development.md"
+      ]
+    },
+    {
+      "id": "C-004",
+      "class": "invention",
+      "statement": "Fresh Rift uses young lava crust as Ember's surface base, exposes fractured basalt on scarps, shelters ash in depressions, and confines iron-rich alteration to lava-distance contact zones.",
+      "evidence": [
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-surface-target-board.jpg",
+        "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/candidate-decisions.md"
       ]
     }
   ],
@@ -210,6 +223,49 @@
         "R6 Gate 4 visual evidence"
       ],
       "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/"
+    },
+    {
+      "invalidatedAt": "2026-08-28T07:23:22.335Z",
+      "reopenedGate": 3,
+      "museumTrackerItem": "s3cxnp6hOLBVQR5dDF42",
+      "reason": "R7 and the Blackglass atmosphere fixed focal geology and color separation, but the broad uniform basin and 23 m flat moat still made the stage read as a contained vignette. R8 compares three registered terrain topologies and advances the strongest world-scale composition.",
+      "preserved": [
+        "four unique R7 Meshy geological landmarks",
+        "Blackglass Inferno runtime atmosphere",
+        "seventeen-point lava route",
+        "4.5 m performer action clearance",
+        "responsive stage sizing",
+        "front-stage performer facing"
+      ],
+      "invalidated": [
+        "uniform R7 basin silhouette",
+        "23 m flat action-floor moat",
+        "R7 Gate 3 terrain target",
+        "R7 Gate 4 terrain evidence"
+      ],
+      "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-terrain-r8/ and docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-terrain-r8/"
+    },
+    {
+      "invalidatedAt": "2026-08-28T18:39:05.344Z",
+      "reopenedGate": 3,
+      "museumTrackerItem": "uXmi4z9lL7zCiNq5ULCp",
+      "reason": "R8 solved the terrain silhouette and shelf-to-world continuity, but one weathered-basalt texture triplet still skins the columnar hero and all three depth bands. R9 compares three camera-registered surface ecosystems and one director synthesis before changing the production material owner.",
+      "preserved": [
+        "R8 Breached Caldera Terraces topology",
+        "four unique R7 Meshy geological landmarks",
+        "Blackglass Inferno runtime atmosphere",
+        "seventeen-point lava route",
+        "4.5 m performer action clearance",
+        "responsive stage sizing",
+        "front-stage performer facing",
+        "remaining 40 Meshy credits"
+      ],
+      "invalidated": [
+        "R8 uniform weathered-basalt surface language",
+        "R8 Gate 3 material target",
+        "R8 Gate 4 material evidence"
+      ],
+      "replacementEvidence": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/"
     }
   ],
   "gates": [
@@ -321,141 +377,90 @@
       "evidence": [
         {
           "kind": "locked-camera-set",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-report.json"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-surface-target-report.json"
         },
         {
           "kind": "visual-target-board",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-orbit-board.png"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/ember-r9-surface-target-board.jpg"
         },
         {
           "kind": "material-lighting-brief",
-          "path": "docs/superpowers/specs/ember-spatial-directions/look-development.md"
-        },
-        {
-          "kind": "editable-blender-source",
-          "path": "blender/ember-broken-rift-lookdev-r3.blend"
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-3-surface-r9/candidate-decisions.md"
         }
       ],
       "checks": [
         {
           "name": "camera-registration",
           "status": "passed",
-          "evidence": "The report records one shared ten-camera set used unchanged by all three Blender target scenes: eight orbit sectors, one geological detail, and one orthographic plan view."
+          "evidence": "The target report records the same hero, front-right, left, and rear cameras for Fresh Flow Field, Ash-Choked Caldera, Hydrothermal Rift, and the Fresh Rift director synthesis."
         },
         {
           "name": "silhouette-read",
           "status": "passed",
-          "evidence": "The comparison and three orbit boards show three distinct hero silhouettes under matched camera and lighting conditions without depending on a pre-existing hero model."
+          "evidence": "Sixteen matched renders preserve the R8 silhouette so the review isolates material hierarchy. The decision ledger rejects Ash's graybox regression and Hydrothermal's broad color risk, then recommends Fresh Rift for coherent young lava plus restrained iron contact zones."
         },
         {
-          "name": "action-clearance",
+          "name": "surface-mask-continuity",
           "status": "passed",
-          "evidence": "All target geometry and secondary geology remain outside the preserved 4.5 m unobstructed performer action radius, confirmed by the registered plan views."
+          "evidence": "The continuous terrain uses a smooth per-vertex four-family mask rather than hard material islands. The R8 geometry, action clearance, atmosphere, Meshy landmarks, river path, and stage contract remain unchanged."
         }
       ],
       "approval": {
         "approvedBy": "Austen",
-        "approvedAt": "2026-08-27T07:27:15.129Z",
-        "quote": "I will take your recommendation",
-        "museumTrackerItem": "QRHbwRQLhM7Zn9LyYHOd",
+        "approvedAt": "2026-08-28T19:09:09.090Z",
+        "quote": "approved, But as you work on it I am curious what the triple A target will be, I'm more than happy to allow you to get in my blender and blend up whatever you feel you want to",
+        "museumTrackerItem": "ahPuPwh34G3FeqvUEHsB",
         "visualComprehensionConfirmed": true
       }
     },
     {
       "id": "production-slice",
-      "status": "ready-for-review",
+      "status": "in-progress",
       "evidence": [
         {
           "kind": "vertical-slice-build",
-          "path": "blender/ember-volcanic-world-production-slice-r7.blend"
-        },
-        {
-          "kind": "build-report",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-report.json"
-        },
-        {
-          "kind": "registered-orbit-board",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-orbit-board.png"
-        },
-        {
-          "kind": "interaction-capture",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-r7-runtime-hero-1920x1080.png"
-        },
-        {
-          "kind": "performance-report",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-report.json"
-        },
-        {
-          "kind": "baseline-performance-report",
-          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-volcanic-r5/ember-volcanic-world-production-slice-r5-runtime-report.json"
-        },
-        {
-          "kind": "optimized-glb",
           "path": "static/models/ember/ember-production-slice.glb"
         },
         {
-          "kind": "reversible-r5-glb",
-          "path": "static/models/ember/ember-production-slice-r5.glb"
+          "kind": "editable-source",
+          "path": "blender/ember-volcanic-world-production-slice-r9.blend"
         },
         {
-          "kind": "reversible-r6-glb",
-          "path": "static/models/ember/ember-production-slice-r6.glb"
+          "kind": "coordinate-manifest",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-surface-r9/ember-volcanic-world-production-slice-r9-report.json"
         },
         {
-          "kind": "reversible-r7-glb",
-          "path": "static/models/ember/ember-production-slice-r7.glb"
+          "kind": "review-contact-sheet",
+          "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-surface-r9/ember-volcanic-world-production-slice-r9-orbit-board.png"
         }
       ],
       "checks": [
         {
-          "name": "registered-source-provenance",
+          "name": "artifact-budget",
           "status": "passed",
-          "evidence": "The R7 report records four unique Ember Meshy multiview source chains, including geometry, retexture, and official remesh task IDs. Each selected source is embedded once; no Ocean asset or unrelated pre-existing hero is present."
+          "evidence": "The R9 report records 197,898 triangles, a 49,345-triangle largest mesh, 6.156 m minimum structural clearance, and the optimized shipping GLB is 4,488,452 bytes."
         },
         {
-          "name": "anti-repetition",
+          "name": "focused-tests",
           "status": "passed",
-          "evidence": "R7 uses one hero escarpment, one collapsed lava bank, one fumarole talus, and one breached distant caldera, then buries each unique source into the continuous R6 terrain. Procedural secondary column clusters and the pyramid-like distant vent were removed after review exposed their graybox repetition."
+          "evidence": "The Ember production contract, Ember ground detail, and shared forest detail suites pass 14 tests with one historical todo."
         },
         {
-          "name": "action-clearance",
+          "name": "typecheck",
           "status": "passed",
-          "evidence": "Computed minimum structural radial clearance is 6.156 m against the preserved 4.5 m performer action radius."
-        },
-        {
-          "name": "performance",
-          "status": "passed",
-          "evidence": "The optimized R7 asset is 6.33 MiB with Meshopt, mesh quantization, and 18 KTX2 textures. The source artifact is 196,906 triangles and its largest mesh is 49,345 triangles."
+          "evidence": "svelte-check reports zero errors and zero warnings."
         },
         {
           "name": "interaction-state",
-          "status": "passed",
-          "evidence": "The shared stage owner grew through one, two, three, and four performers; the corrected four-performer runtime proof keeps every body inside the platform and every visible front toward the audience camera."
-        },
-        {
-          "name": "front-stage-facing",
-          "status": "passed",
-          "evidence": "The Viewer3D formation adapter resolves same-direction layouts to Math.PI for the negative-Z audience camera while preserving explicit back-to-back and inward-facing slots. The corrected hero, four-performer, and seven-viewport proofs show visible chests and props toward camera."
+          "status": "pending"
         },
         {
           "name": "runtime-console",
-          "status": "passed",
-          "evidence": "The decisive 1920 by 1080 front-stage runtime capture loaded the final R7 GLB, reached the environment-ready state, and produced no browser-console errors or warnings."
+          "status": "pending"
         },
         {
-          "name": "focused-verification",
-          "status": "passed",
-          "evidence": "The focused R7 request-safety, provenance, terrain, stage, and shipping-asset suite passed 15 checks with one historical integrated-room todo. Svelte-check completed with zero errors and zero warnings."
-        },
-        {
-          "name": "volcanic-world-composition",
-          "status": "passed",
-          "evidence": "The R6 380 by 335 m terrain owner remains intact. R7's registered eight-sector orbit and decisive runtime view add a fractured columnar landmark, collapsed bank, fumarole talus, and low breached caldera without restoring a uniform enclosure or isolated backdrop."
-        },
-        {
-          "name": "lava-river",
-          "status": "passed",
-          "evidence": "A shared seventeen-point downhill channel drives the static levees and runtime indexed spline surface from the distant vent through the audience side of frame while remaining outside the action radius."
+          "name": "performance",
+          "status": "pending"
         }
       ],
       "approval": null

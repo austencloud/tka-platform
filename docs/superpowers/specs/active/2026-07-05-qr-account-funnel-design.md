@@ -11,6 +11,11 @@ last_triaged: 2026-07-29
 
 # /q Account Funnel — Download Gate + Sign-in Chip — Design
 
+> **ROUTING UPDATE — 2026-08-28.** The funnel behavior is unchanged, but its
+> viewer owner moved from `/q` to the scan-origin `/sequence` host. `/q` is now
+> attribution ingress only. Re-run the remaining post-auth replay verification
+> on the `/sequence/[code]?from=scan&code=[code]` destination.
+
 > **DRIFT WARNING — 2026-08-02.** Verified 2026-08-02. Correctly BLOCKED, not drifting: `depends_on` already names the external gate (one live Google sign-in to confirm post-auth export resume). The body reads "Implemented; verification blocked", which the detector cannot distinguish from a stale done-claim. Criterion 2 is known BROKEN, not merely unverified — see `remaining`.
 >
 > Status lines below predate this check and are left intact deliberately.

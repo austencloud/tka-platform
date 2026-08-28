@@ -1,4 +1,4 @@
-<!-- Optional presentation step for the persisted favoriteProp field. -->
+<!-- Optional presentation step for the skill featured beside a creator name. -->
 <script lang="ts">
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getProfilePropLabel } from "$lib/shared/community/domain/profile-prop-catalog";
@@ -17,7 +17,7 @@
 <div
   class="profile-prop-picker"
   role="group"
-  aria-label="Choose a Profile prop"
+  aria-label="Choose a featured prop skill"
 >
   {#each selectedProps as prop (prop)}
     {@const label = getProfilePropLabel(prop)}
@@ -28,7 +28,7 @@
       onclick={() => onselect(prop)}
       {disabled}
       aria-pressed={value === prop}
-      aria-label={`Use ${label} as your Profile prop`}
+      aria-label={`Feature ${label} on your profile`}
     >
       {#if value === prop}
         <span class="selection-mark" aria-hidden="true">
@@ -62,28 +62,28 @@
     <span class="no-preference-icon" aria-hidden="true">
       <i class="fas fa-layer-group"></i>
     </span>
-    <span class="profile-prop-label">No preference</span>
-    <span class="profile-prop-note">Show all my props instead</span>
+    <span class="profile-prop-label">No featured skill</span>
   </button>
 </div>
 
 <style>
   .profile-prop-picker {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(7.5rem, 9rem));
+    justify-content: center;
+    gap: 0.625rem;
     padding: 0.5rem;
   }
 
   .profile-prop-card {
     position: relative;
     display: flex;
-    min-height: 9.5rem;
+    min-height: 7rem;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.55rem;
-    padding: 1rem 0.75rem;
+    gap: 0.4rem;
+    padding: 0.7rem 0.6rem;
     color: var(--theme-text, white);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -125,8 +125,8 @@
 
   .profile-prop-image,
   .no-preference-icon {
-    width: 4.5rem;
-    height: 4.5rem;
+    width: 3.5rem;
+    height: 3.5rem;
   }
 
   .profile-prop-image {
@@ -152,38 +152,6 @@
     font-size: var(--font-size-sm, 0.875rem);
     font-weight: 700;
     text-align: center;
-  }
-
-  .profile-prop-note {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
-    line-height: 1.3;
-    text-align: center;
-  }
-
-  @container (min-width: 90rem) {
-    .profile-prop-picker {
-      gap: 1rem;
-      padding: 1rem;
-    }
-
-    .profile-prop-card {
-      min-height: 15rem;
-    }
-
-    .profile-prop-image,
-    .no-preference-icon {
-      width: 7rem;
-      height: 7rem;
-    }
-
-    .profile-prop-label {
-      font-size: 1.125rem;
-    }
-
-    .profile-prop-note {
-      font-size: 0.95rem;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {

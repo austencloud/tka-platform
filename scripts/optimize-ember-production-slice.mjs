@@ -5,48 +5,43 @@ import { copyFile } from "node:fs/promises";
 
 const materialProfiles = [
   {
-    prefix: "Ember_Columnar_Basalt_PBR",
-    tint: [0.86, 0.92, 0.9, 1.0],
+    prefix: "Ember_R9_fresh-rift-synthesis_roped-pahoehoe",
+    tint: [0.9, 0.96, 0.96, 1.0],
+    roughnessFloor: 0.52,
+    roughnessCeiling: 0.8,
+    metallicCeiling: 0.035,
+    normalScale: 0.42,
+  },
+  {
+    prefix: "Ember_R9_fresh-rift-synthesis_iron-contact-crust",
+    tint: [0.96, 0.72, 0.6, 1.0],
     roughnessFloor: 0.72,
-    metallicCeiling: 0.05,
-    normalScale: 0.34,
-  },
-  {
-    prefix: "Ember_Ground_Blackglass_PBR",
-    tint: [0.38, 0.48, 0.56, 1.0],
-    roughnessFloor: 0.5,
-    roughnessCeiling: 0.68,
-    metallicFloor: 0.09,
-    metallicCeiling: 0.14,
-    normalScale: 0.2,
-  },
-  {
-    prefix: "Ember_Near_Caldera_PBR",
-    tint: [0.58, 0.64, 0.62, 1.0],
-    roughnessFloor: 0.86,
-    metallicCeiling: 0.02,
-    normalScale: 0.3,
-  },
-  {
-    prefix: "Ember_Middle_Caldera_PBR",
-    tint: [0.68, 0.72, 0.69, 1.0],
-    roughnessFloor: 0.9,
-    metallicCeiling: 0.01,
-    normalScale: 0.2,
-  },
-  {
-    prefix: "Ember_Far_Caldera_PBR",
-    tint: [0.78, 0.8, 0.75, 1.0],
-    roughnessFloor: 0.94,
-    metallicCeiling: 0.0,
-    normalScale: 0.12,
-  },
-  {
-    prefix: "Ember_Meshy_Geology_PBR",
-    tint: [0.58, 0.64, 0.62, 1.0],
-    roughnessFloor: 0.84,
+    roughnessCeiling: 0.94,
     metallicCeiling: 0.025,
-    normalScale: 0.46,
+    normalScale: 0.38,
+  },
+  {
+    prefix: "Ember_R9_fresh-rift-synthesis_fractured-basalt",
+    tint: [0.86, 0.93, 0.92, 1.0],
+    roughnessFloor: 0.68,
+    roughnessCeiling: 0.92,
+    metallicCeiling: 0.02,
+    normalScale: 0.48,
+  },
+  {
+    prefix: "Ember_R9_fresh-rift-synthesis_windborne-ash",
+    tint: [0.94, 0.93, 0.88, 1.0],
+    roughnessFloor: 0.92,
+    metallicCeiling: 0.005,
+    normalScale: 0.2,
+  },
+  {
+    prefix: "Ember_R9_fresh-rift-synthesis_Blended_Terrain",
+    tint: [0.91, 0.94, 0.92, 1.0],
+    roughnessFloor: 0.76,
+    roughnessCeiling: 0.9,
+    metallicCeiling: 0.025,
+    normalScale: 0.34,
   },
 ];
 
@@ -99,13 +94,13 @@ function applyEmberMaterialProfile(document) {
 }
 
 const runtimeOutput = "static/models/ember/ember-production-slice.glb";
-const versionedOutput = "static/models/ember/ember-production-slice-r7.glb";
+const versionedOutput = "static/models/ember/ember-production-slice-r9.glb";
 
 await optimizeGltfKtx2({
   input: "static/models/ember/ember-production-slice_raw.glb",
   output: runtimeOutput,
   temporaryStem: "ember-production-slice",
-  label: "Ember volcanic world, Meshy geology ensemble, and blackglass shelf",
+  label: "Ember Fresh Rift breached-caldera terraces and surface ecology",
   textureSize: 1024,
   materialTextureSize: 512,
   simplifyRatio: 0.92,
@@ -114,4 +109,4 @@ await optimizeGltfKtx2({
 });
 
 await copyFile(runtimeOutput, versionedOutput);
-console.log(`  preserved reversible R7 asset: ${versionedOutput}`);
+console.log(`  preserved reversible R9 asset: ${versionedOutput}`);

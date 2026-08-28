@@ -1,4 +1,6 @@
 <script lang="ts">
+  import GlossaryLetterPictographs from "./GlossaryLetterPictographs.svelte";
+
   /**
    * The full entry for one glossary term - the "detail" half of the lexicon's
    * master-detail layout. Rendered twice by +page.svelte: in the desktop
@@ -23,12 +25,16 @@
     entry,
     thumb = null,
     showTitle = true,
+    showLetterPictographs = true,
     onrelated,
   }: {
     entry: TermEntry;
     thumb?: { src: string; alt: string } | null;
     /** The mobile accordion row already shows the name; the detail panel needs it. */
     showTitle?: boolean;
+    /** Row bodies stay mounted for crawlable prose. Only the opened row needs
+     *  its pictographs; the desktop detail panel renders its selected set. */
+    showLetterPictographs?: boolean;
     /** Related-term chip click - the page reveals (selects + scrolls to) the target. */
     onrelated: (slug: string, e: MouseEvent) => void;
   } = $props();
@@ -53,20 +59,10 @@
 
   <p class="td-def">{entry.definition}</p>
 
-  {#if entry.letters.length}
+  {#if entry.letters.length && showLetterPictographs}
     <div class="td-letters">
-      <span class="td-section-label">Selectable base letters</span>
-      <div class="td-letter-links">
-        {#each entry.letters as letter (letter.label)}
-          <a
-            class="td-letter-link"
-            href={letter.href}
-            aria-label={`Open letter ${letter.label} in the Letter Codex`}
-          >
-            {letter.label}
-          </a>
-        {/each}
-      </div>
+      <span class="td-section-label">Base-letter pictographs</span>
+      <GlossaryLetterPictographs letters={entry.letters} />
     </div>
   {/if}
 
@@ -201,36 +197,6 @@
     border-radius: var(--radius-md, 12px);
     background: var(--theme-card-bg, oklch(0.24 0.02 270 / 0.34));
   }
-  .td-letter-links {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
-    gap: 0.45rem;
-  }
-  .td-letter-link {
-    display: grid;
-    place-items: center;
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0.35rem;
-    border: 1px solid var(--theme-stroke, oklch(0.55 0.08 274 / 0.35));
-    border-radius: var(--radius-sm, 8px);
-    color: var(--theme-text, oklch(0.97 0.02 275));
-    background: var(--theme-panel-bg, oklch(0.2 0.025 274 / 0.55));
-    font-size: var(--font-size-min, 0.875rem);
-    font-weight: 750;
-    text-decoration: none;
-    transition:
-      border-color 140ms ease,
-      background 140ms ease;
-  }
-  .td-letter-link:hover {
-    border-color: var(--theme-accent, oklch(0.65 0.13 275));
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, oklch(0.65 0.13 275)) 16%,
-      var(--theme-panel-bg, #171524)
-    );
-  }
   .td-chips {
     display: flex;
     flex-wrap: wrap;
@@ -262,10 +228,6 @@
     outline: 2px solid oklch(0.65 0.13 275);
     outline-offset: 2px;
   }
-  .td-letter-link:focus-visible {
-    outline: 2px solid var(--theme-accent, oklch(0.65 0.13 275));
-    outline-offset: 2px;
-  }
 
   /* Big-screen tier: 1680, the site-wide seam (public-editorial.css). The old
      2200 query never fired on a 4K monitor at 200% scaling (~1920px CSS). */
@@ -286,14 +248,10 @@
       font-size: 0.95rem;
       min-height: 40px;
     }
-    .td-letter-link {
-      font-size: 1rem;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .td-chip,
-    .td-letter-link {
+    .td-chip {
       transition: none;
     }
   }

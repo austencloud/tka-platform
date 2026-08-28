@@ -9,6 +9,47 @@ export type TunnelPosterRefreshResult =
   | "unavailable"
   | "failed";
 
+let refreshQueue: Promise<void> = Promise.resolve();
+const inFlight = new Map<string, Promise<TunnelPosterRefreshResult>>();
+
+function posterSubjectKey(tunnel: CollectedTunnel): string {
+  return [
+    tunnel.id,
+    tunnel.currentRevisionId ?? "legacy",
+    tunnel.currentContentDigest ?? "unknown",
+    tunnel.currentRevisionCreatedAt ?? tunnel.createdAt,
+  ].join(":");
+}
+
+async function refreshTunnelPosterNow(
+  tunnel: CollectedTunnel
+): Promise<TunnelPosterRefreshResult> {
+  try {
+    const poster = await renderTunnelPoster(tunnel);
+    // An empty render means the offscreen stage never drew — keep what we have.
+    if (!poster) return "unavailable";
+
+    // The poster is presentation for one exact revision. If the user edited
+    // and saved while the offscreen renderer was drawing, do not attach the old
+    // picture to the new choreography; the next queued pass will render the new
+    // revision instead.
+    const current = tunnelCollectionState.collection.find(
+      (candidate) => candidate.id === tunnel.id
+    );
+    if (!current || posterSubjectKey(current) !== posterSubjectKey(tunnel)) {
+      return "unavailable";
+    }
+
+    const saved = await tunnelCollectionState.updatePresentation(tunnel.id, {
+      poster,
+      posterRenderVersion: 1,
+    });
+    return saved ? "refreshed" : "failed";
+  } catch {
+    return "failed";
+  }
+}
+
 /**
  * Replace a saved tunnel's thumbnail with the canonical poster.
  *
@@ -27,16 +68,22 @@ export async function refreshTunnelPoster(
   tunnel: CollectedTunnel
 ): Promise<TunnelPosterRefreshResult> {
   if (!needsTunnelPosterRefresh(tunnel)) return "already-current";
-  try {
-    const poster = await renderTunnelPoster(tunnel);
-    // An empty render means the offscreen stage never drew — keep what we have.
-    if (!poster) return "unavailable";
-    const saved = await tunnelCollectionState.updatePresentation(tunnel.id, {
-      poster,
-      posterRenderVersion: 1,
-    });
-    return saved ? "refreshed" : "failed";
-  } catch {
-    return "failed";
-  }
+  const key = posterSubjectKey(tunnel);
+  const existing = inFlight.get(key);
+  if (existing) return existing;
+
+  // TunnelDetailPreview temporarily applies renderer globals. One canonical
+  // queue makes background backfills, save-time refreshes, and explicit retries
+  // cooperate instead of mounting several competing stages at once.
+  const queued = refreshQueue.then(
+    () => refreshTunnelPosterNow(tunnel),
+    () => refreshTunnelPosterNow(tunnel)
+  );
+  refreshQueue = queued.then(
+    () => undefined,
+    () => undefined
+  );
+  inFlight.set(key, queued);
+  void queued.finally(() => inFlight.delete(key));
+  return queued;
 }

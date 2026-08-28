@@ -4,6 +4,7 @@ import type { ImportedTerrainDataV2 } from "$lib/shared/3d/procedural-engine/gen
 import {
   buildFlowFestTerrainHost,
   buildFlowFestChunkSeamTraversal,
+  flowFestColliderWindowKey,
   sampleFlowFestTerrainWorldY,
 } from "../../src/routes/test/flow-fest-graybox/flow-fest-terrain-host";
 
@@ -118,5 +119,13 @@ describe("Flow Fest Gate 2 terrain hosts", () => {
     expect(xSeamDistances[0]).toBeCloseTo(0, 8);
     expect(xSeamDistances[1]).toBeCloseTo(0.05, 5);
     expect(xSeamDistances[2]).toBeCloseTo(0.05, 5);
+  });
+
+  it("keeps one collider window key until the player crosses a chunk seam", () => {
+    const bounds = { minX: -512, minZ: -512 };
+    expect(flowFestColliderWindowKey(-511.9, -511.9, bounds)).toBe("0:0");
+    expect(flowFestColliderWindowKey(-480.01, -480.01, bounds)).toBe("0:0");
+    expect(flowFestColliderWindowKey(-480, -480, bounds)).toBe("1:1");
+    expect(flowFestColliderWindowKey(15.9, -480.1, bounds)).toBe("16:0");
   });
 });

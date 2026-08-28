@@ -23,24 +23,29 @@
 
 import { DURATION } from "./transitions";
 
-/** The clock every step-grid layout change runs on, including arrival landing. */
-export const GRID_LAYOUT_TRANSITION_MS = DURATION.emphasis;
-export const GRID_LAYOUT_TRANSITION_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
+/** The clock every multi-element layout recomposition runs on. */
+export const LAYOUT_MOTION_DURATION_MS = DURATION.emphasis;
+export const LAYOUT_MOTION_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
+
+/** @deprecated Use LAYOUT_MOTION_DURATION_MS. */
+export const GRID_LAYOUT_TRANSITION_MS = LAYOUT_MOTION_DURATION_MS;
+/** @deprecated Use LAYOUT_MOTION_EASING. */
+export const GRID_LAYOUT_TRANSITION_EASING = LAYOUT_MOTION_EASING;
 
 /** Below these a move is invisible and not worth an animation. */
 const MIN_TRANSLATE_PX = 0.5;
 const MIN_SCALE_DELTA = 0.005;
 
-export interface LayoutFlipGroup {
+export interface LayoutMotionGroup {
   /** Attribute selector matching the family, e.g. `[data-history-step-identity]`. */
   selector: string;
   /** `dataset` property holding each member's stable key. */
   datasetKey: string;
 }
 
-export interface LayoutFlipConfig {
+export interface LayoutMotionConfig {
   getRoot: () => HTMLElement | null | undefined;
-  groups: LayoutFlipGroup[];
+  groups: LayoutMotionGroup[];
   /**
    * Descendants whose in-flight animations are cancelled on capture, so a
    * second transition doesn't stack on top of a first.
@@ -51,7 +56,7 @@ export interface LayoutFlipConfig {
   easing?: string;
 }
 
-export interface LayoutFlip {
+export interface LayoutMotion {
   /** Snapshot current geometry. Returns false when there is nothing to track. */
   capture(): boolean;
   /** Animate from the snapshot to current geometry. Consumes the snapshot. */
@@ -65,7 +70,7 @@ export interface LayoutFlip {
 
 function collectMembers(
   root: HTMLElement,
-  groups: LayoutFlipGroup[]
+  groups: LayoutMotionGroup[]
 ): Map<string, HTMLElement> {
   const members = new Map<string, HTMLElement>();
   groups.forEach((group, groupIndex) => {
@@ -149,13 +154,13 @@ function animateGeometry(
   return animation;
 }
 
-export function createLayoutFlip(config: LayoutFlipConfig): LayoutFlip {
+export function createLayoutMotion(config: LayoutMotionConfig): LayoutMotion {
   const {
     getRoot,
     groups,
     cancelSelectors = [],
-    getDuration = () => GRID_LAYOUT_TRANSITION_MS,
-    easing = GRID_LAYOUT_TRANSITION_EASING,
+    getDuration = () => LAYOUT_MOTION_DURATION_MS,
+    easing = LAYOUT_MOTION_EASING,
   } = config;
 
   let snapshot: Map<string, DOMRect> | null = null;
@@ -236,3 +241,12 @@ export function createLayoutFlip(config: LayoutFlipConfig): LayoutFlip {
     cancel,
   };
 }
+
+/** @deprecated Use LayoutMotionGroup. */
+export type LayoutFlipGroup = LayoutMotionGroup;
+/** @deprecated Use LayoutMotionConfig. */
+export type LayoutFlipConfig = LayoutMotionConfig;
+/** @deprecated Use LayoutMotion. */
+export type LayoutFlip = LayoutMotion;
+/** @deprecated Use createLayoutMotion. */
+export const createLayoutFlip = createLayoutMotion;

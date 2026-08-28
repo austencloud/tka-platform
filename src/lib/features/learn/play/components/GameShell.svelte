@@ -2,7 +2,7 @@
 GameShell — the arcade chrome around a running game. Rendered by PlayHub
 while session.phase.name === "playing".
 
-Owns the top bar (back/quit, level label, question progress, score, streak
+Owns the top bar (back/quit, challenge label, question progress, score, streak
 flame, countdown timer ring) and the crossfading question stage. Games are
 dumb question renderers routed by phase.game.id below; each receives exactly
 one prop (constraints) and talks to the engine via getArcadeSession().
@@ -18,8 +18,8 @@ increments questionIndex synchronously inside submitAnswer() — at answer
 click, before the feedback pause. Keying the stage on it would remount the
 game mid-feedback, destroying the feedback banner, misconception hint, and
 self-advance timer the plan's porting steps require keeping. The stage keys
-on the playing-phase object instead: startLevel() creates a fresh phase
-object, so the crossfade fires on level entry and replay, never mid-question.
+on the playing-phase object instead: startChallenge() creates a fresh phase
+object, so the crossfade fires on challenge entry and replay, never mid-question.
 Question-to-question motion stays with the render kit's persistent-slot
 animations, exactly as the legacy quizzes did.
 -->
@@ -45,7 +45,7 @@ animations, exactly as the legacy quizzes did.
   const session = getArcadeSession();
 
   // Discriminated-union narrowing: everything below only renders when the
-  // session is mid-level, and `playing` carries the game + level payload.
+  // session is mid-challenge, and `playing` carries the game + challenge payload.
   const playing = $derived(
     session.phase.name === "playing" ? session.phase : null
   );
@@ -78,7 +78,9 @@ animations, exactly as the legacy quizzes did.
   // cursor advances when an answer is scored; the presentation cursor waits
   // until Continue has revealed the next question.
   const questionCount = $derived(
-    playing?.level.mode.kind === "fixed" ? playing.level.mode.questionCount : 0
+    playing?.challenge.mode.kind === "fixed"
+      ? playing.challenge.mode.questionCount
+      : 0
   );
   const questionNumber = $derived(
     questionCount > 0
@@ -87,11 +89,15 @@ animations, exactly as the legacy quizzes did.
   );
 
   const maxMisses = $derived(
-    playing?.level.mode.kind === "survival" ? playing.level.mode.maxMisses : 0
+    playing?.challenge.mode.kind === "survival"
+      ? playing.challenge.mode.maxMisses
+      : 0
   );
 
   const countdownTotal = $derived(
-    playing?.level.mode.kind === "countdown" ? playing.level.mode.seconds : 0
+    playing?.challenge.mode.kind === "countdown"
+      ? playing.challenge.mode.seconds
+      : 0
   );
   const timerPercent = $derived(
     countdownTotal > 0 ? (session.timeRemaining / countdownTotal) * 100 : 0
@@ -102,8 +108,8 @@ animations, exactly as the legacy quizzes did.
   let showQuitConfirm = $state(false);
 
   function handleBack() {
-    // Mid-level with rounds on the board = confirm before throwing the run
-    // away. An untouched level just goes back.
+    // Mid-challenge with rounds on the board = confirm before throwing the run
+    // away. An untouched challenge just goes back.
     //
     // `rounds`, not `records`: a performance game's traced rounds never appear
     // in the quiz-only `records` log, so reading that one would let a player
@@ -111,12 +117,12 @@ animations, exactly as the legacy quizzes did.
     if (session.rounds.length > 0) {
       showQuitConfirm = true;
     } else {
-      withViewTransition(() => session.backToLevels());
+      withViewTransition(() => session.backToChallenges());
     }
   }
 
   function confirmQuit() {
-    withViewTransition(() => session.backToLevels());
+    withViewTransition(() => session.backToChallenges());
   }
 </script>
 
@@ -128,7 +134,7 @@ animations, exactly as the legacy quizzes did.
           type="button"
           class="back-button"
           onclick={handleBack}
-          aria-label="Back to level select"
+          aria-label="Back to challenge select"
         >
           <svg
             width="20"
@@ -145,9 +151,9 @@ animations, exactly as the legacy quizzes did.
           </svg>
         </button>
 
-        <div class="level-label">
+        <div class="challenge-label">
           <span class="game-title">{playing.game.title}</span>
-          <span class="level-title">{playing.level.title}</span>
+          <span class="challenge-title">{playing.challenge.title}</span>
         </div>
 
         <!-- Immersive games keep the bar (and its exits) but drop the readouts
@@ -157,7 +163,7 @@ animations, exactly as the legacy quizzes did.
           {#if immersive}
             <!-- Intentionally empty: an immersive stage narrates its own
                  progress in its live region. -->
-          {:else if playing.level.mode.kind === "fixed"}
+          {:else if playing.challenge.mode.kind === "fixed"}
             <!-- Ghost-sizer reserves the widest readout so 9→10 never shifts -->
             <span
               class="q-progress"
@@ -168,7 +174,7 @@ animations, exactly as the legacy quizzes did.
               >
               <span class="q-live">{questionNumber}/{questionCount}</span>
             </span>
-          {:else if playing.level.mode.kind === "survival"}
+          {:else if playing.challenge.mode.kind === "survival"}
             <div
               class="miss-pips"
               role="img"
@@ -178,7 +184,7 @@ animations, exactly as the legacy quizzes did.
                 <span class="pip" class:missed={i < session.misses}></span>
               {/each}
             </div>
-          {:else if playing.level.mode.kind === "countdown"}
+          {:else if playing.challenge.mode.kind === "countdown"}
             <div class="timer">
               <ProgressRing
                 percent={timerPercent}
@@ -213,25 +219,25 @@ animations, exactly as the legacy quizzes did.
     <div class="stage">
       <Crossfade key={playing} fill>
         {#if playing.game.id === "pictograph-to-letter"}
-          <PictographToLetterGame constraints={playing.level.constraints} />
+          <PictographToLetterGame constraints={playing.challenge.constraints} />
         {:else if playing.game.id === "letter-to-pictograph"}
-          <LetterToPictographGame constraints={playing.level.constraints} />
+          <LetterToPictographGame constraints={playing.challenge.constraints} />
         {:else if playing.game.id === "valid-next"}
-          <ValidNextGame constraints={playing.level.constraints} />
+          <ValidNextGame constraints={playing.challenge.constraints} />
         {:else if playing.game.id === "performer-word"}
-          <PerformerWordGame constraints={playing.level.constraints} />
+          <PerformerWordGame constraints={playing.challenge.constraints} />
         {:else if playing.game.id === "speed-blitz"}
-          <SpeedBlitzGame constraints={playing.level.constraints} />
+          <SpeedBlitzGame constraints={playing.challenge.constraints} />
         {:else if playing.game.id === "mandala-match"}
-          <MandalaMatchGame constraints={playing.level.constraints} />
+          <MandalaMatchGame constraints={playing.challenge.constraints} />
         {:else if playing.game.id === "card-to-mandala"}
-          <CardToMandalaGame constraints={playing.level.constraints} />
+          <CardToMandalaGame constraints={playing.challenge.constraints} />
         {:else if playing.game.id === "motion-to-mandala"}
-          <MotionToMandalaGame constraints={playing.level.constraints} />
+          <MotionToMandalaGame constraints={playing.challenge.constraints} />
         {:else if playing.game.id === "word-bridges"}
-          <WordBridgeGame constraints={playing.level.constraints} />
+          <WordBridgeGame constraints={playing.challenge.constraints} />
         {:else if playing.game.id === "trace-paths"}
-          <TracePathsGame constraints={playing.level.constraints} />
+          <TracePathsGame constraints={playing.challenge.constraints} />
         {/if}
       </Crossfade>
     </div>
@@ -257,7 +263,6 @@ animations, exactly as the legacy quizzes did.
     height: 100%;
     min-height: 0;
   }
-
 
   .top-bar {
     display: flex;
@@ -308,7 +313,7 @@ animations, exactly as the legacy quizzes did.
     transform: translateX(-1px) scale(0.98);
   }
 
-  .level-label {
+  .challenge-label {
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -324,7 +329,7 @@ animations, exactly as the legacy quizzes did.
     text-overflow: ellipsis;
   }
 
-  .level-title {
+  .challenge-title {
     font-size: var(--font-size-compact);
     font-weight: 500;
     color: var(--theme-text-dim);
@@ -434,7 +439,6 @@ animations, exactly as the legacy quizzes did.
     text-align: right;
   }
 
-
   .stage {
     flex: 1;
     min-height: 0;
@@ -442,7 +446,7 @@ animations, exactly as the legacy quizzes did.
   }
 
   /* 4K-native tier — the bar is a per-viewport constant (never resizes
-     mid-session, so this can't shift anything a running level depends on).
+     mid-session, so this can't shift anything a running challenge depends on).
      Typography steps up one notch and the bar gains a little more height so
      it doesn't read as a thin phone strip stretched across a 3840px chrome. */
   @media (min-width: 2560px) {
@@ -459,7 +463,7 @@ animations, exactly as the legacy quizzes did.
       font-size: var(--font-size-base);
     }
 
-    .level-title {
+    .challenge-title {
       font-size: var(--font-size-sm);
     }
 

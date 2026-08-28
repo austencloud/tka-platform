@@ -160,13 +160,6 @@
         </g>
 
         {#if playerPoint && targetPoint}
-          <line
-            class="target-bearing"
-            x1={playerPoint.x}
-            y1={playerPoint.y}
-            x2={targetPoint.x}
-            y2={targetPoint.y}
-          ></line>
           <circle
             class="target-ring"
             cx={targetPoint.x}
@@ -407,14 +400,6 @@
     stroke: var(--sim-mint);
     stroke-width: 3;
     stroke-dasharray: 7 5;
-  }
-
-  .target-bearing {
-    stroke: var(--sim-accent);
-    stroke-width: 1.8;
-    stroke-dasharray: 4 6;
-    opacity: 0.88;
-    vector-effect: non-scaling-stroke;
   }
 
   .target-ring {

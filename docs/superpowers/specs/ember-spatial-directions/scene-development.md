@@ -1,6 +1,6 @@
 # Ember Spatial Directions
 
-Status: Volcanic World Gate 4 Revision 5 ready for review; approval unset
+Status: Fresh Rift approved at Gate 3; Gate 4 production in progress
 
 Date: 2026-08-25
 
@@ -8,8 +8,11 @@ Historical final acceptance: museum tracker `wqUAKQMa79rTYDYa0N5m`
 
 Current regression authority: museum trackers `rn25Qau62kXyyOJpgm7Z`,
 `QRHbwRQLhM7Zn9LyYHOd`, `gME4uHJawz9dtTlirRl8`,
-`kqMUPC5UpCHjj7ts9atQ`, `5otAzYdNg5Wp5E27mgfo`, and
-`nu73zqvPJRxio4T2sWz7`
+`kqMUPC5UpCHjj7ts9atQ`, `5otAzYdNg5Wp5E27mgfo`,
+`nu73zqvPJRxio4T2sWz7`, `ATURN84Ov2hmjWUndebl`,
+`ZSnkB98pb0wz6PO17XKp`, `sDKmB6cUEXLfHgz4DGd4`,
+`s3cxnp6hOLBVQR5dDF42`, `uXmi4z9lL7zCiNq5ULCp`, and
+`ahPuPwh34G3FeqvUEHsB`
 
 ## Why this exists
 
@@ -225,3 +228,89 @@ terrain; authored rubble remains transition tissue instead of duplicating hero
 silhouettes. The orbit evidence and audit ledger live under
 `evidence/gate-4-meshy-r1/`. Final spend was 200 of 240 credits, leaving 40
 credits unused.
+
+## R8 cinematic atmosphere audition
+
+Museum tracker `sDKmB6cUEXLfHgz4DGd4` authorizes a runtime-only look pass over
+the locked R7 geometry. Blackglass Inferno, Furnace Storm, and Sulfur Caldera
+were captured from the same hero camera. Blackglass was selected because its
+red cloud horizon, dark geology, local lava bounce, and cool opposing rim keep
+the broad terrain readable without washing the performer and world into one
+color.
+
+The selected look also owns a restrained quality-aware shadow key, three heat
+fields along the river and vent, three depth-registered fumarole plumes, and
+material-name-aware response for the playable blackglass, Meshy formations,
+mineral seams, and surrounding authored terrain. The initial glittering stage
+and orange shelf trim were rejected during the proof loop and removed before
+the final capture.
+
+The comparison, complete orbit, viewport sweep, and runtime frame-time report
+live under `evidence/gate-4-atmosphere-r1/`. The geometry asset and remaining 40
+Meshy credits were untouched.
+
+## Geological World R8 terrain track
+
+Museum tracker `s3cxnp6hOLBVQR5dDF42` reopens Gate 3 around the latest spatial
+critique: the environment was continuous in metres but still read as one broad,
+uniform basin around a contained stage. The R8 terrain track therefore compares
+three registered topologies in the actual R7 scene instead of treating one
+concept image as an immutable target.
+
+Breached Caldera Terraces wins over Collapsed Lava Delta and Basalt Badlands.
+Its offset rim and collapsed benches create a stronger near/middle/far hierarchy,
+while the missing arc and river-cut saddle imply travel beyond the focal area.
+The former 23 m flat moat contracts to the 10.8 m required by the responsive
+stage envelope. Eight fractured crust plates make that shelf part of the same
+geological event, and erosion bowls let the four R7 Meshy landmarks emerge from
+rather than intersect the terrain.
+
+Gate 3 comparison evidence lives in `evidence/gate-3-terrain-r8/`. The selected
+production source, ten registered renders, complete orbit board, runtime hero,
+four-performer growth proof, and frame report live in
+`evidence/gate-4-terrain-r8/`. The R7 geology, Blackglass Inferno atmosphere,
+seventeen-point runtime river, front-stage heading, 4.5 m action clearance, and
+remaining 40 Meshy credits are preserved.
+
+## R9 volcanic surface ecology track
+
+Museum tracker `uXmi4z9lL7zCiNq5ULCp` reopens Gate 3 around the remaining
+material failure. R8 solved the world-scale terrain silhouette, but the same
+`weathered-basalt` color, roughness, and normal maps still skin the columnar
+hero and all three depth bands. The result reads as one rippled procedural
+material even when the underlying geometry is strong.
+
+R9 holds the entire R8 spatial and lighting contract fixed and compares three
+independent material ecosystems from the same four cameras:
+
+- **Fresh Flow Field:** roped pahoehoe, a'a clinker, fractured basalt, and
+  sheltered windborne ash.
+- **Ash-Choked Caldera:** compacted ash, lapilli fall, exposed basalt scarps,
+  and lava-baked contact crust.
+- **Hydrothermal Rift:** wet obsidian, iron oxide drainage, localized sulfur
+  sinter, and steam-bleached basalt.
+
+The director synthesis, **Fresh Rift**, combines Fresh Flow's coherent young
+lava base with Hydrothermal Rift's iron response only at the river and contact
+zones. It rejects broad sulfur fields and the Ash direction's full-scene gray
+blanket. The terrain proof uses a smooth per-vertex four-family mask rather
+than visible material islands. Cooled shelf fissures receive geological crust
+instead of an unlit black surface.
+
+Sixteen registered renders, the four-direction board, editable Blender target,
+and deterministic build report live in `evidence/gate-3-surface-r9/`. The
+adversarial ledger recommends Fresh Rift. Austen approved that registered
+target on 2026-08-28 and explicitly authorized Blender work in tracker
+`ahPuPwh34G3FeqvUEHsB`. Gate 4 now carries the selected ecology into the
+editable production source, the existing shared world-space detail owner, and
+the live Ember environment while preserving the R8 spatial contract.
+
+The authored Gate 4 slice is now built. Its editable R9 Blender source retains
+the R8 terrain and four Meshy landmarks, while the shipping 4.28 MiB GLB uses
+five Fresh Rift materials and twelve KTX2 maps. A 1,024-square world mask maps
+young lava, river-contact iron, fractured scarps, and sheltered ash across the
+full 380 by 335 m country. The runtime scene composes the existing shared
+masked-ground-detail shader and assigns atmospheric treatment by semantic
+geology role. Automated verification is green; live Viewer3D visual,
+interaction, console, and frame-time evidence remains the boundary before Gate
+4 can become ready for review.

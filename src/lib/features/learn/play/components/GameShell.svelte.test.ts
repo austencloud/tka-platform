@@ -22,7 +22,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import GameShellTestHarness from "./GameShellTestHarness.svelte";
 import { scoreAnswer } from "../domain/scoring";
 import type { ArcadeSession } from "../state/arcade-session-state.svelte";
-import type { GameDefinition, LevelDefinition } from "../domain/arcade-types";
+import type {
+  GameDefinition,
+  ChallengeDefinition,
+} from "../domain/arcade-types";
 import type { QuizAnswerEvent } from "$lib/features/learn/quiz/domain/models/quiz-models";
 
 // Minimal fake event — only `isCorrect` matters to the engine. Shape copied
@@ -54,12 +57,13 @@ const GAME: GameDefinition = {
   accentColor: "#000",
   quizType: "pictograph_to_letter" as never,
   capabilities: { scoring: "quiz" },
-  levels: [],
+  curriculum: { status: "unclassified" },
+  challenges: [],
 };
 
-const TWO_QUESTION_LEVEL: LevelDefinition = {
-  levelNumber: 1,
-  title: "Test Level",
+const TWO_QUESTION_CHALLENGE: ChallengeDefinition = {
+  challengeNumber: 1,
+  title: "Test Challenge",
   mode: { kind: "fixed", questionCount: 2 },
   constraints: {},
   stars: { one: 100, two: 500, three: 1000 },
@@ -85,9 +89,10 @@ describe("GameShell coin-flip regression (component layer)", () => {
         session = s;
       },
     });
-    if (!session) throw new Error("harness did not report a session via onReady");
+    if (!session)
+      throw new Error("harness did not report a session via onReady");
 
-    session.startLevel(GAME, TWO_QUESTION_LEVEL);
+    session.startChallenge(GAME, TWO_QUESTION_CHALLENGE);
 
     // Question 1: correct, answered 800ms after it was shown (full-speed
     // bonus bucket, streakBefore 0).
@@ -101,7 +106,7 @@ describe("GameShell coin-flip regression (component layer)", () => {
     });
 
     // Question 2: incorrect — always 0 points regardless of timing, and
-    // this is the 2nd of 2 fixed questions, so the level completes here.
+    // this is the 2nd of 2 fixed questions, so the challenge completes here.
     session.markQuestionShown();
     clock += 3000;
     session.submitAnswer(evt(false));
@@ -110,19 +115,34 @@ describe("GameShell coin-flip regression (component layer)", () => {
 
     flushSync();
 
-    const phaseStatus = page.getByRole("status", { name: "session phase", exact: true });
+    const phaseStatus = page.getByRole("status", {
+      name: "session phase",
+      exact: true,
+    });
     await expect.element(phaseStatus).toHaveTextContent("results");
 
-    const correctCount = page.getByRole("status", { name: "result correct count", exact: true });
+    const correctCount = page.getByRole("status", {
+      name: "result correct count",
+      exact: true,
+    });
     await expect.element(correctCount).toHaveTextContent("1");
 
-    const totalCount = page.getByRole("status", { name: "result total count", exact: true });
+    const totalCount = page.getByRole("status", {
+      name: "result total count",
+      exact: true,
+    });
     await expect.element(totalCount).toHaveTextContent("2");
 
-    const resultScore = page.getByRole("status", { name: "result score", exact: true });
+    const resultScore = page.getByRole("status", {
+      name: "result score",
+      exact: true,
+    });
     await expect.element(resultScore).toHaveTextContent(String(expectedScore));
 
-    const liveScore = page.getByRole("status", { name: "live score", exact: true });
+    const liveScore = page.getByRole("status", {
+      name: "live score",
+      exact: true,
+    });
     await expect.element(liveScore).toHaveTextContent(String(expectedScore));
   });
 });

@@ -15,14 +15,20 @@
   import TunnelArtView from "$lib/shared/sequence-viewer/tunnel/TunnelArtView.svelte";
   import { copyOpsLabel } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
   import { TunnelViewController } from "$lib/shared/sequence-viewer/tunnel/tunnel-view-controller.svelte";
-  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import TkaLabel from "$lib/shared/components/TkaLabel.svelte";
   import { getTunnelCreatorContext } from "../context/tunnel-creator-context";
-  import type { TunnelCreatorMode } from "../state/tunnel-creator-state.svelte";
-  import TunnelPerformerCard from "./TunnelPerformerCard.svelte";
+  import TunnelPerformerRoster from "./TunnelPerformerRoster.svelte";
   import TunnelRelationshipEditor from "./TunnelRelationshipEditor.svelte";
   import ShapeMatrixTunnelSourcePicker from "./ShapeMatrixTunnelSourcePicker.svelte";
   import type { ModeRealization } from "$lib/shared/shape-matrix/services/build-mode-realizations";
+
+  let {
+    onOpenLibrary,
+    collectionCount = 0,
+  }: {
+    onOpenLibrary: () => void;
+    collectionCount?: number;
+  } = $props();
 
   type TunnelInspector = "settings" | "pairing" | "generation";
 
@@ -31,11 +37,13 @@
   let syncedGenerationSource = $state<string | null>(null);
   let generateCurrentRecipe = $state<(() => Promise<void>) | null>(null);
   type GenerationCardRef = {
-    prepareGenerationAnimation: (stepCount: number) => void;
-    clearGenerationAnimation: () => void;
+    prepareGenerationAnimation: (
+      performerId: string,
+      stepCount: number
+    ) => void;
+    clearGenerationAnimation: (performerId: string) => void;
   };
-  let performerOneCard: GenerationCardRef | undefined = $state();
-  let performerTwoCard: GenerationCardRef | undefined = $state();
+  let performerRoster: GenerationCardRef | undefined = $state();
   const generationSequenceState = createSequenceState({
     onCurrentSequenceChange(sequence) {
       if (syncingGenerationSequence || !sequence || !creator.generationTargetId)
@@ -47,23 +55,35 @@
       );
     },
   });
-  let performerTwoLayerSequence = $state<SequenceData | null>(null);
-  let performerTwoStageTransform = $state<string | null>(null);
+  let performerDisplays = $state<
+    Record<
+      string,
+      {
+        sequence: SequenceData | null;
+        stageTransformLabel: string | null;
+        generatedInstanceCount: number;
+      }
+    >
+  >({});
   const controller = new TunnelViewController({
     getSequence: () => creator.leadSequence,
     getComposition: () =>
-      creator.compositionWithFormation(creator.initialFormation),
+      creator.previewCompositionWithFormation(creator.initialFormation),
     onLayersChange: (layers) => {
-      const performerTwoLayer =
-        layers.find((layer) => layer.authoredPerformerIndex === 1) ??
-        (creator.mode === "linked" ? layers[1] : undefined);
-      // The card is the performer's choreography, not merely their source.
-      // Showing the pre-formation sequence made a rotated/reflected arm look
-      // identical to Performer 1 even while the stage rendered it correctly.
-      performerTwoLayerSequence = performerTwoLayer?.sequence ?? null;
-      performerTwoStageTransform = performerTwoLayer?.formationOps.length
-        ? copyOpsLabel(performerTwoLayer.formationOps)
-        : null;
+      const next: typeof performerDisplays = {};
+      for (const layer of layers) {
+        const current = next[layer.performerId];
+        next[layer.performerId] = {
+          sequence: current?.sequence ?? layer.sequence,
+          stageTransformLabel:
+            current?.stageTransformLabel ??
+            (layer.formationOps.length
+              ? copyOpsLabel(layer.formationOps)
+              : null),
+          generatedInstanceCount: (current?.generatedInstanceCount ?? 0) + 1,
+        };
+      }
+      performerDisplays = next;
     },
     visibilityManager: creator.presentation.visibility,
     persistViewState: false,
@@ -98,34 +118,19 @@
       (slot) => slot.id === creator.generationTargetId
     )?.label ?? "Performer"
   );
-  const performerOneId = $derived(creator.performerIdAt(0));
-  const performerTwoId = $derived(creator.performerIdAt(1));
-  const performerTwoDisplaySequence = $derived(
-    creator.mode === "linked"
-      ? (performerTwoLayerSequence ?? creator.leadSequence)
-      : null
-  );
   const bluePropType = $derived(creator.presentation.bluePropType as PropType);
   const redPropType = $derived(creator.presentation.redPropType as PropType);
   const propType = $derived(bluePropType ? String(bluePropType) : "staff");
-  const modeOptions = [
-    {
-      value: "separate",
-      label: "Separate",
-      ariaLabel: "Separate: two independent complete sequences",
-    },
-    {
-      value: "linked",
-      label: "Linked",
-      ariaLabel: "Linked: one sequence rebuilds the second performer",
-    },
-  ] as const;
   const generationAnimationTarget: GenerationAnimationTarget = {
     clear() {
-      generationTargetCard()?.clearGenerationAnimation();
+      const targetId = creator.generationTargetId;
+      if (targetId) performerRoster?.clearGenerationAnimation(targetId);
     },
     prepare(stepCount) {
-      generationTargetCard()?.prepareGenerationAnimation(stepCount);
+      const targetId = creator.generationTargetId;
+      if (targetId) {
+        performerRoster?.prepareGenerationAnimation(targetId, stepCount);
+      }
     },
   };
 
@@ -186,10 +191,6 @@
     return () => media.removeEventListener("change", update);
   });
 
-  function setMode(mode: TunnelCreatorMode): void {
-    creator.setMode(mode);
-  }
-
   function toggleSettings(): void {
     if (settingsOpen) {
       creator.closeWorkspacePanel();
@@ -202,18 +203,12 @@
     creator.openWorkspacePanel("settings");
   }
 
-  function openPairing(): void {
-    creator.openWorkspacePanel("pairing");
+  function openPairing(targetId: string): void {
+    creator.openPairingPanel(targetId);
   }
 
   function openGeneration(targetId: string): void {
     creator.openGenerationPanel(targetId);
-  }
-
-  function generationTargetCard() {
-    return creator.generationTargetId === performerOneId
-      ? performerOneCard
-      : performerTwoCard;
   }
 
   async function generatePerformer(targetId: string): Promise<void> {
@@ -284,8 +279,8 @@
 {#snippet pairingPanel(isMobile: boolean)}
   <div class="drawer-panel pairing-panel">
     <PanelHeader
-      title="Pairing"
-      subtitle="How Performer 2 follows Performer 1"
+      title={`${creator.pairingTarget?.label ?? "Performer"} source`}
+      subtitle="Independent choreography or a derived relationship"
       {isMobile}
       onClose={creator.closeWorkspacePanel}
     />
@@ -351,91 +346,54 @@
       {:else}
         <div class="title-block">
           <h2>Build a tunnel</h2>
-          <p>Pair two complete sequences in one formation.</p>
+          <p>Author up to eight performers in one formation.</p>
         </div>
       {/if}
 
-      <div class="mode-switch">
-        <SegmentedControl
-          options={[...modeOptions]}
-          value={creator.mode}
-          onchange={setMode}
-          semantics="radiogroup"
-          ariaLabel="Tunnel source mode"
-          color="accent"
-          size="md"
-        />
-      </div>
-
-      <div class="settings-trigger">
-        <PanelButton
-          variant="secondary"
-          onclick={toggleSettings}
-          ariaExpanded={settingsOpen}
-          ariaLabel={settingsOpen
-            ? "Close tunnel settings"
-            : "Open tunnel settings"}
-        >
-          <i class="fas fa-sliders" aria-hidden="true"></i>
-          <span>Tunnel settings</span>
-          <i class="fas fa-chevron-right" aria-hidden="true"></i>
-        </PanelButton>
+      <div class="workspace-actions">
+        <div class="library-trigger">
+          <PanelButton
+            variant="secondary"
+            onclick={onOpenLibrary}
+            ariaLabel={`Open tunnels; ${collectionCount} saved`}
+          >
+            <i class="fas fa-folder-open" aria-hidden="true"></i>
+            <span class="library-label">Tunnels</span>
+            <span class="library-count" aria-hidden="true"
+              >{collectionCount}</span
+            >
+          </PanelButton>
+        </div>
+        <div class="settings-trigger">
+          <PanelButton
+            variant="secondary"
+            onclick={toggleSettings}
+            ariaExpanded={settingsOpen}
+            ariaLabel={settingsOpen
+              ? "Close tunnel settings"
+              : "Open tunnel settings"}
+          >
+            <i class="fas fa-sliders" aria-hidden="true"></i>
+            <span>Tunnel settings</span>
+            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+          </PanelButton>
+        </div>
       </div>
     </header>
 
     <div class="source-column">
-      <TunnelPerformerCard
-        bind:this={performerOneCard}
-        performer={creator.lead}
-        label="Performer 1"
-        sourceOrigin={performerOneId
-          ? creator.sourceOrigin(performerOneId)
-          : null}
-        previousCount={performerOneId
-          ? creator.previousCount(performerOneId)
-          : 0}
+      <TunnelPerformerRoster
+        bind:this={performerRoster}
+        displays={performerDisplays}
         {bluePropType}
         {redPropType}
-        onChoose={() => performerOneId && creator.openPicker(performerOneId)}
-        onChooseShapeMatrix={() =>
-          performerOneId && (shapeMatrixTarget = performerOneId)}
-        onGenerateNow={() =>
-          performerOneId && void generatePerformer(performerOneId)}
-        onEditGeneration={() =>
-          performerOneId && openGeneration(performerOneId)}
-        onPrevious={() =>
-          performerOneId && creator.restorePreviousSequence(performerOneId)}
-      />
-
-      <TunnelPerformerCard
-        bind:this={performerTwoCard}
-        performer={creator.partner}
-        displaySequence={performerTwoDisplaySequence}
-        formationCopy={creator.partnerIsFormationCopy}
-        stageTransformLabel={creator.mode === "linked"
-          ? performerTwoStageTransform
-          : null}
-        label="Performer 2"
-        linked={creator.mode === "linked"}
-        disabled={!creator.leadSequence}
-        sourceOrigin={performerTwoId
-          ? creator.sourceOrigin(performerTwoId)
-          : null}
-        previousCount={performerTwoId
-          ? creator.previousCount(performerTwoId)
-          : 0}
-        {bluePropType}
-        {redPropType}
-        onChoose={() => performerTwoId && creator.openPicker(performerTwoId)}
-        onChooseShapeMatrix={() =>
-          performerTwoId && (shapeMatrixTarget = performerTwoId)}
-        onGenerateNow={() =>
-          performerTwoId && void generatePerformer(performerTwoId)}
-        onEditGeneration={() =>
-          performerTwoId && openGeneration(performerTwoId)}
-        onPrevious={() =>
-          performerTwoId && creator.restorePreviousSequence(performerTwoId)}
-        onEditPairing={openPairing}
+        onChoose={(performerId) => creator.openPicker(performerId)}
+        onChooseShapeMatrix={(performerId) => (shapeMatrixTarget = performerId)}
+        onGenerateNow={(performerId) => void generatePerformer(performerId)}
+        onEditGeneration={openGeneration}
+        onEditRelationship={openPairing}
+        onSelectPerformer={(performerId) =>
+          controller.selectAuthoredPerformer(performerId)}
       />
     </div>
 
@@ -445,9 +403,28 @@
           <span>Result</span>
           <h3>Tunnel preview</h3>
         </div>
-        <p>
-          {controller.performerCount} performers · {controller.propCount} props
-        </p>
+        <div class="preview-summary">
+          <p>
+            {creator.authoredPerformerCount} authored · {controller.performerCount}
+            rendered instances · {controller.propCount} props
+          </p>
+          {#if controller.spectrum}
+            <button
+              type="button"
+              class="spectrum-status"
+              onclick={() => (controller.spectrum = false)}
+              aria-label="Use pictograph hand colors on the tunnel stage"
+            >
+              Spectrum copies · use hand colors
+            </button>
+          {:else}
+            <div class="preview-hand-key" aria-label="Tunnel prop hand colors">
+              <span class="left"><i aria-hidden="true"></i><b>L</b> Left</span>
+              <span class="right"><i aria-hidden="true"></i><b>R</b> Right</span
+              >
+            </div>
+          {/if}
+        </div>
       </header>
 
       <div class="frame-wrap" class:empty={!creator.leadSequence}>
@@ -470,8 +447,8 @@
             <div class="preview-guidance" role="status">
               <i class="fas fa-person-circle-plus" aria-hidden="true"></i>
               <span>
-                <strong>Previewing Performer 1</strong>
-                Choose Performer 2 to complete the tunnel.
+                <strong>Previewing the completed cards</strong>
+                Finish every empty performer card before opening the viewer.
               </span>
             </div>
           {/if}
@@ -479,7 +456,7 @@
           <PanelState
             type="empty"
             title="Your tunnel will appear here"
-            message="Choose a sequence in the Performer 1 panel to start the preview."
+            message="Choose a sequence in the first performer card to start the preview."
             icon="fa-people-arrows-left-right"
           />
         {/if}
@@ -706,20 +683,37 @@
     font-size: var(--font-size-compact, 12px);
   }
 
-  .mode-switch {
+  .workspace-actions {
     display: flex;
-    flex: 0 1 22rem;
-    min-width: 12rem;
-    margin-right: auto;
+    align-items: center;
+    flex: 0 1 auto;
+    gap: var(--settings-spacing-sm, 8px);
+    min-width: 0;
+    margin-left: auto;
   }
 
-  .mode-switch :global(.segmented-control) {
-    width: 100%;
-  }
-
+  .library-trigger,
   .settings-trigger {
     flex: 0 1 auto;
     min-width: 0;
+  }
+
+  .library-count {
+    display: inline-grid;
+    min-width: 1.65rem;
+    min-height: 1.65rem;
+    padding-inline: 5px;
+    place-items: center;
+    border-radius: 999px;
+    color: var(--theme-text);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 14%,
+      var(--theme-panel-bg)
+    );
+    font-size: var(--font-size-compact, 12px);
+    font-variant-numeric: tabular-nums;
+    font-weight: 750;
   }
 
   .settings-trigger :global(.panel-btn) {
@@ -734,11 +728,9 @@
 
   .source-column {
     grid-area: sources;
-    display: grid;
-    grid-template-rows: repeat(2, minmax(0, 1fr));
-    gap: var(--tunnel-gap);
     min-width: 0;
     min-height: 0;
+    overflow: hidden;
   }
 
   .preview-stage {
@@ -778,19 +770,20 @@
     border-bottom: 1px solid var(--theme-stroke);
   }
 
-  .preview-heading > div {
+  .preview-heading > div:first-child {
     display: grid;
     gap: 2px;
   }
 
-  .preview-heading span,
   .preview-heading p,
   .result-meta span {
     color: var(--theme-text-dim);
     font-size: var(--font-size-compact, 12px);
   }
 
-  .preview-heading span {
+  .preview-heading > div:first-child > span {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
     font-weight: 750;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -799,6 +792,78 @@
   .preview-heading h3 {
     color: var(--theme-text);
     font-size: var(--font-size-min, 14px);
+  }
+
+  .preview-summary {
+    display: flex;
+    align-items: flex-end;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .preview-summary p {
+    text-align: right;
+  }
+
+  .preview-hand-key {
+    display: flex;
+    gap: var(--settings-spacing-xs, 6px);
+  }
+
+  .preview-hand-key span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 1.6rem;
+    padding: 1px 7px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 999px;
+    color: var(--theme-text-dim);
+    background: var(--theme-card-bg);
+    font-size: var(--font-size-compact, 12px);
+    white-space: nowrap;
+  }
+
+  .preview-hand-key i {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--hand-color);
+  }
+
+  .preview-hand-key b {
+    color: var(--theme-text);
+  }
+
+  .preview-hand-key .left {
+    --hand-color: var(--prop-blue, #2e8bf0);
+  }
+
+  .preview-hand-key .right {
+    --hand-color: var(--prop-red, #ed1c24);
+  }
+
+  .spectrum-status {
+    min-height: var(--min-touch-target, 44px);
+    padding: 3px 9px;
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent) 45%, var(--theme-stroke));
+    border-radius: 999px;
+    color: var(--theme-accent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 9%,
+      var(--theme-card-bg)
+    );
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .spectrum-status:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
   }
 
   .frame-wrap {
@@ -1034,17 +1099,8 @@
       flex-wrap: wrap;
     }
 
-    .mode-switch {
-      flex: 1 0 100%;
-      order: 3;
-    }
-
-    .settings-trigger {
+    .workspace-actions {
       margin-left: auto;
-    }
-
-    .source-column {
-      grid-template-rows: repeat(2, minmax(16rem, auto));
     }
 
     .tunnel-workspace.compact-settings-task {
@@ -1082,6 +1138,7 @@
     }
 
     .title-block p,
+    .library-label,
     .settings-trigger :global(.panel-btn span),
     .settings-trigger :global(.panel-btn .fa-chevron-right) {
       display: none;
@@ -1092,15 +1149,39 @@
       height: 32px;
     }
 
+    .library-trigger :global(.panel-btn),
     .settings-trigger :global(.panel-btn) {
       width: var(--min-touch-target, 48px);
       min-width: var(--min-touch-target, 48px);
       padding: 0;
     }
 
+    .library-trigger :global(.panel-btn) {
+      position: relative;
+    }
+
+    .library-count {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 1.25rem;
+      min-height: 1.25rem;
+      padding-inline: 3px;
+      border: 1px solid var(--theme-panel-bg);
+      font-size: 10px;
+    }
+
     .stage-controls {
       align-items: stretch;
       flex-direction: column;
+    }
+
+    .preview-heading {
+      align-items: flex-start;
+    }
+
+    .preview-summary p {
+      display: none;
     }
 
     .result-actions,
@@ -1159,31 +1240,13 @@
       padding-block: 6px;
     }
 
-    .title-block p,
-    .source-column :global(.workbench-stage) {
+    .title-block p {
       display: none;
     }
 
     .editing-poster {
       width: 32px;
       height: 32px;
-    }
-
-    .source-column :global(.source-empty) {
-      grid-template-columns: auto minmax(0, 1fr) auto;
-      align-items: center;
-      justify-items: start;
-      min-height: 0;
-      padding: var(--settings-spacing-sm, 8px);
-      text-align: left;
-    }
-
-    .source-column :global(.source-empty > i) {
-      font-size: var(--font-size-min, 14px);
-    }
-
-    .source-column :global(.source-empty span) {
-      display: none;
     }
   }
 

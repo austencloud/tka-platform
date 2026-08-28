@@ -32,6 +32,7 @@
     showReversals = false,
     showNonRadialPoints = false,
     showName = true,
+    showTransition = true,
     theme = "print",
     dataOverride,
     onSelect,
@@ -49,6 +50,9 @@
     showPositions?: boolean;
     showReversals?: boolean;
     showNonRadialPoints?: boolean;
+    /** Glossary type grids show the letter itself without repeating the
+     *  transition caption that the surrounding definition already explains. */
+    showTransition?: boolean;
     /** The spelled-out Greek name under the cell (Sigma, Alpha). On paper it is
      *  a reader's aid at a fixed cell size. On a screen board it is the only
      *  thing that varies the cell's height, so a row mixing named and unnamed
@@ -68,22 +72,22 @@
 </script>
 
 {#snippet cellBody()}
-  {#if cell.top}
+  {#if cell.top && showTransition}
     <span class="cell-top"><CodexTransitionGlyph text={cell.top} /></span>
   {/if}
   <div class="picto">
     <GuidePictograph
       {data}
       size="sm"
-      showGrid={showGrid}
+      {showGrid}
       showArrows={true}
       {propType}
-      showTKA={showTKA}
+      {showTKA}
       showTnD={showGlyph}
       showElemental={showGlyph}
-      showPositions={showPositions}
-      showReversals={showReversals}
-      showNonRadialPoints={showNonRadialPoints}
+      {showPositions}
+      {showReversals}
+      {showNonRadialPoints}
       printMode={true}
       darkMode={false}
       forceTheme={theme === "dark" ? "dark" : undefined}

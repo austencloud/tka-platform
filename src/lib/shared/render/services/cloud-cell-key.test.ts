@@ -25,14 +25,20 @@ describe("canonicalCellKeyString", () => {
   });
 
   it("is independent of step-number presence", () => {
-    const a = canonicalCellKeyString(data, true, { ...base, showStepNumbers: true });
-    const b = canonicalCellKeyString(data, true, { ...base, showStepNumbers: false });
+    const a = canonicalCellKeyString(data, true, {
+      ...base,
+      showStepNumbers: true,
+    });
+    const b = canonicalCellKeyString(data, true, {
+      ...base,
+      showStepNumbers: false,
+    });
     expect(a).toBe(b);
   });
 
   it("differs by dark mode and by prop type", () => {
     expect(canonicalCellKeyString(data, true, base)).not.toBe(
-      canonicalCellKeyString(data, false, base),
+      canonicalCellKeyString(data, false, base)
     );
     expect(
       canonicalCellKeyString(data, true, {
@@ -51,9 +57,33 @@ describe("canonicalCellKeyString", () => {
     );
   });
 
+  it("carries the authored club-art revision into the cloud identity", () => {
+    const club = canonicalCellKeyString(data, true, {
+      ...base,
+      bluePropType: PropType.CLUB,
+    });
+    const staff = canonicalCellKeyString(data, true, {
+      ...base,
+      bluePropType: PropType.STAFF,
+    });
+
+    expect(club).toContain('"propAppearanceRevision":"club-art-v2"');
+    expect(staff).not.toContain("propAppearanceRevision");
+  });
+
   it("normalizes per-device visibility: same hash regardless of showTKA/showTnD/showGrid", () => {
-    const a = canonicalCellKeyString(data, true, { ...base, showTKA: true, showTnD: true, showGrid: true });
-    const b = canonicalCellKeyString(data, true, { ...base, showTKA: false, showTnD: false, showGrid: false });
+    const a = canonicalCellKeyString(data, true, {
+      ...base,
+      showTKA: true,
+      showTnD: true,
+      showGrid: true,
+    });
+    const b = canonicalCellKeyString(data, true, {
+      ...base,
+      showTKA: false,
+      showTnD: false,
+      showGrid: false,
+    });
     expect(a).toBe(b);
   });
 });

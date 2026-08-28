@@ -37,6 +37,12 @@ interface ForestGroundDetailOptions {
   preserveColor?: Color;
   normalResponse?: number;
   roughnessFloor?: number;
+  absoluteColorStrength?: number;
+  primaryScale?: number;
+  secondaryScale?: number;
+  maskOrigin?: Vector2;
+  maskSize?: Vector2;
+  worldAxisSign?: Vector2;
 }
 
 export function isForestGroundMaterial(
@@ -74,12 +80,12 @@ export function patchForestGroundDetailMaterial(
       preserveColor: options.preserveColor,
       normalResponse: options.normalResponse,
       roughnessFloor: options.roughnessFloor,
-      absoluteColorStrength: 0,
-      primaryScale: 2.8,
-      secondaryScale: 7.4,
-      maskOrigin: new Vector2(-200, -200),
-      maskSize: new Vector2(400, 400),
-      worldAxisSign: new Vector2(1, -1),
+      absoluteColorStrength: options.absoluteColorStrength ?? 0,
+      primaryScale: options.primaryScale ?? 2.8,
+      secondaryScale: options.secondaryScale ?? 7.4,
+      maskOrigin: options.maskOrigin ?? new Vector2(-200, -200),
+      maskSize: options.maskSize ?? new Vector2(400, 400),
+      worldAxisSign: options.worldAxisSign ?? new Vector2(1, -1),
       familyBaselines: [
         new Color(0.36, 0.38, 0.25),
         new Color(0.44, 0.62, 0.29),

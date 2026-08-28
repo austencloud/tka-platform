@@ -13,7 +13,7 @@ No checkboxes anywhere, per the design system. Each row is a real button, keyboa
 operable, with a visible focus ring and a 44px target.
 
 None of these gate content. Tap Route and the step-through preview complete a
-level on their own terms — they simply don't claim a traced score.
+challenge on their own terms — they simply don't claim a traced score.
 -->
 <script lang="ts">
   import {
@@ -33,7 +33,8 @@ level on their own terms — they simply don't claim a traced score.
     {
       key: "reducedMotion",
       label: "Reduced motion",
-      description: "Static marks only. No traveling preview, no pulsing targets.",
+      description:
+        "Static marks only. No traveling preview, no pulsing targets.",
     },
     {
       key: "lowStimulus",

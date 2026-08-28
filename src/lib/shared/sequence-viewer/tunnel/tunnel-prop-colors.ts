@@ -39,7 +39,11 @@ function lerp(a: number, b: number, t: number): number {
 }
 
 /** HSL (h in deg, s/l in 0..1) → rgb 0..1. */
-function hslToRgb01(h: number, s: number, l: number): { r: number; g: number; b: number } {
+function hslToRgb01(
+  h: number,
+  s: number,
+  l: number
+): { r: number; g: number; b: number } {
   const hh = ((h % 360) + 360) % 360;
   const c = (1 - Math.abs(2 * l - 1)) * s;
   const x = c * (1 - Math.abs(((hh / 60) % 2) - 1));
@@ -57,7 +61,9 @@ function hslToRgb01(h: number, s: number, l: number): { r: number; g: number; b:
 }
 
 function toHex2(n: number): string {
-  return Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0");
+  return Math.max(0, Math.min(255, Math.round(n)))
+    .toString(16)
+    .padStart(2, "0");
 }
 
 /**
@@ -68,7 +74,10 @@ function toHex2(n: number): string {
  *                   family spans `layerCount + 1` props (base + layers), so the
  *                   fan stretches to fill exactly the active stack.
  */
-export function tunnelPropColor(propIndex: number, layerCount: number): TunnelColor {
+export function tunnelPropColor(
+  propIndex: number,
+  layerCount: number
+): TunnelColor {
   const isBlue = propIndex % 2 === 0;
   const familyIndex = Math.floor(propIndex / 2); // 0 = base
   const familyCount = Math.max(1, layerCount + 1);
@@ -94,6 +103,9 @@ export function tunnelPropColor(propIndex: number, layerCount: number): TunnelCo
  *  kaleidoscope, high enough that the others stay faintly legible. */
 export const SPOTLIGHT_DIM = 0.12;
 
+export type TunnelLayerSelection =
+  number | readonly number[] | null | undefined;
+
 /**
  * Brightness multiplier for a prop family under the spotlight. `selectedArm` is
  * the selected performer (0 = base "you", k = copy arm k), or null when none is
@@ -101,11 +113,15 @@ export const SPOTLIGHT_DIM = 0.12;
  * selected family (or when nothing is selected), else {@link SPOTLIGHT_DIM}.
  */
 export function spotlightFactor(
-  selectedArm: number | null | undefined,
-  familyIndex: number,
+  selectedArm: TunnelLayerSelection,
+  familyIndex: number
 ): number {
   if (selectedArm == null) return 1;
-  return familyIndex === selectedArm ? 1 : SPOTLIGHT_DIM;
+  const selected =
+    typeof selectedArm === "number"
+      ? familyIndex === selectedArm
+      : selectedArm.includes(familyIndex);
+  return selected ? 1 : SPOTLIGHT_DIM;
 }
 
 /** Scale a "#rrggbb" toward black by `factor` (1 = unchanged) — for dimming the

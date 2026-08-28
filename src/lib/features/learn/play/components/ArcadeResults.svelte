@@ -1,5 +1,5 @@
 <!--
-ArcadeResults — end-of-level results screen for the Play arcade.
+ArcadeResults — end-of-challenge results screen for the Play arcade.
 
 Rendered by PlayHub at phase "results". SIDE-EFFECT-FREE by contract: no
 store writes, no confetti, no history persistence — PlayHub owns all of
@@ -18,7 +18,10 @@ heavier 400ms beat on the last one → best line → stats → actions.
   import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
   import { analyzeErrors } from "$lib/features/learn/services/gap-detector";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { ArcadeSessionResult, GameProgress } from "../domain/arcade-types";
+  import type {
+    ArcadeSessionResult,
+    GameProgress,
+  } from "../domain/arcade-types";
   import { getArcadeSession } from "../state/arcade-session-state.svelte";
   import AnimatedScoreCounter from "./AnimatedScoreCounter.svelte";
   import QuizMisconceptionSummary from "./QuizMisconceptionSummary.svelte";
@@ -27,17 +30,17 @@ heavier 400ms beat on the last one → best line → stats → actions.
     result,
     progress,
     isNewBest,
-    hasNextLevel,
+    hasNextChallenge,
   }: {
     result: ArcadeSessionResult;
     progress: GameProgress;
     isNewBest: boolean;
-    hasNextLevel: boolean;
+    hasNextChallenge: boolean;
   } = $props();
 
   const session = getArcadeSession();
 
-  // Game/level come from the session's results phase — the props carry the
+  // Game/challenge come from the session's results phase — the props carry the
   // outcome, the phase carries the definitions needed to replay/advance.
   const resultsCtx = $derived(
     session.phase.name === "results" ? session.phase : null
@@ -91,7 +94,9 @@ heavier 400ms beat on the last one → best line → stats → actions.
     starTimes.forEach((time, i) => {
       timers.push(setTimeout(() => (starRevealed[i] = true), time));
     });
-    timers.push(setTimeout(() => (revealBest = true), starsEnd + DURATION.fast));
+    timers.push(
+      setTimeout(() => (revealBest = true), starsEnd + DURATION.fast)
+    );
     timers.push(
       setTimeout(
         () => (revealStats = true),
@@ -114,122 +119,134 @@ heavier 400ms beat on the last one → best line → stats → actions.
   function handleReplay() {
     if (!resultsCtx) return;
     getHapticFeedback().trigger("selection");
-    session.startLevel(resultsCtx.game, resultsCtx.level);
+    session.startChallenge(resultsCtx.game, resultsCtx.challenge);
   }
 
   function handleNext() {
     if (!resultsCtx) return;
-    const next = resultsCtx.game.levels.find(
-      (l) => l.levelNumber === resultsCtx.level.levelNumber + 1
+    const next = resultsCtx.game.challenges.find(
+      (l) => l.challengeNumber === resultsCtx.challenge.challengeNumber + 1
     );
     if (!next) return;
     getHapticFeedback().trigger("selection");
-    session.startLevel(resultsCtx.game, next);
+    session.startChallenge(resultsCtx.game, next);
   }
 
   function handleBack() {
     getHapticFeedback().trigger("selection");
-    session.backToLevels();
+    session.backToChallenges();
   }
 </script>
 
 <div class="results-shell">
-<div class="arcade-results" style="--game-accent: {accent}">
-  <!-- 1. Grade: spring scale-in. Transform only — the hero box is fixed, zero layout shift. -->
-  <div class="grade-hero" role="img" aria-label="Grade {result.grade}">
-    <span
-      class="grade-letter"
-      style="transform: scale({gradeScale.current}); opacity: {Math.min(
-        1,
-        gradeScale.current
-      )}"
+  <div class="arcade-results" style="--game-accent: {accent}">
+    <!-- 1. Grade: spring scale-in. Transform only — the hero box is fixed, zero layout shift. -->
+    <div class="grade-hero" role="img" aria-label="Grade {result.grade}">
+      <span
+        class="grade-letter"
+        style="transform: scale({gradeScale.current}); opacity: {Math.min(
+          1,
+          gradeScale.current
+        )}"
+      >
+        {result.grade}
+      </span>
+    </div>
+
+    <!-- 2. Score count-up -->
+    <div class="score-block reveal" class:shown={revealScore}>
+      <AnimatedScoreCounter
+        value={result.score}
+        delay={reduced ? 0 : DURATION.dramatic}
+        duration={reduced ? 0 : DURATION.dramatic * 2}
+      />
+      <span class="score-label">score</span>
+    </div>
+
+    <!-- 3. Stars -->
+    <div
+      class="stars-row"
+      role="img"
+      aria-label="{result.starsEarned} of 3 stars"
     >
-      {result.grade}
-    </span>
-  </div>
-
-  <!-- 2. Score count-up -->
-  <div class="score-block reveal" class:shown={revealScore}>
-    <AnimatedScoreCounter
-      value={result.score}
-      delay={reduced ? 0 : DURATION.dramatic}
-      duration={reduced ? 0 : DURATION.dramatic * 2}
-    />
-    <span class="score-label">score</span>
-  </div>
-
-  <!-- 3. Stars -->
-  <div class="stars-row" role="img" aria-label="{result.starsEarned} of 3 stars">
-    {#each [0, 1, 2] as i (i)}
-      {@const earned = i < result.starsEarned}
-      <svg
-        class="result-star"
-        class:earned
-        class:popped={starRevealed[i]}
-        class:heavy={earned && i === result.starsEarned - 1}
-        width="44"
-        height="44"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
-        <path
-          d="M12 2l2.94 6.36 6.96.6-5.27 4.6 1.58 6.81L12 16.77l-6.21 3.6 1.58-6.81L2.1 8.96l6.96-.6L12 2z"
-          fill={earned ? "currentColor" : "none"}
-          stroke="currentColor"
-          stroke-width={earned ? 0 : 1.5}
-          stroke-linejoin="round"
-        />
-      </svg>
-    {/each}
-  </div>
-
-  <!-- 4. Best delta (reserved height either way — no shift between states) -->
-  <p class="best-line reveal" class:shown={revealBest} class:new-best={isNewBest}>
-    {isNewBest ? "New best!" : `Best: ${progress.bestScore}`}
-  </p>
-
-  <!-- 5. Stats -->
-  <div class="stats-row reveal" class:shown={revealStats}>
-    <div class="stat">
-      <span class="stat-value">{Math.round(result.accuracyPercentage)}%</span>
-      <span class="stat-label">accuracy</span>
+      {#each [0, 1, 2] as i (i)}
+        {@const earned = i < result.starsEarned}
+        <svg
+          class="result-star"
+          class:earned
+          class:popped={starRevealed[i]}
+          class:heavy={earned && i === result.starsEarned - 1}
+          width="44"
+          height="44"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            d="M12 2l2.94 6.36 6.96.6-5.27 4.6 1.58 6.81L12 16.77l-6.21 3.6 1.58-6.81L2.1 8.96l6.96-.6L12 2z"
+            fill={earned ? "currentColor" : "none"}
+            stroke="currentColor"
+            stroke-width={earned ? 0 : 1.5}
+            stroke-linejoin="round"
+          />
+        </svg>
+      {/each}
     </div>
-    <div class="stat">
-      <span class="stat-value">{result.longestStreak}</span>
-      <span class="stat-label">best streak</span>
-    </div>
-    <div class="stat">
-      <span class="stat-value">{formatTime(result.durationSeconds)}</span>
-      <span class="stat-label">time</span>
-    </div>
-  </div>
 
-  <!-- 6 + 7. Misconceptions + actions -->
-  <div class="extras reveal" class:shown={revealExtras}>
-    {#if gaps.length > 0}
-      <QuizMisconceptionSummary {gaps} />
-    {/if}
+    <!-- 4. Best delta (reserved height either way — no shift between states) -->
+    <p
+      class="best-line reveal"
+      class:shown={revealBest}
+      class:new-best={isNewBest}
+    >
+      {isNewBest ? "New best!" : `Best: ${progress.bestScore}`}
+    </p>
 
-    <div class="actions">
-      <button
-        type="button"
-        class="action-button"
-        class:primary={!hasNextLevel}
-        onclick={handleReplay}
-      >
-        Replay level
-      </button>
-      {#if hasNextLevel}
-        <button type="button" class="action-button primary" onclick={handleNext}>
-          Next level
-        </button>
+    <!-- 5. Stats -->
+    <div class="stats-row reveal" class:shown={revealStats}>
+      <div class="stat">
+        <span class="stat-value">{Math.round(result.accuracyPercentage)}%</span>
+        <span class="stat-label">accuracy</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">{result.longestStreak}</span>
+        <span class="stat-label">best streak</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">{formatTime(result.durationSeconds)}</span>
+        <span class="stat-label">time</span>
+      </div>
+    </div>
+
+    <!-- 6 + 7. Misconceptions + actions -->
+    <div class="extras reveal" class:shown={revealExtras}>
+      {#if gaps.length > 0}
+        <QuizMisconceptionSummary {gaps} />
       {/if}
-      <button type="button" class="action-button ghost" onclick={handleBack}>
-        Back to levels
-      </button>
+
+      <div class="actions">
+        <button
+          type="button"
+          class="action-button"
+          class:primary={!hasNextChallenge}
+          onclick={handleReplay}
+        >
+          Replay challenge
+        </button>
+        {#if hasNextChallenge}
+          <button
+            type="button"
+            class="action-button primary"
+            onclick={handleNext}
+          >
+            Next challenge
+          </button>
+        {/if}
+        <button type="button" class="action-button ghost" onclick={handleBack}>
+          Back to challenges
+        </button>
+      </div>
     </div>
   </div>
-</div>
 </div>
 
 <style>
@@ -272,7 +289,8 @@ heavier 400ms beat on the last one → best line → stats → actions.
     font-weight: 800;
     line-height: 1;
     color: var(--game-accent);
-    text-shadow: 0 0 32px color-mix(in srgb, var(--game-accent) 45%, transparent);
+    text-shadow: 0 0 32px
+      color-mix(in srgb, var(--game-accent) 45%, transparent);
     will-change: transform;
   }
 
@@ -328,7 +346,8 @@ heavier 400ms beat on the last one → best line → stats → actions.
     opacity: 1;
     transform: scale(1);
     transition:
-      transform var(--duration-emphasis, 280ms) cubic-bezier(0.34, 1.56, 0.64, 1),
+      transform var(--duration-emphasis, 280ms)
+        cubic-bezier(0.34, 1.56, 0.64, 1),
       opacity var(--duration-fast, 150ms) ease;
   }
 
@@ -436,7 +455,7 @@ heavier 400ms beat on the last one → best line → stats → actions.
   }
 
   /* Composed-panel tier — the results column anchors against the starfield
-     instead of floating on it, same treatment as LevelPicker's game-detail
+     instead of floating on it, same treatment as ChallengePicker's game-detail
      panel. Austen's 4K monitor runs Windows display scaling, so this starts
      at 1024 rather than waiting for a 2560 gate that may never fire for him. */
   @media (min-width: 1024px) {
@@ -446,7 +465,8 @@ heavier 400ms beat on the last one → best line → stats → actions.
       border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
       border-radius: 24px;
       box-shadow:
-        0 32px 80px -32px color-mix(in srgb, var(--game-accent) 32%, transparent),
+        0 32px 80px -32px
+          color-mix(in srgb, var(--game-accent) 32%, transparent),
         0 2px 0 0 color-mix(in srgb, var(--game-accent) 12%, transparent) inset;
     }
   }
@@ -488,7 +508,11 @@ heavier 400ms beat on the last one → best line → stats → actions.
     }
 
     .stat-value {
-      font-size: clamp(var(--font-size-lg, 1.125rem), 1.6vw, var(--font-size-2xl, 1.5rem));
+      font-size: clamp(
+        var(--font-size-lg, 1.125rem),
+        1.6vw,
+        var(--font-size-2xl, 1.5rem)
+      );
     }
 
     .stat-label {

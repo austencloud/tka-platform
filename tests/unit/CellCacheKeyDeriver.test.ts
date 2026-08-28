@@ -319,6 +319,60 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
     });
   });
 
+  describe("targeted authored-prop appearance revision", () => {
+    it("rekeys club rasters without invalidating staff rasters", () => {
+      const data = makeStartPosition();
+      const clubKey = deriver.deriveCacheKey(
+        data,
+        undefined,
+        true,
+        makeOptions({ bluePropType: PropType.CLUB })
+      );
+      const staffKey = deriver.deriveCacheKey(
+        data,
+        undefined,
+        true,
+        makeOptions({ bluePropType: PropType.STAFF })
+      );
+
+      expect(clubKey).toContain('"propAppearanceRevision":"club-art-v2"');
+      expect(staffKey).not.toContain("propAppearanceRevision");
+    });
+
+    it("rekeys a cat/dog cell when either effective prop uses the revised club art", () => {
+      const key = deriver.deriveCacheKey(
+        makeStartPosition(),
+        undefined,
+        true,
+        makeOptions({
+          bluePropType: PropType.STAFF,
+          redPropType: PropType.CLUB,
+          catDogModeEnabled: true,
+        })
+      );
+
+      expect(key).toContain('"propAppearanceRevision":"club-art-v2"');
+    });
+
+    it("keeps Regular and Classic Club raster identities separate", () => {
+      const regular = deriver.deriveCacheKey(
+        makeStartPosition(),
+        undefined,
+        true,
+        makeOptions({ bluePropType: PropType.CLUB })
+      );
+      const classic = deriver.deriveCacheKey(
+        makeStartPosition(),
+        undefined,
+        true,
+        makeOptions({ bluePropType: PropType.CLASSIC_CLUB })
+      );
+
+      expect(regular).not.toBe(classic);
+      expect(classic).toContain('"bluePropType":"classic_club"');
+    });
+  });
+
   describe("handPathMode differentiation", () => {
     it("handPathMode on vs off produces different keys for same pictograph data", () => {
       const data = makeStartPosition();

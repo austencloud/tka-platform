@@ -6,6 +6,8 @@
   import TimeRuler from "$lib/features/compose/timeline/components/TimeRuler.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { flyFade, growFade, popIn } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
 
   import { getStageChoreographyContext } from "../context/stage-choreography-context";
   import {
@@ -488,7 +490,11 @@
   <header class="timeline-toolbar">
     <div class="timeline-title">
       {#if mode === "dock"}
-        <span class="timeline-label">Performance</span>
+        <span
+          class="timeline-label"
+          transition:growFade={{ duration: DURATION.fast, axis: "x" }}
+          >Performance</span
+        >
       {/if}
       <strong
         >Count {stageState.currentBeat.toFixed(1)} / {Math.round(
@@ -510,7 +516,9 @@
         </div>
       {/if}
       {#if mode === "dock"}
-        <span class="timeline-summary"
+        <span
+          class="timeline-summary"
+          transition:growFade={{ duration: DURATION.fast, axis: "x" }}
           >{choreography.performers.length} performer{choreography.performers
             .length === 1
             ? ""
@@ -546,11 +554,17 @@
           : "Collapse choreography editor"}
         onclick={mode === "dock" ? onExpand : onCollapse}
       >
-        <i
-          class="fas {mode === 'dock' ? 'fa-wave-square' : 'fa-chevron-down'}"
-          aria-hidden="true"
-        ></i>
-        <span>{mode === "dock" ? "Choreograph" : "Collapse"}</span>
+        <Crossfade key={mode} duration={DURATION.fast}>
+          <span class="disclosure-content">
+            <i
+              class="fas {mode === 'dock'
+                ? 'fa-wave-square'
+                : 'fa-chevron-down'}"
+              aria-hidden="true"
+            ></i>
+            <span>{mode === "dock" ? "Choreograph" : "Collapse"}</span>
+          </span>
+        </Crossfade>
       </button>
     </div>
   </header>
@@ -560,6 +574,7 @@
       id="stage-timeline-editor"
       class="timeline-scroll"
       bind:clientWidth={timelineViewportWidth}
+      transition:flyFade={{ duration: DURATION.emphasis, y: 8 }}
     >
       <div
         class="timeline-grid"
@@ -730,6 +745,7 @@
                   <button
                     type="button"
                     class="formation-action"
+                    transition:popIn={{ duration: DURATION.fast }}
                     aria-label="Remove {formationName(formation, index)}"
                     title="Remove"
                     onpointerdown={(event) => event.stopPropagation()}
@@ -833,6 +849,7 @@
                 <button
                   type="button"
                   class="lane-add-hint"
+                  transition:flyFade={{ duration: DURATION.normal, x: 6, y: 0 }}
                   onpointerdown={(event) => event.stopPropagation()}
                   onclick={() => openPicker(performer.id)}
                 >
@@ -879,6 +896,7 @@
                     <button
                       type="button"
                       class="clip-action"
+                      transition:popIn={{ duration: DURATION.fast }}
                       class:active={clip.loop}
                       aria-pressed={clip.loop}
                       aria-label="Loop {clipDisplayLabel(clip)}"
@@ -894,6 +912,7 @@
                     <button
                       type="button"
                       class="clip-action delete-clip"
+                      transition:popIn={{ duration: DURATION.fast }}
                       aria-label="Remove {clipDisplayLabel(clip)}"
                       title="Remove"
                       onpointerdown={(event) => event.stopPropagation()}
@@ -1074,6 +1093,13 @@
     white-space: nowrap;
   }
 
+  .disclosure-content {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+  }
+
   .timeline-disclosure:hover,
   .timeline-disclosure:focus-visible {
     border-color: var(--theme-accent);
@@ -1121,10 +1147,12 @@
        else is going, so a chip sitting on the final count has somewhere to be
        drawn instead of being clipped by the lane it ends. */
     grid-template-columns: 7rem minmax(var(--timeline-width), 1fr);
-    grid-auto-rows: 3.5rem;
+    grid-auto-rows: var(--stage-timeline-lane-size, 3.5rem);
     /* 3.5rem keeps the set chip's 2.75rem touch target intact inside its
        0.35rem inset, and matches the performer lane height. */
-    grid-template-rows: 2.25rem 3.5rem;
+    grid-template-rows:
+      var(--stage-timeline-ruler-size, 2.25rem)
+      var(--stage-timeline-lane-size, 3.5rem);
   }
 
   .ruler-label,

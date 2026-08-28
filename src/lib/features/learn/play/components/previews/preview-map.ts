@@ -1,7 +1,7 @@
 /**
  * Preview map — one place mapping each GameId to the little animated preview
  * that acts out its mechanic on the hub card's stage. Shared by GameCard (the
- * PlayHub wall) and LevelPicker (the game-detail screen) so both surfaces
+ * PlayHub wall) and ChallengePicker (the game-detail screen) so both surfaces
  * show literally the same preview per game — never two hand-maintained
  * copies of this switch drifting apart.
  */

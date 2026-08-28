@@ -14,7 +14,11 @@
   transform/box-shadow only (compositor).
 -->
 <script lang="ts">
-  import type { GameDefinition, GameProgress, Grade } from "../domain/arcade-types";
+  import type {
+    GameDefinition,
+    GameProgress,
+    Grade,
+  } from "../domain/arcade-types";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { getGamePreview } from "./previews/preview-map";
 
@@ -31,17 +35,20 @@
   } = $props();
 
   /* The id→preview mapping lives in previews/preview-map.ts, shared with
-     LevelPicker's game-detail screen so both surfaces show the same preview
+     ChallengePicker's game-detail screen so both surfaces show the same preview
      per game. */
   const Preview = $derived(getGamePreview(game.id));
 
   const totalStars = $derived(
-    Object.values(progress.starsByLevel).reduce<number>((sum, s) => sum + s, 0)
+    Object.values(progress.starsByChallenge).reduce<number>(
+      (sum, s) => sum + s,
+      0
+    )
   );
-  const maxStars = $derived(game.levels.length * 3);
+  const maxStars = $derived(game.challenges.length * 3);
   const played = $derived(progress.totalPlays > 0);
-  const levelsReached = $derived(
-    Math.min(progress.levelsUnlocked, game.levels.length)
+  const challengesReached = $derived(
+    Math.min(progress.challengesUnlocked, game.challenges.length)
   );
 
   /* Same grade palette as Train's PersonalBests/SessionHistory so a grade
@@ -93,14 +100,16 @@
         </span>
       {:else}
         <span class="best">
-          <span class="unplayed">{game.levels.length} levels</span>
+          <span class="unplayed">{game.challenges.length} challenges</span>
         </span>
       {/if}
 
       <span class="ladder">
         <span class="ladder-text">
           <span class="stars-text">★ {totalStars}/{maxStars}</span>
-          <span class="level-text">Lv {levelsReached}/{game.levels.length}</span>
+          <span class="challenge-text"
+            >Challenge {challengesReached}/{game.challenges.length}</span
+          >
         </span>
         <ProgressRing
           percent={maxStars > 0 ? (totalStars / maxStars) * 100 : 0}
@@ -162,7 +171,11 @@
     padding: var(--spacing-sm);
     background: linear-gradient(
       165deg,
-      color-mix(in srgb, var(--game-accent) 8%, var(--theme-card-bg, rgba(255, 255, 255, 0.04))),
+      color-mix(
+        in srgb,
+        var(--game-accent) 8%,
+        var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+      ),
       var(--theme-card-bg, rgba(255, 255, 255, 0.03)) 70%
     );
     border: 1px solid color-mix(in srgb, var(--game-accent) 24%, transparent);
@@ -296,7 +309,7 @@
     color: color-mix(in srgb, var(--game-accent) 80%, white);
   }
 
-  .level-text {
+  .challenge-text {
     font-size: var(--font-size-compact);
     font-variant-numeric: tabular-nums;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
@@ -375,7 +388,7 @@
     }
 
     .stars-text,
-    .level-text {
+    .challenge-text {
       font-size: var(--font-size-base);
     }
 

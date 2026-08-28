@@ -121,7 +121,7 @@ captureEffectDiagnostics to the context menu.
     redProp: PropState | null;
     additionalLayers?: AdditionalLayerProps[];
     tunnelSpectrum?: boolean;
-    tunnelSelectedLayer?: number | null;
+    tunnelSelectedLayer?: number | readonly number[] | null;
     gridVisible?: boolean;
     gridMode?: GridMode | null;
     backgroundAlpha?: number;

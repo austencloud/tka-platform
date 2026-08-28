@@ -35,13 +35,14 @@ describe("QR scan cloud-render contract", () => {
     );
     expect(server).not.toContain("scanCard:");
     expect(page).toContain("data.preparedSequence");
-    expect(page).toContain(
-      "shortCodeManager.resolveShortCodeWithRecord(shortCode, data.record)"
+    expect(page).toMatch(
+      /shortCodeManager\.resolveShortCodeWithRecord\(\s*shortCode,\s*data\.record\s*\)/
     );
   });
 
-  it("keeps choreography hidden until the complete viewer reports ready", () => {
+  it("keeps choreography out of the ingress while it hands off", () => {
     const route = source("src/routes/q/[code]/+page.svelte");
+    const ingress = source("src/routes/q/[code]/QScanPage.svelte");
 
     expect(route).not.toContain("ScanCardBootstrap");
     expect(route).not.toContain("ChoreoCard.svelte");
@@ -50,14 +51,16 @@ describe("QR scan cloud-render contract", () => {
     expect(route).toContain("class:ready={viewerReady}");
     expect(route).toContain("aria-hidden={!viewerReady}");
     expect(route).toContain("inert={!viewerReady ? true : undefined}");
+    expect(ingress).toContain("buildScanSequenceDestination");
+    expect(ingress).toContain("replaceState: true");
+    expect(ingress).not.toContain("SequenceViewerShell.svelte");
   });
 
   it("reveals terminal resolution errors instead of leaving the loader stuck", () => {
     const page = source("src/routes/q/[code]/QScanPage.svelte");
 
-    expect(page).toMatch(
-      /pageState = \{ kind: "error", message: "Sequence not found" \};\s*onViewerReady\?\.\(\);\s*return;/
-    );
+    expect(page).toContain('reportFailure(\n          "Sequence not found"');
+    expect(page).toContain("onViewerReady?.();");
   });
 
   it("keeps scan step numbers out of the cached bitmap pipeline", () => {
@@ -74,10 +77,11 @@ describe("QR scan cloud-render contract", () => {
   });
 
   it("builds the complete viewer in card mode before interactive startup", () => {
-    const page = source("src/routes/q/[code]/QScanPage.svelte");
-    expect(page).toContain('initialViewerMode="card"');
+    const page = source("src/routes/sequence/[id]/SequenceViewerPage.svelte");
+    expect(page).toContain('initialViewerMode={scanOriginCode ? "card"');
     expect(page).toContain("deferInteractiveStartup");
     expect(page).toContain("startInCardThenSplit");
+    expect(page).toContain("setScanCardCloudProbe(true)");
   });
 
   it("does not launch the local card pre-warmer for a cloud-backed scan", () => {

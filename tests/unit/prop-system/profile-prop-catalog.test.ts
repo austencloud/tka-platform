@@ -4,26 +4,52 @@ import {
   PROFILE_PROP_FAMILIES,
   getLegacyProfileProps,
   getProfilePropFamily,
-  toggleProfilePropVariant,
+  normalizeProfileSelection,
+  normalizeProfileSkill,
+  normalizeProfileSkills,
+  toggleProfileSkill,
 } from "$lib/shared/community/domain/profile-prop-catalog";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 describe("profile prop catalog", () => {
-  it("keeps Torch inside Club instead of creating a second family", () => {
+  it("folds club and torch assets into one Club skill", () => {
     const club = getProfilePropFamily(PropType.TORCH);
 
     expect(club?.representative).toBe(PropType.CLUB);
-    expect(club?.variants).toContain(PropType.CLUB);
-    expect(club?.variants).toContain(PropType.TORCH);
+    expect(club?.choices).toHaveLength(1);
+    expect(normalizeProfileSkill(PropType.TORCH)).toBe(PropType.CLUB);
+    expect(normalizeProfileSkill(PropType.BIGTORCH)).toBe(PropType.CLUB);
     expect(
       PROFILE_PROP_FAMILIES.map((family) => family.representative)
     ).not.toContain(PropType.TORCH);
   });
 
-  it("keeps Trigeng inside the Triad family", () => {
-    expect(getProfilePropFamily(PropType.TRIGENG)?.representative).toBe(
-      PropType.TRIAD
+  it("folds cosmetic assets into transferable skills", () => {
+    expect(normalizeProfileSkill(PropType.CAPSULE_BATON)).toBe(PropType.STAFF);
+    expect(normalizeProfileSkill(PropType.BIGFAN)).toBe(PropType.FAN);
+    expect(normalizeProfileSkill(PropType.BIGBUUGENG)).toBe(PropType.BUUGENG);
+    expect(normalizeProfileSkill(PropType.TRIGENG)).toBe(PropType.TRIAD);
+    expect(normalizeProfileSkill(PropType.BIGTRIAD)).toBe(PropType.TRIAD);
+    expect(normalizeProfileSkill(PropType.TRIQUETRA2)).toBe(PropType.TRIQUETRA);
+    expect(normalizeProfileSkill(PropType.ENERGY_SABER)).toBe(PropType.SWORD);
+    expect(normalizeProfileSkill(PropType.BIGDOUBLESTAR)).toBe(
+      PropType.DOUBLESTAR
     );
+    expect(normalizeProfileSkill(PropType.BIGEIGHTRINGS)).toBe(
+      PropType.EIGHTRINGS
+    );
+  });
+
+  it("keeps mini hoop and big hoop as different skills", () => {
+    const hoop = getProfilePropFamily(PropType.MINIHOOP);
+
+    expect(hoop?.choices.map((choice) => choice.prop)).toEqual([
+      PropType.MINIHOOP,
+      PropType.BIGHOOP,
+    ]);
+    expect(
+      normalizeProfileSkills([PropType.MINIHOOP, PropType.BIGHOOP])
+    ).toEqual([PropType.MINIHOOP, PropType.BIGHOOP]);
   });
 
   it("does not offer rendering novelties as ordinary setup families", () => {
@@ -34,6 +60,8 @@ describe("profile prop catalog", () => {
     expect(representatives).not.toContain(PropType.CHICKEN);
     expect(representatives).not.toContain(PropType.GUITAR);
     expect(representatives).not.toContain(PropType.HAND);
+    expect(representatives).not.toContain(PropType.SICKLES);
+    expect(normalizeProfileSkill(PropType.SICKLES)).toBeNull();
   });
 
   it("preserves unsupported saved props as legacy values", () => {
@@ -42,12 +70,32 @@ describe("profile prop catalog", () => {
     ).toEqual([PropType.CHICKEN, PropType.GUITAR]);
   });
 
-  it("toggles Club and Torch independently inside the same family", () => {
-    const withTorch = toggleProfilePropVariant([PropType.CLUB], PropType.TORCH);
-    expect(withTorch).toEqual([PropType.CLUB, PropType.TORCH]);
+  it("rewrites old saved assets without erasing safe legacy values", () => {
+    expect(
+      normalizeProfileSelection([
+        PropType.BIGSTAFF,
+        PropType.TORCH,
+        PropType.BIGTRIAD,
+        PropType.SICKLES,
+        PropType.CHICKEN,
+      ])
+    ).toEqual([
+      PropType.STAFF,
+      PropType.CLUB,
+      PropType.TRIAD,
+      PropType.CHICKEN,
+    ]);
+  });
 
-    expect(toggleProfilePropVariant(withTorch, PropType.CLUB)).toEqual([
-      PropType.TORCH,
+  it("toggles the canonical Club skill once", () => {
+    const withoutClub = toggleProfileSkill(
+      [PropType.CLUB, PropType.TORCH],
+      PropType.CLUB
+    );
+    expect(withoutClub).toEqual([]);
+
+    expect(toggleProfileSkill(withoutClub, PropType.CLUB)).toEqual([
+      PropType.CLUB,
     ]);
   });
 });

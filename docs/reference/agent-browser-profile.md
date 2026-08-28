@@ -4,6 +4,11 @@ Codex and Claude share one dedicated TKA application profile for browser tasks
 that Austen has approved. It prevents either agent from appearing as Austen or
 as the Google reviewer.
 
+There are two distinct names in this workflow:
+
+- `Agent DevTools` is the Chrome shell profile and visible taskbar identity.
+- `Codex + Claude` is the ordinary-user TKA application account used inside it.
+
 ## Identity
 
 | Field        | Value                         |
@@ -43,6 +48,11 @@ Use the shared debug Chrome process and a task-owned background tab as required
 by `AGENTS.md`. Interactive browser actions still require Austen's approval in
 the current conversation.
 
+The launcher always uses `Profile 1` inside
+`C:\Users\Austen\.claude\chrome-profile`. Chrome displays that shell profile as
+`Agent DevTools`; the non-default directory is also part of its Windows
+taskbar identity. Do not launch this profile directly or substitute `Default`.
+
 If the production browser session is already signed in as `Codex + Claude`, use
 that session. If a sign-in is required, copy one field at a time:
 
@@ -59,6 +69,29 @@ or from the protected credential file.
 
 When verification ends, close only the task-owned tab. Leave the shared browser
 and its authenticated session running unless Austen asks for a sign-out.
+
+## Desktop and taskbar shortcuts
+
+Create or repair the profile-specific desktop shortcuts in the background:
+
+```powershell
+pwsh -NoProfile -File launchers/install-chrome-profile-shortcuts.ps1
+```
+
+The installer creates:
+
+- `Austen - Chrome`, which carries `Chrome.UserData.Default` and uses Austen's
+  native `Default\Google Profile.ico` profile image.
+- `Agent DevTools - Chrome`, which carries the agent profile AppUserModelID and
+  uses the violet code-window fallback icon. Chrome shows the Agent DevTools
+  profile badge while that window is running.
+
+It does not restart Explorer, focus Chrome, or change taskbar pins. Windows
+requires the user to unpin stale Chrome entries and pin these shortcuts once.
+Keep the desktop shortcuts after pinning so the repair source remains obvious.
+Do not pin Chrome from Start or from the profile-picker window: those use the
+generic `Chrome` and `Chrome.UserData.SystemProfile` identities, which create
+extra taskbar entries instead of opening Austen's `Default` profile group.
 
 ## Provisioning and audit
 

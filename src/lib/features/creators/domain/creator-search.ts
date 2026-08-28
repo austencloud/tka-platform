@@ -1,5 +1,6 @@
 import { getEffectiveProp } from "$lib/shared/community/domain/get-effective-prop";
 import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
+import { normalizeProfileSkills } from "$lib/shared/community/domain/profile-prop-catalog";
 import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 
 /**
@@ -15,7 +16,7 @@ export function matchesCreatorQuery(
   const effectiveProp = getEffectiveProp(user);
   const propNames = [
     effectiveProp ? getPropTypeDisplayInfo(effectiveProp).label : "",
-    ...(user.propsISpinWith ?? []).map(
+    ...normalizeProfileSkills(user.propsISpinWith ?? []).map(
       (prop) => getPropTypeDisplayInfo(prop).label
     ),
   ];

@@ -80,6 +80,34 @@ Phrases that mean you're punting and must be removed:
 
 Report the actual result, not the instruction to produce one.
 
+## Motion Communicates Change
+
+Instant structural UI changes are unacceptable. When a panel opens, an item is
+inserted or removed, a workspace changes mode, or responsive content moves, the
+transition is part of the information architecture: it shows what changed and
+where it went, reducing the mental work required to follow the interface.
+
+Classify every dynamic geometry change before implementation:
+
+- accidental movement gets prevented by reserving stable geometry;
+- intentional movement gets animated through the canonical motion system.
+
+Use `Crossfade`, the reduced-motion-aware helpers in
+`src/lib/shared/transitions/motion.ts`, `PanelGroup` for structural workspaces,
+`animate:flip` with `flipDuration()` for keyed lists, and
+`createLayoutMotion()` for multi-element recomposition. Use `DURATION` and the
+global `--transition-*` tokens. Do not create feature-local durations, easing
+curves, FLIP utilities, or `transition: all` rules.
+
+Pointer-driven dragging follows the pointer without easing. Reduced-motion
+preferences collapse transitions to their accessible final state. Those are
+exceptions to animation, not permission for ordinary disclosure to pop.
+
+The enforced routing matrix, implementation rules, and verification checklist
+live in `.claude/rules/no-layout-shift.md`. Read it before any UI change that
+adds/removes content, changes size/position/structure, or alters a dynamic
+label/icon.
+
 ## Answer Your Own Questions
 
 When you catch yourself about to say "want me to research X" / "should I look into Y" / "can I investigate Z" — STOP. Just go do it. You have the codebase, grep, glob, read, web search, and subagents. Use them.
@@ -154,7 +182,18 @@ pwsh -NoProfile -File scripts/launch-chrome-debug.ps1 -Url about:blank
 This is one shared browser process and window for every agent. Never launch
 Chrome directly. The launcher serializes simultaneous calls, reuses the active
 process, and leaves window geometry alone so Chrome restores Austen's last
-manual size and position.
+manual size and position. Its Chrome shell profile is `Agent DevTools`
+(`Profile 1` inside the dedicated user-data directory). That non-default
+profile gives the agent browser a separate Windows taskbar identity from
+Austen's everyday Chrome. Do not override `-ProfileDirectory`.
+
+If the desktop shortcuts or taskbar identities need repair, run
+`pwsh -NoProfile -File launchers/install-chrome-profile-shortcuts.ps1`. It
+creates `Austen - Chrome` and `Agent DevTools - Chrome` desktop shortcuts with
+matching profile AppUserModelIDs. Austen's shortcut uses Chrome's native profile
+icon; the agent shortcut installs the violet fallback icon and uses its Chrome
+profile badge while running. The installer does not restart Explorer or change
+taskbar pins.
 
 Each agent opens a task-owned tab with `new_page(..., background: true)`, keeps
 the returned page ID, and supplies that `pageId` to every page-scoped tool. Do
@@ -181,9 +220,10 @@ Read-only (`take_snapshot`, `take_screenshot`, `list_console_messages`) is fine 
 ### Shared Agent Application Identity
 
 When an approved browser task needs an ordinary TKA sign-in, Codex and Claude
-use the dedicated `Codex + Claude` profile. Do not use Austen's personal account
-or the Google reviewer account. The profile has normal user access only and
-must never receive admin, tester, premium, or reviewer privileges.
+use the dedicated `Codex + Claude` TKA application account inside the
+`Agent DevTools` Chrome shell profile. Do not use Austen's personal account or
+the Google reviewer account. The profile has normal user access only and must
+never receive admin, tester, premium, or reviewer privileges.
 
 Credentials stay outside the repository in a Windows user-scoped encrypted
 store. Use `scripts/agent-profile-credential.ps1` to copy one field at a time,

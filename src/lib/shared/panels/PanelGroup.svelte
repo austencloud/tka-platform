@@ -30,6 +30,11 @@
      * left its editor instead of resetting the workspace.
      */
     fixedSize?: string;
+    /**
+     * Start at a CSS length while leaving the resize handle active. The first
+     * drag turns that preferred allocation into the user's saved flex sizes.
+     */
+    preferredSize?: string;
     /** Whether the handle after this panel is available (default: true). */
     resizable?: boolean;
     /** Panel ID for tracking */
@@ -39,6 +44,8 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
+  import { flexPresence, growFade } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import ResizeHandle from "./ResizeHandle.svelte";
 
   interface Props {
@@ -71,6 +78,7 @@
   let containerRef = $state<HTMLDivElement | null>(null);
   let dragStartSizes = $state<number[]>([]);
   let activeDragIndex = $state<number | null>(null);
+  let manuallySizedPanels = $state<Set<string | number>>(new Set());
 
   // Initialize sizes from panel defaults - only when panel count changes
   // Use untrack to prevent reactive cascade when sizes is bindable
@@ -85,7 +93,28 @@
 
   // Handle resize start
   function handleDragStart(index: number) {
-    dragStartSizes = [...sizes];
+    const renderedSizes = containerRef
+      ? Array.from(
+          containerRef.querySelectorAll<HTMLElement>(":scope > .panel-wrapper")
+        ).map((panel) =>
+          direction === "horizontal" ? panel.clientWidth : panel.clientHeight
+        )
+      : [];
+
+    // A preferred panel begins at content height, not at its stored flex
+    // ratio. Starting the drag from the rendered pixels prevents the first
+    // pointer movement from snapping it back to that stale ratio.
+    dragStartSizes =
+      renderedSizes.length === panels.length ? renderedSizes : [...sizes];
+    sizes = [...dragStartSizes];
+
+    const nextManuallySizedPanels = new Set(manuallySizedPanels);
+    for (const panelIndex of [index, index + 1]) {
+      if (panels[panelIndex]?.preferredSize) {
+        nextManuallySizedPanels.add(panels[panelIndex]?.id ?? panelIndex);
+      }
+    }
+    manuallySizedPanels = nextManuallySizedPanels;
     activeDragIndex = index;
   }
 
@@ -192,7 +221,17 @@
   // Get flex style for a panel
   function getFlexStyle(index: number): string {
     const fixedSize = panels[index]?.fixedSize;
-    return fixedSize ? `flex: 0 0 ${fixedSize}` : `flex: ${sizes[index] ?? 1}`;
+    if (fixedSize) {
+      return `flex-grow: 0; flex-shrink: 0; flex-basis: ${fixedSize}`;
+    }
+
+    const panelKey = panels[index]?.id ?? index;
+    const preferredSize = panels[index]?.preferredSize;
+    if (preferredSize && !manuallySizedPanels.has(panelKey)) {
+      return `flex-grow: 0; flex-shrink: 0; flex-basis: ${preferredSize}`;
+    }
+
+    return `flex-grow: ${sizes[index] ?? 1}; flex-shrink: 1; flex-basis: 0px`;
   }
 </script>
 
@@ -212,22 +251,36 @@
       style={getFlexStyle(i)}
       data-min-size={panel.minSize}
       data-max-size={panel.maxSize}
+      transition:flexPresence={{
+        duration: DURATION.emphasis,
+        axis: direction === "horizontal" ? "x" : "y",
+      }}
     >
       {@render panel.content()}
     </div>
 
     <!-- Resize handle between panels -->
     {#if !flattened && i < panels.length - 1 && panel.resizable !== false}
-      <ResizeHandle
-        direction={direction === "horizontal" ? "horizontal" : "vertical"}
-        size={gap}
-        onDragStart={() => handleDragStart(i)}
-        onDrag={(delta) => handleDrag(i, delta)}
-        onDragEnd={handleDragEnd}
-        onKeydown={(event) => handleKeydown(i, event)}
-        ariaLabel={`Resize ${panel.id ?? `panel ${i + 1}`} and ${panels[i + 1]?.id ?? `panel ${i + 2}`}`}
-        ariaValueNow={handleValue(i)}
-      />
+      <div
+        class="resize-handle-slot"
+        class:horizontal={direction === "horizontal"}
+        class:vertical={direction === "vertical"}
+        transition:growFade={{
+          duration: DURATION.fast,
+          axis: direction === "horizontal" ? "x" : "y",
+        }}
+      >
+        <ResizeHandle
+          direction={direction === "horizontal" ? "horizontal" : "vertical"}
+          size={gap}
+          onDragStart={() => handleDragStart(i)}
+          onDrag={(delta) => handleDrag(i, delta)}
+          onDragEnd={handleDragEnd}
+          onKeydown={(event) => handleKeydown(i, event)}
+          ariaLabel={`Resize ${panel.id ?? `panel ${i + 1}`} and ${panels[i + 1]?.id ?? `panel ${i + 2}`}`}
+          ariaValueNow={handleValue(i)}
+        />
+      </div>
     {/if}
   {/each}
 </div>
@@ -260,12 +313,36 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    transition:
+      flex-grow var(--transition-emphasis),
+      flex-basis var(--transition-emphasis);
   }
 
   .panel-wrapper > :global(*) {
     flex: 1;
     min-width: 0;
     min-height: 0;
+  }
+
+  .resize-handle-slot {
+    display: flex;
+    flex: none;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .resize-handle-slot.horizontal {
+    width: var(--panel-gap);
+    height: 100%;
+  }
+
+  .resize-handle-slot.vertical {
+    width: 100%;
+    height: var(--panel-gap);
+  }
+
+  .resize-handle-slot > :global(*) {
+    flex: 1;
   }
 
   /* During drag, prevent interactions with panel content */
@@ -275,5 +352,12 @@
 
   .panel-group.dragging .panel-wrapper {
     pointer-events: none;
+    transition: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel-wrapper {
+      transition: none;
+    }
   }
 </style>
