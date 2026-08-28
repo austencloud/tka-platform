@@ -501,6 +501,7 @@ ${svgParts.join("\n")}
       innerContent = innerContent.replace(/#000000/gi, color);
       innerContent = innerContent.replace(/black/gi, color);
       innerContent = innerContent.replace(/#2e3192/gi, color); // Staff/arrow base color
+      innerContent = innerContent.replace(/#bdbdbd/gi, color); // Club body; hardware keeps authored colors
       innerContent = innerContent.replace(/#00f/gi, color); // Center point marker
 
       // The prop's center point is at the middle of its viewBox
