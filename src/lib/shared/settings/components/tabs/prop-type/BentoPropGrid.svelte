@@ -23,7 +23,7 @@
     isPremiumCosmeticProp,
   } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import { Popover } from "bits-ui";
-  import { flyFade } from "$lib/shared/transitions/motion";
+  import { flyFade, growFade } from "$lib/shared/transitions/motion";
   import PropTypeButton from "./PropTypeButton.svelte";
   import PropChiralityRow from "./PropChiralityRow.svelte";
   import type { PropChiralitySeam } from "./prop-chirality-seam";
@@ -323,11 +323,13 @@
   </div>
 
   {#if chirality && isBuugengFamilyProp(selectedPropType)}
-    <PropChiralityRow
-      propType={selectedPropType}
-      hands={chirality.hands}
-      onChange={chirality.onChange}
-    />
+    <div class="chirality-dock" transition:growFade={{ axis: "y" }}>
+      <PropChiralityRow
+        propType={selectedPropType}
+        hands={chirality.hands}
+        onChange={chirality.onChange}
+      />
+    </div>
   {/if}
 
   {#if premiumNudgeFor}
@@ -501,6 +503,11 @@
     width: 100%;
     max-height: none;
     box-shadow: 0 8px 24px var(--theme-shadow, rgba(0, 0, 0, 0.42));
+  }
+
+  .chirality-dock {
+    flex: 0 0 auto;
+    min-width: 0;
   }
 
   /* Paid labels include the product family name. At the narrowest picker
