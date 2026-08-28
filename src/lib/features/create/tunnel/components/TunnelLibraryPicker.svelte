@@ -1,77 +1,296 @@
 <script lang="ts">
+  import { flip } from "svelte/animate";
   import PanelHeader from "$lib/shared/create/components/PanelHeader.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import PanelSpinner from "$lib/shared/components/panel/PanelSpinner.svelte";
-  import TkaLabel from "$lib/shared/components/TkaLabel.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import { flipDuration } from "$lib/shared/transitions/motion";
+  import type { PublicArtifactEnvelope } from "$lib/shared/artifact-revisions/domain/public-artifact";
   import type { CollectedTunnel } from "$lib/features/tunnel-collection/domain/tunnel-collection-types";
   import { needsTunnelPosterRefresh } from "$lib/features/tunnel-collection/domain/tunnel-artifact-migration";
-  import { imageCount } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
+  import {
+    describeTunnelForDiscovery,
+    matchesTunnelDiscoveryQuery,
+    sortTunnelDiscovery,
+    tunnelDiscoverySavedAt,
+    type TunnelDiscoverySort,
+  } from "$lib/features/tunnel-collection/domain/tunnel-discovery";
+  import { refreshTunnelPoster } from "$lib/features/tunnel-collection/services/tunnel-poster-refresh";
+  import {
+    hydratePublicTunnelDiscovery,
+    listPublicTunnelDiscovery,
+    type PublicTunnelDiscoveryEntry,
+  } from "$lib/features/tunnel-collection/services/tunnel-public-discovery";
+  import TunnelDiscoveryCard from "./TunnelDiscoveryCard.svelte";
+
+  type TunnelSource = "mine" | "explore";
+  type PosterState = "queued" | "refreshing" | "failed";
 
   let {
     items,
+    active = false,
     loading = false,
     activeTunnelId = null,
     onSelect,
+    onOpenPublic,
     onNew,
     onManage,
     onClose,
   }: {
     items: readonly CollectedTunnel[];
+    active?: boolean;
     loading?: boolean;
     activeTunnelId?: string | null;
     onSelect: (tunnel: CollectedTunnel) => void;
+    onOpenPublic: (envelope: PublicArtifactEnvelope) => void;
     onNew: () => void;
     onManage: () => void;
     onClose: () => void;
   } = $props();
 
+  let source = $state<TunnelSource>("mine");
   let query = $state("");
-  const orderedItems = $derived(
-    [...items].sort(
-      (a, b) =>
-        (b.currentRevisionCreatedAt ?? b.createdAt) -
-        (a.currentRevisionCreatedAt ?? a.createdAt)
+  let sort = $state<TunnelDiscoverySort>("recent");
+  let publicEntries = $state<PublicTunnelDiscoveryEntry[]>([]);
+  let publicLoading = $state(false);
+  let publicAttempted = $state(false);
+  let publicError = $state<string | null>(null);
+  let publicGeneration = 0;
+  let posterStates = $state<Record<string, PosterState>>({});
+  const scheduledPosterKeys = new Set<string>();
+  let posterQueue: Promise<void> = Promise.resolve();
+
+  const sourceOptions = $derived([
+    {
+      value: "mine" as const,
+      label: "Mine",
+      ariaLabel: `Mine, ${items.length} saved tunnels`,
+      count: items.length,
+      id: "tunnel-source-mine",
+      controls: "tunnel-library-results",
+    },
+    {
+      value: "explore" as const,
+      label: "Explore",
+      ariaLabel: publicAttempted
+        ? `Explore, ${publicEntries.length} public tunnels`
+        : "Explore public tunnels",
+      count: publicAttempted ? publicEntries.length : null,
+      id: "tunnel-source-explore",
+      controls: "tunnel-library-results",
+    },
+  ]);
+
+  const visibleItems = $derived(
+    sortTunnelDiscovery(
+      items.filter((item) => matchesTunnelDiscoveryQuery(item, query)),
+      sort
     )
   );
-  const visibleItems = $derived.by(() => {
+
+  const visiblePublicEntries = $derived.by(() => {
     const needle = query.trim().toLocaleLowerCase();
-    return needle
-      ? orderedItems.filter((item) =>
-          item.name.toLocaleLowerCase().includes(needle)
-        )
-      : orderedItems;
+    const filtered = publicEntries.filter((entry) => {
+      const detail = entry.tunnel
+        ? describeTunnelForDiscovery(entry.tunnel).searchText
+        : "";
+      return (
+        !needle ||
+        [entry.envelope.title, entry.envelope.ownerDisplayName, detail]
+          .join(" ")
+          .toLocaleLowerCase()
+          .includes(needle)
+      );
+    });
+
+    return [...filtered].sort((a, b) => {
+      const aSummary = a.tunnel ? describeTunnelForDiscovery(a.tunnel) : null;
+      const bSummary = b.tunnel ? describeTunnelForDiscovery(b.tunnel) : null;
+      switch (sort) {
+        case "name":
+          return a.envelope.title.localeCompare(b.envelope.title, undefined, {
+            sensitivity: "base",
+          });
+        case "performers":
+          return (
+            (bSummary?.authoredCount ?? -1) - (aSummary?.authoredCount ?? -1) ||
+            publicTimestamp(b.envelope.updatedAt) -
+              publicTimestamp(a.envelope.updatedAt)
+          );
+        case "instances":
+          return (
+            (bSummary?.renderedCount ?? -1) - (aSummary?.renderedCount ?? -1) ||
+            publicTimestamp(b.envelope.updatedAt) -
+              publicTimestamp(a.envelope.updatedAt)
+          );
+        case "recent":
+        default:
+          return (
+            publicTimestamp(b.envelope.updatedAt) -
+            publicTimestamp(a.envelope.updatedAt)
+          );
+      }
+    });
   });
 
-  function authoredCount(tunnel: CollectedTunnel): number {
-    return tunnel.composition?.performers.length ?? 1;
+  const failedPosterCount = $derived(
+    Object.values(posterStates).filter((state) => state === "failed").length
+  );
+
+  function localPosterKey(tunnel: CollectedTunnel): string {
+    return [
+      tunnel.id,
+      tunnel.currentRevisionId ?? "legacy",
+      tunnel.currentContentDigest ?? "unknown",
+      tunnel.currentRevisionCreatedAt ?? tunnel.createdAt,
+    ].join(":");
   }
 
-  function savedLabel(tunnel: CollectedTunnel): string {
-    return new Date(
-      tunnel.currentRevisionCreatedAt ?? tunnel.createdAt
-    ).toLocaleDateString(undefined, {
+  function setPosterState(id: string, state: PosterState | null): void {
+    if (state) {
+      posterStates = { ...posterStates, [id]: state };
+      return;
+    }
+    const next = { ...posterStates };
+    delete next[id];
+    posterStates = next;
+  }
+
+  function schedulePosterRefresh(tunnel: CollectedTunnel): void {
+    const key = localPosterKey(tunnel);
+    if (scheduledPosterKeys.has(key)) return;
+    scheduledPosterKeys.add(key);
+    setPosterState(tunnel.id, "queued");
+
+    const refresh = async () => {
+      if (!active || source !== "mine") {
+        scheduledPosterKeys.delete(key);
+        setPosterState(tunnel.id, null);
+        return;
+      }
+      setPosterState(tunnel.id, "refreshing");
+      const result = await refreshTunnelPoster(tunnel);
+      if (result === "failed" || result === "unavailable") {
+        setPosterState(tunnel.id, "failed");
+      } else {
+        setPosterState(tunnel.id, null);
+      }
+    };
+    posterQueue = posterQueue.then(refresh, refresh);
+  }
+
+  function retryFailedPosters(): void {
+    for (const tunnel of items) {
+      if (posterStates[tunnel.id] !== "failed") continue;
+      scheduledPosterKeys.delete(localPosterKey(tunnel));
+      setPosterState(tunnel.id, null);
+      schedulePosterRefresh(tunnel);
+    }
+  }
+
+  function publicTimestamp(value: unknown): number {
+    if (value instanceof Date) return value.getTime();
+    if (typeof value === "number") return value;
+    if (typeof value === "string") return Date.parse(value) || 0;
+    if (value && typeof value === "object") {
+      if ("toMillis" in value && typeof value.toMillis === "function") {
+        return value.toMillis();
+      }
+      if ("toDate" in value && typeof value.toDate === "function") {
+        const date = value.toDate();
+        return date instanceof Date ? date.getTime() : 0;
+      }
+    }
+    return 0;
+  }
+
+  function dateLabel(prefix: string, timestamp: number): string {
+    if (!Number.isFinite(timestamp) || timestamp <= 0) return prefix;
+    return `${prefix} ${new Date(timestamp).toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
       year: "numeric",
-    });
+    })}`;
   }
+
+  async function loadPublicTunnels(force = false): Promise<void> {
+    if (publicLoading || (publicAttempted && !force)) return;
+    const generation = ++publicGeneration;
+    publicAttempted = true;
+    publicLoading = true;
+    publicError = null;
+    try {
+      const entries = await listPublicTunnelDiscovery();
+      if (generation !== publicGeneration) return;
+      publicEntries = entries;
+      publicLoading = false;
+
+      void hydratePublicTunnelDiscovery(entries, (entry, index) => {
+        if (generation !== publicGeneration) return;
+        publicEntries = publicEntries.map((current, currentIndex) =>
+          currentIndex === index ? entry : current
+        );
+      }).catch(() => {
+        // Individual detail failures preserve their envelope card. The service
+        // already isolates them; this catch only guards an unexpected worker
+        // failure from becoming an unhandled rejection.
+      });
+    } catch {
+      if (generation !== publicGeneration) return;
+      publicEntries = [];
+      publicError = "Public tunnels could not be loaded.";
+      publicLoading = false;
+    }
+  }
+
+  function retryPublicTunnels(): void {
+    void loadPublicTunnels(true);
+  }
+
+  $effect(() => {
+    if (!active || source !== "mine") return;
+    for (const tunnel of items) {
+      if (needsTunnelPosterRefresh(tunnel)) schedulePosterRefresh(tunnel);
+    }
+  });
+
+  $effect(() => {
+    if (active && source === "explore" && !publicAttempted) {
+      void loadPublicTunnels();
+    }
+  });
 </script>
 
-<section class="tunnel-library" aria-label="Your tunnels">
+<section class="tunnel-library" aria-label="Tunnels">
   <PanelHeader
-    title="Your tunnels"
-    subtitle={`${items.length} saved`}
+    title="Tunnels"
+    subtitle={source === "mine"
+      ? `${items.length} saved`
+      : "Published by the community"}
     {onClose}
   />
+
+  <div class="source-switcher">
+    <SegmentedControl
+      options={sourceOptions}
+      value={source}
+      onchange={(value) => (source = value)}
+      color="accent"
+      size="sm"
+      density="compact"
+      ariaLabel="Tunnel source"
+      semantics="tabs"
+    />
+  </div>
 
   <div class="library-toolbar">
     <label class="search-field">
       <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
-      <span class="sr-only">Search your tunnels</span>
+      <span class="sr-only">Search tunnels by name, prop, or formation</span>
       <input
         type="search"
         bind:value={query}
-        placeholder="Search tunnels"
+        placeholder="Name, prop, or formation"
         autocomplete="off"
       />
       {#if query}
@@ -86,97 +305,160 @@
       {/if}
     </label>
 
+    <label class="sort-field">
+      <span class="sr-only">Sort tunnels</span>
+      <i class="fas fa-arrow-down-wide-short" aria-hidden="true"></i>
+      <select bind:value={sort} aria-label="Sort tunnels">
+        <option value="recent">Recent</option>
+        <option value="name">Name</option>
+        <option value="performers">Most authored</option>
+        <option value="instances">Most on stage</option>
+      </select>
+    </label>
+
     <PanelButton
       variant="primary"
       onclick={onNew}
       ariaLabel="Start a new tunnel"
     >
       <i class="fas fa-plus" aria-hidden="true"></i>
-      New tunnel
+      <span class="new-label">New tunnel</span>
     </PanelButton>
   </div>
 
-  <div class="library-scroll themed-scrollbar">
-    {#if loading && items.length === 0}
+  <div
+    class="library-scroll themed-scrollbar"
+    id="tunnel-library-results"
+    role="tabpanel"
+    aria-labelledby={source === "mine"
+      ? "tunnel-source-mine"
+      : "tunnel-source-explore"}
+  >
+    {#if source === "mine"}
+      {#if loading && items.length === 0}
+        <div class="library-state" role="status">
+          <PanelSpinner size={12} />
+          <strong>Loading your tunnels</strong>
+        </div>
+      {:else if items.length === 0}
+        <div class="library-state">
+          <i class="fas fa-fan state-icon" aria-hidden="true"></i>
+          <strong>No saved tunnels yet</strong>
+          <p>Build one here, open it in the viewer, then save it.</p>
+        </div>
+      {:else if visibleItems.length === 0}
+        <div class="library-state" role="status">
+          <i class="fas fa-magnifying-glass state-icon" aria-hidden="true"></i>
+          <strong>No matching tunnels</strong>
+          <p>Try a name, prop, effect, or formation.</p>
+        </div>
+      {:else}
+        <div class="library-grid" aria-label="Your saved tunnels">
+          {#each visibleItems as tunnel (tunnel.id)}
+            <div animate:flip={{ duration: flipDuration() }}>
+              <TunnelDiscoveryCard
+                name={tunnel.name}
+                poster={tunnel.poster}
+                summary={describeTunnelForDiscovery(tunnel)}
+                dateLabel={dateLabel("Saved", tunnelDiscoverySavedAt(tunnel))}
+                active={tunnel.id === activeTunnelId}
+                posterState={posterStates[tunnel.id] ?? null}
+                actionLabel={tunnel.id === activeTunnelId
+                  ? "Currently editing"
+                  : "Edit"}
+                onclick={() => onSelect(tunnel)}
+              />
+            </div>
+          {/each}
+        </div>
+      {/if}
+    {:else if publicLoading && publicEntries.length === 0}
       <div class="library-state" role="status">
         <PanelSpinner size={12} />
-        <strong>Loading your tunnels</strong>
+        <strong>Finding public tunnels</strong>
+        <p>Loading the community’s current published artifacts.</p>
       </div>
-    {:else if items.length === 0}
+    {:else if publicError}
+      <div class="library-state" role="alert">
+        <i class="fas fa-cloud-arrow-down state-icon" aria-hidden="true"></i>
+        <strong>{publicError}</strong>
+        <PanelButton
+          variant="secondary"
+          onclick={retryPublicTunnels}
+          ariaLabel="Retry loading public tunnels"
+        >
+          <i class="fas fa-arrows-rotate" aria-hidden="true"></i>
+          Retry
+        </PanelButton>
+      </div>
+    {:else if publicEntries.length === 0}
       <div class="library-state">
-        <i class="fas fa-fan state-icon" aria-hidden="true"></i>
-        <strong>No saved tunnels yet</strong>
-        <p>Build one here, open it in the viewer, then save it.</p>
+        <i class="fas fa-earth-americas state-icon" aria-hidden="true"></i>
+        <strong>No public tunnels yet</strong>
+        <p>Published Tunnel artifacts will appear here.</p>
       </div>
-    {:else if visibleItems.length === 0}
+    {:else if visiblePublicEntries.length === 0}
       <div class="library-state" role="status">
         <i class="fas fa-magnifying-glass state-icon" aria-hidden="true"></i>
-        <strong>No matching tunnels</strong>
-        <p>Try another name.</p>
+        <strong>No matching public tunnels</strong>
+        <p>Try a name, creator, prop, effect, or formation.</p>
       </div>
     {:else}
-      <div class="library-grid" aria-label="Saved tunnels">
-        {#each visibleItems as tunnel (tunnel.id)}
-          {@const active = tunnel.id === activeTunnelId}
-          {@const performers = authoredCount(tunnel)}
-          {@const instances = imageCount(tunnel.snapshot.tunnel.config)}
-          <button
-            type="button"
-            class="tunnel-card"
-            class:active
-            onclick={() => onSelect(tunnel)}
-            aria-label={`${active ? "Currently editing" : "Edit"} ${tunnel.name}; ${performers} authored performers, ${instances} rendered instances`}
-            aria-current={active ? "true" : undefined}
-          >
-            <span class="poster-frame">
-              {#if tunnel.poster}
-                <img src={tunnel.poster} alt="" loading="lazy" />
-              {:else}
-                <i class="fas fa-fan poster-fallback" aria-hidden="true"></i>
-              {/if}
-              {#if active}
-                <span class="active-badge">
-                  <i class="fas fa-pen" aria-hidden="true"></i>
-                  Editing
-                </span>
-              {/if}
-            </span>
-
-            <span class="tunnel-copy">
-              <span class="tunnel-name">
-                <TkaLabel text={tunnel.name} darkMode />
-              </span>
-              <span class="tunnel-meta">
-                {performers} authored · {instances} rendered
-              </span>
-              <span class="saved-date">Saved {savedLabel(tunnel)}</span>
-              {#if needsTunnelPosterRefresh(tunnel)}
-                <span class="poster-status">
-                  <i class="fas fa-arrows-rotate" aria-hidden="true"></i>
-                  Saved preview may be outdated
-                </span>
-              {/if}
-            </span>
-
-            <span class="open-cue" aria-hidden="true">
-              <i class={`fas ${active ? "fa-check" : "fa-chevron-right"}`}></i>
-            </span>
-          </button>
+      <div class="library-grid" aria-label="Public tunnels">
+        {#each visiblePublicEntries as entry (entry.envelope.artifactId)}
+          <div animate:flip={{ duration: flipDuration() }}>
+            <TunnelDiscoveryCard
+              name={entry.envelope.title}
+              poster={entry.envelope.posterUrl ?? entry.tunnel?.poster}
+              summary={entry.tunnel
+                ? describeTunnelForDiscovery(entry.tunnel)
+                : null}
+              eyebrow={`By ${entry.envelope.ownerDisplayName}`}
+              dateLabel={dateLabel(
+                "Published",
+                publicTimestamp(entry.envelope.updatedAt)
+              )}
+              actionLabel="View public tunnel"
+              onclick={() => onOpenPublic(entry.envelope)}
+            />
+          </div>
         {/each}
       </div>
     {/if}
   </div>
 
   <footer class="library-footer">
-    <PanelButton
-      variant="secondary"
-      onclick={onManage}
-      ariaLabel="Manage tunnels in Browse"
-    >
-      <i class="fas fa-table-cells-large" aria-hidden="true"></i>
-      Manage in Browse
-    </PanelButton>
-    <p>Rename, publish, connect footage, or delete from Browse.</p>
+    {#if source === "mine"}
+      <div class="footer-actions">
+        <PanelButton
+          variant="secondary"
+          onclick={onManage}
+          ariaLabel="Manage tunnels in Browse"
+        >
+          <i class="fas fa-table-cells-large" aria-hidden="true"></i>
+          Manage in Browse
+        </PanelButton>
+        {#if failedPosterCount > 0}
+          <PanelButton
+            variant="secondary"
+            onclick={retryFailedPosters}
+            ariaLabel={`Retry ${failedPosterCount} tunnel ${failedPosterCount === 1 ? "preview" : "previews"}`}
+          >
+            <i class="fas fa-arrows-rotate" aria-hidden="true"></i>
+            Retry previews
+          </PanelButton>
+        {/if}
+      </div>
+      <p>
+        Preview upgrades change presentation only—never choreography or
+        revisions.
+      </p>
+    {:else}
+      <p>
+        Public tunnels open in Browse so the published revision and creator stay
+        explicit.
+      </p>
+    {/if}
   </footer>
 </section>
 
@@ -184,7 +466,7 @@
   .tunnel-library {
     container: tunnel-library / inline-size;
     display: grid;
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
     width: 100%;
     height: 100%;
     min-width: 0;
@@ -193,12 +475,17 @@
     background: var(--theme-panel-bg);
   }
 
+  .source-switcher {
+    padding: 10px var(--settings-spacing-md, 14px) 8px;
+    background: var(--theme-card-bg);
+  }
+
   .library-toolbar,
   .library-footer {
     display: flex;
     align-items: center;
     gap: var(--settings-spacing-sm, 8px);
-    padding: var(--settings-spacing-md, 14px);
+    padding: 8px var(--settings-spacing-md, 14px) 10px;
     border-bottom: 1px solid var(--theme-stroke);
     background: var(--theme-card-bg);
   }
@@ -207,13 +494,13 @@
     flex: 0 0 auto;
   }
 
-  .search-field {
+  .search-field,
+  .sort-field {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    flex: 1 1 auto;
     min-width: 0;
-    min-height: var(--min-touch-target, 48px);
+    min-height: var(--min-touch-target, 44px);
     padding-inline: 12px 4px;
     border: 1px solid var(--theme-stroke);
     border-radius: var(--settings-radius-sm, 10px);
@@ -221,13 +508,25 @@
     background: var(--theme-panel-bg);
   }
 
-  .search-field:focus-within {
+  .search-field {
+    flex: 1 1 auto;
+  }
+
+  .sort-field {
+    grid-template-columns: auto minmax(0, 1fr);
+    flex: 0 1 9.5rem;
+    padding-right: 8px;
+  }
+
+  .search-field:focus-within,
+  .sort-field:focus-within {
     border-color: var(--theme-accent);
     box-shadow: 0 0 0 2px
       color-mix(in srgb, var(--theme-accent) 22%, transparent);
   }
 
-  .search-field input {
+  .search-field input,
+  .sort-field select {
     width: 100%;
     min-width: 0;
     height: 100%;
@@ -238,6 +537,16 @@
     background: transparent;
     font: inherit;
     font-size: var(--font-size-min, 14px);
+  }
+
+  .sort-field select {
+    padding-right: 0;
+    cursor: pointer;
+  }
+
+  .sort-field select option {
+    color: var(--theme-text);
+    background: var(--theme-panel-bg);
   }
 
   .search-field input::placeholder {
@@ -262,8 +571,7 @@
     background: var(--theme-card-hover-bg);
   }
 
-  .clear-search:focus-visible,
-  .tunnel-card:focus-visible {
+  .clear-search:focus-visible {
     outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
@@ -271,7 +579,6 @@
   .library-scroll {
     min-width: 0;
     min-height: 0;
-    padding: var(--settings-spacing-md, 14px);
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -280,137 +587,6 @@
   .library-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--settings-spacing-sm, 8px);
-  }
-
-  .tunnel-card {
-    display: grid;
-    grid-template-columns: 6.25rem minmax(0, 1fr) var(--min-touch-target, 44px);
-    align-items: center;
-    gap: var(--settings-spacing-md, 14px);
-    width: 100%;
-    min-width: 0;
-    min-height: 7.5rem;
-    padding: 10px 8px 10px 10px;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--settings-radius-md, 14px);
-    color: inherit;
-    background: var(--theme-card-bg);
-    text-align: left;
-    cursor: pointer;
-    transition:
-      border-color var(--duration-fast, 150ms) var(--ease-out, ease),
-      background var(--duration-fast, 150ms) var(--ease-out, ease),
-      transform var(--duration-fast, 150ms) var(--ease-out, ease);
-  }
-
-  .tunnel-card:hover {
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent) 48%,
-      var(--theme-stroke)
-    );
-    background: var(--theme-card-hover-bg);
-    transform: translateY(-1px);
-  }
-
-  .tunnel-card.active {
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent) 72%,
-      var(--theme-stroke)
-    );
-    background: color-mix(
-      in srgb,
-      var(--theme-accent) 9%,
-      var(--theme-card-bg)
-    );
-  }
-
-  .poster-frame {
-    position: relative;
-    display: grid;
-    width: 6.25rem;
-    aspect-ratio: 1;
-    place-items: center;
-    overflow: hidden;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--settings-radius-sm, 10px);
-    background: #000;
-  }
-
-  .poster-frame img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .poster-fallback {
-    color: var(--theme-text-dim);
-    font-size: 2rem;
-  }
-
-  .active-badge {
-    position: absolute;
-    right: 5px;
-    bottom: 5px;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    min-height: 1.5rem;
-    padding: 2px 6px;
-    border: 1px solid color-mix(in srgb, var(--theme-accent) 55%, transparent);
-    border-radius: 999px;
-    color: var(--theme-text);
-    background: color-mix(in srgb, var(--theme-panel-bg) 88%, transparent);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-  }
-
-  .tunnel-copy {
-    display: grid;
-    gap: 4px;
-    min-width: 0;
-  }
-
-  .tunnel-name {
-    display: block;
-    min-width: 0;
-    overflow: hidden;
-    color: var(--theme-text);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 750;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .tunnel-meta,
-  .saved-date,
-  .poster-status,
-  .library-footer p,
-  .library-state p {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 12px);
-    line-height: 1.35;
-  }
-
-  .poster-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    color: var(--theme-accent);
-  }
-
-  .open-cue {
-    display: grid;
-    width: var(--min-touch-target, 44px);
-    height: var(--min-touch-target, 44px);
-    place-items: center;
-    color: var(--theme-text-dim);
-  }
-
-  .tunnel-card.active .open-cue {
-    color: var(--theme-accent);
   }
 
   .library-state {
@@ -446,59 +622,50 @@
     border-bottom: 0;
   }
 
-  .library-footer :global(.panel-btn) {
+  .library-footer p {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.35;
+  }
+
+  .footer-actions {
+    display: flex;
+    gap: var(--settings-spacing-sm, 8px);
     width: 100%;
+  }
+
+  .footer-actions :global(.panel-btn) {
+    flex: 1 1 0;
   }
 
   @container tunnel-library (min-width: 46rem) {
     .library-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+  }
 
-    .tunnel-card {
-      grid-template-columns: 5.25rem minmax(0, 1fr) var(
-          --min-touch-target,
-          44px
-        );
-    }
-
-    .poster-frame {
-      width: 5.25rem;
+  @container tunnel-library (max-width: 32rem) {
+    .new-label {
+      display: none;
     }
   }
 
   @container tunnel-library (max-width: 25rem) {
     .library-toolbar {
-      align-items: stretch;
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
     }
 
-    .library-toolbar :global(.panel-btn) {
+    .search-field {
+      grid-column: 1 / -1;
+    }
+
+    .sort-field {
       width: 100%;
     }
 
-    .tunnel-card {
-      grid-template-columns: 4.5rem minmax(0, 1fr) var(--min-touch-target, 44px);
-      gap: var(--settings-spacing-sm, 8px);
-      min-height: 6rem;
-      padding-left: 8px;
-    }
-
-    .poster-frame {
-      width: 4.5rem;
-    }
-
-    .active-badge {
-      width: 1.6rem;
-      padding: 0;
-      justify-content: center;
-      font-size: 0;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .tunnel-card {
-      transition: none;
+    .footer-actions {
+      flex-direction: column;
     }
   }
 </style>

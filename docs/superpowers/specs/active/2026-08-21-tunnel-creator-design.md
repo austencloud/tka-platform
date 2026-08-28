@@ -324,14 +324,19 @@ sources, reorder it, reload it, and verify relationship lineage remains intact.
 Acceptance: finish, save, reopen, share, and view a tunnel at every required
 viewport with no obscured animation, lost recipe, stale card, or console error.
 
-#### Saved-tunnel access inside the creator
+#### Tunnel discovery inside the creator
 
-- The Tunnel workspace header exposes **Your tunnels** without making Browse a
-  required detour. The control opens a focused responsive library surface;
-  Browse remains the management destination for rename, publication, connected
-  footage, and deletion.
+- The Tunnel workspace header exposes **Tunnels** without making Browse a
+  required detour. Its Mine source opens saved work; its Explore source lists
+  the current public Tunnel artifact index. Browse remains the management
+  destination for rename, publication, connected footage, and deletion.
 - This library reads the existing tunnel collection singleton. It does not own
   another cache, query, migration, or saved-artifact shape.
+- Explore reads public envelopes first, then hydrates their exact immutable
+  current revisions through a bounded worker pool. Choosing public work opens
+  the existing Browse public-detail route; it does not silently fork the work,
+  discard creator attribution, or make public choreography look locally
+  authored.
 - Choosing a card replaces the complete editor document. It never inserts a
   tunnel into one performer card or conflates artifact selection with the
   sequence and Shape Matrix source pickers.
@@ -347,7 +352,18 @@ viewport with no obscured animation, lost recipe, stale card, or console error.
 - Replacing a workspace with uncommitted content requires an explicit warning.
   Empty or unchanged sessions open immediately; selecting the already-active
   tunnel simply closes the library.
-- The compact library shows recent saved work, search, truthful authored and
-  rendered counts, current-editing state, and poster-refresh uncertainty. It
-  offers New tunnel and a button-styled Manage in Browse exit without embedding
-  the full collection management interface in Create.
+- Each card's prop names, recipe origin/modified state, formation transforms,
+  authored count, rendered-instance count, effect, and BPM are derived from the
+  canonical artifact. Search covers those facts and sorting supports recency,
+  name, authored performers, and rendered instances; none of this metadata is
+  denormalized into a second persistence contract.
+- An old or unknown poster is automatically rebuilt with the canonical
+  complete-figure renderer while its current image remains visible. Backfills
+  are serialized, deduplicated per artifact revision, and recheck the revision
+  before writing. They use the presentation-only update path, so refreshing a
+  poster never changes choreography, mints a revision, or mutates dedupe
+  identity. Only the active rebuild reports progress; failures preserve the old
+  image and offer an explicit retry instead of putting a permanent uncertainty
+  warning on every card.
+- The library offers New tunnel and a button-styled Manage in Browse exit
+  without embedding the full collection management interface in Create.

@@ -4,6 +4,7 @@
   import CreatePanelDrawer from "$lib/features/create/shared/components/CreatePanelDrawer.svelte";
   import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
   import type { CollectedTunnel } from "$lib/features/tunnel-collection/domain/tunnel-collection-types";
+  import type { PublicArtifactEnvelope } from "$lib/shared/artifact-revisions/domain/public-artifact";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { setPendingBrowseIntent } from "$lib/features/browse/state/pending-browse-intent.svelte";
   import {
@@ -103,6 +104,18 @@
     libraryOpen = false;
     await handleModuleChange("browse", "you");
   }
+
+  async function openPublicInBrowse(
+    envelope: PublicArtifactEnvelope
+  ): Promise<void> {
+    setPendingBrowseIntent({
+      kind: "explore-visual-detail",
+      visualType: "tunnels",
+      artifactId: envelope.artifactId,
+    });
+    libraryOpen = false;
+    await handleModuleChange("browse", "explore");
+  }
 </script>
 
 {#key sessionRevision}
@@ -123,13 +136,15 @@
   focusTrap={true}
   lockScroll={true}
   keepMounted={true}
-  ariaLabel="Your tunnels"
+  ariaLabel="Tunnels"
 >
   <TunnelLibraryPicker
     items={collection}
+    active={libraryOpen}
     loading={tunnelCollectionState.loading}
     activeTunnelId={sessionStatus.editingTunnelId}
     onSelect={(tunnel) => requestReplacement({ kind: "open", tunnel })}
+    onOpenPublic={(envelope) => void openPublicInBrowse(envelope)}
     onNew={() => requestReplacement({ kind: "new" })}
     onManage={() => void manageInBrowse()}
     onClose={() => (libraryOpen = false)}
