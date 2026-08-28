@@ -35,7 +35,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.STAFF,
     label: "Staff",
-    description: "Staffs and batons",
+    description: "Includes batons",
     group: "core",
     choices: [
       skill(PropType.STAFF, "Staff", [
@@ -52,7 +52,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.CLUB,
     label: "Club",
-    description: "Clubs and torches",
+    description: "Includes torches",
     group: "core",
     choices: [
       skill(PropType.CLUB, "Club", [
@@ -95,7 +95,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.TRIAD,
     label: "Triad",
-    description: "Triads and trigengs",
+    description: "Includes trigengs",
     group: "core",
     choices: [
       skill(PropType.TRIAD, "Triad", [
@@ -120,7 +120,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.SWORD,
     label: "Sword",
-    description: "Swords and lightsabers",
+    description: "Includes lightsabers",
     group: "core",
     choices: [
       skill(PropType.SWORD, "Sword", [PropType.SWORD, PropType.ENERGY_SABER]),
@@ -129,7 +129,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.DOUBLESTAR,
     label: "Double Star",
-    description: "All sizes",
+    description: "All double star styles",
     group: "specialty",
     choices: [
       skill(PropType.DOUBLESTAR, "Double Star", [
@@ -141,7 +141,7 @@ export const PROFILE_PROP_FAMILIES: readonly ProfilePropFamily[] = [
   {
     representative: PropType.EIGHTRINGS,
     label: "Eight Rings",
-    description: "All sizes",
+    description: "All eight-ring styles",
     group: "specialty",
     choices: [
       skill(PropType.EIGHTRINGS, "Eight Rings", [

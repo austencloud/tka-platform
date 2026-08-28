@@ -19,7 +19,11 @@
   );
 </script>
 
-<section class="variant-picker" aria-labelledby="active-family-title">
+<section
+  class="variant-picker"
+  id="prop-family-skill-choices"
+  aria-labelledby="active-family-title"
+>
   <header class="variant-heading">
     <span>
       <span class="variant-kicker">{family.label} sizes</span>

@@ -109,6 +109,11 @@
     if (family.choices.length > 1) {
       activeFamily = representative;
       triggerHaptic("selection");
+      requestAnimationFrame(() => {
+        editorContentElement
+          ?.querySelector<HTMLElement>("#prop-family-skill-choices")
+          ?.scrollIntoView({ block: "nearest" });
+      });
       return;
     }
 

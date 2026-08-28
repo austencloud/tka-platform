@@ -40,6 +40,8 @@
   class:active
   onclick={() => onselect(family.representative)}
   aria-pressed={selected}
+  aria-expanded={hasChoices ? active : undefined}
+  aria-controls={hasChoices ? "prop-family-skill-choices" : undefined}
   {disabled}
 >
   <span class="art-stage" aria-hidden="true">
