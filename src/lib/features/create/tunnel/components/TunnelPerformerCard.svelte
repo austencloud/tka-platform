@@ -20,9 +20,9 @@
     selected = false,
     generatedInstanceCount = 0,
     sourcePerformerLabel = null,
-    disabled = false,
     bluePropType,
     redPropType,
+    stageColors = [],
     sourceOrigin = null,
     previousCount = 0,
     onChoose,
@@ -52,9 +52,9 @@
     selected?: boolean;
     generatedInstanceCount?: number;
     sourcePerformerLabel?: string | null;
-    disabled?: boolean;
     bluePropType?: PropType;
     redPropType?: PropType;
+    stageColors?: Array<{ arm: number; left: string; right: string }>;
     sourceOrigin?: TunnelSourceOrigin | null;
     previousCount?: number;
     onChoose: () => void;
@@ -92,6 +92,25 @@
       ? copyOpsLabel(performer.source.transforms)
       : null
   );
+  const sourceDescriptor = $derived.by(() => {
+    if (linked) return null;
+    const provenance =
+      performer?.source.kind === "independent"
+        ? performer.source.provenance
+        : null;
+    if (provenance?.kind === "shape-matrix-realization") {
+      return `Shape Matrix ${provenance.mode}`;
+    }
+    if (provenance?.kind === "library-sequence") {
+      return provenance.scope === "personal"
+        ? "Yours"
+        : provenance.scope === "public"
+          ? "Public"
+          : "Library";
+    }
+    return sourceOrigin === "generated" ? "Generated" : null;
+  });
+  const primaryStageColors = $derived(stageColors[0] ?? null);
 
   let gridRef:
     | {
@@ -127,8 +146,8 @@
         <h3>{label}</h3>
         <p>
           {#if previewSequence}
-            {previewSequence.steps.length} steps{#if !linked && sourceOrigin === "generated"}
-              · Generated
+            {previewSequence.steps.length} steps{#if sourceDescriptor}
+              · {sourceDescriptor}
             {/if}{#if linked && sourceLabel}
               · Follows {sourcePerformerLabel ?? "earlier performer"} · {sourceLabel}
             {/if}{#if linked && stageTransformLabel}
@@ -155,122 +174,127 @@
       </span>
     </button>
 
-    <div class="hand-key" aria-label="Hand colors: blue Left, red Right">
-      <span class="hand blue"><i aria-hidden="true"></i><b>L</b> Left</span>
-      <span class="hand red"><i aria-hidden="true"></i><b>R</b> Right</span>
+    <div
+      class="hand-key"
+      aria-label={primaryStageColors
+        ? `${label} stage colors: Left ${primaryStageColors.left}, Right ${primaryStageColors.right}${stageColors.length > 1 ? `; ${stageColors.length} generated color pairs` : ""}`
+        : `${label} hand identity: Left and Right`}
+    >
+      <span
+        class="hand"
+        style:--hand-color={primaryStageColors?.left ??
+          "var(--prop-blue, #2e8bf0)"}><i aria-hidden="true"></i><b>L</b></span
+      >
+      <span
+        class="hand"
+        style:--hand-color={primaryStageColors?.right ??
+          "var(--prop-red, #ed1c24)"}><i aria-hidden="true"></i><b>R</b></span
+      >
+      {#if stageColors.length > 1}
+        <span
+          class="pair-count"
+          title={`${stageColors.length} stage instances use distinct spectrum pairs`}
+          >×{stageColors.length}</span
+        >
+      {/if}
     </div>
 
     {#if expanded}
-      {#if linked && onEditPairing}
+      <div class="source-actions" aria-label={`${label} source actions`}>
+        {#if onEditPairing}
+          <PanelButton
+            variant="secondary"
+            onclick={onEditPairing}
+            ariaLabel={linked
+              ? `${formationCopy ? "Author" : "Edit"} source relationship${sourceLabel ? `: ${sourceLabel}` : ""}`
+              : `Link ${label} to an earlier performer`}
+          >
+            <i class="fas fa-link" aria-hidden="true"></i>
+            <span class="action-label">{linked ? "Relationship" : "Link"}</span>
+          </PanelButton>
+        {/if}
+        {#if previousCount > 0 && onPrevious}
+          <PanelButton
+            variant="secondary"
+            onclick={onPrevious}
+            ariaLabel={`Show the previous ${label} sequence`}
+          >
+            <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
+            <span class="action-label">Previous</span>
+          </PanelButton>
+        {/if}
+        {#if onGenerateNow}
+          <PanelButton
+            variant="primary"
+            onclick={onGenerateNow}
+            ariaLabel={`Generate a new ${label} sequence with the current settings`}
+          >
+            <i class="fas fa-dice" aria-hidden="true"></i>
+            <span class="action-label">Generate</span>
+          </PanelButton>
+        {/if}
+        {#if onEditGeneration}
+          <PanelButton
+            variant="secondary"
+            onclick={onEditGeneration}
+            ariaLabel={`Edit generation settings for ${label}`}
+          >
+            <i class="fas fa-sliders" aria-hidden="true"></i>
+            <span class="action-label">Recipe</span>
+          </PanelButton>
+        {/if}
         <PanelButton
           variant="secondary"
-          onclick={onEditPairing}
-          ariaLabel={`${formationCopy ? "Author" : "Edit"} source relationship${sourceLabel ? `: ${sourceLabel}` : ""}`}
+          onclick={onChoose}
+          ariaLabel={`Choose an existing sequence for ${label}`}
         >
-          <i class="fas fa-link" aria-hidden="true"></i>
-          {formationCopy ? "Author relationship" : "Edit relationship"}
-          <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+          <i class="fas fa-folder-open" aria-hidden="true"></i>
+          <span class="action-label">Browse</span>
         </PanelButton>
-      {:else if !linked && ownSequence}
-        <div class="source-actions" aria-label={`${label} source actions`}>
-          {#if onEditPairing}
-            <PanelButton
-              variant="secondary"
-              onclick={onEditPairing}
-              ariaLabel={`Link ${label} to an earlier performer`}
-            >
-              <i class="fas fa-link" aria-hidden="true"></i>
-              <span class="action-label">Source</span>
-            </PanelButton>
-          {/if}
-          {#if previousCount > 0 && onPrevious}
-            <PanelButton
-              variant="secondary"
-              onclick={onPrevious}
-              ariaLabel={`Show the previous ${label} sequence`}
-            >
-              <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
-              <span class="action-label">Previous</span>
-            </PanelButton>
-          {/if}
-          {#if onGenerateNow}
-            <PanelButton
-              variant="primary"
-              onclick={onGenerateNow}
-              ariaLabel={`Generate a new ${label} sequence with the current settings`}
-            >
-              <i class="fas fa-dice" aria-hidden="true"></i>
-              <span class="action-label">Generate</span>
-            </PanelButton>
-          {/if}
-          {#if onEditGeneration}
-            <PanelButton
-              variant="secondary"
-              onclick={onEditGeneration}
-              ariaLabel={`Edit generation settings for ${label}`}
-            >
-              <i class="fas fa-sliders" aria-hidden="true"></i>
-              <span class="action-label">Generation settings</span>
-            </PanelButton>
-          {/if}
+        {#if onChooseShapeMatrix}
           <PanelButton
             variant="secondary"
-            onclick={onChoose}
-            ariaLabel={`Choose an existing sequence for ${label}`}
+            onclick={onChooseShapeMatrix}
+            ariaLabel={`Choose a Shape Matrix realization for ${label}`}
           >
-            <i class="fas fa-folder-open" aria-hidden="true"></i>
-            <span class="action-label">Choose</span>
+            <i class="fas fa-shapes" aria-hidden="true"></i>
+            <span class="action-label">Matrix</span>
           </PanelButton>
-          {#if onChooseShapeMatrix}
-            <PanelButton
-              variant="secondary"
-              onclick={onChooseShapeMatrix}
-              ariaLabel={`Choose a Shape Matrix realization for ${label}`}
-            >
-              <i class="fas fa-shapes" aria-hidden="true"></i>
-              <span class="action-label">Shape Matrix</span>
-            </PanelButton>
+        {/if}
+        <span class="action-spacer" aria-hidden="true"></span>
+        <div class="roster-actions" aria-label={`${label} roster controls`}>
+          <PanelButton
+            variant="secondary"
+            disabled={!canMoveUp}
+            onclick={onMoveUp}
+            ariaLabel={`Move ${label} earlier`}
+          >
+            <i class="fas fa-arrow-up" aria-hidden="true"></i>
+          </PanelButton>
+          <PanelButton
+            variant="secondary"
+            disabled={!canMoveDown}
+            onclick={onMoveDown}
+            ariaLabel={`Move ${label} later`}
+          >
+            <i class="fas fa-arrow-down" aria-hidden="true"></i>
+          </PanelButton>
+          {#if onRemove}
+            <span title={removeBlockedReason ?? undefined}>
+              <PanelButton
+                variant="secondary"
+                disabled={!canRemove}
+                onclick={onRemove}
+                ariaLabel={removeBlockedReason ?? `Remove ${label}`}
+              >
+                <i class="fas fa-user-minus" aria-hidden="true"></i>
+              </PanelButton>
+            </span>
           {/if}
         </div>
-      {/if}
+      </div>
     {/if}
   </header>
-
-  {#if expanded}
-    <div class="card-order" aria-label={`${label} roster controls`}>
-      <PanelButton
-        variant="secondary"
-        disabled={!canMoveUp}
-        onclick={onMoveUp}
-        ariaLabel={`Move ${label} earlier`}
-      >
-        <i class="fas fa-arrow-up" aria-hidden="true"></i>
-        Earlier
-      </PanelButton>
-      <PanelButton
-        variant="secondary"
-        disabled={!canMoveDown}
-        onclick={onMoveDown}
-        ariaLabel={`Move ${label} later`}
-      >
-        <i class="fas fa-arrow-down" aria-hidden="true"></i>
-        Later
-      </PanelButton>
-      {#if onRemove}
-        <span title={removeBlockedReason ?? undefined}>
-          <PanelButton
-            variant="secondary"
-            disabled={!canRemove}
-            onclick={onRemove}
-            ariaLabel={removeBlockedReason ?? `Remove ${label}`}
-          >
-            <i class="fas fa-user-minus" aria-hidden="true"></i>
-            Remove
-          </PanelButton>
-        </span>
-      {/if}
-    </div>
-  {/if}
 
   <div class="workbench-stage">
     {#if displayWord}
@@ -292,6 +316,8 @@
         preferWidthSizingOnNarrow={true}
         bluePropTypeOverride={bluePropType}
         redPropTypeOverride={redPropType}
+        blueColorOverride={primaryStageColors?.left}
+        redColorOverride={primaryStageColors?.right}
         sequenceWord={displayWord}
       />
     </div>
@@ -311,40 +337,6 @@
               : "Pick from your library or the community."}
           </span>
         </div>
-        {#if expanded && !linked}
-          <div class="empty-actions">
-            <PanelButton variant="secondary" {disabled} onclick={onChoose}>
-              <i class="fas fa-folder-open" aria-hidden="true"></i>
-              Choose existing
-            </PanelButton>
-            {#if onChooseShapeMatrix}
-              <PanelButton
-                variant="secondary"
-                {disabled}
-                onclick={onChooseShapeMatrix}
-              >
-                <i class="fas fa-shapes" aria-hidden="true"></i>
-                Shape Matrix
-              </PanelButton>
-            {/if}
-            {#if onGenerateNow}
-              <PanelButton variant="primary" {disabled} onclick={onGenerateNow}>
-                <i class="fas fa-dice" aria-hidden="true"></i>
-                Generate
-              </PanelButton>
-            {/if}
-            {#if onEditGeneration}
-              <PanelButton
-                variant="secondary"
-                {disabled}
-                onclick={onEditGeneration}
-              >
-                <i class="fas fa-sliders" aria-hidden="true"></i>
-                Generation settings
-              </PanelButton>
-            {/if}
-          </div>
-        {/if}
       </div>
     {/if}
   </div>
@@ -366,7 +358,7 @@
 
   .source-card.expanded {
     flex-basis: clamp(22rem, 58cqh, 34rem);
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
   }
 
   .source-card.selected {
@@ -418,8 +410,7 @@
   }
 
   .source-actions,
-  .empty-actions,
-  .card-order,
+  .roster-actions,
   .hand-key {
     display: flex;
     align-items: center;
@@ -429,6 +420,20 @@
   .source-actions {
     flex: 1 1 100%;
     flex-wrap: wrap;
+  }
+
+  .action-spacer {
+    flex: 1 1 auto;
+  }
+
+  .roster-actions {
+    flex: 0 0 auto;
+  }
+
+  .roster-actions :global(.panel-btn) {
+    width: var(--min-touch-target, 44px);
+    min-width: var(--min-touch-target, 44px);
+    padding-inline: 0;
   }
 
   .hand-key {
@@ -457,28 +462,15 @@
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--hand-color) 70%, white);
   }
 
-  .hand.blue {
-    --hand-color: var(--prop-blue, #2e8bf0);
-  }
-
-  .hand.red {
-    --hand-color: var(--prop-red, #ed1c24);
-  }
-
   .hand b {
     color: var(--theme-text);
   }
 
-  .card-order {
-    justify-content: flex-end;
-    padding: var(--settings-spacing-xs, 6px) var(--settings-spacing-md, 14px);
-    border-bottom: 1px solid var(--theme-stroke);
-    background: var(--theme-card-bg);
-  }
-
-  .empty-actions {
-    flex-wrap: wrap;
-    justify-content: center;
+  .pair-count {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 
   .source-identity > div {
@@ -630,7 +622,7 @@
     }
   }
 
-  @container (max-width: 46rem) {
+  @container (max-width: 56rem) {
     .source-actions .action-label {
       display: none;
     }

@@ -44,38 +44,49 @@ is [`active/2026-08-28-unified-learn-atlas-design.md`](active/2026-08-28-unified
   1920x1080, 2560x1440, and 3840x2160 with no page-width overflow and no
   console errors. The only console messages were the expected local PostHog
   no-key warnings.
+- Level 1.4 Rotation Direction is implemented in `8e946a002f`. It uses the
+  canonical A/B pair to compare pro and anti on the same hand paths, lets the
+  learner switch relationships immediately, checks both directions, and keeps
+  base rotation distinct from additional turns. Wide canvases reveal both real
+  pictographs together; narrower layouts preserve the focused selector-first
+  flow.
+- The explicit Atlas route now outranks saved lesson progress. A direct
+  `/learn/concepts?place=1.4` link stays on the Atlas with 1.4 selected instead
+  of being hijacked by an old persisted lesson. The route was also opened in a
+  fresh tab with existing saved progress and resolved to the same place.
+- Verification for `8e946a002f` is green after rebasing onto the current
+  `main`: four focused files passed 23/23 tests, and `svelte-check` reported 0
+  errors and 0 warnings. Live checks covered 375x667, 960x412, 820x1180,
+  1440x900, 1920x1080, 2560x1440, and 3840x2160. There was no horizontal
+  overflow, the root remained 16px at compact and 4K widths, and the console
+  reported no errors.
 
 ## Believed done - unverified
 
-- The revised route has objective responsive and interaction proof, but Austen
-  has not yet completed the required human confidence pass. Do not mark any
-  lesson `CONFIRMED` from the automated checks.
+- The revised route and 1.4 lesson have objective responsive and interaction
+  proof, but Austen has not yet completed the required human confidence pass.
+  Do not mark any lesson `CONFIRMED` from the automated checks.
 
 ## In flight
 
-- No implementation is in flight. The verified implementation commit
-  `7c8d41a42f` and the first handoff update `92f57e2f55` were fast-forwarded
-  into `main` on 2026-08-28.
-- The task-owned 5187 preview and worktree were used only for verification and
-  are safe to remove. The primary 5173 dev server was not running at the end of
-  this slice; do not start or restart it from a shell.
+- No implementation is in flight. The verified 1.4 implementation commit
+  `8e946a002f` was fast-forwarded into `main` on 2026-08-28.
+- The task-owned 5188 preview was stopped and its Chrome DevTools tab was
+  closed after verification.
 
 ## Loose ends (ranked)
 
 1. Have Austen physically test the landing route and the existing 1.1, 1.2,
-   1.3, and 1.5 lessons before changing any status to `CONFIRMED`.
-2. Give 1.4 Rotation Direction its own grounded concept-place experience. It is
-   the next missing prerequisite before Letter Types and Orientations; do not
-   jump ahead to styling all nine TKA levels.
-3. Connect 1.6, 1.7, and 1.8 one at a time through the same registry and route
+   1.3, 1.4, and 1.5 lessons before changing any status to `CONFIRMED`.
+2. Connect 1.6, 1.7, and 1.8 one at a time through the same registry and route
    contract. Each needs a real lesson/reference owner or an honest map-only
    state.
-4. Add higher-level Atlas navigation only when the official knowledge graph and
+3. Add higher-level Atlas navigation only when the official knowledge graph and
    available resources can support a useful destination without pretending the
    material is taught.
-5. Classify games against official TKA levels only after the concept and level
+4. Classify games against official TKA levels only after the concept and level
    evidence exists; keep unknown games `unclassified`.
-6. Extend the same concept-place contract beyond the first Level 1 slice rather
+5. Extend the same concept-place contract beyond the first Level 1 slice rather
    than creating another navigation system.
 
 ## Decisions already made
@@ -108,10 +119,8 @@ is [`active/2026-08-28-unified-learn-atlas-design.md`](active/2026-08-28-unified
   vocabulary.
 - The public Atlas currently groups glossary categories and must not be treated
   as curriculum truth.
-- Only six lesson experiences are registered today. `docs/learn/concept-status.md`
+- Only seven lesson experiences are registered today. `docs/learn/concept-status.md`
   is the status authority, and `CONFIRMED` requires human interaction.
-- The primary checkout at `E:/tka-platform` has an unrelated modified
-  `pnpm-lock.yaml`. Do not touch or overwrite it.
 - The public Learn route pulls a large client graph on a cold Vite start. The
   task-owned preview required one dependency-optimization reload before the
   interactive course replaced its prerendered fallback. Do not mistake that

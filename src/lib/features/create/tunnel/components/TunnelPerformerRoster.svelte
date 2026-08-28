@@ -2,6 +2,8 @@
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { getBaseMotionColors } from "$lib/shared/animation-engine/services/svg-generator";
+  import { tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
   import { getTunnelCreatorContext } from "../context/tunnel-creator-context";
   import TunnelPerformerCard from "./TunnelPerformerCard.svelte";
 
@@ -9,6 +11,7 @@
     sequence: SequenceData | null;
     stageTransformLabel: string | null;
     generatedInstanceCount: number;
+    stageArms: number[];
   }
 
   interface CardRef {
@@ -20,6 +23,8 @@
     displays,
     bluePropType,
     redPropType,
+    spectrum,
+    renderedInstanceCount,
     onChoose,
     onChooseShapeMatrix,
     onGenerateNow,
@@ -30,6 +35,8 @@
     displays: Record<string, TunnelPerformerDisplay>;
     bluePropType: PropType;
     redPropType: PropType;
+    spectrum: boolean;
+    renderedInstanceCount: number;
     onChoose: (performerId: string) => void;
     onChooseShapeMatrix: (performerId: string) => void;
     onGenerateNow: (performerId: string) => void;
@@ -39,6 +46,7 @@
   } = $props();
 
   const creator = getTunnelCreatorContext();
+  const baseMotionColors = getBaseMotionColors();
   let cardRefs = $state<Record<string, CardRef | undefined>>({});
 
   function sourceLabel(performerId: string): string | null {
@@ -46,10 +54,10 @@
       (slot) => slot.id === performerId
     )?.performer;
     if (performer?.source.kind !== "derived") return null;
+    const sourcePerformerId = performer.source.performerId;
     return (
-      creator.performerSlots.find(
-        (slot) => slot.id === performer.source.performerId
-      )?.label ?? "an earlier performer"
+      creator.performerSlots.find((slot) => slot.id === sourcePerformerId)
+        ?.label ?? "an earlier performer"
     );
   }
 
@@ -75,6 +83,26 @@
     return null;
   }
 
+  function stageColorPairs(performerId: string): Array<{
+    arm: number;
+    left: string;
+    right: string;
+  }> {
+    const arms = displays[performerId]?.stageArms ?? [];
+    const layerCount = Math.max(0, renderedInstanceCount - 1);
+    return arms.map((arm) => ({
+      arm,
+      left:
+        !spectrum || arm === 0
+          ? baseMotionColors.blue
+          : tunnelPropColor(arm * 2, layerCount).hex,
+      right:
+        !spectrum || arm === 0
+          ? baseMotionColors.red
+          : tunnelPropColor(arm * 2 + 1, layerCount).hex,
+    }));
+  }
+
   export function prepareGenerationAnimation(
     performerId: string,
     stepCount: number
@@ -87,7 +115,11 @@
   }
 </script>
 
-<section class="performer-roster" aria-labelledby="performer-roster-title">
+<section
+  class="performer-roster"
+  class:few-cards={creator.performerSlots.length <= 2}
+  aria-labelledby="performer-roster-title"
+>
   <header class="roster-heading">
     <div>
       <span>Authored choreography</span>
@@ -96,10 +128,6 @@
           .length}
         {creator.performerSlots.length === 1 ? " card" : " cards"}
       </h3>
-    </div>
-    <div class="roster-hand-key" aria-label="Pictograph hand colors">
-      <span class="left"><i aria-hidden="true"></i><b>L</b> Left</span>
-      <span class="right"><i aria-hidden="true"></i><b>R</b> Right</span>
     </div>
   </header>
 
@@ -119,12 +147,13 @@
         {linked}
         sourcePerformerLabel={sourceLabel(slot.id)}
         selected={creator.selectedPerformerId === slot.id}
-        expanded={creator.selectedPerformerId === slot.id}
-        disabled={linked && !display?.sequence}
+        expanded={creator.performerSlots.length <= 2 ||
+          creator.selectedPerformerId === slot.id}
         sourceOrigin={slot.origin}
         previousCount={slot.previousCount}
         {bluePropType}
         {redPropType}
+        stageColors={stageColorPairs(slot.id)}
         canMoveUp={creator.canMovePerformer(slot.id, -1)}
         canMoveDown={creator.canMovePerformer(slot.id, 1)}
         canRemove={creator.canRemovePerformer(slot.id)}
@@ -159,7 +188,11 @@
     >
       <i class="fas fa-user-plus" aria-hidden="true"></i>
       Add performer
-      <span>{creator.performerSlots.length}/8</span>
+      <span
+        >{creator.performerSlots.length}{creator.performerSlots.length > 4
+          ? " preserved"
+          : "/4"}</span
+      >
     </PanelButton>
     {#if creator.addPerformerBlockedReason}
       <p role="status">{creator.addPerformerBlockedReason}</p>
@@ -215,44 +248,6 @@
     font-size: var(--font-size-min, 14px);
   }
 
-  .roster-hand-key {
-    display: flex;
-    flex: 0 0 auto;
-    gap: var(--settings-spacing-xs, 6px);
-  }
-
-  .roster-hand-key span {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    min-height: 1.75rem;
-    padding: 2px 7px;
-    border: 1px solid var(--theme-stroke);
-    border-radius: 999px;
-    color: var(--theme-text-dim);
-    background: var(--theme-panel-bg);
-    white-space: nowrap;
-  }
-
-  .roster-hand-key i {
-    width: 0.65rem;
-    height: 0.65rem;
-    border-radius: 50%;
-    background: var(--hand-color);
-  }
-
-  .roster-hand-key b {
-    color: var(--theme-text);
-  }
-
-  .roster-hand-key .left {
-    --hand-color: var(--prop-blue, #2e8bf0);
-  }
-
-  .roster-hand-key .right {
-    --hand-color: var(--prop-red, #ed1c24);
-  }
-
   .roster-scroll {
     display: flex;
     flex-direction: column;
@@ -263,6 +258,11 @@
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
+  }
+
+  .performer-roster.few-cards .roster-scroll :global(.source-card.expanded) {
+    flex: 1 1 0;
+    min-height: 17rem;
   }
 
   .roster-footer {
