@@ -10,11 +10,13 @@
 
   let map: SVGSVGElement | null = $state(null);
   let points: ImagePoint[] = $state([]);
-  let previousPoints: ImagePoint[] = $state([]);
+  let undoHistory: ImagePoint[][] = $state([]);
   let drawing = $state(false);
   let saving = $state(false);
   let saved = $state(false);
-  let notice = $state("Draw once around the center of the pale road.");
+  let notice = $state(
+    "Drag in as many passes as you need, or click to place precise points."
+  );
 
   const closedPoints = $derived.by(() => {
     if (drawing || points.length < 3) return points;
@@ -50,11 +52,14 @@
   function beginDrawing(event: PointerEvent): void {
     const point = imagePoint(event);
     if (!point || !map) return;
-    previousPoints = points.map((candidate) => ({ ...candidate }));
-    points = [point];
+    undoHistory = [
+      ...undoHistory,
+      points.map((candidate) => ({ ...candidate })),
+    ];
+    points = [...points, point];
     drawing = true;
     saved = false;
-    notice = "Keep drawing around the pale road, then release.";
+    notice = "Drawing this pass. Release whenever you want to pause.";
     map.setPointerCapture(event.pointerId);
   }
 
@@ -80,27 +85,29 @@
     map?.releasePointerCapture(event.pointerId);
     notice =
       points.length >= 3
-        ? "Loop closed. Send it when the green line follows the road center."
-        : "That stroke was too short. Draw one complete loop.";
+        ? "Pass kept. Continue from the blue endpoint, or Send when the loop is right."
+        : "Point kept. Continue from the blue endpoint with another drag or click.";
   }
 
   function undo(): void {
-    const current = points;
-    points = previousPoints;
-    previousPoints = current;
+    const previous = undoHistory.at(-1);
+    if (!previous) return;
+    points = previous.map((point) => ({ ...point }));
+    undoHistory = undoHistory.slice(0, -1);
     drawing = false;
     saved = false;
     notice = points.length
-      ? "Previous loop restored."
-      : "Draw once around the center of the pale road.";
+      ? "Last pass removed. Continue from the blue endpoint."
+      : "Last pass removed. Start again whenever you are ready.";
   }
 
   function clear(): void {
-    previousPoints = points.map((point) => ({ ...point }));
+    if (!points.length) return;
+    undoHistory = [...undoHistory, points.map((point) => ({ ...point }))];
     points = [];
     drawing = false;
     saved = false;
-    notice = "Cleared. Draw once around the center of the pale road.";
+    notice = "Cleared. Undo restores it, or start a new multi-pass trace.";
   }
 
   async function sendToCodex(): Promise<void> {
@@ -145,7 +152,7 @@
   <header>
     <div>
       <p class="eyebrow">FLOW FEST · LOWER CAMPGROUND</p>
-      <h1>Trace the center of the pale road</h1>
+      <h1>Trace the road in as many passes as you need</h1>
     </div>
     <p class="north" aria-label="Map is oriented north-up">
       <strong>N</strong> ↑
@@ -161,7 +168,7 @@
       class:drawing
       viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.width} ${VIEW.height}`}
       role="img"
-      aria-label="North-up registered aerial of the lower campground. Drag once around the pale road."
+      aria-label="North-up registered aerial of the lower campground. Drag repeatedly or click to add precise points around the pale road."
       onpointerdown={beginDrawing}
       onpointermove={continueDrawing}
       onpointerup={finishDrawing}
@@ -180,6 +187,14 @@
           r="2.8"
         />
       {/if}
+      {#if points.length > 1}
+        <circle
+          class="end-point"
+          cx={points.at(-1)!.x}
+          cy={points.at(-1)!.y}
+          r="3.2"
+        />
+      {/if}
     </svg>
     <div class="scale" aria-label="Fifty metre scale"><span></span>50 m</div>
   </section>
@@ -192,7 +207,7 @@
         type="button"
         class="secondary"
         onclick={undo}
-        disabled={saving || (!points.length && !previousPoints.length)}
+        disabled={saving || !undoHistory.length}
       >
         Undo
       </button>
@@ -242,11 +257,8 @@
     min-height: 100dvh;
     padding: clamp(10px, 1.8cqh, 22px);
     color: #f4f7ef;
-    background: radial-gradient(
-        circle at 50% 0%,
-        rgb(31 61 46 / 45%),
-        transparent 45%
-      ),
+    background:
+      radial-gradient(circle at 50% 0%, rgb(31 61 46 / 45%), transparent 45%),
       #07110d;
     container-type: size;
   }
@@ -342,6 +354,14 @@
 
   .start-point {
     fill: #ffffff;
+    stroke: #07110d;
+    stroke-width: 1.2;
+    vector-effect: non-scaling-stroke;
+    pointer-events: none;
+  }
+
+  .end-point {
+    fill: #64b5ff;
     stroke: #07110d;
     stroke-width: 1.2;
     vector-effect: non-scaling-stroke;
