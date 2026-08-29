@@ -20,6 +20,14 @@ function layers(container: HTMLElement): HTMLElement[] {
   ];
 }
 
+function stepLayers(container: HTMLElement): HTMLElement[] {
+  return [
+    ...container.querySelectorAll<HTMLElement>(
+      '[data-testid="step-stage"] .crossfade > .layer'
+    ),
+  ];
+}
+
 describe("Crossfade interruption", () => {
   it("measures layout height without inheriting an ancestor's visual scale", async () => {
     const { container } = render(CrossfadeTestHarness);
@@ -84,5 +92,39 @@ describe("Crossfade interruption", () => {
     );
     expect(midpoint).toBeGreaterThan(60);
     expect(midpoint).toBeLessThan(160);
+  });
+
+  it("keeps sequential step copy from becoming readable at the same time", async () => {
+    const { container } = render(CrossfadeTestHarness);
+
+    await page.getByRole("button", { name: "Measure step forward" }).click();
+    await new Promise((resolve) => setTimeout(resolve, 250));
+
+    expect(
+      Number(page.getByTestId("max-readable-step-layers").element().textContent)
+    ).toBe(1);
+    const settled = stepLayers(container);
+    expect(settled).toHaveLength(1);
+    expect(settled[0]?.textContent).toContain("second decision");
+    expect(
+      container
+        .querySelector<HTMLElement>('[data-testid="step-stage"] .crossfade')
+        ?.getBoundingClientRect().height
+    ).toBeCloseTo(130, 0);
+  });
+
+  it("uses the supplied direction when stepping back", async () => {
+    const { container } = render(CrossfadeTestHarness);
+    await page.getByRole("button", { name: "Measure step forward" }).click();
+    await settle();
+
+    await page.getByRole("button", { name: "Measure step back" }).click();
+    await new Promise((resolve) => setTimeout(resolve, 250));
+
+    expect(
+      Number(page.getByTestId("max-back-outgoing-x").element().textContent)
+    ).toBeGreaterThan(0);
+
+    expect(stepLayers(container)[0]?.textContent).toContain("first decision");
   });
 });
