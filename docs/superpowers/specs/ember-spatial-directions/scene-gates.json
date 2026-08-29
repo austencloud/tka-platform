@@ -442,7 +442,7 @@
         {
           "name": "artifact-budget",
           "status": "passed",
-          "evidence": "The R10 report records 197,898 triangles, a 49,345-triangle largest mesh, 6.156 m minimum structural clearance, eleven registered review cameras, and the optimized shipping GLB is 4,467,892 bytes."
+          "evidence": "The R10 report records 197,898 triangles, a 49,345-triangle largest mesh, 6.156 m minimum structural clearance, eleven registered review cameras, 6.181 m lava-bank edge clearance, and the optimized shipping GLB is 4,473,528 bytes."
         },
         {
           "name": "focused-tests",

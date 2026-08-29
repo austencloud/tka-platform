@@ -11,13 +11,45 @@ export interface EmberSurfaceEcology {
 }
 
 const LAVA_CORRIDOR: [number, number][] = [
-  [14, 2],
-  [12, 11],
-  [10, 19],
-  [11, 29],
-  [8, 40],
+  [-20, 156],
+  [-25, 132],
+  [-20, 108],
+  [-17, 82],
+  [-12, 67],
   [-4, 52],
+  [8, 40],
+  [11, 29],
+  [10, 19],
+  [12, 11],
+  [14, 2],
+  [12, -8],
+  [8, -24],
+  [-1, -43],
+  [-14, -64],
+  [-10, -91],
+  [2, -122],
 ];
+
+const TALUS_CLUSTERS = [
+  { x: -18, z: -20, spread: 5.5 },
+  { x: 26, z: -18, spread: 6.2 },
+  { x: -26, z: 10, spread: 5.8 },
+  { x: 28, z: 20, spread: 6.5 },
+  { x: -18, z: 30, spread: 5.4 },
+  { x: 20, z: -36, spread: 6.8 },
+  { x: -30, z: -38, spread: 6.6 },
+  { x: 34, z: 38, spread: 7.2 },
+] as const;
+
+function clusteredPosition(random: () => number): [number, number] {
+  const cluster = TALUS_CLUSTERS[Math.floor(random() * TALUS_CLUSTERS.length)]!;
+  const angle = random() * Math.PI * 2;
+  const radius = Math.sqrt(random()) * cluster.spread;
+  return [
+    cluster.x + Math.cos(angle) * radius,
+    cluster.z + Math.sin(angle) * radius,
+  ];
+}
 
 function createRandom(seed: number): () => number {
   let state = seed >>> 0 || 1;
@@ -65,14 +97,11 @@ export function createEmberSurfaceEcology(
   const rubble: EmberSurfacePlacement[] = [];
   const plates: EmberSurfacePlacement[] = [];
 
-  for (let attempt = 0; attempt < 900 && rubble.length < 220; attempt += 1) {
-    const angle = random() * Math.PI * 2;
-    const radius =
-      stageClearance + Math.pow(random(), 0.72) * (38 - stageClearance);
-    const x = Math.cos(angle) * radius;
-    const z = Math.sin(angle) * radius;
-    if (distanceToEmberLavaCorridor(x, z) < 3.7) continue;
-    const size = 0.075 + Math.pow(random(), 2.1) * 0.44;
+  for (let attempt = 0; attempt < 1_000 && rubble.length < 150; attempt += 1) {
+    const [x, z] = clusteredPosition(random);
+    if (Math.hypot(x, z) < stageClearance) continue;
+    if (distanceToEmberLavaCorridor(x, z) < 4.3) continue;
+    const size = 0.055 + Math.pow(random(), 2.2) * 0.34;
     const familyRoll = random();
     rubble.push({
       position: [x, 0.025 + random() * 0.035, z],
@@ -86,14 +115,11 @@ export function createEmberSurfaceEcology(
     });
   }
 
-  for (let attempt = 0; attempt < 420 && plates.length < 54; attempt += 1) {
-    const angle = random() * Math.PI * 2;
-    const radius =
-      stageClearance + 0.8 + Math.pow(random(), 0.8) * (31 - stageClearance);
-    const x = Math.cos(angle) * radius;
-    const z = Math.sin(angle) * radius;
-    if (distanceToEmberLavaCorridor(x, z) < 4.5) continue;
-    const span = 0.42 + random() * 0.95;
+  for (let attempt = 0; attempt < 500 && plates.length < 32; attempt += 1) {
+    const [x, z] = clusteredPosition(random);
+    if (Math.hypot(x, z) < stageClearance + 0.8) continue;
+    if (distanceToEmberLavaCorridor(x, z) < 5.1) continue;
+    const span = 0.34 + random() * 0.72;
     plates.push({
       position: [x, 0.045 + random() * 0.025, z],
       rotation: [

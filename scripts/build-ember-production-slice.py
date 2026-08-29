@@ -1978,6 +1978,12 @@ def r8_geological_height(
         south_east_bench = math.exp(
             -(((x - 72.0) / 36.0) ** 2 + ((runtime_z + 68.0) / 46.0) ** 2)
         ) * 16.5
+        south_west_crown = math.exp(
+            -(((x + 48.0) / 30.0) ** 2 + ((runtime_z + 108.0) / 34.0) ** 2)
+        ) * 24.0
+        south_east_crown = math.exp(
+            -(((x - 54.0) / 32.0) ** 2 + ((runtime_z + 114.0) / 36.0) ** 2)
+        ) * 27.0
 
         west_scarp = math.exp(
             -(((x + 166.0) / 34.0) ** 2 + ((runtime_z - 2.0) / 120.0) ** 2)
@@ -2010,6 +2016,8 @@ def r8_geological_height(
             + south_east_wall
             + south_west_bench
             + south_east_bench
+            + south_west_crown
+            + south_east_crown
             + west_scarp
             + east_scarp
             + terraced
@@ -2116,7 +2124,7 @@ def create_volcanic_basin(
                 # bowls retain their bases while the surrounding benches rise.
                 for asset_x, asset_z, inner_radius, outer_radius, bed_height in (
                     (-24.0, 24.0, 14.0, 27.0, -0.22),
-                    (28.0, 6.0, 5.0, 10.0, -0.18),
+                    (30.5, 6.0, 5.0, 10.0, -0.18),
                     (19.0, 15.0, 6.2, 13.0, -0.2),
                 ):
                     asset_distance = math.hypot(x - asset_x, runtime_z - asset_z)
@@ -2273,8 +2281,8 @@ def create_qa_lava_river(
     # These sparse plates are QA-only and deliberately leave hot leads visible.
     if crust_material is not None:
         plate_index = 0
-        for start in range(8, len(river) - 12, 13):
-            end = min(start + 7 + (plate_index % 3), len(river) - 2)
+        for start in range(6, len(river) - 8, 7):
+            end = min(start + 2 + (plate_index % 2), len(river) - 2)
             centers = river[start : end + 1]
             plate_vertices: list[tuple[float, float, float]] = []
             for local_index, center in enumerate(centers):
@@ -2285,8 +2293,8 @@ def create_qa_lava_river(
                 normal = Vector((-tangent.y, tangent.x))
                 t = source_index / (len(river) - 1)
                 half_width = width * (0.9 + math.sin(math.pi * t) * 0.1) * 0.5
-                side_bias = -0.18 if plate_index % 2 == 0 else 0.18
-                plate_half = half_width * (0.56 + 0.08 * math.sin(plate_index * 1.9))
+                side_bias = -0.22 if plate_index % 2 == 0 else 0.22
+                plate_half = half_width * (0.38 + 0.08 * math.sin(plate_index * 1.9))
                 center_offset = normal * half_width * side_bias
                 left = Vector((center.x, center.y)) + center_offset - normal * plate_half
                 right = Vector((center.x, center.y)) + center_offset + normal * plate_half
@@ -2795,7 +2803,7 @@ def create_meshy_geology_ensemble(
     lava_bank = import_meshy_geology(
         "collapsed-lava-bank.glb",
         "Ember_Meshy_Collapsed_Lava_Bank",
-        (28.0, -6.0, -0.34),
+        (30.5, -6.0, -0.34),
         3.4,
         22.0,
         "meshy-lava-bank",

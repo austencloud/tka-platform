@@ -70,7 +70,7 @@
         receiveShadow
         oncreate={(mesh: InstancedMesh) => fill(mesh, rubble)}
       >
-        <T.IcosahedronGeometry args={[1, 1]} />
+        <T.IcosahedronGeometry args={[1, 2]} />
         <T.MeshStandardMaterial
           color={colors[family]}
           roughness={family === "glass" ? 0.66 : 0.92}

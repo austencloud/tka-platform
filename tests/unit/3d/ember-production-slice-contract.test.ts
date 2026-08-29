@@ -215,7 +215,7 @@ describe("Ember production-slice contracts", () => {
     expect(report.contract.lavaRiverControlPointsRuntimeXZHeight).toEqual(
       world.lavaRiver.pointsRuntimeXZHeight
     );
-    expect(report.contract.collapsedLavaBankCenterRuntimeXZ).toEqual([28, 6]);
+    expect(report.contract.collapsedLavaBankCenterRuntimeXZ).toEqual([30.5, 6]);
     expect(
       report.contract.collapsedLavaBankRiverEdgeClearanceMeters
     ).toBeGreaterThan(4);
@@ -399,13 +399,13 @@ describe("Ember integrated-room contracts", () => {
     const first = createEmberSurfaceEcology(5.2);
     const second = createEmberSurfaceEcology(5.2);
     expect(first).toEqual(second);
-    expect(first.rubble).toHaveLength(220);
-    expect(first.plates).toHaveLength(54);
+    expect(first.rubble).toHaveLength(150);
+    expect(first.plates).toHaveLength(32);
 
     for (const placement of [...first.rubble, ...first.plates]) {
       const [x, , z] = placement.position;
       expect(Math.hypot(x, z)).toBeGreaterThanOrEqual(7.4);
-      expect(distanceToEmberLavaCorridor(x, z)).toBeGreaterThanOrEqual(3.7);
+      expect(distanceToEmberLavaCorridor(x, z)).toBeGreaterThanOrEqual(4.3);
     }
   });
 

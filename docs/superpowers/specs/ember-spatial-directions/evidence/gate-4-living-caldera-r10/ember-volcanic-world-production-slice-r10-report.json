@@ -48,10 +48,10 @@
   "artifacts": {
     "blend": "blender/ember-volcanic-world-production-slice-r10.blend",
     "rawGlb": "static/models/ember/ember-production-slice_raw.glb",
-    "rawGlbSha256": "314af1ed74b2a0815cd3e3992031826411a367209e4582281302999c1d5ea284",
-    "rawGlbBytes": 14753188,
+    "rawGlbSha256": "aa4a1a5068929863a48754d82a71a8e9123d7f3b2d016edf61e35a29aeda966e",
+    "rawGlbBytes": 14773344,
     "worldContract": "src/lib/shared/3d/environments/domain/models/scene-configs/ember-volcanic-world-r7.json",
-    "worldContractSha256": "00094afc96b1fbf50cec4cb0714830d370ae3d34db4ae6cb68e343f6a45c0b03"
+    "worldContractSha256": "77eb5fb39b97f629d86653524e92d1d4ddb039e6265351b2d1b42e1b77d7f82e"
   },
   "contract": {
     "stageSurfaceLocalY": 0.5,
@@ -160,10 +160,10 @@
       ]
     ],
     "collapsedLavaBankCenterRuntimeXZ": [
-      28.0,
+      30.5,
       6.0
     ],
-    "collapsedLavaBankRiverEdgeClearanceMeters": 4.3171,
+    "collapsedLavaBankRiverEdgeClearanceMeters": 6.181,
     "continuousOrbitDepthBands": [
       "foreground",
       "midground",
@@ -224,12 +224,12 @@
       "min": [
         -190.0,
         -224.1357,
-        -7.2209
+        -5.968
       ],
       "max": [
         190.0,
         145.0,
-        51.8286
+        51.8287
       ]
     }
   },
@@ -363,9 +363,9 @@
     "approvalTrackerItem": "ahPuPwh34G3FeqvUEHsB",
     "familyPolygonCounts": {
       "0": 5359,
-      "1": 38459,
-      "2": 49777,
-      "3": 82440
+      "1": 38437,
+      "2": 50034,
+      "3": 82205
     },
     "runtimeAssets": {
       "detailTextures": [
