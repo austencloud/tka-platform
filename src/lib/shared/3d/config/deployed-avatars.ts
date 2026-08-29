@@ -8,7 +8,9 @@ import { AVATAR_DEFINITIONS, type AvatarId } from "@austencloud/scene-3d";
  * callers that care about deployment availability without guessing from a URL
  * scheme.
  */
-export const DEPLOYED_AVATAR_DEFINITIONS = AVATAR_DEFINITIONS;
+export const DEPLOYED_AVATAR_DEFINITIONS = AVATAR_DEFINITIONS.filter(
+  (avatar) => avatar.availability !== "local-evaluation"
+);
 
 export const DEPLOYED_AVATAR_IDS: AvatarId[] = DEPLOYED_AVATAR_DEFINITIONS.map(
   (a) => a.id as AvatarId

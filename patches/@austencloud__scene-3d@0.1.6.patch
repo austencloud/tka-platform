@@ -10,7 +10,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 +++ b/dist/lib/components/Avatar3D.svelte
 @@ -16,29 +16,40 @@
     */
- 
+
    import { onMount, onDestroy, untrack } from "svelte";
 -  import { T, useTask } from "@threlte/core";
 +  import { T, useTask, useThrelte } from "@threlte/core";
@@ -43,12 +43,12 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 +    nextAvatarInstrumentationSequence,
 +    recordAvatarLoadSpan,
 +  } from "../debug/avatar-load-instrumentation";
- 
+
    import { userProportionsState } from "../state/user-proportions-state.svelte";
    import IKFigure3D from "./IKFigure3D.svelte";
 -  import AvatarLoadingIndicator from "./AvatarLoadingIndicator.svelte";
    const toast = { warning(_msg: string) {} };
- 
+
 -  import type { ILocomotionAnimator } from "../services/contracts/ILocomotionAnimator";
 +  import type {
 +    ILocomotionAnimator,
@@ -73,7 +73,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 @@ -74,6 +89,17 @@
    const blueVisible = $derived(viewerVisibility?.blueMotion ?? true);
    const redVisible = $derived(viewerVisibility?.redMotion ?? true);
- 
+
 +  const { renderer, scene, camera } = useThrelte() as unknown as {
 +    renderer: WebGLRenderer;
 +    scene: Scene;
@@ -191,13 +191,13 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
    const FACE_FORWARD_OFFSET = 0.08; // 8 cm forward from head bone
 -  const FACE_UP_OFFSET = 0.05;      // 5 cm up from head bone
 +  const FACE_UP_OFFSET = 0.05; // 5 cm up from head bone
- 
+
    /**
     * Base rotation from the staff's local-Y axis to the "horizontal" axis
 @@ -278,9 +352,158 @@
- 
+
    const _unitY = new Vector3(0, 1, 0);
- 
+
 +  // --- Wrist orientation + last-mile contact lock ---
 +  // Full world staff orientations handed to the animator so the wrist can
 +  // align its knuckle line with the shaft. Composed the same way
@@ -363,11 +363,11 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 +      ? position.y - feetOffset // Use provided Y (terrain mode)
 +      : defaultGroundY - feetOffset // Use stage groundY (stage mode)
    );
- 
+
    // No mesh offset needed - the crouch animation's Hips position track (scaled
    // from cm to m in LocomotionAnimator) handles the body drop directly.
    const groupY = $derived(baseGroupY);
- 
+
 +  function applyModelOpacity(
 +    root: import("three").Object3D,
 +    value: number
@@ -405,15 +405,15 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
    async function loadAvatar(targetAvatarId: string) {
 @@ -319,12 +574,22 @@
      if (currentLoadedAvatarId === targetAvatarId) return;
- 
+
      const url = getAvatarModelPath(targetAvatarId);
 +    const loadLabel = `${targetAvatarId}@${nextAvatarInstrumentationSequence()}`;
 +    const loadStart = performance.now();
 +    let rendererPreparedForSpan = false;
 +    let hadPreparedRootForSpan = false;
- 
+
      isLoading = true;
- 
+
      try {
        // Load new model (skeleton service handles internal swap)
 -      await skeletonService.loadModel(url);
@@ -424,13 +424,13 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 +      const loadModel = () => skeletonService!.loadModel(url, preparedRoot ?? undefined);
 +      if (preparedRoot) await loadModel();
 +      else await schedulePerformerInitialization(loadModel, loadLabel);
- 
+
        // Scale model to match user's height
        // setHeight() calculates proper scale and stores feet offset
 @@ -333,19 +598,43 @@
        // Get the feet offset for positioning (negative value)
        feetOffset = skeletonService.getFeetOffset();
- 
+
 -      // Update cached root AFTER everything is ready
 -      // This ensures Threlte only sees the swap when the new model is complete
 -      cachedRoot = skeletonService.getRoot();
@@ -440,7 +440,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 +        nextRoot.traverse((child: any) => {
 +          if (child.isMesh) child.castShadow = true;
 +        });
- 
+
 -      // Enable shadow casting on all meshes in the avatar
 -      if (cachedRoot) {
 -        cachedRoot.traverse((child: any) => {
@@ -470,7 +470,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 +          );
 +        }
        }
- 
+
 +      // Update cached root AFTER everything is ready. This ensures Threlte
 +      // only sees the swap when the model and both fade shader variants are
 +      // complete.
@@ -513,7 +513,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 -          ...(enableFootPlanting && { stripLegBones: true }),
          });
          locomotionAnimator.initialize(cachedRoot);
- 
+
          // Initialize root motion extractor with the Hips bone
 -        if (enableRootMotion && rootMotionExtractor && locomotionAnimator.getHipsBone) {
 +        if (
@@ -602,7 +602,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 +      ) {
          footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
        }
- 
+
 @@ -502,6 +830,16 @@
        }
      } finally {
@@ -619,16 +619,16 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 +      );
      }
    }
- 
+
 @@ -587,7 +925,7 @@
- 
+
      // Disable spine twist in dual-wheel mode - wide lateral IK targets
      // twist the torso and shift the feet on the ground.
 -    if ('setSpineTwistEnabled' in animationService) {
 +    if ("setSpineTwistEnabled" in animationService) {
        (animationService as any).setSpineTwistEnabled(!disableSpineTwist);
      }
- 
+
 @@ -596,16 +934,19 @@
      if (enableLocomotion && locomotionAnimator) {
        if (stateMachine) {
@@ -656,7 +656,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 +          },
 +          delta
 +        );
- 
+
          // Feed state to LocomotionAnimator for clip selection
          locomotionAnimator.setActiveState?.(stateOutput.state);
 @@ -627,6 +968,8 @@
@@ -665,11 +665,11 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
        locomotionAnimator.update(delta);
 +      const gaitClock = locomotionAnimator.getGaitClock?.();
 +      if (gaitClock) onGaitClock?.(gaitClock);
- 
+
        // Turn clip overlay - when a turn is active, overwrite lower-body
        // and spine bones with the turn clip's authored pose at the current
 @@ -642,7 +985,9 @@
- 
+
          // Apply bone rotations - overwrite animation pose for lower body
          for (const [boneName, quat] of sample.boneRotations) {
 -          const bone = bones.get(boneName as import("../services/contracts/IAvatarSkeletonBuilder").BoneName);
@@ -751,7 +751,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
        }
 -
      }
- 
+
      // 2. IK post-process (blends per-arm based on prop presence)
      // IK targets: read world positions from PropAnchor groups in PerformerRig.
      // If refs aren't available (standalone Avatar3D), fall back to prop state positions.
@@ -759,7 +759,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 -    const redIKTarget = new Vector3();
 +    const blueIKTarget = _blueIKTarget;
 +    const redIKTarget = _redIKTarget;
- 
+
      if (bluePropAnchorRef && bluePropState) {
        bluePropAnchorRef.updateWorldMatrix(true, false);
        bluePropAnchorRef.getWorldPosition(blueIKTarget);
@@ -773,7 +773,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 +        blueIKTarget.applyMatrix4(gridFrameRef.matrixWorld);
 +      }
      }
- 
+
      if (redPropAnchorRef && redPropState) {
 @@ -737,6 +1136,10 @@
        redPropAnchorRef.getWorldPosition(redIKTarget);
@@ -784,12 +784,12 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 +        redIKTarget.applyMatrix4(gridFrameRef.matrixWorld);
 +      }
      }
- 
+
      const blueWorldProp = bluePropState
 @@ -746,15 +1149,74 @@
        ? { ...redPropState, worldPosition: redIKTarget }
        : null;
- 
+
 +    // World staff orientations for the wrist orientation goal.
 +    _propOrientations.blue =
 +      blueVisible && bluePropState
@@ -839,7 +839,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 +          : _noHeadThreats
 +    );
      animationService.update(delta);
- 
+
 +    // 2a. Last-mile contact lock: after the solve, snap the rendered prop
 +    // to the hand by the clamped residual. Runs even when the arm can't
 +    // fully reach - that is exactly when it matters.
@@ -5709,6 +5709,48 @@ index 879d82efe3e258e6c98bb1e22da26d9bed63049c..00000000000000000000000000000000
 diff --git a/dist/lib/config/avatar-definitions.d.ts.map b/dist/lib/config/avatar-definitions.d.ts.map
 deleted file mode 100644
 index 00bac5f8e9f0e499668207b35e5eb79c49861922..0000000000000000000000000000000000000000
+diff --git a/dist/lib/config/avatar-definitions.js b/dist/lib/config/avatar-definitions.js
+index 6625f568525aa5f1f2dc0560861e3627aff5d1e2..fc31d04a168a9ca104d71b018d9f67917193c0c7 100644
+--- a/dist/lib/config/avatar-definitions.js
++++ b/dist/lib/config/avatar-definitions.js
+@@ -17,7 +17,7 @@ function getOptimizedAvatarPath(id) {
+  * Available avatars
+  * Note: Height scaling is handled automatically based on model proportions
+  */
+-export const AVATAR_DEFINITIONS = [
++const DEPLOYED_AVATAR_DEFINITIONS = [
+     {
+         id: "x-bot",
+         name: "X-Bot",
+@@ -131,6 +131,28 @@ export const AVATAR_DEFINITIONS = [
+         description: "Mixamo Quinn",
+     },
+ ];
++const LOCAL_EVALUATION_AVATAR_DEFINITIONS = [
++    {
++        id: "personal-metaperson",
++        name: "Austen",
++        modelPath: "/models/avatars/bakeoff/personal-metaperson.glb",
++        icon: "fa-person",
++        description: "Austen's personal MetaPerson",
++        availability: "local-evaluation",
++    },
++];
++function createAvatarDefinitions(includeLocalEvaluation) {
++    return includeLocalEvaluation
++        ? [
++            ...DEPLOYED_AVATAR_DEFINITIONS,
++            ...LOCAL_EVALUATION_AVATAR_DEFINITIONS,
++        ]
++        : [...DEPLOYED_AVATAR_DEFINITIONS];
++}
++// The free MetaPerson export is licensed for evaluation. It belongs in the
++// real picker during local development, but a production build must have no
++// route to discover or request it until commercial rights are attached.
++export const AVATAR_DEFINITIONS = createAvatarDefinitions(import.meta.env?.DEV === true);
+ /**
+  * Get avatar definition by ID
+  */
 diff --git a/dist/lib/config/avatar-proportions.d.ts b/dist/lib/config/avatar-proportions.d.ts
 deleted file mode 100644
 index c9fb2f9477a25d368809bd065b2988533925be4f..0000000000000000000000000000000000000000
@@ -17674,6 +17716,65 @@ index 0000000000000000000000000000000000000000..e78e9296e60edb2d417b43b47b32edff
 +  ];
 +  return shape;
 +}
+diff --git a/src/lib/config/avatar-definitions.ts b/src/lib/config/avatar-definitions.ts
+index e3c577e94a6b79bbca1bc222fd79886eaf88962b..51564323a068692e0d291cec92502d091414bd77 100644
+--- a/src/lib/config/avatar-definitions.ts
++++ b/src/lib/config/avatar-definitions.ts
+@@ -22,13 +22,17 @@ export interface AvatarDefinition {
+   modelPath: string;
+   icon?: string; // FontAwesome icon class
+   description?: string;
++  /** Local evaluation models can be exercised in the app without entering a
++      production build or the deployed CDN catalog. */
++  availability?: "deployed" | "local-evaluation";
++  thumbnailPath?: string;
+ }
+
+ /**
+  * Available avatars
+  * Note: Height scaling is handled automatically based on model proportions
+  */
+-export const AVATAR_DEFINITIONS: AvatarDefinition[] = [
++const DEPLOYED_AVATAR_DEFINITIONS: AvatarDefinition[] = [
+   {
+     id: "x-bot",
+     name: "X-Bot",
+@@ -143,6 +147,35 @@ export const AVATAR_DEFINITIONS: AvatarDefinition[] = [
+   },
+ ];
+
++const LOCAL_EVALUATION_AVATAR_DEFINITIONS: AvatarDefinition[] = [
++  {
++    id: "personal-metaperson",
++    name: "Austen",
++    modelPath: "/models/avatars/bakeoff/personal-metaperson.glb",
++    icon: "fa-person",
++    description: "Austen's personal MetaPerson",
++    availability: "local-evaluation",
++  },
++];
++
++function createAvatarDefinitions(
++  includeLocalEvaluation: boolean
++): AvatarDefinition[] {
++  return includeLocalEvaluation
++    ? [
++        ...DEPLOYED_AVATAR_DEFINITIONS,
++        ...LOCAL_EVALUATION_AVATAR_DEFINITIONS,
++      ]
++    : [...DEPLOYED_AVATAR_DEFINITIONS];
++}
++
++// The free MetaPerson export is licensed for evaluation. It belongs in the
++// real picker during local development, but a production build must have no
++// route to discover or request it until commercial rights are attached.
++export const AVATAR_DEFINITIONS: AvatarDefinition[] = createAvatarDefinitions(
++  import.meta.env?.DEV === true
++);
++
+ export type AvatarId = (typeof AVATAR_DEFINITIONS)[number]["id"];
+
+ /**
 diff --git a/src/lib/debug/avatar-load-instrumentation.ts b/src/lib/debug/avatar-load-instrumentation.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..7533d55eb9587dc3eda6ea149de226fc48749af5

@@ -23,6 +23,11 @@ This file is an evaluation asset. Commercial use was not selected when it was
 exported, so it must not enter the public avatar roster or asset CDN. A licensed
 export is still required before production integration.
 
+The local development catalog does expose it as **Austen** in the real
+performer avatar picker. That exercises the complete preview, swap, animation,
+and saved-performer path without weakening the publication boundary: production
+catalog creation excludes entries marked `local-evaluation`.
+
 Ready Player Me is not a candidate. Its services ended on January 31, 2026.
 
 ## What the test exercised
@@ -43,7 +48,8 @@ body-bone mapping, arm and leg chains, full finger mapping, source height, file
 size, and achieved hand error.
 
 Downloaded models remain evaluation-only ignored files under
-`static/models/avatars/bakeoff/`. No third-party model is added to the product
+`static/models/avatars/bakeoff/`. The local app may load the personal export
+from there, but no third-party model is added to a production build, asset CDN,
 or Git history by this work.
 
 ## Candidate scorecard
