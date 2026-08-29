@@ -120,6 +120,39 @@ describe("locomotion gait clock", () => {
     expect(harness.targetDirWeights.grapevineRight).toBe(0);
   });
 
+  it("puts all lateral speed matching into cadence when spatial stride warping is disabled", () => {
+    const animator = new LocomotionAnimator();
+    const harness = animator as unknown as {
+      gaits: Record<string, GaitClockHarness["gaits"]["forward"] | null>;
+      currentDirWeights: Record<string, number>;
+      commandedSpeed: number;
+      rootWorldScale: number;
+      playRate: number;
+      strideScale: number;
+      updateGaitSplit(): void;
+    };
+    harness.gaits.grapevineLeft = {
+      duration: 2,
+      nativeSpeed: 2,
+      leftContact: new Float32Array([1, 0]),
+      rightContact: new Float32Array([0, 1]),
+      leftStrikePhase: 0,
+      strikePhases: new Float32Array([0, 0.5]),
+      stepsPerCycle: 2,
+      rootDistance: new Float32Array([0, 0.5, 1]),
+      soleOffset: 0,
+      toeOffset: 0,
+    };
+    harness.currentDirWeights.grapevineLeft = 1;
+    harness.commandedSpeed = 1;
+    harness.rootWorldScale = 1;
+
+    harness.updateGaitSplit();
+
+    expect(harness.playRate).toBeCloseTo(0.5, 8);
+    expect(harness.strideScale).toBeCloseTo(1, 8);
+  });
+
   it("keeps authored steps monotonic when normalized phase wraps", () => {
     const { animator, harness } = animatorWithOneSecondGait();
 
