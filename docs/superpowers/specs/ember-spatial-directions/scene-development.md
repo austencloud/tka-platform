@@ -314,3 +314,34 @@ masked-ground-detail shader and assigns atmospheric treatment by semantic
 geology role. Automated verification is green; live Viewer3D visual,
 interaction, console, and frame-time evidence remains the boundary before Gate
 4 can become ready for review.
+
+## R10 Living Caldera production correction
+
+Austen's 2026-08-28 review rejected R9 as a final top-tier result because its
+audience-side orbit still read as a graybox apron and the lava river lacked the
+continuous molten hierarchy visible in real active channels. R10 keeps the
+approved Fresh Rift materials, unique Meshy landmarks, responsive performer
+clearance, front-stage heading, and shared river contract. It changes the
+production slice rather than adding another environment owner.
+
+The terrain is now a four-sided, offset caldera. North and south walls carry
+separate foreground, midground, and crown masses; the river cuts deliberate
+breaches through both horizons so the composition remains directional rather
+than becoming a closed arena. A registered `audience` camera reproduces the low
+positive-runtime-Z view that exposed the R9 failure. That angle is part of the
+build report and orbit proof, so future passes cannot hide the southern sector
+behind elevated review cameras.
+
+Runtime surface ecology replaces every flattened box plate with one shared
+jagged basalt mesh. The existing lava owner now carries broader incandescent
+leads, thinner moving crust seams, stronger bank bounce, and a restrained set of
+sampled lights across the complete 278 m channel. Fog density drops while cold
+sky separation rises; the haze shader confines warm particulate strata to the
+lower atmosphere so the new caldera silhouette remains readable.
+
+The deterministic builder is `scripts/build-ember-production-slice.py
+--r10-production`. The editable source is
+`blender/ember-volcanic-world-production-slice-r10.blend`; the reversible asset
+is `static/models/ember/ember-production-slice-r10.glb`; and Gate 4 evidence
+lives in `evidence/gate-4-living-caldera-r10/`. The shipping GLB remains the
+stable `ember-production-slice.glb` capability owner.

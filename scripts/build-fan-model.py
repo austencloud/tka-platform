@@ -57,6 +57,7 @@ LOTUS_HEIGHT_M = 0.35
 LOTUS_RING_DIAMETER_M = 0.092075
 LOTUS_FRAME_RADIUS_M = 0.002
 LOTUS_GRIP_RADIUS_M = 0.0035
+LOTUS_BEZIER_SAMPLES_PER_SPAN = 12
 DAY_WIDTH_M = 0.51
 DAY_HEIGHT_M = 0.35
 DAY_DEPTH_M = 0.0095
@@ -752,7 +753,7 @@ def import_svg_centerlines(
                 start.handle_right,
                 end.handle_left,
                 end.co,
-                5,
+                LOTUS_BEZIER_SAMPLES_PER_SPAN,
             )
             if index > 0:
                 segment = segment[1:]
@@ -1310,7 +1311,8 @@ def build_lotus_frame(
     parent["tka_vector_path_count"] = 10
     parent["tka_side_weld_boss_count"] = len(geometry["side_weld_bosses"])
     parent["tka_finger_ring_brace_count"] = 0
-    parent["tka_finger_ring_weld_count"] = 1
+    parent["tka_finger_ring_weld_count"] = 3
+    parent["tka_rail_root_weld_count"] = 10
     parent["tka_wick_centers_m"] = [list(centre) for centre in wick_centres]
     parent["tka_wick_directions_m"] = [
         list(direction) for direction in wick_directions
@@ -1495,6 +1497,7 @@ def build_lotus_frame(
         vector_paths[f"{path_name.replace('_', '-')}-{side}"][0]
         for side in ("left", "right")
         for path_name in (
+            "center_petal",
             "upper_outer_petal",
             "upper_inner_petal",
             "lower_outer_petal",

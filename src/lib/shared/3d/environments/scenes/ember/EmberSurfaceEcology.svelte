@@ -1,11 +1,13 @@
 <script lang="ts">
   import { T } from "@threlte/core";
   import { userProportionsState } from "@austencloud/scene-3d";
+  import { onDestroy, untrack } from "svelte";
   import { Euler, InstancedMesh, Matrix4, Quaternion, Vector3 } from "three";
   import {
     createEmberSurfaceEcology,
     type EmberSurfacePlacement,
   } from "./ember-surface-ecology";
+  import { createEmberSurfacePlateGeometry } from "./ember-surface-plate-geometry";
 
   interface Props {
     stageRadius?: number;
@@ -20,6 +22,9 @@
     iron: "#3a1a12",
     glass: "#242b2e",
   } as const;
+  const plateGeometry = untrack(() => createEmberSurfacePlateGeometry());
+
+  onDestroy(() => plateGeometry.dispose());
 
   function placementsFor(
     placements: EmberSurfacePlacement[],
@@ -65,7 +70,7 @@
         receiveShadow
         oncreate={(mesh: InstancedMesh) => fill(mesh, rubble)}
       >
-        <T.IcosahedronGeometry args={[1, 1]} />
+        <T.IcosahedronGeometry args={[1, 2]} />
         <T.MeshStandardMaterial
           color={colors[family]}
           roughness={family === "glass" ? 0.66 : 0.92}
@@ -77,10 +82,10 @@
     {#if plates.length > 0}
       <T.InstancedMesh
         args={[undefined, undefined, plates.length]}
+        geometry={plateGeometry}
         receiveShadow
         oncreate={(mesh: InstancedMesh) => fill(mesh, plates)}
       >
-        <T.BoxGeometry args={[1, 1, 1]} />
         <T.MeshStandardMaterial
           color={colors[family]}
           emissive={family === "iron" ? "#2a0904" : "#050708"}

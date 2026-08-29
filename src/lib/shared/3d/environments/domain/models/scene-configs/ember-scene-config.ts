@@ -235,6 +235,12 @@ export function createDefaultEmberConfig(
             ([x, z, height]) => [x, z, height]
           ) as [number, number, number][],
         },
+        {
+          widthScale: volcanicWorldR7.southVentCascade.widthScale,
+          points: volcanicWorldR7.southVentCascade.pointsRuntimeXZHeight.map(
+            ([x, z, height]) => [x, z, height]
+          ) as [number, number, number][],
+        },
       ],
       baseColor: look.lavaRivers.baseColor,
       hotColor: look.lavaRivers.hotColor,
