@@ -106,7 +106,7 @@ in the tool schemas, not in taste:
 | Screenshot cost   | `format: "webp", quality: 70` — ~4x cheaper than PNG                                                   | `computer` screenshot takes **no format/quality params**. Full fidelity, every frame.                                      |
 | Viewport          | `emulate(viewport: "<w>x<h>x1")` sets per-page device metrics, including a real 3840×2160 CSS viewport | `resize_window(w, h)` sizes the **OS window**; tab strip and URL bar eat the top, and it cannot exceed the physical screen |
 | Cheap measurement | `evaluate_script` returns JSON — ten element widths for a rounding error, no image                     | built around visual coordinates                                                                                            |
-| Session           | dedicated persistent instance from `scripts/launch-chrome-debug.ps1`; manual sign-in survives restarts | drives Austen's everyday Chrome                                                                                            |
+| Session           | dedicated `Agent DevTools` profile from `scripts/launch-chrome-debug.ps1`; manual sign-in survives restarts | drives Austen's everyday Chrome                                                                                            |
 | Scoping           | `uid` screenshots one element; `filePath` writes the image to disk instead of into context             | full-viewport frames only                                                                                                  |
 
 Claude in Chrome is for _acting_ in Austen's live browser — external dashboards
@@ -118,8 +118,9 @@ point, per global `CLAUDE.md` → Web Browsing. It stays there.
 1. Start or reuse the dedicated browser with
    `pwsh -NoProfile -File scripts/launch-chrome-debug.ps1 -Url about:blank`.
    The launcher reuses one shared window, preserves its last manual placement,
-   and must be the only way agents start Chrome. Do not pass
-   `--force-device-scale-factor`.
+   preserves the separate `Agent DevTools` taskbar identity, and must be the
+   only way agents start Chrome. Do not pass `--force-device-scale-factor` or
+   override `-ProfileDirectory`.
 2. Open a task-owned page in the default browser context, in the background for
    screenshot-only checks. Keep its returned page ID and provide that `pageId`
    to every page-scoped tool instead of relying on `select_page`. Then call

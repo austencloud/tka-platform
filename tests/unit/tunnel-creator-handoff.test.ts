@@ -9,6 +9,7 @@ import {
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import {
   consumeTunnelCreatorHandoff,
+  createTunnelCreatorHandoff,
   saveTunnelCreatorHandoff,
 } from "$lib/features/create/tunnel/services/tunnel-creator-handoff";
 
@@ -45,6 +46,11 @@ const snapshot = {
   },
   trailRender: { mode: "trail", tailLength: 48 },
 };
+const migratedSnapshot = {
+  ...snapshot,
+  version: 2,
+  tunnel: { ...snapshot.tunnel, presetRecipe: null },
+};
 
 function savedTunnel(
   overrides: Partial<CollectedTunnel> = {}
@@ -80,17 +86,35 @@ describe("tunnel creator handoff", () => {
       tunnelName: "Four-person weave",
       poster: "data:image/webp;base64,AA",
       composition: { performers: composition.performers },
-      snapshot,
+      snapshot: migratedSnapshot,
       formation,
     });
     expect(consumeTunnelCreatorHandoff()).toBeNull();
+  });
+
+  it("uses the same migrated editor input without a module handoff", () => {
+    const input = createTunnelCreatorHandoff(savedTunnel(), () => 456);
+
+    expect(input).toMatchObject({
+      tunnelId: "tunnel-42",
+      tunnelName: "Four-person weave",
+      snapshot: migratedSnapshot,
+      formation,
+      presetRecipe: null,
+      createdAt: 456,
+    });
+    expect(input.composition.performers).toHaveLength(1);
+    expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull();
   });
 
   it("carries explicit recipe provenance but leaves legacy provenance unknown", () => {
     saveTunnelCreatorHandoff(
       savedTunnel({
         snapshot: {
+          ...snapshot,
+          version: 2,
           tunnel: {
+            ...snapshot.tunnel,
             config: formation,
             presetRecipe: {
               kind: "built-in",

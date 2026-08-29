@@ -93,6 +93,47 @@ export interface FlowFestCampPlan {
   selectedCampZoneId: string;
 }
 
+export function allFlowFestCampPlanLines(
+  plan: FlowFestCampPlan
+): FlowFestCampPlanLine[] {
+  return [...plan.publicRoads, ...plan.internalDrives, ...plan.footConnectors];
+}
+
+export function flowFestCampPlanLineToRuntimeSegment(
+  line: FlowFestCampPlanLine
+): FlowFestRuntimeSegment {
+  return {
+    id: line.id,
+    mode: line.kind === "foot-connector" ? "person" : "vehicle",
+    widthMeters: line.widthMeters,
+    lengthMeters: line.points.reduce((length, point, index) => {
+      const previous = line.points[index - 1];
+      return previous
+        ? length + Math.hypot(point.x - previous.x, point.z - previous.z)
+        : length;
+    }, 0),
+    sourceClasses: [line.evidence],
+    pathClass: line.kind,
+    points: line.points.map((point) => ({
+      x: point.x,
+      z: point.z,
+      sourceTerrainY: 0,
+      reviewTerrainY: 0,
+    })),
+  };
+}
+
+export const FLOW_FEST_GROUND_COORDINATE_FRAME = Object.freeze({
+  width: 2048,
+  height: 2048,
+  pixelSizeMeters: 0.5,
+  worldMinX: -512,
+  worldMinZ: -512,
+  sourcePath: "static/data/flow-fest-sim/ortho.webp",
+  sourceSha256:
+    "abbf63d78d4d4cc29f3df591e2c19687cba8ce63811748008a8bc6235e18fd2f",
+});
+
 export const FLOW_FEST_PUBLIC_ROAD_SOURCE = Object.freeze({
   agency: "Ohio Department of Transportation",
   dataset: "TIMS Road Inventory",
@@ -116,7 +157,79 @@ export const FLOW_FEST_ORTHOPHOTO_SOURCE = Object.freeze({
   serviceUrl:
     "https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPPlus/ImageServer",
   rights: "USGS and USDA NAIP; public domain",
+  runtimeRaster: FLOW_FEST_GROUND_COORDINATE_FRAME,
 });
+
+/**
+ * The lower campground road is one continuous loop in the registered NAIP
+ * image. These centerline samples follow the visible pale vehicle track; they
+ * are an imagery interpretation, not a survey of either road edge.
+ */
+export const FLOW_FEST_LOWER_CAMPGROUND_LOOP_NAIP_PIXELS = Object.freeze([
+  { x: 1647, y: 820 },
+  { x: 1655, y: 790 },
+  { x: 1664, y: 750 },
+  { x: 1665, y: 730 },
+  { x: 1655, y: 710 },
+  { x: 1640, y: 695 },
+  { x: 1618, y: 680 },
+  { x: 1585, y: 670 },
+  { x: 1550, y: 662 },
+  { x: 1535, y: 665 },
+  { x: 1515, y: 695 },
+  { x: 1505, y: 730 },
+  { x: 1493, y: 770 },
+  { x: 1485, y: 805 },
+  { x: 1490, y: 835 },
+  { x: 1525, y: 845 },
+  { x: 1570, y: 854 },
+  { x: 1607, y: 860 },
+  { x: 1625, y: 855 },
+  { x: 1638, y: 842 },
+  { x: 1647, y: 820 },
+]);
+
+export const FLOW_FEST_LOWER_CAMPGROUND_LOOP = Object.freeze(
+  FLOW_FEST_LOWER_CAMPGROUND_LOOP_NAIP_PIXELS.map(flowFestNaipPixelToWorld)
+);
+
+/**
+ * Austen's lower-level occupancy correction is topological rather than a
+ * claim about any one festival weekend's exact pitch locations. The loop is
+ * the circulation boundary: car camping occupies its middle, a smaller tent
+ * population sits inside the road edge, and the main tent population lives
+ * across the road beside the tree line.
+ */
+export const FLOW_FEST_LOWER_CAMPGROUND_OCCUPANCY = Object.freeze({
+  evidence: "austen-observed-topology" as const,
+  circulationRoadId: "lower-campground-loop",
+  centerVehicleCount: 32,
+  centerTentCount: 4,
+  innerRoadsideTentCount: 8,
+  outerTreeLineTentCount: 14,
+  sourceNote:
+    "Austen's 2026-08-28 correction: the loop is the lower-level vehicle road; cars concentrate in its open middle, only a few tents mix with cars, more tents sit near the inside edge, and the main tent population occupies the tree-line side outside the road.",
+});
+
+export function flowFestNaipPixelToWorld(point: {
+  x: number;
+  y: number;
+}): Pick<FlowFestRuntimePoint, "x" | "z"> {
+  return {
+    x: Number(
+      (
+        FLOW_FEST_GROUND_COORDINATE_FRAME.worldMinX +
+        point.x * FLOW_FEST_GROUND_COORDINATE_FRAME.pixelSizeMeters
+      ).toFixed(1)
+    ),
+    z: Number(
+      (
+        FLOW_FEST_GROUND_COORDINATE_FRAME.worldMinZ +
+        point.y * FLOW_FEST_GROUND_COORDINATE_FRAME.pixelSizeMeters
+      ).toFixed(1)
+    ),
+  };
+}
 
 /**
  * The official ODOT centerline clipped to the registered terrain frame.
@@ -145,7 +258,7 @@ export const FLOW_FEST_CAMDEN_COLLEGE_CORNER_ROAD = Object.freeze([
   { x: 370, z: -157.5 },
 ] satisfies Array<Pick<FlowFestRuntimePoint, "x" | "z">>);
 
-const ORIENTATION_BOUNDS = Object.freeze({
+export const FLOW_FEST_CAMP_PLAN_BOUNDS = Object.freeze({
   minX: -170,
   maxX: 380,
   minZ: -180,
@@ -231,11 +344,11 @@ function toZone(zone: FlowFestRuntimeZone): FlowFestCampPlanZone {
 function buildInternalDrives(
   contract: FlowFestRuntimeContract
 ): FlowFestCampPlanLine[] {
-  const lowerAccess = requiredSegment(contract, "lower-tent-unload");
+  requiredSegment(contract, "lower-tent-unload");
   return [
     {
       id: "camp-road-entrance-to-check-in",
-      label: "Camp entrance to check-in",
+      label: "Camp entrance to lower loop",
       evidence: "imagery-interpreted",
       kind: "internal-drive",
       widthMeters: 3.6,
@@ -243,19 +356,20 @@ function buildInternalDrives(
         FLOW_FEST_CAMP_ROAD_ENTRANCE,
         FLOW_FEST_ENTRANCE_APRON_JOIN,
         FLOW_FEST_LOWER_CHECK_IN,
+        FLOW_FEST_LOWER_CAMPGROUND_LOOP[0]!,
       ],
       sourceNote:
-        "West-side junction registered from exact August 2024 Street View panorama metadata to ODOT road feature 3019609, then corroborated by the identifiable junction in the 2023 public-domain NAIP orthophoto. The check-in gameplay marker is placed on the driveway center beside the observed gatehouse and remains Austen-correctable.",
+        "West-side junction registered from exact August 2024 Street View panorama metadata to ODOT road feature 3019609, then joined to the visible lower-loop entrance in the 2023 public-domain NAIP orthophoto. Austen's lower-level correction removes the former separate center-cut access line: this perimeter connection is the only represented approach to the loop.",
     },
     {
-      id: "check-in-to-lower-level",
-      label: "Lower-level access",
-      evidence: "imagery-interpreted",
+      id: "lower-campground-loop",
+      label: "Lower campground loop",
+      evidence: "public-orthophoto",
       kind: "internal-drive",
-      widthMeters: 3.6,
-      points: lowerAccess.points,
+      widthMeters: 3.8,
+      points: [...FLOW_FEST_LOWER_CAMPGROUND_LOOP],
       sourceNote:
-        "Registered from the public-domain orthophoto; surface width and gate hardware remain field-unverified.",
+        "Centerline sampled from the continuous pale vehicle loop visible in the registered 2023 public-domain NAIP orthophoto. The exact road edges and surface condition remain field-unverified.",
     },
     {
       id: "west-road-to-upper-clearing",
@@ -282,6 +396,67 @@ function buildInternalDrives(
         "Generalized from the registered arrival route and public-domain orthophoto; parking circulation remains provisional.",
     },
   ];
+}
+
+function clipConnectorAtLoopBoundary(
+  points: ReadonlyArray<Pick<FlowFestRuntimePoint, "x" | "z">>,
+  loop: ReadonlyArray<Pick<FlowFestRuntimePoint, "x" | "z">>
+): Array<Pick<FlowFestRuntimePoint, "x" | "z">> {
+  if (points.length < 2 || loop.length < 3) return [...points];
+
+  const clipped = [points[0]!];
+  for (let pointIndex = 1; pointIndex < points.length; pointIndex += 1) {
+    const start = points[pointIndex - 1]!;
+    const end = points[pointIndex]!;
+    const intersections = loop.slice(1).flatMap((edgeEnd, edgeIndex) => {
+      const intersection = segmentIntersection(
+        start,
+        end,
+        loop[edgeIndex]!,
+        edgeEnd
+      );
+      return intersection ? [intersection] : [];
+    });
+
+    const firstIntersection = intersections.sort(
+      (first, second) => first.progress - second.progress
+    )[0];
+    if (firstIntersection) {
+      clipped.push({ x: firstIntersection.x, z: firstIntersection.z });
+      return clipped;
+    }
+    clipped.push(end);
+  }
+
+  return clipped;
+}
+
+function segmentIntersection(
+  lineStart: Pick<FlowFestRuntimePoint, "x" | "z">,
+  lineEnd: Pick<FlowFestRuntimePoint, "x" | "z">,
+  edgeStart: Pick<FlowFestRuntimePoint, "x" | "z">,
+  edgeEnd: Pick<FlowFestRuntimePoint, "x" | "z">
+): { x: number; z: number; progress: number } | null {
+  const lineX = lineEnd.x - lineStart.x;
+  const lineZ = lineEnd.z - lineStart.z;
+  const edgeX = edgeEnd.x - edgeStart.x;
+  const edgeZ = edgeEnd.z - edgeStart.z;
+  const denominator = lineX * edgeZ - lineZ * edgeX;
+  if (Math.abs(denominator) < Number.EPSILON) return null;
+
+  const offsetX = edgeStart.x - lineStart.x;
+  const offsetZ = edgeStart.z - lineStart.z;
+  const progress = (offsetX * edgeZ - offsetZ * edgeX) / denominator;
+  const edgeProgress = (offsetX * lineZ - offsetZ * lineX) / denominator;
+  if (progress < 0 || progress > 1 || edgeProgress < 0 || edgeProgress > 1) {
+    return null;
+  }
+
+  return {
+    x: lineStart.x + lineX * progress,
+    z: lineStart.z + lineZ * progress,
+    progress,
+  };
 }
 
 function buildRegions(): FlowFestCampPlanRegion[] {
@@ -496,8 +671,12 @@ export function createFlowFestCampPlan(
   branch: FlowFestBranchId
 ): FlowFestCampPlan {
   const selectedCampZoneId = CAMP_ZONE_BY_BRANCH[branch];
+  const middleToLowerLoop = clipConnectorAtLoopBoundary(
+    contract.connectorTraces.middleEarthToLowerClearing.vertices,
+    FLOW_FEST_LOWER_CAMPGROUND_LOOP
+  );
   return {
-    bounds: { ...ORIENTATION_BOUNDS },
+    bounds: { ...FLOW_FEST_CAMP_PLAN_BOUNDS },
     publicRoads: [
       {
         id: "odot-camden-college-corner-road",
@@ -523,13 +702,13 @@ export function createFlowFestCampPlan(
       },
       {
         id: "middle-to-lower",
-        label: "Middle Earth to lower level",
+        label: "Middle Earth to lower loop",
         evidence: "austen-traced",
         kind: "foot-connector",
         widthMeters: 1.8,
-        points: contract.connectorTraces.middleEarthToLowerClearing.vertices,
+        points: middleToLowerLoop,
         sourceNote:
-          "Austen's orthophoto trace, preserved as a route centerline rather than a surveyed trail edge.",
+          "Austen's orthophoto trace through the woodland, clipped where it meets the lower campground loop so it does not imply a path through the car-camping field.",
       },
     ],
     zones: contract.zones.map(toZone),

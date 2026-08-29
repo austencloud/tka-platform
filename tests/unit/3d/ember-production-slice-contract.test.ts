@@ -3,6 +3,12 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { createDefaultEmberConfig } from "$lib/shared/3d/environments/domain/models/scene-configs/ember-scene-config";
+import { getCanonicalPerformerStageBounds } from "$lib/shared/3d/environments/domain/performer-stage-bounds";
+import {
+  createEmberSurfaceEcology,
+  distanceToEmberLavaCorridor,
+} from "$lib/shared/3d/environments/scenes/ember/ember-surface-ecology";
+import { createEmberSurfacePlateGeometry } from "$lib/shared/3d/environments/scenes/ember/ember-surface-plate-geometry";
 import {
   resolveViewerFormationFacingAngle,
   VIEWER_FRONT_STAGE_FACING_ANGLE,
@@ -33,7 +39,7 @@ interface EmberSliceGltf {
 const optimizedPath = resolve("static/models/ember/ember-production-slice.glb");
 const integratedPath = resolve("static/models/ember/ember-integrated-room.glb");
 const reportPath = resolve(
-  "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-meshy-r1/ember-volcanic-world-production-slice-r7-report.json"
+  "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-report.json"
 );
 const volcanicWorldContractPath = resolve(
   "src/lib/shared/3d/environments/domain/models/scene-configs/ember-volcanic-world-r7.json"
@@ -62,14 +68,14 @@ describe("Ember production-slice contracts", () => {
         "KHR_texture_basisu",
       ])
     );
-    expect(gltf.images).toHaveLength(18);
+    expect(gltf.images).toHaveLength(12);
     expect(gltf.images?.every((image) => image.mimeType === "image/ktx2")).toBe(
       true
     );
     expect(statSync(optimizedPath).size).toBeLessThan(7_000_000);
   });
 
-  it("retains the continuous world and the four selected geology roles", () => {
+  it("retains the breached-caldera world and the four selected geology roles", () => {
     const roles = new Set(gltf.nodes?.map((node) => node.extras?.tka_role));
     expect(roles).toEqual(
       new Set([
@@ -77,6 +83,7 @@ describe("Ember production-slice contracts", () => {
         "shelf-stratum",
         "playable-surface",
         "cooled-fissure",
+        "live-fissure",
         "caldera-bank",
         "perimeter-talus-cluster",
         "volcanic-basin",
@@ -103,7 +110,7 @@ describe("Ember production-slice contracts", () => {
           !node.extras ||
           (node.extras.tka_scene === "ember" &&
             node.extras.tka_gate === 4 &&
-            node.extras.tka_revision === "ember-broken-rift-gate4-meshy-r7")
+            node.extras.tka_revision === "ember-living-caldera-gate4-r10")
       )
     ).toBe(true);
   });
@@ -124,21 +131,17 @@ describe("Ember production-slice contracts", () => {
     );
   });
 
-  it("keeps the furnace hierarchy and three distance-graded basin materials", () => {
-    expect(gltf.materials?.map((material) => material.name)).toEqual([
-      "Ember_Ash_Deposit",
-      "Ember_Columnar_Basalt_PBR",
-      "Ember_Ground_Blackglass_PBR",
-      "Ember_Mineral_Ochre",
-      "Ember_Fissure_Chasm",
-      "Ember_Meshy_Geology_PBR_hero-columnar-escarpment_01",
-      "Ember_Meshy_Geology_PBR_collapsed-lava-bank_01",
-      "Ember_Meshy_Geology_PBR_obsidian-fumarole-talus_01",
-      "Ember_Meshy_Geology_PBR_distant-breached-caldera_01",
-      "Ember_Near_Caldera_PBR",
-      "Ember_Middle_Caldera_PBR",
-      "Ember_Far_Caldera_PBR",
-    ]);
+  it("ships only the approved Fresh Rift families and live-fissure source", () => {
+    expect(new Set(gltf.materials?.map((material) => material.name))).toEqual(
+      new Set([
+        "Ember_R9_fresh-rift-synthesis_roped-pahoehoe",
+        "Ember_R9_fresh-rift-synthesis_fractured-basalt",
+        "Ember_R9_fresh-rift-synthesis_iron-contact-crust",
+        "Ember_R9_fresh-rift-synthesis_windborne-ash",
+        "Ember_R9_fresh-rift-synthesis_Blended_Terrain",
+        "Ember_Live_Fissure",
+      ])
+    );
   });
 
   it("rejects runaway per-object subdivision before export", () => {
@@ -148,7 +151,7 @@ describe("Ember production-slice contracts", () => {
         maximumMeshTriangleCount: number;
       };
     };
-    expect(report.geometry.triangleCount).toBeLessThan(220_000);
+    expect(report.geometry.triangleCount).toBeLessThan(225_000);
     expect(report.geometry.maximumMeshTriangleCount).toBeLessThan(55_000);
   });
 
@@ -162,6 +165,8 @@ describe("Ember production-slice contracts", () => {
     expect(report).toContain("nu73zqvPJRxio4T2sWz7");
     expect(report).toContain("ATURN84Ov2hmjWUndebl");
     expect(report).toContain("ZSnkB98pb0wz6PO17XKp");
+    expect(report).toContain("s3cxnp6hOLBVQR5dDF42");
+    expect(report).toContain("ahPuPwh34G3FeqvUEHsB");
     expect(report).toContain("01a045af-5015-7cb4-ac34-0d62f4269b67");
     expect(report).toContain("01a045b2-f26d-772f-a92e-9bf36e3fc318");
     expect(report).toContain("01a045b6-292c-7930-bdd7-ad8a5222989d");
@@ -171,6 +176,12 @@ describe("Ember production-slice contracts", () => {
     expect(report).not.toContain("generated/ember-rift-buttress");
     expect(report).not.toContain("static/models/ocean");
     expect(report).not.toContain("basalt_pinnacle");
+    expect(report).toContain(
+      "static/textures/ember-surface-r9/fresh-rift-family-mask.png"
+    );
+    expect(report).toContain(
+      "src/lib/shared/3d/environments/primitives/masked-ground-detail-material.ts"
+    );
   });
 
   it("uses one shared volcanic-world contract for the static channel and runtime river", () => {
@@ -180,15 +191,30 @@ describe("Ember production-slice contracts", () => {
       lavaRiver: {
         pointsRuntimeXZHeight: [number, number, number][];
       };
+      southVentCascade: {
+        widthScale: number;
+        pointsRuntimeXZHeight: [number, number, number][];
+      };
       terrain: {
         runtimeXRange: [number, number];
         runtimeZRange: [number, number];
         actionFloorRadius: number;
+        actionTerrainBaseHeight: number;
+        direction: string;
       };
     };
     const report = JSON.parse(readFileSync(reportPath, "utf8")) as {
       contract: {
         lavaRiverControlPointsRuntimeXZHeight: [number, number, number][];
+        southVentCascadeControlPointsRuntimeXZHeight: [
+          number,
+          number,
+          number,
+        ][];
+        collapsedLavaBankCenterRuntimeXZ: [number, number];
+        collapsedLavaBankRiverEdgeClearanceMeters: number;
+        continuousOrbitDepthBands: string[];
+        registeredReviewCameras: string[];
       };
       geometry: { volcanicBasinCount: number; lavaChannelLeveeCount: number };
     };
@@ -197,15 +223,41 @@ describe("Ember production-slice contracts", () => {
     expect(config.lavaRivers?.channels[0]?.points).toEqual(
       world.lavaRiver.pointsRuntimeXZHeight
     );
+    expect(config.lavaRivers?.channels[1]?.points).toEqual(
+      world.southVentCascade.pointsRuntimeXZHeight
+    );
+    expect(config.lavaRivers?.channels[1]?.widthScale).toBe(
+      world.southVentCascade.widthScale
+    );
     expect(report.contract.lavaRiverControlPointsRuntimeXZHeight).toEqual(
       world.lavaRiver.pointsRuntimeXZHeight
     );
+    expect(
+      report.contract.southVentCascadeControlPointsRuntimeXZHeight
+    ).toEqual(world.southVentCascade.pointsRuntimeXZHeight);
+    expect(report.contract.collapsedLavaBankCenterRuntimeXZ).toEqual([30.5, 6]);
+    expect(
+      report.contract.collapsedLavaBankRiverEdgeClearanceMeters
+    ).toBeGreaterThan(4);
     expect(report.geometry.volcanicBasinCount).toBe(1);
     expect(report.geometry.lavaChannelLeveeCount).toBe(2);
     expect(world.terrain.runtimeXRange).toEqual([-190, 190]);
     expect(world.terrain.runtimeZRange[0]).toBeLessThanOrEqual(-140);
     expect(world.terrain.runtimeZRange[1]).toBeGreaterThanOrEqual(180);
-    expect(world.terrain.actionFloorRadius).toBeGreaterThanOrEqual(20);
+    expect(world.terrain.direction).toBe("living-caldera");
+    expect(world.terrain.actionFloorRadius).toBe(10.8);
+    expect(world.terrain.actionTerrainBaseHeight).toBeCloseTo(0.49);
+    expect(world.terrain.actionTerrainBaseHeight).toBeLessThan(0.5);
+    expect(getCanonicalPerformerStageBounds(8).radius).toBeLessThan(
+      world.terrain.actionFloorRadius
+    );
+    expect(report.contract.continuousOrbitDepthBands).toEqual([
+      "foreground",
+      "midground",
+      "north-rim",
+      "south-rim",
+    ]);
+    expect(report.contract.registeredReviewCameras).toContain("audience");
 
     const frontContinuation = world.lavaRiver.pointsRuntimeXZHeight.at(-1)!;
     expect(frontContinuation[1]).toBeLessThanOrEqual(-120);
@@ -341,6 +393,7 @@ describe("Ember integrated-room contracts", () => {
     expect(workbenchSource).toContain(
       "facingAngle: VIEWER_FRONT_STAGE_FACING_ANGLE"
     );
+    expect(VIEWER_FRONT_STAGE_FACING_ANGLE).toBe(Math.PI);
 
     const line = createFormationFromPreset("line", 4);
     for (const slot of line.slots) {
@@ -362,6 +415,41 @@ describe("Ember integrated-room contracts", () => {
         resolveViewerFormationFacingAngle(slot, circle, Number.NaN)
       )
     ).toEqual(circle.slots.map((slot) => slot.facingAngle));
+  });
+
+  it("fills the shelf with deterministic geology without invading stage or lava", () => {
+    const first = createEmberSurfaceEcology(5.2);
+    const second = createEmberSurfaceEcology(5.2);
+    expect(first).toEqual(second);
+    expect(first.rubble).toHaveLength(150);
+    expect(first.plates).toHaveLength(32);
+
+    for (const placement of [...first.rubble, ...first.plates]) {
+      const [x, , z] = placement.position;
+      expect(Math.hypot(x, z)).toBeGreaterThanOrEqual(7.4);
+      expect(distanceToEmberLavaCorridor(x, z)).toBeGreaterThanOrEqual(4.3);
+    }
+  });
+
+  it("uses one faceted volcanic plate mesh instead of instanced graybox slabs", () => {
+    const geometry = createEmberSurfacePlateGeometry();
+    const positions = geometry.getAttribute("position");
+    expect(geometry.name).toBe("Ember_Jagged_Surface_Plate");
+    expect(positions.count).toBe(132);
+    expect(
+      new Set(Array.from(positions.array).map((value) => value.toFixed(2))).size
+    ).toBeGreaterThan(18);
+    expect(geometry.boundingSphere?.radius).toBeGreaterThan(0.9);
+    geometry.dispose();
+
+    const sceneSource = readFileSync(
+      resolve(
+        "src/lib/shared/3d/environments/scenes/ember/EmberSurfaceEcology.svelte"
+      ),
+      "utf8"
+    );
+    expect(sceneSource).not.toContain("<T.BoxGeometry");
+    expect(sceneSource).toContain("createEmberSurfacePlateGeometry");
   });
 
   it("keeps the visibility revision above the darkness regression floor", () => {

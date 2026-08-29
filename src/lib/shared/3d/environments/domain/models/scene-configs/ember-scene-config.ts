@@ -13,6 +13,12 @@ import type {
   TreeRingConfig,
 } from "./shared-scene-config";
 import volcanicWorldR7 from "./ember-volcanic-world-r7.json";
+import {
+  DEFAULT_EMBER_ATMOSPHERE_LOOK,
+  getEmberAtmosphereLook,
+  type EmberAtmosphereLookId,
+  type EmberAtmosphereRigConfig,
+} from "./ember-atmosphere-looks";
 
 export interface LavaPoolConfig {
   enabled: boolean;
@@ -129,6 +135,7 @@ export interface VolcanicHazeConfig {
 }
 
 export interface EmberSceneConfig {
+  atmosphere: EmberAtmosphereRigConfig;
   sky: SkyGradientConfig;
   fog: FogConfig;
   ground: GroundConfig;
@@ -181,14 +188,14 @@ const EMBER_PILLAR_RINGS: TreeRingConfig[] = [
   },
 ];
 
-export function createDefaultEmberConfig(): EmberSceneConfig {
+export function createDefaultEmberConfig(
+  lookId: EmberAtmosphereLookId = DEFAULT_EMBER_ATMOSPHERE_LOOK
+): EmberSceneConfig {
+  const look = getEmberAtmosphereLook(lookId);
   return {
-    sky: {
-      topColor: "#080a0c",
-      midColor: "#172126",
-      bottomColor: "#594039",
-    },
-    fog: { color: "#161b1c", density: 0.0095 },
+    atmosphere: look.rig,
+    sky: look.sky,
+    fog: look.fog,
     ground: {
       color: "#151a19",
       size: 380,
@@ -228,14 +235,20 @@ export function createDefaultEmberConfig(): EmberSceneConfig {
             ([x, z, height]) => [x, z, height]
           ) as [number, number, number][],
         },
+        {
+          widthScale: volcanicWorldR7.southVentCascade.widthScale,
+          points: volcanicWorldR7.southVentCascade.pointsRuntimeXZHeight.map(
+            ([x, z, height]) => [x, z, height]
+          ) as [number, number, number][],
+        },
       ],
-      baseColor: "#8f1d06",
-      hotColor: "#ff5a0a",
-      crustColor: "#0c100f",
-      flowSpeed: volcanicWorldR7.lavaRiver.flowSpeed,
+      baseColor: look.lavaRivers.baseColor,
+      hotColor: look.lavaRivers.hotColor,
+      crustColor: look.lavaRivers.crustColor,
+      flowSpeed: look.lavaRivers.flowSpeed,
       width: volcanicWorldR7.lavaRiver.width,
-      warpIntensity: volcanicWorldR7.lavaRiver.warpIntensity,
-      crustCoverage: volcanicWorldR7.lavaRiver.crustCoverage,
+      warpIntensity: look.lavaRivers.warpIntensity,
+      crustCoverage: look.lavaRivers.crustCoverage,
     },
     obsidianPillars: {
       enabled: false,
@@ -272,61 +285,17 @@ export function createDefaultEmberConfig(): EmberSceneConfig {
       burstInterval: 3.5,
       burstCount: 12,
     },
-    volcanicHaze: {
-      enabled: true,
-      color1: "#33474a",
-      color2: "#100d0d",
-      opacity: 0.052,
-      scale: 2.6,
-      animationSpeed: 0.014,
-      lightningInterval: 6.0,
-      lightningIntensity: 0.12,
-      innerGlowColor: "#ff5418",
-      radius: 260,
-    },
-    embers: {
-      type: "embers",
-      count: 72,
-      area: { width: 20, height: 6, depth: 20 },
-      speed: 0.12,
-      colors: ["#ff6b35", "#ff8c42", "#ffc145", "#ff4500", "#ff2200"],
-      sizeRange: [0.012, 0.045],
-      spin: false,
-    },
-    ash: {
-      type: "dust",
-      count: 90,
-      area: { width: 25, height: 8, depth: 25 },
-      speed: 0.04,
-      colors: ["#46515e", "#303b48", "#56616c", "#202b38"],
-      sizeRange: [0.012, 0.045],
-      spin: false,
-    },
-    smoke: {
-      type: "smoke",
-      count: 14,
-      area: { width: 18, height: 6, depth: 18 },
-      speed: 0.022,
-      colors: ["#101820", "#0a1018", "#070b10", "#17222b"],
-      sizeRange: [0.06, 0.18],
-      spin: false,
-    },
+    volcanicHaze: look.volcanicHaze,
+    embers: look.embers,
+    ash: look.ash,
+    smoke: look.smoke,
     cinders: null,
     rockCount: 0,
     clearingRadius: 10,
     rockTintColor: "#1a0a08",
     rockTintBlend: 0.4,
-    hemisphereLight: {
-      skyColor: "#b8c4c0",
-      groundColor: "#2b1c18",
-      intensity: 0.88,
-    },
-    skyLight: {
-      enabled: true,
-      color: "#e3ddd1",
-      intensity: 1.35,
-      position: [-10, 18, -6],
-    },
+    hemisphereLight: look.hemisphereLight,
+    skyLight: look.skyLight,
     platform: {
       enabled: false,
       radius: 4.5,

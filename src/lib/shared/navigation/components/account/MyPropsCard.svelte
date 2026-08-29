@@ -5,7 +5,8 @@
   import type { PropPreferenceState } from "$lib/shared/community/state/prop-preference-state.svelte";
   import {
     getProfilePropLabel,
-    uniqueProfileProps,
+    normalizeProfileSkill,
+    normalizeProfileSkills,
   } from "$lib/shared/community/domain/profile-prop-catalog";
 
   interface Props {
@@ -16,11 +17,16 @@
   let { propState, onOpenPropEditor }: Props = $props();
 
   const selectedProps = $derived(
-    uniqueProfileProps(propState?.propsISpinWith ?? [])
+    normalizeProfileSkills(propState?.propsISpinWith ?? [])
+  );
+  const normalizedFavorite = $derived(
+    propState?.favoriteProp
+      ? normalizeProfileSkill(propState.favoriteProp)
+      : null
   );
   const explicitProfileProp = $derived(
-    propState?.favoriteProp && selectedProps.includes(propState.favoriteProp)
-      ? propState.favoriteProp
+    normalizedFavorite && selectedProps.includes(normalizedFavorite)
+      ? normalizedFavorite
       : null
   );
   const effectiveProfileProp = $derived(

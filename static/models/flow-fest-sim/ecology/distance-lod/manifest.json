@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Geometry-only distance tiers for Flow Fest trees. Runtime reuses the accepted near-tree materials and textures.",
+  "tiers": {
+    "mid": {
+      "ratio": 0.2,
+      "error": 0.1
+    },
+    "far": {
+      "ratio": 0.1,
+      "error": 0.15
+    }
+  },
+  "assets": [
+    {
+      "source": "island-tree-01-flow-lod-512.glb",
+      "sourceSha256": "c130634d19e6ae2d6156f67f2bac14c95d1cf81d7d5fe9ee99baaafc8e4e1439",
+      "sourceTriangles": 22639,
+      "tier": "mid",
+      "output": "island-tree-01-mid.glb",
+      "outputSha256": "ed57dcd5f4f75e1c6f773dbc437204ea2546df5cb32f60d19314cb391c78fa93",
+      "outputBytes": 144668,
+      "outputTriangles": 4535
+    },
+    {
+      "source": "island-tree-01-flow-lod-512.glb",
+      "sourceSha256": "c130634d19e6ae2d6156f67f2bac14c95d1cf81d7d5fe9ee99baaafc8e4e1439",
+      "sourceTriangles": 22639,
+      "tier": "far",
+      "output": "island-tree-01-far.glb",
+      "outputSha256": "380482ea87370abdcfcb0238704b3010e4097b0cbf51a4f3345f17cc04b051ba",
+      "outputBytes": 80636,
+      "outputTriangles": 2456
+    },
+    {
+      "source": "island-tree-02-flow-lod-512.glb",
+      "sourceSha256": "426ca53a19ce3d5963c2b6033cf8aac051a8efd5843ba874d74d6abd7a88ff6e",
+      "sourceTriangles": 18797,
+      "tier": "mid",
+      "output": "island-tree-02-mid.glb",
+      "outputSha256": "61cf9d6f595c972c024e5ba61fa851f7efa10b0bae4b8a3d418bc4c3e844f74f",
+      "outputBytes": 117408,
+      "outputTriangles": 3678
+    },
+    {
+      "source": "island-tree-02-flow-lod-512.glb",
+      "sourceSha256": "426ca53a19ce3d5963c2b6033cf8aac051a8efd5843ba874d74d6abd7a88ff6e",
+      "sourceTriangles": 18797,
+      "tier": "far",
+      "output": "island-tree-02-far.glb",
+      "outputSha256": "2bec9dbeca720dcdad8a34a5674c2e11dd2bba9d15b918050350b1ec9ffd062a",
+      "outputBytes": 64920,
+      "outputTriangles": 1923
+    },
+    {
+      "source": "island-tree-03-flow-lod-512.glb",
+      "sourceSha256": "1989b812490c0b16dc2d8fb1082d27a0312e2fe112224283f14528a1ee01ccab",
+      "sourceTriangles": 23086,
+      "tier": "mid",
+      "output": "island-tree-03-mid.glb",
+      "outputSha256": "c9111b54b9ae6c0f5d0174bb978506cf23488e4072ad78ae83dc0d0577724655",
+      "outputBytes": 143156,
+      "outputTriangles": 4535
+    },
+    {
+      "source": "island-tree-03-flow-lod-512.glb",
+      "sourceSha256": "1989b812490c0b16dc2d8fb1082d27a0312e2fe112224283f14528a1ee01ccab",
+      "sourceTriangles": 23086,
+      "tier": "far",
+      "output": "island-tree-03-far.glb",
+      "outputSha256": "46230406d001229737c8e4b81102dd3af08a05956d3b54090bb3576f3aefcfd9",
+      "outputBytes": 74268,
+      "outputTriangles": 2331
+    },
+    {
+      "source": "tree-small-02-flow-lod-512.glb",
+      "sourceSha256": "36ab6796be5a74a1a4bebf8267c32eff6434698f8028dfd57b527385c51572b8",
+      "sourceTriangles": 23044,
+      "tier": "mid",
+      "output": "tree-small-02-mid.glb",
+      "outputSha256": "17d444ab70c773de3c47bad29813cb44868af1bf76380a0f7860fe458684548c",
+      "outputBytes": 136608,
+      "outputTriangles": 4701
+    },
+    {
+      "source": "tree-small-02-flow-lod-512.glb",
+      "sourceSha256": "36ab6796be5a74a1a4bebf8267c32eff6434698f8028dfd57b527385c51572b8",
+      "sourceTriangles": 23044,
+      "tier": "far",
+      "output": "tree-small-02-far.glb",
+      "outputSha256": "3d927d6c6d38617ee1f80154f1eb95e6c53a954afa89721f5035fe9d957bf233",
+      "outputBytes": 75956,
+      "outputTriangles": 2447
+    }
+  ]
+}

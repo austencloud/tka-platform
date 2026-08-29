@@ -220,8 +220,8 @@
     line-height: 1.3;
     color: oklch(0.75 0.015 270);
     text-decoration: none;
-    border-left: 2px solid oklch(0.45 0.04 270 / 0.18);
-    border-radius: 0 10px 10px 0;
+    border: 1px solid transparent;
+    border-radius: 10px;
     transition:
       color 140ms ease,
       background 140ms ease,
@@ -234,7 +234,8 @@
   .gnav-cat.active {
     color: oklch(0.95 0.03 275);
     background: oklch(0.28 0.05 275 / 0.35);
-    border-left-color: oklch(0.7 0.14 275);
+    border-color: oklch(0.7 0.14 275);
+    box-shadow: 0 0 0 1px oklch(0.7 0.14 275 / 0.24);
   }
   .gnav-cat:focus-visible {
     outline: 2px solid oklch(0.65 0.13 275);

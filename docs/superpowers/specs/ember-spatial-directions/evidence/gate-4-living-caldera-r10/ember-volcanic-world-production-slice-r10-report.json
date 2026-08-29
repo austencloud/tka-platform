@@ -1,0 +1,463 @@
+{
+  "revision": "ember-living-caldera-gate4-r10",
+  "blenderVersion": "5.0.1",
+  "authority": {
+    "spatial": "docs/superpowers/specs/ember-spatial-directions/scene-development.md#r1-outcome",
+    "selectedLook": "docs/superpowers/specs/ember-spatial-directions/evidence/lookdev-r3/ember-lookdev-r3-comparison-board.png",
+    "gate3SelectionTrackerItem": "QRHbwRQLhM7Zn9LyYHOd",
+    "gate4AuthorizationTrackerItem": "gME4uHJawz9dtTlirRl8",
+    "gate4ArtRevisionTrackerItem": "5otAzYdNg5Wp5E27mgfo",
+    "gate4VolcanicWorldTrackerItem": "nu73zqvPJRxio4T2sWz7",
+    "gate4ContinuityTrackerItem": "ATURN84Ov2hmjWUndebl",
+    "gate4MeshyGeologyTrackerItem": "ZSnkB98pb0wz6PO17XKp",
+    "gate3GeologicalWorldTrackerItem": "s3cxnp6hOLBVQR5dDF42",
+    "gate3SurfaceEcologyTrackerItem": "uXmi4z9lL7zCiNq5ULCp",
+    "gate4SurfaceEcologyTrackerItem": "ahPuPwh34G3FeqvUEHsB"
+  },
+  "sources": [
+    {
+      "role": "hero-columnar-escarpment",
+      "sourceTaskId": "01a04587-db17-7a2a-b386-849e70d03b4e",
+      "retextureTaskId": "01a0459b-0657-711d-89d0-0aa73e15e5cb",
+      "remeshTaskId": "01a045af-5015-7cb4-ac34-0d62f4269b67",
+      "referenceDirectory": "assets/meshy-refs/ember/hero-columnar-escarpment"
+    },
+    {
+      "role": "collapsed-lava-bank",
+      "sourceTaskId": "01a0458b-0cf6-7131-90ac-0c7b38dac384",
+      "retextureTaskId": "01a045a0-4707-72e6-8e2f-ce95c2dabb61",
+      "remeshTaskId": "01a045b2-f26d-772f-a92e-9bf36e3fc318",
+      "referenceDirectory": "assets/meshy-refs/ember/collapsed-lava-bank"
+    },
+    {
+      "role": "obsidian-fumarole-talus",
+      "sourceTaskId": "01a0458e-5a9d-7d9c-a115-d569ba60119a",
+      "retextureTaskId": "01a045a5-a3d7-73a6-8530-eb42836c009f",
+      "remeshTaskId": "01a045b6-292c-7930-bdd7-ad8a5222989d",
+      "referenceDirectory": "assets/meshy-refs/ember/obsidian-fumarole-talus"
+    },
+    {
+      "role": "distant-breached-caldera",
+      "sourceTaskId": "01a045d9-7610-7858-bf2d-3caba206f23a",
+      "retextureTaskId": "01a045db-a666-78ec-99a2-3195f6a55319",
+      "remeshTaskId": "01a045e1-a103-7626-bff7-b62b29c74094",
+      "referenceDirectory": "assets/meshy-refs/ember/distant-breached-caldera"
+    }
+  ],
+  "provenance": "Four unique geology silhouettes were generated from registered Ember multiview references, selected from paired auditions, retextured with the same references, remeshed through Meshy's topology service, and embedded once each. Scene-authored terrain and rubble remain the continuity tissue.",
+  "artifacts": {
+    "blend": "blender/ember-volcanic-world-production-slice-r10.blend",
+    "rawGlb": "static/models/ember/ember-production-slice_raw.glb",
+    "rawGlbSha256": "cb499bc51d874f853b9efa0040b21fbc5a51e75ba67877764510ffbadad4adad",
+    "rawGlbBytes": 14699312,
+    "worldContract": "src/lib/shared/3d/environments/domain/models/scene-configs/ember-volcanic-world-r7.json",
+    "worldContractSha256": "ba090228a2a47d772966a4bdd0f40e90ec343a236fe782d5473c823a4dff9275"
+  },
+  "contract": {
+    "stageSurfaceLocalY": 0.5,
+    "clearActionRadiusMeters": 4.5,
+    "minimumStructuralRadialClearanceMeters": 5.8594,
+    "heroCenterBlenderXYZ": [
+      -8.5,
+      -27.0,
+      5.25
+    ],
+    "heroCenterRuntimeXYZ": [
+      -8.5,
+      5.25,
+      27.0
+    ],
+    "heroInPositiveRuntimeZFarField": true,
+    "selectedDirection": "Living Caldera with Fresh Rift ecology",
+    "terrainDirection": "living-caldera",
+    "revisionDirection": "A continuous four-sided caldera whose offset walls, north and south river breaches, audience-side benches, and registered low review camera carry the Fresh Rift ecology through every orbit quadrant",
+    "performerFacing": "negative-runtime-z-toward-front-stage-audience",
+    "lavaRiverControlPointsRuntimeXZHeight": [
+      [
+        -20.0,
+        156.0,
+        15.2
+      ],
+      [
+        -25.0,
+        132.0,
+        12.7
+      ],
+      [
+        -20.0,
+        108.0,
+        10.6
+      ],
+      [
+        -17.0,
+        82.0,
+        8.7
+      ],
+      [
+        -12.0,
+        67.0,
+        6.5
+      ],
+      [
+        -4.0,
+        52.0,
+        4.4
+      ],
+      [
+        8.0,
+        40.0,
+        2.9
+      ],
+      [
+        11.0,
+        29.0,
+        1.9
+      ],
+      [
+        10.0,
+        19.0,
+        1.1
+      ],
+      [
+        12.0,
+        11.0,
+        0.55
+      ],
+      [
+        13.0,
+        2.0,
+        0.25
+      ],
+      [
+        10.5,
+        -8.0,
+        0.1
+      ],
+      [
+        -3.5,
+        -24.0,
+        -0.02
+      ],
+      [
+        -11.0,
+        -43.0,
+        -0.12
+      ],
+      [
+        -9.0,
+        -64.0,
+        -0.18
+      ],
+      [
+        -4.0,
+        -91.0,
+        -0.24
+      ],
+      [
+        1.0,
+        -122.0,
+        -0.32
+      ]
+    ],
+    "southVentCascadeControlPointsRuntimeXZHeight": [
+      [
+        -4.0,
+        -84.0,
+        19.9
+      ],
+      [
+        -4.5,
+        -78.0,
+        20.4
+      ],
+      [
+        -5.0,
+        -72.0,
+        14.0
+      ],
+      [
+        -6.0,
+        -66.0,
+        10.65
+      ],
+      [
+        -7.0,
+        -60.0,
+        9.45
+      ],
+      [
+        -8.0,
+        -54.0,
+        5.1
+      ],
+      [
+        -9.0,
+        -48.0,
+        2.95
+      ],
+      [
+        -11.0,
+        -43.0,
+        0.02
+      ]
+    ],
+    "collapsedLavaBankCenterRuntimeXZ": [
+      30.5,
+      6.0
+    ],
+    "collapsedLavaBankRiverEdgeClearanceMeters": 6.8799,
+    "continuousOrbitDepthBands": [
+      "foreground",
+      "midground",
+      "north-rim",
+      "south-rim"
+    ],
+    "registeredReviewCameras": [
+      "hero",
+      "front-right",
+      "right",
+      "rear-right",
+      "rear",
+      "rear-left",
+      "left",
+      "front-left",
+      "audience",
+      "detail",
+      "plan"
+    ]
+  },
+  "geometry": {
+    "meshObjectCount": 82,
+    "triangleCount": 196916,
+    "maximumMeshTriangleCount": 49345,
+    "maximumMeshTriangleObject": "Ember_Meshy_Columnar_Escarpment",
+    "materialCount": 6,
+    "materials": [
+      "Ember_Live_Fissure",
+      "Ember_R9_fresh-rift-synthesis_Blended_Terrain",
+      "Ember_R9_fresh-rift-synthesis_fractured-basalt",
+      "Ember_R9_fresh-rift-synthesis_iron-contact-crust",
+      "Ember_R9_fresh-rift-synthesis_roped-pahoehoe",
+      "Ember_R9_fresh-rift-synthesis_windborne-ash"
+    ],
+    "roleCounts": {
+      "caldera-bank": 3,
+      "cooled-fissure": 3,
+      "lava-channel-levee": 2,
+      "live-fissure": 3,
+      "meshy-distant-caldera": 1,
+      "meshy-fumarole-talus": 1,
+      "meshy-hero-geology": 1,
+      "meshy-lava-bank": 1,
+      "perimeter-talus-cluster": 49,
+      "playable-shelf": 1,
+      "playable-surface": 1,
+      "shelf-stratum": 15,
+      "volcanic-basin": 1
+    },
+    "columnarJointCount": 0,
+    "columnSideDistribution": {},
+    "columnHeightRangeMeters": [],
+    "maximumCapLossMeters": null,
+    "authoredHeroMeshCount": 55,
+    "authoredWorldMeshCount": 82,
+    "volcanicBasinCount": 1,
+    "lavaChannelLeveeCount": 2,
+    "boundsBlenderXYZ": {
+      "min": [
+        -190.0,
+        -190.0,
+        -6.3383
+      ],
+      "max": [
+        190.0,
+        206.1728,
+        51.3748
+      ]
+    }
+  },
+  "cameras": {
+    "hero": {
+      "position": [
+        0.0,
+        19.8,
+        6.55
+      ],
+      "type": "PERSP",
+      "lensMm": 40.0,
+      "orthoScale": null
+    },
+    "front-right": {
+      "position": [
+        14.8,
+        14.8,
+        8.0
+      ],
+      "type": "PERSP",
+      "lensMm": 43.0,
+      "orthoScale": null
+    },
+    "right": {
+      "position": [
+        20.0,
+        0.0,
+        7.5
+      ],
+      "type": "PERSP",
+      "lensMm": 45.0,
+      "orthoScale": null
+    },
+    "rear-right": {
+      "position": [
+        27.0,
+        -49.0,
+        14.0
+      ],
+      "type": "PERSP",
+      "lensMm": 50.0,
+      "orthoScale": null
+    },
+    "rear": {
+      "position": [
+        0.0,
+        -54.0,
+        15.0
+      ],
+      "type": "PERSP",
+      "lensMm": 50.0,
+      "orthoScale": null
+    },
+    "rear-left": {
+      "position": [
+        -27.0,
+        -49.0,
+        24.0
+      ],
+      "type": "PERSP",
+      "lensMm": 50.0,
+      "orthoScale": null
+    },
+    "left": {
+      "position": [
+        -20.0,
+        0.0,
+        7.5
+      ],
+      "type": "PERSP",
+      "lensMm": 45.0,
+      "orthoScale": null
+    },
+    "front-left": {
+      "position": [
+        -14.8,
+        14.8,
+        8.0
+      ],
+      "type": "PERSP",
+      "lensMm": 43.0,
+      "orthoScale": null
+    },
+    "audience": {
+      "position": [
+        -3.32,
+        -28.41,
+        2.35
+      ],
+      "type": "PERSP",
+      "lensMm": 50.0,
+      "orthoScale": null
+    },
+    "detail": {
+      "position": [
+        10.8,
+        0.8,
+        6.9
+      ],
+      "type": "PERSP",
+      "lensMm": 52.0,
+      "orthoScale": null
+    },
+    "plan": {
+      "position": [
+        0.0,
+        -8.0,
+        135.0
+      ],
+      "type": "ORTHO",
+      "lensMm": null,
+      "orthoScale": 230.0
+    }
+  },
+  "renders": {
+    "hero": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-hero.png",
+    "front-right": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-front-right.png",
+    "right": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-right.png",
+    "rear-right": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-rear-right.png",
+    "rear": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-rear.png",
+    "rear-left": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-rear-left.png",
+    "left": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-left.png",
+    "front-left": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-front-left.png",
+    "audience": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-audience.png",
+    "detail": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-detail.png",
+    "plan": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-living-caldera-r10/ember-volcanic-world-production-slice-r10-plan.png"
+  },
+  "surfaceEcology": {
+    "direction": "fresh-rift-synthesis",
+    "approvalTrackerItem": "ahPuPwh34G3FeqvUEHsB",
+    "familyPolygonCounts": {
+      "0": 4875,
+      "1": 38439,
+      "2": 50055,
+      "3": 82178
+    },
+    "runtimeAssets": {
+      "detailTextures": [
+        {
+          "path": "static/textures/ember-surface-r9/young-lava.png",
+          "bytes": 192337,
+          "sha256": "cf8b04d0ce7fee41006d05756f5ac053d3f97fb4403c3a8efe48a1e061f201ab"
+        },
+        {
+          "path": "static/textures/ember-surface-r9/iron-contact.png",
+          "bytes": 167740,
+          "sha256": "541fe4ac0c2152440be0c106e95ffa306dd9be7a0f83b69a1c68d19f3f46cd40"
+        },
+        {
+          "path": "static/textures/ember-surface-r9/fractured-basalt.png",
+          "bytes": 196871,
+          "sha256": "127e44617d29a52ce9d5c7bfeb99c1051e0fc70b20bf5e47a7d2e934b81330d5"
+        },
+        {
+          "path": "static/textures/ember-surface-r9/sheltered-ash.png",
+          "bytes": 174284,
+          "sha256": "5af038713bae052ac700df4b0241082edcfa12f634c54d8c939cc5a935445865"
+        }
+      ],
+      "familyMask": {
+        "path": "static/textures/ember-surface-r9/fresh-rift-family-mask.png",
+        "bytes": 674113,
+        "sha256": "e5592d2c02b48ec20cb5948a61d655639ab0ddd6175acb26c5d34347eb64cd75",
+        "resolution": [
+          1024,
+          1024
+        ],
+        "worldOriginRuntimeXZ": [
+          -190.0,
+          -145.0
+        ],
+        "worldSizeRuntimeXZ": [
+          380.0,
+          335.0
+        ],
+        "channels": {
+          "red": "young-lava",
+          "green": "iron-contact",
+          "blue": "fractured-basalt",
+          "implicitFourth": "sheltered-ash"
+        }
+      }
+    },
+    "materialOwner": "src/lib/shared/3d/environments/primitives/masked-ground-detail-material.ts",
+    "sceneAdapter": "src/lib/shared/3d/environments/scenes/ember/ember-ground-detail.ts"
+  }
+}

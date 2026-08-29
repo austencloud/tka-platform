@@ -63,6 +63,26 @@ describe("creator discovery", () => {
     ).toBe(PropType.FAN);
   });
 
+  it("shows legacy render variants as their profile skill", () => {
+    expect(
+      getEffectiveProp(
+        creator({
+          favoriteProp: PropType.TORCH,
+          propsISpinWith: [PropType.TORCH],
+        })
+      )
+    ).toBe(PropType.CLUB);
+
+    expect(
+      getEffectiveProp(
+        creator({
+          favoriteProp: PropType.ENERGY_SABER,
+          propsISpinWith: [PropType.ENERGY_SABER],
+        })
+      )
+    ).toBe(PropType.SWORD);
+  });
+
   it("uses the only selected prop without forcing a separate favorite", () => {
     expect(
       getEffectiveProp(

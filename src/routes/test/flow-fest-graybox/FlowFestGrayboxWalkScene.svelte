@@ -2,7 +2,11 @@
   import { onDestroy, onMount } from "svelte";
   import { T, useTask, useThrelte } from "@threlte/core";
   import { CameraMode, UnifiedCameraController } from "@austencloud/camera-3d";
-  import type { AvatarState, PhysicsProvider } from "@austencloud/camera-3d";
+  import type {
+    AvatarState,
+    CameraCollisionProbe,
+    PhysicsProvider,
+  } from "@austencloud/camera-3d";
   import type { FlowFestProductionCollisionSet } from "$lib/features/flow-fest-sim/domain/flow-fest-simulation-contract";
   import {
     FLOW_FEST_EUC_CONFIG,
@@ -33,6 +37,7 @@
     parseGeospatialTerrainManifest,
   } from "$lib/shared/3d/procedural-engine/generation/geospatial-terrain";
   import { buildFlowFestEntranceGradedTerrain } from "../flow-fest-sim/flow-fest-entrance-terrain";
+  import { FLOW_FEST_CAMP_PLAN_BOUNDS } from "../flow-fest-sim/flow-fest-camp-plan";
   import {
     createPhysicsWorldState,
     createRigidBody,
@@ -55,6 +60,7 @@
   import {
     buildFlowFestTerrainHost,
     buildFlowFestChunkSeamTraversal,
+    flowFestColliderWindowKey,
     sampleFlowFestTerrainWorldY,
     type FlowFestTerrainHost,
     type FlowFestTerrainHostMode,
@@ -141,6 +147,22 @@
   let terrain: Awaited<ReturnType<typeof loadGeospatialTerrain>> | null = null;
   let initialized = $state(false);
   let disposed = false;
+  const probeThirdPersonCameraCollision: CameraCollisionProbe = (
+    origin,
+    direction,
+    maxDistance
+  ) => {
+    if (!physicsState?.world || !playerState) return null;
+    return (
+      castRay(
+        physicsState,
+        origin,
+        direction,
+        maxDistance,
+        playerState.collider
+      )?.distance ?? null
+    );
+  };
   let appliedResetToken = props.resetToken;
   let appliedCameraToken = props.cameraToken;
   let appliedStageToken = props.stageToken ?? 0;
@@ -190,6 +212,7 @@
   let performanceWarmupFrames = 0;
   let missingColliderFrames = 0;
   const activeTerrainBodies = new Map<string, PhysicsBodyComponent>();
+  let activeTerrainColliderWindowKey: string | null = null;
   let productionCollisionBodies: PhysicsBodyComponent[] = [];
   let mountedProductionCollision: FlowFestProductionCollisionSet | null = null;
   let mountedCampEstablished = false;
@@ -347,6 +370,26 @@
   ): boolean {
     if (!physicsState?.world || !terrainHost) return false;
 
+    const nextWindowKey =
+      props.hostMode === "bounded-static"
+        ? "bounded-static"
+        : terrain
+          ? flowFestColliderWindowKey(
+              x,
+              z,
+              terrain.worldBounds,
+              CHUNK_SIZE_METERS
+            )
+          : null;
+    if (
+      pruneDistant &&
+      nextWindowKey !== null &&
+      nextWindowKey === activeTerrainColliderWindowKey
+    ) {
+      return true;
+    }
+    if (!pruneDistant) activeTerrainColliderWindowKey = null;
+
     const desired = new Set<string>();
     for (const collider of terrainHost.colliders) {
       const isNeeded =
@@ -386,6 +429,8 @@
         Math.abs(collider.centerX - x) <= collider.halfExtentX + 1e-6 &&
         Math.abs(collider.centerZ - z) <= collider.halfExtentZ + 1e-6
     );
+    activeTerrainColliderWindowKey =
+      pruneDistant && containingColliderIsActive ? nextWindowKey : null;
     updateActiveColliderProof();
     return containingColliderIsActive;
   }
@@ -1043,11 +1088,15 @@
       terrainHost = buildFlowFestTerrainHost(
         loadedTerrain,
         props.hostMode,
-        texture
+        texture,
+        props.hostMode === "chunked"
+          ? {
+              fullDetailBounds: FLOW_FEST_CAMP_PLAN_BOUNDS,
+              fullDetailPaddingMeters: 32,
+              farSampleStep: 2,
+            }
+          : undefined
       );
-      terrainHost.root.traverse((object) => {
-        if (object instanceof Mesh) object.userData.cameraCollider = true;
-      });
       overlay = buildFlowFestReviewOverlay(
         loadedContract,
         loadedTerrain,
@@ -1204,11 +1253,13 @@
         terrain: {
           sourceSamples: loadedTerrain.heightmap.heights.length,
           renderColliderIdentity: props.hostMode === "bounded-static",
-          renderColliderHeightParity: true,
+          renderColliderHeightParity: props.hostMode === "bounded-static",
+          fullDetailColliderHeightParity: true,
           renderStrategy:
             props.hostMode === "chunked"
-              ? "one full-resolution render batch with 32 m collision chunks"
+              ? "one crack-free adaptive render batch: 1 m campground detail, 2 m far field, and 32 m full-resolution collision chunks"
               : "one full-resolution visible/collider mesh",
+          cameraCollisionStrategy: "rapier-active-chunk-broadphase",
           candidateColliderMeshes: terrainHost.metrics.colliderMeshes,
           activeColliderMeshes: activeTerrainBodies.size,
           colliderBufferMeters:
@@ -1478,6 +1529,7 @@
     clearProductionCollisionBodies();
     if (physicsState) disposePhysicsWorld(physicsState);
     activeTerrainBodies.clear();
+    activeTerrainColliderWindowKey = null;
     terrainHost?.dispose();
     disposeOverlay(overlay);
     if (barrier) {
@@ -1541,6 +1593,7 @@
       preferencesKey="flow-fest-gate2-camera"
       {avatarState}
       {physicsProvider}
+      cameraCollisionProbe={probeThirdPersonCameraCollision}
       enabled={true}
       initialYaw={playerYaw}
       {initialPitch}

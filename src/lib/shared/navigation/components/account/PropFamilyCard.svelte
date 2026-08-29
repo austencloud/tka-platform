@@ -1,13 +1,12 @@
-<!-- One profile prop family. Selecting it reveals the registered variations. -->
+<!-- One profile skill. Hoop is the only family that opens a size choice. -->
 <script lang="ts">
   import type { ProfilePropFamily } from "$lib/shared/community/domain/profile-prop-catalog";
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
-  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   interface Props {
     family: ProfilePropFamily;
-    selectedVariants: PropType[];
+    selectedChoices: PropType[];
     active: boolean;
     disabled?: boolean;
     onselect: (representative: PropType) => void;
@@ -15,25 +14,22 @@
 
   let {
     family,
-    selectedVariants,
+    selectedChoices,
     active,
     disabled = false,
     onselect,
   }: Props = $props();
 
-  const selected = $derived(selectedVariants.length > 0);
+  const selected = $derived(selectedChoices.length > 0);
+  const hasChoices = $derived(family.choices.length > 1);
   const previewProp = $derived(
-    selectedVariants[selectedVariants.length - 1] ?? family.representative
+    selectedChoices[selectedChoices.length - 1] ?? family.representative
   );
   const selectionSummary = $derived(
-    selectedVariants
-      .map((prop) => getPropTypeDisplayInfo(prop).label)
-      .join(", ")
-  );
-  const selectionDetail = $derived(
-    selectedVariants.length === 1 && selectionSummary === family.label
-      ? "1 version selected"
-      : selectionSummary
+    family.choices
+      .filter((choice) => selectedChoices.includes(choice.prop))
+      .map((choice) => choice.label.replace(" Hoop", ""))
+      .join(" + ")
   );
 </script>
 
@@ -44,6 +40,8 @@
   class:active
   onclick={() => onselect(family.representative)}
   aria-pressed={selected}
+  aria-expanded={hasChoices ? active : undefined}
+  aria-controls={hasChoices ? "prop-family-skill-choices" : undefined}
   {disabled}
 >
   <span class="art-stage" aria-hidden="true">
@@ -53,34 +51,32 @@
       useSavedOverrides={false}
     />
     {#if selected}
-      <span class="selection-count">{selectedVariants.length}</span>
-    {:else}
-      <span class="add-mark"><i class="fas fa-plus"></i></span>
+      <span class="selection-mark"><i class="fas fa-check"></i></span>
     {/if}
   </span>
   <span class="card-copy">
     <strong>{family.label}</strong>
-    <small
-      >{selected
-        ? selectionDetail
-        : `${family.variants.length} ${family.variants.length === 1 ? "version" : "versions"}`}</small
-    >
+    {#if selected && hasChoices}
+      <small>{selectionSummary}</small>
+    {/if}
   </span>
-  <span class="detail-cue" aria-hidden="true">
-    <i class="fas fa-chevron-right"></i>
-  </span>
+  {#if hasChoices}
+    <span class="detail-cue" aria-hidden="true">
+      <i class="fas fa-chevron-right"></i>
+    </span>
+  {/if}
 </button>
 
 <style>
   .family-card {
     position: relative;
     display: grid;
-    grid-template-columns: 3.25rem minmax(0, 1fr) auto;
+    grid-template-columns: 2.5rem minmax(0, 1fr) auto;
     min-width: 0;
-    min-height: 5.25rem;
+    min-height: 4rem;
     align-items: center;
-    gap: 0.65rem;
-    padding: 0.7rem;
+    gap: 0.55rem;
+    padding: 0.55rem 0.65rem;
     color: var(--theme-text, white);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -129,8 +125,8 @@
   .art-stage {
     position: relative;
     display: grid;
-    width: 3.25rem;
-    height: 3.25rem;
+    width: 2.5rem;
+    height: 2.5rem;
     place-items: center;
     border-radius: 0.7rem;
     background: color-mix(in srgb, var(--theme-text) 4%, transparent);
@@ -141,8 +137,7 @@
     height: 80%;
   }
 
-  .selection-count,
-  .add-mark {
+  .selection-mark {
     position: absolute;
     top: -0.25rem;
     right: -0.25rem;
@@ -156,12 +151,6 @@
     background: color-mix(in srgb, var(--theme-accent) 82%, #090b13);
     font-size: 0.875rem;
     font-weight: 850;
-  }
-
-  .add-mark {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    background: var(--theme-panel-bg, #11141c);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .card-copy {
@@ -184,7 +173,7 @@
 
   .card-copy small {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
+    font-size: max(0.75rem, var(--font-size-compact, 0.75rem));
   }
 
   .detail-cue {
@@ -192,39 +181,17 @@
     font-size: 0.75rem;
   }
 
-  @container (min-width: 120rem) {
-    .family-card {
-      grid-template-columns: 5rem minmax(0, 1fr) auto;
-      min-height: 7rem;
-      gap: 1rem;
-      padding: 1rem;
-    }
-
-    .art-stage {
-      width: 5rem;
-      height: 5rem;
-    }
-
-    .card-copy strong {
-      font-size: 1.5rem;
-    }
-
-    .card-copy small {
-      font-size: 1.125rem;
-    }
-  }
-
   @media (max-width: 520px) {
     .family-card {
-      grid-template-columns: 2.75rem minmax(0, 1fr);
-      min-height: 4.5rem;
+      grid-template-columns: 2.5rem minmax(0, 1fr);
+      min-height: 4rem;
       gap: 0.45rem;
       padding: 0.55rem;
     }
 
     .art-stage {
-      width: 2.75rem;
-      height: 2.75rem;
+      width: 2.5rem;
+      height: 2.5rem;
     }
 
     .card-copy small,

@@ -42,12 +42,13 @@
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { motionDuration } from "$lib/shared/transitions/motion";
   import {
-    createLayoutFlip,
-    GRID_LAYOUT_TRANSITION_EASING,
-    GRID_LAYOUT_TRANSITION_MS,
+    createLayoutMotion,
+    LAYOUT_MOTION_DURATION_MS,
+    LAYOUT_MOTION_EASING,
   } from "$lib/shared/transitions/layout-flip";
   import { computeGridLayoutSignature } from "../domain/grid-layout-signature";
   import type {
+    MandalaPalette,
     MandalaPathShape,
     MandalaRenderOptions,
   } from "$lib/shared/mandala/domain/mandala-types";
@@ -94,6 +95,8 @@
     getDurationDisplay,
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
+    blueColorOverride = undefined,
+    redColorOverride = undefined,
     sequenceWord = "",
     arrivalRequest = null,
     scrollContainerRef = $bindable(),
@@ -133,6 +136,8 @@
     getDurationDisplay: (stepIndex: number) => string;
     bluePropTypeOverride?: PropType;
     redPropTypeOverride?: PropType;
+    blueColorOverride?: string;
+    redColorOverride?: string;
     sequenceWord?: string;
     arrivalRequest?: PictographArrivalRequest | null;
     scrollContainerRef?: HTMLElement;
@@ -150,7 +155,9 @@
   // deletion through removingStepIndices. Both mean the same thing to the cell:
   // play your exit, you are about to leave the layout.
   function isStepLeaving(stepIndex: number): boolean {
-    return removingStepIndices.has(stepIndex) || removingStepIndex === stepIndex;
+    return (
+      removingStepIndices.has(stepIndex) || removingStepIndex === stepIndex
+    );
   }
 
   const cellSize = $derived(
@@ -207,7 +214,6 @@
       ? revealDelays
       : EMPTY_REVEAL_DELAYS
   );
-
 
   function syncRevealEpoch(): void {
     const epoch = displayState.animationEpoch;
@@ -463,11 +469,17 @@
   // arrival landing — is the same gesture: cells leave one arrangement and
   // arrive at another. One owner runs all of them, so nothing can apply a
   // second transform on top of a first and make the motion wobble.
-  const layoutFlip = createLayoutFlip({
+  const layoutMotion = createLayoutMotion({
     getRoot: () => gridSurfaceRef,
     groups: [
-      { selector: "[data-history-step-identity]", datasetKey: "historyStepIdentity" },
-      { selector: "[data-history-start-position]", datasetKey: "historyStartPosition" },
+      {
+        selector: "[data-history-step-identity]",
+        datasetKey: "historyStepIdentity",
+      },
+      {
+        selector: "[data-history-start-position]",
+        datasetKey: "historyStartPosition",
+      },
       { selector: "[data-layout-mandala-key]", datasetKey: "layoutMandalaKey" },
     ],
     // The transform goes on the keyed element itself, never on an inner
@@ -475,8 +487,8 @@
     // only the inside would park a black square at the destination and have the
     // pictograph slide over to cover it.
     cancelSelectors: [".history-layout-shell", ".step-cell"],
-    getDuration: () => motionDuration(GRID_LAYOUT_TRANSITION_MS),
-    easing: GRID_LAYOUT_TRANSITION_EASING,
+    getDuration: () => motionDuration(LAYOUT_MOTION_DURATION_MS),
+    easing: LAYOUT_MOTION_EASING,
   });
 
   /** What the grid looks like, reduced to a string. Changes here mean cells
@@ -559,7 +571,8 @@
 
     const elements = getStepLayoutElements();
     for (const transition of plan.steps) {
-      if (transition.fromIndex === null || transition.toIndex === null) continue;
+      if (transition.fromIndex === null || transition.toIndex === null)
+        continue;
 
       const element = elements.get(transition.identity);
       if (!element) continue;
@@ -598,7 +611,7 @@
     // would otherwise leave the automatic capture standing aside forever.
     if (arrivalCapturePending && !arrivalRequest) {
       arrivalCapturePending = false;
-      layoutFlip.discard();
+      layoutMotion.discard();
     }
 
     const layoutChanged =
@@ -611,12 +624,12 @@
     gridHistoryAnimation = null;
 
     const captured =
-      layoutChanged && !arrivalCapturePending && layoutFlip.capture();
+      layoutChanged && !arrivalCapturePending && layoutMotion.capture();
     const token = ++layoutTransitionToken;
 
     void tick().then(() => {
       if (token !== layoutTransitionToken) return;
-      if (captured) layoutFlip.play();
+      if (captured) layoutMotion.play();
       if (historyChanged && plan === historyTransition) {
         playHistoryFlourishes(plan);
       }
@@ -624,12 +637,12 @@
   });
 
   export function captureArrivalLayout(): void {
-    arrivalCapturePending = layoutFlip.capture();
+    arrivalCapturePending = layoutMotion.capture();
   }
 
   export function playArrivalLayout(): void {
     arrivalCapturePending = false;
-    layoutFlip.play();
+    layoutMotion.play();
   }
 
   const timelineStartMandalas = $derived.by(() => {
@@ -694,6 +707,17 @@
   );
 
   const mandalaSize = $derived(Math.round(cellSize * MANDALA_CELL_SCALE));
+  const mandalaPaletteOverride = $derived.by((): MandalaPalette | undefined => {
+    if (!blueColorOverride || !redColorOverride) return undefined;
+    return {
+      blueStroke: blueColorOverride,
+      blueFill: blueColorOverride,
+      redStroke: redColorOverride,
+      redFill: redColorOverride,
+      purpleStroke: "#a78bfa",
+      purpleFill: "#a78bfa",
+    };
+  });
 
   // --- Context menu ---
   let mandalaMenuState = $state<ContextMenuState>({ open: false });
@@ -775,6 +799,7 @@
     size={mandalaSize}
     bluePropType={effectiveBluePropType}
     redPropType={effectiveRedPropType}
+    palette={mandalaPaletteOverride}
     pathShape={mandalaPathShape}
     morphChanges
   />
@@ -831,6 +856,8 @@
                 isTimelineMode={true}
                 {bluePropTypeOverride}
                 {redPropTypeOverride}
+                {blueColorOverride}
+                {redColorOverride}
                 onContentReady={() =>
                   noteContentReady(START_TILE_REVEAL_KEY, 0)}
               />
@@ -847,7 +874,10 @@
                 class:cascading={isMandalaCascading(cell.index)}
                 class:awaiting-reveal={isMandalaAwaiting(cell.index)}
                 data-layout-mandala-key={`timeline-start:${cell.index}`}
-                style:--reveal-delay={mandalaRevealDelay(cell.index, cell.index)}
+                style:--reveal-delay={mandalaRevealDelay(
+                  cell.index,
+                  cell.index
+                )}
               >
                 {#if onMandalaClick}
                   <button
@@ -949,6 +979,8 @@
                     animationEpoch={displayState.animationEpoch}
                     {bluePropTypeOverride}
                     {redPropTypeOverride}
+                    {blueColorOverride}
+                    {redColorOverride}
                     onContentReady={() => noteContentReady(stepIndex, waveBand)}
                   />
                 </div>
@@ -995,6 +1027,8 @@
               animationEpoch={displayState.animationEpoch}
               {bluePropTypeOverride}
               {redPropTypeOverride}
+              {blueColorOverride}
+              {redColorOverride}
               onContentReady={() => noteContentReady(START_TILE_REVEAL_KEY, 0)}
             />
           </div>
@@ -1047,6 +1081,8 @@
               animationEpoch={displayState.animationEpoch}
               {bluePropTypeOverride}
               {redPropTypeOverride}
+              {blueColorOverride}
+              {redColorOverride}
               onContentReady={() => noteContentReady(index, waveBand)}
             />
           </div>
@@ -1284,7 +1320,8 @@
         var(--dm-pictograph-bg, #0a0a0f)
       );
       box-shadow:
-        inset 0 0 0 1px color-mix(in srgb, var(--theme-accent, #7dd3fc) 62%, transparent),
+        inset 0 0 0 1px
+          color-mix(in srgb, var(--theme-accent, #7dd3fc) 62%, transparent),
         0 0 var(--plate-bloom-radius)
           color-mix(in srgb, var(--theme-accent, #7dd3fc) 26%, transparent);
     }

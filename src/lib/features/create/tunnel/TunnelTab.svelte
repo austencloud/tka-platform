@@ -1,116 +1,181 @@
 <script lang="ts">
-  import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import { onMount } from "svelte";
+  import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
+  import CreatePanelDrawer from "$lib/features/create/shared/components/CreatePanelDrawer.svelte";
+  import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
+  import type { CollectedTunnel } from "$lib/features/tunnel-collection/domain/tunnel-collection-types";
+  import type { PublicArtifactEnvelope } from "$lib/shared/artifact-revisions/domain/public-artifact";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+  import { setPendingBrowseIntent } from "$lib/features/browse/state/pending-browse-intent.svelte";
   import {
-    getEffectsConfigContext,
-    setEffectsConfigContext,
-  } from "$lib/shared/effects/state/effects-config-context";
-  import {
-    AnimationVisibilityStateManager,
-    getAnimationVisibilityManager,
-  } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { setAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
-  import {
-    animationSettings,
-    createAnimationSettingsState,
-  } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import { openSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
-  import { persistViewerMode } from "$lib/shared/sequence-viewer/services/viewer-state-persistence";
-  import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
-  import { createTunnelCreatorState } from "./state/tunnel-creator-state.svelte";
-  import { setTunnelCreatorContext } from "./context/tunnel-creator-context";
-  import TunnelLayout from "./components/TunnelLayout.svelte";
-  import { consumeTunnelCreatorHandoff } from "./services/tunnel-creator-handoff";
-  import { parseTunnelCreatorDraft } from "./domain/tunnel-creator-draft";
-  import { createTunnelPresentationState } from "./state/tunnel-presentation-state.svelte";
-  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
-  import { stageTunnelSnapshotForViewer } from "$lib/shared/sequence-viewer/tunnel/stage-tunnel-snapshot-for-viewer";
+    consumeTunnelCreatorHandoff,
+    createTunnelCreatorHandoff,
+    type TunnelCreatorHandoff,
+  } from "./services/tunnel-creator-handoff";
+  import type { TunnelEditorSessionStatus } from "./domain/tunnel-editor-session";
+  import TunnelEditorSession from "./TunnelEditorSession.svelte";
+  import TunnelLibraryPicker from "./components/TunnelLibraryPicker.svelte";
 
-  const draftPersistence = createPersistenceHelper<unknown>({
-    key: "tka-create-tunnel-draft-v1",
-    defaultValue: null,
+  type PendingReplacement =
+    | { kind: "open"; tunnel: CollectedTunnel }
+    | { kind: "new" };
+
+  const initialInput = consumeTunnelCreatorHandoff();
+  let editorInput = $state<TunnelCreatorHandoff | null>(initialInput);
+  let restoreDraft = $state(initialInput === null);
+  let sessionRevision = $state(0);
+  let libraryOpen = $state(false);
+  let pendingReplacement = $state<PendingReplacement | null>(null);
+  let replacementConfirmOpen = $state(false);
+  let sessionStatus = $state<TunnelEditorSessionStatus>({
+    editingTunnelId: initialInput?.tunnelId ?? null,
+    editingTunnelName: initialInput?.tunnelName ?? null,
+    hasContent: initialInput !== null,
+    dirty: false,
   });
 
-  const handoff = consumeTunnelCreatorHandoff();
-  const restoredDraft = handoff
-    ? null
-    : parseTunnelCreatorDraft(draftPersistence.load());
-  // Carries the poster as well as the name: after the tab switch these are the
-  // creator's only way to say which saved tunnel it is holding.
-  const editingTunnel = handoff
-    ? {
-        id: handoff.tunnelId,
-        name: handoff.tunnelName,
-        ...(handoff.poster ? { poster: handoff.poster } : {}),
-      }
-    : (restoredDraft?.editingTunnel ?? undefined);
+  const collection = $derived(tunnelCollectionState.collection);
+  const replacementName = $derived(
+    pendingReplacement?.kind === "open"
+      ? pendingReplacement.tunnel.name
+      : "a new tunnel"
+  );
+  const currentWorkspaceName = $derived(
+    sessionStatus.editingTunnelName ?? "this tunnel draft"
+  );
+  const replacementConfirmText = $derived(
+    pendingReplacement?.kind === "new" ? "Start new tunnel" : "Open tunnel"
+  );
 
-  // Seed new tunnels from the user's current look, then keep every edit inside
-  // this creator subtree. Existing tunnels replace these seeds with their exact
-  // saved snapshot below.
-  const inheritedEffects = getEffectsConfigContext();
-  const effects = createEffectsConfigState(inheritedEffects?.config, {
-    persist: false,
-  });
-  setEffectsConfigContext(effects);
-
-  const visibility = new AnimationVisibilityStateManager({ ephemeral: true });
-  visibility.updateSettings(getAnimationVisibilityManager().getSettings());
-  setAnimationVisibilityContext(visibility);
-
-  const localAnimationSettings = createAnimationSettingsState({
-    ephemeral: true,
-  });
-  localAnimationSettings.updateSettings({
-    ...animationSettings.settings,
-    trail: JSON.parse(JSON.stringify(animationSettings.trail)),
+  onMount(() => {
+    // Signed-in sessions start during auth boot. This fills the same singleton
+    // from guest localStorage without duplicating collection ownership.
+    tunnelCollectionState.initLocal();
   });
 
-  const presentation = createTunnelPresentationState({
-    initialSnapshot: handoff?.snapshot ?? restoredDraft?.presentation ?? null,
-    initialFormation:
-      handoff?.snapshot?.tunnel.config ??
-      handoff?.formation ??
-      restoredDraft?.composition?.formation,
-    effects,
-    visibility,
-    animationSettings: localAnimationSettings,
-    initialBluePropType: settingsService.settings.bluePropType ?? "staff",
-    initialRedPropType: settingsService.settings.redPropType ?? "staff",
-    initialBlueBuugengFlipped:
-      settingsService.settings.blueBuugengFlipped ?? false,
-    initialRedBuugengFlipped:
-      settingsService.settings.redBuugengFlipped ?? false,
-  });
+  function replaceSession(next: PendingReplacement): void {
+    editorInput =
+      next.kind === "open" ? createTunnelCreatorHandoff(next.tunnel) : null;
+    restoreDraft = false;
+    sessionRevision += 1;
+    libraryOpen = false;
+    pendingReplacement = null;
+  }
 
-  const state = createTunnelCreatorState({
-    initialComposition: handoff?.composition,
-    initialDraft: restoredDraft,
-    initialFormation: handoff?.formation,
-    editingTunnel,
-    presentation,
-    openComposition(composition, snapshot) {
-      const lead = composition.performers.find(
-        (performer) => performer.source.kind === "independent"
-      );
-      if (!lead || lead.source.kind !== "independent") return;
-      stageTunnelSnapshotForViewer(snapshot);
-      persistViewerMode("tunnel");
-      openSequenceOverlay(lead.source.sequence, {
-        returnLabel: "Back to Tunnel Creator",
-        initialViewerMode: "tunnel",
-        initialViewMode: "animation",
-        initialBpm: snapshot.playback.bpm,
-        initialPlaybackMode: snapshot.playback.playbackMode,
-        tunnelComposition: composition,
-        tunnelSaveTarget: editingTunnel,
-      });
-    },
-  });
-  setTunnelCreatorContext(state);
+  function requestReplacement(next: PendingReplacement): void {
+    if (
+      next.kind === "open" &&
+      next.tunnel.id === sessionStatus.editingTunnelId
+    ) {
+      libraryOpen = false;
+      return;
+    }
+    if (
+      next.kind === "new" &&
+      !sessionStatus.editingTunnelId &&
+      !sessionStatus.hasContent
+    ) {
+      libraryOpen = false;
+      return;
+    }
 
-  $effect(() => {
-    draftPersistence.setupAutoSave(state.draftSnapshot());
-  });
+    if (sessionStatus.dirty) {
+      pendingReplacement = next;
+      replacementConfirmOpen = true;
+      return;
+    }
+    replaceSession(next);
+  }
+
+  function confirmReplacement(): void {
+    if (pendingReplacement) replaceSession(pendingReplacement);
+  }
+
+  function cancelReplacement(): void {
+    pendingReplacement = null;
+  }
+
+  async function manageInBrowse(): Promise<void> {
+    setPendingBrowseIntent({
+      kind: "art-shelf",
+      shelfId: "art_tunnels",
+      label: "Tunnels",
+    });
+    libraryOpen = false;
+    await handleModuleChange("browse", "you");
+  }
+
+  async function openPublicInBrowse(
+    envelope: PublicArtifactEnvelope
+  ): Promise<void> {
+    setPendingBrowseIntent({
+      kind: "explore-visual-detail",
+      visualType: "tunnels",
+      artifactId: envelope.artifactId,
+    });
+    libraryOpen = false;
+    await handleModuleChange("browse", "explore");
+  }
 </script>
 
-<TunnelLayout />
+{#key sessionRevision}
+  <TunnelEditorSession
+    input={editorInput}
+    {restoreDraft}
+    collectionCount={collection.length}
+    onOpenLibrary={() => (libraryOpen = true)}
+    onStatusChange={(status) => (sessionStatus = status)}
+  />
+{/key}
+
+<CreatePanelDrawer
+  bind:isOpen={libraryOpen}
+  panelName="tunnel-library"
+  fullHeightOnMobile={true}
+  closeOnBackdrop={true}
+  focusTrap={true}
+  lockScroll={true}
+  keepMounted={true}
+  ariaLabel="Tunnels"
+>
+  <TunnelLibraryPicker
+    items={collection}
+    active={libraryOpen}
+    loading={tunnelCollectionState.loading}
+    activeTunnelId={sessionStatus.editingTunnelId}
+    onSelect={(tunnel) => requestReplacement({ kind: "open", tunnel })}
+    onOpenPublic={(envelope) => void openPublicInBrowse(envelope)}
+    onNew={() => requestReplacement({ kind: "new" })}
+    onManage={() => void manageInBrowse()}
+    onClose={() => (libraryOpen = false)}
+  />
+</CreatePanelDrawer>
+
+<ConfirmDialog
+  bind:isOpen={replacementConfirmOpen}
+  title={`Open ${replacementName}?`}
+  message={`Opening ${replacementName} replaces unsaved changes in ${currentWorkspaceName}. The saved artifact stays unchanged until you explicitly save.`}
+  confirmText={replacementConfirmText}
+  cancelText="Keep editing"
+  variant="warning"
+  onConfirm={confirmReplacement}
+  onCancel={cancelReplacement}
+/>
+
+<style>
+  :global(.drawer-content.tunnel-library-panel-container) {
+    --sheet-bg: var(--theme-panel-bg);
+    --sheet-filter: none;
+    background: var(--theme-panel-bg);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  :global(
+    .drawer-content.tunnel-library-panel-container.side-by-side-layout[data-placement="right"]
+  ) {
+    width: clamp(32rem, 38vw, 52rem);
+    max-width: calc(100vw - var(--desktop-sidebar-width, 64px));
+    border-radius: 0;
+  }
+</style>

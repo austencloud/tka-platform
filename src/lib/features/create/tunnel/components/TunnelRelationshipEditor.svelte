@@ -16,6 +16,20 @@
     value: String(speed),
     label: `${speed}×`,
   }));
+  const target = $derived(state.pairingTarget);
+  const targetLabel = $derived(target?.label ?? "Performer");
+  const sourceId = $derived(
+    target?.performer?.source.kind === "derived"
+      ? target.performer.source.performerId
+      : "independent"
+  );
+  const sourceLabel = $derived(
+    sourceId === "independent"
+      ? "Independent choreography"
+      : (state.pairingSourceCandidates.find(
+          (candidate) => candidate.id === sourceId
+        )?.label ?? "Earlier performer")
+  );
 </script>
 
 <section
@@ -24,101 +38,135 @@
 >
   <header>
     <div>
-      <span class="eyebrow">Pairing transformation</span>
-      <h3 id="relationship-title">Performer 1 → Performer 2</h3>
+      <span class="eyebrow">Performer source</span>
+      <h3 id="relationship-title">{sourceLabel} → {targetLabel}</h3>
     </div>
-    <span class="recipe">{copyOpsLabel(state.relationshipOps)}</span>
+    <span class="recipe">
+      {sourceId === "independent"
+        ? "Independent"
+        : copyOpsLabel(state.relationshipOps)}
+    </span>
   </header>
 
-  <div class="relationship-grid">
-    <div class="rotation-card">
-      <h4 id="tunnel-rotation-label">Rotation</h4>
-      <FuseRotationDial
-        value={state.relationship.rotationSteps}
-        accent="var(--theme-accent)"
-        labelledBy="tunnel-rotation-label"
-        onchange={(rotationSteps) => state.setRelationship({ rotationSteps })}
-      />
-    </div>
-
-    <div class="rule-stack">
-      <div class="control-group">
-        <span class="control-label">Reflection</span>
-        <SegmentedControl
-          options={reflectionOptions}
-          value={state.relationship.reflect}
-          onchange={(reflect) => state.setRelationship({ reflect })}
-          semantics="radiogroup"
-          ariaLabel="Performer 2 reflection"
-          color="accent"
-          size="sm"
-        />
-      </div>
-
-      <div class="chip-row" aria-label="Performer 2 motion transforms">
-        <FilterChipBase
-          label="Invert"
-          icon="fas fa-arrows-rotate"
-          mode="toggle"
-          active={state.relationship.invert}
-          chipColor="var(--theme-accent)"
-          onclick={() =>
-            state.setRelationship({ invert: !state.relationship.invert })}
-        />
-        <FilterChipBase
-          label="Rewind"
-          icon="fas fa-backward"
-          mode="toggle"
-          active={state.relationship.rewind}
-          chipColor="var(--theme-accent)"
-          onclick={() =>
-            state.setRelationship({ rewind: !state.relationship.rewind })}
-        />
-      </div>
-
-      <div class="control-group">
-        <span class="control-label">Performer 2 speed</span>
-        <SegmentedControl
-          options={speedOptions}
-          value={String(state.partner?.timing.speed ?? 1)}
-          onchange={(value) => state.setPartnerTiming({ speed: Number(value) })}
-          semantics="radiogroup"
-          ariaLabel="Performer 2 speed"
-          color="accent"
-          size="sm"
-        />
-      </div>
-
-      <div class="offset-row">
-        <div>
-          <span class="control-label">Start offset</span>
-          <span class="offset-hint">Shift Performer 2 around the sequence</span>
-        </div>
-        <div class="stepper" aria-label="Performer 2 start offset">
-          <button
-            type="button"
-            aria-label="Decrease Performer 2 offset"
-            onclick={() =>
-              state.setPartnerTiming({
-                stepOffset: Math.max(
-                  0,
-                  (state.partner?.timing.stepOffset ?? 0) - 1
-                ),
-              })}><i class="fas fa-minus" aria-hidden="true"></i></button
-          >
-          <output>{state.partner?.timing.stepOffset ?? 0}</output>
-          <button
-            type="button"
-            aria-label="Increase Performer 2 offset"
-            onclick={() =>
-              state.setPartnerTiming({
-                stepOffset: (state.partner?.timing.stepOffset ?? 0) + 1,
-              })}><i class="fas fa-plus" aria-hidden="true"></i></button
-          >
-        </div>
-      </div>
-    </div>
+  <div class="source-card">
+    <label for="tunnel-performer-source">Choreography source</label>
+    <select
+      id="tunnel-performer-source"
+      value={sourceId}
+      onchange={(event) => {
+        const next = event.currentTarget.value;
+        state.setPerformerSource(
+          target?.id ?? "",
+          next === "independent" ? null : next
+        );
+      }}
+    >
+      <option value="independent">Independent sequence</option>
+      {#each state.pairingSourceCandidates as candidate (candidate.id)}
+        <option value={candidate.id}>Follow {candidate.label}</option>
+      {/each}
+    </select>
+    <p>
+      {sourceId === "independent"
+        ? `${targetLabel} owns a complete two-prop sequence.`
+        : `${targetLabel} derives choreography from ${sourceLabel} while keeping its own timing.`}
+    </p>
   </div>
+
+  {#if sourceId !== "independent"}
+    <div class="relationship-grid">
+      <div class="rotation-card">
+        <h4 id="tunnel-rotation-label">Rotation</h4>
+        <FuseRotationDial
+          value={state.relationship.rotationSteps}
+          accent="var(--theme-accent)"
+          labelledBy="tunnel-rotation-label"
+          onchange={(rotationSteps) => state.setRelationship({ rotationSteps })}
+        />
+      </div>
+
+      <div class="rule-stack">
+        <div class="control-group">
+          <span class="control-label">Reflection</span>
+          <SegmentedControl
+            options={reflectionOptions}
+            value={state.relationship.reflect}
+            onchange={(reflect) => state.setRelationship({ reflect })}
+            semantics="radiogroup"
+            ariaLabel={`${targetLabel} reflection`}
+            color="accent"
+            size="sm"
+          />
+        </div>
+
+        <div class="chip-row" aria-label={`${targetLabel} motion transforms`}>
+          <FilterChipBase
+            label="Invert"
+            icon="fas fa-arrows-rotate"
+            mode="toggle"
+            active={state.relationship.invert}
+            chipColor="var(--theme-accent)"
+            onclick={() =>
+              state.setRelationship({ invert: !state.relationship.invert })}
+          />
+          <FilterChipBase
+            label="Rewind"
+            icon="fas fa-backward"
+            mode="toggle"
+            active={state.relationship.rewind}
+            chipColor="var(--theme-accent)"
+            onclick={() =>
+              state.setRelationship({ rewind: !state.relationship.rewind })}
+          />
+        </div>
+
+        <div class="control-group">
+          <span class="control-label">{targetLabel} speed</span>
+          <SegmentedControl
+            options={speedOptions}
+            value={String(target?.timing.speed ?? 1)}
+            onchange={(value) =>
+              target &&
+              state.setPerformerTiming(target.id, { speed: Number(value) })}
+            semantics="radiogroup"
+            ariaLabel={`${targetLabel} speed`}
+            color="accent"
+            size="sm"
+          />
+        </div>
+
+        <div class="offset-row">
+          <div>
+            <span class="control-label">Start offset</span>
+            <span class="offset-hint"
+              >Shift Performer 2 around the sequence</span
+            >
+          </div>
+          <div class="stepper" aria-label={`${targetLabel} start offset`}>
+            <button
+              type="button"
+              aria-label={`Decrease ${targetLabel} offset`}
+              onclick={() =>
+                target &&
+                state.setPerformerTiming(target.id, {
+                  stepOffset: Math.max(0, target.timing.stepOffset - 1),
+                })}><i class="fas fa-minus" aria-hidden="true"></i></button
+            >
+            <output>{target?.timing.stepOffset ?? 0}</output>
+            <button
+              type="button"
+              aria-label={`Increase ${targetLabel} offset`}
+              onclick={() =>
+                target &&
+                state.setPerformerTiming(target.id, {
+                  stepOffset: target.timing.stepOffset + 1,
+                })}><i class="fas fa-plus" aria-hidden="true"></i></button
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
 </section>
 
 <style>
@@ -188,6 +236,48 @@
     align-items: center;
   }
 
+  .source-card {
+    display: grid;
+    grid-template-columns: minmax(10rem, 0.7fr) minmax(12rem, 1.3fr);
+    align-items: center;
+    gap: 8px 14px;
+    padding: var(--settings-spacing-md, 16px);
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--settings-radius-md, 14px);
+    background: var(--theme-card-bg);
+  }
+
+  .source-card label {
+    color: var(--theme-text);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+  }
+
+  .source-card select {
+    width: 100%;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 2.5rem 0 0.75rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--settings-radius-sm, 8px);
+    color: var(--theme-text);
+    background: var(--theme-panel-bg);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .source-card select:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .source-card p {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.4;
+  }
+
   .rotation-card,
   .rule-stack,
   .control-group {
@@ -251,8 +341,13 @@
   }
 
   @container (max-width: 660px) {
-    .relationship-grid {
+    .relationship-grid,
+    .source-card {
       grid-template-columns: 1fr;
+    }
+
+    .source-card p {
+      grid-column: auto;
     }
   }
 

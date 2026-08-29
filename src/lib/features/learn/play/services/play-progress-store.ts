@@ -1,5 +1,5 @@
 /**
- * Play arcade progress store — personal bests, stars, level unlocks.
+ * Play arcade progress store — personal bests, stars, challenge unlocks.
  *
  * Dual-write strategy mirrors ConceptProgressTracker
  * (../../services/concept-progress-tracker.ts):
@@ -14,9 +14,16 @@
  * lives in ../get-play-progress-store.ts.
  */
 import { z } from "zod";
-import { firestoreGet, firestoreSet } from "$lib/shared/firestore/firestore-crud";
+import {
+  firestoreGet,
+  firestoreSet,
+} from "$lib/shared/firestore/firestore-crud";
 import { getUserPlayProgressPath } from "../../data/firestore-paths";
-import { applyResult, emptyGameProgress, mergeProgress } from "../domain/progression";
+import {
+  applyResult,
+  emptyGameProgress,
+  mergeProgress,
+} from "../domain/progression";
 import type {
   ArcadeSessionResult,
   GameId,
@@ -34,20 +41,42 @@ const GradeSchema = z.union([
   z.literal("C"),
   z.literal("D"),
 ]);
-const StarsSchema = z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]);
+const StarsSchema = z.union([
+  z.literal(0),
+  z.literal(1),
+  z.literal(2),
+  z.literal(3),
+]);
 
-const GameProgressSchema = z.object({
-  bestScore: z.number(),
-  bestGrade: GradeSchema.nullable(),
-  starsByLevel: z.record(z.string(), StarsSchema),
-  levelsUnlocked: z.number(),
-  totalPlays: z.number(),
+const StoredGameProgressSchema = z
+  .object({
+    bestScore: z.number(),
+    bestGrade: GradeSchema.nullable(),
+    starsByChallenge: z.record(z.string(), StarsSchema).optional(),
+    challengesUnlocked: z.number().optional(),
+    // Legacy names written before game progression was separated from the
+    // official TKA level system. Read them, but never write them again.
+    starsByLevel: z.record(z.string(), StarsSchema).optional(),
+    levelsUnlocked: z.number().optional(),
+    totalPlays: z.number(),
+  })
+  .transform((stored): GameProgress => ({
+    bestScore: stored.bestScore,
+    bestGrade: stored.bestGrade,
+    starsByChallenge: stored.starsByChallenge ?? stored.starsByLevel ?? {},
+    challengesUnlocked: stored.challengesUnlocked ?? stored.levelsUnlocked ?? 1,
+    totalPlays: stored.totalPlays,
+  }));
+
+const StoredPlayProgressSchema = z.object({
+  games: z.record(z.string(), StoredGameProgressSchema),
+  lastUpdated: z.string().optional(),
 });
 
 /** Firestore doc shape for users/{uid}/playProgress/current. */
 const PlayProgressDocSchema = z.object({
   id: z.string(),
-  games: z.record(z.string(), GameProgressSchema),
+  games: z.record(z.string(), StoredGameProgressSchema),
   lastUpdated: z.string(),
 });
 
@@ -57,9 +86,10 @@ export interface PlayProgressStore {
   getGameProgress(gameId: GameId): GameProgress;
   /** Applies a session result; persists localStorage immediately, Firestore
    *  fire-and-forget when signed in. Returns updated progress + isNewBest. */
-  recordResult(
-    result: Omit<ArcadeSessionResult, "isNewBest">
-  ): { progress: GameProgress; isNewBest: boolean };
+  recordResult(result: Omit<ArcadeSessionResult, "isNewBest">): {
+    progress: GameProgress;
+    isNewBest: boolean;
+  };
   /** Wire Firestore sync after sign-in; merges by lastUpdated (mergeProgress). */
   initializeForUser(userId: string): Promise<void>;
   reset(): void; // test hook
@@ -67,6 +97,15 @@ export interface PlayProgressStore {
 
 function emptyPlayProgress(): PlayProgress {
   return { games: {}, lastUpdated: new Date(0).toISOString() };
+}
+
+function normalizeGames(games: Record<string, unknown>): PlayProgress["games"] {
+  return Object.fromEntries(
+    Object.entries(games).map(([gameId, stored]) => [
+      gameId,
+      StoredGameProgressSchema.parse(stored),
+    ])
+  ) as PlayProgress["games"];
 }
 
 export function createPlayProgressStore(): PlayProgressStore {
@@ -77,13 +116,16 @@ export function createPlayProgressStore(): PlayProgressStore {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) return emptyPlayProgress();
-      const parsed = JSON.parse(stored) as Partial<PlayProgress>;
+      const parsed = StoredPlayProgressSchema.parse(JSON.parse(stored));
       return {
-        games: parsed.games ?? {},
+        games: parsed.games as PlayProgress["games"],
         lastUpdated: parsed.lastUpdated ?? new Date(0).toISOString(),
       };
     } catch (error) {
-      console.warn("[play-progress-store] Failed to load progress from localStorage:", error);
+      console.warn(
+        "[play-progress-store] Failed to load progress from localStorage:",
+        error
+      );
       return emptyPlayProgress();
     }
   }
@@ -99,7 +141,10 @@ export function createPlayProgressStore(): PlayProgressStore {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
     } catch (error) {
-      console.error("[play-progress-store] Failed to save progress to localStorage:", error);
+      console.error(
+        "[play-progress-store] Failed to save progress to localStorage:",
+        error
+      );
     }
   }
 
@@ -108,14 +153,20 @@ export function createPlayProgressStore(): PlayProgressStore {
     await firestoreSet(
       getUserPlayProgressPath(userId),
       DOC_ID,
-      { games: progress.games, lastUpdated: progress.lastUpdated } as Record<string, unknown>,
+      { games: progress.games, lastUpdated: progress.lastUpdated } as Record<
+        string,
+        unknown
+      >,
       { merge: true }
     );
   }
 
   function syncToFirestoreFireAndForget(): void {
     writeToFirestore().catch((error) => {
-      console.error("[play-progress-store] Failed to sync progress to Firestore:", error);
+      console.error(
+        "[play-progress-store] Failed to sync progress to Firestore:",
+        error
+      );
     });
   }
 
@@ -128,15 +179,16 @@ export function createPlayProgressStore(): PlayProgressStore {
     return current.games[gameId] ?? emptyGameProgress();
   }
 
-  function recordResult(
-    result: Omit<ArcadeSessionResult, "isNewBest">
-  ): { progress: GameProgress; isNewBest: boolean } {
+  function recordResult(result: Omit<ArcadeSessionResult, "isNewBest">): {
+    progress: GameProgress;
+    isNewBest: boolean;
+  } {
     const current = ensureLoaded();
     const existing = current.games[result.gameId] ?? emptyGameProgress();
     const isNewBest = result.score > existing.bestScore;
 
     const updatedGame = applyResult(existing, {
-      levelNumber: result.levelNumber,
+      challengeNumber: result.challengeNumber,
       score: result.score,
       starsEarned: result.starsEarned,
       grade: result.grade,
@@ -169,14 +221,20 @@ export function createPlayProgressStore(): PlayProgressStore {
         try {
           await writeToFirestore();
         } catch (error) {
-          console.error("[play-progress-store] Failed to seed Firestore progress:", error);
+          console.error(
+            "[play-progress-store] Failed to seed Firestore progress:",
+            error
+          );
         }
       }
       return;
     }
 
     const remoteProgress: PlayProgress = {
-      games: remoteDoc.games as PlayProgress["games"],
+      // firestoreGet applies the schema in production. Normalizing once more
+      // keeps this boundary honest for alternate adapters and tests that
+      // return a raw legacy document.
+      games: normalizeGames(remoteDoc.games),
       lastUpdated: remoteDoc.lastUpdated,
     };
 
@@ -189,7 +247,10 @@ export function createPlayProgressStore(): PlayProgressStore {
       try {
         await writeToFirestore();
       } catch (error) {
-        console.error("[play-progress-store] Failed to push local progress to Firestore:", error);
+        console.error(
+          "[play-progress-store] Failed to push local progress to Firestore:",
+          error
+        );
       }
     }
   }
@@ -204,5 +265,11 @@ export function createPlayProgressStore(): PlayProgressStore {
     }
   }
 
-  return { getProgress, getGameProgress, recordResult, initializeForUser, reset };
+  return {
+    getProgress,
+    getGameProgress,
+    recordResult,
+    initializeForUser,
+    reset,
+  };
 }

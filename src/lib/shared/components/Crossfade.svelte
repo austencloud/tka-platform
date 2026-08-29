@@ -78,7 +78,7 @@
 
   let reducedMotion = $state(
     typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
 
   $effect(() => {
@@ -98,7 +98,7 @@
   // (delay = out duration), mirroring CellRenderer's sequential swap timing.
   // Crossfade mode uses the explicit `delay` prop (0 = pure overlap).
   const inDelay = $derived(
-    reducedMotion ? 0 : mode === "swap" ? duration : delay,
+    reducedMotion ? 0 : mode === "swap" ? duration : delay
   );
 
   const heightEnabled = $derived(animateHeight && !fill);
@@ -126,7 +126,11 @@
     const expected = Number.parseFloat(box.style.height);
     if (Number.isFinite(expected) && Math.abs(expected - target) < 0.5) return;
 
-    const from = box.getBoundingClientRect().height;
+    // Layout height must stay in the element's own coordinate space. A modal
+    // may scale its whole subtree while entering; getBoundingClientRect() then
+    // reports that temporary visual scale and freezes the box too short after
+    // the modal settles.
+    const from = box.offsetHeight;
     box.style.height = `${target}px`;
     if (!shouldAnimate || Math.abs(from - target) < 0.5) return;
 
@@ -144,13 +148,13 @@
         // fill the box would jump there and only then animate away from it.
         fill: "backwards",
         easing: HEIGHT_EASING,
-      },
+      }
     );
   }
 
   function measure(): void {
     if (!liveLayer) return;
-    applyHeight(liveLayer.getBoundingClientRect().height);
+    applyHeight(liveLayer.offsetHeight);
   }
 
   function cancelScheduledMeasure(): void {

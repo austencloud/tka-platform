@@ -11,7 +11,7 @@ things that exist in the actual sequence viewer drawer to exist in the QR page?
 to fix the other variation so it does look exactly the same."_
 
 The fix was structural: ALL viewer chrome now lives in one shared component,
-rendered by both hosts, so the surfaces are identical by construction. This rule
+rendered by both viewer destinations, so the surfaces are identical by construction. This rule
 keeps it that way — the same playbook that stopped chip and crossfade drift
 (`chip-primitives.md`, `crossfade-primitive.md`).
 
@@ -28,18 +28,18 @@ Host deltas go through the prop seam, never through forked markup:
 | Prop                     | Purpose                                                        |
 | ------------------------ | -------------------------------------------------------------- |
 | `onClose`                | Host-specific dismiss (drawer close vs `goto`)                 |
-| `onRemix`                | Override remix routing (/q → composer handoff)                 |
+| `onRemix`                | Override remix routing when a host needs it                    |
 | `openAppHref`            | "Open TKA" target for standalone hosts                         |
 | `onAccountSignIn`        | Guest sign-in / full-account avatar entry for standalone hosts |
-| `startInSplit`           | Boot into split view (/q scan landing)                         |
-| `exportOverrides`        | Host-owned export funnels (gated downloads on /q)              |
+| `startInCardThenSplit`   | Boot a scan-origin viewer on its card before split view        |
+| `exportOverrides`        | Host-owned export funnels (such as scan download gating)       |
 | `navigation`             | Standalone-route back action in the shared header              |
 | `contextContent`         | Host context rendered between the header and viewer body       |
 | `showFullscreenControls` | Enables route-owned fullscreen affordances in the shell        |
 
 ## The Host Contract
 
-A host (today: `SequenceViewerDrawerHost.svelte`, `src/routes/q/[code]/+page.svelte`,
+A host (today: `SequenceViewerDrawerHost.svelte` and
 `src/routes/sequence/[id]/SequenceViewerPage.svelte`) is THIN. It owns only: its wrapper (Drawer / route page), data
 resolution/bootstrap, open/close routing, and host-specific funnels (scan
 logging, gated export). Hosts MUST NOT:
@@ -53,7 +53,7 @@ logging, gated export). Hosts MUST NOT:
    declarations in host styles — they shadow the `:root` values set by
    `applyThemeForBackground()` for the whole subtree and re-create the
    color-mismatch bug. Consuming them via `var()` is fine. Standalone hosts run
-   the theme pipeline instead (see the /q `onMount`).
+   the theme pipeline instead.
 3. **Fork behavior.** Mobile breakpoint is `width < 768` everywhere. Layout and
    export-narrow rules live in the shell only.
 
@@ -61,11 +61,19 @@ Need something the shell doesn't expose? **Add a prop to the shell** (as
 `exportOverrides` was added). If the shell's own behavior is wrong, fix it in
 the shell — both surfaces get the fix.
 
+### Scan ingress contract
+
+`src/routes/q/[code]/QScanPage.svelte` is not a viewer host. It may resolve a
+short code, record physical-scan attribution, cache a route handoff, and
+replace the URL with `/sequence/[code]`. It must not import the orchestrator or
+shell, render viewer chrome, or own an alternate export/practice layout. Only
+this ingress may call `recordCardScan`.
+
 ## Enforcement
 
 `tests/unit/sequence-viewer-shell-contract.test.ts` statically asserts the
-contract (shell rendered by both hosts, no chrome imports, no theme-var
-declarations, shared breakpoint) and runs in the `web-ci` unit-test job. If it
+contract (shell rendered by both viewer hosts, no chrome imports, no theme-var
+declarations, shared breakpoint, and no shell on `/q`) and runs in the `web-ci` unit-test job. If it
 fails, fix the host — do not loosen the test.
 
 ## Forbidden
@@ -74,8 +82,7 @@ fails, fix the host — do not loosen the test.
 - Host-side `--theme-*` / `--semantic-*` declarations.
 - A second breakpoint or export-layout rule outside the shell.
 - Loosening the contract test to make a host change pass.
-- "The /q version just needs a small tweak" → that tweak goes in the shell or
-  through a prop.
+- A full viewer mounted on `/q`; physical scans hand off to `/sequence`.
 
 ## Related
 

@@ -1,20 +1,30 @@
 <script lang="ts">
+  import { tick } from "svelte";
+
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import { SceneEnvironmentId } from "$lib/shared/3d/environments/domain/scene-environment";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
+  import type { FormationPresetId } from "../domain/stage-types";
   import {
     RECOMMENDED_STUDIO_STARTER,
     type StudioStarter,
   } from "../domain/studio-project";
 
+  type GuideStep = "material" | "cast" | "formation" | "prop" | "world";
+
   interface Props {
     word: string | null;
     showDirector: boolean;
     directorHref: string;
-    onApply: (starter: StudioStarter) => void;
+    onApply: (starter: StudioStarter) => Promise<void> | void;
     onChooseSequence: () => void;
-    onOpenChart: () => void;
+    onOpenChoreography: () => void;
+    onVisibilityChange: (visible: boolean) => void;
+    onStartEmptyStage: () => void;
+    onReturnToExample: () => void;
   }
 
   let {
@@ -23,28 +33,65 @@
     directorHref,
     onApply,
     onChooseSequence,
-    onOpenChart,
+    onOpenChoreography,
+    onVisibilityChange,
+    onStartEmptyStage,
+    onReturnToExample,
   }: Props = $props();
 
   const STORAGE_KEY = "tka-stage-starter-dismissed";
   const castOptions = [
-    { count: 1 as const, label: "Solo", formation: "solo" as const },
+    {
+      count: 1 as const,
+      label: "Solo",
+      description: "One performer",
+      icon: "fa-person",
+    },
     {
       count: 2 as const,
       label: "Duo",
-      formation: "facing-each-other" as const,
+      description: "Two performers",
+      icon: "fa-user-group",
     },
-    { count: 4 as const, label: "Ensemble", formation: "v-shape" as const },
+    {
+      count: 4 as const,
+      label: "Ensemble",
+      description: "Four performers",
+      icon: "fa-people-group",
+    },
   ];
+  const duoFormations: Array<{
+    id: FormationPresetId;
+    label: string;
+    icon: string;
+  }> = [
+    { id: "side-by-side", label: "Side by side", icon: "fa-arrows-left-right" },
+    {
+      id: "facing-each-other",
+      label: "Face to face",
+      icon: "fa-people-arrows",
+    },
+    { id: "back-to-back", label: "Back to back", icon: "fa-arrows-up-down" },
+  ];
+  const ensembleFormations: Array<{
+    id: FormationPresetId;
+    label: string;
+    icon: string;
+  }> = [
+    { id: "line", label: "Line", icon: "fa-grip-lines" },
+    { id: "v-shape", label: "V shape", icon: "fa-chevron-down" },
+    { id: "circle", label: "Circle", icon: "fa-circle-notch" },
+  ];
+  const propOptions = [
+    { id: PropType.STAFF, label: "Staff", icon: "fa-grip-lines-vertical" },
+    { id: PropType.POI, label: "Poi", icon: "fa-circle-nodes" },
+    { id: PropType.FAN, label: "Fans", icon: "fa-fan" },
+  ] as const;
   const sceneOptions = [
     { id: SceneEnvironmentId.EMBER, label: "Ember", icon: "fa-fire" },
     { id: SceneEnvironmentId.COSMIC, label: "Cosmic", icon: "fa-moon" },
     { id: SceneEnvironmentId.FOREST, label: "Forest", icon: "fa-tree" },
-  ] as const;
-  const propOptions = [
-    { id: PropType.STAFF, label: "Staff" },
-    { id: PropType.POI, label: "Poi" },
-    { id: PropType.FAN, label: "Fans" },
+    { id: SceneEnvironmentId.VOID, label: "Void", icon: "fa-circle" },
   ] as const;
 
   function storedDismissal(): boolean {
@@ -57,14 +104,43 @@
 
   let dismissed = $state(storedDismissal());
   let guided = $state(false);
-  let startingMaterial =
-    $state<StudioStarter["startingMaterial"]>("recommended");
-  let performerCount = $state<StudioStarter["performerCount"]>(4);
-  let formation = $state<StudioStarter["formation"]>("v-shape");
-  let environmentId = $state<StudioStarter["environmentId"]>(
-    SceneEnvironmentId.EMBER
+  let currentStep = $state<GuideStep>("material");
+  let applying = $state(false);
+  let startingMaterial = $state<StudioStarter["startingMaterial"] | null>(null);
+  let performerCount = $state<StudioStarter["performerCount"] | null>(null);
+  let formation = $state<StudioStarter["formation"] | null>(null);
+  let environmentId = $state<StudioStarter["environmentId"] | null>(null);
+  let prop = $state<StudioStarter["prop"] | null>(null);
+  let activeHeading = $state<HTMLHeadingElement | null>(null);
+
+  const guideSteps = $derived<GuideStep[]>(
+    performerCount === 1
+      ? ["material", "cast", "prop", "world"]
+      : ["material", "cast", "formation", "prop", "world"]
   );
-  let prop = $state<StudioStarter["prop"]>(PropType.STAFF);
+  const currentStepIndex = $derived(guideSteps.indexOf(currentStep));
+  const formationOptions = $derived(
+    performerCount === 2
+      ? duoFormations
+      : performerCount === 4
+        ? ensembleFormations
+        : []
+  );
+  const canContinue = $derived(
+    currentStep === "material"
+      ? startingMaterial !== null
+      : currentStep === "cast"
+        ? performerCount !== null
+        : currentStep === "formation"
+          ? formation !== null
+          : currentStep === "prop"
+            ? prop !== null
+            : environmentId !== null
+  );
+
+  $effect(() => {
+    onVisibilityChange(!dismissed);
+  });
 
   function dismiss(): void {
     dismissed = true;
@@ -75,281 +151,425 @@
     }
   }
 
-  function selectCast(option: (typeof castOptions)[number]): void {
-    performerCount = option.count;
-    formation = option.formation;
+  async function focusActiveHeading(): Promise<void> {
+    await tick();
+    activeHeading?.focus({ preventScroll: true });
   }
 
-  function applyRecommended(): void {
-    dismiss();
-    onApply(RECOMMENDED_STUDIO_STARTER);
+  function beginGuided(): void {
+    currentStep = "material";
+    guided = true;
+    onStartEmptyStage();
+    void focusActiveHeading();
   }
 
-  function applyGuided(): void {
-    const starter: StudioStarter = {
-      startingMaterial,
-      performerCount,
-      formation,
-      environmentId,
-      prop,
-    };
-    dismiss();
-    onApply(starter);
-    if (startingMaterial === "choose-sequence") onChooseSequence();
+  function returnToExample(): void {
+    guided = false;
+    onReturnToExample();
+    void focusActiveHeading();
+  }
+
+  function selectCast(count: StudioStarter["performerCount"]): void {
+    performerCount = count;
+    if (count === 1) {
+      formation = "solo";
+      return;
+    }
+
+    const valid = count === 2 ? duoFormations : ensembleFormations;
+    if (!formation || !valid.some((option) => option.id === formation)) {
+      formation = null;
+    }
+  }
+
+  function selectStartingMaterial(
+    material: StudioStarter["startingMaterial"]
+  ): void {
+    startingMaterial = material;
+    moveStep(1);
+  }
+
+  function moveStep(direction: -1 | 1): void {
+    const next = guideSteps[currentStepIndex + direction];
+    if (next) {
+      currentStep = next;
+      void focusActiveHeading();
+    }
+  }
+
+  function back(): void {
+    if (currentStepIndex > 0) moveStep(-1);
+    else returnToExample();
+  }
+
+  async function applyRecommended(): Promise<void> {
+    if (applying) return;
+    applying = true;
+    try {
+      await onApply(RECOMMENDED_STUDIO_STARTER);
+      dismiss();
+    } finally {
+      applying = false;
+    }
+  }
+
+  async function applyGuided(): Promise<void> {
+    if (
+      applying ||
+      !startingMaterial ||
+      !performerCount ||
+      !formation ||
+      !environmentId ||
+      !prop
+    ) {
+      return;
+    }
+
+    applying = true;
+    try {
+      await onApply({
+        startingMaterial,
+        performerCount,
+        formation,
+        environmentId,
+        prop,
+      });
+      dismiss();
+      if (startingMaterial === "choose-sequence") onChooseSequence();
+    } finally {
+      applying = false;
+    }
   }
 </script>
 
-{#if !dismissed}
-  <aside class="starter" aria-labelledby="studio-starter-title">
+<BaseModal
+  open={!dismissed}
+  closeOnBackdrop={false}
+  closeOnEscape={false}
+  size="fit"
+  animation="pop"
+  class="stage-starter-modal"
+  labelledBy="stage-starter-title"
+>
+  <span id="stage-starter-title" class="visually-hidden">Set up 3D Studio</span>
+  <Crossfade key={guided ? "guided" : "entry"} animateHeight>
     {#if !guided}
-      <div class="eyebrow">
-        <i class="fas fa-wand-sparkles" aria-hidden="true"></i> 3D Studio
-      </div>
-      <h1 id="studio-starter-title">Put something in motion.</h1>
-      <p>
+      <div class="starter-surface entry-surface">
+        <div class="eyebrow">
+          <i class="fas fa-wand-sparkles" aria-hidden="true"></i>
+          3D Studio
+        </div>
+        <h1 bind:this={activeHeading} tabindex="-1">
+          Begin with motion or an empty stage.
+        </h1>
+        <p>
+          The performance behind this card is an example. Keep it, or clear the
+          stage and choose each part yourself.
+        </p>
         {#if word}
-          Your current sequence is ready when you are.
-        {:else}
-          Start with a real cast, prop, and world. The deeper tools stay one tap
-          away.
+          <div class="example-label">
+            <span>Example sequence</span>
+            <strong>{word}</strong>
+          </div>
         {/if}
-      </p>
-      <div class="actions">
-        <PanelButton variant="primary" fullWidth onclick={applyRecommended}>
-          <i class="fas fa-play" aria-hidden="true"></i>
-          Start a recommended scene
-        </PanelButton>
-        <PanelButton
-          variant="secondary"
-          fullWidth
-          onclick={() => (guided = true)}
-        >
-          <i class="fas fa-sliders" aria-hidden="true"></i>
-          Start a scene
-        </PanelButton>
+        <div class="actions">
+          <PanelButton
+            variant="primary"
+            fullWidth
+            disabled={applying}
+            ariaBusy={applying}
+            onclick={() => void applyRecommended()}
+          >
+            <i
+              class="fas {applying ? 'fa-circle-notch fa-spin' : 'fa-play'}"
+              aria-hidden="true"
+            ></i>
+            Start with a recommended scene
+          </PanelButton>
+          <PanelButton
+            variant="secondary"
+            fullWidth
+            disabled={applying}
+            onclick={beginGuided}
+          >
+            <i class="fas fa-eraser" aria-hidden="true"></i>
+            Build from an empty stage
+          </PanelButton>
+        </div>
+
+        <div class="advanced" aria-label="Other ways to begin">
+          <button
+            type="button"
+            onclick={() => {
+              dismiss();
+              onOpenChoreography();
+            }}>Keep this example and choreograph it</button
+          >
+          <button
+            type="button"
+            onclick={() => {
+              dismiss();
+              onChooseSequence();
+            }}>Open a sequence from your library</button
+          >
+          {#if showDirector}
+            <a href={directorHref}
+              >Director preview &amp; JSON
+              <span
+                >Expert workspace. It does not load this unsaved Stage project
+                yet.</span
+              ></a
+            >
+          {/if}
+        </div>
       </div>
     {:else}
-      <header>
-        <div>
-          <div class="eyebrow">Guided start</div>
-          <h1 id="studio-starter-title">Make it yours</h1>
+      <div class="starter-surface guide-surface">
+        <div class="guide-nav">
+          <PanelButton disabled={applying} onclick={back}>
+            <i class="fas fa-arrow-left" aria-hidden="true"></i>
+            Back
+          </PanelButton>
         </div>
-        <button class="back" type="button" onclick={() => (guided = false)}
-          >Back</button
-        >
-      </header>
 
-      <fieldset>
-        <legend>Starting material</legend>
-        <div class="choice-row">
-          <button
-            type="button"
-            class:chosen={startingMaterial === "recommended"}
-            aria-pressed={startingMaterial === "recommended"}
-            onclick={() => (startingMaterial = "recommended")}
-            >Recommended flow</button
-          >
-          <button
-            type="button"
-            class:chosen={startingMaterial === "choose-sequence"}
-            aria-pressed={startingMaterial === "choose-sequence"}
-            onclick={() => (startingMaterial = "choose-sequence")}
-            >Pick a sequence</button
-          >
+        <div class="guide-body">
+          <Crossfade key={currentStep} animateHeight>
+            <section class="step-content" aria-live="polite">
+              {#if currentStep === "material"}
+                <h2 bind:this={activeHeading} tabindex="-1">
+                  Choose a sequence
+                </h2>
+                <p>Use your library, or let Studio choose for you.</p>
+                <div class="choice-grid two" aria-label="Choose a sequence">
+                  <button
+                    type="button"
+                    class="choice-card material-choice"
+                    class:chosen={startingMaterial === "recommended"}
+                    aria-pressed={startingMaterial === "recommended"}
+                    onclick={() => selectStartingMaterial("recommended")}
+                  >
+                    <i class="fas fa-wand-magic-sparkles" aria-hidden="true"
+                    ></i>
+                    <span class="choice-copy">
+                      <strong>Pick one for me</strong>
+                      <span>Studio picks a clear starter sequence.</span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    class="choice-card material-choice"
+                    class:chosen={startingMaterial === "choose-sequence"}
+                    aria-pressed={startingMaterial === "choose-sequence"}
+                    onclick={() => selectStartingMaterial("choose-sequence")}
+                  >
+                    <i class="fas fa-folder-open" aria-hidden="true"></i>
+                    <span class="choice-copy">
+                      <strong>Pick one</strong>
+                      <span>Choose something from your library.</span>
+                    </span>
+                  </button>
+                </div>
+              {:else if currentStep === "cast"}
+                <h2 bind:this={activeHeading} tabindex="-1">
+                  Who is on stage?
+                </h2>
+                <div class="choice-grid three">
+                  {#each castOptions as option (option.count)}
+                    <button
+                      type="button"
+                      class="choice-card compact"
+                      class:chosen={performerCount === option.count}
+                      aria-pressed={performerCount === option.count}
+                      onclick={() => selectCast(option.count)}
+                    >
+                      <i class="fas {option.icon}" aria-hidden="true"></i>
+                      <strong>{option.label}</strong>
+                      <span>{option.description}</span>
+                    </button>
+                  {/each}
+                </div>
+              {:else if currentStep === "formation"}
+                <h2 bind:this={activeHeading} tabindex="-1">
+                  How should they begin?
+                </h2>
+                <div class="choice-grid three">
+                  {#each formationOptions as option (option.id)}
+                    <button
+                      type="button"
+                      class="choice-card compact"
+                      class:chosen={formation === option.id}
+                      aria-pressed={formation === option.id}
+                      onclick={() => (formation = option.id)}
+                    >
+                      <i class="fas {option.icon}" aria-hidden="true"></i>
+                      <strong>{option.label}</strong>
+                    </button>
+                  {/each}
+                </div>
+              {:else if currentStep === "prop"}
+                <h2 bind:this={activeHeading} tabindex="-1">
+                  What are they holding?
+                </h2>
+                <div class="choice-grid three">
+                  {#each propOptions as option (option.id)}
+                    <button
+                      type="button"
+                      class="choice-card compact"
+                      class:chosen={prop === option.id}
+                      aria-pressed={prop === option.id}
+                      onclick={() => (prop = option.id)}
+                    >
+                      <i class="fas {option.icon}" aria-hidden="true"></i>
+                      <strong>{option.label}</strong>
+                    </button>
+                  {/each}
+                </div>
+              {:else}
+                <h2 bind:this={activeHeading} tabindex="-1">
+                  Where are they performing?
+                </h2>
+                <div class="choice-grid worlds">
+                  {#each sceneOptions as option (option.id)}
+                    <button
+                      type="button"
+                      class="choice-card compact"
+                      class:chosen={environmentId === option.id}
+                      aria-pressed={environmentId === option.id}
+                      onclick={() => (environmentId = option.id)}
+                    >
+                      <i class="fas {option.icon}" aria-hidden="true"></i>
+                      <strong>{option.label}</strong>
+                    </button>
+                  {/each}
+                </div>
+              {/if}
+            </section>
+          </Crossfade>
         </div>
-      </fieldset>
 
-      <fieldset>
-        <legend>Who is on stage?</legend>
-        <div class="choice-row">
-          {#each castOptions as option (option.count)}
-            <button
-              type="button"
-              class:chosen={performerCount === option.count}
-              aria-pressed={performerCount === option.count}
-              onclick={() => selectCast(option)}>{option.label}</button
-            >
-          {/each}
-        </div>
-        {#if performerCount > 1}
-          <p class="hint">
-            Opening formation: {formation.replaceAll("-", " ")}
-          </p>
+        {#if currentStep !== "material"}
+          <footer>
+            {#if currentStepIndex < guideSteps.length - 1}
+              <PanelButton
+                variant="primary"
+                disabled={!canContinue || applying}
+                onclick={() => moveStep(1)}>Next</PanelButton
+              >
+            {:else}
+              <PanelButton
+                variant="primary"
+                disabled={!canContinue || applying}
+                ariaBusy={applying}
+                onclick={() => void applyGuided()}
+              >
+                <i
+                  class="fas {applying
+                    ? 'fa-circle-notch fa-spin'
+                    : 'fa-wand-magic-sparkles'}"
+                  aria-hidden="true"
+                ></i>
+                Bring them on stage
+              </PanelButton>
+            {/if}
+          </footer>
         {/if}
-      </fieldset>
-
-      <fieldset>
-        <legend>Prop</legend>
-        <div class="choice-row">
-          {#each propOptions as option (option.id)}
-            <button
-              type="button"
-              class:chosen={prop === option.id}
-              aria-pressed={prop === option.id}
-              onclick={() => (prop = option.id)}>{option.label}</button
-            >
-          {/each}
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>World</legend>
-        <div class="choice-row scenes">
-          {#each sceneOptions as option (option.id)}
-            <button
-              type="button"
-              class:chosen={environmentId === option.id}
-              aria-pressed={environmentId === option.id}
-              onclick={() => (environmentId = option.id)}
-              ><i class="fas {option.icon}" aria-hidden="true"></i>
-              {option.label}</button
-            >
-          {/each}
-        </div>
-      </fieldset>
-
-      <PanelButton variant="primary" fullWidth onclick={applyGuided}>
-        Create this scene
-      </PanelButton>
+      </div>
     {/if}
-
-    <div class="advanced" aria-label="Continue editing or open expert tools">
-      <button
-        type="button"
-        onclick={() => {
-          dismiss();
-          onOpenChart();
-        }}>Continue in drill chart</button
-      >
-      <button
-        type="button"
-        onclick={() => {
-          dismiss();
-          onChooseSequence();
-        }}>Choose a sequence</button
-      >
-      {#if showDirector}
-        <a href={directorHref}
-          >Director preview &amp; JSON
-          <span
-            >Preview only — it does not load this unsaved Stage project yet.</span
-          ></a
-        >
-      {/if}
-    </div>
-  </aside>
-{/if}
+  </Crossfade>
+</BaseModal>
 
 <style>
-  .starter {
-    position: absolute;
-    top: 4.5rem;
-    left: clamp(0.75rem, 2.5cqi, 3rem);
-    z-index: 24;
-    display: grid;
-    width: min(31rem, calc(100% - 7rem));
-    max-height: calc(100% - 9.25rem);
-    overflow-y: auto;
-    gap: 1rem;
-    padding: clamp(1rem, 2.5cqi, 1.5rem);
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.14));
-    border-radius: 1rem;
-    background: var(--theme-panel-bg, #0c0e16);
-    box-shadow: var(--theme-panel-shadow, 0 1rem 3rem rgba(0, 0, 0, 0.52));
-    color: var(--theme-text, #fff);
+  :global(dialog.stage-starter-modal[data-size="fit"]) {
+    width: min(36rem, calc(100vw - 2rem));
   }
+
+  .starter-surface {
+    --font-size-sm: 1rem;
+    --min-touch-target: 3rem;
+
+    display: grid;
+    min-width: 0;
+    gap: 1.25rem;
+    padding: clamp(1.25rem, 3cqi, 2rem);
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--theme-accent) 8%, transparent),
+      transparent 42%
+    );
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
   .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     color: var(--theme-accent);
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
-  h1 {
-    margin: 0;
-    font-size: clamp(1.35rem, 2.2cqi, 2rem);
-    line-height: 1.08;
-    letter-spacing: -0.025em;
-  }
+
+  h1,
+  h2,
   p {
     margin: 0;
-    color: var(--theme-text-dim);
-    line-height: 1.45;
   }
+
+  h1 {
+    font-size: clamp(1.75rem, 4cqi, 2.25rem);
+    line-height: 1.12;
+    letter-spacing: -0.025em;
+  }
+
+  h2 {
+    font-size: clamp(1.25rem, 3cqi, 1.5rem);
+    line-height: 1.3;
+  }
+
+  p {
+    max-width: 56ch;
+    color: var(--theme-text);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .example-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.75rem;
+    background: var(--theme-card-bg);
+    color: var(--theme-text-dim);
+    font-size: 0.9375rem;
+  }
+
+  .example-label strong {
+    max-width: 58%;
+    overflow: hidden;
+    color: var(--theme-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .actions {
     display: grid;
     gap: 0.625rem;
   }
-  header {
-    display: flex;
-    align-items: start;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-  .back,
-  .advanced button,
-  .advanced a {
-    min-height: var(--min-touch-target, 44px);
-    border: 0;
-    background: transparent;
-    color: var(--theme-text-dim);
-    font: inherit;
-    font-size: var(--font-size-min, 0.875rem);
-    text-align: left;
-    cursor: pointer;
-  }
-  .back {
-    padding: 0 0.5rem;
-    color: var(--theme-text);
-  }
-  fieldset {
-    display: grid;
-    min-width: 0;
-    gap: 0.5rem;
-    margin: 0;
-    padding: 0;
-    border: 0;
-  }
-  legend {
-    padding: 0;
-    color: var(--theme-text);
-    font-size: var(--font-size-min, 0.875rem);
-    font-weight: 650;
-  }
-  .choice-row {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.5rem;
-  }
-  .choice-row button {
-    min-height: var(--min-touch-target, 44px);
-    padding: 0.5rem;
-    border: 1px solid var(--theme-stroke);
-    border-radius: 0.75rem;
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-    font: inherit;
-    font-size: var(--font-size-compact, 0.8125rem);
-    cursor: pointer;
-  }
-  .choice-row button:hover,
-  .choice-row button:focus-visible {
-    border-color: var(--theme-stroke-strong);
-    background: var(--theme-card-hover-bg);
-  }
-  .choice-row button.chosen {
-    border-color: var(--theme-accent);
-    background: color-mix(
-      in srgb,
-      var(--theme-accent) 18%,
-      var(--theme-card-bg)
-    );
-    color: var(--theme-text);
-  }
-  .hint {
-    font-size: var(--font-size-compact, 0.8125rem);
-    text-transform: capitalize;
-  }
+
   .advanced {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -357,6 +577,19 @@
     padding-top: 0.625rem;
     border-top: 1px solid var(--theme-stroke);
   }
+
+  .advanced button,
+  .advanced a {
+    min-height: var(--min-touch-target, 44px);
+    border: 0;
+    background: transparent;
+    color: var(--theme-text-dim);
+    font: inherit;
+    font-size: 1rem;
+    text-align: left;
+    cursor: pointer;
+  }
+
   .advanced button:hover,
   .advanced button:focus-visible,
   .advanced a:hover,
@@ -364,39 +597,164 @@
     color: var(--theme-text);
     text-decoration: underline;
   }
+
   .advanced a {
     display: grid;
     grid-column: 1 / -1;
     align-content: center;
     text-decoration: none;
   }
+
   .advanced a span {
     color: var(--theme-text-dim);
-    font-size: 0.75rem;
+    font-size: 0.9375rem;
+    line-height: 1.5;
   }
-  @container (min-width: 48rem) and (min-height: 34rem) {
-    .starter {
-      top: 10rem;
-      max-height: calc(100% - 11rem);
-    }
+
+  .guide-body {
+    min-width: 0;
   }
-  @container (max-width: 36rem) {
-    .starter {
-      right: 0.75rem;
-      left: 0.75rem;
-      width: auto;
-    }
+
+  .guide-nav {
+    display: flex;
+    justify-content: flex-start;
   }
-  @container (max-width: 24rem) {
-    .choice-row {
+
+  .step-content {
+    display: grid;
+    min-width: 0;
+    gap: 0.75rem;
+  }
+
+  .choice-grid {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .choice-grid.two,
+  .choice-grid.worlds {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .choice-grid.three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .choice-card {
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    min-width: 0;
+    min-height: 7.25rem;
+    gap: 0.625rem;
+    padding: 1rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.75rem;
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background-color var(--duration-normal, 200ms) ease,
+      border-color var(--duration-normal, 200ms) ease,
+      transform var(--duration-fast, 150ms) ease,
+      box-shadow var(--duration-normal, 200ms) ease;
+  }
+
+  .choice-card.compact {
+    justify-items: center;
+    min-height: 5.75rem;
+    text-align: center;
+  }
+
+  .choice-card.material-choice {
+    justify-items: start;
+    min-height: 9rem;
+    text-align: left;
+  }
+
+  .choice-card:hover,
+  .choice-card:focus-visible {
+    border-color: var(--theme-stroke-strong);
+    background: var(--theme-card-hover-bg);
+    transform: translateY(-2px);
+  }
+
+  .choice-card:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .choice-card.chosen {
+    border-color: var(--theme-accent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 18%,
+      var(--theme-card-bg)
+    );
+    box-shadow: 0 0.5rem 1.5rem
+      color-mix(in srgb, var(--theme-accent) 14%, transparent);
+  }
+
+  .choice-card i {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    border-radius: 0.875rem;
+    background: color-mix(in srgb, var(--theme-accent) 13%, transparent);
+    color: var(--theme-accent);
+    font-size: 1.125rem;
+    place-items: center;
+  }
+
+  .choice-card strong {
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+
+  .choice-card span {
+    color: var(--theme-text);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+
+  .choice-copy {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+
+  @container (max-width: 28rem) {
+    .choice-grid.three {
       grid-template-columns: 1fr;
     }
+
     .advanced {
       grid-template-columns: 1fr;
     }
+
+    .advanced a {
+      grid-column: auto;
+    }
   }
+
+  @container (max-width: 22rem) {
+    .choice-grid.two,
+    .choice-grid.worlds {
+      grid-template-columns: 1fr;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .choice-row button {
+    .choice-card {
       transition: none;
     }
   }

@@ -6,12 +6,12 @@
 
   let isOpen = $state(true);
   let selectedProps = $state<PropType[]>([
-    PropType.STAFF,
-    PropType.FAN,
-    PropType.CLUB,
-    PropType.CHICKEN,
+    PropType.BIGSTAFF,
+    PropType.BIGFAN,
+    PropType.TORCH,
+    PropType.SICKLES,
   ]);
-  let favoriteProp = $state<PropType | null>(PropType.STAFF);
+  let favoriteProp = $state<PropType | null>(PropType.TORCH);
   let favoriteCatdog = $state<CatdogCombo | null>(null);
   let saving = $state(false);
   let error = $state<string | null>(null);
@@ -145,8 +145,7 @@
     place-items: center;
     padding: clamp(1rem, 4vw, 4rem);
     color: var(--theme-text, #f8fafc);
-    background:
-      radial-gradient(
+    background: radial-gradient(
         circle at 18% 12%,
         color-mix(in srgb, var(--prop-blue, #3b82f6) 18%, transparent),
         transparent 32%

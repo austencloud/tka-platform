@@ -33,7 +33,7 @@
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
-  import { createLayoutFlip } from "$lib/shared/transitions/layout-flip";
+  import { createLayoutMotion } from "$lib/shared/transitions/layout-flip";
   import { growFade, motionDuration } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import {
@@ -98,7 +98,9 @@
     showFanAppearance && build.fanBuild === "day"
   );
   const showFanCover = $derived(
-    showFanAppearance && build.fanBuild !== "pictograph"
+    showFanAppearance &&
+      build.fanBuild !== "pictograph" &&
+      build.fanBuild !== "lotus"
   );
   const showBuildControls = $derived(
     showFinishes || showFanAppearance || selectedFamily !== undefined
@@ -106,7 +108,7 @@
 
   // The outer crossfade belongs to actual panel replacement: moving between
   // prop families. A subtype change keeps its family's primary picker alive so
-  // LayoutFlip can carry it to its new width instead of ghosting a second copy
+  // LayoutMotion can carry it to its new width instead of ghosting a second copy
   // over the first one (Triad <-> Trigeng was the clearest offender).
   const buildPanelKey = $derived(
     selectedFamily?.representative ?? currentProp ?? PropType.STAFF
@@ -123,20 +125,19 @@
   );
 
   const fanBuildContext = $derived(
-    build.fanBuild === "day" ? "Day fan" : "Fire fan"
+    build.fanBuild === "day"
+      ? "Day fan"
+      : build.fanBuild === "lotus"
+        ? "Lotus fan"
+        : "Fire fan"
   );
   const finishOptions = $derived(
     finishPreviewOptions(currentProp ?? PropType.TRIAD)
   );
   const fanBuildOptions = $derived(
-    fanBuildPreviewOptions(
-      build.fanFrameColor,
-      build.fanCover
-    )
+    fanBuildPreviewOptions(build.fanFrameColor, build.fanCover)
   );
-  const fanFrameOptions = $derived(
-    fanFramePreviewOptions(build.fanCover)
-  );
+  const fanFrameOptions = $derived(fanFramePreviewOptions(build.fanCover));
   const fanCoverOptions = $derived(
     fanCoverPreviewOptions(
       build.fanBuild === "day" ? "day" : "fire",
@@ -182,9 +183,11 @@
   let previousBuildLayoutSignature: string | null = null;
   let buildLayoutTransitionToken = 0;
 
-  const buildLayoutFlip = createLayoutFlip({
+  const buildLayoutMotion = createLayoutMotion({
     getRoot: () => buildStageElement,
-    groups: [{ selector: "[data-build-layout-key]", datasetKey: "buildLayoutKey" }],
+    groups: [
+      { selector: "[data-build-layout-key]", datasetKey: "buildLayoutKey" },
+    ],
     getDuration: () => motionDuration(DURATION.emphasis),
   });
 
@@ -204,19 +207,16 @@
     previousBuildLayoutSignature = signature;
     if (!samePanel || !changed || !buildStageElement) return;
 
-    const captured = buildLayoutFlip.capture();
+    const captured = buildLayoutMotion.capture();
     const token = ++buildLayoutTransitionToken;
     void tick().then(() => {
       if (token !== buildLayoutTransitionToken) return;
-      if (captured) buildLayoutFlip.play();
+      if (captured) buildLayoutMotion.play();
     });
   });
 </script>
 
-<div
-  class="scene-prop-picker"
-  style:--prop-picker-accent={accentColor || null}
->
+<div class="scene-prop-picker" style:--prop-picker-accent={accentColor || null}>
   <div
     bind:this={buildStageElement}
     class="build-stage"
@@ -462,8 +462,21 @@
   }
 
   .fan-build-primary {
+    --build-option-count: 4;
     grid-column: 1 / -1;
     grid-row: 1;
+  }
+
+  @container (max-width: 499px) {
+    .fan-build-primary {
+      --build-option-count: 2;
+    }
+  }
+
+  @container (min-width: 620px) and (max-width: 759px) {
+    .fan-build-layout.has-customization .fan-build-primary {
+      --build-option-count: 2;
+    }
   }
 
   .fan-customization {

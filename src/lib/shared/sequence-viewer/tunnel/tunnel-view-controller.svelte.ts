@@ -36,6 +36,7 @@ import {
 } from "./tunnel-preset-recipe";
 import { performerRing } from "./performer-ring-model";
 import { tunnelPropColor } from "./tunnel-prop-colors";
+import { getBaseMotionColors } from "$lib/shared/animation-engine/services/svg-generator";
 import {
   createIndependentTunnelPerformer,
   createTunnelComposition,
@@ -106,6 +107,10 @@ export class TunnelViewController {
    *  Transient UI focus — NOT part of the config/persistence; drives the sidebar
    *  highlight + the render spotlight-dim. */
   selectedArm = $state<number | null>(null);
+  /** The authored card selected in the creator. Every formation arm driven by
+   * that stable performer ID stays bright together. This is workspace focus,
+   * not saved choreography or presentation state. */
+  selectedPerformerId = $state<string | null>(null);
 
   /** Tunnel-specific grid visibility. The kaleidoscope owns this (the global
    *  Visual/Display toggles don't reach the self-clocked tunnel). Default off —
@@ -172,6 +177,15 @@ export class TunnelViewController {
     $effect(() => {
       if (this.selectedArm != null && this.selectedArm >= this.performerCount) {
         this.selectedArm = null;
+      }
+      if (
+        this.selectedPerformerId &&
+        this.#layers.length > 0 &&
+        !this.#layers.some(
+          (layer) => layer.performerId === this.selectedPerformerId
+        )
+      ) {
+        this.selectedPerformerId = null;
       }
     });
 
@@ -380,6 +394,7 @@ export class TunnelViewController {
   resetSpeed(): void {
     this.speedOverrides = {};
     this.selectedArm = null;
+    this.selectedPerformerId = null;
   }
   /** True when any performer runs at a non-1× rate (drives the Reset affordance). */
   hasSpeedOverrides = $derived(Object.keys(this.speedOverrides).length > 0);
@@ -416,22 +431,44 @@ export class TunnelViewController {
   });
   /** Toggle the spotlight selection for a performer (click again to clear). */
   selectPerformer(arm: number): void {
+    this.selectedPerformerId = null;
     this.selectedArm = this.selectedArm === arm ? null : arm;
   }
+  /** Select one authored card without pretending its generated formation arms
+   * are additional authored performers. */
+  selectAuthoredPerformer(performerId: string | null): void {
+    this.selectedArm = null;
+    this.selectedPerformerId =
+      performerId && performerId !== this.selectedPerformerId
+        ? performerId
+        : null;
+  }
+  spotlightLayers = $derived.by(() => {
+    if (!this.selectedPerformerId) return this.selectedArm;
+    return this.#layers.flatMap((layer, arm) =>
+      layer.performerId === this.selectedPerformerId ? [arm] : []
+    );
+  });
   /** Per-performer speed rows for the Speed drawer, in the same overlay order as
    *  the Performer Ring: index 0 = the base "you" (locked 1×), 1..n = the copies
-   *  (arm k). Carries the arm's effective rate + its two identity colors (the
-   *  spectrum hues the render fans; in Uniform mode the render collapses to base
-   *  blue/red, but the swatch stays a stable per-performer identity tag). */
+   *  (arm k). Its swatches describe the actual stage props: spectrum hues when
+   *  that authored appearance is active, otherwise the pictograph blue/red pair. */
   speedPerformers = $derived.by(() => {
     const cfg = this.config;
     const layerCount = Math.max(0, imageCount(cfg) - 1);
+    const handColors = getBaseMotionColors();
     return performerRing(cfg).map((_p, i) => ({
       arm: i,
       label: this.#layers[i]?.performerLabel ?? (i === 0 ? "You" : `Copy ${i}`),
       rate: effectiveSpeed(cfg, i),
-      blueHex: tunnelPropColor(i * 2, layerCount).hex,
-      redHex: tunnelPropColor(i * 2 + 1, layerCount).hex,
+      blueHex:
+        i === 0 || !this.spectrum
+          ? handColors.blue
+          : tunnelPropColor(i * 2, layerCount).hex,
+      redHex:
+        i === 0 || !this.spectrum
+          ? handColors.red
+          : tunnelPropColor(i * 2 + 1, layerCount).hex,
     }));
   });
   /** Set the canon offset, clamped to the sequence (the sampler also wraps). */

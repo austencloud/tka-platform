@@ -73,7 +73,7 @@ describe("Forest ground detail", () => {
     const shader = {
       uniforms: {},
       vertexShader:
-        "#include <common>\n#include <uv_vertex>\n#include <begin_vertex>",
+        "#include <common>\n#include <uv_vertex>\n#include <defaultnormal_vertex>\n#include <begin_vertex>",
       fragmentShader:
         "#include <common>\n#include <map_fragment>\n#include <normal_fragment_maps>\n#include <roughnessmap_fragment>",
     } as WebGLProgramParametersWithUniforms;
@@ -96,9 +96,7 @@ describe("Forest ground detail", () => {
     // (6a5556bc96), so the uniforms carry the generic `uMaskedGround*` names
     // and the Forest family→channel mapping is what this guards.
     expect(shader.uniforms.uMaskedGroundRedMap.value).toBe(detailMap);
-    expect(shader.uniforms.uMaskedGroundGreenMap.value).toBe(
-      detailMaps.meadow
-    );
+    expect(shader.uniforms.uMaskedGroundGreenMap.value).toBe(detailMaps.meadow);
     expect(shader.uniforms.uMaskedGroundBlueMap.value).toBe(detailMaps.litter);
     expect(shader.uniforms.uMaskedGroundFourthMap.value).toBe(detailMaps.damp);
     expect(shader.uniforms.uMaskedGroundFamilyMask.value).toBe(familyMask);
@@ -108,6 +106,8 @@ describe("Forest ground detail", () => {
     // The primary detail scale used to be inlined as `/ 2.8`; it is now a
     // uniform the Forest caller supplies, so both halves are asserted.
     expect(shader.uniforms.uMaskedGroundPrimaryScale.value).toBe(2.8);
+    expect(shader.uniforms.uMaskedGroundHeightResponse.value).toBe(0.18);
+    expect(shader.uniforms.uMaskedGroundMacroDetailStrength.value).toBe(0);
     expect(shader.vertexShader).toContain("vMaskedGroundWorldPosition");
     expect(shader.fragmentShader).toContain(
       "maskedGroundPoint / uMaskedGroundPrimaryScale"
@@ -116,7 +116,7 @@ describe("Forest ground detail", () => {
     expect(shader.fragmentShader).toContain("familyFeather");
     expect(shader.fragmentShader).toContain("maskedGroundSurfaceGradient");
     expect(shader.fragmentShader).toContain(
-      "0.18 * uMaskedGroundDetailStrength"
+      "uMaskedGroundHeightResponse * uMaskedGroundDetailStrength"
     );
     expect(shader.fragmentShader).toContain(
       "clamp(uMaskedGroundNormalResponse, 0.0, 0.32)"

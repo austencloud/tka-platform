@@ -91,6 +91,50 @@ describe("One Stage ownership", () => {
     expect(stage).not.toContain("StageFirstRun");
   });
 
+  it("keeps choreography hidden until the user asks for precision tools", () => {
+    const stage = read(STAGE);
+    const starter = read(
+      "src/lib/features/stage/components/StageStarter.svelte"
+    );
+    const timeline = read(
+      "src/lib/features/stage/components/StageTimeline.svelte"
+    );
+
+    expect(stage).toContain(
+      'type TimelineDisclosure = "hidden" | "dock" | "editor"'
+    );
+    expect(stage).toContain('timelineDisclosure === "hidden"');
+    expect(stage).toContain('timelineDisclosure === "dock"');
+    expect(stage).toContain("content: timelinePanel");
+    expect(stage).toContain(
+      'mode={timelineDisclosure === "editor" ? "editor" : "dock"}'
+    );
+    expect(starter).toContain("onVisibilityChange(!dismissed)");
+    expect(starter).toContain("Keep this example and choreograph it");
+    expect(timeline).toContain('{#if mode === "editor"}');
+    expect(stage).toContain("preferredSize:");
+    expect(stage).toContain("--stage-timeline-content-size");
+    expect(timeline).toContain(
+      "grid-auto-rows: var(--stage-timeline-lane-size, 3.5rem)"
+    );
+    expect(timeline).not.toContain("grid-auto-rows: minmax(3.5rem, 1fr)");
+  });
+
+  it("uses an empty-stage view without creating a second project model", () => {
+    const stage = read(STAGE);
+    const starter = read(
+      "src/lib/features/stage/components/StageStarter.svelte"
+    );
+
+    expect(starter).toContain("Build from an empty stage");
+    expect(starter).toContain("onStartEmptyStage");
+    expect(stage).toContain("starterSceneBlank");
+    expect(stage).toContain("visiblePerformerCount={starterSceneBlank ? 0");
+    expect(stage).toContain("showSceneChrome={!starterSceneBlank}");
+    expect(stage).toContain("stageState.applyStudioStarter(starter)");
+    expect(stage).not.toContain("createStarterProject");
+  });
+
   it("says nothing about phrases", () => {
     const stage = read(STAGE);
     const state = read(

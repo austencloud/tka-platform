@@ -49,7 +49,7 @@
   // Grid center in 3D world space.
   // Y=0 is shoulder height (proportions reference). Grid T.Group is at
   // position.z = gridOffset = +0.3 inside PerformerRig (which has no rotation
-  // in wall mode). Positive Z is behind the GLTF model that faces -Z.
+  // in wall mode). Positive Z is in front of the GLTF model at zero rotation.
   const GRID_CENTER_Y = 0;
   const GRID_CENTER_Z = 0.3;
   const GRID_RADIUS_3D = 0.52; // meters

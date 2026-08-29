@@ -403,7 +403,6 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
     } else {
       updateSettings({ redPropType: propType });
     }
-    propSheetOpen = false;
   }
 
   function handlePushUndoSnapshot() {

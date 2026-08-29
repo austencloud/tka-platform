@@ -147,7 +147,7 @@ Learn Tab
 
 - **Location**: `src/lib/modules/learn/domain/concepts.ts`
 - **Exports**:
-  - `TKA_CONCEPTS`: Array of all 28 concepts mapped from Level 1 PDF
+  - `TKA_CONCEPTS`: Array of all 29 concepts mapped from the Level 1 curriculum and Guide
   - `CONCEPT_CATEGORIES`: Category metadata with colors/icons
   - Helper functions:
     - `getConceptsByCategory(category)`

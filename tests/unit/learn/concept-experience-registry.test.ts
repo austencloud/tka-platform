@@ -13,13 +13,14 @@ const expectedPublishedIds = [
   "grid",
   "hand-positions",
   "hand-motions-intro",
+  "rotation-direction",
   "staff-positions",
   "type1-abc-ghi",
   "words-alpha-beta",
 ];
 
 describe("concept experience registry", () => {
-  it("lists only the six lessons that have a real published experience", () => {
+  it("lists only lessons that have a real published experience", () => {
     expect(getAvailableConcepts().map((concept) => concept.id)).toEqual(
       expectedPublishedIds
     );
@@ -49,5 +50,13 @@ describe("concept experience registry", () => {
     expect(handMotions?.guideSlug).toBe("hand-motions");
     expect(getConceptExperienceForGuideSlug("hand-motions")).toBe(handMotions);
     expect(isConceptExperienceAvailable("hand-motions")).toBe(false);
+  });
+
+  it("publishes rotation direction as its own focused lesson", () => {
+    const rotationDirection = getConceptExperience("rotation-direction");
+
+    expect(rotationDirection?.guideSlug).toBe("staff-motions");
+    expect(rotationDirection?.reviewStatus).toBe("built");
+    expect(isConceptExperienceAvailable("rotation-direction")).toBe(true);
   });
 });

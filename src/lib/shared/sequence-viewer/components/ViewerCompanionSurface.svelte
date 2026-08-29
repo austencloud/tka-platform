@@ -37,6 +37,7 @@
     onArtAction,
     tunnelComposition = null,
     tunnelSaveTarget = null,
+    onTunnelSaved,
   }: ViewerCompanionSurfaceProps = $props();
 
   const selectedPane = $derived(
@@ -162,6 +163,7 @@
       {onArtSettingChange}
       {onArtAction}
       {tunnelSaveTarget}
+      {onTunnelSaved}
     />
   </div>
 {/if}
@@ -198,6 +200,7 @@
       {onArtAction}
       {tunnelComposition}
       {tunnelSaveTarget}
+      {onTunnelSaved}
     />
   </div>
 {/if}

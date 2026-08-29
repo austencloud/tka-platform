@@ -56,6 +56,14 @@ export const CONCEPT_EXPERIENCES = [
       import("../components/interactive/motions/MotionsConceptExperience.svelte"),
   }),
   experience({
+    conceptId: "rotation-direction",
+    guideSlug: "staff-motions",
+    guideLabel: "Staff Motions: Prospin and Antispin",
+    reviewStatus: "built",
+    load: () =>
+      import("../components/interactive/rotation/RotationDirectionConceptExperience.svelte"),
+  }),
+  experience({
     conceptId: "staff-positions",
     guideSlug: "staff-positions",
     guideLabel: "Staff Positions and Rotations",

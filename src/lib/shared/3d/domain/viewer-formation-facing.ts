@@ -5,11 +5,11 @@ import {
 } from "@austencloud/scene-3d";
 
 /**
- * Viewer3D's audience camera begins on the negative-Z side of the stage. The
- * shared formation package uses positive Z as its generic forward direction,
- * so its same-direction heading would show the audience every performer's
- * back. This adapter is the one place where formation intent enters the
- * Viewer3D camera frame.
+ * Viewer3D's hero environments are composed beyond the positive-Z stage edge.
+ * The shared performer rig faces positive Z at zero rotation, so a half-turn
+ * points performers toward the negative-Z audience camera while the hero vista
+ * remains behind them. This adapter is the one place where formation intent
+ * enters the Viewer3D camera frame.
  */
 export const VIEWER_FRONT_STAGE_FACING_ANGLE = Math.PI;
 

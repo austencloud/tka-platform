@@ -115,6 +115,6 @@ export function createLavaRiverStripGeometry({
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
 
-  const lightPositions = [0.18, 0.52, 0.84].map((t) => curve.getPoint(t));
+  const lightPositions = [0.12, 0.52, 0.9].map((t) => curve.getPoint(t));
   return { geometry, lightPositions };
 }

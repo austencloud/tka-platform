@@ -1,0 +1,81 @@
+{
+  "version": 5,
+  "product": "Home of Poi Medium Lotus Fire Fan",
+  "source": "https://www.homeofpoi.com/en/shop/listItems/Medium-Lotus-Fire-Fans",
+  "source_image": "https://www.threeworlds.com.au/cdn/shop/products/lotus_fire_fans2.png?v=1654825026&width=1800",
+  "vector_reference": "scripts/assets/lotus-fire-reference.svg",
+  "source_image_px": [1800, 1800],
+  "fan_bbox_px": {
+    "left": 45,
+    "top": 310,
+    "right": 1769,
+    "bottom": 1503
+  },
+  "pivot_px": [900, 1230],
+  "published_dimensions_m": [0.48, 0.35],
+  "pixel_scale_m": [0.0002784222737819026, 0.0002933780385582565],
+  "published_construction": {
+    "spinning_ring_inside_diameter_m": 0.092075,
+    "wick_length_m": 0.05,
+    "frame_stock_diameter_m": 0.004,
+    "grip_stock_diameter_m": 0.007,
+    "weight_kg": 0.4
+  },
+  "geometry_m": {
+    "finger_ring_inside_diameter_m": 0.022,
+    "finger_ring_center_x": 0.0,
+    "finger_ring_center_y": 0.06,
+    "grip_ring_center_x": 0.0,
+    "grip_ring_center_y": -0.007628,
+    "cradle_join": [-0.04944, -0.004518],
+    "cradle_bottom_y": -0.077796,
+    "side_weld_bosses": [
+      {
+        "name": "Left",
+        "center": [-0.04944, -0.004518, 0.00075],
+        "half_extents": [0.0065, 0.0064, 0.004],
+        "phase": 1.12
+      },
+      {
+        "name": "Right",
+        "center": [0.04944, -0.004518, 0.00075],
+        "half_extents": [0.0065, 0.0064, 0.004],
+        "phase": 1.12
+      }
+    ],
+    "finger_ring_bottom_weld": {
+      "center": [0.0, 0.0462, 0.0004],
+      "radius": 0.0018
+    },
+    "wick_roll_length_m": 0.05,
+    "wick_roll_lengths_m": [0.054937, 0.050414, 0.050441, 0.050414, 0.054937],
+    "wick_diameters_m": [0.03479, 0.034468, 0.028984, 0.034468, 0.03479],
+    "wick_tine_half_spacing_m": 0.004,
+    "wick_tine_straight_length_m": 0.009,
+    "wick_tine_blend_length_m": 0.022,
+    "wick_tine_insertion_depth_m": 0.01,
+    "wick_centers_m": [
+      [-0.212362, 0.08209],
+      [-0.162503, 0.218212],
+      [0.0, 0.242065],
+      [0.162503, 0.218212],
+      [0.212362, 0.08209]
+    ],
+    "wick_directions": [
+      [-0.781416, 0.62401],
+      [-0.101135, 0.994873],
+      [0.0, 1.0],
+      [0.101135, 0.994873],
+      [0.781416, 0.62401]
+    ]
+  },
+  "calibration": {
+    "method": "Austen-authored Illustrator Bezier centerlines aligned from the traced grip circle to the published 3 5/8 inch ring ID; the front-on 1800 px product photograph still calibrates the 480 x 350 mm envelope",
+    "symmetry": "five hand-traced right rail centerlines are preserved as sparse cubic Beziers and reflected exactly across the grip centerline; the right wick centers, axes, roll lengths, and diameters are reflected exactly to the left, with the center wick locked to the symmetry axis",
+    "lower_cradle": "the traced secondary circle is opened at its two intersections with the grip ring, retaining only the lower U-shaped rail",
+    "finger_ring": "22 mm inside diameter centered on the mirrored grip assembly",
+    "wick_roll": "the two right-side hand-wrapped rolls were measured from the calibrated photograph and reflected exactly to the left; the center roll is centered vertically on the symmetry axis and the nominal tape width remains the published 50 mm",
+    "wick_mount": "two 4 mm frame tines run parallel to each mirrored wick axis, enter through the inward-facing end cap, and continue inside the roll",
+    "wick_diameter_m": 0.028
+  }
+}

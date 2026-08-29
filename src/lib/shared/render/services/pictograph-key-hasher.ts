@@ -38,6 +38,7 @@ interface PictographKeyInput {
   // Present only when a narrowly-scoped render algorithm revision changes
   // this pictograph's pixels. Unaffected cells keep their established key.
   propGeometryRevision?: string;
+  propAppearanceRevision?: string;
   turnGlyphRevision?: string;
   visibility: {
     showTKA: boolean;
@@ -64,7 +65,15 @@ interface PictographKeyInput {
 }
 
 const BETA_SHIFT_MAP_REVISION = "beta-shift-map-v2";
-const QUARTER_TURN_GLYPH_REVISION = "quarter-turn-glyph-v1";
+const FIRST_QUARTER_TURN_GLYPH_REVISION = "quarter-turn-glyph-v1";
+const COMPLETE_QUARTER_TURN_GLYPH_REVISION = "quarter-turn-glyph-v2";
+const COMPLETED_QUARTER_TURN_VALUES = new Set([0.75, 1.25, 1.75, 2.25, 2.75]);
+const PROP_APPEARANCE_REVISIONS: Readonly<Record<string, string>> = {
+  // The original club raster was a single flat silhouette. The regular-club
+  // material artwork changes those pixels without changing PropType.CLUB, so
+  // old IndexedDB and cloud cells must no longer be valid hits.
+  club: "club-art-v2",
+};
 const NON_RADIAL_ORIENTATIONS = new Set(["clock", "counter"]);
 const SHIFT_MOTION_TYPES = new Set(["pro", "anti", "float"]);
 const REVISED_NON_RADIAL_SHIFT_TRANSITIONS = new Set([
@@ -138,9 +147,10 @@ export function getPictographGeometryRevision(
 }
 
 /**
- * Rekeys only pictographs whose rasterized TKA tuple changed when the 0.25
- * number asset was introduced. Older lsp11/lsp12 blobs were rendered before
- * that glyph existed and otherwise remain valid cache hits forever.
+ * Rekeys only pictographs whose rasterized TKA tuple changed when quarter-turn
+ * number assets were introduced. The original 0.25 asset keeps its established
+ * revision; the remaining Level 4 values use v2 so cached blank columns cannot
+ * survive after their assets become available.
  */
 export function getTurnGlyphRevision(
   data: StepData | PictographData,
@@ -148,12 +158,37 @@ export function getTurnGlyphRevision(
 ): string | undefined {
   if (!showTKA) return undefined;
 
-  const usesQuarterTurn = Object.values(data.motions ?? {}).some((motion) => {
-    if (!motion || motion.isVisible === false) return false;
-    return Number(motion.turns) === 0.25;
-  });
+  const visibleTurns = Object.values(data.motions ?? {}).flatMap((motion) =>
+    !motion || motion.isVisible === false ? [] : [Number(motion.turns)]
+  );
 
-  return usesQuarterTurn ? QUARTER_TURN_GLYPH_REVISION : undefined;
+  if (visibleTurns.some((turns) => COMPLETED_QUARTER_TURN_VALUES.has(turns))) {
+    return COMPLETE_QUARTER_TURN_GLYPH_REVISION;
+  }
+
+  return visibleTurns.includes(0.25)
+    ? FIRST_QUARTER_TURN_GLYPH_REVISION
+    : undefined;
+}
+
+/**
+ * Returns only the authored-art revisions that can affect the selected props.
+ *
+ * Prop types are already part of the cache identity. This extra seam covers a
+ * different case: the SVG behind an existing prop type changes while its enum
+ * value stays stable. Keeping the revision prop-scoped avoids throwing away
+ * the established cloud corpus for every unrelated prop.
+ */
+export function getPropAppearanceRevision(
+  bluePropType: string,
+  redPropType: string
+): string | undefined {
+  const revisions = [bluePropType, redPropType]
+    .map((propType) => PROP_APPEARANCE_REVISIONS[propType.toLowerCase()])
+    .filter((revision): revision is string => Boolean(revision));
+
+  const uniqueRevisions = [...new Set(revisions)].sort();
+  return uniqueRevisions.length > 0 ? uniqueRevisions.join("+") : undefined;
 }
 
 export class PictographKeyHasher {
@@ -186,6 +221,10 @@ export class PictographKeyHasher {
     const reversalsVisible = visibility.showReversals ?? true;
     const step = data as Partial<StepData>;
     const propGeometryRevision = getPictographGeometryRevision(data);
+    const propAppearanceRevision = getPropAppearanceRevision(
+      resolvedBlueProp,
+      resolvedRedProp
+    );
     const turnGlyphRevision = getTurnGlyphRevision(
       data,
       visibility.showTKA ?? true
@@ -199,6 +238,7 @@ export class PictographKeyHasher {
       redReversal: reversalsVisible ? (step.redReversal ?? false) : false,
       betaSwapped: data.betaSwapped ?? false,
       ...(propGeometryRevision && { propGeometryRevision }),
+      ...(propAppearanceRevision && { propAppearanceRevision }),
       ...(turnGlyphRevision && { turnGlyphRevision }),
       visibility: {
         showTKA: visibility.showTKA ?? true,

@@ -200,7 +200,6 @@ dialog.base-modal[data-position="top"] {
   margin-bottom: auto;
 }
 
-
 /* Pop animation (default) - springy entrance */
 dialog.base-modal[data-animation="pop"] {
   transition:
@@ -262,7 +261,6 @@ dialog.base-modal[data-closing="true"]::backdrop {
   backdrop-filter: blur(0);
   -webkit-backdrop-filter: blur(0);
 }
-
 
 /* Staggered content animations - only when modal has entered */
 dialog.base-modal[data-entered="true"] [data-animate] {
@@ -359,6 +357,13 @@ dialog.base-modal[data-entered="true"] [data-animate-icon] {
     );
     border-radius: var(--modal-border-radius-mobile);
     margin: auto;
+  }
+
+  dialog.base-modal[data-size="fit"] {
+    /* `auto` stretches a fixed dialog between its block insets. Preserve the
+       fit variant's content-sized contract so short phone dialogs do not grow
+       a large empty tail beneath their content. */
+    height: fit-content;
   }
 }
 

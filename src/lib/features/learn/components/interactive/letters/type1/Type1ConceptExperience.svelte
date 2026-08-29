@@ -19,9 +19,11 @@
 
   let {
     onComplete,
+    onBack,
     viewMode = "step",
   }: {
     onComplete?: () => void;
+    onBack?: () => void;
     viewMode?: ExperienceViewMode;
   } = $props();
 
@@ -125,7 +127,11 @@
   }
 
   export function handleBack() {
-    if (phase > 1) goToPhase(phase - 1);
+    if (phase > 1) {
+      goToPhase(phase - 1);
+      return;
+    }
+    onBack?.();
   }
 </script>
 

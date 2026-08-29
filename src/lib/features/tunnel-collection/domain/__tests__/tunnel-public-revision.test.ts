@@ -11,10 +11,12 @@ import { createSequenceData } from "$lib/shared/foundation/domain/models/sequenc
 import type { CollectedTunnel } from "../tunnel-collection-types";
 import { createTunnelRevision } from "../tunnel-revision";
 import {
+  collectedTunnelFromPublicArtifact,
   createTunnelPublicRevision,
   sanitizeTunnelComposition,
   tunnelPublicPayload,
 } from "../tunnel-public-revision";
+import type { PublicArtifactEnvelope } from "$lib/shared/artifact-revisions/domain/public-artifact";
 
 const snapshot = {
   version: SNAPSHOT_VERSION,
@@ -67,6 +69,25 @@ function compositionFixture() {
     name: "Cast",
     now: 456,
   });
+}
+
+function publicEnvelope(
+  overrides: Partial<PublicArtifactEnvelope> = {}
+): PublicArtifactEnvelope {
+  return {
+    artifactId: "public-tunnel-1",
+    artifactType: "tunnel",
+    ownerId: "owner-1",
+    ownerDisplayName: "Flow Artist",
+    title: "Published Tunnel",
+    posterUrl: "https://example.com/poster.webp",
+    currentRevisionId: "v1_" + "a".repeat(64),
+    currentContentDigest: "a".repeat(64),
+    publishedAt: new Date(100),
+    updatedAt: new Date(200),
+    schemaVersion: 1,
+    ...overrides,
+  };
 }
 
 describe("sanitizeTunnelComposition", () => {
@@ -156,6 +177,46 @@ describe("tunnelPublicPayload", () => {
   });
 });
 
+describe("collectedTunnelFromPublicArtifact", () => {
+  it("validates a public revision into a discovery artifact without inventing private dates", () => {
+    const payload = tunnelPublicPayload(
+      tunnelFixture({
+        sourceWord: "ABAB",
+        composition: compositionFixture(),
+      })
+    );
+    const discovered = collectedTunnelFromPublicArtifact(
+      publicEnvelope(),
+      payload
+    );
+
+    expect(discovered).toMatchObject({
+      id: "public-tunnel-1",
+      name: "Published Tunnel",
+      source: "viewer",
+      sourceWord: "ABAB",
+      createdAt: 0,
+    });
+    expect(discovered?.composition).toEqual(payload.composition);
+  });
+
+  it("rejects the wrong artifact type or an invalid revision payload", () => {
+    const payload = tunnelPublicPayload(tunnelFixture());
+    expect(
+      collectedTunnelFromPublicArtifact(
+        publicEnvelope({ artifactType: "scene" }),
+        payload
+      )
+    ).toBeNull();
+    expect(
+      collectedTunnelFromPublicArtifact(publicEnvelope(), {
+        ...payload,
+        snapshot: { broken: true },
+      } as unknown as typeof payload)
+    ).toBeNull();
+  });
+});
+
 describe("createTunnelPublicRevision", () => {
   it("is deterministic for identical content", async () => {
     const a = await createTunnelPublicRevision(tunnelFixture());
@@ -191,8 +252,13 @@ describe("createTunnelPublicRevision", () => {
       sourceSequenceId: "library-sequence-42",
       composition: compositionFixture(),
     });
-    const privateRevision = await createTunnelRevision(tunnel, tunnel.createdAt);
+    const privateRevision = await createTunnelRevision(
+      tunnel,
+      tunnel.createdAt
+    );
     const publicRevision = await createTunnelPublicRevision(tunnel);
-    expect(publicRevision.contentDigest).not.toBe(privateRevision.contentDigest);
+    expect(publicRevision.contentDigest).not.toBe(
+      privateRevision.contentDigest
+    );
   });
 });

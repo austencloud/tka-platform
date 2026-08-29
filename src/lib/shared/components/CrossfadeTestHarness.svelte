@@ -46,3 +46,9 @@
     <div class="panel" style="height: {HEIGHTS[key]}px;">{key} panel</div>
   </Crossfade>
 </div>
+
+<div data-testid="scaled-stage" style="width: 240px; transform: scale(0.8);">
+  <Crossfade key="scaled" duration={80} animateHeight>
+    <div style="height: 125px;">scaled panel</div>
+  </Crossfade>
+</div>

@@ -23,7 +23,7 @@ You are the TKA prop positioning pipeline expert. Sister agent to the arrow-posi
    - **Center-family orientations** (`Orientation.CENTER_N/NE/E/…/NW`) resolve via
      `CENTRIC_ANGLE_MAP` (`prop-rot-angle-manager.ts:104`) — absolute compass
      angles in SVG convention (0=east, 90=south, CW). Used for staves AT
-     `GridLocation.CENTER` (Level 5 Tau/Terra positions) and for halved-dash
+     `GridLocation.CENTER` (Level 6 Tau/Terra positions) and for halved-dash
      midpoints (see below).
    - Skewed mode uses diamond for cardinals, box for intercardinals
    - Code: `prop/services/prop-rot-angle-manager.ts`

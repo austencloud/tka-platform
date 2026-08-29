@@ -1,0 +1,189 @@
+{
+  "capturedAt": "2026-08-28T06:37:50.136Z",
+  "selectedLook": "blackglass-inferno",
+  "museumTrackerItem": "sDKmB6cUEXLfHgz4DGd4",
+  "geometryRevision": "ember-volcanic-world-production-slice-r7",
+  "origin": "http://127.0.0.1:5176",
+  "lookAudition": [
+    {
+      "look": "blackglass-inferno",
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/look-blackglass-inferno-hero-1920x1080.png"
+    },
+    {
+      "look": "furnace-storm",
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/look-furnace-storm-hero-1920x1080.png"
+    },
+    {
+      "look": "sulfur-caldera",
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/look-sulfur-caldera-hero-1920x1080.png"
+    }
+  ],
+  "orbit": [
+    {
+      "name": "front",
+      "position": [
+        0,
+        3.4,
+        -9.8
+      ],
+      "target": [
+        0,
+        1.4,
+        5.2
+      ],
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/orbit-front-1920x1080.png"
+    },
+    {
+      "name": "front-right",
+      "position": [
+        8.8,
+        3.8,
+        -6.5
+      ],
+      "target": [
+        0,
+        1.5,
+        4
+      ],
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/orbit-front-right-1920x1080.png"
+    },
+    {
+      "name": "right",
+      "position": [
+        13.5,
+        4.1,
+        2.5
+      ],
+      "target": [
+        0,
+        1.5,
+        3
+      ],
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/orbit-right-1920x1080.png"
+    },
+    {
+      "name": "rear-right",
+      "position": [
+        9,
+        4.1,
+        12
+      ],
+      "target": [
+        0,
+        1.5,
+        2
+      ],
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/orbit-rear-right-1920x1080.png"
+    },
+    {
+      "name": "rear",
+      "position": [
+        0,
+        4.1,
+        15
+      ],
+      "target": [
+        0,
+        1.5,
+        1
+      ],
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/orbit-rear-1920x1080.png"
+    },
+    {
+      "name": "rear-left",
+      "position": [
+        -9,
+        4.1,
+        12
+      ],
+      "target": [
+        0,
+        1.5,
+        2
+      ],
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/orbit-rear-left-1920x1080.png"
+    },
+    {
+      "name": "left",
+      "position": [
+        -13.5,
+        4.1,
+        2.5
+      ],
+      "target": [
+        0,
+        1.5,
+        3
+      ],
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/orbit-left-1920x1080.png"
+    },
+    {
+      "name": "front-left",
+      "position": [
+        -8.8,
+        3.8,
+        -6.5
+      ],
+      "target": [
+        0,
+        1.5,
+        4
+      ],
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/orbit-front-left-1920x1080.png"
+    }
+  ],
+  "viewports": [
+    {
+      "name": "4k-200",
+      "width": 1920,
+      "height": 1080,
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/viewport-4k-200-1920x1080.png"
+    },
+    {
+      "name": "4k-150",
+      "width": 2560,
+      "height": 1440,
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/viewport-4k-150-2560x1440.png"
+    },
+    {
+      "name": "4k-100",
+      "width": 3840,
+      "height": 2160,
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/viewport-4k-100-3840x2160.png"
+    },
+    {
+      "name": "laptop",
+      "width": 1440,
+      "height": 900,
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/viewport-laptop-1440x900.png"
+    },
+    {
+      "name": "tablet",
+      "width": 820,
+      "height": 1180,
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/viewport-tablet-820x1180.png"
+    },
+    {
+      "name": "fold-landscape",
+      "width": 960,
+      "height": 412,
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/viewport-fold-landscape-960x412.png"
+    },
+    {
+      "name": "iphone-se",
+      "width": 375,
+      "height": 667,
+      "path": "docs/superpowers/specs/ember-spatial-directions/evidence/gate-4-atmosphere-r1/viewport-iphone-se-375x667.png"
+    }
+  ],
+  "performance": {
+    "samples": 180,
+    "averageFrameMs": 16.58833333334989,
+    "averageFps": 60.283331658736174,
+    "p95FrameMs": 16.800000000000182,
+    "canvas": {
+      "width": 1910,
+      "height": 1015
+    }
+  }
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it, afterEach } from "vitest";
-import { createLayoutFlip } from "./layout-flip";
+import { createLayoutMotion } from "./layout-flip";
 
 /**
  * These run in a real browser (vitest-browser-svelte) because the whole point of
@@ -10,7 +10,8 @@ let root: HTMLElement | null = null;
 
 function mountRow(keys: string[], cellWidth = 100): HTMLElement {
   const container = document.createElement("div");
-  container.style.cssText = "display: flex; width: 600px; align-items: stretch;";
+  container.style.cssText =
+    "display: flex; width: 600px; align-items: stretch;";
   for (const key of keys) {
     const cell = document.createElement("div");
     cell.dataset.cellKey = key;
@@ -23,7 +24,7 @@ function mountRow(keys: string[], cellWidth = 100): HTMLElement {
 }
 
 function flipFor(container: HTMLElement, duration = 280) {
-  return createLayoutFlip({
+  return createLayoutMotion({
     getRoot: () => container,
     groups: [{ selector: "[data-cell-key]", datasetKey: "cellKey" }],
     getDuration: () => duration,
@@ -56,7 +57,7 @@ afterEach(() => {
   root = null;
 });
 
-describe("createLayoutFlip", () => {
+describe("createLayoutMotion", () => {
   it("animates the survivors when a member leaves the layout", () => {
     const container = mountRow(["a", "b", "c"]);
     const flip = flipFor(container);

@@ -112,6 +112,7 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
 
   <div class="input-row">
     <input
+      name="generation-word"
       type="text"
       class="word-field"
       placeholder="A-Z"

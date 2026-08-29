@@ -10,6 +10,7 @@ import {
   SHEET2,
   transitionFor,
   type CodexBoxDef,
+  type CodexCellDef,
   type CodexTypeDef,
 } from "../../../guide/codex/_data/codex-groups";
 
@@ -37,10 +38,12 @@ export function typeColor(type: CodexTypeDef): string {
 }
 
 export const CODEX_LETTERS = new Map<string, CodexLetterInfo>();
+export const CODEX_CELLS_BY_LABEL = new Map<string, CodexCellDef>();
 for (const type of CODEX_TYPES) {
   for (const box of type.boxes) {
     for (const cell of box.cells) {
       if (CODEX_LETTERS.has(cell.id)) continue;
+      CODEX_CELLS_BY_LABEL.set(cell.label, cell);
       CODEX_LETTERS.set(cell.id, {
         id: cell.id,
         label: cell.label,
@@ -89,7 +92,9 @@ function splitStrip(tagged: TaggedBox): TaggedBox[] {
 }
 
 export const CODEX_BOXES: TaggedBox[] = CODEX_TYPES.flatMap((type) =>
-  type.boxes.flatMap((box, i) => splitStrip({ box, type, key: `${type.n}-${i}` }))
+  type.boxes.flatMap((box, i) =>
+    splitStrip({ box, type, key: `${type.n}-${i}` })
+  )
 );
 
 export function cellCount(box: CodexBoxDef): number {

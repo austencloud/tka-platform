@@ -19,12 +19,21 @@
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { createFullscreenController } from "$lib/shared/fullscreen/state/fullscreen-controller.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import { sceneEnvironmentIdForBackground } from "$lib/shared/3d/environments/domain/scene-environment";
+  import {
+    SceneEnvironmentId,
+    sceneEnvironmentIdForBackground,
+  } from "$lib/shared/3d/environments/domain/scene-environment";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { FILM_DIRECTOR_ROUTE } from "$lib/features/film-director/domain/film-director-link";
   import { consumeSceneStudioHandoff } from "$lib/features/scene-3d-collection/services/open-3d-scene";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import {
+    flyFade,
+    growFade,
+    motionDuration,
+  } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { FormationPresetId } from "./domain/stage-types";
 
@@ -51,6 +60,7 @@
   } from "./services/stage-viewer-adapter";
 
   type SequenceLoadState = "loading" | "ready" | "error";
+  type TimelineDisclosure = "hidden" | "dock" | "editor";
 
   // Opening a saved 3D scene from the collection hands over a whole resolved
   // sequence rather than an id, so it seeds the resolver instead of going
@@ -89,14 +99,22 @@
 
   const exporter = createSceneVideoExport(viewer);
 
-  const compactPortrait = new MediaQuery(
-    "(max-width: 900px) and (orientation: portrait)"
+  const compactTimelineWorkspace = new MediaQuery(
+    "(max-width: 900px), (max-height: 560px)"
   );
 
   const choreography = $derived(stageState.choreography);
   const performanceFrames = $derived(stageState.performanceFrames);
 
   let chartRaised = $state(false);
+  let starterVisible = $state(!handoff);
+  let starterSceneBlank = $state(false);
+  let starterCurtainVisible = $state(false);
+  let starterEnvironmentPreview = $state(false);
+  let starterTransitionId = 0;
+  let timelineExpanded = $state(false);
+  let timelineLens = $state<"hands" | "floor" | "motion">("hands");
+  let workspaceSizes = $state<number[]>([]);
   let pickerOpen = $state(false);
   const preloadedSequences = new Map<string, SequenceData>(
     handoff ? [[handoff.sequence.id, handoff.sequence]] : []
@@ -114,6 +132,18 @@
   const sharedSequence = $derived(
     resolvedSequences.get(sharedSequenceId) ?? null
   );
+
+  const timelineDisclosure = $derived<TimelineDisclosure>(
+    starterVisible ? "hidden" : timelineExpanded ? "editor" : "dock"
+  );
+
+  const timelineContentSize = $derived.by(() => {
+    const lanes = Array.from(
+      { length: choreography.performers.length + 1 },
+      () => "var(--stage-timeline-lane-size)"
+    );
+    return `calc(1px + var(--stage-timeline-toolbar-size) + var(--stage-timeline-ruler-size) + ${lanes.join(" + ")})`;
+  });
 
   const sequenceIds = $derived.by(() => {
     const ids = new Set<string>([sharedSequenceId]);
@@ -293,6 +323,7 @@
   let syncedEnvironmentId = stageState.choreography.environmentId;
   $effect(() => {
     const next = viewer.environmentId;
+    if (starterEnvironmentPreview) return;
     if (next === syncedEnvironmentId) return;
     syncedEnvironmentId = next;
     stageState.setEnvironmentId(next);
@@ -325,31 +356,107 @@
 
   let exportOpen = $state(false);
 
-  const workspacePanels: PanelDefinition[] = [
-    { content: stagePanel, defaultSize: 2.6, minSize: 240, id: "stage" },
-    {
-      content: timelinePanel,
-      defaultSize: 1.55,
-      minSize: 170,
-      maxSize: 540,
-      id: "timeline",
-    },
-  ];
+  const workspacePanels = $derived.by<PanelDefinition[]>(() => {
+    const stage: PanelDefinition = {
+      content: stagePanel,
+      defaultSize: 2.8,
+      minSize: 240,
+      id: "stage",
+      resizable:
+        timelineDisclosure === "editor" && !compactTimelineWorkspace.current,
+    };
+    if (timelineDisclosure === "hidden") return [stage];
+
+    return [
+      stage,
+      {
+        content: timelinePanel,
+        defaultSize: 1.2,
+        minSize: 200,
+        maxSize: 360,
+        fixedSize:
+          timelineDisclosure === "dock"
+            ? "var(--stage-timeline-dock-size)"
+            : compactTimelineWorkspace.current
+              ? "min(var(--stage-timeline-content-size), var(--stage-timeline-sheet-size))"
+              : undefined,
+        preferredSize:
+          timelineDisclosure === "editor" && !compactTimelineWorkspace.current
+            ? "min(var(--stage-timeline-content-size), var(--stage-timeline-editor-max-size))"
+            : undefined,
+        id: "timeline",
+      },
+    ];
+  });
+
+  function openChoreography(openChart = false): void {
+    starterVisible = false;
+    timelineExpanded = true;
+    if (openChart) chartRaised = true;
+  }
+
+  function collapseChoreography(): void {
+    timelineExpanded = false;
+  }
 
   function chooseSequence(next: SequenceData): void {
     stageState.setSharedSequence(next);
   }
 
-  async function applyStudioStarter(starter: StudioStarter): Promise<void> {
-    stageState.applyStudioStarter(starter);
-    // Stage owns cast, formation and world; the shared performer manager owns
-    // the prop look. Waiting one render lets the canonical cast adapter create
-    // exactly the rigs the fresh Stage document called for.
-    viewer.setEnvironmentId(starter.environmentId);
+  function transitionDelay(duration: number): Promise<void> {
+    return new Promise((resolve) => window.setTimeout(resolve, duration));
+  }
+
+  async function transitionStarterScene(
+    change: () => Promise<void> | void
+  ): Promise<void> {
+    const transitionId = ++starterTransitionId;
+    starterCurtainVisible = true;
     await tick();
-    for (const performer of viewer.performerManager.performers) {
-      performer.setProp(starter.prop, { equipBuild: false });
-    }
+
+    const duration = motionDuration(DURATION.normal);
+    if (duration > 0) await transitionDelay(duration);
+    if (transitionId !== starterTransitionId) return;
+
+    await change();
+    await tick();
+    if (transitionId === starterTransitionId) starterCurtainVisible = false;
+  }
+
+  function startEmptyStage(): void {
+    chartRaised = false;
+    if (stageState.isPlaying) stageState.togglePlay();
+    void transitionStarterScene(() => {
+      // The blank setup is a view over the seeded example, not a second Stage
+      // document. The real document stays untouched until the final action.
+      starterEnvironmentPreview = true;
+      viewer.setEnvironmentId(SceneEnvironmentId.VOID);
+      starterSceneBlank = true;
+    });
+  }
+
+  function returnToStarterExample(): void {
+    void transitionStarterScene(() => {
+      viewer.setEnvironmentId(choreography.environmentId);
+      starterSceneBlank = false;
+      starterEnvironmentPreview = false;
+    });
+  }
+
+  async function applyStudioStarter(starter: StudioStarter): Promise<void> {
+    await transitionStarterScene(async () => {
+      stageState.applyStudioStarter(starter);
+      // Stage owns cast, formation and world; the shared performer manager owns
+      // the prop look. Waiting one render lets the canonical cast adapter create
+      // exactly the rigs the fresh Stage document called for.
+      viewer.setEnvironmentId(starter.environmentId);
+      starterSceneBlank = false;
+      await tick();
+      for (const performer of viewer.performerManager.performers) {
+        performer.setProp(starter.prop, { equipBuild: false });
+      }
+      starterEnvironmentPreview = false;
+    });
   }
 
   /** One count, and the eight counts a drill is written in. */
@@ -468,26 +575,53 @@
 
 {#snippet stageOverlay()}
   {#if chartRaised}
-    <div class="drill-layer" aria-label="Drill chart">
+    <div
+      class="drill-layer"
+      aria-label="Drill chart"
+      transition:flyFade={{ duration: DURATION.emphasis, y: 12 }}
+    >
       <div class="drill-chart">
         <FormationOverlay {editMode} />
       </div>
       {#if activeSet}
-        <div class="drill-inspector">
+        <div
+          class="drill-inspector"
+          transition:growFade={{
+            duration: DURATION.emphasis,
+            axis: "x",
+          }}
+        >
           <SetProperties {editMode} />
         </div>
       {/if}
     </div>
   {/if}
 
+  {#if starterCurtainVisible}
+    <div
+      class="starter-scene-curtain"
+      aria-hidden="true"
+      transition:flyFade={{ duration: DURATION.normal, x: 0, y: 0 }}
+    ></div>
+  {/if}
+
   {#if sequenceLoadState === "loading"}
-    <div class="load-notice" role="status" aria-live="polite">
+    <div
+      class="load-notice"
+      role="status"
+      aria-live="polite"
+      transition:flyFade={{ duration: DURATION.normal }}
+    >
       <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
       <strong>Preparing the performance</strong>
       <span>Loading the sequence and performer rigs</span>
     </div>
   {:else if sequenceLoadState === "error"}
-    <div class="load-notice error" role="alert">
+    <div
+      class="load-notice error"
+      role="alert"
+      transition:flyFade={{ duration: DURATION.normal }}
+    >
       <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
       <strong>Sequence failed to load</strong>
       <span>{sequenceLoadError ?? "The catalog entry is unavailable."}</span>
@@ -502,7 +636,10 @@
       directorHref={FILM_DIRECTOR_ROUTE}
       onApply={applyStudioStarter}
       onChooseSequence={() => (pickerOpen = true)}
-      onOpenChart={() => (chartRaised = true)}
+      onOpenChoreography={() => openChoreography(true)}
+      onVisibilityChange={(visible) => (starterVisible = visible)}
+      onStartEmptyStage={startEmptyStage}
+      onReturnToExample={returnToStarterExample}
     />
   {/if}
 {/snippet}
@@ -536,13 +673,15 @@
         immersive={fullscreen.immersive}
         onToggleImmersive={(host) => fullscreen.toggleImmersive(host)}
         {performerSteps}
-        worldChildren={floorPaths}
+        worldChildren={starterSceneBlank ? undefined : floorPaths}
         hudActions={stageHudActions}
         overlayChildren={stageOverlay}
         hideCanvasOverlays
         sceneControlsBottomOffset="0.75rem"
         allowSaveScene={false}
         renderEmptyScene
+        visiblePerformerCount={starterSceneBlank ? 0 : undefined}
+        showSceneChrome={!starterSceneBlank}
         contained
       />
     {:else}
@@ -556,7 +695,14 @@
 {/snippet}
 
 {#snippet timelinePanel()}
-  <StageTimeline {editMode} />
+  <StageTimeline
+    {editMode}
+    sequences={resolvedSequences}
+    bind:timelineLens
+    mode={timelineDisclosure === "editor" ? "editor" : "dock"}
+    onExpand={() => openChoreography()}
+    onCollapse={collapseChoreography}
+  />
 {/snippet}
 
 <div
@@ -564,6 +710,7 @@
   role="main"
   aria-label="Stage"
   data-edit-history-shortcut-scope
+  style:--stage-timeline-content-size={timelineContentSize}
 >
   <EditHistoryShortcutBridge
     onUndo={stageState.undo}
@@ -571,14 +718,11 @@
     canUndo={stageState.canUndo}
     canRedo={stageState.canRedo}
   />
-  {#if compactPortrait.current}
-    <div class="compact-stage-layout">
-      <div class="compact-viewer">{@render stagePanel()}</div>
-      <div class="compact-timeline">{@render timelinePanel()}</div>
-    </div>
-  {:else}
-    <PanelGroup direction="vertical" panels={workspacePanels} />
-  {/if}
+  <PanelGroup
+    direction="vertical"
+    panels={workspacePanels}
+    bind:sizes={workspaceSizes}
+  />
 </div>
 
 <SequencePickerModal
@@ -600,6 +744,12 @@
 
 <style>
   .stage-module {
+    --stage-timeline-dock-size: 4.25rem;
+    --stage-timeline-sheet-size: min(66cqh, 26rem);
+    --stage-timeline-editor-max-size: 22.5rem;
+    --stage-timeline-toolbar-size: 4.25rem;
+    --stage-timeline-ruler-size: 2.25rem;
+    --stage-timeline-lane-size: 3.5rem;
     display: flex;
     width: 100%;
     height: 100%;
@@ -607,26 +757,13 @@
     min-height: 0;
     overflow: hidden;
     background: var(--color-bg-primary, #080910);
+    container-type: size;
   }
 
-  .compact-stage-layout {
-    display: grid;
-    width: 100%;
-    height: 100%;
-    min-width: 0;
-    min-height: 0;
-    grid-template-rows: minmax(17rem, 54%) minmax(19rem, 1fr);
-    overflow: hidden;
-  }
-
-  .compact-viewer,
-  .compact-timeline {
-    position: relative;
-    display: flex;
-    min-width: 0;
-    min-height: 0;
-    flex-direction: column;
-    overflow: hidden;
+  @media (max-width: 35rem) {
+    .stage-module {
+      --stage-timeline-dock-size: 6.75rem;
+    }
   }
 
   .stage-canvas {
@@ -672,6 +809,20 @@
     min-width: 0;
     flex: none;
     overflow-y: auto;
+  }
+
+  .starter-scene-curtain {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    background:
+      radial-gradient(
+        circle at 42% 46%,
+        color-mix(in srgb, var(--theme-accent) 7%, transparent),
+        transparent 34%
+      ),
+      color-mix(in srgb, var(--theme-panel-bg, #0c0e16) 96%, #000);
+    pointer-events: none;
   }
 
   .load-notice {

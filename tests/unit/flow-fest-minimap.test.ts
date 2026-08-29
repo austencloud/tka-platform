@@ -4,6 +4,7 @@ import type { FlowFestRuntimeContract } from "../../src/routes/test/flow-fest-gr
 import {
   createFlowFestCampPlan,
   FLOW_FEST_CAMDEN_COLLEGE_CORNER_ROAD,
+  FLOW_FEST_LOWER_CAMPGROUND_LOOP,
   FLOW_FEST_ORTHOPHOTO_SOURCE,
   FLOW_FEST_PUBLIC_ROAD_SOURCE,
   identifyFlowFestPlanLocation,
@@ -162,9 +163,20 @@ describe("Flow Fest minimap", () => {
     expect(plan.internalDrives).toHaveLength(4);
     expect(
       plan.internalDrives.every(
-        (line) => line.evidence === "imagery-interpreted"
+        (line) => line.evidence !== "official-road-inventory"
       )
     ).toBe(true);
+    expect(
+      plan.internalDrives.find((line) => line.id === "lower-campground-loop")
+    ).toMatchObject({ evidence: "public-orthophoto" });
+    expect(
+      plan.internalDrives.some((line) => line.id === "check-in-to-lower-level")
+    ).toBe(false);
+    expect(
+      plan.internalDrives
+        .find((line) => line.id === "camp-road-entrance-to-check-in")
+        ?.points.at(-1)
+    ).toEqual(FLOW_FEST_LOWER_CAMPGROUND_LOOP[0]);
     expect(
       plan.footConnectors.every((line) => line.evidence === "austen-traced")
     ).toBe(true);
@@ -218,5 +230,28 @@ describe("Flow Fest minimap", () => {
       id: "lower-level",
       label: "Lower level",
     });
+  });
+
+  it("stops the woodland connector at the lower loop instead of crossing car camping", () => {
+    const contract = JSON.parse(
+      readFileSync(
+        "static/data/flow-fest-sim/gate2-runtime-contract.json",
+        "utf8"
+      )
+    ) as FlowFestRuntimeContract;
+    const sourcePoints =
+      contract.connectorTraces.middleEarthToLowerClearing.vertices;
+    const connector = createFlowFestCampPlan(
+      contract,
+      "car-camp"
+    ).footConnectors.find((line) => line.id === "middle-to-lower")!;
+    const terminal = connector.points.at(-1)!;
+
+    expect(connector.label).toBe("Middle Earth to lower loop");
+    expect(connector.points[0]).toEqual(sourcePoints[0]);
+    expect(connector.points).toHaveLength(8);
+    expect(sourcePoints).toHaveLength(14);
+    expect(terminal.x).toBeCloseTo(237.152_347, 6);
+    expect(terminal.z).toBeCloseTo(-93.313_615, 6);
   });
 });

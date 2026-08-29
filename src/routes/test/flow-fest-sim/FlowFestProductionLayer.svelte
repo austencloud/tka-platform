@@ -1,7 +1,12 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { T, useTask, useThrelte } from "@threlte/core";
-  import { FogExp2, type Mesh, type MeshStandardMaterial } from "three";
+  import {
+    FogExp2,
+    type Mesh,
+    type MeshStandardMaterial,
+    type Object3D,
+  } from "three";
   import type { InstanceFrustumCullingStats } from "$lib/shared/3d/rendering/instance-frustum-culling";
   import SkyGradient from "$lib/shared/3d/environments/primitives/SkyGradient.svelte";
   import FallingParticles from "$lib/shared/3d/environments/primitives/FallingParticles.svelte";
@@ -29,6 +34,7 @@
   } from "./flow-fest-production-geometry";
   import FlowFestFestivalCommunity from "./FlowFestFestivalCommunity.svelte";
   import FlowFestForestEcology from "./FlowFestForestEcology.svelte";
+  import FlowFestGroundSurface from "./FlowFestGroundSurface.svelte";
   import FlowFestHeroFire from "./FlowFestHeroFire.svelte";
   import { getFlowFestVisualProfile } from "./flow-fest-visual-system";
   import { buildFlowFestEntranceGradedTerrain } from "./flow-fest-entrance-terrain";
@@ -69,6 +75,8 @@
   let buildEpoch = 0;
   let destroyed = false;
   let sceneElapsed = 0;
+  let animatedLedRings: Object3D[] = [];
+  let staticSceneSetupComplete = false;
 
   const campEstablished = $derived(
     isFlowFestCampEstablishedPhase(props.progressPhase)
@@ -104,6 +112,16 @@
       y: nightHeartY,
       z: nightHeartPosition.z,
     }
+  );
+  const forestShadowRefreshToken = $derived(
+    [
+      props.selectedBranch,
+      props.moment,
+      props.progressPhase,
+      campEstablished,
+      festivalActive,
+      props.showCampDressing !== false,
+    ].join(":")
   );
 
   async function build(branch: FlowFestBranchId): Promise<void> {
@@ -148,11 +166,15 @@
       "FFS_EntranceFence_",
       "FFS_EntranceUtilityPole_",
     ];
+    const nextAnimatedLedRings: Object3D[] = [];
     next.root.traverse((object) => {
       if (
         cameraColliderPrefixes.some((prefix) => object.name.startsWith(prefix))
       ) {
         object.userData.cameraCollider = true;
+      }
+      if (object.name.startsWith("FFS_LEDFlowCircle_HangingRing_")) {
+        nextAnimatedLedRings.push(object);
       }
     });
     if (destroyed || epoch !== buildEpoch) {
@@ -164,6 +186,7 @@
     next.setFestivalActive(festivalActive);
     dressing?.dispose();
     dressing = next;
+    animatedLedRings = nextAnimatedLedRings;
     contract = loadedContract;
     builtBranch = branch;
     heroFirePosition = {
@@ -227,6 +250,7 @@
         grassAssetsReady: 0,
         groundLifeAssetsReady: 0,
       },
+      groundSurface: next.groundSurface.audit,
     };
     (globalThis as Record<string, unknown>).__flowFestProduction = proof;
     props.onReady?.({
@@ -276,6 +300,8 @@
     treeCullingSourceBatches: number;
     treeCullingBatches: number;
     treeCullingCoveredVertices: number;
+    treeMidRenderedTriangles: number;
+    treeFarRenderedTriangles: number;
   }): void {
     const proof = (globalThis as Record<string, unknown>)
       .__flowFestProduction as
@@ -288,6 +314,10 @@
     proof.forestEcology.treeFamiliesReady = details.treeFamilies;
     proof.forestEcology.treeDrawBatches = details.treeDrawBatches;
     proof.forestEcology.treeRenderedTriangles = details.treeRenderedTriangles;
+    proof.forestEcology.treeMidRenderedTriangles =
+      details.treeMidRenderedTriangles;
+    proof.forestEcology.treeFarRenderedTriangles =
+      details.treeFarRenderedTriangles;
     proof.forestEcology.treeCullingSourceBatches =
       details.treeCullingSourceBatches;
     proof.forestEcology.treeCullingBatches = details.treeCullingBatches;
@@ -310,6 +340,24 @@
       details.estimatedVerticesCovered;
     proof.forestEcology.treeSubmittedVertices =
       details.estimatedSubmittedVertices;
+  }
+
+  function configureStaticScene(activeScene: Object3D): boolean {
+    const reviewOverlay = activeScene.getObjectByName("FFS_ReviewOverlay");
+    if (reviewOverlay) reviewOverlay.visible = false;
+    const terrainMesh = (activeScene.getObjectByName(
+      "FFS_Terrain_ChunkedRenderBatch"
+    ) ?? activeScene.getObjectByName("FFS_Terrain_Bounded")) as
+      | Mesh
+      | undefined;
+    if (!terrainMesh) return false;
+    const material = terrainMesh.material as MeshStandardMaterial;
+    // The grade is a restrained multiplicative color, so the orthophoto still
+    // owns roads and clearing edges instead of collapsing into synthetic turf.
+    material.color.set(atmosphere.grade.terrainTint);
+    material.roughness = 1;
+    terrainMesh.receiveShadow = true;
+    return true;
   }
 
   onMount(() => {
@@ -352,6 +400,7 @@
     if (!activeScene || !activeRenderer) return;
     activeScene.fog = fog;
     activeRenderer.toneMappingExposure = atmosphere.grade.exposure;
+    staticSceneSetupComplete = false;
     const proof = (globalThis as Record<string, unknown>)
       .__flowFestProduction as Record<string, unknown> | undefined;
     if (proof) proof.moment = props.moment;
@@ -381,8 +430,20 @@
     if (proof) {
       proof.visualProfile = atmosphere.id;
       proof.visualExposure = atmosphere.grade.exposure;
-      proof.shadowKey = "camera-bounded-92m-frustum";
+      proof.shadowKey =
+        "camera-bounded-92m-frustum-6m-anchor-grid-30hz-refresh";
     }
+  });
+
+  $effect(() => {
+    const proof = (globalThis as Record<string, unknown>)
+      .__flowFestProduction as
+      | { festivalCommunity?: Record<string, unknown> }
+      | undefined;
+    if (!proof?.festivalCommunity) return;
+    proof.festivalCommunity.interactionState =
+      props.fireJamState ?? "not-started";
+    proof.festivalCommunity.responseIntensity = props.fireJamEnergy ?? 0;
   });
 
   useTask((delta) => {
@@ -396,40 +457,23 @@
     }
     const activeScene = scene.current;
     if (!activeScene) return;
-    const reviewOverlay = activeScene.getObjectByName("FFS_ReviewOverlay");
-    if (reviewOverlay) reviewOverlay.visible = false;
-
-    const terrainMesh = activeScene.getObjectByName(
-      "FFS_Terrain_ChunkedRenderBatch"
-    ) as Mesh | undefined;
-    if (terrainMesh) {
-      const material = terrainMesh.material as MeshStandardMaterial;
-      // The grade is a restrained multiplicative color, so the orthophoto still
-      // owns roads and clearing edges instead of collapsing into synthetic turf.
-      material.color.set(atmosphere.grade.terrainTint);
-      material.roughness = 1;
-      terrainMesh.receiveShadow = true;
+    if (!staticSceneSetupComplete) {
+      staticSceneSetupComplete = configureStaticScene(activeScene);
     }
 
-    dressing?.root.traverse((object) => {
-      if (object.name.startsWith("FFS_LEDFlowCircle_HangingRing_")) {
-        const energy = props.fireJamEnergy ?? 0;
-        object.rotation.z += delta * (0.035 + energy * 0.52);
-        const pulse =
-          1 + Math.sin(sceneElapsed * (1.8 + energy * 3.2)) * energy * 0.045;
-        object.scale.setScalar(pulse);
-      }
-    });
-    if (proof?.festivalCommunity) {
-      const community = proof.festivalCommunity as Record<string, unknown>;
-      community.interactionState = props.fireJamState ?? "not-started";
-      community.responseIntensity = props.fireJamEnergy ?? 0;
+    const energy = props.fireJamEnergy ?? 0;
+    const pulse =
+      1 + Math.sin(sceneElapsed * (1.8 + energy * 3.2)) * energy * 0.045;
+    for (const ring of animatedLedRings) {
+      ring.rotation.z += delta * (0.035 + energy * 0.52);
+      ring.scale.setScalar(pulse);
     }
   });
 
   onDestroy(() => {
     destroyed = true;
     buildEpoch += 1;
+    animatedLedRings = [];
     dressing?.dispose();
     delete (globalThis as Record<string, unknown>).__flowFestProduction;
   });
@@ -458,10 +502,17 @@
   anchor={forestLightAnchor}
   shadowExtentMeters={46}
   keyLightDistanceMeters={92}
+  shadowAnchorSnapMeters={6}
+  shadowRefreshIntervalSeconds={1 / 30}
+  shadowRefreshToken={forestShadowRefreshToken}
 />
 
 {#if dressing}
   <T is={dressing.root} />
+  <FlowFestGroundSurface
+    surface={dressing.groundSurface}
+    scene={dressing.root}
+  />
   <FlowFestForestEcology
     layout={dressing.forestEcology}
     foliageTint={atmosphere.grade.foliageTint}

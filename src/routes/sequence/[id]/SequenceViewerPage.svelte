@@ -2,7 +2,7 @@
   import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
   import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import { loadSequencesByIds } from "$lib/features/choreo-card/services/catalog-loader";
-  import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
+  import type { SequenceRouteMeta } from "./sequence-seo";
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
@@ -29,13 +29,6 @@
   import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/get-public-sequence-hash-matcher";
   import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-  import { setSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
-  import {
-    registerDrawer,
-    unregisterDrawer,
-    generateDrawerId,
-  } from "$lib/shared/foundation/ui/drawer/drawer-stack";
-  import { createModalSwipeDismiss } from "$lib/shared/sequence-viewer/services/modal-swipe-dismiss";
   import {
     consumeSequenceRouteHandoff,
     type SequenceRouteHandoff,
@@ -43,6 +36,7 @@
   import SequenceViewerOrchestrator from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
   import type { OrchestratorContext } from "$lib/shared/sequence-viewer/domain/viewer-orchestrator-context";
   import SequenceViewerShell from "$lib/shared/sequence-viewer/components/SequenceViewerShell.svelte";
+  import { viewerModeForRenderMode } from "$lib/shared/sequence-viewer/services/viewer-modes";
 
   import {
     getIabBannerVisible,
@@ -53,9 +47,35 @@
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { registerLibraryRepository } from "$lib/shared/composition-root/register-library-repository";
+  import {
+    beginScanVisit,
+    captureScanEvent,
+    captureScanExport,
+    endScanViewerSession,
+    refreshScanSessionAttribution,
+    updateScanAttribution,
+  } from "$lib/shared/analytics/scan-analytics";
+  import { initPostHog } from "$lib/shared/analytics/services/posthog";
+  import {
+    authState,
+    initializeAuthListener,
+  } from "$lib/shared/auth/state/auth-state.svelte";
+  import { getInAppBrowserDetector } from "$lib/shared/auth/get-in-app-browser-detector";
+  import { buildScanAppHandoffHref } from "$lib/shared/qr/services/scan-app-handoff";
+  import { readScanSequenceCode } from "$lib/shared/qr/services/scan-sequence-handoff";
+  import { setScanCardCloudProbe } from "$lib/shared/sequence-viewer/scan-card-cloud-context";
+  import {
+    initialScanPlaybackBpm,
+    saveScanPlaybackBpm,
+  } from "$lib/shared/sequence-viewer/services/scan-playback-tempo";
+  import {
+    guideTargetForLetter,
+    GUIDE_CODEX_SLUG,
+  } from "../../(public)/guide/level-1/_data/guide-content-index";
+  import { setGuideScanIntent } from "../../(public)/guide/level-1/_data/guide-scan-intent";
 
-  // Same bare-layout gap /q/[code] wires around: this standalone route never
-  // imports the composition root, so nothing registered the library repository
+  // This standalone route never mounts MainApplication's composition root, so
+  // nothing registered the library repository
   // or the visual save coordinator. SequenceViewerShell's Save then threw
   // "Visual sequence saving has not been registered" on the first tap, and the
   // shell's saved/owner sync threw on getLibraryRepository() for signed-in
@@ -67,15 +87,23 @@
   interface Props {
     data: {
       meta: SequenceRouteMeta;
-      seo: SequenceSeoDocument;
     };
   }
 
   const { data }: Props = $props();
-  const seo = $derived(data.seo);
 
   // Route params
   const sequenceId = $derived(page.params.id);
+  const scanOriginCode = readScanSequenceCode(
+    page.params.id,
+    page.url.searchParams
+  );
+  const isDemo = page.url.searchParams.get("demo") === "1";
+  const scanAnalyticsCode = isDemo ? null : scanOriginCode;
+
+  // Scan-origin cards keep the cloud pictograph path after /q hands off. This
+  // context must exist before the descendant orchestrator mounts.
+  if (scanOriginCode) setScanCardCloudProbe(true);
 
   // URL params for state restoration
   const urlViewMode = $derived(
@@ -139,17 +167,18 @@
 
   // Mobile detection
   let isMobile = $state(false);
+  let scanInitialBpm = $state(60);
+  let scanResolutionReported = false;
 
-  // Swipe-to-dismiss (works at all viewport sizes)
-  const swipeDismiss = createModalSwipeDismiss();
-  let currentSwipeY = $state(0);
-  let currentIsSwiping = $state(false);
-
-  // Page container ref for swipe visual feedback
-  let pageContainer: HTMLElement | null = $state(null);
-
-  // DrawerStack registration - blocks pull-to-refresh on mobile
-  const drawerId = generateDrawerId();
+  const scanOpenAppHref = $derived(
+    scanOriginCode
+      ? buildScanAppHandoffHref(scanOriginCode, page.url.searchParams, {
+          android:
+            browser && getInAppBrowserDetector().getPlatform() === "android",
+          origin: page.url.origin,
+        })
+      : "/browse/gallery"
+  );
 
   // Track if orchestrator needs to restore time from URL after init
   let pendingTimeRestore = $state<number | null>(null);
@@ -176,7 +205,7 @@
       } satisfies ShortCodeSequenceLoader);
     }
 
-    // Same bare-layout gap as /q/[code]: without the composition root, the
+    // Without MainApplication's composition root, the
     // animation playback path's getLoopDetector() throws and the whole
     // animation/3D view dead-ends at "Animation data not available"; the
     // loop display resolver degrades silently, dropping LOOP labels.
@@ -188,6 +217,16 @@
     // Don't block the viewer on service initialization.
     initializeAppServices().catch(() => {});
 
+    if (scanAnalyticsCode) {
+      void initPostHog().catch(() => {});
+      beginScanVisit(scanAnalyticsCode, {
+        sequenceWord: data.meta.word,
+        deckName: data.meta.deckName,
+        isAuthenticated: () => authState.isAuthenticated,
+      });
+      void initializeAuthListener();
+    }
+
     // Mobile detection
     const checkMobile = () => {
       isMobile = window.innerWidth < 768;
@@ -196,33 +235,18 @@
     window.addEventListener("resize", checkMobile);
     resizeCleanup = () => window.removeEventListener("resize", checkMobile);
 
-    // Block pull-to-refresh on mobile
-    if (isMobile) {
-      registerDrawer(drawerId, handleClose);
-    }
-
     // Start sequence loading immediately - don't wait for services
     void initializeRoute();
   });
 
   onDestroy(() => {
-    unregisterDrawer(drawerId);
     resizeCleanup?.();
-    swipeDismiss.dispose();
+    if (scanAnalyticsCode) endScanViewerSession("route_unmount");
   });
 
-  // Apply visual feedback during swipe gesture
   $effect(() => {
-    if (!pageContainer) return;
-    if (currentIsSwiping && currentSwipeY > 0) {
-      pageContainer.style.transform = `translateY(${currentSwipeY}px)`;
-      pageContainer.style.opacity = `${Math.max(0.3, 1 - currentSwipeY / 300)}`;
-      pageContainer.style.transition = "none";
-    } else if (!currentIsSwiping) {
-      pageContainer.style.transform = "";
-      pageContainer.style.opacity = "";
-      pageContainer.style.transition = "";
-    }
+    void authState.isAuthenticated;
+    if (scanAnalyticsCode) refreshScanSessionAttribution();
   });
 
   /** Apply URL metadata params to a decoded sequence (fills in data lost during encoding). */
@@ -278,6 +302,69 @@
 
       settingsService.updateSettings(updates);
     }
+  }
+
+  function reportScanResolutionSuccess(resolved: SequenceData): void {
+    if (!scanAnalyticsCode || scanResolutionReported) return;
+    scanResolutionReported = true;
+    scanInitialBpm = initialScanPlaybackBpm(scanAnalyticsCode, resolved);
+
+    const props = parsePropsFromURL(page.url.searchParams);
+    updateScanAttribution({
+      sequenceWord:
+        resolved.word || resolved.displayName || resolved.name || null,
+      deckName: data.meta.deckName,
+      blueProp: props.bluePropType ? String(props.bluePropType) : null,
+      redProp: props.redPropType ? String(props.redPropType) : null,
+    });
+    captureScanEvent("qr_scan_resolution", {
+      outcome: "success",
+      category: "resolved",
+      stage: "ready",
+    });
+  }
+
+  function reportScanResolutionFailure(): void {
+    if (!scanAnalyticsCode || scanResolutionReported) return;
+    scanResolutionReported = true;
+    captureScanEvent("qr_scan_resolution", {
+      outcome: "failure",
+      category: navigator.onLine ? "not_found" : "offline",
+      stage: "load",
+    });
+  }
+
+  function handleScanBpmChange(bpm: number): void {
+    if (scanOriginCode) saveScanPlaybackBpm(scanOriginCode, bpm);
+  }
+
+  function requestGatedScanExport(
+    ctx: OrchestratorContext,
+    kind: "video" | "card"
+  ): void {
+    if (!authState.isFullAccount) {
+      captureScanExport(kind, "gated", { source: "sequence_route" });
+    }
+    ctx.invokeGatedAction("download", () => void ctx.handleExport());
+  }
+
+  function resumeGatedScanExport(ctx: OrchestratorContext): void {
+    void ctx.handleExport();
+  }
+
+  function seeInGuide(): void {
+    if (!sequence) return;
+    const label =
+      sequence.steps?.length === 1 ? (sequence.word ?? "").trim() : "";
+    const target = label ? guideTargetForLetter(label) : null;
+    if (target?.cellKey) {
+      setGuideScanIntent({ slug: target.slug, cellKey: target.cellKey });
+      void goto(`/learn/guide/${target.slug}`);
+      return;
+    }
+
+    setGuideScanIntent({ slug: GUIDE_CODEX_SLUG, sequence });
+    void goto(`/learn/guide/${GUIDE_CODEX_SLUG}`);
   }
 
   /**
@@ -388,6 +475,9 @@
     if (urlTime) {
       pendingTimeRestore = urlTime;
     }
+
+    if (sequence && !loadError) reportScanResolutionSuccess(sequence);
+    else if (loadError) reportScanResolutionFailure();
   }
 
   async function loadSequenceFromId(id: string) {
@@ -452,47 +542,23 @@
   // ============================================================================
 
   function handleClose() {
-    const returnPath = handoffData?.returnPath || "/browse/gallery";
-    goto(returnPath);
-  }
-
-  function handleTouchStart(e: TouchEvent, ctx: OrchestratorContext) {
-    if (ctx.isFullscreen || ctx.isExportMode) return;
-    swipeDismiss.handleTouchStart(e);
-  }
-
-  function handleTouchMove(e: TouchEvent, ctx: OrchestratorContext) {
-    if (ctx.isFullscreen || ctx.isExportMode) return;
-    const handled = swipeDismiss.handleTouchMove(e);
-    currentSwipeY = swipeDismiss.state.swipeY;
-    currentIsSwiping = swipeDismiss.state.isSwiping;
-    if (handled && e.cancelable) {
-      e.preventDefault();
+    if (isDemo) return;
+    if (handoffData?.returnPath) {
+      void goto(handoffData.returnPath);
+      return;
     }
-  }
-
-  async function handleTouchEnd(ctx: OrchestratorContext) {
-    const shouldDismiss = swipeDismiss.handleTouchEnd();
-    if (shouldDismiss) {
-      if (pageContainer) {
-        pageContainer.style.transition =
-          "transform 200ms ease-out, opacity 200ms ease-out";
-        pageContainer.style.transform = "translateY(100%)";
-        pageContainer.style.opacity = "0";
-        await new Promise((r) => setTimeout(r, 200));
-      }
-      setSkipNextViewTransition();
-      ctx.onClose();
-    } else {
-      currentSwipeY = 0;
-      currentIsSwiping = false;
+    if (browser && window.history.length > 1) {
+      window.history.back();
+      return;
     }
+    void goto("/browse/gallery");
   }
 
   function updateUrlParam(key: string, value: string) {
     if (!browser) return;
     mutateCurrentUrl((url) => {
-      url.searchParams.set(key, value);
+      if (value) url.searchParams.set(key, value);
+      else url.searchParams.delete(key);
     });
   }
 </script>
@@ -531,83 +597,58 @@
     {sequence}
     {isMobile}
     {forceGuest}
-    initialBpm={urlBpm || handoffData?.playbackState?.bpm || 60}
+    initialBpm={urlBpm ||
+      (scanOriginCode ? scanInitialBpm : handoffData?.playbackState?.bpm || 60)}
     initialStep={handoffData?.playbackState?.currentStep || 0}
     initialViewMode={urlViewMode || undefined}
-    initialRenderMode={urlRenderMode || undefined}
+    initialRenderMode={urlRenderMode || (scanOriginCode ? "2d" : undefined)}
+    initialViewerMode={scanOriginCode
+      ? "card"
+      : viewerModeForRenderMode(urlRenderMode)}
+    deferInteractiveStartup={!!scanOriginCode}
+    initialActiveEffect={scanOriginCode ? "trails" : undefined}
     handPathMode={urlHandPathMode}
     initialBlueVisible={urlInitialBlueVisible}
     initialRedVisible={urlInitialRedVisible}
     onClose={handleClose}
     onUrlParamChange={updateUrlParam}
-    blockClicks={swipeDismiss.state.blockClicks}
+    onBpmChange={scanOriginCode ? handleScanBpmChange : undefined}
+    onGatedDownload={scanOriginCode ? resumeGatedScanExport : undefined}
   >
     {#snippet children(ctx)}
-      {#snippet routeContext()}
-        {#if !ctx.editingPane}
-          <section
-            class="sequence-context"
-            aria-labelledby="sequence-context-heading"
-            data-sequence-index-content
-          >
-            <div class="sequence-context-identity">
-              <p>Flow Arts Composer</p>
-              <h1 id="sequence-context-heading">{seo.heading}</h1>
-            </div>
-
-            <p class="sequence-context-facts">
-              {#if data.meta.creator}<span>By {data.meta.creator}</span>{/if}
-              {#if data.meta.stepCount}
-                <span>
-                  {data.meta.stepCount}
-                  {data.meta.stepCount === 1 ? "step" : "steps"}
-                </span>
-              {/if}
-              {#if data.meta.difficulty}
-                <span>Difficulty: {data.meta.difficulty}</span>
-              {/if}
-            </p>
-
-            <details class="sequence-context-details">
-              <summary>
-                Details
-                <i class="fas fa-chevron-down" aria-hidden="true"></i>
-              </summary>
-              <div class="sequence-context-panel">
-                <p>{seo.description}</p>
-
-                <nav aria-label="More flow arts tools">
-                  <a href="/create">Open Flow Arts Composer</a>
-                  <a href="/browse/gallery">Browse public sequences</a>
-                </nav>
-              </div>
-            </details>
-          </section>
-        {/if}
-      {/snippet}
-
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <main
         class="sequence-route-page"
-        bind:this={pageContainer}
         data-fullscreen={ctx.isFullscreen}
         style:padding-bottom={iabBannerShowing
           ? `${iabBannerHeight || IAB_BANNER_HEIGHT}px`
           : undefined}
-        ontouchstart={(event) => handleTouchStart(event, ctx)}
-        ontouchmove={(event) => handleTouchMove(event, ctx)}
-        ontouchend={() => handleTouchEnd(ctx)}
       >
         <SequenceViewerShell
           {ctx}
           {sequence}
           {isMobile}
+          startInCardThenSplit={!!scanOriginCode}
+          embedded={isDemo}
           onClose={handleClose}
           navigation={{
-            label: `Back to ${handoffData?.returnLabel || "Browse"}`,
+            label: handoffData?.returnLabel
+              ? `Back to ${handoffData.returnLabel}`
+              : "Back",
           }}
-          openAppHref="/browse/gallery"
-          contextContent={routeContext}
+          openAppHref={scanOpenAppHref}
+          onAccountSignIn={scanOriginCode ? ctx.openSignInPrompt : undefined}
+          guideAction={scanOriginCode
+            ? { label: "See it in the Guide", onSelect: seeInGuide }
+            : null}
+          exportOverrides={scanOriginCode
+            ? {
+                onVideoExport: () => requestGatedScanExport(ctx, "video"),
+                onCardExport: () => requestGatedScanExport(ctx, "card"),
+                videoBusy: ctx.isExporting,
+                videoProgress: ctx.exportProgress,
+                cardBusy: ctx.isExporting,
+              }
+            : undefined}
           showFullscreenControls
         />
       </main>
@@ -625,167 +666,6 @@
     height: 100vh;
     height: 100dvh;
     overflow: hidden;
-  }
-
-  .sequence-context {
-    position: relative;
-    z-index: 19;
-    display: grid;
-    grid-template-columns: minmax(180px, 1fr) auto auto;
-    align-items: center;
-    gap: 12px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 6px 16px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: var(--theme-panel-bg, rgba(15, 20, 30, 0.96));
-    flex-shrink: 0;
-  }
-
-  .sequence-context-identity {
-    min-width: 0;
-  }
-
-  .sequence-context-identity p {
-    margin: 0 0 2px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    line-height: 1;
-    text-transform: uppercase;
-  }
-
-  .sequence-context-identity h1 {
-    margin: 0;
-    overflow: hidden;
-    color: var(--theme-text, #ffffff);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-    line-height: 1.25;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .sequence-context-facts {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 6px 14px;
-    margin: 0;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.72));
-    font-size: var(--font-size-compact, 12px);
-    line-height: 1.3;
-  }
-
-  .sequence-context-facts span {
-    white-space: nowrap;
-  }
-
-  .sequence-context-details {
-    position: relative;
-  }
-
-  .sequence-context-details summary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 0 12px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
-    color: var(--theme-text, #ffffff);
-    cursor: pointer;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    list-style: none;
-  }
-
-  .sequence-context-details summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .sequence-context-details summary:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.09));
-  }
-
-  .sequence-context-details summary:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  .sequence-context-details summary i {
-    font-size: 10px;
-    transition: transform 180ms ease;
-  }
-
-  .sequence-context-details[open] summary i {
-    transform: rotate(180deg);
-  }
-
-  .sequence-context-panel {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    width: min(620px, calc(100vw - 24px));
-    padding: 16px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    border-radius: 14px;
-    background: var(--theme-panel-bg, rgba(15, 20, 30, 0.98));
-    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.42);
-  }
-
-  .sequence-context-panel > p {
-    max-width: 62ch;
-    margin: 0;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.78));
-    font-size: var(--font-size-sm, 14px);
-    line-height: 1.55;
-  }
-
-  .sequence-context-panel nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 18px;
-    margin-top: 16px;
-  }
-
-  .sequence-context-panel a {
-    color: var(--theme-accent, #a78bfa);
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
-  }
-
-  .sequence-context-panel a:hover {
-    text-decoration-thickness: 2px;
-  }
-
-  @media (max-width: 700px) {
-    .sequence-context {
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 5px 10px;
-      padding: 6px 12px;
-    }
-
-    .sequence-context-facts {
-      grid-column: 1 / -1;
-      grid-row: 2;
-      justify-content: flex-start;
-    }
-
-    .sequence-context-details {
-      grid-column: 2;
-      grid-row: 1;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .sequence-context-details summary i {
-      transition: none;
-    }
   }
 
   /* Loading state */
@@ -869,18 +749,5 @@
   .recovery-button:focus-visible {
     outline: 2px solid var(--theme-accent, #f43f5e);
     outline-offset: 2px;
-  }
-
-  /* Mobile drawer appearance */
-  @media (max-width: 767px) {
-    .sequence-route-page {
-      border-top-left-radius: 16px;
-      border-top-right-radius: 16px;
-      box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
-      background: var(--theme-panel-bg, #0a0a14);
-      overflow: hidden;
-      overscroll-behavior-y: contain;
-      touch-action: pan-y;
-    }
   }
 </style>
