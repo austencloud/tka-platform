@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   WALK_PATTERNS,
   stepOf,
+  stepOfGaitDistance,
   walkPattern,
 } from "$lib/shared/3d/diagnostics/gait/walk-patterns";
 import type { WalkPattern } from "$lib/shared/3d/diagnostics/gait/walk-patterns";
@@ -152,6 +153,22 @@ describe("walk patterns", () => {
       DT
     );
     expect(step).toEqual({ dx: 0, dz: 0, distance: 0 });
+  });
+
+  it("maps the contact-matched gait clock back to commanded metres", () => {
+    const tick = {
+      facing: 0,
+      isMoving: true,
+      rate: 1,
+      direction: { x: 1, z: 0 },
+      phase: "right",
+    };
+
+    expect(stepOfGaitDistance(tick, 1, 2, 0.25)).toEqual({
+      dx: -0.125,
+      dz: 0,
+      distance: 0.125,
+    });
   });
 
   it("runs the grapevine as lateral travel in both directions", () => {

@@ -20,7 +20,10 @@
     ScheduledGaitTimingSample,
     TerminalStepPlan,
   } from "@austencloud/scene-3d";
-  import { stepOf } from "$lib/shared/3d/diagnostics/gait/walk-patterns";
+  import {
+    stepOf,
+    stepOfGaitDistance,
+  } from "$lib/shared/3d/diagnostics/gait/walk-patterns";
   import {
     sampleDestinationWalkPlan,
     type DestinationWalkPlan,
@@ -89,6 +92,7 @@
   let scoreStarted = false;
   let patternTerminalStepPlan: TerminalStepPlan | null = null;
   let holdPatternTime = false;
+  let previousGaitDistanceStep: number | null = null;
 
   $effect(() => {
     if (destinationPlan && gaitTimingPlan) {
@@ -115,6 +119,7 @@
     scoreStarted = false;
     patternTerminalStepPlan = null;
     holdPatternTime = false;
+    previousGaitDistanceStep = null;
     onDepartureStep?.(null);
     onGaitTimingSample?.(null);
   });
@@ -228,6 +233,7 @@
       // the feet to keep a steady-loop stride while the body decelerates.
       speed: moving ? sample.speed : 0,
       direction: { x: 0, z: 1 },
+      worldMotionMatchesGait: gaitClock !== null,
       phase: sample.arrived
         ? `arrived on step ${plan.steps}`
         : `walking to mark · step ${sample.step.toFixed(1)} of ${plan.steps}`,
@@ -302,7 +308,25 @@
 
     facing = tick.facing;
 
-    const step = stepOf(tick, running ? speed : 0, dt);
+    const fallbackStep = stepOf(tick, running ? speed : 0, dt);
+    const currentDistanceStep = gaitClock?.distanceStep;
+    const worldMotionMatchesGait =
+      !manual &&
+      tick.isMoving &&
+      gaitClock?.moving === true &&
+      gaitClock.cadence > 1e-6 &&
+      currentDistanceStep !== undefined &&
+      previousGaitDistanceStep !== null &&
+      currentDistanceStep >= previousGaitDistanceStep;
+    const step = worldMotionMatchesGait
+      ? stepOfGaitDistance(
+          tick,
+          running ? speed : 0,
+          gaitClock!.cadence,
+          currentDistanceStep! - previousGaitDistanceStep!
+        )
+      : fallbackStep;
+    previousGaitDistanceStep = currentDistanceStep ?? null;
     x += step.dx;
     z += step.dz;
     travelled += step.distance;
@@ -319,6 +343,7 @@
         length > 1e-6
           ? { x: tick.direction.x / length, z: tick.direction.z / length }
           : { x: 0, z: 1 },
+      worldMotionMatchesGait,
       phase: tick.phase,
       travelled,
       turnRequest: tick.turnRequest ?? null,

@@ -30,6 +30,8 @@ export interface WalkState {
   speed: number;
   /** Travel direction in the character's own frame, normalised. */
   direction: { x: number; z: number };
+  /** World travel is sampled from the animator's contact-matched gait clock. */
+  worldMotionMatchesGait?: boolean;
   phase: string;
   /** Metres covered since the last reset. */
   travelled: number;
