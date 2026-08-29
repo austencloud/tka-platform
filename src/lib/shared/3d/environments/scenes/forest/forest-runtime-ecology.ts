@@ -32,19 +32,29 @@ export interface ForestRuntimeGrassPlacement {
   colorIndex: number;
 }
 
+export interface ForestRuntimeTreeInstanceOptions {
+  materialSource?: Object3D;
+  distanceTier?: "near" | "mid" | "far";
+}
+
 const GRASS_COLORS = ["#6d7a5c", "#7e8768", "#5d6b50", "#74805d"];
 
 /** Build GPU instances from an accepted Forest tree family without copying it. */
 export function createForestRuntimeTreeInstances(
   source: Object3D,
   placements: ForestRuntimeTreePlacement[],
-  familyId: string
+  familyId: string,
+  options: ForestRuntimeTreeInstanceOptions = {}
 ): Group {
   const root = new Group();
-  root.name = `Forest_RuntimeTreeFamily_${familyId}`;
+  const distanceTier = options.distanceTier ?? "near";
+  root.name = `Forest_RuntimeTreeFamily_${familyId}_${distanceTier}`;
   source.updateMatrixWorld(true);
-  const bounds = new Box3().setFromObject(source);
+  const materialSource = options.materialSource ?? source;
+  materialSource.updateMatrixWorld(true);
+  const bounds = new Box3().setFromObject(materialSource);
   const sourceHeight = Math.max(0.001, bounds.max.y - bounds.min.y);
+  const sourceMaterials = collectMaterialsByName(materialSource);
   const placementMatrix = new Matrix4();
   const combinedMatrix = new Matrix4();
   const quaternion = new Quaternion();
@@ -55,7 +65,9 @@ export function createForestRuntimeTreeInstances(
   source.traverse((child) => {
     const sourceMesh = child as Mesh;
     if (!sourceMesh.isMesh || !sourceMesh.geometry) return;
-    const materials = cloneMaterials(sourceMesh.material);
+    const materials = cloneMaterials(
+      replaceMaterialsByName(sourceMesh.material, sourceMaterials)
+    );
     const instances = new InstancedMesh(
       sourceMesh.geometry,
       materials,
@@ -69,6 +81,7 @@ export function createForestRuntimeTreeInstances(
     instances.frustumCulled = true;
     instances.userData.forestRuntimeEcology = true;
     instances.userData.forestTreeFamily = familyId;
+    instances.userData.forestDistanceTier = distanceTier;
     instances.userData.ownedMaterials = true;
 
     placements.forEach((placement, index) => {
@@ -183,4 +196,30 @@ function cloneMaterials(
   return Array.isArray(material)
     ? material.map((candidate) => candidate.clone())
     : material.clone();
+}
+
+function collectMaterialsByName(
+  source: Object3D
+): ReadonlyMap<string, Material> {
+  const materials = new Map<string, Material>();
+  source.traverse((object) => {
+    const mesh = object as Mesh;
+    if (!mesh.isMesh) return;
+    const candidates = Array.isArray(mesh.material)
+      ? mesh.material
+      : [mesh.material];
+    for (const material of candidates) {
+      if (material.name) materials.set(material.name, material);
+    }
+  });
+  return materials;
+}
+
+function replaceMaterialsByName(
+  material: Material | Material[],
+  materialsByName: ReadonlyMap<string, Material>
+): Material | Material[] {
+  const replace = (candidate: Material) =>
+    materialsByName.get(candidate.name) ?? candidate;
+  return Array.isArray(material) ? material.map(replace) : replace(material);
 }
