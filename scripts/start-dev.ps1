@@ -1,6 +1,8 @@
 # Unified dev server startup
 # - Starts the Vite dev server (background), waits until it actually serves,
 #   THEN starts the Cloudflare tunnel (dev.tkaflowarts.com).
+# - Verifies installed dependency manifests and imports before Vite starts. A
+#   broken install is rebuilt from the frozen lockfile and rechecked first.
 # - Ordering matters: cloudflared connects to Cloudflare's edge in ~1s, but Vite
 #   on a project this size takes much longer to boot. If the tunnel comes up
 #   first, dev.tkaflowarts.com returns 502 Bad Gateway for the whole cold-boot
@@ -79,6 +81,51 @@ function Clear-Port5173 {
     if ($owners) { Start-Sleep -Seconds 2 }
 }
 
+# Vite remembers failed package resolution for the life of the process. Check
+# the real installed files and import the boot-critical dependency graph before
+# Vite is allowed to start, so a hollow pnpm package directory cannot poison the
+# module graph until Austen restarts again.
+function Test-WorkspaceInstall($RepoRoot) {
+    $verifier = Join-Path $RepoRoot "scripts\verify-workspace-install.mjs"
+    $check = Start-Process -FilePath "node.exe" -ArgumentList $verifier, $RepoRoot `
+        -WorkingDirectory $RepoRoot -NoNewWindow -Wait -PassThru
+    return $check.ExitCode -eq 0
+}
+
+function Invoke-RepoCommand($RepoRoot, $Command) {
+    $commandProcess = Start-Process -FilePath "cmd.exe" -ArgumentList "/d", "/s", "/c", $Command `
+        -WorkingDirectory $RepoRoot -NoNewWindow -Wait -PassThru
+    return $commandProcess.ExitCode
+}
+
+function Repair-WorkspaceInstall($RepoRoot) {
+    Write-Status "Dependency preflight failed - rebuilding the frozen install before Vite starts."
+
+    $installExit = Invoke-RepoCommand $RepoRoot "pnpm install --force --offline --frozen-lockfile --reporter=append-only"
+    if ($installExit -ne 0) {
+        Write-Status "Offline repair could not complete - retrying from the registry with the same frozen lockfile."
+        $installExit = Invoke-RepoCommand $RepoRoot "pnpm install --force --frozen-lockfile --reporter=append-only"
+    }
+    if ($installExit -ne 0) {
+        throw "Dependency repair failed. Vite was not started with an unhealthy install."
+    }
+
+    $buildExit = Invoke-RepoCommand $RepoRoot "pnpm run build:packages"
+    if ($buildExit -ne 0) {
+        throw "Workspace package rebuild failed. Vite was not started with stale package entrypoints."
+    }
+
+    if (-not (Test-WorkspaceInstall $RepoRoot)) {
+        throw "Dependency repair completed but the install still fails its importability check. Vite was not started."
+    }
+
+    # The repaired package version may be identical, so source paths alone do
+    # not prove Vite's existing optimizer output is safe. Force exactly the next
+    # dev-server optimizer pass through the canonical Vite cache owner.
+    $env:TKA_FORCE_VITE_DEPS = "1"
+    Write-Status "Dependency repair verified - Vite will rebuild its dependency cache once."
+}
+
 # Main execution
 Write-Line ""
 Write-Line "========================================"
@@ -109,8 +156,14 @@ $tunnelProc = $null
 # into this console and keeps node in this process tree, so console Ctrl+C and
 # VS Code "terminate" both reach it. WorkingDirectory is the repo root.
 $repoRoot = Split-Path -Parent $PSScriptRoot
-Stop-Pm2App
-Clear-Port5173
+if (-not (Test-WorkspaceInstall $repoRoot)) {
+    Stop-Pm2App
+    Clear-Port5173
+    Repair-WorkspaceInstall $repoRoot
+} else {
+    Stop-Pm2App
+    Clear-Port5173
+}
 Write-Status "Starting Vite dev server..."
 Write-Line ""
 $viteProc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "pnpm run dev" `
