@@ -520,6 +520,8 @@
   keyLightDistanceMeters={92}
   shadowAnchorSnapMeters={6}
   shadowRefreshIntervalSeconds={1 / 30}
+  shadowRefreshMinimumFrameGap={2}
+  shadowMapSize={1024}
   shadowRefreshToken={forestShadowRefreshToken}
 />
 

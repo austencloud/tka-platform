@@ -210,6 +210,7 @@
   let loadStartedAt = 0;
   let frameTimes: number[] = [];
   let performanceWarmupFrames = 0;
+  let performanceCaptureOrdinal = 0;
   let missingColliderFrames = 0;
   const activeTerrainBodies = new Map<string, PhysicsBodyComponent>();
   let activeTerrainColliderWindowKey: string | null = null;
@@ -1257,7 +1258,7 @@
           fullDetailColliderHeightParity: true,
           renderStrategy:
             props.hostMode === "chunked"
-              ? "one crack-free adaptive render batch: 1 m campground detail, 2 m far field, and 32 m full-resolution collision chunks"
+              ? "independently culled 192 m adaptive render tiles: 1 m campground detail, 2 m far field, and separate 32 m full-resolution collision chunks"
               : "one full-resolution visible/collider mesh",
           cameraCollisionStrategy: "rapier-active-chunk-broadphase",
           candidateColliderMeshes: terrainHost.metrics.colliderMeshes,
@@ -1479,7 +1480,9 @@
         const proof = (globalThis as Record<string, unknown>)
           .__flowFestGate2 as Record<string, unknown> | undefined;
         if (proof) {
+          performanceCaptureOrdinal += 1;
           proof.performance = {
+            captureOrdinal: performanceCaptureOrdinal,
             samples: frameTimes.length,
             p50FrameMilliseconds: percentile(frameTimes, 0.5),
             p95FrameMilliseconds: percentile(frameTimes, 0.95),

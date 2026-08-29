@@ -69,13 +69,22 @@ export const FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS = {
 export const FLOW_FEST_FOREST_DISTANCE_LOD = {
   nearMaximumMeters: 55,
   midMaximumMeters: 130,
-  grassMaximumMeters: 70,
+  grassNearMaximumMeters: 22,
+  grassMidMaximumMeters: 40,
+  grassMaximumMeters: 58,
+  grassMidDensity: 0.5,
+  grassFarDensity: 0.25,
   cameraPositionThresholdMeters: 0.75,
   cameraRotationThresholdRadians: 0.015,
 } as const;
 
 export const FLOW_FEST_FOREST_GRASS_ASSET =
   "/models/flow-fest-sim/ecology/forest-grass-prototypes.glb";
+
+export const FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS = {
+  mid: "/models/flow-fest-sim/ecology/distance-lod/grass/forest-grass-prototypes-mid.glb",
+  far: "/models/flow-fest-sim/ecology/distance-lod/grass/forest-grass-prototypes-far.glb",
+} as const;
 
 export const FLOW_FEST_FOREST_GROUND_LIFE_ASSETS = {
   "damp-sedge-tussock": "/models/forest/ground-life/damp-sedge-tussock.glb",

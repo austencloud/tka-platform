@@ -36,6 +36,10 @@
      * Three's default every-frame shadow update behavior.
      */
     shadowRefreshIntervalSeconds?: number;
+    /** Prevents a low frame rate from turning a capped shadow pass back into an every-frame pass. */
+    shadowRefreshMinimumFrameGap?: number;
+    /** Per-consumer shadow-map resolution. Forest keeps its 2048 default. */
+    shadowMapSize?: number;
     /** Forces a shadow refresh when static scene dressing or lighting changes. */
     shadowRefreshToken?: string | number;
   }
@@ -49,6 +53,8 @@
     keyLightDistanceMeters = 64,
     shadowAnchorSnapMeters = 0,
     shadowRefreshIntervalSeconds = 0,
+    shadowRefreshMinimumFrameGap = 0,
+    shadowMapSize = 2048,
     shadowRefreshToken = 0,
   }: Props = $props();
 
@@ -60,6 +66,7 @@
   const keyTarget = new Object3D();
   let keyLight = $state<DirectionalLight>();
   let shadowRefreshElapsed = 0;
+  let shadowRefreshFrames = 0;
   const resolvedShadowAnchorSnapMeters = $derived(
     Math.max(0, shadowAnchorSnapMeters)
   );
@@ -115,6 +122,7 @@
     light.shadow.autoUpdate = !controlledRefresh;
     light.shadow.needsUpdate = shadowsEnabled;
     shadowRefreshElapsed = 0;
+    shadowRefreshFrames = 0;
   });
 
   useTask((delta) => {
@@ -122,8 +130,14 @@
     const interval = Math.max(0, shadowRefreshIntervalSeconds);
     if (!light || !shadowsEnabled || interval <= 0) return;
     shadowRefreshElapsed += Math.max(0, delta);
-    if (shadowRefreshElapsed < interval) return;
+    shadowRefreshFrames += 1;
+    if (
+      shadowRefreshElapsed < interval ||
+      shadowRefreshFrames < Math.max(0, shadowRefreshMinimumFrameGap)
+    )
+      return;
     shadowRefreshElapsed %= interval;
+    shadowRefreshFrames = 0;
     light.shadow.needsUpdate = true;
   });
 </script>
@@ -139,8 +153,8 @@
   position.z={keyPosition[2]}
   target={keyTarget}
   castShadow={shadowsEnabled}
-  shadow.mapSize.width={2048}
-  shadow.mapSize.height={2048}
+  shadow.mapSize.width={shadowMapSize}
+  shadow.mapSize.height={shadowMapSize}
   shadow.camera.near={1}
   shadow.camera.far={140}
   shadow.camera.left={shadowExtentMeters ? -shadowExtentMeters : -28}
