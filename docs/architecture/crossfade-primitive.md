@@ -59,6 +59,13 @@ same clock as the fade, in either direction. A parent-filled crossfade of cheap
 content is fine on the primitive (`fill`); a parent-filled crossfade of heavy
 content is not (regardless of `fill`).
 
+Sequential decision screens use `mode="swap" motion="step"` with `direction={1}`
+for forward and `direction={-1}` for back. The primitive sequences the outgoing
+and incoming layers so their copy is never readable at the same time, carries a
+short directional drift through the shared motion helper, and animates a changed
+natural height on the same clock when `animateHeight` is enabled. This is the
+canonical wizard-step transition; feature code does not reproduce it.
+
 ## What is on the primitive (migrated 2026-06-30)
 
 | File                                             | Mode              | Note                                                                |

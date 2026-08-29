@@ -70,7 +70,10 @@ Given `from`, `to`, `steps`, and an optional comfortable cadence:
 
 - `steps` must be a positive integer;
 - all coordinates and cadence must be finite;
-- every step boundary is `from + (to - from) * i / steps`;
+- the declared step-length profile must sum exactly to the requested distance;
+- the final two steps may shorten deliberately to express braking, while the
+  preceding steps absorb the remaining distance without exceeding the
+  comfortable-step-length envelope;
 - sampling is clamped, monotonic, and frame-rate independent;
 - the terminal sample equals `to` exactly by construction; and
 - the planner returns the required mean step length so the animation layer can
@@ -100,6 +103,22 @@ terminal stance foot anchored, but it must not invent the swing trajectory or
 decide which footfall counts. The destination planner continues to own only
 the root's geometric progress.
 
+The bridge between those owners is `TerminalStepPlan`. It is armed at least
+two authored steps before arrival and declares:
+
+- the monotonic gait step where braking begins and the step where arrival must
+  complete;
+- the terminal foot and target facing;
+- the remaining root distance and the two braking-step distances;
+- the cadence used to time the authored transition; and
+- the immutable plan identity used to reject stale transitions.
+
+The selected stop asset supplies the normalized root-distance curve and
+contact schedule. `LocomotionAnimator` maps that curve onto the plan's exact
+remaining distance and holds the terminal pose after settle. `FootPlanter`
+realizes the declared anchors during braking, landing, and settle. It remains a
+late corrective layer rather than a transition generator.
+
 ## State-of-the-art reference
 
 The design follows the same separation used by modern game locomotion:
@@ -113,7 +132,9 @@ and one controlled bridge between them.
 
 Automated:
 
-- every integer step boundary is evenly spaced;
+- every integer step boundary follows the declared step-length profile;
+- the complete profile sums to the requested distance and preserves a
+  deliberate two-step braking window;
 - the terminal sample is bit-stable at the requested destination;
 - invalid step counts and non-finite inputs are rejected;
 - different frame partitions produce the same sampled positions for the same
@@ -140,32 +161,108 @@ joint acceleration, knee jerk, and cycling.
 
 ## Current boundary
 
-The straight-path executor now uses the gait clock as its progress source and
+The straight-path executor uses the gait clock as its progress source and
 lands on the requested mark without an endpoint correction. Walk Lab also
 limits its exact-step picker to mean step lengths between 55 and 85 cm, so the
 diagnostic cannot request a three-step eight-metre walk and mistake the result
 for a locomotion failure.
 
-The live 8 m / 12 step case proves the planning half: 0.0 cm endpoint error,
-no backwards progress, and a largest measured root advance of 1.90 cm in one
-rendered frame. It does not prove a production-quality stop. Inside the steady
-travel window the root is clean, but the gait still measures roughly 6.7 cm of
-stance-foot slip and 2,894 deg/s² RMS knee jerk. At the endpoint, the system
-freezes the loop phase and crossfades that arbitrary stride pose to idle. That
-transition has no remaining-distance model, terminal foot owner, or authored
-stop window, so it cannot promise an anchored final foot or a jolt-free settle.
+The terminal-step seam now exists. The asset build produces left- and
+right-terminal stop clips plus explicit contact and normalized root-distance
+sidecars. `LocomotionAnimator` selects the requested terminal foot, starts the
+transition two authored steps before arrival, distance-matches the clip to the
+remaining plan, blends into the braking stride without a phase jump, and holds
+the settled pose. The cyclic contact retargeter never rewrites the non-cyclic
+stop asset.
 
-The next production seam is therefore a terminal-step controller, not another
-position correction. It must receive remaining distance, requested terminal
-footfall, and step-length/cadence intent, then drive either an authored stop
-clip through distance matching or a procedural stopping window with the stance
-foot held. Until that owner exists, the exact mark planner is valid but the
-walking system as a whole does not satisfy the top-tier motion acceptance
+Live warm-cache proof for Remy's 8 m / 12 step case:
+
+- 8.0 m covered in exactly 12 authored steps with 0.0 cm endpoint error;
+- 0.0 joint teleports per second over the complete walk, with a worst measured
+  joint acceleration of 135 m/s²;
+- terminal-window foot slip of 1.1 cm, heel lift of 1.4 cm, and knee jerk of
+  945 deg/s²; and
+- one remaining terminal knee twitch at roughly 1.1 events per second in the
+  0.85-second arrival window.
+
+The system is therefore exact and its terminal transition is close to the
+declared arrival thresholds, but the full walk is not top-tier yet. The steady
+travel window still measures roughly 6.2 cm of stance-foot slip, 11.8 cm of
+mid-stance heel lift, 19.7 knee twitches per second, 3,287 deg/s² knee jerk,
+and only 18% body-over-foot support. Disabling the current contact retarget and
+planting layers makes those numbers substantially worse, while wider IK ramps
+trade one failure for another.
+
+The remaining production seam is authored steady-locomotion data, not another
+per-frame IK heuristic. The asset pipeline needs phase-aligned root-motion
+walks across useful speed bands, explicit foot contacts, believable pelvis
+weight transfer, and more stop families keyed by speed and facing. A future
+motion-matching database may select those clips, but the unfinished lab-only
+motion-matching controller must not become a parallel runtime owner. Until the
+steady dataset replaces the current loop/retarget trajectory, the walking
+system does not satisfy the zero-twitch and human-range support acceptance
 criteria.
 
-A live procedural prototype that simply held both endpoint plants proved why
-this seam cannot be skipped. It removed the stop jolt, but left Remy frozen in
-a 73 cm split stance with the rear knee nearly straight. Letting both locks
-fade produced the opposite failure: a normal idle pose reached through roughly
-30 cm of visible foot travel. Both variants were rejected. The terminal step
-must replace the final looped footfall, not clean up after it.
+## Locomotion-family architecture
+
+Steady travel, lateral travel, turn-in-place, and stopping are separate motion
+families. They share trajectory intent and late contact correction, but they do
+not share a universal clip or a universal set of human-walk thresholds.
+
+- **Steady travel** selects by future trajectory, gait phase, speed band, and
+  desired facing. The gait clock now exposes `distanceStep` beside `step`:
+  `step` remains the exact footfall/counting axis, while `distanceStep` follows
+  the selected motion's reconstructed within-cycle root curve. A host can
+  distance-match the world root without changing the requested step count.
+- **Lateral travel** admits only lateral candidates and rejects any sampled
+  pose whose feet reverse the left/right ordering of its thighs. The current
+  lateral clips receive an offline clearance bake; hard world-space foot locks
+  stay disabled until a selected candidate also supplies a matched root curve.
+- **Turn-in-place** uses authored left/right quarter-turn clips with contact
+  labels and sampled root yaw. The turn animator owns the visible body turn;
+  the root banks the completed yaw at the seam, and FootPlanter realizes only
+  the declared support windows.
+- **Stopping** uses the existing terminal controller and left/right authored
+  stop assets. It is selected at least two footfalls ahead and distance-matched
+  to the remaining mark.
+
+The diagnostic now chooses rows by maneuver family. A turn is no longer failed
+for having no forward step length or for "cycling on the spot," and a sidestep
+is not compared with forward-walk cadence and duty-factor ranges. Contact slip,
+joint impulses, knee jerk, and leg self-crossing remain visible wherever they
+are physically meaningful.
+
+## Asset and database boundary
+
+The repository can build authored stop and turn clips today and bake their
+contact labels. It does not yet contain the steady/lateral database needed for
+the final acceptance gate: phase-aligned speed bands, start/stop variants,
+left/right terminal stance, clean root trajectories, and contact metadata.
+
+The unfinished `MmLocomotionController` is the future database host. Its
+extractor already records pose, feet, hip velocity, and future trajectory; its
+search now supports intent-family admission and hard leg-clearance rejection.
+It still does not invoke that search at runtime or transfer a selected
+candidate's root/contact metadata to the animator. That controller must be
+extended rather than placing a second motion-matching system beside it.
+
+The minimal resolved candidate handed from selection to playback is:
+
+```ts
+interface ResolvedLocomotionCandidate {
+  clipId: string;
+  sampleTime: number;
+  family: "travel" | "lateral" | "turn" | "stop";
+  rootDistanceCurve: readonly number[];
+  contactSchedule: {
+    left: readonly number[];
+    right: readonly number[];
+  };
+  targetFacing: number;
+  terminalFoot?: "left" | "right";
+}
+```
+
+Inertialization may remove the small pose delta after selection. It cannot
+create braking, foot placement, lateral clearance, or weight transfer missing
+from the candidate data.

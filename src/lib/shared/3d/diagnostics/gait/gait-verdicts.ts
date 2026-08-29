@@ -11,6 +11,11 @@ import type { GaitReport } from "./gait-analysis";
 
 export type Verdict = "good" | "warn" | "bad" | "none";
 export type GaitReportScope = "gait" | "arrival";
+export type GaitManeuverProfile =
+  | "walk"
+  | "lateral"
+  | "crossover"
+  | "turn-in-place";
 
 export interface VerdictRow {
   name: string;
@@ -38,7 +43,8 @@ function band(
 
 export function verdictRows(
   report: GaitReport | null,
-  scope: GaitReportScope = "gait"
+  scope: GaitReportScope = "gait",
+  maneuver: GaitManeuverProfile = "walk"
 ): VerdictRow[] {
   const r = report;
   if (!r || r.stances.length === 0) return [];
@@ -134,6 +140,14 @@ export function verdictRows(
       tell: `worst single-frame jump was ${cm(r.peakJoltStep)}cm in one frame`,
     },
     {
+      name: "Leg self-crossing",
+      value: pct(r.legCrossingFraction),
+      unit: "%",
+      human: "0",
+      verdict: band(r.legCrossingFraction, [0, 0], [0, 0.01]),
+      tell: `feet reversed the thighs' left/right order; worst margin ${cm(r.minimumLegOrderMargin)}cm`,
+    },
+    {
       name: "Knee twitches",
       value: r.twitchesPerSecond.toFixed(1),
       unit: "/s",
@@ -182,24 +196,114 @@ export function verdictRows(
       tell: "the sway must change sides with the foot, or it is not transfer",
     },
   ];
-  if (scope === "gait") return rows;
   const arrivalMetrics = new Set([
     "Foot slip per step",
     "Heel lift in stance",
     "Joint teleports",
     "Worst teleport",
+    "Leg self-crossing",
     "Knee twitches",
     "Knee jerk",
     "Cycling on the spot",
   ]);
-  return rows.filter((row) => arrivalMetrics.has(row.name));
+  if (scope === "arrival") {
+    return rows.filter((row) => arrivalMetrics.has(row.name));
+  }
+
+  // Forward-walk norms are not universal locomotion norms. A pivot has no
+  // meaningful forward step length or cycling-on-the-spot score, and lateral
+  // gait has different cadence/support ranges. Keep the safety/contact rows
+  // that answer the maneuver's real question instead of manufacturing red
+  // results from an unrelated human-walking reference.
+  if (maneuver === "turn-in-place") {
+    const turnMetrics = new Set([
+      "Foot slip per step",
+      "Slip share of step",
+      "Heel lift in stance",
+      "Joint teleports",
+      "Worst teleport",
+      "Leg self-crossing",
+      "Knee twitches",
+      "Knee jerk",
+      "Weight alternates",
+    ]);
+    return rows.filter((row) => turnMetrics.has(row.name));
+  }
+  if (maneuver === "crossover") {
+    const crossoverMetrics = new Set([
+      "Foot slip per step",
+      "Slip share of step",
+      "Heel lift in stance",
+      "Joint teleports",
+      "Worst teleport",
+      "Knee twitches",
+      "Knee jerk",
+      "Cycling on the spot",
+      "Body over the foot",
+      "Weight alternates",
+    ]);
+    return [
+      ...rows.filter((row) => crossoverMetrics.has(row.name)),
+      {
+        name: "Crossing order",
+        value: r.legOrderAlternates ? "yes" : "no",
+        unit: "",
+        human: "front and back order both present",
+        verdict: r.legOrderAlternates ? "good" : "bad",
+        tell: `signed foot order ranged from ${cm(r.minimumLegOrderMargin)}cm to ${cm(r.maximumLegOrderMargin)}cm`,
+      },
+      {
+        name: "Foot clearance",
+        value: cm(r.minimumFootSeparation),
+        unit: "cm",
+        human: "over 10cm between ankle centres",
+        verdict: band(
+          r.minimumFootSeparation,
+          [0.1, Infinity],
+          [0.06, Infinity]
+        ),
+        tell: "closest 3D ankle-centre separation during the crossover",
+      },
+      {
+        name: "Leg clearance",
+        value: cm(r.minimumLegSegmentSeparation),
+        unit: "cm",
+        human: "over 4cm between leg centre lines",
+        verdict: band(
+          r.minimumLegSegmentSeparation,
+          [0.04, Infinity],
+          [0.025, Infinity]
+        ),
+        tell: "closest 3D thigh or shin centre-line separation",
+      },
+    ];
+  }
+  if (maneuver === "lateral") {
+    const lateralMetrics = new Set([
+      "Foot slip per step",
+      "Slip share of step",
+      "Heel lift in stance",
+      "Joint teleports",
+      "Worst teleport",
+      "Leg self-crossing",
+      "Knee twitches",
+      "Knee jerk",
+      "Cycling on the spot",
+      "Body over the foot",
+      "Weight alternates",
+    ]);
+    return rows.filter((row) => lateralMetrics.has(row.name));
+  }
+  return rows;
 }
 
 /** How many measurements sit outside the human range. */
 export function countFailing(
   report: GaitReport | null,
-  scope: GaitReportScope = "gait"
+  scope: GaitReportScope = "gait",
+  maneuver: GaitManeuverProfile = "walk"
 ): number {
-  return verdictRows(report, scope).filter((row) => row.verdict === "bad")
-    .length;
+  return verdictRows(report, scope, maneuver).filter(
+    (row) => row.verdict === "bad"
+  ).length;
 }

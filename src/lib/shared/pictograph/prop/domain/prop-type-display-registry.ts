@@ -463,6 +463,18 @@ export function getBasePropType(propType: PropType): PropType {
 }
 
 /**
+ * A family tile opens the base family's chooser, but its artwork should show
+ * the exact build the user chose. Otherwise selecting LED Baton appears to
+ * snap back to Double Staff even though the saved prop value is correct.
+ */
+export function getFamilyTileDisplayProp(
+  base: PropType,
+  selectedPropType: PropType
+): PropType {
+  return getBasePropType(selectedPropType) === base ? selectedPropType : base;
+}
+
+/**
  * Gets all variations for a prop type (including the base).
  */
 export function getAllVariations(propType: PropType): PropType[] {

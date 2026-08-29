@@ -6,12 +6,18 @@
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import { SceneEnvironmentId } from "$lib/shared/3d/environments/domain/scene-environment";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { growFade } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
 
   import type { FormationPresetId } from "../domain/stage-types";
   import {
     RECOMMENDED_STUDIO_STARTER,
+    STUDIO_PERFORMER_COUNTS,
+    type StudioPerformerCount,
     type StudioStarter,
   } from "../domain/studio-project";
+  import StudioCastPreview from "./StudioCastPreview.svelte";
+  import StudioFormationDiagram from "./StudioFormationDiagram.svelte";
 
   type GuideStep = "material" | "cast" | "formation" | "prop" | "world";
 
@@ -40,47 +46,62 @@
   }: Props = $props();
 
   const STORAGE_KEY = "tka-stage-starter-dismissed";
-  const castOptions = [
-    {
-      count: 1 as const,
-      label: "Solo",
-      description: "One performer",
-      icon: "fa-person",
-    },
-    {
-      count: 2 as const,
-      label: "Duo",
-      description: "Two performers",
-      icon: "fa-user-group",
-    },
-    {
-      count: 4 as const,
-      label: "Ensemble",
-      description: "Four performers",
-      icon: "fa-people-group",
-    },
-  ];
+  const ensembleCounts = STUDIO_PERFORMER_COUNTS.filter((count) => count >= 3);
   const duoFormations: Array<{
     id: FormationPresetId;
     label: string;
-    icon: string;
+    description: string;
   }> = [
-    { id: "side-by-side", label: "Side by side", icon: "fa-arrows-left-right" },
+    {
+      id: "side-by-side",
+      label: "Side by side",
+      description: "Share one line",
+    },
     {
       id: "facing-each-other",
       label: "Face to face",
-      icon: "fa-people-arrows",
+      description: "Turn toward each other",
     },
-    { id: "back-to-back", label: "Back to back", icon: "fa-arrows-up-down" },
+    {
+      id: "back-to-back",
+      label: "Back to back",
+      description: "Face opposite directions",
+    },
+    {
+      id: "tunnel-stack",
+      label: "Front and back",
+      description: "One behind the other",
+    },
+    {
+      id: "stage-lr",
+      label: "Far apart",
+      description: "Use the whole stage",
+    },
+    {
+      id: "diagonal",
+      label: "Diagonal",
+      description: "Offset across depth",
+    },
   ];
   const ensembleFormations: Array<{
     id: FormationPresetId;
     label: string;
-    icon: string;
+    description: string;
   }> = [
-    { id: "line", label: "Line", icon: "fa-grip-lines" },
-    { id: "v-shape", label: "V shape", icon: "fa-chevron-down" },
-    { id: "circle", label: "Circle", icon: "fa-circle-notch" },
+    { id: "line", label: "Line", description: "One clear row" },
+    {
+      id: "v-shape",
+      label: "V shape",
+      description: "A leader at the point",
+    },
+    { id: "circle", label: "Circle", description: "Face the center" },
+    { id: "grid", label: "Grid", description: "Balanced rows" },
+    {
+      id: "diagonal",
+      label: "Diagonal",
+      description: "Sweep corner to corner",
+    },
+    { id: "stagger", label: "Stagger", description: "Offset the rows" },
   ];
   const propOptions = [
     { id: PropType.STAFF, label: "Staff", icon: "fa-grip-lines-vertical" },
@@ -105,6 +126,7 @@
   let dismissed = $state(storedDismissal());
   let guided = $state(false);
   let currentStep = $state<GuideStep>("material");
+  let stepDirection = $state<-1 | 1>(1);
   let applying = $state(false);
   let startingMaterial = $state<StudioStarter["startingMaterial"] | null>(null);
   let performerCount = $state<StudioStarter["performerCount"] | null>(null);
@@ -122,9 +144,15 @@
   const formationOptions = $derived(
     performerCount === 2
       ? duoFormations
-      : performerCount === 4
+      : performerCount !== null && performerCount >= 3
         ? ensembleFormations
         : []
+  );
+  const showCastPreview = $derived(
+    currentStep === "cast" || currentStep === "formation"
+  );
+  const formationLabel = $derived(
+    formationOptions.find((option) => option.id === formation)?.label ?? null
   );
   const canContinue = $derived(
     currentStep === "material"
@@ -158,18 +186,20 @@
 
   function beginGuided(): void {
     currentStep = "material";
+    stepDirection = 1;
     guided = true;
     onStartEmptyStage();
     void focusActiveHeading();
   }
 
   function returnToExample(): void {
+    stepDirection = -1;
     guided = false;
     onReturnToExample();
     void focusActiveHeading();
   }
 
-  function selectCast(count: StudioStarter["performerCount"]): void {
+  function selectCast(count: StudioPerformerCount): void {
     performerCount = count;
     if (count === 1) {
       formation = "solo";
@@ -192,6 +222,7 @@
   function moveStep(direction: -1 | 1): void {
     const next = guideSteps[currentStepIndex + direction];
     if (next) {
+      stepDirection = direction;
       currentStep = next;
       void focusActiveHeading();
     }
@@ -252,7 +283,13 @@
   labelledBy="stage-starter-title"
 >
   <span id="stage-starter-title" class="visually-hidden">Set up 3D Studio</span>
-  <Crossfade key={guided ? "guided" : "entry"} animateHeight>
+  <Crossfade
+    key={guided ? "guided" : "entry"}
+    mode="swap"
+    motion="step"
+    direction={stepDirection}
+    animateHeight
+  >
     {#if !guided}
       <div class="starter-surface entry-surface">
         <div class="eyebrow">
@@ -325,9 +362,42 @@
       </div>
     {:else}
       <div class="starter-surface guide-surface">
+        <div class="guide-nav">
+          <PanelButton disabled={applying} onclick={back}>
+            <i class="fas fa-arrow-left" aria-hidden="true"></i>
+            Back
+          </PanelButton>
+        </div>
+
         <div class="guide-body">
-          <Crossfade key={currentStep} animateHeight>
-            <section class="step-content" aria-live="polite">
+          {#if showCastPreview}
+            <div
+              class="cast-preview-wrap"
+              transition:growFade={{
+                axis: "y",
+                duration: DURATION.emphasis,
+              }}
+            >
+              <StudioCastPreview
+                {performerCount}
+                {formation}
+                {formationLabel}
+              />
+            </div>
+          {/if}
+
+          <Crossfade
+            key={currentStep}
+            mode="swap"
+            motion="step"
+            direction={stepDirection}
+            animateHeight
+          >
+            <section
+              class="step-content"
+              aria-live="polite"
+              data-stage-starter-step={currentStep}
+            >
               {#if currentStep === "material"}
                 <h2 bind:this={activeHeading} tabindex="-1">
                   Choose a sequence
@@ -364,38 +434,93 @@
                 </div>
               {:else if currentStep === "cast"}
                 <h2 bind:this={activeHeading} tabindex="-1">
-                  Who is on stage?
+                  How many performers?
                 </h2>
-                <div class="choice-grid three">
-                  {#each castOptions as option (option.count)}
+                <p>Choose a solo, a duo, or the exact size of your ensemble.</p>
+                <div class="cast-picker" aria-label="Choose performer count">
+                  <div class="featured-counts">
                     <button
                       type="button"
-                      class="choice-card compact"
-                      class:chosen={performerCount === option.count}
-                      aria-pressed={performerCount === option.count}
-                      onclick={() => selectCast(option.count)}
+                      class="choice-card visual-choice"
+                      class:chosen={performerCount === 1}
+                      aria-pressed={performerCount === 1}
+                      onclick={() => selectCast(1)}
                     >
-                      <i class="fas {option.icon}" aria-hidden="true"></i>
-                      <strong>{option.label}</strong>
-                      <span>{option.description}</span>
+                      <StudioFormationDiagram
+                        formation="solo"
+                        performerCount={1}
+                      />
+                      <span class="visual-choice-copy">
+                        <strong>Solo</strong>
+                        <span>1 performer</span>
+                      </span>
                     </button>
-                  {/each}
+                    <button
+                      type="button"
+                      class="choice-card visual-choice"
+                      class:chosen={performerCount === 2}
+                      aria-pressed={performerCount === 2}
+                      onclick={() => selectCast(2)}
+                    >
+                      <StudioFormationDiagram
+                        formation="side-by-side"
+                        performerCount={2}
+                      />
+                      <span class="visual-choice-copy">
+                        <strong>Duo</strong>
+                        <span>2 performers</span>
+                      </span>
+                    </button>
+                  </div>
+
+                  <div
+                    class="ensemble-picker"
+                    class:chosen={performerCount !== null &&
+                      performerCount >= 3}
+                  >
+                    <div class="ensemble-copy">
+                      <strong>Ensemble</strong>
+                      <span>Choose 3–8 performers</span>
+                    </div>
+                    <div
+                      class="ensemble-counts"
+                      role="group"
+                      aria-label="Ensemble size"
+                    >
+                      {#each ensembleCounts as count (count)}
+                        <button
+                          type="button"
+                          class:chosen={performerCount === count}
+                          aria-pressed={performerCount === count}
+                          aria-label={`${count} performers`}
+                          onclick={() => selectCast(count)}>{count}</button
+                        >
+                      {/each}
+                    </div>
+                  </div>
                 </div>
               {:else if currentStep === "formation"}
                 <h2 bind:this={activeHeading} tabindex="-1">
                   How should they begin?
                 </h2>
-                <div class="choice-grid three">
+                <p>Pick a starting relationship. You can move anyone later.</p>
+                <div class="formation-grid">
                   {#each formationOptions as option (option.id)}
                     <button
                       type="button"
-                      class="choice-card compact"
+                      class="choice-card formation-choice"
                       class:chosen={formation === option.id}
                       aria-pressed={formation === option.id}
                       onclick={() => (formation = option.id)}
                     >
-                      <i class="fas {option.icon}" aria-hidden="true"></i>
-                      <strong>{option.label}</strong>
+                      <StudioFormationDiagram
+                        formation={option.id}
+                        performerCount={performerCount ?? 2}
+                      />
+                      <span class="visual-choice-copy">
+                        <strong>{option.label}</strong>
+                        <span>{option.description}</span>
+                      </span>
                     </button>
                   {/each}
                 </div>
@@ -440,9 +565,8 @@
           </Crossfade>
         </div>
 
-        <footer>
-          <PanelButton disabled={applying} onclick={back}>Back</PanelButton>
-          {#if currentStep !== "material"}
+        {#if currentStep !== "material"}
+          <footer>
             {#if currentStepIndex < guideSteps.length - 1}
               <PanelButton
                 variant="primary"
@@ -465,8 +589,8 @@
                 Bring them on stage
               </PanelButton>
             {/if}
-          {/if}
-        </footer>
+          </footer>
+        {/if}
       </div>
     {/if}
   </Crossfade>
@@ -474,7 +598,8 @@
 
 <style>
   :global(dialog.stage-starter-modal[data-size="fit"]) {
-    width: min(36rem, calc(100vw - 2rem));
+    container-type: inline-size;
+    width: min(50rem, calc(100vw - 2rem));
   }
 
   .starter-surface {
@@ -606,7 +731,18 @@
   }
 
   .guide-body {
+    display: grid;
     min-width: 0;
+    gap: 1rem;
+  }
+
+  .cast-preview-wrap {
+    min-width: 0;
+  }
+
+  .guide-nav {
+    display: flex;
+    justify-content: flex-start;
   }
 
   .step-content {
@@ -627,6 +763,115 @@
 
   .choice-grid.three {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .cast-picker {
+    display: grid;
+    gap: 0.625rem;
+    min-width: 0;
+  }
+
+  .featured-counts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.625rem;
+  }
+
+  .ensemble-picker {
+    display: grid;
+    grid-template-columns: minmax(9rem, 0.8fr) minmax(0, 2fr);
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    padding: 0.75rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.875rem;
+    background: var(--theme-card-bg);
+    transition:
+      background-color var(--duration-normal, 200ms) ease,
+      border-color var(--duration-normal, 200ms) ease,
+      box-shadow var(--duration-normal, 200ms) ease;
+  }
+
+  .ensemble-picker.chosen {
+    border-color: var(--theme-accent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 12%,
+      var(--theme-card-bg)
+    );
+    box-shadow: 0 0.5rem 1.5rem
+      color-mix(in srgb, var(--theme-accent) 10%, transparent);
+  }
+
+  .ensemble-copy,
+  .visual-choice-copy {
+    display: grid;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  .ensemble-copy strong,
+  .visual-choice-copy strong {
+    color: var(--theme-text);
+    font-size: 1rem;
+    line-height: 1.3;
+  }
+
+  .ensemble-copy span,
+  .visual-choice-copy span {
+    color: var(--theme-text);
+    font-size: var(--font-size-min, 14px);
+    line-height: 1.35;
+  }
+
+  .ensemble-counts {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.375rem;
+    min-width: 0;
+  }
+
+  .ensemble-counts button {
+    min-width: 0;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.5rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.625rem;
+    background: var(--surface-inset-deep);
+    color: var(--theme-text);
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 750;
+    cursor: pointer;
+    transition:
+      background-color var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
+  }
+
+  .ensemble-counts button:hover,
+  .ensemble-counts button:focus-visible {
+    border-color: var(--theme-stroke-strong);
+    background: var(--theme-card-hover-bg);
+    transform: translateY(-1px);
+  }
+
+  .ensemble-counts button:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .ensemble-counts button.chosen {
+    border-color: var(--theme-accent);
+    background: var(--theme-accent);
+    color: var(--theme-on-accent, white);
+  }
+
+  .formation-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.625rem;
   }
 
   .choice-card {
@@ -661,6 +906,28 @@
     justify-items: start;
     min-height: 9rem;
     text-align: left;
+  }
+
+  .choice-card.visual-choice,
+  .choice-card.formation-choice {
+    align-content: stretch;
+    justify-items: stretch;
+    gap: 0.5rem;
+    min-height: 0;
+    padding: 0.625rem;
+  }
+
+  .choice-card.visual-choice {
+    grid-template-columns: minmax(7.5rem, 1.2fr) minmax(0, 0.8fr);
+    align-items: center;
+  }
+
+  .choice-card.formation-choice {
+    grid-template-rows: auto 1fr;
+  }
+
+  .choice-card.formation-choice .visual-choice-copy {
+    padding: 0 0.25rem 0.25rem;
   }
 
   .choice-card:hover,
@@ -717,7 +984,7 @@
   footer {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 0.75rem;
   }
 
@@ -733,6 +1000,24 @@
     .advanced a {
       grid-column: auto;
     }
+
+    .choice-card.visual-choice {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      text-align: center;
+    }
+
+    .ensemble-picker {
+      grid-template-columns: 1fr;
+    }
+
+    .ensemble-counts {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .formation-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   @container (max-width: 22rem) {
@@ -743,7 +1028,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .choice-card {
+    .choice-card,
+    .ensemble-picker,
+    .ensemble-counts button {
       transition: none;
     }
   }

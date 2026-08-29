@@ -49,14 +49,24 @@ describe("Autumn scene layout", () => {
   });
 
   it("keeps fireflies localized around authored ecology outside the stage", () => {
-    const counts = allocateAutumnFireflies(36);
+    const counts = allocateAutumnFireflies(84);
     expect(counts).toHaveLength(AUTUMN_FIREFLY_CLUSTERS.length);
-    expect(counts.reduce((sum, count) => sum + count, 0)).toBe(36);
+    expect(counts.reduce((sum, count) => sum + count, 0)).toBe(84);
     expect(counts.every((count) => count > 0)).toBe(true);
 
     for (const cluster of AUTUMN_FIREFLY_CLUSTERS) {
       expect(Math.hypot(...cluster.position)).toBeGreaterThan(6.5);
     }
+
+    expect(AUTUMN_FIREFLY_CLUSTERS.map((cluster) => cluster.id)).toEqual([
+      "clearing-edge",
+      "pond",
+      "deadwood",
+      "champignon-arc",
+      "woodland-lane",
+    ]);
+    expect(AUTUMN_FIREFLY_CLUSTERS[0]?.position[1]).toBeGreaterThan(0);
+    expect(AUTUMN_FIREFLY_CLUSTERS.at(-1)?.position[1]).toBeLessThan(-20);
   });
 
   it("emits every falling leaf beneath an authored tree canopy", () => {

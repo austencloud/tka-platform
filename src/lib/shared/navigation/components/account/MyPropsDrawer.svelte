@@ -14,10 +14,12 @@
     toggleProfileSkill,
   } from "$lib/shared/community/domain/profile-prop-catalog";
   import type { PropPreferenceState } from "$lib/shared/community/state/prop-preference-state.svelte";
+  import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import { tryGetAccountSetupContext } from "$lib/shared/onboarding/context/account-setup-context";
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { growFade } from "$lib/shared/transitions/motion";
   import ProfilePropPicker from "./ProfilePropPicker.svelte";
   import PropFamilyGrid from "./PropFamilyGrid.svelte";
   import SelectionFooterBar from "./SelectionFooterBar.svelte";
@@ -200,28 +202,15 @@
   class="my-props-modal"
 >
   {#snippet header()}
-    <div class="modal-header">
-      <span class="step-label">
-        {step === "props" ? "1 of 2" : "Optional · 2 of 2"}
-      </span>
-      <h2 class="modal-title">
-        {step === "props" ? "What do you spin?" : "Feature a skill?"}
-      </h2>
-      <p class="modal-description">
-        {step === "props"
-          ? "On your profile and in prop search."
-          : "Beside your name on creator cards."}
-      </p>
-      <button
-        type="button"
-        class="close-button"
-        onclick={closeModal}
-        aria-label="Close prop editor"
-        disabled={submitting}
-      >
-        <i class="fas fa-xmark" aria-hidden="true"></i>
-      </button>
-    </div>
+    <DrawerHeader
+      title={step === "props" ? "What do you spin?" : "Feature a skill?"}
+      subtitle={step === "props"
+        ? "Step 1 of 2 · On your profile and in prop search."
+        : "Optional · Step 2 of 2 · Beside your name on creator cards."}
+      onClose={closeModal}
+      closeDisabled={submitting}
+      closeLabel="Close prop editor"
+    />
   {/snippet}
 
   <div class="prop-editor-content" bind:this={editorContentElement}>
@@ -248,47 +237,51 @@
     {/if}
 
     {#if step === "props"}
-      <PropFamilyGrid
-        selectedProps={draftProps}
-        {activeFamily}
-        disabled={submitting || propState.loading}
-        onselectfamily={handleFamilySelect}
-        ontoggleskill={handleSkillToggle}
-      />
+      <div class="editor-step" transition:growFade={{ axis: "y" }}>
+        <PropFamilyGrid
+          selectedProps={draftProps}
+          {activeFamily}
+          disabled={submitting || propState.loading}
+          onselectfamily={handleFamilySelect}
+          ontoggleskill={handleSkillToggle}
+        />
 
-      {#if legacyProps.length > 0}
-        <section class="legacy-props" aria-labelledby="legacy-props-title">
-          <strong id="legacy-props-title">Old saved props</strong>
-          <div class="legacy-list">
-            {#each legacyProps as prop (prop)}
-              <button
-                type="button"
-                class="legacy-chip"
-                onclick={() => handleLegacyRemove(prop)}
-                disabled={submitting}
-                aria-label={`Remove previously saved ${getProfilePropLabel(prop)}`}
-              >
-                <span class="legacy-preview" aria-hidden="true">
-                  <PropCompositionPreview
-                    propType={prop}
-                    size={32}
-                    useSavedOverrides={false}
-                  />
-                </span>
-                <span>{getProfilePropLabel(prop)}</span>
-                <i class="fas fa-xmark" aria-hidden="true"></i>
-              </button>
-            {/each}
-          </div>
-        </section>
-      {/if}
+        {#if legacyProps.length > 0}
+          <section class="legacy-props" aria-labelledby="legacy-props-title">
+            <strong id="legacy-props-title">Old saved props</strong>
+            <div class="legacy-list">
+              {#each legacyProps as prop (prop)}
+                <button
+                  type="button"
+                  class="legacy-chip"
+                  onclick={() => handleLegacyRemove(prop)}
+                  disabled={submitting}
+                  aria-label={`Remove previously saved ${getProfilePropLabel(prop)}`}
+                >
+                  <span class="legacy-preview" aria-hidden="true">
+                    <PropCompositionPreview
+                      propType={prop}
+                      size={32}
+                      useSavedOverrides={false}
+                    />
+                  </span>
+                  <span>{getProfilePropLabel(prop)}</span>
+                  <i class="fas fa-xmark" aria-hidden="true"></i>
+                </button>
+              {/each}
+            </div>
+          </section>
+        {/if}
+      </div>
     {:else}
-      <ProfilePropPicker
-        selectedProps={profilePropChoices}
-        value={draftProfileProp}
-        disabled={submitting}
-        onselect={handleProfilePropChoice}
-      />
+      <div class="editor-step" transition:growFade={{ axis: "y" }}>
+        <ProfilePropPicker
+          selectedProps={profilePropChoices}
+          value={draftProfileProp}
+          disabled={submitting}
+          onselect={handleProfilePropChoice}
+        />
+      </div>
     {/if}
   </div>
 
@@ -311,41 +304,10 @@
     width: min(94vw, 64rem) !important;
   }
 
-  .modal-header {
-    position: relative;
+  .editor-step {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 0.2rem;
-    padding: 0.75rem 4rem 0.4rem 0.75rem;
-  }
-
-  .step-label {
-    color: color-mix(in srgb, var(--theme-accent, #6366f1) 58%, white);
-    font-size: max(0.75rem, var(--font-size-compact, 0.75rem));
-    font-weight: 750;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .modal-title,
-  .modal-description {
-    margin: 0;
-  }
-
-  .modal-title {
-    color: var(--theme-text, white);
-    font-size: max(1.125rem, var(--font-size-lg, 1.125rem));
-    font-weight: 700;
-    line-height: 1.2;
-    overflow-wrap: anywhere;
-  }
-
-  .modal-description {
-    max-width: 54rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-    font-size: max(0.875rem, var(--font-size-min, 0.875rem));
-    line-height: 1.45;
+    gap: 0.5rem;
   }
 
   .prop-editor-content {
@@ -358,36 +320,6 @@
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2))
       transparent;
-  }
-
-  .close-button {
-    position: absolute;
-    top: 0.65rem;
-    right: 0.65rem;
-    display: grid;
-    width: var(--min-touch-target, 44px);
-    height: var(--min-touch-target, 44px);
-    place-items: center;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 0.65rem;
-    cursor: pointer;
-  }
-
-  .close-button:hover:not(:disabled) {
-    color: var(--theme-text, white);
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-  }
-
-  .close-button:disabled {
-    cursor: wait;
-    opacity: 0.58;
-  }
-
-  .close-button:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
   }
 
   .prop-error,
@@ -474,5 +406,4 @@
     width: 100%;
     height: 100%;
   }
-
 </style>

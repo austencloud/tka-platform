@@ -222,4 +222,106 @@ describe("scene-3d foot planting", () => {
       true
     );
   });
+
+  it("lets an authored maneuver own contact over the gait underneath it", () => {
+    const root = new Object3D();
+    const hips = new Bone();
+    hips.name = "Hips";
+    root.add(hips);
+    const left = makeLeg("Left");
+    const right = makeLeg("Right");
+    hips.add(left.chain.root, right.chain.root);
+    root.updateMatrixWorld(true);
+
+    const byName = new Map([
+      ["Hips", hips],
+      ["LeftToeBase", left.toe],
+      ["RightToeBase", right.toe],
+    ]);
+    const skeleton = {
+      getBone: (name: string) => byName.get(name) ?? null,
+      getLeftLegChain: () => left.chain,
+      getRightLegChain: () => right.chain,
+    } as unknown as IAvatarSkeletonBuilder;
+
+    const solvedRoots: Bone[] = [];
+    const solver: ILegIKSolver = {
+      solve(input) {
+        solvedRoots.push(input.chain.root as Bone);
+        return { bendSign: input.bendSign ?? 1, reliable: false };
+      },
+    };
+    const curves = new ContactCurveCache();
+    curves.register({
+      clipName: "turn-right-90",
+      frameRate: 30,
+      frameCount: 2,
+      leftFoot: [0, 0],
+      rightFoot: [1, 1],
+    });
+    const planter = new FootPlanter();
+    planter.initialize(skeleton, solver, curves);
+
+    const input = {
+      groundY: 0,
+      locomotionState: LocomotionState.IDLE,
+      isMoving: true,
+      currentClipName: "turn-right-90",
+      currentClipPhase: 0.5,
+      // Deliberately contradict the authored maneuver. The overlay on screen
+      // says right support, so the frozen loop underneath cannot take it back.
+      contactLeft: 1,
+      contactRight: 0,
+    };
+    planter.update(0.04, input); // seed velocity history
+    planter.update(0.04, input);
+
+    expect(solvedRoots).toContain(right.chain.root);
+    expect(solvedRoots).not.toContain(left.chain.root);
+  });
+
+  it("leaves authored motion alone when its hard-lock confidence is zero", () => {
+    const root = new Object3D();
+    const hips = new Bone();
+    hips.name = "Hips";
+    root.add(hips);
+    const left = makeLeg("Left");
+    const right = makeLeg("Right");
+    hips.add(left.chain.root, right.chain.root);
+    root.updateMatrixWorld(true);
+    const byName = new Map([
+      ["Hips", hips],
+      ["LeftToeBase", left.toe],
+      ["RightToeBase", right.toe],
+    ]);
+    const skeleton = {
+      getBone: (name: string) => byName.get(name) ?? null,
+      getLeftLegChain: () => left.chain,
+      getRightLegChain: () => right.chain,
+    } as unknown as IAvatarSkeletonBuilder;
+    let solveCount = 0;
+    const solver: ILegIKSolver = {
+      solve(input) {
+        solveCount += 1;
+        return { bendSign: input.bendSign ?? 1, reliable: false };
+      },
+    };
+    const planter = new FootPlanter();
+    planter.initialize(skeleton, solver, new ContactCurveCache());
+    const input = {
+      groundY: 0,
+      locomotionState: LocomotionState.WALKING,
+      isMoving: true,
+      contactLeft: 1,
+      contactRight: 1,
+      lockConfidence: 0,
+      strideScale: 1.4,
+      travelDirection: { x: 1, z: 0 },
+    };
+
+    planter.update(0.04, input);
+
+    expect(solveCount).toBe(0);
+  });
+
 });

@@ -4,6 +4,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
   getAllVariations,
   getBasePropType,
+  getFamilyTileDisplayProp,
   getPropTypeDisplayInfo,
 } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 import {
@@ -24,6 +25,18 @@ describe("prop family groups", () => {
         PropType.CAPSULE_BATON,
         PropType.FIRE_DOUBLE_STAFF,
       ])
+    );
+  });
+
+  it("keeps the exact selected build on a family tile", () => {
+    expect(
+      getFamilyTileDisplayProp(PropType.STAFF, PropType.CAPSULE_BATON)
+    ).toBe(PropType.CAPSULE_BATON);
+    expect(
+      getFamilyTileDisplayProp(PropType.STAFF, PropType.FIRE_DOUBLE_STAFF)
+    ).toBe(PropType.FIRE_DOUBLE_STAFF);
+    expect(getFamilyTileDisplayProp(PropType.STAFF, PropType.CLUB)).toBe(
+      PropType.STAFF
     );
   });
 

@@ -63,9 +63,6 @@ const reference = JSON.parse(
     wick_roll_length_m: number;
     wick_roll_lengths_m: number[];
     wick_diameters_m: number[];
-    wick_tine_half_spacing_m: number;
-    wick_tine_straight_length_m: number;
-    wick_tine_blend_length_m: number;
     wick_tine_insertion_depth_m: number;
     wick_centers_m: [number, number][];
     wick_directions: [number, number][];
@@ -74,6 +71,7 @@ const reference = JSON.parse(
     method: string;
     symmetry: string;
     lower_cradle: string;
+    wick_roll: string;
     wick_diameter_m: number;
     wick_mount: string;
   };
@@ -186,19 +184,24 @@ describe("Medium Lotus five-wick fire fan", () => {
 
   it("seats ten parallel wire tines through the five inward-facing wick caps", () => {
     expect(reference.geometry_m).toMatchObject({
-      wick_tine_half_spacing_m: 0.004,
-      wick_tine_straight_length_m: 0.009,
-      wick_tine_blend_length_m: 0.022,
       wick_tine_insertion_depth_m: 0.01,
     });
     expect(reference.calibration.wick_mount).toContain(
-      "enter through the inward-facing end cap"
+      "complete Illustrator rail remains unchanged"
     );
     expect(builder).toContain(
-      'parent["tka_wick_mount"] = "paired axial tines through inward-facing end caps"'
+      '"intact Illustrator SVG terminals through inward-facing end caps"'
     );
     expect(builder).toContain('rod["tka_wick_tine_neck_m"]');
     expect(builder).toContain('rod["tka_wick_tine_entry_m"]');
+    expect(builder).toContain("path = list(traced_path)");
+    expect(builder).toContain(
+      'raise ValueError(f"{name} no longer reaches its Illustrator endpoint")'
+    );
+    expect(builder).toContain(
+      "centerlines[left_id] = [(-x, y, z) for x, y, z in centerlines[right_id]]"
+    );
+    expect(builder).not.toContain("traced_path[: cut_index + 1]");
     expect(builder).toContain("neck.lerp(entry, step / 8)");
   });
 
@@ -247,21 +250,90 @@ describe("Medium Lotus five-wick fire fan", () => {
     expect(builder).toContain('parent["tka_finger_ring_weld_count"] = 3');
   });
 
-  it("keeps all five measured wick rolls inside the photographed soft envelope", () => {
+  it("keeps every wick dimension perfectly mirrored inside the photographed soft envelope", () => {
     expect(reference.geometry_m.wick_centers_m).toEqual([
-      [-0.21183, 0.081127],
-      [-0.165372, 0.214802],
-      [-0.001687, 0.242065],
-      [0.162503, 0.218212],
-      [0.212362, 0.08209],
+      [-0.21376616, 0.085081206],
+      [-0.16561295, 0.2209646],
+      [0, 0.2426761],
+      [0.16561295, 0.2209646],
+      [0.21376616, 0.085081206],
     ]);
-    expect(reference.geometry_m.wick_directions).toHaveLength(5);
     expect(reference.geometry_m.wick_roll_lengths_m).toEqual([
-      0.053505, 0.045583, 0.050441, 0.050414, 0.054937,
+      0.054937, 0.050414, 0.050441, 0.050414, 0.054937,
     ]);
     expect(reference.geometry_m.wick_diameters_m).toEqual([
-      0.032269, 0.03342, 0.028984, 0.034468, 0.03479,
+      0.03479, 0.034468, 0.028984, 0.034468, 0.03479,
     ]);
+    expect(reference.calibration.symmetry).toContain("reflected exactly");
+    expect(reference.calibration.symmetry).toContain(
+      "center wick locked to the symmetry axis"
+    );
+    expect(reference.calibration.wick_roll).toContain("reflected exactly");
+
+    for (const [leftIndex, rightIndex] of [
+      [0, 4],
+      [1, 3],
+    ]) {
+      const [leftX, leftY] = reference.geometry_m.wick_centers_m[leftIndex];
+      const [rightX, rightY] = reference.geometry_m.wick_centers_m[rightIndex];
+      const [leftDirectionX, leftDirectionY] =
+        reference.geometry_m.wick_directions[leftIndex];
+      const [rightDirectionX, rightDirectionY] =
+        reference.geometry_m.wick_directions[rightIndex];
+      expect(leftX).toBe(-rightX);
+      expect(leftY).toBe(rightY);
+      expect(leftDirectionX + rightDirectionX).toBeCloseTo(0, 9);
+      expect(leftDirectionY).toBe(rightDirectionY);
+      expect(reference.geometry_m.wick_roll_lengths_m[leftIndex]).toBe(
+        reference.geometry_m.wick_roll_lengths_m[rightIndex]
+      );
+      expect(reference.geometry_m.wick_diameters_m[leftIndex]).toBe(
+        reference.geometry_m.wick_diameters_m[rightIndex]
+      );
+    }
+    expect(reference.geometry_m.wick_centers_m[2][0]).toBe(0);
+    expect(reference.geometry_m.wick_directions[2]).toEqual([0, 1]);
+
+    const svgPaths = new Map(
+      [...vectorReference.matchAll(/<path id="([^"]+)" d="([^"]+)"\/>/g)].map(
+        (match) => [match[1], match[2]]
+      )
+    );
+    const terminalPoint = (pathId: string) => {
+      const numbers = svgPaths
+        .get(pathId)
+        ?.match(/-?\d+(?:\.\d+)?/g)
+        ?.map(Number);
+      expect(numbers).toBeDefined();
+      return [
+        (numbers?.at(-2) ?? 240) / 1000 - 0.24,
+        0.27 - (numbers?.at(-1) ?? 270) / 1000,
+      ] as const;
+    };
+    const terminalPathPairs = [
+      ["lower-outer-petal-left", "lower-inner-petal-left"],
+      ["upper-outer-petal-left", "upper-inner-petal-left"],
+      ["center-petal-left", "center-petal-right"],
+      ["upper-inner-petal-right", "upper-outer-petal-right"],
+      ["lower-inner-petal-right", "lower-outer-petal-right"],
+    ] as const;
+    terminalPathPairs.forEach((pathPair, index) => {
+      const terminals = pathPair.map(terminalPoint);
+      const [directionX, directionY] =
+        reference.geometry_m.wick_directions[index];
+      const wickHalf = reference.geometry_m.wick_roll_lengths_m[index] / 2;
+      const [centerX, centerY] = reference.geometry_m.wick_centers_m[index];
+      const baseX = centerX - directionX * wickHalf;
+      const baseY = centerY - directionY * wickHalf;
+      expect((terminals[0][0] + terminals[1][0]) / 2).toBeCloseTo(baseX, 7);
+      expect((terminals[0][1] + terminals[1][1]) / 2).toBeCloseTo(baseY, 7);
+      for (const [terminalX, terminalY] of terminals) {
+        const axialOffset =
+          (terminalX - baseX) * directionX + (terminalY - baseY) * directionY;
+        expect(axialOffset).toBeCloseTo(0, 7);
+      }
+    });
+
     const topY =
       (reference.pivot_px[1] - reference.fan_bbox_px.top) *
       reference.pixel_scale_m[1];

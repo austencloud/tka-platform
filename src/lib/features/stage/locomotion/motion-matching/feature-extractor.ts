@@ -76,7 +76,19 @@ export function buildMotionDatabase(
         row[21 + h] = angleDelta(fut.facing, cur.facing);
       }
 
-      frames.push({ clipId: clip.clipId, time: t });
+      const thighDelta =
+        cur.leftThigh && cur.rightThigh
+          ? cur.rightThigh[0] - cur.leftThigh[0]
+          : 0;
+      const footDelta = cur.rightFoot[0] - cur.leftFoot[0];
+      const quality =
+        Math.abs(thighDelta) > 1e-6
+          ? {
+              legOrderMargin: footDelta * Math.sign(thighDelta),
+              footSeparation: Math.abs(footDelta),
+            }
+          : undefined;
+      frames.push({ clipId: clip.clipId, time: t, ...(quality && { quality }) });
       for (let c = 0; c < FEATURE_STRIDE; c++) rows.push(row[c]!);
     }
   }

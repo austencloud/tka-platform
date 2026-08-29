@@ -151,6 +151,10 @@ export interface PropBuildPreviewOption<T extends string> {
   label: string;
   image: string;
   imageScale?: number;
+  designCredit?: {
+    originator: string;
+    sourceUrl: string;
+  };
 }
 
 const PREVIEW_ROOT = "/images/props/build-previews";
@@ -212,9 +216,34 @@ export function fanBuildPreviewOptions(
       label: "Pictograph",
       image: fanImage("pictograph", frame, cover),
     },
-    { id: "fire", label: "Fire", image: fanImage("fire", frame, cover) },
-    { id: "lotus", label: "Lotus", image: fanImage("lotus", frame, cover) },
-    { id: "day", label: "Day", image: fanImage("day", frame, cover) },
+    {
+      id: "fire",
+      label: "Fire",
+      image: fanImage("fire", frame, cover),
+      designCredit: {
+        originator: "Doodle",
+        sourceUrl: "https://forgedfans.com/products/doodlegrip-fire-fans",
+      },
+    },
+    {
+      id: "lotus",
+      label: "Lotus",
+      image: fanImage("lotus", frame, cover),
+      designCredit: {
+        originator: "Home of Poi",
+        sourceUrl:
+          "https://www.homeofpoi.com/en/shop/listItems/Medium-Lotus-Fire-Fans",
+      },
+    },
+    {
+      id: "day",
+      label: "Day",
+      image: fanImage("day", frame, cover),
+      designCredit: {
+        originator: "Doodle",
+        sourceUrl: "https://flowtoys.com/products/doodlegrip-practice-fans",
+      },
+    },
   ];
 }
 

@@ -10,9 +10,18 @@ import {
 } from "$lib/shared/3d/environments/scenes/ember/ember-surface-ecology";
 import { createEmberSurfacePlateGeometry } from "$lib/shared/3d/environments/scenes/ember/ember-surface-plate-geometry";
 import {
+  DEFAULT_VIEWER_FRONT_STAGE_CAMERA_Z_SIGN,
+  DEFAULT_VIEWER_FRONT_STAGE_FACING_ANGLE,
+  EMBER_VIEWER_FRONT_STAGE_CAMERA_Z_SIGN,
+  EMBER_VIEWER_FRONT_STAGE_FACING_ANGLE,
+  getViewerFrontStageCameraZ,
+  getViewerFrontStageFacingAngle,
   resolveViewerFormationFacingAngle,
-  VIEWER_FRONT_STAGE_FACING_ANGLE,
 } from "$lib/shared/3d/domain/viewer-formation-facing";
+import {
+  SCENE_ENVIRONMENTS,
+  SceneEnvironmentId,
+} from "$lib/shared/3d/environments/domain/scene-environment";
 import { createFormationFromPreset } from "@austencloud/scene-3d";
 
 interface EmberSliceGltf {
@@ -385,21 +394,49 @@ describe("Ember integrated-room contracts", () => {
     expect(report).toContain('"generatedButtressRemoved": true');
   });
 
-  it("keeps the Ember review performer front-stage toward the audience camera", () => {
+  it("keeps Ember's reversed heading scoped away from every other hero scene", () => {
     const workbenchSource = readFileSync(
       resolve("src/routes/test/viewer-3d/Viewer3DWorkbench.svelte"),
       "utf8"
     );
     expect(workbenchSource).toContain(
-      "facingAngle: VIEWER_FRONT_STAGE_FACING_ANGLE"
+      "facingAngle: EMBER_VIEWER_FRONT_STAGE_FACING_ANGLE"
     );
-    expect(VIEWER_FRONT_STAGE_FACING_ANGLE).toBe(Math.PI);
+    expect(getViewerFrontStageFacingAngle(SceneEnvironmentId.EMBER)).toBe(
+      EMBER_VIEWER_FRONT_STAGE_FACING_ANGLE
+    );
+    expect(EMBER_VIEWER_FRONT_STAGE_FACING_ANGLE).toBe(Math.PI);
+    expect(EMBER_VIEWER_FRONT_STAGE_CAMERA_Z_SIGN).toBe(-1);
+    expect(getViewerFrontStageCameraZ(0.3, 2.8, SceneEnvironmentId.EMBER)).toBe(
+      -2.5
+    );
+    for (const environment of SCENE_ENVIRONMENTS) {
+      if (environment.id === SceneEnvironmentId.EMBER) continue;
+      expect(getViewerFrontStageFacingAngle(environment.id)).toBe(
+        DEFAULT_VIEWER_FRONT_STAGE_FACING_ANGLE
+      );
+      expect(DEFAULT_VIEWER_FRONT_STAGE_CAMERA_Z_SIGN).toBe(1);
+      expect(getViewerFrontStageCameraZ(0.3, 2.8, environment.id)).toBe(3.1);
+    }
 
     const line = createFormationFromPreset("line", 4);
     for (const slot of line.slots) {
-      expect(resolveViewerFormationFacingAngle(slot, line, Number.NaN)).toBe(
-        VIEWER_FRONT_STAGE_FACING_ANGLE
-      );
+      expect(
+        resolveViewerFormationFacingAngle(
+          slot,
+          line,
+          Number.NaN,
+          EMBER_VIEWER_FRONT_STAGE_FACING_ANGLE
+        )
+      ).toBe(EMBER_VIEWER_FRONT_STAGE_FACING_ANGLE);
+      expect(
+        resolveViewerFormationFacingAngle(
+          slot,
+          line,
+          Number.NaN,
+          DEFAULT_VIEWER_FRONT_STAGE_FACING_ANGLE
+        )
+      ).toBe(DEFAULT_VIEWER_FRONT_STAGE_FACING_ANGLE);
     }
 
     const backToBack = createFormationFromPreset("back-to-back", 2);

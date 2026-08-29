@@ -275,14 +275,108 @@ export const FLOW_FEST_CAMP_ROAD_ENTRANCE = Object.freeze({
   x: 328.2557337440163,
   z: -98.15506248891917,
 });
-export const FLOW_FEST_ENTRANCE_APRON_JOIN = Object.freeze({
-  x: 302.97424138428926,
-  z: -116.09513339360245,
+export const FLOW_FEST_LOWER_ENTRANCE_BASIS = Object.freeze({
+  origin: FLOW_FEST_CAMP_ROAD_ENTRANCE,
+  driveInwardUnit: Object.freeze({
+    x: -0.8155320116040978,
+    z: -0.5787119646672026,
+  }),
+  driveRightUnit: Object.freeze({
+    x: 0.5787119646672026,
+    z: -0.8155320116040978,
+  }),
+  roadTangentUnit: Object.freeze({
+    x: 0.4751489147348839,
+    z: -0.8799053976571926,
+  }),
+});
+
+export function flowFestLowerEntranceLocalToWorld(point: {
+  right: number;
+  depth: number;
+}): Pick<FlowFestRuntimePoint, "x" | "z"> {
+  const basis = FLOW_FEST_LOWER_ENTRANCE_BASIS;
+  return {
+    x:
+      basis.origin.x +
+      basis.driveRightUnit.x * point.right +
+      basis.driveInwardUnit.x * point.depth,
+    z:
+      basis.origin.z +
+      basis.driveRightUnit.z * point.right +
+      basis.driveInwardUnit.z * point.depth,
+  };
+}
+
+export const FLOW_FEST_LOWER_LOOP_ROAD_CROSSING =
+  FLOW_FEST_LOWER_CAMPGROUND_LOOP[0]!;
+const LOWER_LOOP_PREVIOUS_ENTRANCE_POINT =
+  FLOW_FEST_LOWER_CAMPGROUND_LOOP[FLOW_FEST_LOWER_CAMPGROUND_LOOP.length - 2]!;
+const LOWER_LOOP_NEXT_ENTRANCE_POINT = FLOW_FEST_LOWER_CAMPGROUND_LOOP[1]!;
+const LOWER_LOOP_ENTRANCE_TANGENT_LENGTH = Math.hypot(
+  LOWER_LOOP_NEXT_ENTRANCE_POINT.x - LOWER_LOOP_PREVIOUS_ENTRANCE_POINT.x,
+  LOWER_LOOP_NEXT_ENTRANCE_POINT.z - LOWER_LOOP_PREVIOUS_ENTRANCE_POINT.z
+);
+export const FLOW_FEST_LOWER_LOOP_ENTRANCE_TANGENT = Object.freeze({
+  x:
+    (LOWER_LOOP_NEXT_ENTRANCE_POINT.x - LOWER_LOOP_PREVIOUS_ENTRANCE_POINT.x) /
+    LOWER_LOOP_ENTRANCE_TANGENT_LENGTH,
+  z:
+    (LOWER_LOOP_NEXT_ENTRANCE_POINT.z - LOWER_LOOP_PREVIOUS_ENTRANCE_POINT.z) /
+    LOWER_LOOP_ENTRANCE_TANGENT_LENGTH,
+});
+const LOWER_LOOP_CENTROID = FLOW_FEST_LOWER_CAMPGROUND_LOOP.slice(0, -1).reduce(
+  (sum, point) => ({
+    x: sum.x + point.x / (FLOW_FEST_LOWER_CAMPGROUND_LOOP.length - 1),
+    z: sum.z + point.z / (FLOW_FEST_LOWER_CAMPGROUND_LOOP.length - 1),
+  }),
+  { x: 0, z: 0 }
+);
+const LOWER_LOOP_LEFT_NORMAL = {
+  x: -FLOW_FEST_LOWER_LOOP_ENTRANCE_TANGENT.z,
+  z: FLOW_FEST_LOWER_LOOP_ENTRANCE_TANGENT.x,
+};
+const LEFT_NORMAL_POINTS_INSIDE =
+  LOWER_LOOP_LEFT_NORMAL.x *
+    (LOWER_LOOP_CENTROID.x - FLOW_FEST_LOWER_LOOP_ROAD_CROSSING.x) +
+    LOWER_LOOP_LEFT_NORMAL.z *
+      (LOWER_LOOP_CENTROID.z - FLOW_FEST_LOWER_LOOP_ROAD_CROSSING.z) >
+  0;
+export const FLOW_FEST_LOWER_LOOP_ENTRANCE_INTERIOR = Object.freeze({
+  x: LEFT_NORMAL_POINTS_INSIDE
+    ? LOWER_LOOP_LEFT_NORMAL.x
+    : -LOWER_LOOP_LEFT_NORMAL.x,
+  z: LEFT_NORMAL_POINTS_INSIDE
+    ? LOWER_LOOP_LEFT_NORMAL.z
+    : -LOWER_LOOP_LEFT_NORMAL.z,
+});
+export const FLOW_FEST_LOWER_GATEHOUSE_SITE = Object.freeze({
+  x:
+    FLOW_FEST_LOWER_LOOP_ROAD_CROSSING.x +
+    FLOW_FEST_LOWER_LOOP_ENTRANCE_INTERIOR.x * 14,
+  z:
+    FLOW_FEST_LOWER_LOOP_ROAD_CROSSING.z +
+    FLOW_FEST_LOWER_LOOP_ENTRANCE_INTERIOR.z * 14,
 });
 export const FLOW_FEST_LOWER_CHECK_IN = Object.freeze({
-  x: 298.791509455475,
-  z: -115.384673252792,
+  x:
+    FLOW_FEST_LOWER_GATEHOUSE_SITE.x +
+    FLOW_FEST_LOWER_LOOP_ENTRANCE_TANGENT.x * 8.5,
+  z:
+    FLOW_FEST_LOWER_GATEHOUSE_SITE.z +
+    FLOW_FEST_LOWER_LOOP_ENTRANCE_TANGENT.z * 8.5,
 });
+export const FLOW_FEST_LOWER_ENTRANCE_APPROACH_ID =
+  "camp-road-entrance-to-check-in";
+export const FLOW_FEST_LOWER_ENTRANCE_APRON_ID = "lower-entrance-apron";
+export const FLOW_FEST_LOWER_ENTRANCE_APPROACH = Object.freeze([
+  FLOW_FEST_CAMP_ROAD_ENTRANCE,
+  FLOW_FEST_LOWER_LOOP_ROAD_CROSSING,
+]);
+export const FLOW_FEST_LOWER_ENTRANCE_APRON = Object.freeze([
+  FLOW_FEST_LOWER_LOOP_ROAD_CROSSING,
+  FLOW_FEST_LOWER_CHECK_IN,
+]);
 
 export const FLOW_FEST_ENTRANCE_REGISTRATION = Object.freeze({
   panoramaId: "1Zay8yG4Mf31AxM3p0N25w",
@@ -347,19 +441,14 @@ function buildInternalDrives(
   requiredSegment(contract, "lower-tent-unload");
   return [
     {
-      id: "camp-road-entrance-to-check-in",
+      id: FLOW_FEST_LOWER_ENTRANCE_APPROACH_ID,
       label: "Camp entrance to lower loop",
       evidence: "imagery-interpreted",
       kind: "internal-drive",
       widthMeters: 3.6,
-      points: [
-        FLOW_FEST_CAMP_ROAD_ENTRANCE,
-        FLOW_FEST_ENTRANCE_APRON_JOIN,
-        FLOW_FEST_LOWER_CHECK_IN,
-        FLOW_FEST_LOWER_CAMPGROUND_LOOP[0]!,
-      ],
+      points: [...FLOW_FEST_LOWER_ENTRANCE_APPROACH],
       sourceNote:
-        "West-side junction registered from exact August 2024 Street View panorama metadata to ODOT road feature 3019609, then joined to the visible lower-loop entrance in the 2023 public-domain NAIP orthophoto. Austen's lower-level correction removes the former separate center-cut access line: this perimeter connection is the only represented approach to the loop.",
+        "The public-road turn is registered from exact August 2024 Street View panorama metadata to ODOT road feature 3019609. The interpreted private drive terminates at one junction on the visible lower-loop road in the 2023 public-domain NAIP orthophoto; it does not continue across or double back through the loop interior.",
     },
     {
       id: "lower-campground-loop",
@@ -569,10 +658,10 @@ function buildLandmarks(
       mapLabel: "Entrance",
       evidence: "imagery-interpreted",
       kind: "entrance",
-      position: FLOW_FEST_CAMP_ROAD_ENTRANCE,
+      position: FLOW_FEST_LOWER_GATEHOUSE_SITE,
       approachRadiusMeters: 18,
       sourceNote:
-        "West-side private-drive junction registered from exact August 2024 Street View camera metadata to ODOT road feature 3019609 with a 0.63 m centerline residual, and corroborated by the junction visible in registered 2023 NAIP.",
+        "The modest Street View-observed gatehouse is placed provisionally on the loop-interior side, derived from the entrance segment's inward normal with full footprint clearance behind the road. Its approach remains tied to the ODOT-snapped public-road turn and the interpreted private drive visible in registered 2023 NAIP.",
     },
     {
       id: "lower-check-in-gate",
@@ -583,7 +672,7 @@ function buildLandmarks(
       position: FLOW_FEST_LOWER_CHECK_IN,
       approachRadiusMeters: 14,
       sourceNote:
-        "Austen established check-in at the lower-level gate. The marker is constrained to the registered west-side driveway beside the Street View-observed gatehouse; its exact operational stopping point remains Austen-correctable.",
+        "Austen established check-in at the lower-level gate. The marker sits beside the gatehouse on the interior apron, clear of both the building footprint and the lower-loop vehicle road; its exact operational stopping point remains Austen-correctable.",
     },
     {
       id: "west-parking-gate",

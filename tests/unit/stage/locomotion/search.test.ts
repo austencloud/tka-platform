@@ -30,4 +30,35 @@ describe("searchNearest", () => {
     const query = new Float32Array(FEATURE_STRIDE); query[21] = 0.9;
     expect(searchNearest(db, query)).toBe(1);
   });
+
+  it("rejects a closer candidate whose legs cross", () => {
+    const crossed = new Array(FEATURE_STRIDE).fill(0);
+    const clear = new Array(FEATURE_STRIDE).fill(0);
+    clear[0] = 0.2;
+    const db = dbOf([crossed, clear]);
+    db.frames[0]!.quality = { legOrderMargin: -0.04, footSeparation: 0.04 };
+    db.frames[1]!.quality = { legOrderMargin: 0.12, footSeparation: 0.12 };
+
+    expect(searchNearest(db, new Float32Array(FEATURE_STRIDE))).toBe(0);
+    expect(
+      searchNearest(db, new Float32Array(FEATURE_STRIDE), {
+        minimumLegOrderMargin: 0,
+      })
+    ).toBe(1);
+  });
+
+  it("limits candidates to the maneuver family selected by intent", () => {
+    const pivot = new Array(FEATURE_STRIDE).fill(0);
+    const shuffle = new Array(FEATURE_STRIDE).fill(0);
+    shuffle[0] = 0.1;
+    const db = dbOf([pivot, shuffle]);
+    db.frames[0]!.clipId = "turn-right";
+    db.frames[1]!.clipId = "shuffle-right";
+
+    expect(
+      searchNearest(db, new Float32Array(FEATURE_STRIDE), {
+        allowedClipIds: ["shuffle-right"],
+      })
+    ).toBe(1);
+  });
 });

@@ -5,6 +5,7 @@ import type { InstancedMesh, Mesh } from "three";
 import type { ImportedTerrainDataV2 } from "$lib/shared/3d/procedural-engine/generation/real-terrain-zone";
 import { parseFlowFestRuntimeContract } from "../../src/routes/test/flow-fest-graybox/flow-fest-runtime-contract";
 import { buildFlowFestProductionDressing } from "../../src/routes/test/flow-fest-sim/flow-fest-production-geometry";
+import { FLOW_FEST_LOWER_LOOP_ROAD_CROSSING } from "../../src/routes/test/flow-fest-sim/flow-fest-camp-plan";
 import { getFlowFestVehicleStagePoint } from "../../src/routes/test/flow-fest-sim/flow-fest-site-fidelity";
 
 const root = process.cwd();
@@ -76,6 +77,24 @@ function loadInputs() {
     },
   };
   return { contract, terrain, offsets };
+}
+
+function closestMeshVertex(
+  mesh: Mesh,
+  point: { x: number; z: number }
+): { distance: number; y: number } {
+  const positions = mesh.geometry.getAttribute("position");
+  let closest = { distance: Number.POSITIVE_INFINITY, y: 0 };
+  for (let index = 0; index < positions.count; index += 1) {
+    const distance = Math.hypot(
+      positions.getX(index) - point.x,
+      positions.getZ(index) - point.z
+    );
+    if (distance < closest.distance) {
+      closest = { distance, y: positions.getY(index) };
+    }
+  }
+  return closest;
 }
 
 describe("Flow Fest production dressing", () => {
@@ -225,6 +244,31 @@ describe("Flow Fest production dressing", () => {
     expect(lowerLoop.geometry.getAttribute("position").count).toBeGreaterThan(
       4_000
     );
+    const entranceDrive = first.root.getObjectByName(
+      "FFS_EntranceDriveway_PaleGravelApron_StreetViewObserved"
+    ) as Mesh;
+    expect(entranceDrive.userData).toMatchObject({
+      evidence:
+        "imagery-interpreted-centerline; provisional-interior-apron; street-view-observed-proportion",
+      centerlineFeatureId: "camp-road-entrance-to-check-in",
+      apronFeatureId: "lower-entrance-apron",
+    });
+    expect(
+      first.root.getObjectByName(
+        "FFS_PrivateDrive_camp-road-entrance-to-check-in_OrthophotoInterpreted"
+      )
+    ).toBeUndefined();
+    const entranceSeam = closestMeshVertex(
+      entranceDrive,
+      FLOW_FEST_LOWER_LOOP_ROAD_CROSSING
+    );
+    const loopSeam = closestMeshVertex(
+      lowerLoop,
+      FLOW_FEST_LOWER_LOOP_ROAD_CROSSING
+    );
+    expect(entranceSeam.distance).toBeLessThan(0.01);
+    expect(loopSeam.distance).toBeLessThan(0.01);
+    expect(Math.abs(entranceSeam.y - loopSeam.y)).toBeLessThanOrEqual(0.01);
     expect(first.groundSurface.audit).toMatchObject({
       sourceRouteCount: 7,
     });
