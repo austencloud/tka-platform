@@ -2,7 +2,9 @@ import {
   Color,
   Frustum,
   Matrix4,
+  Quaternion,
   Sphere,
+  Vector3,
   type Camera,
   type InstancedMesh,
   type Object3D,
@@ -11,6 +13,10 @@ import {
 export interface InstanceFrustumCullingOptions {
   minRenderedVerticesPerBatch?: number;
   boundsPadding?: number;
+  minimumDistanceMeters?: number;
+  maximumDistanceMeters?: number;
+  cameraPositionThresholdMeters?: number;
+  cameraRotationThresholdRadians?: number;
 }
 
 export interface InstanceFrustumCullingStats {
@@ -20,6 +26,10 @@ export interface InstanceFrustumCullingStats {
   estimatedVerticesCovered: number;
   visibleInstances: number;
   estimatedSubmittedVertices: number;
+  distanceRejectedInstances: number;
+  frustumRejectedInstances: number;
+  updates: number;
+  skippedUpdates: number;
 }
 
 export interface InstanceFrustumCuller {
@@ -37,6 +47,7 @@ interface CulledBatch {
   visibleScratch: number[];
   verticesPerInstance: number;
   originalFrustumCulled: boolean;
+  originalVisible: boolean;
 }
 
 const DEFAULT_MIN_RENDERED_VERTICES_PER_BATCH = 50_000;
@@ -62,6 +73,19 @@ export function createInstanceFrustumCuller(
     options.minRenderedVerticesPerBatch ??
     DEFAULT_MIN_RENDERED_VERTICES_PER_BATCH;
   const boundsPadding = options.boundsPadding ?? DEFAULT_BOUNDS_PADDING;
+  const minimumDistanceMeters = Math.max(0, options.minimumDistanceMeters ?? 0);
+  const maximumDistanceMeters = Math.max(
+    minimumDistanceMeters,
+    options.maximumDistanceMeters ?? Number.POSITIVE_INFINITY
+  );
+  const cameraPositionThresholdMeters = Math.max(
+    0,
+    options.cameraPositionThresholdMeters ?? 0
+  );
+  const cameraRotationThresholdRadians = Math.max(
+    0,
+    options.cameraRotationThresholdRadians ?? 0
+  );
   const batches: CulledBatch[] = [];
   let sourceBatches = 0;
 
@@ -102,6 +126,7 @@ export function createInstanceFrustumCuller(
       visibleScratch: [],
       verticesPerInstance,
       originalFrustumCulled: mesh.frustumCulled,
+      originalVisible: mesh.visible,
     });
     mesh.frustumCulled = false;
   });
@@ -127,33 +152,61 @@ export function createInstanceFrustumCuller(
         total + batch.verticesPerInstance * batch.matrices.length,
       0
     ),
+    distanceRejectedInstances: 0,
+    frustumRejectedInstances: 0,
+    updates: 0,
+    skippedUpdates: 0,
   };
   const frustum = new Frustum();
   const viewProjection = new Matrix4();
   const worldMatrix = new Matrix4();
   const worldSphere = new Sphere();
-  const lastViewProjection = new Float32Array(16);
+  const cameraWorldPosition = new Vector3();
+  const lastCameraWorldPosition = new Vector3();
+  const cameraWorldQuaternion = new Quaternion();
+  const lastCameraWorldQuaternion = new Quaternion();
+  const lastViewProjection = new Matrix4();
+  const lastProjection = new Matrix4();
   let hasViewProjection = false;
 
   function update(camera: Camera): InstanceFrustumCullingStats {
     camera.updateWorldMatrix(true, false);
+    camera.getWorldPosition(cameraWorldPosition);
+    camera.getWorldQuaternion(cameraWorldQuaternion);
+    const projectionChanged =
+      !hasViewProjection || !camera.projectionMatrix.equals(lastProjection);
+    if (
+      hasViewProjection &&
+      !projectionChanged &&
+      cameraWorldPosition.distanceTo(lastCameraWorldPosition) <
+        cameraPositionThresholdMeters &&
+      cameraWorldQuaternion.angleTo(lastCameraWorldQuaternion) <
+        cameraRotationThresholdRadians
+    ) {
+      stats.skippedUpdates += 1;
+      return stats;
+    }
     camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
     viewProjection.multiplyMatrices(
       camera.projectionMatrix,
       camera.matrixWorldInverse
     );
-    const elements = viewProjection.elements;
-    if (
-      hasViewProjection &&
-      elements.every((value, index) => value === lastViewProjection[index])
-    ) {
+    if (hasViewProjection && viewProjection.equals(lastViewProjection)) {
+      stats.skippedUpdates += 1;
       return stats;
     }
-    lastViewProjection.set(elements);
+    lastViewProjection.copy(viewProjection);
+    lastProjection.copy(camera.projectionMatrix);
+    lastCameraWorldPosition.copy(cameraWorldPosition);
+    lastCameraWorldQuaternion.copy(cameraWorldQuaternion);
     hasViewProjection = true;
     frustum.setFromProjectionMatrix(viewProjection);
     let visibleInstances = 0;
     let submittedVertices = 0;
+    let distanceRejectedInstances = 0;
+    let frustumRejectedInstances = 0;
+    const minimumDistanceSquared = minimumDistanceMeters ** 2;
+    const maximumDistanceSquared = maximumDistanceMeters ** 2;
     for (const batch of batches) {
       const visible = batch.visibleScratch;
       visible.length = 0;
@@ -161,7 +214,21 @@ export function createInstanceFrustumCuller(
         worldMatrix.multiplyMatrices(batch.mesh.matrixWorld, instanceMatrix);
         worldSphere.copy(batch.localSphere).applyMatrix4(worldMatrix);
         worldSphere.radius += boundsPadding;
-        if (frustum.intersectsSphere(worldSphere)) visible.push(index);
+        const distanceSquared = cameraWorldPosition.distanceToSquared(
+          worldSphere.center
+        );
+        if (
+          distanceSquared < minimumDistanceSquared ||
+          distanceSquared >= maximumDistanceSquared
+        ) {
+          distanceRejectedInstances += 1;
+          return;
+        }
+        if (frustum.intersectsSphere(worldSphere)) {
+          visible.push(index);
+        } else {
+          frustumRejectedInstances += 1;
+        }
       });
       visibleInstances += visible.length;
       submittedVertices += visible.length * batch.verticesPerInstance;
@@ -172,12 +239,16 @@ export function createInstanceFrustumCuller(
           batch.mesh.setColorAt(targetIndex, batch.colors[sourceIndex]!);
       });
       batch.mesh.count = visible.length;
+      batch.mesh.visible = visible.length > 0;
       batch.mesh.instanceMatrix.needsUpdate = true;
       if (batch.mesh.instanceColor) batch.mesh.instanceColor.needsUpdate = true;
       batch.visibleIndices = visible.slice();
     }
     stats.visibleInstances = visibleInstances;
     stats.estimatedSubmittedVertices = submittedVertices;
+    stats.distanceRejectedInstances = distanceRejectedInstances;
+    stats.frustumRejectedInstances = frustumRejectedInstances;
+    stats.updates += 1;
     return stats;
   }
 
@@ -190,6 +261,7 @@ export function createInstanceFrustumCuller(
       });
       batch.mesh.count = batch.matrices.length;
       batch.mesh.frustumCulled = batch.originalFrustumCulled;
+      batch.mesh.visible = batch.originalVisible;
       batch.mesh.instanceMatrix.needsUpdate = true;
       if (batch.mesh.instanceColor) batch.mesh.instanceColor.needsUpdate = true;
       batch.visibleIndices = batch.matrices.map((_, index) => index);
