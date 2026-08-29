@@ -162,31 +162,48 @@ export const FLOW_FEST_ORTHOPHOTO_SOURCE = Object.freeze({
 
 /**
  * The lower campground road is one continuous loop in the registered NAIP
- * image. These centerline samples follow the visible pale vehicle track; they
- * are an imagery interpretation, not a survey of either road edge.
+ * image. Austen traced its visible centerline on 2026-08-29. The upper arc was
+ * then moved from the accidental field-side stroke back onto the pale road at
+ * Austen's request. The entrance spur remains a separate plan line, so this
+ * polygon contains only the circulation loop.
  */
 export const FLOW_FEST_LOWER_CAMPGROUND_LOOP_NAIP_PIXELS = Object.freeze([
-  { x: 1647, y: 820 },
-  { x: 1655, y: 790 },
-  { x: 1664, y: 750 },
-  { x: 1665, y: 730 },
-  { x: 1655, y: 710 },
-  { x: 1640, y: 695 },
-  { x: 1618, y: 680 },
-  { x: 1585, y: 670 },
-  { x: 1550, y: 662 },
-  { x: 1535, y: 665 },
-  { x: 1515, y: 695 },
-  { x: 1505, y: 730 },
-  { x: 1493, y: 770 },
-  { x: 1485, y: 805 },
-  { x: 1490, y: 835 },
-  { x: 1525, y: 845 },
-  { x: 1570, y: 854 },
-  { x: 1607, y: 860 },
-  { x: 1625, y: 855 },
-  { x: 1638, y: 842 },
-  { x: 1647, y: 820 },
+  { x: 1666.3, y: 806.4 },
+  { x: 1667.2, y: 792.7 },
+  { x: 1680.1, y: 767.9 },
+  { x: 1684.3, y: 751.6 },
+  { x: 1683, y: 739.1 },
+  { x: 1671.1, y: 724.2 },
+  { x: 1658.7, y: 713.3 },
+  { x: 1645, y: 704.5 },
+  { x: 1630, y: 697.5 },
+  { x: 1615, y: 691.5 },
+  { x: 1600, y: 684.5 },
+  { x: 1585, y: 676.5 },
+  { x: 1570, y: 670.5 },
+  { x: 1555, y: 666.5 },
+  { x: 1540, y: 664 },
+  { x: 1528, y: 663.8 },
+  { x: 1518, y: 667 },
+  { x: 1512, y: 674.5 },
+  { x: 1506, y: 687 },
+  { x: 1494, y: 717 },
+  { x: 1475.2, y: 754.4 },
+  { x: 1464.1, y: 793.6 },
+  { x: 1448.3, y: 823.9 },
+  { x: 1446.6, y: 831.7 },
+  { x: 1453.9, y: 837 },
+  { x: 1470.6, y: 842 },
+  { x: 1538.1, y: 855.2 },
+  { x: 1586.3, y: 870.8 },
+  { x: 1603.2, y: 873.4 },
+  { x: 1621.6, y: 867.8 },
+  { x: 1627.8, y: 863.7 },
+  { x: 1631.9, y: 857.8 },
+  { x: 1644, y: 830.1 },
+  { x: 1651.2, y: 822.4 },
+  { x: 1659, y: 814.5 },
+  { x: 1666.3, y: 806.4 },
 ]);
 
 export const FLOW_FEST_LOWER_CAMPGROUND_LOOP = Object.freeze(
@@ -458,7 +475,7 @@ function buildInternalDrives(
       widthMeters: 3.8,
       points: [...FLOW_FEST_LOWER_CAMPGROUND_LOOP],
       sourceNote:
-        "Centerline sampled from the continuous pale vehicle loop visible in the registered 2023 public-domain NAIP orthophoto. The exact road edges and surface condition remain field-unverified.",
+        "Austen traced the continuous pale vehicle loop over the registered 2023 public-domain NAIP orthophoto on 2026-08-29. At his direction, the accidental field-side portion of the upper arc was registered back to the visible road center. The entrance spur is modeled separately; exact road edges and surface condition remain field-unverified.",
     },
     {
       id: "west-road-to-upper-clearing",

@@ -261,9 +261,9 @@ describe("Flow Fest minimap", () => {
 
     expect(connector.label).toBe("Middle Earth to lower loop");
     expect(connector.points[0]).toEqual(sourcePoints[0]);
-    expect(connector.points).toHaveLength(8);
+    expect(connector.points).toHaveLength(7);
     expect(sourcePoints).toHaveLength(14);
-    expect(terminal.x).toBeCloseTo(237.152_347, 6);
-    expect(terminal.z).toBeCloseTo(-93.313_615, 6);
+    expect(terminal.x).toBeCloseTo(213.315_862, 6);
+    expect(terminal.z).toBeCloseTo(-94.683_448, 6);
   });
 });
