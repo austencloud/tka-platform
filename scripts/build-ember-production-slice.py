@@ -247,6 +247,13 @@ RIVER_POINTS_RUNTIME = [
 RIVER_POINTS_BLENDER = [
     (x, -runtime_z, height) for x, runtime_z, height in RIVER_POINTS_RUNTIME
 ]
+SOUTH_CASCADE_POINTS_RUNTIME = [
+    tuple(float(value) for value in point)
+    for point in WORLD_CONTRACT["southVentCascade"]["pointsRuntimeXZHeight"]
+]
+SOUTH_CASCADE_POINTS_BLENDER = [
+    (x, -runtime_z, height) for x, runtime_z, height in SOUTH_CASCADE_POINTS_RUNTIME
+]
 ACTION_RADIUS = 4.5
 SURFACE_Z = 0.5
 HERO_CENTER = (-8.5, -27.0, 5.25)
@@ -1836,10 +1843,13 @@ def create_secondary_outcrops(
     return outcrops
 
 
-def sample_river_centerline(sample_count: int = 128) -> list[Vector]:
+def sample_river_centerline(
+    sample_count: int = 128,
+    control_points: list[tuple[float, float, float]] = RIVER_POINTS_BLENDER,
+) -> list[Vector]:
     """Sample the runtime-owned Catmull-Rom river contract in Blender space."""
 
-    points = [Vector(point) for point in RIVER_POINTS_BLENDER]
+    points = [Vector(point) for point in control_points]
     sampled: list[Vector] = []
     for sample_index in range(sample_count):
         t = sample_index / (sample_count - 1)
@@ -1935,7 +1945,8 @@ def r8_geological_height(
         breach = math.exp(
             -(((x - 1.0) / 42.0) ** 2 + ((runtime_z - 132.0) / 68.0) ** 2)
         ) * 5.5
-        return base + terrain_weight * (
+        living_base = 0.14 + terrain_weight * (0.16 + radial_distance * 0.009)
+        return living_base + terrain_weight * (
             west_scarp
             + east_scarp
             + west_rear_mass
@@ -3257,6 +3268,13 @@ def create_qa_scene(qa: bpy.types.Collection) -> dict[str, bpy.types.Object]:
     )
     river = sample_river_centerline(144)
     create_qa_lava_river(qa_lava_material, qa, river, qa_lava_crust_material)
+    south_cascade = sample_river_centerline(56, SOUTH_CASCADE_POINTS_BLENDER)
+    create_qa_lava_river(
+        qa_lava_material,
+        qa,
+        south_cascade,
+        qa_lava_crust_material,
+    )
 
     lights: list[bpy.types.Object] = []
     light_specs = [
@@ -3811,6 +3829,7 @@ def scene_report(
             ),
             "performerFacing": "negative-runtime-z-toward-front-stage-audience",
             "lavaRiverControlPointsRuntimeXZHeight": RIVER_POINTS_RUNTIME,
+            "southVentCascadeControlPointsRuntimeXZHeight": SOUTH_CASCADE_POINTS_RUNTIME,
             "collapsedLavaBankCenterRuntimeXZ": [
                 round(lava_bank.location.x, 4),
                 round(-lava_bank.location.y, 4),

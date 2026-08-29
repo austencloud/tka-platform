@@ -51,7 +51,7 @@
     "rawGlbSha256": "02e4302e0b6237b84750bb87ef70c36c3e9ae423964540b551ce353fc8ed6d1d",
     "rawGlbBytes": 14777292,
     "worldContract": "src/lib/shared/3d/environments/domain/models/scene-configs/ember-volcanic-world-r7.json",
-    "worldContractSha256": "ef89c5aa41863d0d7c8dda1b631a7858be0a9c7312f3caee35d54d3e3aca5140"
+    "worldContractSha256": "e8c27b1ed0dab823d8123bbf9fce64294185d58d6a61ba176736e9136a0684d5"
   },
   "contract": {
     "stageSurfaceLocalY": 0.5,
@@ -157,6 +157,48 @@
         1.0,
         -122.0,
         -0.32
+      ]
+    ],
+    "southVentCascadeControlPointsRuntimeXZHeight": [
+      [
+        -4.0,
+        -84.0,
+        19.9
+      ],
+      [
+        -4.5,
+        -78.0,
+        20.4
+      ],
+      [
+        -5.0,
+        -72.0,
+        14.0
+      ],
+      [
+        -6.0,
+        -66.0,
+        10.65
+      ],
+      [
+        -7.0,
+        -60.0,
+        9.45
+      ],
+      [
+        -8.0,
+        -54.0,
+        5.1
+      ],
+      [
+        -9.0,
+        -48.0,
+        2.95
+      ],
+      [
+        -11.0,
+        -43.0,
+        0.02
       ]
     ],
     "collapsedLavaBankCenterRuntimeXZ": [

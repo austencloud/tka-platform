@@ -192,6 +192,10 @@ describe("Ember production-slice contracts", () => {
       lavaRiver: {
         pointsRuntimeXZHeight: [number, number, number][];
       };
+      southVentCascade: {
+        widthScale: number;
+        pointsRuntimeXZHeight: [number, number, number][];
+      };
       terrain: {
         runtimeXRange: [number, number];
         runtimeZRange: [number, number];
@@ -202,6 +206,11 @@ describe("Ember production-slice contracts", () => {
     const report = JSON.parse(readFileSync(reportPath, "utf8")) as {
       contract: {
         lavaRiverControlPointsRuntimeXZHeight: [number, number, number][];
+        southVentCascadeControlPointsRuntimeXZHeight: [
+          number,
+          number,
+          number,
+        ][];
         collapsedLavaBankCenterRuntimeXZ: [number, number];
         collapsedLavaBankRiverEdgeClearanceMeters: number;
         continuousOrbitDepthBands: string[];
@@ -214,9 +223,18 @@ describe("Ember production-slice contracts", () => {
     expect(config.lavaRivers?.channels[0]?.points).toEqual(
       world.lavaRiver.pointsRuntimeXZHeight
     );
+    expect(config.lavaRivers?.channels[1]?.points).toEqual(
+      world.southVentCascade.pointsRuntimeXZHeight
+    );
+    expect(config.lavaRivers?.channels[1]?.widthScale).toBe(
+      world.southVentCascade.widthScale
+    );
     expect(report.contract.lavaRiverControlPointsRuntimeXZHeight).toEqual(
       world.lavaRiver.pointsRuntimeXZHeight
     );
+    expect(
+      report.contract.southVentCascadeControlPointsRuntimeXZHeight
+    ).toEqual(world.southVentCascade.pointsRuntimeXZHeight);
     expect(report.contract.collapsedLavaBankCenterRuntimeXZ).toEqual([30.5, 6]);
     expect(
       report.contract.collapsedLavaBankRiverEdgeClearanceMeters
