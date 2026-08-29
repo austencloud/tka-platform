@@ -44,7 +44,7 @@
 
 <button
   type="button"
-  class="prop-selection-button"
+  class="prop-button prop-selection-button"
   class:selected
   class:active
   onclick={onpress}
