@@ -687,6 +687,31 @@ function buildViewer3DState(
   }
 
   /**
+   * First load is a hero composition, not a blocking diagram. Keep the
+   * FOV-derived group distance but lower the eye and target to the rig's
+   * shoulder-height origin so the authored environment remains visible behind
+   * the performers. Later cast edits still use the elevated overview above.
+   */
+  function computeViewerOpeningShot(
+    performers: readonly PerformerShotSubject[]
+  ) {
+    const shot = computeViewerFrontStageShot(performers);
+    const horizontalDistance = Math.hypot(
+      shot.eye.x - shot.target.x,
+      shot.eye.z - shot.target.z
+    );
+    shot.eye.x = shot.target.x;
+    shot.eye.y = 0;
+    shot.eye.z = getViewerFrontStageCameraZ(
+      shot.target.z,
+      horizontalDistance,
+      environmentId
+    );
+    shot.target.y = 0;
+    return shot;
+  }
+
+  /**
    * Keep the complete cast in view after a cast or formation edit. The shot is
    * calculated from the destination slots, so the camera arrives with the
    * performers instead of correcting itself after their movement finishes.
@@ -1662,7 +1687,7 @@ function buildViewer3DState(
     _welcomeAnimationPending = false;
     const performers = performerManager.performers;
     if (performers.length === 0) return;
-    const shot = computeViewerFrontStageShot(performers);
+    const shot = computeViewerOpeningShot(performers);
     snapCameraTo(
       { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
       { x: shot.target.x, y: shot.target.y, z: shot.target.z }
