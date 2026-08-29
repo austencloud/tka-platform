@@ -842,9 +842,19 @@ def bake_clip(config: dict[str, str]) -> dict[str, object]:
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.context.scene.render.fps = FRAME_RATE
+    # FBX time modes can leave Blender with a non-unit fps_base. The original
+    # grapevine bake inherited 4 here, so 253 keys advertised as 120 Hz were
+    # exported as an 8.4-second clip (30 effective samples/second). That made
+    # the gait four times too slow and made every target rig solve 1,009 dense
+    # retarget samples instead of the authored 253.
+    bpy.context.scene.render.fps_base = 1.0
     bpy.context.scene.frame_start = 0
     bpy.context.scene.frame_end = OUTPUT_FRAMES - 1
     bpy.ops.import_scene.fbx(filepath=source_path)
+    # The importer may restore the source file's time-base after the scene was
+    # configured, so establish the export clock again after import.
+    bpy.context.scene.render.fps = FRAME_RATE
+    bpy.context.scene.render.fps_base = 1.0
     armature = next(
         (obj for obj in bpy.context.scene.objects if obj.type == "ARMATURE"),
         None,

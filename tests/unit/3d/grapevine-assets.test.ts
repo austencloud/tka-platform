@@ -33,6 +33,27 @@ const motion = JSON.parse(
   readFileSync(resolve(assetDirectory, "grapevine.motion.json"), "utf8")
 ) as GrapevineMotion;
 
+function animationDurationSeconds(file: string): number {
+  const glb = readFileSync(resolve(assetDirectory, file));
+  expect(glb.toString("utf8", 0, 4)).toBe("glTF");
+  const jsonLength = glb.readUInt32LE(12);
+  const jsonType = glb.readUInt32LE(16);
+  expect(jsonType).toBe(0x4e4f534a);
+  const document = JSON.parse(
+    glb.toString("utf8", 20, 20 + jsonLength)
+  ) as {
+    accessors: Array<{ max?: number[] }>;
+    animations: Array<{ samplers: Array<{ input: number }> }>;
+  };
+  return Math.max(
+    ...document.animations.flatMap((animation) =>
+      animation.samplers.map(
+        (sampler) => document.accessors[sampler.input]?.max?.[0] ?? 0
+      )
+    )
+  );
+}
+
 describe("authored grapevine assets", () => {
   it("ships collision-safe high-rate motion tied to its measured manifest", () => {
     expect(motion.authoring).toMatchObject({
@@ -56,6 +77,7 @@ describe("authored grapevine assets", () => {
       const asset = readFileSync(resolve(assetDirectory, clip.asset.file));
       const sha256 = createHash("sha256").update(asset).digest("hex");
       expect(sha256).toBe(clip.asset.sha256);
+      expect(animationDurationSeconds(clip.asset.file)).toBeCloseTo(2.1, 4);
     }
   });
 });
