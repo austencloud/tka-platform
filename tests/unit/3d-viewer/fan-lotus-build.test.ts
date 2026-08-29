@@ -74,6 +74,7 @@ const reference = JSON.parse(
     method: string;
     symmetry: string;
     lower_cradle: string;
+    wick_roll: string;
     wick_diameter_m: number;
     wick_mount: string;
   };
@@ -247,21 +248,51 @@ describe("Medium Lotus five-wick fire fan", () => {
     expect(builder).toContain('parent["tka_finger_ring_weld_count"] = 3');
   });
 
-  it("keeps all five measured wick rolls inside the photographed soft envelope", () => {
+  it("keeps every wick dimension perfectly mirrored inside the photographed soft envelope", () => {
     expect(reference.geometry_m.wick_centers_m).toEqual([
-      [-0.21183, 0.081127],
-      [-0.165372, 0.214802],
-      [-0.001687, 0.242065],
+      [-0.212362, 0.08209],
+      [-0.162503, 0.218212],
+      [0, 0.242065],
       [0.162503, 0.218212],
       [0.212362, 0.08209],
     ]);
-    expect(reference.geometry_m.wick_directions).toHaveLength(5);
     expect(reference.geometry_m.wick_roll_lengths_m).toEqual([
-      0.053505, 0.045583, 0.050441, 0.050414, 0.054937,
+      0.054937, 0.050414, 0.050441, 0.050414, 0.054937,
     ]);
     expect(reference.geometry_m.wick_diameters_m).toEqual([
-      0.032269, 0.03342, 0.028984, 0.034468, 0.03479,
+      0.03479, 0.034468, 0.028984, 0.034468, 0.03479,
     ]);
+    expect(reference.calibration.symmetry).toContain("reflected exactly");
+    expect(reference.calibration.symmetry).toContain(
+      "center wick locked to the symmetry axis"
+    );
+    expect(reference.calibration.wick_roll).toContain("reflected exactly");
+
+    for (const [leftIndex, rightIndex] of [
+      [0, 4],
+      [1, 3],
+    ]) {
+      const [leftX, leftY] = reference.geometry_m.wick_centers_m[leftIndex];
+      const [rightX, rightY] =
+        reference.geometry_m.wick_centers_m[rightIndex];
+      const [leftDirectionX, leftDirectionY] =
+        reference.geometry_m.wick_directions[leftIndex];
+      const [rightDirectionX, rightDirectionY] =
+        reference.geometry_m.wick_directions[rightIndex];
+      expect(leftX).toBe(-rightX);
+      expect(leftY).toBe(rightY);
+      expect(leftDirectionX).toBe(-rightDirectionX);
+      expect(leftDirectionY).toBe(rightDirectionY);
+      expect(reference.geometry_m.wick_roll_lengths_m[leftIndex]).toBe(
+        reference.geometry_m.wick_roll_lengths_m[rightIndex]
+      );
+      expect(reference.geometry_m.wick_diameters_m[leftIndex]).toBe(
+        reference.geometry_m.wick_diameters_m[rightIndex]
+      );
+    }
+    expect(reference.geometry_m.wick_centers_m[2][0]).toBe(0);
+    expect(reference.geometry_m.wick_directions[2]).toEqual([0, 1]);
+
     const topY =
       (reference.pivot_px[1] - reference.fan_bbox_px.top) *
       reference.pixel_scale_m[1];

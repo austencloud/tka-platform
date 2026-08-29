@@ -464,8 +464,36 @@ const lotusRollLengths = lotusGroup.extras.tka_wick_roll_lengths_m;
 const lotusDiameters = lotusGroup.extras.tka_wick_diameters_m;
 invariant(
   lotusRollLengths?.length === 5 && lotusDiameters?.length === 5,
-  "Lotus fan must preserve five independently measured wick silhouettes"
+  "Lotus fan must preserve five calibrated wick silhouettes"
 );
+for (const [leftIndex, rightIndex] of [
+  [0, 4],
+  [1, 3],
+]) {
+  const leftCenter = lotusWickCenters[leftIndex];
+  const rightCenter = lotusWickCenters[rightIndex];
+  const leftDirection = lotusWickDirections[leftIndex];
+  const rightDirection = lotusWickDirections[rightIndex];
+  invariant(
+    Math.abs(leftCenter[0] + rightCenter[0]) < 1e-7 &&
+      Math.abs(leftCenter[1] - rightCenter[1]) < 1e-7 &&
+      Math.abs(leftCenter[2] - rightCenter[2]) < 1e-7 &&
+      Math.abs(leftDirection[0] + rightDirection[0]) < 1e-7 &&
+      Math.abs(leftDirection[1] - rightDirection[1]) < 1e-7 &&
+      Math.abs(leftDirection[2] - rightDirection[2]) < 1e-7 &&
+      Math.abs(lotusRollLengths[leftIndex] - lotusRollLengths[rightIndex]) <
+        1e-7 &&
+      Math.abs(lotusDiameters[leftIndex] - lotusDiameters[rightIndex]) < 1e-7,
+    `Lotus wick pair ${leftIndex + 1}/${rightIndex + 1} is not an exact bilateral reflection`
+  );
+}
+invariant(
+  Math.abs(lotusWickCenters[2][0]) < 1e-7 &&
+    Math.abs(lotusWickDirections[2][0]) < 1e-7 &&
+    Math.abs(lotusWickDirections[2][1] - 1) < 1e-7,
+  "Lotus center wick is not locked vertically to the symmetry axis"
+);
+console.log("FAN_LOTUS_SYMMETRY=verified-5-wicks-exact-bilateral-reflection");
 const lotusStraightLength = lotusGroup.extras.tka_wick_tine_straight_length_m;
 const lotusInsertionDepth = lotusGroup.extras.tka_wick_tine_insertion_depth_m;
 const lotusTineHalfSpacing = lotusGroup.extras.tka_wick_tine_half_spacing_m;

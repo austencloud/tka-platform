@@ -92,9 +92,9 @@ export const FAN_FIRE_WICK_CENTERS_M = [
  * these constants with both the baked extras and each wick node transform.
  */
 export const FAN_LOTUS_WICK_CENTERS_M = [
-  { x: -0.21183, y: 0.081127, z: 0 },
-  { x: -0.165372, y: 0.214802, z: 0 },
-  { x: -0.001687, y: 0.242065, z: 0 },
+  { x: -0.212362, y: 0.08209, z: 0 },
+  { x: -0.162503, y: 0.218212, z: 0 },
+  { x: 0, y: 0.242065, z: 0 },
   { x: 0.162503, y: 0.218212, z: 0 },
   { x: 0.212362, y: 0.08209, z: 0 },
 ] as const;
