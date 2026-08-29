@@ -44,6 +44,7 @@ describe("instance frustum culling", () => {
     const stats = culler.update(camera);
 
     expect(stats.visibleInstances).toBe(1);
+    expect(stats.visibleBatches).toBe(1);
     expect(stats.distanceRejectedInstances).toBe(1);
     expect(stats.frustumRejectedInstances).toBe(1);
     expect(near.mesh.count).toBe(1);
@@ -67,6 +68,7 @@ describe("instance frustum culling", () => {
     const stats = culler.update(camera);
 
     expect(stats.visibleInstances).toBe(1);
+    expect(stats.visibleBatches).toBe(1);
     expect(stats.distanceRejectedInstances).toBe(2);
     expect(stats.frustumRejectedInstances).toBe(0);
     expect(middle.mesh.count).toBe(1);

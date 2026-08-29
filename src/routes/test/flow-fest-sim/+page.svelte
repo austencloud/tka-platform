@@ -178,6 +178,7 @@
   let integratedJourney = $state<FlowFestIntegratedJourneyState | null>(null);
   let gate6GnssAudit = $state<FlowFestGnssRoundTripAudit | null>(null);
   let gate5Performance = $state<{
+    captureOrdinal: number;
     samples: number;
     p95FrameMilliseconds: number;
     p99FrameMilliseconds: number;
@@ -589,15 +590,17 @@
     const performance = gate2?.performance;
     if (
       typeof performance?.samples !== "number" ||
+      typeof performance.captureOrdinal !== "number" ||
       typeof performance.p95FrameMilliseconds !== "number" ||
       typeof performance.p99FrameMilliseconds !== "number" ||
       typeof performance.drawCalls !== "number" ||
       typeof performance.renderedTriangles !== "number" ||
-      gate5Performance?.samples === performance.samples
+      gate5Performance?.captureOrdinal === performance.captureOrdinal
     ) {
       return;
     }
     gate5Performance = {
+      captureOrdinal: performance.captureOrdinal,
       samples: performance.samples,
       p95FrameMilliseconds: performance.p95FrameMilliseconds,
       p99FrameMilliseconds: performance.p99FrameMilliseconds,
@@ -1073,6 +1076,7 @@
   data-audio-spatial-frames={fireJamAudio.spatialFrameCount}
   data-audio-spatial-sources={fireJamAudio.spatializedSources}
   data-performance-samples={gate5Performance?.samples ?? 0}
+  data-performance-capture-ordinal={gate5Performance?.captureOrdinal ?? 0}
   data-performance-p95-ms={gate5Performance?.p95FrameMilliseconds ?? 0}
   data-performance-p99-ms={gate5Performance?.p99FrameMilliseconds ?? 0}
   data-performance-draw-calls={gate5Performance?.drawCalls ?? 0}
@@ -1082,6 +1086,7 @@
   data-adaptive-quality-fps={adaptiveQuality.fps}
   data-tree-culling-source-batches={forestCulling?.sourceBatches ?? 0}
   data-tree-culling-batches={forestCulling?.culledBatches ?? 0}
+  data-tree-visible-batches={forestCulling?.visibleBatches ?? 0}
   data-tree-culling-batch-instances={forestCulling?.instances ?? 0}
   data-tree-visible-batch-instances={forestCulling?.visibleInstances ?? 0}
   data-tree-culling-covered-vertices={forestCulling?.estimatedVerticesCovered ??
@@ -1092,6 +1097,7 @@
   data-tree-culling-updates={forestCulling?.updates ?? 0}
   data-tree-culling-skipped-updates={forestCulling?.skippedUpdates ?? 0}
   data-grass-culling-batch-instances={forestGrassCulling?.instances ?? 0}
+  data-grass-visible-batches={forestGrassCulling?.visibleBatches ?? 0}
   data-grass-visible-batch-instances={forestGrassCulling?.visibleInstances ?? 0}
   data-grass-submitted-vertices={forestGrassCulling?.estimatedSubmittedVertices ??
     0}

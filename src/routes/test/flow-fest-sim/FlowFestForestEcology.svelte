@@ -12,6 +12,7 @@
     createForestRuntimeGrassField,
     createForestRuntimeTreeInstances,
     disposeForestRuntimeEcology,
+    selectForestRuntimeGrassDensity,
   } from "$lib/shared/3d/environments/scenes/forest/forest-runtime-ecology";
   import {
     createInstanceFrustumCuller,
@@ -21,6 +22,7 @@
   import ForestClearingWind from "$lib/shared/3d/environments/scenes/forest/ForestClearingWind.svelte";
   import {
     FLOW_FEST_FOREST_GRASS_ASSET,
+    FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS,
     FLOW_FEST_FOREST_GROUND_LIFE_ASSETS,
     FLOW_FEST_FOREST_DISTANCE_FALLBACK_FAMILY,
     FLOW_FEST_FOREST_DISTANCE_LOD,
@@ -142,6 +144,14 @@
     loaderOptions
   );
   const grassPrototypes = useGltf(FLOW_FEST_FOREST_GRASS_ASSET, loaderOptions);
+  const grassMidPrototypes = useGltf(
+    FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS.mid,
+    loaderOptions
+  );
+  const grassFarPrototypes = useGltf(
+    FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS.far,
+    loaderOptions
+  );
   const dampSedge = useGltf(
     FLOW_FEST_FOREST_GROUND_LIFE_ASSETS["damp-sedge-tussock"],
     loaderOptions
@@ -152,10 +162,10 @@
   );
 
   let treeRoots = $state<Group[]>([]);
-  let grassRoot = $state<Group | null>(null);
+  let grassRoots = $state<Group[]>([]);
   let groundLifeRoot = $state<Group | null>(null);
   let treeCullers: InstanceFrustumCuller[] = [];
-  let grassCuller: InstanceFrustumCuller | null = null;
+  let grassCullers: InstanceFrustumCuller[] = [];
   let lastCullingSignature = "";
   let lastGrassCullingSignature = "";
 
@@ -266,9 +276,8 @@
     return sources;
   });
 
-  const grassSources = $derived.by(() => {
+  function extractGrassSources(scene: Object3D | undefined) {
     const sources = new Map<"summer-sward" | "woodland-grass", Mesh>();
-    const scene = $grassPrototypes?.scene;
     if (!scene) return sources;
     scene.traverse((object) => {
       const mesh = object as Mesh;
@@ -280,7 +289,15 @@
       }
     });
     return sources;
-  });
+  }
+
+  const grassSources = $derived(extractGrassSources($grassPrototypes?.scene));
+  const midGrassSources = $derived(
+    extractGrassSources($grassMidPrototypes?.scene)
+  );
+  const farGrassSources = $derived(
+    extractGrassSources($grassFarPrototypes?.scene)
+  );
 
   function buildDistanceTierRoot(
     tier: "mid" | "far",
@@ -312,13 +329,17 @@
     const activeMidTreeSources = midTreeSources;
     const activeFarTreeSources = farTreeSources;
     const activeGrassSources = grassSources;
+    const activeMidGrassSources = midGrassSources;
+    const activeFarGrassSources = farGrassSources;
     if (
       sources.size !== Object.keys(FLOW_FEST_FOREST_TREE_ASSETS).length ||
       activeMidTreeSources.size !==
         Object.keys(FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid).length ||
       activeFarTreeSources.size !==
         Object.keys(FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far).length ||
-      activeGrassSources.size !== 2
+      activeGrassSources.size !== 2 ||
+      activeMidGrassSources.size !== 2 ||
+      activeFarGrassSources.size !== 2
     )
       return;
     const nextNearTrees = new Group();
@@ -345,11 +366,28 @@
     );
     const nextTreeRoots = [nextNearTrees, nextMidTrees, nextFarTrees];
     nextTreeRoots.forEach((root) => (root.visible = false));
-    const nextGrass = createForestRuntimeGrassField(
-      layout.grass,
-      activeGrassSources
-    );
-    nextGrass.visible = false;
+    const nextGrassRoots = [
+      createForestRuntimeGrassField(layout.grass, activeGrassSources, {
+        distanceTier: "near",
+      }),
+      createForestRuntimeGrassField(
+        selectForestRuntimeGrassDensity(
+          layout.grass,
+          FLOW_FEST_FOREST_DISTANCE_LOD.grassMidDensity
+        ),
+        activeMidGrassSources,
+        { distanceTier: "mid" }
+      ),
+      createForestRuntimeGrassField(
+        selectForestRuntimeGrassDensity(
+          layout.grass,
+          FLOW_FEST_FOREST_DISTANCE_LOD.grassFarDensity
+        ),
+        activeFarGrassSources,
+        { distanceTier: "far" }
+      ),
+    ];
+    nextGrassRoots.forEach((root) => (root.visible = false));
     const sharedCullingOptions = {
       minRenderedVerticesPerBatch: 0,
       boundsPadding: 1.25,
@@ -373,34 +411,53 @@
         minimumDistanceMeters: FLOW_FEST_FOREST_DISTANCE_LOD.midMaximumMeters,
       }),
     ];
-    const nextGrassCuller = createInstanceFrustumCuller(nextGrass, {
+    const grassCullingOptions = {
       ...sharedCullingOptions,
       boundsPadding: 0.35,
-      maximumDistanceMeters: FLOW_FEST_FOREST_DISTANCE_LOD.grassMaximumMeters,
-    });
+    };
+    const nextGrassCullers = [
+      createInstanceFrustumCuller(nextGrassRoots[0]!, {
+        ...grassCullingOptions,
+        maximumDistanceMeters:
+          FLOW_FEST_FOREST_DISTANCE_LOD.grassNearMaximumMeters,
+      }),
+      createInstanceFrustumCuller(nextGrassRoots[1]!, {
+        ...grassCullingOptions,
+        minimumDistanceMeters:
+          FLOW_FEST_FOREST_DISTANCE_LOD.grassNearMaximumMeters,
+        maximumDistanceMeters:
+          FLOW_FEST_FOREST_DISTANCE_LOD.grassMidMaximumMeters,
+      }),
+      createInstanceFrustumCuller(nextGrassRoots[2]!, {
+        ...grassCullingOptions,
+        minimumDistanceMeters:
+          FLOW_FEST_FOREST_DISTANCE_LOD.grassMidMaximumMeters,
+        maximumDistanceMeters: FLOW_FEST_FOREST_DISTANCE_LOD.grassMaximumMeters,
+      }),
+    ];
     const previousTreeRoots = untrack(() => treeRoots);
     const previousTreeCullers = treeCullers;
-    const previousGrassCuller = grassCuller;
-    const previousGrass = untrack(() => grassRoot);
+    const previousGrassCullers = grassCullers;
+    const previousGrassRoots = untrack(() => grassRoots);
     previousTreeCullers.forEach((culler) => culler.restore());
-    previousGrassCuller?.restore();
+    previousGrassCullers.forEach((culler) => culler.restore());
     treeCullers = nextTreeCullers;
-    grassCuller = nextGrassCuller;
+    grassCullers = nextGrassCullers;
     lastCullingSignature = "";
     lastGrassCullingSignature = "";
     treeRoots = nextTreeRoots;
-    grassRoot = nextGrass;
+    grassRoots = nextGrassRoots;
     previousTreeRoots.forEach(disposeForestRuntimeEcology);
-    if (previousGrass) disposeForestRuntimeEcology(previousGrass);
+    previousGrassRoots.forEach(disposeForestRuntimeEcology);
     return () => {
       if (treeRoots[0] === nextNearTrees) treeRoots = [];
-      if (grassRoot === nextGrass) grassRoot = null;
+      if (grassRoots[0] === nextGrassRoots[0]) grassRoots = [];
       if (treeCullers[0] === nextTreeCullers[0]) treeCullers = [];
-      if (grassCuller === nextGrassCuller) grassCuller = null;
+      if (grassCullers[0] === nextGrassCullers[0]) grassCullers = [];
       nextTreeCullers.forEach((culler) => culler.restore());
-      nextGrassCuller.restore();
+      nextGrassCullers.forEach((culler) => culler.restore());
       nextTreeRoots.forEach(disposeForestRuntimeEcology);
-      disposeForestRuntimeEcology(nextGrass);
+      nextGrassRoots.forEach(disposeForestRuntimeEcology);
     };
   });
 
@@ -464,7 +521,8 @@
   });
 
   $effect(() => {
-    if (treeRoots.length !== 3 || !grassRoot || !groundLifeRoot) return;
+    if (treeRoots.length !== 3 || grassRoots.length !== 3 || !groundLifeRoot)
+      return;
     const tierMetrics = treeRoots.map((root) => {
       let drawBatches = 0;
       let renderedTriangles = 0;
@@ -508,6 +566,7 @@
         const stats = culler.stats;
         total.sourceBatches += stats.sourceBatches;
         total.culledBatches += stats.culledBatches;
+        total.visibleBatches += stats.visibleBatches;
         total.instances += stats.instances;
         total.estimatedVerticesCovered += stats.estimatedVerticesCovered;
         total.visibleInstances += stats.visibleInstances;
@@ -521,6 +580,7 @@
       {
         sourceBatches: 0,
         culledBatches: 0,
+        visibleBatches: 0,
         instances: 0,
         estimatedVerticesCovered: 0,
         visibleInstances: 0,
@@ -535,11 +595,13 @@
 
   useTask(() => {
     const activeCamera = camera.current;
-    if (treeCullers.length !== 3 || !grassCuller || !activeCamera) return;
+    if (treeCullers.length !== 3 || grassCullers.length !== 3 || !activeCamera)
+      return;
     treeCullers.forEach((culler) => culler.update(activeCamera));
-    const grassStats = grassCuller.update(activeCamera);
+    grassCullers.forEach((culler) => culler.update(activeCamera));
+    const grassStats = aggregateCullingStats(grassCullers);
     treeRoots.forEach((root) => (root.visible = true));
-    if (grassRoot) grassRoot.visible = true;
+    grassRoots.forEach((root) => (root.visible = true));
     const stats = aggregateCullingStats(treeCullers);
     const signature = `${stats.visibleInstances}:${stats.estimatedSubmittedVertices}:${stats.updates}`;
     if (signature === lastCullingSignature) return;
@@ -555,10 +617,10 @@
 {#each treeRoots as treeRoot (treeRoot.uuid)}
   <T is={treeRoot} />
 {/each}
-{#if grassRoot}
+{#each grassRoots as grassRoot (grassRoot.uuid)}
   <T is={grassRoot} />
   <ForestClearingWind scene={grassRoot} />
-{/if}
+{/each}
 {#if groundLifeRoot}
   <T is={groundLifeRoot} />
 {/if}
