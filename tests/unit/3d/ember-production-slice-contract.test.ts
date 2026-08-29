@@ -81,7 +81,6 @@ describe("Ember production-slice contracts", () => {
       new Set([
         "playable-shelf",
         "shelf-stratum",
-        "stage-crust-transition",
         "playable-surface",
         "cooled-fissure",
         "live-fissure",

@@ -2962,7 +2962,10 @@ def build_production_geometry(
     )
     create_surface_field(SHELF_OUTLINE, blackglass, production)
     create_shelf_edge_talus(SHELF_OUTLINE, blackglass, mineral, production)
-    if terrain_direction in PRODUCTION_TERRAIN_DIRECTIONS:
+    if (
+        terrain_direction in PRODUCTION_TERRAIN_DIRECTIONS
+        and terrain_direction != "living-caldera"
+    ):
         create_stage_crust_transition(blackglass, near_caldera, production)
 
     fissures = [

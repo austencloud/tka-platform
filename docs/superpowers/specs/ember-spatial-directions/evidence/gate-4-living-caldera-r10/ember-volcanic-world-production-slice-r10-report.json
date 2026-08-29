@@ -48,8 +48,8 @@
   "artifacts": {
     "blend": "blender/ember-volcanic-world-production-slice-r10.blend",
     "rawGlb": "static/models/ember/ember-production-slice_raw.glb",
-    "rawGlbSha256": "94bbeb82139d40924cebebaf92ed40d2a719b404a7c20b4268685d8cf4869453",
-    "rawGlbBytes": 14777292,
+    "rawGlbSha256": "cb499bc51d874f853b9efa0040b21fbc5a51e75ba67877764510ffbadad4adad",
+    "rawGlbBytes": 14699312,
     "worldContract": "src/lib/shared/3d/environments/domain/models/scene-configs/ember-volcanic-world-r7.json",
     "worldContractSha256": "ba090228a2a47d772966a4bdd0f40e90ec343a236fe782d5473c823a4dff9275"
   },
@@ -227,8 +227,8 @@
     ]
   },
   "geometry": {
-    "meshObjectCount": 90,
-    "triangleCount": 197908,
+    "meshObjectCount": 82,
+    "triangleCount": 196916,
     "maximumMeshTriangleCount": 49345,
     "maximumMeshTriangleObject": "Ember_Meshy_Columnar_Escarpment",
     "materialCount": 6,
@@ -253,7 +253,6 @@
       "playable-shelf": 1,
       "playable-surface": 1,
       "shelf-stratum": 15,
-      "stage-crust-transition": 8,
       "volcanic-basin": 1
     },
     "columnarJointCount": 0,
@@ -261,7 +260,7 @@
     "columnHeightRangeMeters": [],
     "maximumCapLossMeters": null,
     "authoredHeroMeshCount": 55,
-    "authoredWorldMeshCount": 90,
+    "authoredWorldMeshCount": 82,
     "volcanicBasinCount": 1,
     "lavaChannelLeveeCount": 2,
     "boundsBlenderXYZ": {
@@ -406,7 +405,7 @@
     "direction": "fresh-rift-synthesis",
     "approvalTrackerItem": "ahPuPwh34G3FeqvUEHsB",
     "familyPolygonCounts": {
-      "0": 5363,
+      "0": 4875,
       "1": 38439,
       "2": 50055,
       "3": 82178
