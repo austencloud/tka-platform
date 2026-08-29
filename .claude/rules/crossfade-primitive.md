@@ -33,6 +33,8 @@ Props:
 | `key`           | —                 | Change it to trigger a crossfade (the discriminator).                                                                                 |
 | `duration`      | `DURATION.normal` | Fade length. Pass a `DURATION.*` token, never a raw number.                                                                           |
 | `mode`          | `"crossfade"`     | `crossfade` overlaps in+out; `swap` runs out fully, then in.                                                                          |
+| `motion`        | `"fade"`          | `step` adds the canonical short directional drift for wizard-like navigation. Pair it with `mode="swap"`.                             |
+| `direction`     | `1`               | Forward is `1`, back is `-1`. Only affects `motion="step"`.                                                                           |
 | `fill`          | `false`           | Layers fill a sized parent (`absolute; inset:0`) instead of hugging content. Use inside panels / fixed-size stages.                   |
 | `animateHeight` | `false`           | Measures each keyed layer and eases the wrapper between materially different natural heights in both directions. Ignored with `fill`. |
 | `delay`         | `0`               | Deliberate in-transition stagger (crossfade mode only).                                                                               |
@@ -59,7 +61,10 @@ So:
 
 1. Cheap true crossfade → `<Crossfade>` (add `animateHeight` when the wrapper
    follows materially different layer heights, `fill` if a sized parent owns
-   the box, `mode="swap"` for sequential, or `delay` for a stagger).
+   the box, `mode="swap" motion="step" direction={direction}` for sequential
+   decision screens, or `delay` for a stagger). The step mode guarantees that
+   outgoing and incoming copy do not become readable at the same time and
+   communicates forward/back direction without a feature-local transition.
 2. Heavy/stateful true crossfade → CellRenderer dual-source
    (`src/lib/shared/sequence-viewer/components/CellRenderer.svelte` +
    `crossfader-state.svelte.ts`). No remount.

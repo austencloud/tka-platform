@@ -18,6 +18,10 @@ export default defineConfig({
   // none are discovered halfway through a test and reload the page underneath
   // Bits UI's effect roots.
   optimizeDeps: {
+    // scene-3d deliberately ships Svelte source. Let the Svelte plugin compile
+    // it instead of asking esbuild's dependency optimizer to parse .svelte
+    // state-module imports as plain TypeScript.
+    exclude: ["@austencloud/scene-3d"],
     include: [
       "@austencloud/backgrounds",
       "@austencloud/backgrounds/card",

@@ -21,10 +21,13 @@ export interface StudioProjectV1 {
 
 export type StudioStartingMaterial = "recommended" | "choose-sequence";
 
+export const STUDIO_PERFORMER_COUNTS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+export type StudioPerformerCount = (typeof STUDIO_PERFORMER_COUNTS)[number];
+
 /** Only combinations the canonical Stage and performer manager can fulfil. */
 export interface StudioStarter {
   startingMaterial: StudioStartingMaterial;
-  performerCount: 1 | 2 | 4;
+  performerCount: StudioPerformerCount;
   formation: FormationPresetId;
   environmentId: SceneEnvironmentId;
   prop: PropType;

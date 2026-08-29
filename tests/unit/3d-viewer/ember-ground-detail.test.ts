@@ -26,7 +26,6 @@ describe("Ember Fresh Rift ground detail", () => {
     );
     expect(EMBER_GROUND_SURFACE_TEXTURES).toEqual({
       height: "/textures/ember-surface-r11/rock-ground-height.jpg",
-      roughness: "/textures/ember-surface-r11/rock-ground-roughness.jpg",
     });
   });
 
@@ -58,7 +57,6 @@ describe("Ember Fresh Rift ground detail", () => {
     const familyMask = new Texture();
     const surfaceMaps = {
       height: new Texture(),
-      roughness: new Texture(),
     };
     const shader = {
       uniforms: {},
@@ -111,14 +109,11 @@ describe("Ember Fresh Rift ground detail", () => {
     expect(shader.uniforms.uMaskedGroundSurfaceHeightMap.value).toBe(
       surfaceMaps.height
     );
-    expect(shader.uniforms.uMaskedGroundSurfaceRoughnessMap.value).toBe(
-      surfaceMaps.roughness
-    );
     expect(shader.uniforms.uMaskedGroundSurfaceScale.value).toBe(1.55);
     expect(shader.uniforms.uMaskedGroundSurfaceNormalStrength.value).toBe(0.72);
     expect(shader.vertexShader).toContain("vMaskedGroundWorldNormal");
     expect(shader.fragmentShader).toContain("uMaskedGroundFamilyMask");
-    expect(shader.fragmentShader).toContain("maskedGroundSurfaceSideUv");
+    expect(shader.fragmentShader).toContain("maskedGroundSurfaceHeight");
     expect(shader.fragmentShader).toContain("maskedGroundSlopeWeight");
     expect(shader.fragmentShader).toContain("maskedGroundSurfaceGradient");
 

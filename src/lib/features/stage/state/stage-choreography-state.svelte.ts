@@ -564,6 +564,8 @@ export function createStageChoreographyState(
       spots[performer.id] = {
         x: position.x,
         z: position.z,
+        facingAngle:
+          "facingAngle" in position ? position.facingAngle : undefined,
         walkStyle: "direct",
         easing: "linear",
       };
@@ -705,7 +707,14 @@ export function createStageChoreographyState(
       const position = positions[index];
       const spot = formation.spots[performer.id];
       if (!position || !spot) return;
-      formation.spots[performer.id] = { ...spot, ...position };
+      formation.spots[performer.id] = {
+        ...spot,
+        ...position,
+        // Choosing a front-facing preset after a relationship preset must
+        // clear the old authored turn instead of carrying it into the new
+        // shape where it no longer means anything.
+        facingAngle: position.facingAngle,
+      };
     });
     formation.presetId = preset;
     normalizeFormationTrack();

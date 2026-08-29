@@ -36,12 +36,14 @@ into a different forest palette or duplicate texture memory.
    beyond 130 metres. Every measured placement belongs to exactly one tier.
 3. Reject instances by distance before the frustum test and avoid instance
    matrix rewrites for sub-threshold camera jitter.
-4. Keep the moving shadow pool on a six-metre world grid and refresh dynamic
+4. Preserve modeled grass inside 70 metres while rejecting the thousands of
+   individual blades that cannot contribute readable silhouette beyond it.
+5. Keep the moving shadow pool on a six-metre world grid and refresh dynamic
    casters at 30 Hz instead of paying for a 2048 square shadow pass on every
    rendered frame.
-5. Remove static terrain discovery and material writes from the per-frame
+6. Remove static terrain discovery and material writes from the per-frame
    production task.
-6. Expose adaptive tier, pixel density, distance rejection, frustum rejection,
+7. Expose adaptive tier, pixel density, distance rejection, frustum rejection,
    and culling-update counters through the existing runtime proof surface.
 
 The generated tier manifest records source and output SHA-256 digests, byte

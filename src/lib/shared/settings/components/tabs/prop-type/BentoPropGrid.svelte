@@ -18,6 +18,7 @@
     PROP_PICKER_SECTIONS,
     getAllVariations,
     getBasePropType,
+    getFamilyTileDisplayProp,
     getPropTypeDisplayInfo,
     isPropActive,
     isPremiumCosmeticProp,
@@ -127,6 +128,10 @@
     return count > 1 ? count : undefined;
   }
 
+  function familyDisplayProp(base: PropType): PropType {
+    return getFamilyTileDisplayProp(base, selectedPropType);
+  }
+
   let openFamily = $state<PropType | null>(null);
 
   function toggleFamily(base: PropType): void {
@@ -228,7 +233,7 @@
       {@render tile(choices[0] ?? base)}
     {:else if flat}
       <PropTypeButton
-        propType={base}
+        propType={familyDisplayProp(base)}
         selected={selectedBase === base}
         badge={familyCount(base)}
         actionLabel={`Choose ${getPropTypeDisplayInfo(base).label} style`}
@@ -260,7 +265,7 @@
         <Popover.Trigger>
           {#snippet child({ props })}
             <PropTypeButton
-              propType={base}
+              propType={familyDisplayProp(base)}
               selected={selectedBase === base}
               badge={familyCount(base)}
               actionLabel={`Choose ${getPropTypeDisplayInfo(base).label} style`}

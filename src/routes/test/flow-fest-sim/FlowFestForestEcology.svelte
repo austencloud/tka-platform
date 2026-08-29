@@ -49,10 +49,17 @@
       treeFarRenderedTriangles: number;
     }) => void;
     onCullingSample?: (details: InstanceFrustumCullingStats) => void;
+    onGrassCullingSample?: (details: InstanceFrustumCullingStats) => void;
   }
 
-  let { layout, foliageTint, barkTint, onReady, onCullingSample }: Props =
-    $props();
+  let {
+    layout,
+    foliageTint,
+    barkTint,
+    onReady,
+    onCullingSample,
+    onGrassCullingSample,
+  }: Props = $props();
   const { camera } = useThrelte();
   const loaderOptions = {
     dracoLoader: useDraco("/draco/"),
@@ -148,7 +155,9 @@
   let grassRoot = $state<Group | null>(null);
   let groundLifeRoot = $state<Group | null>(null);
   let treeCullers: InstanceFrustumCuller[] = [];
+  let grassCuller: InstanceFrustumCuller | null = null;
   let lastCullingSignature = "";
+  let lastGrassCullingSignature = "";
 
   const familyColorGrade: Partial<
     Record<
@@ -340,6 +349,7 @@
       layout.grass,
       activeGrassSources
     );
+    nextGrass.visible = false;
     const sharedCullingOptions = {
       minRenderedVerticesPerBatch: 0,
       boundsPadding: 1.25,
@@ -363,12 +373,21 @@
         minimumDistanceMeters: FLOW_FEST_FOREST_DISTANCE_LOD.midMaximumMeters,
       }),
     ];
+    const nextGrassCuller = createInstanceFrustumCuller(nextGrass, {
+      ...sharedCullingOptions,
+      boundsPadding: 0.35,
+      maximumDistanceMeters: FLOW_FEST_FOREST_DISTANCE_LOD.grassMaximumMeters,
+    });
     const previousTreeRoots = untrack(() => treeRoots);
     const previousTreeCullers = treeCullers;
+    const previousGrassCuller = grassCuller;
     const previousGrass = untrack(() => grassRoot);
     previousTreeCullers.forEach((culler) => culler.restore());
+    previousGrassCuller?.restore();
     treeCullers = nextTreeCullers;
+    grassCuller = nextGrassCuller;
     lastCullingSignature = "";
+    lastGrassCullingSignature = "";
     treeRoots = nextTreeRoots;
     grassRoot = nextGrass;
     previousTreeRoots.forEach(disposeForestRuntimeEcology);
@@ -377,7 +396,9 @@
       if (treeRoots[0] === nextNearTrees) treeRoots = [];
       if (grassRoot === nextGrass) grassRoot = null;
       if (treeCullers[0] === nextTreeCullers[0]) treeCullers = [];
+      if (grassCuller === nextGrassCuller) grassCuller = null;
       nextTreeCullers.forEach((culler) => culler.restore());
+      nextGrassCuller.restore();
       nextTreeRoots.forEach(disposeForestRuntimeEcology);
       disposeForestRuntimeEcology(nextGrass);
     };
@@ -514,14 +535,20 @@
 
   useTask(() => {
     const activeCamera = camera.current;
-    if (treeCullers.length !== 3 || !activeCamera) return;
+    if (treeCullers.length !== 3 || !grassCuller || !activeCamera) return;
     treeCullers.forEach((culler) => culler.update(activeCamera));
+    const grassStats = grassCuller.update(activeCamera);
     treeRoots.forEach((root) => (root.visible = true));
+    if (grassRoot) grassRoot.visible = true;
     const stats = aggregateCullingStats(treeCullers);
     const signature = `${stats.visibleInstances}:${stats.estimatedSubmittedVertices}:${stats.updates}`;
     if (signature === lastCullingSignature) return;
     lastCullingSignature = signature;
     onCullingSample?.(stats);
+    const grassSignature = `${grassStats.visibleInstances}:${grassStats.estimatedSubmittedVertices}:${grassStats.updates}`;
+    if (grassSignature === lastGrassCullingSignature) return;
+    lastGrassCullingSignature = grassSignature;
+    onGrassCullingSample?.(grassStats);
   });
 </script>
 
