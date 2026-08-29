@@ -116,8 +116,14 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    background: rgba(255, 255, 255, 0.025);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background:
+      linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--theme-accent) 7%, transparent),
+        transparent 72%
+      ),
+      var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     cursor: pointer;
     transition:
       color var(--duration-normal, 200ms) cubic-bezier(0.22, 1, 0.36, 1),
@@ -128,33 +134,52 @@
       transform var(--duration-fast, 150ms) cubic-bezier(0.22, 1, 0.36, 1);
     color: var(--theme-text);
     position: relative;
-    padding: 8px 4px 6px;
-    gap: 4px;
-    border-radius: 12px;
+    padding: 10px 8px 8px;
+    gap: 6px;
+    border-radius: 14px;
     box-sizing: border-box;
-    aspect-ratio: 1 / 1.15;
+    aspect-ratio: 1 / 1.05;
     width: 100%;
     min-height: 44px;
     overflow: hidden;
   }
 
   .prop-button:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.1);
+    background:
+      linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--theme-accent) 13%, transparent),
+        transparent 74%
+      ),
+      var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
     color: var(--theme-text);
     transform: translateY(-1px);
   }
 
   .prop-button.selected {
-    background: color-mix(in srgb, var(--theme-accent) 10%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    background:
+      linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--theme-accent) 28%, transparent),
+        color-mix(in srgb, var(--theme-accent) 10%, transparent)
+      ),
+      var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border-color: color-mix(in srgb, var(--theme-accent) 68%, transparent);
     color: var(--theme-text);
-    box-shadow: 0 0 16px
-      color-mix(in srgb, var(--theme-accent) 12%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--theme-accent) 18%, transparent),
+      0 8px 24px color-mix(in srgb, var(--theme-accent) 22%, transparent);
   }
 
   .prop-button.selected:hover {
-    background: color-mix(in srgb, var(--theme-accent) 14%, transparent);
+    background:
+      linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--theme-accent) 34%, transparent),
+        color-mix(in srgb, var(--theme-accent) 14%, transparent)
+      ),
+      var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
   }
 
   .prop-button:focus-visible {
@@ -179,22 +204,26 @@
   }
 
   .prop-image-container :global(.prop-composition-preview) {
-    width: 75%;
+    width: 82%;
     height: auto;
     aspect-ratio: 1;
-    max-height: 75%;
-    opacity: 0.45;
-    transition: opacity var(--duration-normal, 200ms) ease;
+    max-height: 80%;
+    opacity: 0.82;
+    filter: drop-shadow(0 2px 6px var(--theme-shadow, rgba(0, 0, 0, 0.4)));
+    transition:
+      opacity var(--duration-normal, 200ms) ease,
+      transform var(--duration-normal, 200ms) ease;
   }
 
   .prop-button:hover .prop-image-container :global(.prop-composition-preview) {
-    opacity: 0.7;
+    opacity: 0.96;
+    transform: scale(1.035);
   }
 
   .prop-button.selected
     .prop-image-container
     :global(.prop-composition-preview) {
-    opacity: 0.95;
+    opacity: 1;
   }
 
   .prop-label {
@@ -204,13 +233,13 @@
     text-overflow: ellipsis;
     max-width: 100%;
     width: 100%;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
     letter-spacing: -0.1px;
     line-height: 1.2;
     flex-shrink: 0;
     color: var(--theme-text-dim);
-    opacity: 0.4;
+    opacity: 0.82;
     transition:
       color var(--duration-normal, 200ms) ease,
       opacity var(--duration-normal, 200ms) ease;
@@ -219,7 +248,8 @@
   }
 
   .prop-button:hover .prop-label {
-    opacity: 0.65;
+    opacity: 1;
+    color: var(--theme-text);
   }
 
   .prop-button.selected .prop-label {
@@ -230,10 +260,10 @@
   /* Variant count badge */
   .variant-badge {
     position: absolute;
-    top: 4px;
-    left: 4px;
-    width: 16px;
-    height: 16px;
+    top: 7px;
+    left: 7px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     color: var(--theme-panel-bg, #121218);
@@ -250,22 +280,22 @@
   /* Checkmark container */
   .checkmark-container {
     position: absolute;
-    top: 6px;
-    right: 6px;
+    top: 7px;
+    right: 7px;
     display: flex;
     gap: 3px;
     z-index: 10;
   }
 
   .ios-checkmark {
-    width: 16px;
-    height: 16px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 700;
     animation: ios-checkmark-pop var(--duration-emphasis, 300ms)
       cubic-bezier(0.34, 1.56, 0.64, 1);
