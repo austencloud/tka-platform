@@ -14,6 +14,20 @@ export interface MaskedGroundDetailMaps {
   fourth: Texture;
 }
 
+export interface MaskedGroundSurfaceDetailMaps {
+  height: Texture;
+  roughness: Texture;
+}
+
+export interface MaskedGroundSurfaceDetail {
+  maps: MaskedGroundSurfaceDetailMaps;
+  scale: number;
+  albedoStrength: number;
+  normalStrength: number;
+  roughnessStrength: number;
+  slopeProjectionStrength: number;
+}
+
 export interface MaskedGroundContactZone {
   center: Vector2;
   halfSize: Vector2;
@@ -37,6 +51,14 @@ export interface MaskedGroundDetailOptions {
   absoluteColorStrength?: number;
   primaryScale?: number;
   secondaryScale?: number;
+  familyContrast?: number;
+  heightResponse?: number;
+  macroScale?: number;
+  macroDetailScale?: number;
+  macroDetailStrength?: number;
+  slopeFamilyStrength?: number;
+  slopeStart?: number;
+  surfaceDetail?: MaskedGroundSurfaceDetail;
   contactZone?: MaskedGroundContactZone;
 }
 
@@ -64,6 +86,14 @@ export function patchMaskedGroundDetailMaterial(
   const absoluteColorStrength = options.absoluteColorStrength ?? 0;
   const primaryScale = options.primaryScale ?? 2.8;
   const secondaryScale = options.secondaryScale ?? 7.4;
+  const familyContrast = options.familyContrast ?? 1;
+  const heightResponse = options.heightResponse ?? 0.18;
+  const macroScale = options.macroScale ?? 10.526;
+  const macroDetailScale = options.macroDetailScale ?? macroScale;
+  const macroDetailStrength = options.macroDetailStrength ?? 0;
+  const slopeFamilyStrength = options.slopeFamilyStrength ?? 0;
+  const slopeStart = options.slopeStart ?? 0.35;
+  const surfaceDetail = options.surfaceDetail;
   const contactZone = options.contactZone;
   if (previousColor) material.color.setRGB(1, 1, 1);
 
@@ -85,6 +115,19 @@ export function patchMaskedGroundDetailMaterial(
     };
     shader.uniforms.uMaskedGroundPrimaryScale = { value: primaryScale };
     shader.uniforms.uMaskedGroundSecondaryScale = { value: secondaryScale };
+    shader.uniforms.uMaskedGroundFamilyContrast = { value: familyContrast };
+    shader.uniforms.uMaskedGroundHeightResponse = { value: heightResponse };
+    shader.uniforms.uMaskedGroundMacroScale = { value: macroScale };
+    shader.uniforms.uMaskedGroundMacroDetailScale = {
+      value: macroDetailScale,
+    };
+    shader.uniforms.uMaskedGroundMacroDetailStrength = {
+      value: macroDetailStrength,
+    };
+    shader.uniforms.uMaskedGroundSlopeFamilyStrength = {
+      value: slopeFamilyStrength,
+    };
+    shader.uniforms.uMaskedGroundSlopeStart = { value: slopeStart };
     shader.uniforms.uMaskedGroundMaskOrigin = {
       value: options.maskOrigin.clone(),
     };
@@ -125,12 +168,124 @@ export function patchMaskedGroundDetailMaterial(
     shader.uniforms.uMaskedGroundContactStrength = {
       value: contactZone?.strength ?? 0,
     };
+    if (surfaceDetail) {
+      shader.uniforms.uMaskedGroundSurfaceHeightMap = {
+        value: surfaceDetail.maps.height,
+      };
+      shader.uniforms.uMaskedGroundSurfaceRoughnessMap = {
+        value: surfaceDetail.maps.roughness,
+      };
+      shader.uniforms.uMaskedGroundSurfaceScale = {
+        value: surfaceDetail.scale,
+      };
+      shader.uniforms.uMaskedGroundSurfaceAlbedoStrength = {
+        value: surfaceDetail.albedoStrength,
+      };
+      shader.uniforms.uMaskedGroundSurfaceNormalStrength = {
+        value: surfaceDetail.normalStrength,
+      };
+      shader.uniforms.uMaskedGroundSurfaceRoughnessStrength = {
+        value: surfaceDetail.roughnessStrength,
+      };
+      shader.uniforms.uMaskedGroundSurfaceSlopeProjectionStrength = {
+        value: surfaceDetail.slopeProjectionStrength,
+      };
+    }
+
+    const surfaceDeclarations = surfaceDetail
+      ? /* glsl */ `
+          uniform sampler2D uMaskedGroundSurfaceHeightMap;
+          uniform sampler2D uMaskedGroundSurfaceRoughnessMap;
+          uniform float uMaskedGroundSurfaceScale;
+          uniform float uMaskedGroundSurfaceAlbedoStrength;
+          uniform float uMaskedGroundSurfaceNormalStrength;
+          uniform float uMaskedGroundSurfaceRoughnessStrength;
+          uniform float uMaskedGroundSurfaceSlopeProjectionStrength;`
+      : "";
+    const surfaceSampling = surfaceDetail
+      ? /* glsl */ `
+          vec2 maskedGroundSurfaceUv = maskedGroundPoint
+            / uMaskedGroundSurfaceScale;
+          vec2 maskedGroundSidePoint = abs(vMaskedGroundWorldNormal.x)
+            > abs(vMaskedGroundWorldNormal.z)
+              ? vec2(
+                  vMaskedGroundWorldPosition.z,
+                  vMaskedGroundWorldPosition.y
+                )
+              : vec2(
+                  vMaskedGroundWorldPosition.x,
+                  vMaskedGroundWorldPosition.y
+                );
+          vec2 maskedGroundSurfaceSideUv = maskedGroundSidePoint
+            / uMaskedGroundSurfaceScale + vec2(6.17, -3.83);
+          float maskedGroundSurfaceProjection = clamp(
+            maskedGroundSlopeWeight
+              * uMaskedGroundSurfaceSlopeProjectionStrength,
+            0.0,
+            1.0
+          );
+          float maskedGroundSurfaceHeight = mix(
+            texture2D(
+              uMaskedGroundSurfaceHeightMap,
+              maskedGroundSurfaceUv
+            ).r,
+            texture2D(
+              uMaskedGroundSurfaceHeightMap,
+              maskedGroundSurfaceSideUv
+            ).r,
+            maskedGroundSurfaceProjection
+          );
+          float maskedGroundSurfaceRoughness = mix(
+            texture2D(
+              uMaskedGroundSurfaceRoughnessMap,
+              maskedGroundSurfaceUv
+            ).r,
+            texture2D(
+              uMaskedGroundSurfaceRoughnessMap,
+              maskedGroundSurfaceSideUv
+            ).r,
+            maskedGroundSurfaceProjection
+          );
+          float maskedGroundSurfaceValue = (
+            smoothstep(0.12, 0.9, maskedGroundSurfaceHeight) - 0.5
+          ) * 2.0;
+          diffuseColor.rgb *= 1.0
+            + maskedGroundSurfaceValue
+              * uMaskedGroundSurfaceAlbedoStrength
+              * uMaskedGroundDetailStrength;`
+      : /* glsl */ `
+          float maskedGroundSurfaceHeight = 0.5;
+          float maskedGroundSurfaceRoughness = 1.0;`;
+    const surfaceRoughness = surfaceDetail
+      ? /* glsl */ `
+          roughnessFactor = mix(
+            roughnessFactor,
+            max(roughnessFactor, maskedGroundSurfaceRoughness),
+            clamp(
+              uMaskedGroundSurfaceRoughnessStrength
+                * uMaskedGroundDetailStrength,
+              0.0,
+              1.0
+            )
+          );`
+      : "";
+    const surfaceHeightContribution = surfaceDetail
+      ? "(maskedGroundSurfaceHeight - 0.5) * uMaskedGroundSurfaceNormalStrength"
+      : "0.0";
 
     shader.vertexShader = shader.vertexShader
       .replace(
         "#include <common>",
         /* glsl */ `#include <common>
-          varying vec3 vMaskedGroundWorldPosition;`
+          varying vec3 vMaskedGroundWorldPosition;
+          varying vec3 vMaskedGroundWorldNormal;`
+      )
+      .replace(
+        "#include <defaultnormal_vertex>",
+        /* glsl */ `#include <defaultnormal_vertex>
+          vMaskedGroundWorldNormal = normalize(
+            mat3(modelMatrix) * transformedNormal
+          );`
       )
       .replace(
         "#include <begin_vertex>",
@@ -155,6 +310,13 @@ export function patchMaskedGroundDetailMaterial(
           uniform float uMaskedGroundAbsoluteColorStrength;
           uniform float uMaskedGroundPrimaryScale;
           uniform float uMaskedGroundSecondaryScale;
+          uniform float uMaskedGroundFamilyContrast;
+          uniform float uMaskedGroundHeightResponse;
+          uniform float uMaskedGroundMacroScale;
+          uniform float uMaskedGroundMacroDetailScale;
+          uniform float uMaskedGroundMacroDetailStrength;
+          uniform float uMaskedGroundSlopeFamilyStrength;
+          uniform float uMaskedGroundSlopeStart;
           uniform vec2 uMaskedGroundMaskOrigin;
           uniform vec2 uMaskedGroundMaskSize;
           uniform vec2 uMaskedGroundWorldAxisSign;
@@ -170,6 +332,8 @@ export function patchMaskedGroundDetailMaterial(
           uniform float uMaskedGroundContactNoise;
           uniform float uMaskedGroundContactStrength;
           varying vec3 vMaskedGroundWorldPosition;
+          varying vec3 vMaskedGroundWorldNormal;
+          ${surfaceDeclarations}
 
           float maskedGroundHash(vec2 point) {
             return fract(sin(dot(point, vec2(127.1, 311.7))) * 43758.5453);
@@ -249,6 +413,26 @@ export function patchMaskedGroundDetailMaterial(
             clamp(contactWeight, 0.0, 1.0)
           );
 
+          float maskedGroundSlope = 1.0 - clamp(
+            abs(vMaskedGroundWorldNormal.y),
+            0.0,
+            1.0
+          );
+          float maskedGroundSlopeWeight = smoothstep(
+            uMaskedGroundSlopeStart,
+            1.0,
+            maskedGroundSlope
+          );
+          familyWeights = mix(
+            familyWeights,
+            vec4(0.0, 0.0, 1.0, 0.0),
+            clamp(
+              maskedGroundSlopeWeight * uMaskedGroundSlopeFamilyStrength,
+              0.0,
+              0.82
+            )
+          );
+
           vec3 detailColorPrimary =
             texture2D(uMaskedGroundRedMap, detailUv).rgb * familyWeights.r
             + texture2D(uMaskedGroundGreenMap, detailUv).rgb * familyWeights.g
@@ -267,20 +451,34 @@ export function patchMaskedGroundDetailMaterial(
             + uMaskedGroundBaselineBlue * familyWeights.b
             + uMaskedGroundBaselineFourth * familyWeights.a;
           vec3 familyVariation = clamp(
-            detailColor - familyBaseline,
+            (detailColor - familyBaseline) * uMaskedGroundFamilyContrast,
             vec3(-0.12),
             vec3(0.12)
           );
           float baselineLuma = dot(familyBaseline, vec3(0.299, 0.587, 0.114));
           float microValue = clamp(
-            (detailLuma - baselineLuma) * 0.82,
+            (detailLuma - baselineLuma)
+              * 0.82
+              * uMaskedGroundFamilyContrast,
             -0.11,
             0.11
           );
           vec3 modulation = vec3(1.0)
             + familyVariation * (0.60 * uMaskedGroundDetailStrength)
             + vec3(microValue * uMaskedGroundDetailStrength);
-          float macro = maskedGroundNoise(maskedGroundPoint * 0.095);
+          float macroBroad = maskedGroundNoise(
+            maskedGroundPoint / uMaskedGroundMacroScale
+          );
+          float macroDetail = maskedGroundNoise(
+            mat2(0.7071, -0.7071, 0.7071, 0.7071)
+              * maskedGroundPoint / uMaskedGroundMacroDetailScale
+              + vec2(-7.1, 5.3)
+          );
+          float macro = mix(
+            macroBroad,
+            macroBroad * 0.68 + macroDetail * 0.32,
+            clamp(uMaskedGroundMacroDetailStrength, 0.0, 1.0)
+          );
           float meadowBladeSignal = mix(
             sin(dot(maskedGroundPoint, vec2(8.4, 2.7))),
             sin(dot(maskedGroundPoint, vec2(-3.1, 10.6)) + 1.7),
@@ -301,7 +499,8 @@ export function patchMaskedGroundDetailMaterial(
             uMaskedGroundMacroLight,
             macro
           );
-          diffuseColor.rgb *= 1.0 + meadowBladeSignal * 0.025;`
+          diffuseColor.rgb *= 1.0 + meadowBladeSignal * 0.025;
+          ${surfaceSampling}`
       )
       .replace(
         "#include <normal_fragment_maps>",
@@ -314,8 +513,10 @@ export function patchMaskedGroundDetailMaterial(
           ));
           vec3 maskedGroundPositionDx = dFdx(vViewPosition);
           vec3 maskedGroundPositionDy = dFdy(vViewPosition);
-          float maskedGroundHeightDx = dFdx(detailLuma);
-          float maskedGroundHeightDy = dFdy(detailLuma);
+          float maskedGroundCombinedHeight = detailLuma
+            + ${surfaceHeightContribution};
+          float maskedGroundHeightDx = dFdx(maskedGroundCombinedHeight);
+          float maskedGroundHeightDy = dFdy(maskedGroundCombinedHeight);
           vec3 maskedGroundCrossX = cross(maskedGroundPositionDy, normal);
           vec3 maskedGroundCrossY = cross(normal, maskedGroundPositionDx);
           float maskedGroundDeterminant = dot(
@@ -329,7 +530,7 @@ export function patchMaskedGroundDetailMaterial(
           normal = normalize(
             abs(maskedGroundDeterminant) * normal
               - maskedGroundSurfaceGradient
-                * (0.18 * uMaskedGroundDetailStrength)
+                * (uMaskedGroundHeightResponse * uMaskedGroundDetailStrength)
           );`
       )
       .replace(
@@ -338,7 +539,8 @@ export function patchMaskedGroundDetailMaterial(
           roughnessFactor = max(
             roughnessFactor,
             uMaskedGroundRoughnessFloor
-          );`
+          );
+          ${surfaceRoughness}`
       );
   };
   material.customProgramCacheKey = () =>

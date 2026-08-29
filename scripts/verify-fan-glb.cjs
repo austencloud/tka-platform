@@ -352,8 +352,8 @@ invariant(
 );
 invariant(
   lotusGroup.extras?.tka_wick_mount ===
-    "paired axial tines through inward-facing end caps",
-  "Lotus wire is no longer mounted through the five inward-facing wick caps"
+    "intact Illustrator SVG terminals through inward-facing end caps",
+  "Lotus wire no longer preserves the Illustrator terminals at the five wick caps"
 );
 invariant(
   dayPlate.extras?.tka_trace_contours === 18,
@@ -439,6 +439,25 @@ invariant(
 
 const pointsMatch = (left, right, tolerance = 1e-7) =>
   left.every((value, axis) => Math.abs(value - right[axis]) < tolerance);
+const pointsReflectAcrossCenter = (left, right, tolerance = 1e-7) =>
+  Math.abs(left[0] + right[0]) < tolerance &&
+  Math.abs(left[1] - right[1]) < tolerance &&
+  Math.abs(left[2] - right[2]) < tolerance;
+for (const [leftWick, leftTine, rightWick, rightTine] of [
+  [0, 0, 4, 1],
+  [0, 1, 4, 0],
+  [1, 0, 3, 1],
+  [1, 1, 3, 0],
+  [2, 0, 2, 1],
+]) {
+  const [leftNeck, leftEntry] = lotusTinePairs[leftWick][leftTine];
+  const [rightNeck, rightEntry] = lotusTinePairs[rightWick][rightTine];
+  invariant(
+    pointsReflectAcrossCenter(leftNeck, rightNeck) &&
+      pointsReflectAcrossCenter(leftEntry, rightEntry),
+    `Lotus SVG tine ${leftWick + 1}/${leftTine + 1} is not an exact reflection of ${rightWick + 1}/${rightTine + 1}: ${JSON.stringify({ leftNeck, rightNeck, leftEntry, rightEntry })}`
+  );
+}
 for (const actual of actualLotusTines) {
   invariant(
     expectedLotusTines.some(
@@ -494,9 +513,8 @@ invariant(
   "Lotus center wick is not locked vertically to the symmetry axis"
 );
 console.log("FAN_LOTUS_SYMMETRY=verified-5-wicks-exact-bilateral-reflection");
-const lotusStraightLength = lotusGroup.extras.tka_wick_tine_straight_length_m;
 const lotusInsertionDepth = lotusGroup.extras.tka_wick_tine_insertion_depth_m;
-const lotusTineHalfSpacing = lotusGroup.extras.tka_wick_tine_half_spacing_m;
+const lotusSvgImportTolerance = 1e-4;
 for (let wickIndex = 0; wickIndex < 5; wickIndex += 1) {
   const center = new Vector3().fromArray(lotusWickCenters[wickIndex]);
   const direction = new Vector3()
@@ -504,38 +522,40 @@ for (let wickIndex = 0; wickIndex < 5; wickIndex += 1) {
     .normalize();
   const lotusRollHalf = lotusRollLengths[wickIndex] / 2;
   const baseCenter = center.clone().addScaledVector(direction, -lotusRollHalf);
-  const entries = [];
+  const terminals = [];
   for (const [neckArray, entryArray] of lotusTinePairs[wickIndex]) {
     const neck = new Vector3().fromArray(neckArray);
     const entry = new Vector3().fromArray(entryArray);
     const axialRun = entry.clone().sub(neck);
     invariant(
-      Math.abs(
-        axialRun.length() - (lotusStraightLength + lotusInsertionDepth)
-      ) < 1e-7 && axialRun.clone().normalize().dot(direction) > 0.999999,
-      `Lotus wick ${wickIndex + 1} has a tine that is not axial below the cap`
+      Math.abs(axialRun.length() - lotusInsertionDepth) < 1e-7 &&
+        axialRun.clone().normalize().dot(direction) > 0.999999,
+      `Lotus wick ${wickIndex + 1} has a terminal extension that is not axial inside the roll`
     );
-    const entryOffset = entry.clone().sub(baseCenter);
-    const insertion = entryOffset.dot(direction);
-    const transverse = entryOffset
+    const neckOffset = neck.clone().sub(baseCenter);
+    const axialOffset = neckOffset.dot(direction);
+    const transverse = neckOffset
       .clone()
-      .addScaledVector(direction, -insertion)
+      .addScaledVector(direction, -axialOffset)
       .length();
     invariant(
-      Math.abs(insertion - lotusInsertionDepth) < 1e-7 &&
-        Math.abs(transverse - lotusTineHalfSpacing) < 1e-7,
-      `Lotus wick ${wickIndex + 1} tine misses the inward-facing base cap`
+      Math.abs(axialOffset) < lotusSvgImportTolerance &&
+        transverse < lotusDiameters[wickIndex] / 2,
+      `Lotus wick ${wickIndex + 1} Illustrator terminal misses the inward-facing base cap`
     );
-    entries.push(entry);
+    terminals.push(neck);
   }
+  const terminalMidpoint = terminals[0]
+    .clone()
+    .add(terminals[1])
+    .multiplyScalar(0.5);
   invariant(
-    Math.abs(entries[0].distanceTo(entries[1]) - lotusTineHalfSpacing * 2) <
-      1e-7,
-    `Lotus wick ${wickIndex + 1} tines no longer preserve their paired spacing`
+    terminalMidpoint.distanceTo(baseCenter) < lotusSvgImportTolerance,
+    `Lotus wick ${wickIndex + 1} is no longer centered on its Illustrator terminal pair`
   );
 }
 console.log(
-  "FAN_LOTUS_WICK_MOUNTS=verified-10-axial-tines-through-5-base-caps"
+  "FAN_LOTUS_WICK_MOUNTS=verified-10-intact-svg-terminals-through-5-base-caps"
 );
 
 const requiredMaterials = [

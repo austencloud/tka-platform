@@ -202,7 +202,15 @@
   }
 
   :global(.prop-selection-drawer) {
-    --sheet-bg: var(--theme-panel-bg, rgb(15, 15, 20));
+    /* Theme panel colors are intentionally translucent on animated canvases.
+       A picker needs an opaque reading surface, so keep the active theme wash
+       while painting it over the shared solid drawer floor. */
+    --sheet-bg:
+      linear-gradient(
+        var(--theme-panel-bg, rgb(15, 15, 20)),
+        var(--theme-panel-bg, rgb(15, 15, 20))
+      ),
+      var(--sheet-bg-solid, rgb(15, 15, 20));
     --sheet-filter: none;
   }
 
