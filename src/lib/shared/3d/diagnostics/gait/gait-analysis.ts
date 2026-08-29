@@ -831,8 +831,10 @@ export function analyzeGait(
   let inPlace = 0;
   let overSupport = 0;
   let singleSupportFrames = 0;
-  const leftSway: number[] = [];
-  const rightSway: number[] = [];
+  let leftSupportFrames = 0;
+  let rightSupportFrames = 0;
+  const leftSideSupportSway: number[] = [];
+  const rightSideSupportSway: number[] = [];
   const sway: number[] = [];
 
   for (let i = 0; i < frames.length; i++) {
@@ -852,7 +854,20 @@ export function analyzeGait(
       singleSupportFrames += 1;
       const swayNow = pelvisSway(frame);
       sway.push(swayNow);
-      (support === "left" ? leftSway : rightSway).push(swayNow);
+      if (support === "left") leftSupportFrames += 1;
+      else rightSupportFrames += 1;
+
+      const supportAnkle = frame[support].ankle;
+      const [rx, rz] = rightOf(frame.facing);
+      const supportSide =
+        (supportAnkle.x - frame.root.x) * rx +
+        (supportAnkle.z - frame.root.z) * rz;
+      // A crossover deliberately puts an anatomical left foot on the body's
+      // right, or vice versa. Weight must follow the place on the floor that
+      // is carrying the body, not the foot's name. Ignore the one-centimetre
+      // centre band because it has no stable side to alternate with.
+      if (supportSide < -0.01) leftSideSupportSway.push(swayNow);
+      else if (supportSide > 0.01) rightSideSupportSway.push(swayNow);
 
       const off = lateralOffsetOverSupport(frame, support);
       if (off !== null && Math.abs(off) <= thresholds.overFootLateral) {
@@ -912,18 +927,20 @@ export function analyzeGait(
     if (margin < -0.01) legCrossingSeconds += Math.max(0, frame.dt);
   }
 
-  // Balancing on a leg means bringing the body over it, so the pelvis must sit
-  // LEFT of the travel line while the left foot carries it and right of the
-  // line while the right foot does. A pelvis that leans one way regardless of
-  // which leg is under it is not transferring weight, and one that never
+  // Balancing on a leg means bringing the body toward its support point. That
+  // point normally shares the anatomical foot's side, but intentionally swaps
+  // sides in a crossover. A pelvis that leans one way regardless of where the
+  // support point is located is not transferring weight, and one that never
   // leaves the line is being slid along a rail with its legs cycling beneath.
   const weightShiftAmplitude =
     sway.length > 0 ? Math.max(...sway) - Math.min(...sway) : 0;
   const weightShiftAlternates =
-    leftSway.length > 0 &&
-    rightSway.length > 0 &&
-    mean(leftSway) < 0 &&
-    mean(rightSway) > 0 &&
+    leftSupportFrames > 0 &&
+    rightSupportFrames > 0 &&
+    leftSideSupportSway.length > 0 &&
+    rightSideSupportSway.length > 0 &&
+    mean(leftSideSupportSway) < 0 &&
+    mean(rightSideSupportSway) > 0 &&
     weightShiftAmplitude > 0.02;
 
   return {

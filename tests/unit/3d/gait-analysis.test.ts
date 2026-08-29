@@ -419,6 +419,37 @@ describe("gait analysis", () => {
     expect(listing.weightShiftAlternates).toBe(false);
   });
 
+  it("follows the supporting footprint across the body during a crossover", () => {
+    const crossed = syntheticWalk({
+      steps: 6,
+      stepLength: 0.7,
+      framesPerStance: 22,
+      weightShift: 0.045,
+    }).map((f) => ({
+      ...f,
+      // The supporting foot and the pelvis both cross the body's centreline.
+      // Anatomical left/right names therefore say the opposite of which side
+      // is actually carrying the avatar in this part of the grapevine.
+      hips: { ...f.hips, x: -f.hips.x },
+      left: {
+        ...f.left,
+        ankle: { ...f.left.ankle, x: -f.left.ankle.x },
+        toe: f.left.toe ? { ...f.left.toe, x: -f.left.toe.x } : null,
+        hip: { ...f.left.hip, x: 0.1 },
+      },
+      right: {
+        ...f.right,
+        ankle: { ...f.right.ankle, x: -f.right.ankle.x },
+        toe: f.right.toe ? { ...f.right.toe, x: -f.right.toe.x } : null,
+        hip: { ...f.right.hip, x: -0.1 },
+      },
+    }));
+
+    const report = analyzeGait(crossed);
+    expect(report.weightShiftAlternates).toBe(true);
+    expect(report.weightShiftAmplitude).toBeGreaterThan(0.05);
+  });
+
   it("signs the lateral offset by the character's own right", () => {
     // Forward +Z puts the character's left at +X. Standing on the left foot
     // with the hips on the centreline leaves the body 10cm to the character's
@@ -484,6 +515,13 @@ describe("gait analysis", () => {
       },
     };
 
+    expect(
+      Math.hypot(
+        colliding.left.ankle.x - colliding.right.ankle.x,
+        colliding.left.ankle.y - colliding.right.ankle.y,
+        colliding.left.ankle.z - colliding.right.ankle.z
+      )
+    ).toBeGreaterThan(0.1);
     expect(legSegmentSeparation(colliding)).toBeLessThan(0.01);
     expect(legSegmentSeparation(cleared)).toBeGreaterThan(0.05);
   });
