@@ -48,15 +48,15 @@
   "artifacts": {
     "blend": "blender/ember-volcanic-world-production-slice-r10.blend",
     "rawGlb": "static/models/ember/ember-production-slice_raw.glb",
-    "rawGlbSha256": "cb499bc51d874f853b9efa0040b21fbc5a51e75ba67877764510ffbadad4adad",
-    "rawGlbBytes": 14699312,
+    "rawGlbSha256": "fd63292c8f682ac075576cc96afd06dc118c891ae80e9b78433b9eb2b40c377c",
+    "rawGlbBytes": 14631996,
     "worldContract": "src/lib/shared/3d/environments/domain/models/scene-configs/ember-volcanic-world-r7.json",
-    "worldContractSha256": "ba090228a2a47d772966a4bdd0f40e90ec343a236fe782d5473c823a4dff9275"
+    "worldContractSha256": "ff29e620e4a424183f8b8903e88c701f18a500eb42a8d5352e60f17418a0ce99"
   },
   "contract": {
     "stageSurfaceLocalY": 0.5,
     "clearActionRadiusMeters": 4.5,
-    "minimumStructuralRadialClearanceMeters": 5.8594,
+    "minimumStructuralRadialClearanceMeters": 6.156,
     "heroCenterBlenderXYZ": [
       -8.5,
       -27.0,
@@ -74,8 +74,8 @@
     "performerFacing": "negative-runtime-z-toward-front-stage-audience",
     "lavaRiverControlPointsRuntimeXZHeight": [
       [
-        -20.0,
-        156.0,
+        -25.0,
+        145.0,
         15.2
       ],
       [
@@ -99,57 +99,57 @@
         6.5
       ],
       [
-        -4.0,
+        -10.0,
         52.0,
         4.4
       ],
       [
-        8.0,
+        -9.0,
         40.0,
         2.9
       ],
       [
-        11.0,
+        -10.0,
         29.0,
         1.9
       ],
       [
-        10.0,
+        -11.0,
         19.0,
         1.1
       ],
       [
-        12.0,
+        -12.0,
         11.0,
         0.55
       ],
       [
-        13.0,
+        -13.0,
         2.0,
         0.25
       ],
       [
-        10.5,
+        -13.5,
         -8.0,
         0.1
       ],
       [
-        -3.5,
+        -14.0,
         -24.0,
         -0.02
       ],
       [
-        -11.0,
+        -13.0,
         -43.0,
         -0.12
       ],
       [
-        -9.0,
+        -10.0,
         -64.0,
         -0.18
       ],
       [
-        -4.0,
+        -5.0,
         -91.0,
         -0.24
       ],
@@ -159,53 +159,15 @@
         -0.32
       ]
     ],
-    "southVentCascadeControlPointsRuntimeXZHeight": [
-      [
-        -4.0,
-        -84.0,
-        19.9
-      ],
-      [
-        -4.5,
-        -78.0,
-        20.4
-      ],
-      [
-        -5.0,
-        -72.0,
-        14.0
-      ],
-      [
-        -6.0,
-        -66.0,
-        10.65
-      ],
-      [
-        -7.0,
-        -60.0,
-        9.45
-      ],
-      [
-        -8.0,
-        -54.0,
-        5.1
-      ],
-      [
-        -9.0,
-        -48.0,
-        2.95
-      ],
-      [
-        -11.0,
-        -43.0,
-        0.02
-      ]
+    "distantVentCenterRuntimeXZ": [
+      -25.0,
+      145.0
     ],
     "collapsedLavaBankCenterRuntimeXZ": [
       30.5,
       6.0
     ],
-    "collapsedLavaBankRiverEdgeClearanceMeters": 6.8799,
+    "collapsedLavaBankRiverEdgeClearanceMeters": 32.0802,
     "continuousOrbitDepthBands": [
       "foreground",
       "midground",
@@ -266,12 +228,12 @@
     "boundsBlenderXYZ": {
       "min": [
         -190.0,
-        -190.0,
+        -229.1728,
         -6.3383
       ],
       "max": [
         190.0,
-        206.1728,
+        145.0,
         51.3748
       ]
     }
@@ -405,10 +367,10 @@
     "direction": "fresh-rift-synthesis",
     "approvalTrackerItem": "ahPuPwh34G3FeqvUEHsB",
     "familyPolygonCounts": {
-      "0": 4875,
-      "1": 38439,
+      "0": 4918,
+      "1": 38366,
       "2": 50055,
-      "3": 82178
+      "3": 82208
     },
     "runtimeAssets": {
       "detailTextures": [
@@ -435,8 +397,8 @@
       ],
       "familyMask": {
         "path": "static/textures/ember-surface-r9/fresh-rift-family-mask.png",
-        "bytes": 674113,
-        "sha256": "e5592d2c02b48ec20cb5948a61d655639ab0ddd6175acb26c5d34347eb64cd75",
+        "bytes": 662106,
+        "sha256": "a2b6ba6e0eea27eff0fcc426edba8bbb9360ce56fd86b1f76b72bf81bdf09be7",
         "resolution": [
           1024,
           1024

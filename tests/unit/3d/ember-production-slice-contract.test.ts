@@ -9,6 +9,7 @@ import {
   distanceToEmberLavaCorridor,
 } from "$lib/shared/3d/environments/scenes/ember/ember-surface-ecology";
 import { createEmberSurfacePlateGeometry } from "$lib/shared/3d/environments/scenes/ember/ember-surface-plate-geometry";
+import { createLavaRiverStripGeometry } from "$lib/shared/3d/environments/scenes/ember/lava-river-geometry";
 import {
   DEFAULT_VIEWER_FRONT_STAGE_CAMERA_Z_SIGN,
   DEFAULT_VIEWER_FRONT_STAGE_FACING_ANGLE,
@@ -193,16 +194,17 @@ describe("Ember production-slice contracts", () => {
     );
   });
 
-  it("uses one shared volcanic-world contract for the static channel and runtime river", () => {
+  it("uses one descending source-to-runout river in the static and runtime world", () => {
     const world = JSON.parse(
       readFileSync(volcanicWorldContractPath, "utf8")
     ) as {
       lavaRiver: {
+        topology: string;
+        sourceTaperFraction: number;
         pointsRuntimeXZHeight: [number, number, number][];
       };
-      southVentCascade: {
-        widthScale: number;
-        pointsRuntimeXZHeight: [number, number, number][];
+      distantVent: {
+        centerRuntimeXZ: [number, number];
       };
       terrain: {
         runtimeXRange: [number, number];
@@ -215,11 +217,7 @@ describe("Ember production-slice contracts", () => {
     const report = JSON.parse(readFileSync(reportPath, "utf8")) as {
       contract: {
         lavaRiverControlPointsRuntimeXZHeight: [number, number, number][];
-        southVentCascadeControlPointsRuntimeXZHeight: [
-          number,
-          number,
-          number,
-        ][];
+        distantVentCenterRuntimeXZ: [number, number];
         collapsedLavaBankCenterRuntimeXZ: [number, number];
         collapsedLavaBankRiverEdgeClearanceMeters: number;
         continuousOrbitDepthBands: string[];
@@ -229,21 +227,36 @@ describe("Ember production-slice contracts", () => {
     };
     const config = createDefaultEmberConfig();
 
+    expect(world.lavaRiver.topology).toBe("single-distant-vent-source");
+    expect(config.lavaRivers?.channels).toHaveLength(1);
     expect(config.lavaRivers?.channels[0]?.points).toEqual(
       world.lavaRiver.pointsRuntimeXZHeight
-    );
-    expect(config.lavaRivers?.channels[1]?.points).toEqual(
-      world.southVentCascade.pointsRuntimeXZHeight
-    );
-    expect(config.lavaRivers?.channels[1]?.widthScale).toBe(
-      world.southVentCascade.widthScale
     );
     expect(report.contract.lavaRiverControlPointsRuntimeXZHeight).toEqual(
       world.lavaRiver.pointsRuntimeXZHeight
     );
-    expect(
-      report.contract.southVentCascadeControlPointsRuntimeXZHeight
-    ).toEqual(world.southVentCascade.pointsRuntimeXZHeight);
+    expect(report.contract.distantVentCenterRuntimeXZ).toEqual(
+      world.distantVent.centerRuntimeXZ
+    );
+
+    const source = world.lavaRiver.pointsRuntimeXZHeight[0]!;
+    const [ventX, ventZ] = world.distantVent.centerRuntimeXZ;
+    expect([source[0], source[1]]).toEqual([ventX, ventZ]);
+    expect(world.lavaRiver.sourceTaperFraction).toBeGreaterThan(0);
+    for (
+      let index = 1;
+      index < world.lavaRiver.pointsRuntimeXZHeight.length;
+      index += 1
+    ) {
+      expect(world.lavaRiver.pointsRuntimeXZHeight[index]![2]).toBeLessThan(
+        world.lavaRiver.pointsRuntimeXZHeight[index - 1]![2]
+      );
+    }
+    const stagePass = world.lavaRiver.pointsRuntimeXZHeight.filter(
+      ([, z]) => Math.abs(z) <= 30
+    );
+    expect(stagePass.every(([x]) => x <= -10)).toBe(true);
+
     expect(report.contract.collapsedLavaBankCenterRuntimeXZ).toEqual([30.5, 6]);
     expect(
       report.contract.collapsedLavaBankRiverEdgeClearanceMeters
@@ -276,6 +289,36 @@ describe("Ember production-slice contracts", () => {
     expect(
       minimumRiverClearance - config.lavaRivers!.width / 2
     ).toBeGreaterThan(9);
+  });
+
+  it("opens the river from a fissure point instead of a cut ribbon", () => {
+    const channel = createDefaultEmberConfig().lavaRivers?.channels[0];
+    expect(channel?.sourceTaperFraction).toBeGreaterThan(0);
+
+    const { geometry } = createLavaRiverStripGeometry({
+      channel: channel!,
+      poolPosition: { x: 0, z: 0 },
+      groundY: 0.5,
+      width: 6.4,
+      longitudinalSegments: 20,
+      lateralSegments: 4,
+    });
+    const positions = geometry.getAttribute("position");
+    const source = Array.from({ length: 5 }, (_, index) => [
+      positions.getX(index),
+      positions.getY(index),
+      positions.getZ(index),
+    ]);
+    expect(new Set(source.map((point) => point.join(","))).size).toBe(1);
+
+    const finalRowStart = 20 * 5;
+    expect(
+      Math.hypot(
+        positions.getX(finalRowStart) - positions.getX(finalRowStart + 4),
+        positions.getZ(finalRowStart) - positions.getZ(finalRowStart + 4)
+      )
+    ).toBeGreaterThan(5);
+    geometry.dispose();
   });
 
   it("keeps the old prop ring disabled", () => {

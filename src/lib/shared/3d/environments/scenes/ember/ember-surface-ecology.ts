@@ -1,3 +1,5 @@
+import volcanicWorldR7 from "../../domain/models/scene-configs/ember-volcanic-world-r7.json";
+
 export interface EmberSurfacePlacement {
   position: [number, number, number];
   rotation: [number, number, number];
@@ -10,25 +12,9 @@ export interface EmberSurfaceEcology {
   plates: EmberSurfacePlacement[];
 }
 
-const LAVA_CORRIDOR: [number, number][] = [
-  [-20, 156],
-  [-25, 132],
-  [-20, 108],
-  [-17, 82],
-  [-12, 67],
-  [-4, 52],
-  [8, 40],
-  [11, 29],
-  [10, 19],
-  [12, 11],
-  [13, 2],
-  [10.5, -8],
-  [-3.5, -24],
-  [-11, -43],
-  [-9, -64],
-  [-4, -91],
-  [1, -122],
-];
+const LAVA_CORRIDOR = volcanicWorldR7.lavaRiver.pointsRuntimeXZHeight.map(
+  ([x, z]) => [x, z] as [number, number]
+);
 
 const TALUS_CLUSTERS = [
   { x: -18, z: -20, spread: 5.5 },
