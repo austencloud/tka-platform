@@ -24,8 +24,6 @@ from mathutils import Matrix
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FRAME_RATE = 30
 PHASE_FRAMES = tuple(range(10, 33)) + tuple(range(1, 10))
-SWING_START = 16
-SWING_END = len(PHASE_FRAMES) - 1
 MINIMUM_CROSS_DEPTH = 0.12
 MINIMUM_FOOT_CLEARANCE = 0.12
 CLEARANCE_MARGIN = 0.05
@@ -85,14 +83,30 @@ def smooth(value: float) -> float:
     return clamped * clamped * (3.0 - 2.0 * clamped)
 
 
-def role_at(cycle: int, phase_index: int, base_sign: float) -> float:
+def crossing_swing_window(crossing_side: str) -> tuple[int, int]:
+    # PHASE_FRAMES rotates the original capture to begin at frame 10. In the
+    # left-travel capture the right foot is already airborne there and lands
+    # around source frame 25 (phase 15). In the mirrored right-travel capture,
+    # the left foot takes the other half of the cycle. Treating both directions
+    # as the latter window rewrites the right foot while it is supporting the
+    # body, erasing the captured weight transfer and creating a flight phase.
+    return (0, 15) if crossing_side == "right" else (16, len(PHASE_FRAMES) - 1)
+
+
+def role_at(
+    cycle: int,
+    phase_index: int,
+    base_sign: float,
+    swing_start: int,
+    swing_end: int,
+) -> float:
     start_role = base_sign if cycle == 0 else -base_sign
     end_role = -start_role
-    if phase_index <= SWING_START:
+    if phase_index <= swing_start:
         return start_role
-    if phase_index >= SWING_END:
+    if phase_index >= swing_end:
         return end_role
-    blend = smooth((phase_index - SWING_START) / (SWING_END - SWING_START))
+    blend = smooth((phase_index - swing_start) / (swing_end - swing_start))
     return start_role + (end_role - start_role) * blend
 
 
@@ -224,6 +238,7 @@ def make_crossing_targets(
         armature,
         LEFT_LEG_NAMES if crossing_side == "left" else RIGHT_LEG_NAMES,
     )
+    swing_start, swing_end = crossing_swing_window(crossing_side)
     for output_frame in range(OUTPUT_FRAMES):
         cycle = output_frame // len(PHASE_FRAMES)
         phase_index = output_frame % len(PHASE_FRAMES)
@@ -239,9 +254,15 @@ def make_crossing_targets(
         source_depth = abs(crossing_world.y - support_world.y)
         desired_depth = max(MINIMUM_CROSS_DEPTH, source_depth)
         desired_world = crossing_world.copy()
-        role = role_at(cycle, phase_index, base_sign)
+        role = role_at(
+            cycle,
+            phase_index,
+            base_sign,
+            swing_start,
+            swing_end,
+        )
         desired_world.y = support_world.y + desired_depth * role
-        if SWING_START < phase_index < SWING_END:
+        if swing_start < phase_index < swing_end:
             # The crossing foot must pass the support foot while changing from
             # front to back (or vice versa). Preserve the captured lateral arc,
             # then add only the vertical separation the current horizontal gap

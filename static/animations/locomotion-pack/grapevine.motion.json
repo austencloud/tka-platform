@@ -28,17 +28,17 @@
       },
       "crossingSide": "right",
       "cycleTravelMeters": 1.789224,
-      "authoredDepthMinimum": -0.185023,
-      "authoredDepthMaximum": 0.185023,
+      "authoredDepthMinimum": -0.182134,
+      "authoredDepthMaximum": 0.182134,
       "measured": {
-        "depthMinimum": -0.186593,
-        "depthMaximum": 0.171116,
-        "minimumFootClearance": 0.13908,
+        "depthMinimum": -0.183083,
+        "depthMaximum": 0.170129,
+        "minimumFootClearance": 0.12813,
         "heightRanges": {
           "left": [0.082269, 0.250389],
-          "right": [0.086012, 0.332009]
+          "right": [0.083819, 0.262047]
         },
-        "maximumLegLengthError": 5.62e-7
+        "maximumLegLengthError": 6.98e-7
       }
     },
     "grapevine-right": {
