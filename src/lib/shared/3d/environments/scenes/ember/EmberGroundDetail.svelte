@@ -140,7 +140,7 @@
       !loadedScene ||
       !mask ||
       Object.keys(textures).length < 4 ||
-      Object.keys(surfaces).length < 2
+      Object.keys(surfaces).length < 1
     )
       return;
 
