@@ -216,7 +216,15 @@ export function fanBuildPreviewOptions(
       label: "Pictograph",
       image: fanImage("pictograph", frame, cover),
     },
-    { id: "fire", label: "Fire", image: fanImage("fire", frame, cover) },
+    {
+      id: "fire",
+      label: "Fire",
+      image: fanImage("fire", frame, cover),
+      designCredit: {
+        originator: "Doodle",
+        sourceUrl: "https://forgedfans.com/products/doodlegrip-fire-fans",
+      },
+    },
     {
       id: "lotus",
       label: "Lotus",
@@ -227,7 +235,15 @@ export function fanBuildPreviewOptions(
           "https://www.homeofpoi.com/en/shop/listItems/Medium-Lotus-Fire-Fans",
       },
     },
-    { id: "day", label: "Day", image: fanImage("day", frame, cover) },
+    {
+      id: "day",
+      label: "Day",
+      image: fanImage("day", frame, cover),
+      designCredit: {
+        originator: "Doodle",
+        sourceUrl: "https://flowtoys.com/products/doodlegrip-practice-fans",
+      },
+    },
   ];
 }
 
