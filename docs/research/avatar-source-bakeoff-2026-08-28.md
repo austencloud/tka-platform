@@ -1,7 +1,8 @@
 # Avatar source bake-off
 
-**Date:** 2026-08-28
-**Status:** Decision ready. No production avatar source or creator has been changed.
+**Date:** 2026-08-28, updated 2026-08-29
+**Status:** One personal MetaPerson export passed visual and rig evaluation. It is
+not licensed for production use.
 
 ## Decision
 
@@ -13,11 +14,14 @@ Do not build a SAM 3D Body or Meshy photo-to-avatar pipeline yet. Those tools
 solve useful parts of the problem, but neither is a finished path from an
 arbitrary clothed photo to a TKA-ready avatar.
 
-The next paid or account-gated experiment should be three fresh MetaPerson
-exports. Its official sample was the strongest current candidate in this test:
-both arm chains, both leg chains, and all 30 finger bones worked through TKA's
-production skeleton services. Its overhead pose also held the shoulders and
-clothing together better than the current model.
+The first fresh MetaPerson photo export passed the important technical checks.
+Its 73-joint skin includes every TKA body bone, both arm and leg chains, and all
+30 finger bones. The neutral, overhead, crossed, depth, and low stress poses did
+not tear the jacket, detach a sleeve, collapse an elbow, or explode the mesh.
+
+This file is an evaluation asset. Commercial use was not selected when it was
+exported, so it must not enter the public avatar roster or asset CDN. A licensed
+export is still required before production integration.
 
 Ready Player Me is not a candidate. Its services ended on January 31, 2026.
 
@@ -44,18 +48,43 @@ or Git history by this work.
 
 ## Candidate scorecard
 
-| Candidate | Visual result | TKA deformation | Rig result | Payload | Availability | Verdict |
-| --- | --- | --- | --- | ---: | --- | --- |
-| Current ch01, raw | Weak face and flat clothing | Shoulder gaps and poor overhead silhouette | 22/22 body bones; arms and legs pass; finger map fails | 61.5 MB | Already owned | Reject as the future source |
-| Current ch01, optimized | No meaningful visual loss from raw at the test camera | Same deformation as raw | Same rig result as raw | 2.4 MB | In production | Keep only until replaced |
-| Avatar SDK MetaPerson sample | Best viable face and clothing detail in this set | Cleanest viable overhead result; sleeves stay attached | 21/22 body bones; arms, legs, and all fingers pass | 14.4 MB before TKA optimization | Current product | Advance to three-avatar export trial |
-| Avaturn Mixamo sample | Cannot grade textures because the public FBX contains none | Body weights run, but the texture-free sample is not a visual comparison | 21/22 body bones; arms, legs, and all fingers pass | 0.7 MB | Current product | Keep as a rig fallback candidate |
-| Ready Player Me archived sample | Better than the current source | Arms, legs, and fingers run | 21/22 body bones; arms, legs, and all fingers pass | 3.8 MB | Discontinued | Disqualified |
+| Candidate                        | Visual result                                              | TKA deformation                                                          | Rig result                                                          |                         Payload | Availability            | Verdict                                             |
+| -------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------- | ------------------------------: | ----------------------- | --------------------------------------------------- |
+| Current ch01, raw                | Weak face and flat clothing                                | Shoulder gaps and poor overhead silhouette                               | 22/22 body bones; arms and legs pass; finger map fails              |                         61.5 MB | Already owned           | Reject as the future source                         |
+| Current ch01, optimized          | No meaningful visual loss from raw at the test camera      | Same deformation as raw                                                  | Same rig result as raw                                              |                          2.4 MB | In production           | Keep only until replaced                            |
+| Avatar SDK MetaPerson sample     | Best viable face and clothing detail in this set           | Cleanest viable overhead result; sleeves stay attached                   | 21/22 body bones; arms, legs, and all fingers pass                  | 14.4 MB before TKA optimization | Current product         | Advance to three-avatar export trial                |
+| Personal MetaPerson photo export | Strong face, hair, leather, and clothing detail            | All five stress poses stay connected                                     | 73-joint rig; 22/22 source body bones; arms, legs, and fingers pass |                         12.2 MB | Evaluation license only | Pass locally; do not ship without commercial rights |
+| Avaturn Mixamo sample            | Cannot grade textures because the public FBX contains none | Body weights run, but the texture-free sample is not a visual comparison | 21/22 body bones; arms, legs, and all fingers pass                  |                          0.7 MB | Current product         | Keep as a rig fallback candidate                    |
+| Ready Player Me archived sample  | Better than the current source                             | Arms, legs, and fingers run                                              | 21/22 body bones; arms, legs, and all fingers pass                  |                          3.8 MB | Discontinued            | Disqualified                                        |
 
-The current source maps `Spine2`; the three external rigs map 21 of TKA's 22
-canonical body bones and omit `Spine2`. This did not stop arm, leg, or finger
-animation in the bake-off, but a production import would need either an
-explicit chest alias or proof that torso twist stays correct without it.
+The original 21/22 external-rig result exposed a mapper defect, not a proven
+missing chest bone. `Spine1` is also a common zero-based alias for `Spine`, and
+`Spine2` is also a common alias for `Spine1`. The mapper checked those aliases
+before exact canonical names, which shifted a correctly named three-level spine
+down by one slot. It now preserves exact TKA bone names before trying vendor
+aliases. The personal export contains and maps all three spine levels.
+
+## Personal export provenance
+
+- Source: MetaPerson Creator photo export, LOD1 GLB, 1K textures
+- Export date: 2026-08-29
+- Original archive: `D:/Downloads/avatar.zip`
+- Model SHA-256: `C76CC4897B324A30D2128AE9D4EA1B2B8E97C6A07BE154C029ACD6E3C44A5CF4`
+- Geometry: 12 skinned meshes, 37,482 uploaded vertices, 157,626 render
+  vertices
+- Rig: one 73-joint skin with canonical body, limb, toe, and 30 finger bones
+- Materials: embedded 1K and 512 JPEG PBR textures, including normal and
+  metallic-roughness maps
+- Animation clips: none; TKA supplies animation through the shared skeleton
+- License boundary: evaluation only because Commercial use was not selected
+  during export
+
+The existing skinning-safe avatar optimizer was also tested. Re-encoding the
+already compressed JPEG textures to WebP increased this model from 12.15 MB to
+12.25 MB, so the raw GLB remains the better evaluation file. Geometry
+compression was not applied because the canonical avatar loader does not
+configure a Draco or Meshopt decoder, and changing that delivery contract needs
+a separate production asset pass.
 
 ## What the Meta release actually gives us
 
@@ -118,9 +147,12 @@ hosted creators do not meet the visual bar.
 
 ## Next experiment and stop conditions
 
-Use MetaPerson's existing creator or trial to make three distinct avatars from
-real photos, including one difficult face and one loose outfit. Export GLB at
-LOD1 with 1K WebP textures and the standard bind pose, then run this same route.
+Do not spend another export until the commercial-use terms for a generated GLB
+fit TKA's budget and storage model. If they do, create two additional licensed
+avatars from distinct real photos, including one difficult face and one loose
+outfit. Export LOD1 GLB with 1K textures and the standard bind pose, then run
+this same route. The personal evaluation export remains the first test in that
+three-avatar set.
 
 Advance to a production creator only if all three exports meet these checks:
 
