@@ -48,10 +48,10 @@
   "artifacts": {
     "blend": "blender/ember-volcanic-world-production-slice-r10.blend",
     "rawGlb": "static/models/ember/ember-production-slice_raw.glb",
-    "rawGlbSha256": "28aab770d29055065e6b4b4adf2ab53d1df31dee0ffd91a5c80e223621912e36",
-    "rawGlbBytes": 14777116,
+    "rawGlbSha256": "94bbeb82139d40924cebebaf92ed40d2a719b404a7c20b4268685d8cf4869453",
+    "rawGlbBytes": 14777292,
     "worldContract": "src/lib/shared/3d/environments/domain/models/scene-configs/ember-volcanic-world-r7.json",
-    "worldContractSha256": "da17fad5fd4be2b7b97772c2df5f37be87d8deda5e07866361c63c99858bce70"
+    "worldContractSha256": "ba090228a2a47d772966a4bdd0f40e90ec343a236fe782d5473c823a4dff9275"
   },
   "contract": {
     "stageSurfaceLocalY": 0.5,
@@ -268,12 +268,12 @@
       "min": [
         -190.0,
         -190.0,
-        -6.3883
+        -6.3383
       ],
       "max": [
         190.0,
         206.1728,
-        51.3248
+        51.3748
       ]
     }
   },

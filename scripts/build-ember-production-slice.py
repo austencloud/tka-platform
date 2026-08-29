@@ -2020,12 +2020,13 @@ def r8_geological_height(
         # Keep the continuous basin just below the playable blackglass skin.
         # At the old generic -0.36 m base, every buried shelf stratum and crust
         # transition was exposed edge-on from the audience and hero cameras,
-        # turning the foreground into a stack of polygon sheets. The 6 cm
-        # reveal preserves the authored action surface while the surrounding
-        # country now swallows all of that construction geometry.
-        living_base = float(WORLD_CONTRACT["terrain"]["actionTerrainBaseHeight"]) + terrain_weight * (
-            0.02 + radial_distance * 0.003
-        )
+        # turning the foreground into a stack of polygon sheets. A one
+        # centimeter reveal keeps the authored skin unambiguous while the
+        # surrounding country swallows all construction geometry at the low
+        # audience camera.
+        living_base = float(
+            WORLD_CONTRACT["terrain"]["actionTerrainBaseHeight"]
+        ) + terrain_weight * (0.02 + radial_distance * 0.003)
         return living_base + terrain_weight * (
             north_west_wall
             + north_east_wall
