@@ -101,6 +101,32 @@
       : "Last pass removed. Start again whenever you are ready.";
   }
 
+  function handleKeydown(event: KeyboardEvent): void {
+    const target = event.target;
+    const isEditingText =
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable);
+    const isUndoShortcut =
+      event.key.toLowerCase() === "z" &&
+      (event.ctrlKey || event.metaKey) &&
+      !event.altKey &&
+      !event.shiftKey;
+
+    if (
+      !isUndoShortcut ||
+      isEditingText ||
+      drawing ||
+      saving ||
+      !undoHistory.length
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    undo();
+  }
+
   function clear(): void {
     if (!points.length) return;
     undoHistory = [...undoHistory, points.map((point) => ({ ...point }))];
@@ -139,6 +165,8 @@
     }
   }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <svelte:head>
   <title>Trace the Lower Campground Loop</title>
@@ -207,6 +235,7 @@
         type="button"
         class="secondary"
         onclick={undo}
+        aria-keyshortcuts="Control+Z Meta+Z"
         disabled={saving || !undoHistory.length}
       >
         Undo
