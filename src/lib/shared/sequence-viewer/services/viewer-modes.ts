@@ -112,3 +112,17 @@ export function coerce3DSplit(config: SplitConfig, fits3D: boolean): SplitConfig
 export function legacyViewModeFor(mode: ViewerMode): 'animation' | 'image' | 'split' {
 	return mode === 'card' ? 'image' : 'animation';
 }
+
+/**
+ * An explicit render query is share-link state, so it outranks the viewer mode
+ * remembered on this device. Without this bridge a `?render=3d` permalink can
+ * reopen an unrelated local surface such as Performances while only changing
+ * the renderer hidden underneath it.
+ */
+export function viewerModeForRenderMode(
+	renderMode: '2d' | '3d' | null
+): ViewerMode | undefined {
+	if (renderMode === '3d') return 'animation-3d';
+	if (renderMode === '2d') return 'animation';
+	return undefined;
+}

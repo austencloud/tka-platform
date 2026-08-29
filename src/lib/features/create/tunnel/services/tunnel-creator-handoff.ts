@@ -1,5 +1,6 @@
 import type { CollectedTunnel } from "$lib/features/tunnel-collection/domain/tunnel-collection-types";
 import { collectedTunnelComposition } from "$lib/features/tunnel-collection/domain/collected-tunnel-source";
+import { migrateTunnelArtifact } from "$lib/features/tunnel-collection/domain/tunnel-artifact-migration";
 import type { TunnelComposition } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
 import {
   TunnelSnapshotSchema,
@@ -35,10 +36,18 @@ export interface TunnelCreatorHandoff {
   createdAt: number;
 }
 
-export function saveTunnelCreatorHandoff(tunnel: CollectedTunnel): void {
-  if (typeof sessionStorage === "undefined") return;
-
-  const handoff: TunnelCreatorHandoff = {
+/**
+ * Resolve one collection entry into the exact editor input used by every
+ * Tunnel entry point. The in-tab library calls this directly; Browse persists
+ * the same value across its module switch. Keeping migration and truthful
+ * legacy reconstruction here prevents the two doors from disagreeing.
+ */
+export function createTunnelCreatorHandoff(
+  collected: CollectedTunnel,
+  now: () => number = Date.now
+): TunnelCreatorHandoff {
+  const tunnel = migrateTunnelArtifact(collected).tunnel;
+  return {
     tunnelId: tunnel.id,
     tunnelName: tunnel.name,
     ...(tunnel.poster ? { poster: tunnel.poster } : {}),
@@ -46,8 +55,14 @@ export function saveTunnelCreatorHandoff(tunnel: CollectedTunnel): void {
     snapshot: tunnel.snapshot,
     formation: tunnel.snapshot.tunnel.config,
     presetRecipe: tunnel.snapshot.tunnel.presetRecipe ?? null,
-    createdAt: Date.now(),
+    createdAt: now(),
   };
+}
+
+export function saveTunnelCreatorHandoff(tunnel: CollectedTunnel): void {
+  if (typeof sessionStorage === "undefined") return;
+
+  const handoff = createTunnelCreatorHandoff(tunnel);
 
   try {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(handoff));
@@ -90,7 +105,7 @@ export function consumeTunnelCreatorHandoff(): TunnelCreatorHandoff | null {
       presetRecipe:
         handoff.presetRecipe ??
         (parsedSnapshot.success
-          ? parsedSnapshot.data.tunnel.presetRecipe ?? null
+          ? (parsedSnapshot.data.tunnel.presetRecipe ?? null)
           : null),
       createdAt:
         typeof handoff.createdAt === "number" ? handoff.createdAt : Date.now(),

@@ -27,6 +27,9 @@ export enum PropType {
   FIRE_DOUBLE_STAFF = "fire_double_staff",
 
   CLUB = "club",
+  // The original flat 2D scan. It shares Club's physical geometry but remains
+  // selectable as a visual build beside the regular material-rendered club.
+  CLASSIC_CLUB = "classic_club",
   BIGCLUB = "bigclub",
 
   FAN = "fan",

@@ -100,6 +100,8 @@ with pre-prepared data for better performance.
     // When provided, passed to PictographPreparer for consistency during async operations
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
+    blueColorOverride = undefined,
+    redColorOverride = undefined,
     // Width multiplier for expanded timeline cells (1 = normal square, >1 = wider)
     widthMultiplier = 1,
     // Cell index for position caching (enables smooth transitions on regeneration)
@@ -166,6 +168,10 @@ with pre-prepared data for better performance.
     bluePropTypeOverride?: PropType;
     /** Explicit prop type for red hand. Export/thumbnail rendering provides this for consistency. */
     redPropTypeOverride?: PropType;
+    /** Display-only color for the blue-hand prop and arrow. */
+    blueColorOverride?: string;
+    /** Display-only color for the red-hand prop and arrow. */
+    redColorOverride?: string;
     /** Width multiplier for expanded timeline cells (1 = normal square, >1 = wider viewBox) */
     widthMultiplier?: number;
     /** Cell index for position caching (enables smooth transitions on regeneration) */
@@ -667,6 +673,8 @@ with pre-prepared data for better performance.
         {propRenderContext}
         {printMode}
         {transparentBackground}
+        {blueColorOverride}
+        {redColorOverride}
         {onToggleTKA}
         {onToggleTnD}
         {onToggleElemental}
@@ -713,6 +721,8 @@ with pre-prepared data for better performance.
             {propRenderContext}
             {printMode}
             {transparentBackground}
+            {blueColorOverride}
+            {redColorOverride}
             {onToggleTKA}
             {onToggleTnD}
             {onToggleElemental}

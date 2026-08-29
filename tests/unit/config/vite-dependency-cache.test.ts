@@ -129,6 +129,20 @@ describe("createViteDependencyCachePlan", () => {
       reason: "invalid-metadata",
     });
   });
+
+  it("forces one clean optimizer pass after startup repairs the install", () => {
+    const projectRoot = createTemporaryProject();
+
+    expect(
+      createViteDependencyCachePlan({
+        env: { TKA_FORCE_VITE_DEPS: "1" },
+        projectRoot,
+      })
+    ).toMatchObject({
+      forceRefresh: true,
+      reason: "repaired-install",
+    });
+  });
 });
 
 describe("Vite dependency state paths", () => {

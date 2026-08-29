@@ -128,13 +128,13 @@ function makeBoxBetaStep(
   };
 }
 
-function makeQuarterTurnPictograph(): PictographData {
+function makeQuarterTurnPictograph(turns = 0.25): PictographData {
   const pictograph = makeBoxBetaStep(
     GridLocation.NORTHEAST,
     GridLocation.SOUTHWEST,
     GridLocation.SOUTHEAST
   );
-  pictograph.motions.blue.turns = 0.25;
+  pictograph.motions.blue.turns = turns;
   return pictograph;
 }
 
@@ -231,6 +231,21 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
       expect(key).toContain('"turnGlyphRevision":"quarter-turn-glyph-v1"');
     });
 
+    it.each([0.75, 1.25, 1.75, 2.25, 2.75])(
+      "rekeys raster cells that display the completed %s tuple glyph",
+      (turns) => {
+        const key = deriver.deriveCacheKey(
+          makeQuarterTurnPictograph(turns),
+          undefined,
+          false,
+          makeOptions({ showTKA: true })
+        );
+
+        expect(key).toMatch(/^lsp11-/);
+        expect(key).toContain('"turnGlyphRevision":"quarter-turn-glyph-v2"');
+      }
+    );
+
     it("preserves existing keys when the TKA tuple is hidden", () => {
       const key = deriver.deriveCacheKey(
         makeQuarterTurnPictograph(),
@@ -316,6 +331,60 @@ describe("CellCacheKeyDeriver (lsp11/lsp12 composition)", () => {
       );
 
       expect(staffKey).not.toBe(fanKey);
+    });
+  });
+
+  describe("targeted authored-prop appearance revision", () => {
+    it("rekeys club rasters without invalidating staff rasters", () => {
+      const data = makeStartPosition();
+      const clubKey = deriver.deriveCacheKey(
+        data,
+        undefined,
+        true,
+        makeOptions({ bluePropType: PropType.CLUB })
+      );
+      const staffKey = deriver.deriveCacheKey(
+        data,
+        undefined,
+        true,
+        makeOptions({ bluePropType: PropType.STAFF })
+      );
+
+      expect(clubKey).toContain('"propAppearanceRevision":"club-art-v2"');
+      expect(staffKey).not.toContain("propAppearanceRevision");
+    });
+
+    it("rekeys a cat/dog cell when either effective prop uses the revised club art", () => {
+      const key = deriver.deriveCacheKey(
+        makeStartPosition(),
+        undefined,
+        true,
+        makeOptions({
+          bluePropType: PropType.STAFF,
+          redPropType: PropType.CLUB,
+          catDogModeEnabled: true,
+        })
+      );
+
+      expect(key).toContain('"propAppearanceRevision":"club-art-v2"');
+    });
+
+    it("keeps Regular and Classic Club raster identities separate", () => {
+      const regular = deriver.deriveCacheKey(
+        makeStartPosition(),
+        undefined,
+        true,
+        makeOptions({ bluePropType: PropType.CLUB })
+      );
+      const classic = deriver.deriveCacheKey(
+        makeStartPosition(),
+        undefined,
+        true,
+        makeOptions({ bluePropType: PropType.CLASSIC_CLUB })
+      );
+
+      expect(regular).not.toBe(classic);
+      expect(classic).toContain('"bluePropType":"classic_club"');
     });
   });
 

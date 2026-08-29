@@ -57,6 +57,10 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
       image: "/images/props/buttons/club.svg",
       category: "staves-clubs",
     },
+    [PropType.CLASSIC_CLUB]: {
+      label: "Classic Club",
+      image: "/images/props/buttons/classic_club.svg",
+    },
     [PropType.BIGCLUB]: {
       label: "Big Club",
       image: "/images/props/buttons/bigclub.svg",
@@ -335,6 +339,7 @@ export const VARIANT_PROP_TYPES: PropType[] = [
   PropType.CAPSULE_BATON,
   PropType.FIRE_DOUBLE_STAFF,
   // Club family
+  PropType.CLASSIC_CLUB,
   PropType.TORCH,
   PropType.BIGCLUB,
   PropType.BIGTORCH,
@@ -375,6 +380,7 @@ const VARIANT_TO_BASE: Partial<Record<PropType, PropType>> = {
   [PropType.CAPSULE_BATON]: PropType.STAFF,
   [PropType.FIRE_DOUBLE_STAFF]: PropType.STAFF,
   // Club variations
+  [PropType.CLASSIC_CLUB]: PropType.CLUB,
   [PropType.TORCH]: PropType.CLUB,
   [PropType.BIGCLUB]: PropType.CLUB,
   [PropType.BIGTORCH]: PropType.CLUB,
@@ -417,7 +423,12 @@ const BASE_TO_VARIANTS: Partial<Record<PropType, PropType[]>> = {
     PropType.BIGSTAFF,
     PropType.STAFF2,
   ],
-  [PropType.CLUB]: [PropType.TORCH, PropType.BIGCLUB, PropType.BIGTORCH],
+  [PropType.CLUB]: [
+    PropType.CLASSIC_CLUB,
+    PropType.TORCH,
+    PropType.BIGCLUB,
+    PropType.BIGTORCH,
+  ],
   [PropType.FAN]: [PropType.BIGFAN],
   [PropType.TRIAD]: [PropType.TRIGENG, PropType.BIGTRIAD],
   [PropType.MINIHOOP]: [PropType.BIGHOOP],
@@ -449,6 +460,18 @@ export function hasVariations(propType: PropType): boolean {
  */
 export function getBasePropType(propType: PropType): PropType {
   return VARIANT_TO_BASE[propType] ?? propType;
+}
+
+/**
+ * A family tile opens the base family's chooser, but its artwork should show
+ * the exact build the user chose. Otherwise selecting LED Baton appears to
+ * snap back to Double Staff even though the saved prop value is correct.
+ */
+export function getFamilyTileDisplayProp(
+  base: PropType,
+  selectedPropType: PropType
+): PropType {
+  return getBasePropType(selectedPropType) === base ? selectedPropType : base;
 }
 
 /**
@@ -633,6 +656,7 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
       PropType.CAPSULE_BATON,
       PropType.FIRE_DOUBLE_STAFF,
       PropType.CLUB,
+      PropType.CLASSIC_CLUB,
       PropType.FAN,
       PropType.TRIAD,
       PropType.MINIHOOP,

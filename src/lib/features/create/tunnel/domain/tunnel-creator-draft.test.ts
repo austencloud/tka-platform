@@ -49,6 +49,7 @@ describe("tunnel creator draft", () => {
   it("round-trips a partial separate-mode draft", () => {
     const draft: TunnelCreatorDraft = {
       version: TUNNEL_CREATOR_DRAFT_VERSION,
+      workflow: "custom",
       mode: "separate",
       composition: createTunnelComposition([
         createIndependentTunnelPerformer(sequence, 0, "Performer 1"),
@@ -96,6 +97,7 @@ describe("tunnel creator draft", () => {
     };
     const draft: TunnelCreatorDraft = {
       version: TUNNEL_CREATOR_DRAFT_VERSION,
+      workflow: "seeded",
       mode: "linked",
       composition: null,
       relationship: {
@@ -204,10 +206,99 @@ describe("tunnel creator draft", () => {
     expect(migrated?.presentation).toBeNull();
   });
 
+  it("migrates a version-four draft and derives workflow without rewriting its cast", () => {
+    const composition = createTunnelComposition([
+      createIndependentTunnelPerformer(sequence, 0, "Performer 1"),
+    ]);
+    const legacy = {
+      version: 4,
+      mode: "linked",
+      composition,
+      relationship: {
+        rotationSteps: 0,
+        reflect: "none",
+        invert: false,
+        rewind: false,
+      },
+      sourceStates: [],
+      workspace: { activePanel: null, generationTargetId: null },
+      editingTunnel: null,
+      presentation,
+    };
+
+    const migrated = parseTunnelCreatorDraft(legacy);
+
+    expect(migrated?.version).toBe(TUNNEL_CREATOR_DRAFT_VERSION);
+    expect(migrated?.workflow).toBe("seeded");
+    expect(migrated?.composition).toEqual(composition);
+    expect(migrated?.presentation).toEqual(presentation);
+  });
+
+  it("round-trips generated and library source provenance without approximating it", () => {
+    const generated = {
+      kind: "generator-recipe" as const,
+      version: 1 as const,
+      setup: {
+        config: {
+          length: 12,
+          level: 3,
+          gridMode: "box",
+          loopEnabled: true,
+          loopType: "mirrored",
+        },
+        startEndOptions: { endPositions: ["alpha1", "beta3"] },
+      },
+    };
+    const library = {
+      kind: "library-sequence" as const,
+      version: 1 as const,
+      sequenceId: "public-sequence-9",
+      scope: "public" as const,
+    };
+    const draft: TunnelCreatorDraft = {
+      version: TUNNEL_CREATOR_DRAFT_VERSION,
+      workflow: "custom",
+      mode: "separate",
+      composition: null,
+      relationship: {
+        rotationSteps: 0,
+        reflect: "none",
+        invert: false,
+        rewind: false,
+      },
+      sourceStates: [
+        {
+          performerId: "performer-1",
+          label: "Performer 1",
+          independentSequence: sequence,
+          origin: "generated",
+          sourceSequenceId: sequence.id,
+          provenance: generated,
+          previous: [
+            {
+              sequence,
+              origin: "picked",
+              sourceSequenceId: library.sequenceId,
+              provenance: library,
+            },
+          ],
+        },
+      ],
+      workspace: { activePanel: null, generationTargetId: null },
+      editingTunnel: null,
+      presentation,
+    };
+
+    expect(parseTunnelCreatorDraft(JSON.parse(JSON.stringify(draft)))).toEqual(
+      draft
+    );
+  });
+
   it("rejects malformed drafts instead of partially restoring them", () => {
     expect(
       parseTunnelCreatorDraft({
         version: TUNNEL_CREATOR_DRAFT_VERSION,
+        workflow: "seeded",
         mode: "linked",
         composition: { performers: [] },
         relationship: {},

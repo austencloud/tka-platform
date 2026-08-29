@@ -115,23 +115,28 @@
       float combined = n1 * 0.5 + n2 * 0.35 + n3 * 0.15;
       combined = pow(combined, 1.25);
 
-      vec3 color = mix(uColor1, uColor2, n2);
+      float lowAtmosphere = smoothstep(0.34, -0.32, dir.y);
+      vec3 color = mix(uColor2, uColor1, lowAtmosphere * (0.5 + n2 * 0.32));
 
       // === Volcanic hemisphere glow ===
       // Lit from below — bottom hemisphere glows warmly
       float bottomGlow = smoothstep(0.1, -0.6, dir.y);
-      float topFade = smoothstep(0.3, -0.15, dir.y);
+      float topFade = smoothstep(0.34, -0.2, dir.y);
       // Cut visible cloud bodies out of the noise instead of tinting the whole
       // dome evenly. The old low-contrast wash was the flat graybox ceiling.
-      float cloudBody = smoothstep(0.18, 0.62, combined);
-      float alpha = cloudBody * uOpacity * topFade;
+      float cloudBody = smoothstep(0.4, 0.7, combined);
+      float strata = 0.78 + snoise(
+        vec3(dir.x * 7.0, dir.y * 1.4, dir.z * 7.0)
+          + vec3(uTime * 0.018)
+      ) * 0.22;
+      float alpha = cloudBody * strata * uOpacity * topFade;
 
       // Horizon boost — volcanic glow at eye level
-      float horizonBoost = exp(-abs(dir.y) * 3.5) * 0.5;
-      alpha += horizonBoost * uOpacity;
+      float horizonBoost = exp(-pow(abs(dir.y) * 5.2, 1.45)) * 0.24;
+      alpha += horizonBoost * uOpacity * (0.72 + combined * 0.28);
 
       // Warm underglow
-      color = mix(color, vec3(0.5, 0.12, 0.0), bottomGlow * 0.6);
+      color = mix(color, vec3(0.46, 0.11, 0.015), bottomGlow * 0.42);
 
       // === Lightning flashes ===
       float flashCycle = mod(uTime / uLightningInterval, 1.0);

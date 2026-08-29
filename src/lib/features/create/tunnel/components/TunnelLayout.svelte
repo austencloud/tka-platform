@@ -7,20 +7,35 @@
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import PanelHeader from "$lib/shared/create/components/PanelHeader.svelte";
   import GeneratePanel from "$lib/features/create/generate/components/GeneratePanel.svelte";
+  import type { SetupSnapshot } from "$lib/features/create/generate/domain/setup-snapshot";
   import type { GenerationAnimationTarget } from "$lib/features/create/generate/state/generate-actions.svelte";
   import { createSequenceState } from "$lib/features/create/shared/state/sequence-state-orchestrator.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import TunnelArtSettings from "$lib/shared/sequence-viewer/components/art-settings/TunnelArtSettings.svelte";
   import TunnelArtView from "$lib/shared/sequence-viewer/tunnel/TunnelArtView.svelte";
-  import { copyOpsLabel } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
+  import {
+    copyOpsLabel,
+    type GeneratorTunnelSourceProvenance,
+  } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
+  import { FOLD_OPTIONS } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
   import { TunnelViewController } from "$lib/shared/sequence-viewer/tunnel/tunnel-view-controller.svelte";
   import TkaLabel from "$lib/shared/components/TkaLabel.svelte";
   import { getTunnelCreatorContext } from "../context/tunnel-creator-context";
   import TunnelPerformerRoster from "./TunnelPerformerRoster.svelte";
   import TunnelRelationshipEditor from "./TunnelRelationshipEditor.svelte";
   import ShapeMatrixTunnelSourcePicker from "./ShapeMatrixTunnelSourcePicker.svelte";
+  import TunnelRecipeRail from "./TunnelRecipeRail.svelte";
   import type { ModeRealization } from "$lib/shared/shape-matrix/services/build-mode-realizations";
+  import type { SequenceSource } from "$lib/shared/browse/engine/types";
+
+  let {
+    onOpenLibrary,
+    collectionCount = 0,
+  }: {
+    onOpenLibrary: () => void;
+    collectionCount?: number;
+  } = $props();
 
   type TunnelInspector = "settings" | "pairing" | "generation";
 
@@ -28,6 +43,10 @@
   let syncingGenerationSequence = false;
   let syncedGenerationSource = $state<string | null>(null);
   let generateCurrentRecipe = $state<(() => Promise<void>) | null>(null);
+  let captureCurrentSetup = $state<(() => SetupSnapshot) | null>(null);
+  let applyGenerationSetup = $state<((setup: SetupSnapshot) => void) | null>(
+    null
+  );
   type GenerationCardRef = {
     prepareGenerationAnimation: (
       performerId: string,
@@ -40,10 +59,22 @@
     onCurrentSequenceChange(sequence) {
       if (syncingGenerationSequence || !sequence || !creator.generationTargetId)
         return;
+      const setup = captureCurrentSetup?.();
+      const provenance: GeneratorTunnelSourceProvenance | undefined = setup
+        ? {
+            kind: "generator-recipe",
+            version: 1,
+            setup: setup as unknown as GeneratorTunnelSourceProvenance["setup"],
+          }
+        : undefined;
       creator.setPerformerSequence(
         creator.generationTargetId,
         sequence,
-        "generated"
+        "generated",
+        {
+          sourceSequenceId: sequence.id,
+          ...(provenance ? { provenance } : {}),
+        }
       );
     },
   });
@@ -54,6 +85,7 @@
         sequence: SequenceData | null;
         stageTransformLabel: string | null;
         generatedInstanceCount: number;
+        stageArms: number[];
       }
     >
   >({});
@@ -63,7 +95,7 @@
       creator.previewCompositionWithFormation(creator.initialFormation),
     onLayersChange: (layers) => {
       const next: typeof performerDisplays = {};
-      for (const layer of layers) {
+      for (const [arm, layer] of layers.entries()) {
         const current = next[layer.performerId];
         next[layer.performerId] = {
           sequence: current?.sequence ?? layer.sequence,
@@ -73,6 +105,7 @@
               ? copyOpsLabel(layer.formationOps)
               : null),
           generatedInstanceCount: (current?.generatedInstanceCount ?? 0) + 1,
+          stageArms: [...(current?.stageArms ?? []), arm],
         };
       }
       performerDisplays = next;
@@ -199,21 +232,46 @@
     creator.openPairingPanel(targetId);
   }
 
-  function openGeneration(targetId: string): void {
-    creator.openGenerationPanel(targetId);
+  function generatorSetupFor(targetId: string): SetupSnapshot | null {
+    const performer = creator.performerSlots.find(
+      (slot) => slot.id === targetId
+    )?.performer;
+    if (performer?.source.kind !== "independent") return null;
+    const provenance = performer.source.provenance;
+    return provenance?.kind === "generator-recipe"
+      ? (provenance.setup as unknown as SetupSnapshot)
+      : null;
+  }
+
+  async function openGeneration(targetId: string): Promise<void> {
+    if (!creator.openGenerationPanel(targetId)) return;
+    await tick();
+    const setup = generatorSetupFor(targetId);
+    if (setup) applyGenerationSetup?.(setup);
   }
 
   async function generatePerformer(targetId: string): Promise<void> {
     if (!creator.selectGenerationTarget(targetId)) return;
     await tick();
+    const setup = generatorSetupFor(targetId);
+    if (setup) applyGenerationSetup?.(setup);
     await generateCurrentRecipe?.();
   }
 
   function selectPickedSequence(
-    sequence: Parameters<typeof creator.setLeadSequence>[0]
+    sequence: Parameters<typeof creator.setLeadSequence>[0],
+    source: SequenceSource
   ): void {
     if (creator.pickerTarget) {
-      creator.setPerformerSequence(creator.pickerTarget, sequence, "picked");
+      creator.setPerformerSequence(creator.pickerTarget, sequence, "picked", {
+        sourceSequenceId: sequence.id,
+        provenance: {
+          kind: "library-sequence",
+          version: 1,
+          sequenceId: sequence.id,
+          scope: source === "my-library" ? "personal" : "public",
+        },
+      });
     }
   }
 
@@ -232,6 +290,17 @@
 
   function changeProp(prop: PropType): void {
     creator.presentation.setPropType(prop);
+  }
+
+  function changeCastCount(count: number): void {
+    if (count > controller.performerCount) {
+      const multiplier =
+        (controller.mirror ? 2 : 1) * (controller.flip ? 2 : 1);
+      const nextFold = FOLD_OPTIONS.find((fold) => fold * multiplier >= count);
+      if (nextFold) controller.setFold(nextFold);
+      creator.setFormation(controller.config);
+    }
+    creator.setPerformerCount(count);
   }
 </script>
 
@@ -294,6 +363,8 @@
         isDesktop={!isMobile}
         {generationAnimationTarget}
         bind:generateCurrent={generateCurrentRecipe}
+        bind:captureCurrentSetup
+        bind:applySetup={applyGenerationSetup}
       />
     </div>
   </div>
@@ -338,24 +409,53 @@
       {:else}
         <div class="title-block">
           <h2>Build a tunnel</h2>
-          <p>Author up to eight performers in one formation.</p>
+          <p>
+            Compose one to four performers; generated copies stay out of the
+            cast.
+          </p>
         </div>
       {/if}
 
-      <div class="settings-trigger">
-        <PanelButton
-          variant="secondary"
-          onclick={toggleSettings}
-          ariaExpanded={settingsOpen}
-          ariaLabel={settingsOpen
-            ? "Close tunnel settings"
-            : "Open tunnel settings"}
-        >
-          <i class="fas fa-sliders" aria-hidden="true"></i>
-          <span>Tunnel settings</span>
-          <i class="fas fa-chevron-right" aria-hidden="true"></i>
-        </PanelButton>
+      <div class="workspace-actions">
+        <div class="library-trigger">
+          <PanelButton
+            variant="secondary"
+            onclick={onOpenLibrary}
+            ariaLabel={`Open tunnels; ${collectionCount} saved`}
+          >
+            <i class="fas fa-folder-open" aria-hidden="true"></i>
+            <span class="library-label">Tunnels</span>
+            <span class="library-count" aria-hidden="true"
+              >{collectionCount}</span
+            >
+          </PanelButton>
+        </div>
+        <div class="settings-trigger">
+          <PanelButton
+            variant="secondary"
+            onclick={toggleSettings}
+            ariaExpanded={settingsOpen}
+            ariaLabel={settingsOpen
+              ? "Close tunnel settings"
+              : "Open tunnel settings"}
+          >
+            <i class="fas fa-sliders" aria-hidden="true"></i>
+            <span>Tunnel settings</span>
+            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+          </PanelButton>
+        </div>
       </div>
+
+      <TunnelRecipeRail
+        {controller}
+        bpm={creator.presentation.bpm}
+        playbackMode={creator.presentation.playbackMode}
+        onCastChange={changeCastCount}
+        onOpenSettings={openSettings}
+        onOpenGeneration={(performerId) => void openGeneration(performerId)}
+        onOpenShapeMatrix={(performerId) => (shapeMatrixTarget = performerId)}
+        onOpenBrowse={(performerId) => creator.openPicker(performerId)}
+      />
     </header>
 
     <div class="source-column">
@@ -364,10 +464,12 @@
         displays={performerDisplays}
         {bluePropType}
         {redPropType}
+        spectrum={controller.spectrum}
+        renderedInstanceCount={controller.performerCount}
         onChoose={(performerId) => creator.openPicker(performerId)}
         onChooseShapeMatrix={(performerId) => (shapeMatrixTarget = performerId)}
         onGenerateNow={(performerId) => void generatePerformer(performerId)}
-        onEditGeneration={openGeneration}
+        onEditGeneration={(performerId) => void openGeneration(performerId)}
         onEditRelationship={openPairing}
         onSelectPerformer={(performerId) =>
           controller.selectAuthoredPerformer(performerId)}
@@ -385,22 +487,11 @@
             {creator.authoredPerformerCount} authored · {controller.performerCount}
             rendered instances · {controller.propCount} props
           </p>
-          {#if controller.spectrum}
-            <button
-              type="button"
-              class="spectrum-status"
-              onclick={() => (controller.spectrum = false)}
-              aria-label="Use pictograph hand colors on the tunnel stage"
-            >
-              Spectrum copies · use hand colors
-            </button>
-          {:else}
-            <div class="preview-hand-key" aria-label="Tunnel prop hand colors">
-              <span class="left"><i aria-hidden="true"></i><b>L</b> Left</span>
-              <span class="right"><i aria-hidden="true"></i><b>R</b> Right</span
-              >
-            </div>
-          {/if}
+          <p>
+            {controller.spectrum
+              ? "Spectrum stage colors"
+              : "Pictograph hand colors"}
+          </p>
         </div>
       </header>
 
@@ -582,6 +673,7 @@
     grid-area: header;
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     justify-content: space-between;
     gap: var(--settings-spacing-md, 14px);
     min-height: var(--min-touch-target, 48px);
@@ -660,10 +752,37 @@
     font-size: var(--font-size-compact, 12px);
   }
 
+  .workspace-actions {
+    display: flex;
+    align-items: center;
+    flex: 0 1 auto;
+    gap: var(--settings-spacing-sm, 8px);
+    min-width: 0;
+    margin-left: auto;
+  }
+
+  .library-trigger,
   .settings-trigger {
     flex: 0 1 auto;
     min-width: 0;
-    margin-left: auto;
+  }
+
+  .library-count {
+    display: inline-grid;
+    min-width: 1.65rem;
+    min-height: 1.65rem;
+    padding-inline: 5px;
+    place-items: center;
+    border-radius: 999px;
+    color: var(--theme-text);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 14%,
+      var(--theme-panel-bg)
+    );
+    font-size: var(--font-size-compact, 12px);
+    font-variant-numeric: tabular-nums;
+    font-weight: 750;
   }
 
   .settings-trigger :global(.panel-btn) {
@@ -754,66 +873,6 @@
 
   .preview-summary p {
     text-align: right;
-  }
-
-  .preview-hand-key {
-    display: flex;
-    gap: var(--settings-spacing-xs, 6px);
-  }
-
-  .preview-hand-key span {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    min-height: 1.6rem;
-    padding: 1px 7px;
-    border: 1px solid var(--theme-stroke);
-    border-radius: 999px;
-    color: var(--theme-text-dim);
-    background: var(--theme-card-bg);
-    font-size: var(--font-size-compact, 12px);
-    white-space: nowrap;
-  }
-
-  .preview-hand-key i {
-    width: 0.6rem;
-    height: 0.6rem;
-    border-radius: 50%;
-    background: var(--hand-color);
-  }
-
-  .preview-hand-key b {
-    color: var(--theme-text);
-  }
-
-  .preview-hand-key .left {
-    --hand-color: var(--prop-blue, #2e8bf0);
-  }
-
-  .preview-hand-key .right {
-    --hand-color: var(--prop-red, #ed1c24);
-  }
-
-  .spectrum-status {
-    min-height: var(--min-touch-target, 44px);
-    padding: 3px 9px;
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent) 45%, var(--theme-stroke));
-    border-radius: 999px;
-    color: var(--theme-accent);
-    background: color-mix(
-      in srgb,
-      var(--theme-accent) 9%,
-      var(--theme-card-bg)
-    );
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    cursor: pointer;
-  }
-
-  .spectrum-status:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 2px;
   }
 
   .frame-wrap {
@@ -1049,7 +1108,7 @@
       flex-wrap: wrap;
     }
 
-    .settings-trigger {
+    .workspace-actions {
       margin-left: auto;
     }
 
@@ -1088,6 +1147,7 @@
     }
 
     .title-block p,
+    .library-label,
     .settings-trigger :global(.panel-btn span),
     .settings-trigger :global(.panel-btn .fa-chevron-right) {
       display: none;
@@ -1098,10 +1158,26 @@
       height: 32px;
     }
 
+    .library-trigger :global(.panel-btn),
     .settings-trigger :global(.panel-btn) {
       width: var(--min-touch-target, 48px);
       min-width: var(--min-touch-target, 48px);
       padding: 0;
+    }
+
+    .library-trigger :global(.panel-btn) {
+      position: relative;
+    }
+
+    .library-count {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 1.25rem;
+      min-height: 1.25rem;
+      padding-inline: 3px;
+      border: 1px solid var(--theme-panel-bg);
+      font-size: 10px;
     }
 
     .stage-controls {

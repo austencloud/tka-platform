@@ -21,15 +21,26 @@
   const vertexShader = /* glsl */ `
     uniform float uTime;
     varying vec2 vUv;
+    varying vec3 vWorldPosition;
     #include <fog_pars_vertex>
 
     void main() {
       vUv = uv;
       vec3 pos = position;
       float bankWeight = sin(clamp(vUv.y, 0.0, 1.0) * 3.14159265);
-      float longWave = sin(vUv.x * 48.0 - uTime * 2.4) * 0.026;
-      float crossWave = sin(vUv.x * 19.0 + vUv.y * 9.0 - uTime * 1.35) * 0.018;
-      pos.y += (longWave + crossWave) * bankWeight;
+      float travellingFold = sin(
+        vUv.x * 22.0
+        + sin(vUv.y * 6.28318) * 0.8
+        - uTime * 1.45
+      ) * 0.034;
+      float convectionRoll = sin(
+        vUv.x * 8.5
+        - vUv.y * 5.0
+        - uTime * 0.52
+      ) * 0.018;
+      pos.y += (travellingFold + convectionRoll) * bankWeight;
+      vec4 worldPosition = modelMatrix * vec4(pos, 1.0);
+      vWorldPosition = worldPosition.xyz;
       vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
       gl_Position = projectionMatrix * mvPosition;
       #include <fog_vertex>
@@ -44,6 +55,7 @@
     uniform float uWarpIntensity;
     uniform float uCrustCoverage;
     varying vec2 vUv;
+    varying vec3 vWorldPosition;
     #include <fog_pars_fragment>
 
     float hash(vec2 p) {
@@ -89,24 +101,78 @@
 
       float broadFlow = fbm(warpedUv * vec2(0.24, 0.92));
       float plateField = fbm(warpedUv * vec2(0.72, 1.18) + vec2(uTime * 0.018, 0.0));
-      float crustThreshold = 0.54 - uCrustCoverage * 0.12;
+      float bankDistance = abs(vUv.y - 0.5) * 2.0;
+      float bankCooling = smoothstep(0.48, 0.98, bankDistance);
+      float contactBreakup = noise(
+        vec2(vUv.x * 84.0 - uTime * 0.026, vUv.y * 9.0)
+      );
+      float crustThreshold = 0.705
+        - uCrustCoverage * 0.09
+        - bankCooling * (0.085 + contactBreakup * 0.025);
       float crust = smoothstep(crustThreshold - 0.045, crustThreshold + 0.035, plateField);
       float fracture = 1.0 - smoothstep(0.018, 0.058, abs(plateField - crustThreshold));
 
       float center = 1.0 - smoothstep(0.0, 1.0, abs(vUv.y - 0.5) * 2.0);
       float heat = clamp(broadFlow * 0.82 + fbm(warpedUv * 0.46 + 8.3) * 0.18, 0.0, 1.0);
-      vec3 molten = mix(uBaseColor, uHotColor, pow(heat, 2.4) * (0.22 + center * 0.24));
+      float convectionCell = smoothstep(
+        0.68,
+        0.92,
+        fbm(warpedUv * vec2(0.3, 0.74) + vec2(uTime * 0.035, 19.0))
+      );
+      vec3 molten = mix(
+        uBaseColor,
+        uHotColor,
+        pow(heat, 1.85) * (0.28 + center * 0.34)
+          + convectionCell * (0.07 + center * 0.055)
+      );
+
+      vec3 surfaceNormal = normalize(cross(
+        dFdx(vWorldPosition),
+        dFdy(vWorldPosition)
+      ));
+      if (surfaceNormal.y < 0.0) surfaceNormal *= -1.0;
+      vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
+      vec3 skyDirection = normalize(vec3(-0.42, 0.82, 0.38));
+      float coolSky = 0.68 + max(dot(surfaceNormal, skyDirection), 0.0) * 0.34;
+      float crustFresnel = pow(
+        1.0 - max(dot(surfaceNormal, viewDirection), 0.0),
+        4.0
+      );
 
       // Open channels raft dark crust downstream. Brightness survives in the
-      // seams between plates and in a restless medial lane.
-      vec3 cooledCrust = uCrustColor * (0.56 + broadFlow * 0.24);
-      vec3 color = mix(molten, cooledCrust, crust * 0.985);
-      color += uHotColor * fracture * (0.11 + center * 0.09);
+      // seams between plates. Their cooled faces still catch the cold sky, so
+      // they read as moving slabs instead of holes punched into an orange map.
+      vec3 cooledCrust = mix(
+        uCrustColor,
+        vec3(0.062, 0.068, 0.07),
+        0.72
+      ) * (0.76 + broadFlow * 0.22) * coolSky;
+      cooledCrust += vec3(0.055, 0.072, 0.078)
+        * crustFresnel
+        * (0.12 + broadFlow * 0.08);
+      vec3 color = mix(molten, cooledCrust, crust * 0.91);
+      color += uHotColor * fracture * (0.28 + center * 0.22);
       float medialLead = smoothstep(0.72, 0.92, fbm(warpedUv * vec2(0.38, 0.76) + 13.4));
-      color += uHotColor * medialLead * pow(center, 3.0) * (1.0 - crust) * 0.1;
+      float travellingLead = smoothstep(
+        0.68,
+        0.9,
+        fbm(warpedUv * vec2(0.46, 0.82) + vec2(-uTime * 0.09, 27.0))
+      );
+      color += uHotColor * medialLead * pow(center, 2.4) * (1.0 - crust) * 0.18;
+      color += uHotColor * travellingLead * fracture * (0.08 + center * 0.1);
+      color += uHotColor
+        * convectionCell
+        * (1.0 - crust)
+        * (0.028 + center * 0.035);
 
-      float bank = smoothstep(0.0, 0.16, vUv.y) * (1.0 - smoothstep(0.84, 1.0, vUv.y));
-      color = mix(uCrustColor * 0.72, color, bank);
+      float bank = smoothstep(0.0, 0.13, vUv.y)
+        * (1.0 - smoothstep(0.87, 1.0, vUv.y));
+      vec3 bankShelf = mix(
+        uCrustColor,
+        vec3(0.05, 0.047, 0.044),
+        0.76
+      ) * (0.74 + contactBreakup * 0.14) * coolSky;
+      color = mix(bankShelf, color, bank);
       gl_FragColor = vec4(color, 1.0);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
@@ -139,6 +205,7 @@
         side: DoubleSide,
         depthWrite: true,
         fog: true,
+        extensions: { derivatives: true },
         uniforms: {
           uTime: { value: 0 },
           uBaseColor: { value: new Color(config.baseColor) },
@@ -176,8 +243,8 @@
       <T.PointLight
         position={[light.x, light.y + 0.7, light.z]}
         color={index % 2 === 0 ? config.hotColor : config.baseColor}
-        intensity={index === river.lightPositions.length - 1 ? 52 : 34}
-        distance={index === river.lightPositions.length - 1 ? 18 : 15}
+        intensity={index === river.lightPositions.length - 1 ? 122 : 86}
+        distance={index === river.lightPositions.length - 1 ? 28 : 23}
         decay={2}
       />
     {/each}

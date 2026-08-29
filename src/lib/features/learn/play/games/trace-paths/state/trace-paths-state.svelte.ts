@@ -22,7 +22,7 @@
  *    up where they were.
  * 3. NO RAW POINTER TRACE LEAVES THIS MODULE. The render trail is a capped,
  *    ephemeral polyline for drawing only; the outcome handed to the arcade is
- *    aggregate metrics. Nothing sample-level is persisted or transmitted.
+ *    aggregate metrics. Nothing sample-challenge is persisted or transmitted.
  */
 
 import { getContext, setContext } from "svelte";
@@ -98,7 +98,7 @@ export type TracePauseReason =
 
 /**
  * Six independent switches. None of them gate content: Tap Route and the
- * step-through preview complete a level on their own terms, they simply don't
+ * step-through preview complete a challenge on their own terms, they simply don't
  * claim a traced score.
  */
 export interface TraceSettings {
@@ -135,7 +135,7 @@ export interface TapWaypoint {
 
 export interface TracePathsStateOptions {
   /**
-   * Multiplier on every stage-relative tolerance. Comes from the level's
+   * Multiplier on every stage-relative tolerance. Comes from the challenge's
    * `toleranceScale`. Never a pixel value — the corridor stays a fraction of
    * the stage so a phone and a 4K monitor grade identically.
    */
@@ -203,7 +203,7 @@ const MM_PER_CSS_PX = 25.4 / 96;
  */
 const TRAIL_CAP = 240;
 
-/** Scale every tolerance radius by the level's forgiveness multiplier. */
+/** Scale every tolerance radius by the challenge's forgiveness multiplier. */
 function scaledConfig(
   scale: number,
   stageSideMm: number
@@ -576,7 +576,10 @@ export function createTracePathsState(options: TracePathsStateOptions = {}) {
     if (!evaluator) return;
     const snapshot = evaluator.state;
 
-    if (snapshot.completedBeats >= snapshot.totalBeats && snapshot.totalBeats > 0) {
+    if (
+      snapshot.completedBeats >= snapshot.totalBeats &&
+      snapshot.totalBeats > 0
+    ) {
       finishRound();
       return;
     }
@@ -756,7 +759,8 @@ export function createTracePathsState(options: TracePathsStateOptions = {}) {
     if (phase.name !== "arming" && phase.name !== "tracing") return;
     if (evaluator) {
       for (const entry of pointers.values()) {
-        if (entry.roundToken === roundToken) evaluator.notifyInterruption(entry.hand);
+        if (entry.roundToken === roundToken)
+          evaluator.notifyInterruption(entry.hand);
       }
     }
     const resumeTo = phase.name;
@@ -833,7 +837,8 @@ export function createTracePathsState(options: TracePathsStateOptions = {}) {
       corridorExcursions: [],
       checkpointsHit: 0,
       checkpointsTotal: 0,
-      elapsedMs: roundStartedAtMs > 0 ? performance.now() - roundStartedAtMs : 0,
+      elapsedMs:
+        roundStartedAtMs > 0 ? performance.now() - roundStartedAtMs : 0,
       divergence: null,
     };
     const score = scoreTraceRound(metrics);

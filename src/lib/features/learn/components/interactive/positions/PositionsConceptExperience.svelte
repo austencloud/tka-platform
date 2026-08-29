@@ -23,8 +23,9 @@
   import LessonGridDisplay from "$lib/shared/pictograph/grid/components/LessonGridDisplay.svelte";
   import type { ExperienceViewMode } from "../../../domain/types";
 
-  let { onComplete, viewMode = "step" } = $props<{
+  let { onComplete, onBack, viewMode = "step" } = $props<{
     onComplete?: () => void;
+    onBack?: () => void;
     viewMode?: ExperienceViewMode;
   }>();
 
@@ -257,7 +258,11 @@
 
   // Lets the shell's header Back step within the lesson before closing.
   export function handleBack() {
-    if (i > 0) go(i - 1);
+    if (i > 0) {
+      go(i - 1);
+      return;
+    }
+    onBack?.();
   }
 </script>
 

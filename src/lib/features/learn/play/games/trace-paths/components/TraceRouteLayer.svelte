@@ -28,7 +28,10 @@ Three things it is careful about:
     TraceHand,
     TraceSegment,
   } from "../domain/trace-types";
-  import { segmentEndPoint, segmentStartPoint } from "../state/trace-paths-state.svelte";
+  import {
+    segmentEndPoint,
+    segmentStartPoint,
+  } from "../state/trace-paths-state.svelte";
 
   interface TapWaypoint {
     hand: TraceHand;
@@ -44,7 +47,7 @@ Three things it is careful about:
     /** Per-hand ephemeral fingertip trail, render-only. */
     trail: (hand: TraceHand) => readonly NormalizedPoint[];
     armed: Partial<Record<TraceHand, boolean>>;
-    /** Beginner levels keep the rail up; later levels fade it once the hands are set. */
+    /** Beginner challenges keep the rail up; later challenges fade it once the hands are set. */
     showRoute: boolean;
     /** True while the player is still placing fingers — the start targets lead. */
     isArming: boolean;
@@ -120,7 +123,11 @@ Three things it is careful about:
   }
 </script>
 
-<g class="trace-route" class:low-stimulus={lowStimulus} class:static-marks={reducedMotion}>
+<g
+  class="trace-route"
+  class:low-stimulus={lowStimulus}
+  class:static-marks={reducedMotion}
+>
   {#each hands as hand (hand)}
     {@const segment = segments[hand]}
     {#if segment}
@@ -130,7 +137,7 @@ Three things it is careful about:
       {@const isArmed = armed[hand] === true}
       {@const drawn = trail(hand)}
 
-      <!-- The route rail. Kept up on beginner levels; on the rest it fades once
+      <!-- The route rail. Kept up on beginner challenges; on the rest it fades once
            the hand is armed, so the player finishes from memory. -->
       {#if path.length >= 2 && (showRoute || !isArmed)}
         <polyline
@@ -151,7 +158,10 @@ Three things it is careful about:
       {/if}
 
       <!-- Start target. Leads while arming, then recedes to a quiet anchor. -->
-      <g class="target start {handClass(hand)}" class:lead={isArming && !isArmed}>
+      <g
+        class="target start {handClass(hand)}"
+        class:lead={isArming && !isArmed}
+      >
         {#if hand === MotionColor.BLUE}
           <circle
             cx={start.x}
@@ -289,7 +299,9 @@ Three things it is careful about:
   /* The glow is atmosphere, not information — Low Stimulus removes it and
      nothing about the route becomes harder to read. */
   .trace-route:not(.low-stimulus) .drawn {
-    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--hand-color) 55%, transparent));
+    filter: drop-shadow(
+      0 0 10px color-mix(in srgb, var(--hand-color) 55%, transparent)
+    );
   }
 
   .target-ring {
@@ -327,7 +339,10 @@ Three things it is careful about:
     fill: var(--hand-color);
     font-size: 46px;
     font-weight: 800;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family:
+      system-ui,
+      -apple-system,
+      sans-serif;
     paint-order: stroke;
     stroke: var(--theme-panel-bg, rgba(0, 0, 0, 0.65));
     stroke-width: 6;
@@ -341,7 +356,6 @@ Three things it is careful about:
     stroke-linecap: round;
     opacity: 0.85;
   }
-
 
   .tap-stop circle {
     fill: color-mix(in srgb, var(--hand-color) 14%, transparent);
@@ -364,14 +378,17 @@ Three things it is careful about:
     fill: var(--theme-text, #fff);
     font-size: 40px;
     font-weight: 700;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family:
+      system-ui,
+      -apple-system,
+      sans-serif;
   }
 
   .tap-stop.done text {
     opacity: 0.4;
   }
 
-  /* The OS-level preference is honored even when the in-game switch is off —
+  /* The OS-challenge preference is honored even when the in-game switch is off —
      the switch can only ever add restraint, never remove it. */
   @media (prefers-reduced-motion: reduce) {
     .target.lead .target-ring {

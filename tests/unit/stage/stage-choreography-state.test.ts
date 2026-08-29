@@ -52,6 +52,66 @@ describe("stage choreography state", () => {
     state.destroy();
   });
 
+  it("seeds an exact six-person circle from the guided Studio start", () => {
+    const state = createStageChoreographyState();
+
+    state.applyStudioStarter({
+      startingMaterial: "recommended",
+      performerCount: 6,
+      formation: "circle",
+      environmentId: SceneEnvironmentId.COSMIC,
+      prop: PropType.FAN,
+    });
+
+    expect(state.choreography.performers).toHaveLength(6);
+    expect(state.choreography.formations).toHaveLength(1);
+    expect(state.choreography.formations[0]?.presetId).toBe("circle");
+    expect(
+      Object.keys(state.choreography.formations[0]?.spots ?? {})
+    ).toHaveLength(6);
+    expect(
+      Object.values(state.choreography.formations[0]?.spots ?? {}).every(
+        (spot) => Number.isFinite(spot.facingAngle)
+      )
+    ).toBe(true);
+    expect(state.studioProject.version).toBe(STUDIO_PROJECT_VERSION);
+    expect(state.studioProject.stage).toBe(state.choreography);
+    state.destroy();
+  });
+
+  it("authors relational facing for duo presets and clears it for a line", () => {
+    const faceToFace = generatePresetPositions("facing-each-other", 2, 10, 8);
+    const backToBack = generatePresetPositions("back-to-back", 2, 10, 8);
+    const sideBySide = generatePresetPositions("side-by-side", 2, 10, 8);
+
+    expect(faceToFace.map((spot) => spot.facingAngle)).toEqual([Math.PI, 0]);
+    expect(backToBack.map((spot) => spot.facingAngle)).toEqual([0, Math.PI]);
+    expect(sideBySide.every((spot) => spot.facingAngle === undefined)).toBe(
+      true
+    );
+
+    const state = createStageChoreographyState();
+    state.applyStudioStarter({
+      startingMaterial: "recommended",
+      performerCount: 2,
+      formation: "facing-each-other",
+      environmentId: SceneEnvironmentId.EMBER,
+      prop: PropType.STAFF,
+    });
+    const opening = state.choreography.formations[0]!;
+    expect(
+      Object.values(opening.spots).map((spot) => spot.facingAngle)
+    ).toEqual([Math.PI, 0]);
+
+    state.applyPresetToFormation(opening.id, "side-by-side");
+    expect(
+      Object.values(opening.spots).every(
+        (spot) => spot.facingAngle === undefined
+      )
+    ).toBe(true);
+    state.destroy();
+  });
+
   it("creates isolated Stage documents holding one lane across the show", () => {
     const first = createStageChoreographyState();
     const second = createStageChoreographyState();
@@ -200,7 +260,9 @@ describe("stage choreography state", () => {
     const arrived = at(64);
     const downstageIndex = held.reduce(
       (nearest, frame, index) =>
-        frame.stagePosition.z < held[nearest]!.stagePosition.z ? index : nearest,
+        frame.stagePosition.z < held[nearest]!.stagePosition.z
+          ? index
+          : nearest,
       0
     );
 
@@ -259,9 +321,7 @@ describe("stage choreography state", () => {
     expect(
       state.choreography.formations.map((formation) => formation.atBeat)
     ).toEqual([0, 12, 64]);
-    expect(
-      state.choreography.formations[1]!.transitionBeats
-    ).toBe(12);
+    expect(state.choreography.formations[1]!.transitionBeats).toBe(12);
     expect(stagingAt(24)).not.toEqual(beforeMove);
     state.destroy();
   });

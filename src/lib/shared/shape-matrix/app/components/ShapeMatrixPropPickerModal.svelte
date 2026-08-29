@@ -10,7 +10,6 @@
   selectedPropType={state.propType}
   color="blue"
   title="Choose a prop"
-  autoClose={false}
   onSelect={(propType) => void state.setPropType(propType)}
   onOpenChange={(open) => {
     if (!open) state.closePropPicker();

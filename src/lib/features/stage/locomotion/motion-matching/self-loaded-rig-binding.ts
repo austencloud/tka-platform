@@ -19,6 +19,8 @@ import type { LegChain, RigBinding } from "./rig-binding";
 const _hipsWorld = new Vector3();
 const _leftFootWorld = new Vector3();
 const _rightFootWorld = new Vector3();
+const _leftThighWorld = new Vector3();
+const _rightThighWorld = new Vector3();
 const _hipsQuat = new Quaternion();
 const _euler = new Euler();
 const _restA = new Vector3();
@@ -88,6 +90,8 @@ export async function createSelfLoadedRigBinding(
   const hipsBone = requireBone("Hips");
   const leftFootBone = requireBone("LeftFoot");
   const rightFootBone = requireBone("RightFoot");
+  const leftThighBone = requireBone("LeftUpLeg");
+  const rightThighBone = requireBone("RightUpLeg");
 
   // 2. Load each clip's animation; key by clipId.
   // 3. Single AnimationMixer over the avatar root; cache one action per clip.
@@ -204,6 +208,8 @@ export async function createSelfLoadedRigBinding(
       hipsBone.getWorldPosition(_hipsWorld);
       leftFootBone.getWorldPosition(_leftFootWorld);
       rightFootBone.getWorldPosition(_rightFootWorld);
+      leftThighBone.getWorldPosition(_leftThighWorld);
+      rightThighBone.getWorldPosition(_rightThighWorld);
       hipsBone.getWorldQuaternion(_hipsQuat);
 
       _euler.setFromQuaternion(_hipsQuat, "YXZ");
@@ -219,6 +225,16 @@ export async function createSelfLoadedRigBinding(
           _rightFootWorld.x - _hipsWorld.x,
           _rightFootWorld.y - _hipsWorld.y,
           _rightFootWorld.z - _hipsWorld.z,
+        ],
+        leftThigh: [
+          _leftThighWorld.x - _hipsWorld.x,
+          _leftThighWorld.y - _hipsWorld.y,
+          _leftThighWorld.z - _hipsWorld.z,
+        ],
+        rightThigh: [
+          _rightThighWorld.x - _hipsWorld.x,
+          _rightThighWorld.y - _hipsWorld.y,
+          _rightThighWorld.z - _hipsWorld.z,
         ],
         facing: _euler.y,
         rootXZ: [_hipsWorld.x, _hipsWorld.z],
@@ -229,6 +245,8 @@ export async function createSelfLoadedRigBinding(
       hipsBone.getWorldPosition(_hipsWorld);
       leftFootBone.getWorldPosition(_leftFootWorld);
       rightFootBone.getWorldPosition(_rightFootWorld);
+      leftThighBone.getWorldPosition(_leftThighWorld);
+      rightThighBone.getWorldPosition(_rightThighWorld);
       hipsBone.getWorldQuaternion(_hipsQuat);
       _euler.setFromQuaternion(_hipsQuat, "YXZ");
       return {
@@ -242,6 +260,16 @@ export async function createSelfLoadedRigBinding(
           _rightFootWorld.x - _hipsWorld.x,
           _rightFootWorld.y - _hipsWorld.y,
           _rightFootWorld.z - _hipsWorld.z,
+        ],
+        leftThigh: [
+          _leftThighWorld.x - _hipsWorld.x,
+          _leftThighWorld.y - _hipsWorld.y,
+          _leftThighWorld.z - _hipsWorld.z,
+        ],
+        rightThigh: [
+          _rightThighWorld.x - _hipsWorld.x,
+          _rightThighWorld.y - _hipsWorld.y,
+          _rightThighWorld.z - _hipsWorld.z,
         ],
         facing: _euler.y,
         rootXZ: [_hipsWorld.x, _hipsWorld.z],

@@ -72,21 +72,26 @@ export function createLavaRiverStripGeometry({
   const uvs: number[] = [];
   const indices: number[] = [];
   const widthScale = channel.widthScale;
+  const sourceTaperFraction = channel.sourceTaperFraction ?? 0;
 
   for (let row = 0; row <= longitudinalSegments; row += 1) {
     const t = row / longitudinalSegments;
     const center = curve.getPoint(t);
     const tangent = curve.getTangent(t).normalize();
     const side = new Vector3(-tangent.z, 0, tangent.x).normalize();
+    const taperProgress =
+      sourceTaperFraction > 0 ? Math.min(1, t / sourceTaperFraction) : 1;
+    const sourceTaper = taperProgress * taperProgress * (3 - 2 * taperProgress);
     const irregularWidth =
       width *
       widthScale *
-      (0.9 + Math.sin(t * Math.PI) * 0.1 + Math.sin(t * 17.3 + 0.7) * 0.025);
+      (0.9 + Math.sin(t * Math.PI) * 0.1 + Math.sin(t * 17.3 + 0.7) * 0.025) *
+      sourceTaper;
 
     for (let column = 0; column <= lateralSegments; column += 1) {
       const lateralT = column / lateralSegments;
       const crossRiver = lateralT * 2 - 1;
-      const edgeDrop = Math.pow(Math.abs(crossRiver), 1.8) * 0.07;
+      const edgeDrop = Math.pow(Math.abs(crossRiver), 1.8) * 0.07 * sourceTaper;
       const position = center
         .clone()
         .addScaledVector(side, crossRiver * irregularWidth * 0.5);
@@ -115,6 +120,6 @@ export function createLavaRiverStripGeometry({
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
 
-  const lightPositions = [0.18, 0.52, 0.84].map((t) => curve.getPoint(t));
+  const lightPositions = [0.12, 0.52, 0.9].map((t) => curve.getPoint(t));
   return { geometry, lightPositions };
 }

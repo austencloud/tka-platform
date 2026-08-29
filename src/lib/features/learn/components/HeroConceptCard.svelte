@@ -114,7 +114,7 @@ Clean design with:
   .hero-card {
     position: relative;
     width: 100%;
-    max-width: 600px;
+    max-width: 52rem;
     margin: 0 auto;
     padding: 0;
     border: 1px solid color-mix(in srgb, var(--category-color) 30%, transparent);
@@ -125,7 +125,9 @@ Clean design with:
     transition:
       transform 0.2s ease,
       box-shadow 0.2s ease;
-    min-height: 120px;
+    min-height: 136px;
+    box-shadow: 0 10px 30px
+      color-mix(in srgb, var(--category-color) 14%, transparent);
   }
 
   .hero-card:hover:not(.locked) {
@@ -169,6 +171,7 @@ Clean design with:
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
+    min-width: 6.5rem;
     flex-shrink: 0;
   }
 
@@ -247,6 +250,8 @@ Clean design with:
 
   /* CTA area */
   .cta-area {
+    align-self: stretch;
+    display: flex;
     flex-shrink: 0;
   }
 
@@ -254,9 +259,10 @@ Clean design with:
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 0.375rem;
-    padding: 0.875rem 1.25rem;
-    min-width: 80px;
+    padding: 1rem 1.5rem;
+    min-width: 8.5rem;
     min-height: var(--min-touch-target);
     background: var(--category-color);
     border-radius: 12px;
@@ -311,6 +317,15 @@ Clean design with:
       width: 100%;
       justify-content: center;
       padding: 1rem;
+    }
+
+    .cta-area {
+      align-self: auto;
+      width: 100%;
+    }
+
+    .icon-area {
+      min-width: 0;
     }
   }
 

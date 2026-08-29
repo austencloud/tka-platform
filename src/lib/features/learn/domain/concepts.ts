@@ -9,7 +9,7 @@
 import type { ConceptCategory, LearnConcept } from "./types";
 
 /**
- * Complete TKA Learning Path - 28 Concepts
+ * Complete TKA Learning Path - 29 Concepts
  * Based on "The Kinetic Alphabet Level 1" curriculum
  */
 export const TKA_CONCEPTS: LearnConcept[] = [
@@ -68,15 +68,33 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     ],
   },
   {
-    id: "dual-shifts-alpha-beta",
+    id: "rotation-direction",
     order: 4,
+    category: "foundation",
+    name: "Rotation Direction",
+    shortName: "Pro / Anti",
+    description: "See whether each prop rotates with or against its hand arc",
+    icon: "fa-arrows-rotate",
+    pdfPages: [16],
+    prerequisites: ["hand-motions-intro"],
+    estimatedMinutes: 6,
+    concepts: [
+      "Pro - prop rotates with the hand arc",
+      "Anti - prop rotates against the hand arc",
+      "Base rotation at zero additional turns",
+      "Rotation relationship is not a fixed clock direction",
+    ],
+  },
+  {
+    id: "dual-shifts-alpha-beta",
+    order: 5,
     category: "foundation",
     name: "Dual-Shifts: Alpha & Beta",
     shortName: "Dual-Shifts",
     description: "Practice split-same and tog-same dual-shift patterns",
     icon: "fa-arrows-left-right",
     pdfPages: [10],
-    prerequisites: ["hand-motions-intro"],
+    prerequisites: ["rotation-direction"],
     estimatedMinutes: 12,
     concepts: [
       "Split-Same (SS)",
@@ -87,7 +105,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "gamma-motion",
-    order: 5,
+    order: 6,
     category: "foundation",
     name: "Gamma Motions",
     shortName: "Gamma",
@@ -104,7 +122,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "shifts-type2",
-    order: 6,
+    order: 7,
     category: "foundation",
     name: "Type 2: Shifts",
     shortName: "Shifts",
@@ -121,7 +139,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "cross-shifts-type3",
-    order: 7,
+    order: 8,
     category: "foundation",
     name: "Type 3: Cross-Shifts",
     shortName: "Cross-Shifts",
@@ -138,7 +156,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "dash-type4",
-    order: 8,
+    order: 9,
     category: "foundation",
     name: "Type 4: Dash",
     shortName: "Dash",
@@ -155,7 +173,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "dual-dash-type5",
-    order: 9,
+    order: 10,
     category: "foundation",
     name: "Type 5: Dual-Dash",
     shortName: "Dual-Dash",
@@ -172,7 +190,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "static-type6",
-    order: 10,
+    order: 11,
     category: "foundation",
     name: "Type 6: Static",
     shortName: "Static",
@@ -189,7 +207,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "staff-positions",
-    order: 11,
+    order: 12,
     category: "foundation",
     name: "Staff Positions",
     shortName: "Staff Pos.",
@@ -206,7 +224,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "staff-motions",
-    order: 12,
+    order: 13,
     category: "foundation",
     name: "Staff Motions",
     shortName: "Staff Motion",
@@ -224,7 +242,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "negative-space",
-    order: 13,
+    order: 14,
     category: "foundation",
     name: "Negative Space & Body Turns",
     shortName: "Negative Space",
@@ -245,7 +263,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   // Learning the alphabet - categorizing motions into letters
   {
     id: "letter-codex-intro",
-    order: 14,
+    order: 15,
     category: "letters",
     name: "Letter Codex Overview",
     shortName: "Codex Intro",
@@ -262,7 +280,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "type1-abc-ghi",
-    order: 15,
+    order: 16,
     category: "letters",
     name: "Type 1: ABC & GHI",
     shortName: "ABC/GHI",
@@ -282,7 +300,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "type1-compound",
-    order: 16,
+    order: 17,
     category: "letters",
     name: "Type 1: DJ, EK, FL",
     shortName: "Compound",
@@ -300,7 +318,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "type1-gamma-compound",
-    order: 17,
+    order: 18,
     category: "letters",
     name: "Type 1: MP, NQ, OR",
     shortName: "γ Compound",
@@ -317,7 +335,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "type1-stuv",
-    order: 18,
+    order: 19,
     category: "letters",
     name: "Type 1: STUV",
     shortName: "STUV",
@@ -335,7 +353,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "type2-wxyz",
-    order: 19,
+    order: 20,
     category: "letters",
     name: "Type 2: WXYZ, ΣΔΘΩ",
     shortName: "Type 2",
@@ -353,7 +371,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "type3-cross-shift-letters",
-    order: 20,
+    order: 21,
     category: "letters",
     name: "Type 3: Cross-Shift Letters",
     shortName: "Type 3",
@@ -371,7 +389,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "type456-dash-static",
-    order: 21,
+    order: 22,
     category: "letters",
     name: "Type 4/5/6: Φ Ψ Λ",
     shortName: "Dash/Static",
@@ -393,7 +411,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   // Putting letters together into words, sequences, and patterns
   {
     id: "words-alpha-beta",
-    order: 22,
+    order: 23,
     category: "combinations",
     name: "TKA 1: Learning Letters",
     shortName: "Learning Letters",
@@ -410,7 +428,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "compound-words",
-    order: 23,
+    order: 24,
     category: "combinations",
     name: "Compound Words",
     shortName: "Compound",
@@ -428,7 +446,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "gamma-words",
-    order: 24,
+    order: 25,
     category: "combinations",
     name: "Gamma Words",
     shortName: "γ Words",
@@ -446,7 +464,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "caps-intro",
-    order: 25,
+    order: 26,
     category: "combinations",
     name: "LOOPs - Continuous Assembly Patterns",
     shortName: "LOOPs",
@@ -467,7 +485,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "reversals",
-    order: 26,
+    order: 27,
     category: "combinations",
     name: "Reversals",
     shortName: "Reversals",
@@ -485,7 +503,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   },
   {
     id: "advanced-caps",
-    order: 27,
+    order: 28,
     category: "combinations",
     name: "Advanced LOOP Examples",
     shortName: "Adv. LOOPs",
@@ -509,7 +527,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
   // Optional mastery concepts for dedicated learners
   {
     id: "motion-type-mastery",
-    order: 28,
+    order: 29,
     category: "advanced",
     name: "Motion Type Mastery",
     shortName: "Motion Types",

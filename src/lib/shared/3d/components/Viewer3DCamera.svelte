@@ -25,6 +25,7 @@
     sampleInterruptibleVector3,
     type TimedTransition,
   } from "../camera/transitions";
+  import { getViewerFrontStageCameraZ } from "../domain/viewer-formation-facing";
 
   interface Props {
     /** Camera player avatar for fly/walk modes (WASD writes here, not the performer). */
@@ -49,7 +50,7 @@
   // Grid center in 3D world space.
   // Y=0 is shoulder height (proportions reference). Grid T.Group is at
   // position.z = gridOffset = +0.3 inside PerformerRig (which has no rotation
-  // in wall mode). Positive Z is behind the GLTF model that faces -Z.
+  // in wall mode). Positive Z is in front of the GLTF model at zero rotation.
   const GRID_CENTER_Y = 0;
   const GRID_CENTER_Z = 0.3;
   const GRID_RADIUS_3D = 0.52; // meters
@@ -64,7 +65,18 @@
     target: { x: number; y: number; z: number };
   } {
     const target = { x: 0, y: GRID_CENTER_Y, z: GRID_CENTER_Z };
-    const fallback = { position: { x: 0, y: 0, z: -2.5 }, target };
+    const fallback = {
+      position: {
+        x: 0,
+        y: 0,
+        z: getViewerFrontStageCameraZ(
+          GRID_CENTER_Z,
+          2.8,
+          viewer3DState.environmentId
+        ),
+      },
+      target,
+    };
 
     if (typeof document === "undefined") return fallback;
 
@@ -122,8 +134,11 @@
     const cameraYOffset = yOffsetPct * visibleHeightAtDist;
 
     const cameraY = GRID_CENTER_Y + cameraYOffset;
-    // Camera in front of avatar (facing -Z toward the performer)
-    const cameraZ = GRID_CENTER_Z - dist;
+    const cameraZ = getViewerFrontStageCameraZ(
+      GRID_CENTER_Z,
+      dist,
+      viewer3DState.environmentId
+    );
 
     return {
       position: { x: 0, y: cameraY, z: cameraZ },

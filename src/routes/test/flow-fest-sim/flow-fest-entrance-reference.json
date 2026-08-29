@@ -1,12 +1,12 @@
 {
   "schemaVersion": 2,
   "sceneId": "flow-fest-sim-earth",
-  "referenceId": "hannon-west-entrance-august-2024-r2",
+  "referenceId": "hannon-west-entrance-august-2024-r3",
   "coordinateAuthority": {
     "worldFrame": "EPSG:26916 registered terrain; x east, y up, z south; metres",
     "roadFeatureObjectId": 3019609,
     "entranceLandmarkId": "camp-road-entrance",
-    "placementRule": "The exact August 2024 Street View panorama is projected into EPSG:26916 and snapped to ODOT road feature 3019609. The west-side drive bearing is corroborated by the identifiable junction in registered 2023 NAIP; every entrance fixture is a local offset from that shared anchor."
+    "placementRule": "The exact August 2024 Street View panorama is projected into EPSG:26916 and snapped to ODOT road feature 3019609. That official-road point is the registration basis, not the building site. The west-side private drive terminates at Austen's 2026-08-29 orthophoto-traced lower-loop junction. The provisional gatehouse site is derived from that loop segment's centroid-facing interior normal so its footprint remains behind the road."
   },
   "sourceReference": {
     "provider": "Google Street View",
@@ -47,17 +47,17 @@
     "roadTangentUnit": { "x": 0.4751489147348839, "z": -0.8799053976571926 },
     "driveway": {
       "localPolygon": [
-        { "right": -7.5, "depth": 3.6 },
-        { "right": 7.5, "depth": 3.6 },
-        { "right": 6.0, "depth": 13.5 },
-        { "right": 4.6, "depth": 31.0 },
-        { "right": -4.6, "depth": 31.0 },
-        { "right": -6.0, "depth": 13.5 }
+        { "right": -6.932294, "depth": -2.862394 },
+        { "right": 6.932294, "depth": 2.862394 },
+        { "right": 8.992212, "depth": 13.153407 },
+        { "right": 0.088145, "depth": 10.838758 }
       ],
-      "surface": "pale compacted gravel apron tapering into the private drive"
+      "roadHalfWidthMeters": 7.5,
+      "loopHalfWidthMeters": 4.6,
+      "surface": "pale compacted gravel private-drive throat terminating at the lower-loop junction"
     },
     "gatehouse": {
-      "localCenter": { "right": 4.2, "depth": 22.0 },
+      "localCenter": { "right": 1.0178868428, "depth": 25.5457490891 },
       "widthMeters": 8.2,
       "depthMeters": 4.8,
       "wallHeightMeters": 2.65,
@@ -93,7 +93,7 @@
         "label": "Direct entrance / front",
         "horizontalFovDegrees": 78,
         "positionWorld": [328.811, 8.6, -97.855],
-        "targetWorld": [313.576, 7.15, -108.572]
+        "targetWorld": [308.011, 7.15, -113.769]
       },
       "sourceView": {
         "panoramaId": "1Zay8yG4Mf31AxM3p0N25w",
@@ -122,7 +122,7 @@
         "label": "Road-right approach",
         "horizontalFovDegrees": 90,
         "positionWorld": [344.886, 8.6, -128.952],
-        "targetWorld": [312.745, 8.2, -114.312]
+        "targetWorld": [308.011, 8.2, -113.769]
       },
       "sourceView": {
         "panoramaId": "1Zay8yG4Mf31AxM3p0N25w",
@@ -151,7 +151,7 @@
         "label": "Road-left approach",
         "horizontalFovDegrees": 90,
         "positionWorld": [311.626, 8.6, -67.358],
-        "targetWorld": [312.745, 8.2, -114.312]
+        "targetWorld": [308.011, 8.2, -113.769]
       },
       "sourceView": {
         "panoramaId": "1Zay8yG4Mf31AxM3p0N25w",
@@ -179,7 +179,7 @@
         "label": "Gatehouse detail",
         "horizontalFovDegrees": 48,
         "positionWorld": [322.547, 8.1, -102.206],
-        "targetWorld": [312.745, 8.2, -114.312]
+        "targetWorld": [308.011, 8.2, -113.769]
       },
       "sourceView": {
         "panoramaId": "1Zay8yG4Mf31AxM3p0N25w",

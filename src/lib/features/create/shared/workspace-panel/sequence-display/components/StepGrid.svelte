@@ -83,6 +83,8 @@
     timeSignature = undefined,
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
+    blueColorOverride = undefined,
+    redColorOverride = undefined,
     sequenceWord = "",
     arrivalSequence = null,
     optionAudition = null,
@@ -131,6 +133,10 @@
     bluePropTypeOverride?: PropType;
     /** Override prop type for red hand. Used by demos/previews to bypass global settings. */
     redPropTypeOverride?: PropType;
+    /** Display-only color for the blue-hand prop and arrow. */
+    blueColorOverride?: string;
+    /** Display-only color for the red-hand prop and arrow. */
+    redColorOverride?: string;
     sequenceWord?: string;
     arrivalSequence?: SequenceData | null;
     optionAudition?: ConstructOptionAudition | null;
@@ -766,6 +772,8 @@
       {getDurationDisplay}
       {bluePropTypeOverride}
       {redPropTypeOverride}
+      {blueColorOverride}
+      {redColorOverride}
       {sequenceWord}
       arrivalRequest={activeArrivalRequest}
       bind:scrollContainerRef
@@ -784,6 +792,8 @@
           onMotionComplete={onAuditionCompleted}
           {bluePropTypeOverride}
           {redPropTypeOverride}
+          {blueColorOverride}
+          {redColorOverride}
         />
       {/key}
     {/if}

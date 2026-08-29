@@ -24,7 +24,7 @@
 
 <section class="public-course" aria-label="Interactive TKA lessons">
   {#if browser}
-    <LearnTab />
+    <LearnTab publicCourse />
   {:else}
     <div class="course-prerender">
       <span>Learn by doing</span>
@@ -42,8 +42,7 @@
 <style>
   .public-course {
     width: 100%;
-    height: calc(100dvh - 64px);
-    min-height: 42rem;
+    min-height: calc(100dvh - 64px);
     margin-top: 64px;
   }
 

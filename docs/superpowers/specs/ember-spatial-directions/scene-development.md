@@ -1,6 +1,6 @@
 # Ember Spatial Directions
 
-Status: Geological World Gate 4 R8 ready for review; approval unset
+Status: Fresh Rift approved at Gate 3; Gate 4 production in progress
 
 Date: 2026-08-25
 
@@ -10,8 +10,9 @@ Current regression authority: museum trackers `rn25Qau62kXyyOJpgm7Z`,
 `QRHbwRQLhM7Zn9LyYHOd`, `gME4uHJawz9dtTlirRl8`,
 `kqMUPC5UpCHjj7ts9atQ`, `5otAzYdNg5Wp5E27mgfo`,
 `nu73zqvPJRxio4T2sWz7`, `ATURN84Ov2hmjWUndebl`,
-`ZSnkB98pb0wz6PO17XKp`, `sDKmB6cUEXLfHgz4DGd4`, and
-`s3cxnp6hOLBVQR5dDF42`
+`ZSnkB98pb0wz6PO17XKp`, `sDKmB6cUEXLfHgz4DGd4`,
+`s3cxnp6hOLBVQR5dDF42`, `uXmi4z9lL7zCiNq5ULCp`, and
+`ahPuPwh34G3FeqvUEHsB`
 
 ## Why this exists
 
@@ -270,3 +271,77 @@ four-performer growth proof, and frame report live in
 `evidence/gate-4-terrain-r8/`. The R7 geology, Blackglass Inferno atmosphere,
 seventeen-point runtime river, front-stage heading, 4.5 m action clearance, and
 remaining 40 Meshy credits are preserved.
+
+## R9 volcanic surface ecology track
+
+Museum tracker `uXmi4z9lL7zCiNq5ULCp` reopens Gate 3 around the remaining
+material failure. R8 solved the world-scale terrain silhouette, but the same
+`weathered-basalt` color, roughness, and normal maps still skin the columnar
+hero and all three depth bands. The result reads as one rippled procedural
+material even when the underlying geometry is strong.
+
+R9 holds the entire R8 spatial and lighting contract fixed and compares three
+independent material ecosystems from the same four cameras:
+
+- **Fresh Flow Field:** roped pahoehoe, a'a clinker, fractured basalt, and
+  sheltered windborne ash.
+- **Ash-Choked Caldera:** compacted ash, lapilli fall, exposed basalt scarps,
+  and lava-baked contact crust.
+- **Hydrothermal Rift:** wet obsidian, iron oxide drainage, localized sulfur
+  sinter, and steam-bleached basalt.
+
+The director synthesis, **Fresh Rift**, combines Fresh Flow's coherent young
+lava base with Hydrothermal Rift's iron response only at the river and contact
+zones. It rejects broad sulfur fields and the Ash direction's full-scene gray
+blanket. The terrain proof uses a smooth per-vertex four-family mask rather
+than visible material islands. Cooled shelf fissures receive geological crust
+instead of an unlit black surface.
+
+Sixteen registered renders, the four-direction board, editable Blender target,
+and deterministic build report live in `evidence/gate-3-surface-r9/`. The
+adversarial ledger recommends Fresh Rift. Austen approved that registered
+target on 2026-08-28 and explicitly authorized Blender work in tracker
+`ahPuPwh34G3FeqvUEHsB`. Gate 4 now carries the selected ecology into the
+editable production source, the existing shared world-space detail owner, and
+the live Ember environment while preserving the R8 spatial contract.
+
+The authored Gate 4 slice is now built. Its editable R9 Blender source retains
+the R8 terrain and four Meshy landmarks, while the shipping 4.28 MiB GLB uses
+five Fresh Rift materials and twelve KTX2 maps. A 1,024-square world mask maps
+young lava, river-contact iron, fractured scarps, and sheltered ash across the
+full 380 by 335 m country. The runtime scene composes the existing shared
+masked-ground-detail shader and assigns atmospheric treatment by semantic
+geology role. Automated verification is green; live Viewer3D visual,
+interaction, console, and frame-time evidence remains the boundary before Gate
+4 can become ready for review.
+
+## R10 Living Caldera production correction
+
+Austen's 2026-08-28 review rejected R9 as a final top-tier result because its
+audience-side orbit still read as a graybox apron and the lava river lacked the
+continuous molten hierarchy visible in real active channels. R10 keeps the
+approved Fresh Rift materials, unique Meshy landmarks, responsive performer
+clearance, front-stage heading, and shared river contract. It changes the
+production slice rather than adding another environment owner.
+
+The terrain is now a four-sided, offset caldera. North and south walls carry
+separate foreground, midground, and crown masses; the river cuts deliberate
+breaches through both horizons so the composition remains directional rather
+than becoming a closed arena. A registered `audience` camera reproduces the low
+positive-runtime-Z view that exposed the R9 failure. That angle is part of the
+build report and orbit proof, so future passes cannot hide the southern sector
+behind elevated review cameras.
+
+Runtime surface ecology replaces every flattened box plate with one shared
+jagged basalt mesh. The existing lava owner now carries broader incandescent
+leads, thinner moving crust seams, stronger bank bounce, and a restrained set of
+sampled lights across the complete 278 m channel. Fog density drops while cold
+sky separation rises; the haze shader confines warm particulate strata to the
+lower atmosphere so the new caldera silhouette remains readable.
+
+The deterministic builder is `scripts/build-ember-production-slice.py
+--r10-production`. The editable source is
+`blender/ember-volcanic-world-production-slice-r10.blend`; the reversible asset
+is `static/models/ember/ember-production-slice-r10.glb`; and Gate 4 evidence
+lives in `evidence/gate-4-living-caldera-r10/`. The shipping GLB remains the
+stable `ember-production-slice.glb` capability owner.

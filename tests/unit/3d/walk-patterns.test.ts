@@ -153,4 +153,100 @@ describe("walk patterns", () => {
     );
     expect(step).toEqual({ dx: 0, dz: 0, distance: 0 });
   });
+
+  it("runs the grapevine as lateral travel in both directions", () => {
+    const grapevine = walkPattern("grapevine");
+    const right = grapevine.tick(1, 1);
+    const left = grapevine.tick(grapevine.period(1) - 1, 1);
+
+    expect(right).toMatchObject({
+      isMoving: true,
+      direction: { x: 1, z: 0 },
+      phase: "grapevine right",
+    });
+    expect(left).toMatchObject({
+      isMoving: true,
+      direction: { x: -1, z: 0 },
+      phase: "grapevine left",
+    });
+  });
+
+  it("drives stationary pivots through authored quarter-turn requests", () => {
+    const pivot = walkPattern("pivot");
+
+    expect(pivot.tick(0.4, 1).turnRequest).toBeUndefined();
+
+    const left = pivot.tick(1.3, 1);
+    expect(left.turnRequest?.fromHeading).toBe(0);
+    expect(left.turnRequest?.toHeading).toBe(Math.PI / 2);
+    expect(left.turnRequest?.phase).toBeCloseTo(0.5, 8);
+    expect(left.turnRequest?.poseWeight).toBe(1);
+    expect(left.facing).toBeCloseTo(Math.PI / 4, 8);
+    expect(left.isMoving).toBe(false);
+
+    const right = pivot.tick(4.3, 1);
+    expect(right.turnRequest?.fromHeading).toBe(Math.PI / 2);
+    expect(right.turnRequest?.toHeading).toBe(0);
+    expect(right.turnRequest?.phase).toBeCloseTo(0.5, 8);
+    expect(right.turnRequest?.poseWeight).toBe(1);
+    expect(right.facing).toBeCloseTo(Math.PI / 4, 8);
+
+    const release = pivot.tick(2.1, 1);
+    expect(release.turnRequest).toBeUndefined();
+    expect(release.facing).toBeCloseTo(Math.PI / 2, 8);
+
+    const blendingOut = pivot.tick(1.9, 1);
+    expect(blendingOut.turnRequest?.phase).toBe(1);
+    expect(blendingOut.turnRequest?.poseWeight).toBeGreaterThan(0);
+    expect(blendingOut.turnRequest?.poseWeight).toBeLessThan(1);
+  });
+
+  it("drives shuttle reversals through opposite authored 180-degree plans", () => {
+    const shuttle = walkPattern("shuttle");
+
+    const left = shuttle.tick(6.4333333333, 1);
+    expect(left.turnRequest).toMatchObject({
+      planId: "shuttle:outbound-turn",
+      fromHeading: 0,
+      toHeading: Math.PI,
+      requireAuthored: true,
+    });
+    expect(left.turnRequest?.phase).toBeCloseTo(0.5, 8);
+    expect(left.turnRequest?.poseWeight).toBe(1);
+    expect(left.isMoving).toBe(false);
+
+    const right = shuttle.tick(14, 1);
+    expect(right.turnRequest).toMatchObject({
+      planId: "shuttle:return-turn",
+      fromHeading: Math.PI,
+      toHeading: 0,
+      requireAuthored: true,
+    });
+    expect(right.turnRequest?.phase).toBeCloseTo(0.5, 8);
+    expect(right.facing).toBeCloseTo(Math.PI / 2, 8);
+
+    const release = shuttle.tick(7.3666666667, 1);
+    expect(release.turnRequest?.phase).toBe(1);
+    expect(release.turnRequest?.poseWeight).toBeGreaterThan(0);
+    expect(release.turnRequest?.poseWeight).toBeLessThan(1);
+  });
+
+  it("keeps each shuttle arrival under the terminal controller until settled", () => {
+    const shuttle = walkPattern("shuttle");
+
+    const outboundTravel = shuttle.tick(4.7, 1);
+    expect(outboundTravel.terminalIntent).toMatchObject({
+      id: "shuttle:outbound-stop",
+      targetFacing: 0,
+    });
+    expect(outboundTravel.terminalIntent?.remainingDistance).toBeCloseTo(0.1);
+
+    const outboundArrival = shuttle.tick(4.9, 1);
+    expect(outboundArrival.phase).toBe("arriving");
+    expect(outboundArrival.waitForTerminalSettle).toBe(true);
+
+    const turn = shuttle.tick(5.7, 1);
+    expect(turn.turnRequest?.planId).toBe("shuttle:outbound-turn");
+    expect(turn.waitForTerminalSettle).toBeUndefined();
+  });
 });

@@ -35,6 +35,10 @@ even when Svelte recreates the component instance.
   } from "../domain/prop-render-context";
   import { getSettings } from "../../../application/state/app-state.svelte";
   import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
+  import {
+    applyColorToSvg,
+    SELECTIVE_COLOR_PROP_TYPES,
+  } from "$lib/shared/utils/svg-color-utils";
 
   // Buugeng family - asymmetric props that can be flipped
   const BUUGENG_FAMILY = new Set([
@@ -105,6 +109,7 @@ even when Svelte recreates the component instance.
     directPositioning = false,
     propRenderContext = "standard",
     darkMode = false,
+    colorOverride = undefined,
   } = $props<{
     motionData: MotionData;
     propAssets: PropAssets;
@@ -123,15 +128,28 @@ even when Svelte recreates the component instance.
     propRenderContext?: PropRenderContext;
     /** The actual pictograph surface, used to choose the opposing shaft color. */
     darkMode?: boolean;
+    /** Optional display-only color. The motion remains blue/red semantically. */
+    colorOverride?: string;
   }>();
 
   const renderedPropType = $derived(propAssets.propType ?? motionData.propType);
+  const colorizedArtwork = $derived(
+    colorOverride
+      ? applyColorToSvg(propAssets.imageSrc, colorOverride, {
+          makeClassNamesUnique: true,
+          colorSuffix: colorOverride.replace(/[^a-z0-9]/gi, ""),
+          selectiveColorMode: (
+            SELECTIVE_COLOR_PROP_TYPES as readonly string[]
+          ).includes(String(renderedPropType ?? "").toLowerCase()),
+        })
+      : propAssets.imageSrc
+  );
   const showEditorContrast = $derived(
     needsEditorContrast(propRenderContext, renderedPropType)
   );
   const renderedArtwork = $derived(
     applyEditorTorchPalette(
-      propAssets.imageSrc,
+      colorizedArtwork,
       propRenderContext,
       renderedPropType,
       darkMode

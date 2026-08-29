@@ -1,27 +1,66 @@
 <script lang="ts">
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import TimeRuler from "$lib/features/compose/timeline/components/TimeRuler.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { flyFade, growFade, popIn } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
 
   import { getStageChoreographyContext } from "../context/stage-choreography-context";
-  import { getActiveStageSequenceClip } from "../domain/stage-sequence-timeline";
+  import {
+    getActiveStageSequenceClip,
+    samplePerformerSequenceAtBeat,
+  } from "../domain/stage-sequence-timeline";
+  import {
+    projectPerformerFloorTravel,
+    samplePerformerFloorSpeed,
+    stageSequenceDisplayName,
+    type StageFloorSpeedSample,
+    type StageFloorTravelSegment,
+  } from "../domain/stage-timeline-projection";
   import type {
     Formation,
     Performer,
     StageSequenceClip,
   } from "../domain/stage-types";
   import type { StageEditMode } from "../state/stage-edit-mode.svelte";
+  import StageFloorLane from "./StageFloorLane.svelte";
+  import StageHandsClipContent from "./StageHandsClipContent.svelte";
+  import StageMotionLane from "./StageMotionLane.svelte";
 
   type TimelineMode = "dock" | "editor";
+  type TimelineLens = "hands" | "floor" | "motion";
+
+  const TIMELINE_LENSES: {
+    value: TimelineLens;
+    label: string;
+    icon: string;
+  }[] = [
+    {
+      value: "hands",
+      label: "Hands",
+      icon: "fas fa-hands",
+    },
+    {
+      value: "floor",
+      label: "Floor",
+      icon: "fas fa-route",
+    },
+    {
+      value: "motion",
+      label: "Motion",
+      icon: "fas fa-chart-line",
+    },
+  ];
 
   interface Props {
     editMode: StageEditMode;
     mode?: TimelineMode;
+    sequences?: ReadonlyMap<string, SequenceData>;
+    timelineLens?: TimelineLens;
     onExpand?: () => void;
     onCollapse?: () => void;
   }
@@ -49,6 +88,8 @@
   let {
     editMode,
     mode = "editor",
+    sequences = new Map(),
+    timelineLens = $bindable("hands"),
     onExpand = () => {},
     onCollapse = () => {},
   }: Props = $props();
@@ -92,6 +133,69 @@
         Math.max(1, maxBeats)
     )
   );
+
+  const floorTravelByPerformer = $derived.by(() => {
+    const projected = new Map<string, StageFloorTravelSegment[]>();
+    for (const performer of choreography.performers) {
+      projected.set(
+        performer.id,
+        projectPerformerFloorTravel(choreography, performer.id)
+      );
+    }
+    return projected;
+  });
+
+  const floorSpeedByPerformer = $derived.by(() => {
+    const projected = new Map<string, StageFloorSpeedSample[]>();
+    for (const performer of choreography.performers) {
+      projected.set(
+        performer.id,
+        samplePerformerFloorSpeed(choreography, performer.id, maxBeats)
+      );
+    }
+    return projected;
+  });
+
+  const maxFloorSpeed = $derived.by(() => {
+    let max = 0;
+    for (const samples of floorSpeedByPerformer.values()) {
+      for (const sample of samples) max = Math.max(max, sample.metersPerSecond);
+    }
+    return Math.max(1, max);
+  });
+
+  const currentFrameByPerformer = $derived(
+    new Map(
+      stageState.performanceFrames.map(
+        (frame) => [frame.performerId, frame] as const
+      )
+    )
+  );
+
+  function sequenceForClip(clip: StageSequenceClip): SequenceData | undefined {
+    return sequences.get(clip.sequenceId);
+  }
+
+  function clipDisplayLabel(clip: StageSequenceClip): string {
+    const sequence = sequenceForClip(clip);
+    return (
+      clip.label?.trim() ||
+      (sequence
+        ? stageSequenceDisplayName(sequence)
+        : stageState.clipLabel(clip))
+    );
+  }
+
+  function activeStepIndex(
+    performer: Performer,
+    clip: StageSequenceClip
+  ): number | null {
+    const sample = samplePerformerSequenceAtBeat(
+      performer,
+      stageState.currentBeat
+    );
+    return sample?.clip.id === clip.id ? sample.stepIndex : null;
+  }
 
   function openPicker(performerId: string): void {
     pickerPerformerId = performerId;
@@ -397,6 +501,20 @@
           stageState.maxTotalBeats
         )}</strong
       >
+      {#if mode === "editor"}
+        <div class="timeline-lens-control">
+          <SegmentedControl
+            options={TIMELINE_LENSES}
+            value={timelineLens}
+            onchange={(value) => (timelineLens = value)}
+            size="sm"
+            density="tight"
+            color="accent"
+            semantics="radiogroup"
+            ariaLabel="Timeline view"
+          />
+        </div>
+      {/if}
       {#if mode === "dock"}
         <span
           class="timeline-summary"
@@ -444,9 +562,7 @@
                 : 'fa-chevron-down'}"
               aria-hidden="true"
             ></i>
-            <span class="disclosure-copy"
-              >{mode === "dock" ? "Choreograph" : "Collapse"}</span
-            >
+            <span>{mode === "dock" ? "Choreograph" : "Collapse"}</span>
           </span>
         </Crossfade>
       </button>
@@ -467,7 +583,11 @@
           maxBeats * effectivePixelsPerBeat
         )}px"
       >
-        <div class="ruler-label" aria-hidden="true">PERFORMER</div>
+        <div class="ruler-label" aria-hidden="true">
+          <Crossfade key={timelineLens} fill>
+            <span class="ruler-label-content">{timelineLens}</span>
+          </Crossfade>
+        </div>
         <div
           class="ruler"
           onpointerdown={seekFromPointer}
@@ -486,123 +606,180 @@
           ></div>
         </div>
 
-        <div class="formation-label">
-          <span class="formation-label-text">SETS</span>
-          <button
-            type="button"
-            class="add-formation"
-            onclick={addFormationAtPlayhead}
-            aria-label="Add a set at the playhead"
-            title="Add a set at the playhead"
-          >
-            <i class="fas fa-plus" aria-hidden="true"></i>
-          </button>
+        <div class="formation-label context-label">
+          <Crossfade key={timelineLens} fill>
+            <div class="context-label-content">
+              <span class="formation-label-text">
+                {timelineLens === "hands"
+                  ? "NOW"
+                  : timelineLens === "floor"
+                    ? "SETS"
+                    : "SPEED"}
+              </span>
+              {#if timelineLens === "floor"}
+                <button
+                  type="button"
+                  class="add-formation"
+                  onclick={addFormationAtPlayhead}
+                  aria-label="Add a set at the playhead"
+                  title="Add a set at the playhead"
+                >
+                  <i class="fas fa-plus" aria-hidden="true"></i>
+                </button>
+              {:else if timelineLens === "hands"}
+                <span class="context-label-glyph" title="Hand sequence">
+                  <i class="fas fa-hands" aria-hidden="true"></i>
+                </span>
+              {:else}
+                <span class="context-unit">m/s</span>
+              {/if}
+            </div>
+          </Crossfade>
         </div>
 
         <div
-          class="formation-track"
+          class="formation-track context-track"
           style="--pixels-per-beat: {effectivePixelsPerBeat}px"
           onpointerdown={seekFromPointer}
-          role="listbox"
-          aria-label="Formation sets. Each block is a held set; the ramp before it is the walk into that set."
+          role={timelineLens === "floor" ? "listbox" : "group"}
+          aria-label={timelineLens === "hands"
+            ? "Hands view guide"
+            : timelineLens === "floor"
+              ? "Formation sets. Each block is a held set; the ramp before it is the walk into that set."
+              : "Floor speed guide"}
           tabindex="-1"
         >
           <div
-            class="lane-playhead"
-            style:left="{stageState.currentBeat * effectivePixelsPerBeat}px"
-          ></div>
-          {#each choreography.formations as formation, index (formation.id)}
-            {@const beat = formationBeat(formation)}
-            {@const transition = formationTransition(formation)}
-            {@const hold = formationHoldBeats(index)}
-            {@const selected = editMode.selectedFormationId === formation.id}
-            {#if hold > 0}
+            class="context-layer hands-context"
+            class:active={timelineLens === "hands"}
+            aria-hidden={timelineLens !== "hands"}
+          >
+            <span class="view-guide-icon"><i class="fas fa-sparkles"></i></span>
+            <span>
+              <strong>Follow the glow.</strong>
+              Each tile is one hand movement in the sequence.
+            </span>
+          </div>
+
+          <div
+            class="context-layer floor-context"
+            class:active={timelineLens === "floor"}
+            aria-hidden={timelineLens !== "floor"}
+            inert={timelineLens !== "floor"}
+          >
+            {#each choreography.formations as formation, index (formation.id)}
+              {@const beat = formationBeat(formation)}
+              {@const transition = formationTransition(formation)}
+              {@const hold = formationHoldBeats(index)}
+              {@const selected = editMode.selectedFormationId === formation.id}
+              {#if hold > 0}
+                <div
+                  class="formation-hold"
+                  class:selected
+                  style="left: {beat * effectivePixelsPerBeat}px; width: {hold *
+                    effectivePixelsPerBeat}px"
+                  aria-hidden="true"
+                ></div>
+              {/if}
+              {#if transition > 0}
+                <div
+                  class="formation-ramp"
+                  class:selected
+                  style="left: {(beat - transition) *
+                    effectivePixelsPerBeat}px; width: {transition *
+                    effectivePixelsPerBeat}px"
+                  aria-hidden="true"
+                ></div>
+              {/if}
               <div
-                class="formation-hold"
+                class="formation-block"
                 class:selected
-                style="left: {beat * effectivePixelsPerBeat}px; width: {hold *
-                  effectivePixelsPerBeat}px"
-                aria-hidden="true"
-              ></div>
-            {/if}
-            {#if transition > 0}
-              <div
-                class="formation-ramp"
-                class:selected
-                style="left: {(beat - transition) *
-                  effectivePixelsPerBeat}px; width: {transition *
-                  effectivePixelsPerBeat}px"
-                aria-hidden="true"
-              ></div>
-            {/if}
-            <div
-              class="formation-block"
-              class:selected
-              class:dragging={formationDrag?.formationId === formation.id}
-              style="left: {beat * effectivePixelsPerBeat}px"
-              role="option"
-              aria-selected={selected}
-              tabindex="0"
-              onkeydown={(event) =>
-                handleFormationKeydown(event, formation, index)}
-            >
-              {#if index > 0}
+                class:dragging={formationDrag?.formationId === formation.id}
+                style="left: {beat * effectivePixelsPerBeat}px"
+                role="option"
+                aria-selected={selected}
+                tabindex="0"
+                onkeydown={(event) =>
+                  handleFormationKeydown(event, formation, index)}
+              >
+                {#if index > 0}
+                  <button
+                    type="button"
+                    class="transition-handle"
+                    onpointerdown={(event) =>
+                      beginFormationDrag(event, formation, "transition")}
+                    aria-label="Change the walk into {formationName(
+                      formation,
+                      index
+                    )}, currently {formation.transitionBeats} counts"
+                    title="Drag to change how many counts the walk takes"
+                  ></button>
+                {/if}
                 <button
                   type="button"
-                  class="transition-handle"
-                  onpointerdown={(event) =>
-                    beginFormationDrag(event, formation, "transition")}
-                  aria-label="Change the walk into {formationName(
+                  class="formation-body"
+                  onpointerdown={(event) => {
+                    if (index === 0) return;
+                    beginFormationDrag(event, formation, "move");
+                  }}
+                  onclick={() => {
+                    if (didFormationDrag) {
+                      didFormationDrag = false;
+                      return;
+                    }
+                    editMode.selectFormation(formation.id);
+                  }}
+                  aria-label="{formationName(
                     formation,
                     index
-                  )}, currently {formation.transitionBeats} counts"
-                  title="Drag to change how many counts the walk takes"
-                ></button>
-              {/if}
-              <button
-                type="button"
-                class="formation-body"
-                onpointerdown={(event) => {
-                  if (index === 0) return;
-                  beginFormationDrag(event, formation, "move");
-                }}
-                onclick={() => {
-                  if (didFormationDrag) {
-                    didFormationDrag = false;
-                    return;
-                  }
-                  editMode.selectFormation(formation.id);
-                }}
-                aria-label="{formationName(
-                  formation,
-                  index
-                )}, in place on count {formation.atBeat}{index > 0
-                  ? `, ${formation.transitionBeats} counts to get there`
-                  : ''}"
-              >
-                <span class="formation-name">
-                  {formationName(formation, index)}
-                </span>
-                <span class="formation-count">{beat}</span>
-              </button>
-              {#if selected && index > 0}
-                <button
-                  type="button"
-                  class="formation-action"
-                  transition:popIn={{ duration: DURATION.fast }}
-                  aria-label="Remove {formationName(formation, index)}"
-                  title="Remove"
-                  onpointerdown={(event) => event.stopPropagation()}
-                  onclick={(event) => {
-                    event.stopPropagation();
-                    removeFormation(formation.id);
-                  }}
+                  )}, in place on count {formation.atBeat}{index > 0
+                    ? `, ${formation.transitionBeats} counts to get there`
+                    : ''}"
                 >
-                  <i class="fas fa-trash" aria-hidden="true"></i>
+                  <span class="formation-name">
+                    {formationName(formation, index)}
+                  </span>
+                  <span class="formation-count">{beat}</span>
                 </button>
-              {/if}
-            </div>
-          {/each}
+                {#if selected && index > 0}
+                  <button
+                    type="button"
+                    class="formation-action"
+                    transition:popIn={{ duration: DURATION.fast }}
+                    aria-label="Remove {formationName(formation, index)}"
+                    title="Remove"
+                    onpointerdown={(event) => event.stopPropagation()}
+                    onclick={(event) => {
+                      event.stopPropagation();
+                      removeFormation(formation.id);
+                    }}
+                  >
+                    <i class="fas fa-trash" aria-hidden="true"></i>
+                  </button>
+                {/if}
+              </div>
+            {/each}
+          </div>
+
+          <div
+            class="context-layer motion-context"
+            class:active={timelineLens === "motion"}
+            aria-hidden={timelineLens !== "motion"}
+          >
+            <span class="view-guide-icon"
+              ><i class="fas fa-chart-line"></i></span
+            >
+            <span>
+              <strong>Floor speed · metres per second.</strong>
+              Calculated from each formation path and its easing.
+            </span>
+            <span class="motion-scale">0–{maxFloorSpeed.toFixed(1)} m/s</span>
+          </div>
+
+          <div
+            class="lane-playhead context-playhead"
+            style:left="{stageState.currentBeat * effectivePixelsPerBeat}px"
+          ></div>
         </div>
 
         {#each choreography.performers as performer (performer.id)}
@@ -622,117 +799,175 @@
             >
               <span>{performer.label}</span>
             </button>
-            <button
-              type="button"
-              class="add-sequence"
-              onclick={() => openPicker(performer.id)}
-              aria-label="Add sequence for performer {performer.label}"
-              title="Add sequence"
-            >
-              <i class="fas fa-plus" aria-hidden="true"></i>
-            </button>
+            <div class="lane-trailing">
+              <Crossfade key={timelineLens} fill>
+                {#if timelineLens === "hands"}
+                  <button
+                    type="button"
+                    class="add-sequence"
+                    onclick={() => openPicker(performer.id)}
+                    aria-label="Add sequence for performer {performer.label}"
+                    title="Add sequence"
+                  >
+                    <i class="fas fa-plus" aria-hidden="true"></i>
+                  </button>
+                {:else if timelineLens === "floor"}
+                  <span class="lane-mode-glyph" title="Floor path">
+                    <i class="fas fa-route" aria-hidden="true"></i>
+                  </span>
+                {:else}
+                  <span class="current-speed">
+                    <strong
+                      >{(
+                        currentFrameByPerformer.get(performer.id)
+                          ?.speedMetersPerSecond ?? 0
+                      ).toFixed(1)}</strong
+                    >
+                    <span>m/s</span>
+                  </span>
+                {/if}
+              </Crossfade>
+            </div>
           </div>
 
           <div
             class="sequence-lane"
             class:selected={editMode.selectedPerformerId === performer.id}
+            data-lens={timelineLens}
             style="--performer-color: {performer.color}; --pixels-per-beat: {effectivePixelsPerBeat}px"
             onpointerdown={seekFromPointer}
             role="group"
-            aria-label="Performer {performer.label} sequence lane"
+            aria-label="Performer {performer.label} {timelineLens} lane"
           >
+            <div
+              class="lens-layer hands-layer"
+              class:active={timelineLens === "hands"}
+              aria-hidden={timelineLens !== "hands"}
+              inert={timelineLens !== "hands"}
+            >
+              {#if performer.sequenceClips.length === 0}
+                <button
+                  type="button"
+                  class="lane-add-hint"
+                  transition:flyFade={{ duration: DURATION.normal, x: 6, y: 0 }}
+                  onpointerdown={(event) => event.stopPropagation()}
+                  onclick={() => openPicker(performer.id)}
+                >
+                  <i class="fas fa-plus" aria-hidden="true"></i>
+                  Add sequence
+                </button>
+              {/if}
+              {#each performer.sequenceClips as clip (clip.id)}
+                <div
+                  class="sequence-clip"
+                  class:selected={editMode.selectedClipId === clip.id}
+                  class:active={activeClipIds.has(clip.id)}
+                  class:dragging={drag?.clipId === clip.id}
+                  style="left: {clipStart(clip) *
+                    effectivePixelsPerBeat}px; width: {Math.max(
+                    28,
+                    clipDuration(clip) * effectivePixelsPerBeat
+                  )}px"
+                  role="option"
+                  aria-selected={editMode.selectedClipId === clip.id}
+                  tabindex="0"
+                  onkeydown={(event) =>
+                    handleClipKeydown(event, performer, clip)}
+                >
+                  <StageHandsClipContent
+                    title={clipDisplayLabel(clip)}
+                    sequence={sequenceForClip(clip)}
+                    activeStepIndex={activeStepIndex(performer, clip)}
+                    loop={clip.loop}
+                  />
+                  <button
+                    type="button"
+                    class="clip-body"
+                    onpointerdown={(event) =>
+                      beginClipDrag(event, clip, "move")}
+                    onclick={(event) => selectClip(event, performer, clip)}
+                    aria-label="{clipDisplayLabel(
+                      clip
+                    )}, starts at beat {clip.startBeat}, lasts {clip.durationBeats} beats"
+                  >
+                    <span class="clip-name">{clipDisplayLabel(clip)}</span>
+                  </button>
+                  {#if editMode.selectedClipId === clip.id}
+                    <button
+                      type="button"
+                      class="clip-action"
+                      transition:popIn={{ duration: DURATION.fast }}
+                      class:active={clip.loop}
+                      aria-pressed={clip.loop}
+                      aria-label="Loop {clipDisplayLabel(clip)}"
+                      title="Loop"
+                      onpointerdown={(event) => event.stopPropagation()}
+                      onclick={(event) => {
+                        event.stopPropagation();
+                        stageState.toggleSequenceClipLoop(clip.id);
+                      }}
+                    >
+                      <i class="fas fa-repeat" aria-hidden="true"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="clip-action delete-clip"
+                      transition:popIn={{ duration: DURATION.fast }}
+                      aria-label="Remove {clipDisplayLabel(clip)}"
+                      title="Remove"
+                      onpointerdown={(event) => event.stopPropagation()}
+                      onclick={(event) => {
+                        event.stopPropagation();
+                        removeClip(performer, clip);
+                      }}
+                    >
+                      <i class="fas fa-trash" aria-hidden="true"></i>
+                    </button>
+                  {/if}
+                  <button
+                    type="button"
+                    class="resize-handle"
+                    onpointerdown={(event) =>
+                      beginClipDrag(event, clip, "resize")}
+                    aria-label="Resize {clipDisplayLabel(clip)}"
+                    title="Drag to change duration"
+                  ></button>
+                </div>
+              {/each}
+            </div>
+
+            <div
+              class="lens-layer floor-layer"
+              class:active={timelineLens === "floor"}
+              aria-hidden={timelineLens !== "floor"}
+            >
+              <StageFloorLane
+                segments={floorTravelByPerformer.get(performer.id) ?? []}
+                currentBeat={stageState.currentBeat}
+                pixelsPerBeat={effectivePixelsPerBeat}
+              />
+            </div>
+
+            <div
+              class="lens-layer motion-layer"
+              class:active={timelineLens === "motion"}
+              aria-hidden={timelineLens !== "motion"}
+            >
+              <StageMotionLane
+                samples={floorSpeedByPerformer.get(performer.id) ?? []}
+                currentBeat={stageState.currentBeat}
+                currentSpeed={currentFrameByPerformer.get(performer.id)
+                  ?.speedMetersPerSecond ?? 0}
+                maxBeat={maxBeats}
+                maxSpeed={maxFloorSpeed}
+                pixelsPerBeat={effectivePixelsPerBeat}
+              />
+            </div>
+
             <div
               class="lane-playhead"
               style:left="{stageState.currentBeat * effectivePixelsPerBeat}px"
             ></div>
-            {#if performer.sequenceClips.length === 0}
-              <button
-                type="button"
-                class="lane-add-hint"
-                transition:flyFade={{ duration: DURATION.normal, x: 6, y: 0 }}
-                onpointerdown={(event) => event.stopPropagation()}
-                onclick={() => openPicker(performer.id)}
-              >
-                <i class="fas fa-plus" aria-hidden="true"></i>
-                Add sequence
-              </button>
-            {/if}
-            {#each performer.sequenceClips as clip (clip.id)}
-              <div
-                class="sequence-clip"
-                class:selected={editMode.selectedClipId === clip.id}
-                class:active={activeClipIds.has(clip.id)}
-                class:dragging={drag?.clipId === clip.id}
-                style="left: {clipStart(clip) *
-                  effectivePixelsPerBeat}px; width: {Math.max(
-                  28,
-                  clipDuration(clip) * effectivePixelsPerBeat
-                )}px"
-                role="option"
-                aria-selected={editMode.selectedClipId === clip.id}
-                tabindex="0"
-                onkeydown={(event) => handleClipKeydown(event, performer, clip)}
-              >
-                <button
-                  type="button"
-                  class="clip-body"
-                  onpointerdown={(event) => beginClipDrag(event, clip, "move")}
-                  onclick={(event) => selectClip(event, performer, clip)}
-                  aria-label="{stageState.clipLabel(
-                    clip
-                  )}, starts at beat {clip.startBeat}, lasts {clip.durationBeats} beats"
-                >
-                  <span class="clip-name">{stageState.clipLabel(clip)}</span>
-                  {#if clip.loop && editMode.selectedClipId !== clip.id}
-                    <i
-                      class="fas fa-repeat"
-                      aria-label="Loops"
-                      transition:popIn={{ duration: DURATION.fast }}
-                    ></i>
-                  {/if}
-                </button>
-                {#if editMode.selectedClipId === clip.id}
-                  <button
-                    type="button"
-                    class="clip-action"
-                    transition:popIn={{ duration: DURATION.fast }}
-                    class:active={clip.loop}
-                    aria-pressed={clip.loop}
-                    aria-label="Loop {stageState.clipLabel(clip)}"
-                    title="Loop"
-                    onpointerdown={(event) => event.stopPropagation()}
-                    onclick={(event) => {
-                      event.stopPropagation();
-                      stageState.toggleSequenceClipLoop(clip.id);
-                    }}
-                  >
-                    <i class="fas fa-repeat" aria-hidden="true"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="clip-action delete-clip"
-                    transition:popIn={{ duration: DURATION.fast }}
-                    aria-label="Remove {stageState.clipLabel(clip)}"
-                    title="Remove"
-                    onpointerdown={(event) => event.stopPropagation()}
-                    onclick={(event) => {
-                      event.stopPropagation();
-                      removeClip(performer, clip);
-                    }}
-                  >
-                    <i class="fas fa-trash" aria-hidden="true"></i>
-                  </button>
-                {/if}
-                <button
-                  type="button"
-                  class="resize-handle"
-                  onpointerdown={(event) =>
-                    beginClipDrag(event, clip, "resize")}
-                  aria-label="Resize {stageState.clipLabel(clip)}"
-                  title="Drag to change duration"
-                ></button>
-              </div>
-            {/each}
           </div>
         {/each}
       </div>
@@ -797,6 +1032,16 @@
     font-size: var(--font-size-min, 0.875rem);
   }
 
+  .timeline-lens-control {
+    width: min(15rem, calc(100% - 6rem));
+    min-width: 11rem;
+    flex: 0 1 15rem;
+  }
+
+  .timeline-lens-control :global(.segmented-control) {
+    width: 100%;
+  }
+
   .timeline-label {
     color: var(--theme-text, white);
     font-size: var(--font-size-min, 0.875rem);
@@ -826,8 +1071,8 @@
 
   .timeline-disclosure {
     display: inline-flex;
-    width: 8.75rem;
-    min-width: 8.75rem;
+    width: auto;
+    min-width: 0;
     min-height: var(--min-touch-target, 44px);
     align-items: center;
     justify-content: center;
@@ -902,10 +1147,12 @@
        else is going, so a chip sitting on the final count has somewhere to be
        drawn instead of being clipped by the lane it ends. */
     grid-template-columns: 7rem minmax(var(--timeline-width), 1fr);
-    grid-auto-rows: 3.5rem;
+    grid-auto-rows: var(--stage-timeline-lane-size, 3.5rem);
     /* 3.5rem keeps the set chip's 2.75rem touch target intact inside its
        0.35rem inset, and matches the performer lane height. */
-    grid-template-rows: 2.25rem 3.5rem;
+    grid-template-rows:
+      var(--stage-timeline-ruler-size, 2.25rem)
+      var(--stage-timeline-lane-size, 3.5rem);
   }
 
   .ruler-label,
@@ -929,11 +1176,19 @@
   .ruler-label {
     display: flex;
     align-items: center;
-    padding: 0 0.75rem;
+    padding: 0;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.42));
     font-size: 0.75rem;
     font-weight: 750;
     letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .ruler-label-content {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    padding: 0 0.75rem;
   }
 
   .ruler {
@@ -1008,6 +1263,42 @@
     cursor: pointer;
   }
 
+  .lane-trailing {
+    position: relative;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex: 0 0 auto;
+  }
+
+  .lane-mode-glyph,
+  .current-speed {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    border: 1px solid
+      color-mix(in srgb, var(--performer-color) 35%, transparent);
+    border-radius: 0.65rem;
+    background: color-mix(in srgb, var(--performer-color) 8%, transparent);
+    color: var(--performer-color);
+  }
+
+  .current-speed {
+    align-content: center;
+    gap: 0.05rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .current-speed strong {
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .current-speed span {
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 700;
+  }
+
   .formation-label {
     display: flex;
     align-items: center;
@@ -1017,6 +1308,19 @@
     /* Deliberately NOT --theme-accent: the themed accent collides with the
        performer clip colours and makes the spine read as a fifth lane. */
     --formation-accent: #7cd4e8;
+  }
+
+  .context-label {
+    padding: 0;
+  }
+
+  .context-label-content {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    padding: 0.3rem 0.45rem;
   }
   .formation-label-text {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.42));
@@ -1036,6 +1340,24 @@
     background: color-mix(in srgb, var(--formation-accent) 10%, transparent);
     color: var(--formation-accent);
     cursor: pointer;
+  }
+
+  .context-label-glyph,
+  .context-unit {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    border: 1px solid
+      color-mix(in srgb, var(--formation-accent) 38%, transparent);
+    border-radius: 0.65rem;
+    background: color-mix(in srgb, var(--formation-accent) 8%, transparent);
+    color: var(--formation-accent);
+  }
+
+  .context-unit {
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 800;
   }
   .formation-track {
     position: relative;
@@ -1057,6 +1379,81 @@
     /* Deliberately NOT --theme-accent: the themed accent collides with the
        performer clip colours and makes the spine read as a fifth lane. */
     --formation-accent: #7cd4e8;
+  }
+
+  .context-track {
+    position: relative;
+  }
+
+  /* These layers stay mounted because the Hands view owns prepared pictographs
+     and the timeline owns selection/drag state. Remounting them through the
+     keyed Crossfade primitive would discard that work on every lens switch.
+     The parent row fixes the geometry; opacity communicates the change without
+     allowing either view to move the rows around it. */
+  .context-layer,
+  .lens-layer {
+    position: absolute;
+    inset: 0;
+    min-width: 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity var(--duration-normal, 240ms) ease,
+      visibility 0s linear var(--duration-normal, 240ms);
+  }
+
+  .context-layer.active,
+  .lens-layer.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0s;
+  }
+
+  .hands-context,
+  .motion-context {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0 0.85rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
+    font-size: var(--font-size-compact, 0.75rem);
+  }
+
+  .hands-context strong,
+  .motion-context strong {
+    color: var(--theme-text, white);
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .view-guide-icon {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--formation-accent) 14%, transparent);
+    color: var(--formation-accent);
+  }
+
+  .motion-scale {
+    display: grid;
+    width: 7rem;
+    min-width: 7rem;
+    margin-left: auto;
+    place-items: center;
+    padding: 0.25rem 0.45rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 0.45rem;
+    color: var(--theme-text, white);
+    font-variant-numeric: tabular-nums;
+    font-weight: 750;
+  }
+
+  .context-playhead {
+    z-index: 10;
   }
   /* The cast is standing still: a flat hairline rail, no travel implied. */
   .formation-hold {
@@ -1220,6 +1617,7 @@
   }
   .sequence-lane {
     position: relative;
+    container-type: inline-size;
     overflow: hidden;
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     background:
@@ -1276,6 +1674,8 @@
   }
 
   .clip-body {
+    position: relative;
+    z-index: 2;
     display: flex;
     min-width: 0;
     min-height: 2.75rem;
@@ -1301,7 +1701,13 @@
     white-space: nowrap;
   }
 
+  .hands-layer .clip-name {
+    visibility: hidden;
+  }
+
   .clip-action {
+    position: relative;
+    z-index: 3;
     display: grid;
     width: 2.25rem;
     min-height: 2.75rem;
@@ -1329,6 +1735,8 @@
   }
 
   .resize-handle {
+    position: relative;
+    z-index: 3;
     display: grid;
     width: 1rem;
     min-height: 2.75rem;
@@ -1407,18 +1815,18 @@
 
     .timeline-disclosure {
       width: var(--min-touch-target, 44px);
-      min-width: var(--min-touch-target, 44px);
       padding-inline: 0;
     }
 
-    .timeline-disclosure .disclosure-copy {
+    .timeline-disclosure span {
       display: none;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .sequence-clip {
-      scroll-behavior: auto;
+    .context-layer,
+    .lens-layer {
+      transition: none;
     }
   }
 </style>

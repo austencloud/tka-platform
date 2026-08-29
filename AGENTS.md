@@ -239,6 +239,13 @@ Suggest `/compact` at 70% context.
 
 Loaded on demand, not every session. See `docs/architecture/` — currently `save-paths.md` (save paths, public index sync, browse gallery cache).
 
+Before changing locomotion, gait timing, exact steps, stops, turns, lateral or
+crossed stepping, foot planting, retargeting, terrain traversal, or motion
+matching, read `.claude/rules/locomotion.md` and
+`docs/architecture/locomotion-research-canon.md`. The canon separates research,
+adopted architecture, prototypes, shipped behavior, dataset rights, and the
+required visual proof.
+
 ---
 
 # Codex Onboarding (read this before non-trivial work)
@@ -250,6 +257,7 @@ You are Codex, working in the same repo as Claude Code. The sections above are t
 The rules above are a summary. The authoritative, enforced set is in `.claude/rules/*.md`. They are not optional and they are not Claude-specific. Read the relevant one before the matching work. The load-bearing ones:
 
 - `never-hand-roll.md` (MASTER) — one concept, one behavior owner. New feature components and creative work are allowed; parallel implementations of existing capabilities are not. Search by meaning, then reuse, extend, compose, or establish a new owner.
+- `locomotion.md`: enforced planner, animator, terminal-transition, foot-contact, motion-matching, research, licensing, and live-verification boundaries for every locomotion change.
 - `autonomy-and-completeness.md` — answer your own questions from the code, finish the task, do not ask what a grep would tell you.
 - `verification-protocol.md` + `no-fabrication.md` + `no-assumption-without-evidence.md` — every "done"/"fixed" needs proof in the same message. Never claim a file/function/behavior exists without grep or Read output in the same turn.
 - `visual-verification-mandatory.md` + `4k-native-layout.md` — if your diff changes how something LOOKS, you open a browser and screenshot it yourself, unprompted, at 1920/2560/3840/1440/tablet/960x412/375, and iterate until it is genuinely good. Standing permission — do not ask. A green typecheck is not visual proof.

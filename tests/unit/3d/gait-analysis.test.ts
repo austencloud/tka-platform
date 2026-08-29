@@ -9,6 +9,8 @@ import {
   findTwitches,
   latestArrivalFrames,
   latestTravelFrames,
+  legSegmentSeparation,
+  legOrderMargin,
   lateralOffsetOverSupport,
   resolveGroundY,
   supportOf,
@@ -417,6 +419,37 @@ describe("gait analysis", () => {
     expect(listing.weightShiftAlternates).toBe(false);
   });
 
+  it("follows the supporting footprint across the body during a crossover", () => {
+    const crossed = syntheticWalk({
+      steps: 6,
+      stepLength: 0.7,
+      framesPerStance: 22,
+      weightShift: 0.045,
+    }).map((f) => ({
+      ...f,
+      // The supporting foot and the pelvis both cross the body's centreline.
+      // Anatomical left/right names therefore say the opposite of which side
+      // is actually carrying the avatar in this part of the grapevine.
+      hips: { ...f.hips, x: -f.hips.x },
+      left: {
+        ...f.left,
+        ankle: { ...f.left.ankle, x: -f.left.ankle.x },
+        toe: f.left.toe ? { ...f.left.toe, x: -f.left.toe.x } : null,
+        hip: { ...f.left.hip, x: 0.1 },
+      },
+      right: {
+        ...f.right,
+        ankle: { ...f.right.ankle, x: -f.right.ankle.x },
+        toe: f.right.toe ? { ...f.right.toe, x: -f.right.toe.x } : null,
+        hip: { ...f.right.hip, x: -0.1 },
+      },
+    }));
+
+    const report = analyzeGait(crossed);
+    expect(report.weightShiftAlternates).toBe(true);
+    expect(report.weightShiftAmplitude).toBeGreaterThan(0.05);
+  });
+
   it("signs the lateral offset by the character's own right", () => {
     // Forward +Z puts the character's left at +X. Standing on the left foot
     // with the hips on the centreline leaves the body 10cm to the character's
@@ -430,6 +463,67 @@ describe("gait analysis", () => {
     expect(lateralOffsetOverSupport(f, "left")).toBeCloseTo(0.1, 5);
     expect(lateralOffsetOverSupport(f, "both")).toBeNull();
     expect(lateralOffsetOverSupport(f, "flight")).toBeNull();
+  });
+
+  it("detects feet crossing sides under the thighs", () => {
+    const clear = frame(
+      0,
+      { x: 0, z: 0 },
+      { x: 0.1, y: 0, z: 0 },
+      { x: -0.1, y: 0, z: 0 }
+    );
+    const crossed = {
+      ...clear,
+      left: { ...clear.left, ankle: { ...clear.left.ankle, x: -0.08 } },
+      right: { ...clear.right, ankle: { ...clear.right.ankle, x: 0.08 } },
+    };
+
+    expect(legOrderMargin(clear)).toBeGreaterThan(0);
+    expect(legOrderMargin(crossed)).toBeLessThan(0);
+
+    const frames = Array.from({ length: 20 }, (_, index) => ({
+      ...(index < 10 ? clear : crossed),
+      t: index * DT,
+    }));
+    const report = analyzeGait(frames);
+    expect(report.legCrossingSeconds).toBeGreaterThan(0);
+    expect(report.legCrossingFraction).toBeGreaterThan(0.4);
+    expect(report.minimumLegOrderMargin).toBeLessThan(0);
+    expect(report.maximumLegOrderMargin).toBeGreaterThan(0);
+    expect(report.legOrderAlternates).toBe(true);
+  });
+
+  it("distinguishes a depth-cleared crossover from intersecting leg paths", () => {
+    const base = frame(
+      0,
+      { x: 0, z: 0 },
+      { x: 0.1, y: 0, z: 0 },
+      { x: -0.1, y: 0, z: 0 }
+    );
+    const colliding = {
+      ...base,
+      left: { ...base.left, ankle: { ...base.left.ankle, x: -0.08 } },
+      right: { ...base.right, ankle: { ...base.right.ankle, x: 0.08 } },
+    };
+    const cleared = {
+      ...colliding,
+      right: {
+        ...colliding.right,
+        hip: { ...colliding.right.hip, z: 0.12 },
+        knee: { ...colliding.right.knee, z: 0.12 },
+        ankle: { ...colliding.right.ankle, z: 0.12 },
+      },
+    };
+
+    expect(
+      Math.hypot(
+        colliding.left.ankle.x - colliding.right.ankle.x,
+        colliding.left.ankle.y - colliding.right.ankle.y,
+        colliding.left.ankle.z - colliding.right.ankle.z
+      )
+    ).toBeGreaterThan(0.1);
+    expect(legSegmentSeparation(colliding)).toBeLessThan(0.01);
+    expect(legSegmentSeparation(cleared)).toBeGreaterThan(0.05);
   });
 
   it("throws away stance runs too short to be a step", () => {

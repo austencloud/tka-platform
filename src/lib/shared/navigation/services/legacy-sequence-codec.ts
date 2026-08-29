@@ -118,6 +118,7 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
   // "double" or "staff" is taken.
   [PropType.FIRE_DOUBLE_STAFF]: "6",
   [PropType.CLUB]: "C",
+  [PropType.CLASSIC_CLUB]: "7",
   [PropType.BIGCLUB]: "c",
   [PropType.FAN]: "F",
   [PropType.BIGFAN]: "f",

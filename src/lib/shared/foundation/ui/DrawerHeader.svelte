@@ -29,9 +29,22 @@
     icon?: string;
     /** Optional custom icon color */
     iconColor?: string;
+    /** Prevent closing while the drawer is completing an in-flight action. */
+    closeDisabled?: boolean;
+    /** Accessible label for the close button. */
+    closeLabel?: string;
   }
 
-  let { title, onClose, onBack, subtitle, icon, iconColor }: Props = $props();
+  let {
+    title,
+    onClose,
+    onBack,
+    subtitle,
+    icon,
+    iconColor,
+    closeDisabled = false,
+    closeLabel = "Close",
+  }: Props = $props();
 
   let hapticService: HapticFeedback | null = null;
   try {
@@ -41,6 +54,7 @@
   }
 
   function handleClose() {
+    if (closeDisabled) return;
     hapticService?.trigger("selection");
     onClose();
   }
@@ -92,7 +106,8 @@
   <button
     class="drawer-close-btn"
     onclick={handleClose}
-    aria-label="Close"
+    aria-label={closeLabel}
+    disabled={closeDisabled}
     type="button"
   >
     <svg
@@ -126,7 +141,10 @@
   /* Drill-down sub-page header: back-left, title-centered, close-right. */
   .drawer-header.has-back {
     display: grid;
-    grid-template-columns: var(--min-touch-target, 48px) 1fr var(--min-touch-target, 48px);
+    grid-template-columns: var(--min-touch-target, 48px) 1fr var(
+        --min-touch-target,
+        48px
+      );
     gap: 12px;
   }
 
@@ -181,7 +199,11 @@
     border-radius: 50%;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
-    transition: all var(--duration-normal, 200ms) ease;
+    transition:
+      color var(--transition-normal),
+      background-color var(--transition-normal),
+      border-color var(--transition-normal),
+      transform var(--transition-fast);
     flex-shrink: 0;
   }
 
@@ -190,6 +212,11 @@
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: var(--theme-text, white);
+  }
+
+  .drawer-close-btn:disabled {
+    cursor: wait;
+    opacity: 0.58;
   }
 
   .drawer-close-btn:active,

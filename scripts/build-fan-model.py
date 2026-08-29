@@ -1,8 +1,9 @@
-"""Build the Doodle-style fire/day fan and optional two-faced cover.
+"""Build the production fan family and optional two-faced cover.
 
-The asset carries three independently switchable groups:
+The asset carries four independently switchable groups:
 
 * ``Fan_Fire``: oil-darkened steel frame with five rolled kevlar wicks.
+* ``Fan_Lotus``: measured five-petal Russian-grip fire fan.
 * ``Fan_Day``: the same reach as a thick HDPE practice frame.
 * ``Fan_Cover``: a slip-on crescent with a solid front and striped back.
 
@@ -23,11 +24,15 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import struct
 import sys
+import tempfile
+import zlib
 from pathlib import Path
 
 import bpy
 from mathutils import Vector
+from mathutils.geometry import interpolate_bezier
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,6 +41,10 @@ DOODLEGRIP_CONTOURS = ROOT / "scripts" / "assets" / "doodlegrip-day-contours.jso
 DOODLEGRIP_FIRE_REFERENCE = (
     ROOT / "scripts" / "assets" / "doodlegrip-fire-reference.json"
 )
+LOTUS_FIRE_REFERENCE = ROOT / "scripts" / "assets" / "lotus-fire-reference.json"
+LOTUS_FIRE_VECTOR_REFERENCE = (
+    ROOT / "scripts" / "assets" / "lotus-fire-reference.svg"
+)
 
 FIRE_WIDTH_M = 0.4826
 FIRE_HEIGHT_M = 0.3302
@@ -43,6 +52,12 @@ FIRE_RING_DIAMETER_M = 0.0381
 FIRE_WICK_LENGTH_M = 0.0381
 FIRE_OUTER_SPINE_RADIUS_M = 0.00238125
 FIRE_INNER_SPINE_RADIUS_M = 0.0015875
+LOTUS_WIDTH_M = 0.48
+LOTUS_HEIGHT_M = 0.35
+LOTUS_RING_DIAMETER_M = 0.092075
+LOTUS_FRAME_RADIUS_M = 0.002
+LOTUS_GRIP_RADIUS_M = 0.0035
+LOTUS_BEZIER_SAMPLES_PER_SPAN = 12
 DAY_WIDTH_M = 0.51
 DAY_HEIGHT_M = 0.35
 DAY_DEPTH_M = 0.0095
@@ -96,6 +111,156 @@ def make_material(
         principled.inputs["Coat Weight"].default_value = coat
     if "Coat Roughness" in principled.inputs:
         principled.inputs["Coat Roughness"].default_value = min(roughness, 0.3)
+    return material
+
+
+def write_rgba_png(
+    path: Path,
+    pixels: list[float],
+    size: int,
+) -> None:
+    """Write a tiny dependency-free RGBA texture Blender can embed reliably."""
+
+    def chunk(kind: bytes, payload: bytes) -> bytes:
+        return (
+            struct.pack(">I", len(payload))
+            + kind
+            + payload
+            + struct.pack(">I", zlib.crc32(kind + payload) & 0xFFFFFFFF)
+        )
+
+    rows = bytearray()
+    stride = size * 4
+    encoded = bytes(
+        max(0, min(255, round(component * 255))) for component in pixels
+    )
+    for row in range(size):
+        rows.append(0)
+        start = row * stride
+        rows.extend(encoded[start : start + stride])
+    path.write_bytes(
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(bytes(rows), level=9))
+        + chunk(b"IEND", b"")
+    )
+
+
+def woven_wick_height(u: float, v: float) -> float:
+    """Return one chunky knitted Kevlar row shared by mesh and normal map."""
+    row_count = 14
+    row_index = math.floor(v * row_count)
+    row_v = (v * row_count) % 1.0
+    stitch_u = (u * 12 + 0.5 * (row_index % 2)) % 1.0
+
+    def periodic_distance(left: float, right: float) -> float:
+        return abs((left - right + 0.5) % 1.0 - 0.5)
+
+    # The product photograph reads as stacked, scalloped crochet rows rather
+    # than a diamond net. One broad cord makes the visible wave, while the
+    # smaller return cord tucks underneath and joins the next row.
+    crest = 0.50 + 0.16 * math.cos(math.tau * stitch_u)
+    return_crest = 0.08 - 0.09 * math.cos(math.tau * stitch_u)
+    face_yarn = math.exp(-((periodic_distance(row_v, crest) / 0.105) ** 2))
+    return_yarn = math.exp(
+        -((periodic_distance(row_v, return_crest) / 0.075) ** 2)
+    )
+    row_body = math.exp(-((periodic_distance(row_v, 0.5) / 0.29) ** 2))
+    return min(
+        1.0,
+        0.06 + face_yarn * 0.72 + return_yarn * 0.18 + row_body * 0.14,
+    )
+
+
+def make_woven_wick_material(name: str) -> bpy.types.Material:
+    """Create the pale, row-braided Kevlar used by the photographed Lotus wicks."""
+    size = 192
+    heights: list[float] = []
+    colors: list[float] = []
+    for y in range(size):
+        v = (y + 0.5) / size
+        for x in range(size):
+            u = (x + 0.5) / size
+            height = woven_wick_height(u, v)
+            fibre = 0.006 * math.sin(math.tau * (47 * u + 31 * v))
+            shade = 0.88 + 0.12 * height + fibre
+            heights.append(height)
+            colors.extend((1.0 * shade, 0.95 * shade, 0.72 * shade, 1.0))
+
+    normals: list[float] = []
+    strength = 2.15
+    for y in range(size):
+        for x in range(size):
+            left = heights[y * size + ((x - 1) % size)]
+            right = heights[y * size + ((x + 1) % size)]
+            below = heights[((y - 1) % size) * size + x]
+            above = heights[((y + 1) % size) * size + x]
+            normal = Vector(
+                (
+                    -(right - left) * strength,
+                    -(above - below) * strength,
+                    1.0,
+                )
+            ).normalized()
+            normals.extend(
+                (
+                    normal.x * 0.5 + 0.5,
+                    normal.y * 0.5 + 0.5,
+                    normal.z * 0.5 + 0.5,
+                    1.0,
+                )
+            )
+
+    with tempfile.TemporaryDirectory(prefix="tka-lotus-wick-") as texture_dir:
+        texture_path = Path(texture_dir)
+        color_path = texture_path / "lotus-wick-color.png"
+        normal_path = texture_path / "lotus-wick-normal.png"
+        write_rgba_png(color_path, colors, size)
+        write_rgba_png(normal_path, normals, size)
+        color_image = bpy.data.images.load(str(color_path), check_existing=False)
+        normal_image = bpy.data.images.load(str(normal_path), check_existing=False)
+        color_image.name = f"{name}_Color"
+        normal_image.name = f"{name}_Normal"
+        color_image.colorspace_settings.name = "sRGB"
+        normal_image.colorspace_settings.name = "Non-Color"
+        color_image.pack()
+        normal_image.pack()
+
+    if max(color_image.pixels[:4]) < 0.2:
+        raise RuntimeError("Generated Lotus wick color texture is empty")
+    if max(normal_image.pixels[:4]) < 0.5:
+        raise RuntimeError("Generated Lotus wick normal texture is empty")
+
+    material = make_material(name, (0.98, 0.9, 0.68, 1), roughness=0.98)
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
+    principled = nodes.get("Principled BSDF")
+    principled.inputs["Base Color"].default_value = (1.0, 1.0, 1.0, 1.0)
+
+    color_texture = nodes.new("ShaderNodeTexImage")
+    color_texture.name = f"{name}_ColorTexture"
+    color_texture.image = color_image
+    color_texture.interpolation = "Linear"
+    color_texture.extension = "REPEAT"
+    links.new(color_texture.outputs["Color"], principled.inputs["Base Color"])
+    emission_color = principled.inputs.get("Emission Color")
+    emission_strength = principled.inputs.get("Emission Strength")
+    if emission_color is not None and emission_strength is not None:
+        # Kevlar scatters the studio light through a pale, fibrous surface.
+        # A restrained self-fill keeps that soft cream body from collapsing
+        # to grey in the dark runtime scene without making an unlit wick glow.
+        links.new(color_texture.outputs["Color"], emission_color)
+        emission_strength.default_value = 0.65
+
+    normal_texture = nodes.new("ShaderNodeTexImage")
+    normal_texture.name = f"{name}_NormalTexture"
+    normal_texture.image = normal_image
+    normal_texture.interpolation = "Linear"
+    normal_texture.extension = "REPEAT"
+    normal_map = nodes.new("ShaderNodeNormalMap")
+    normal_map.inputs["Strength"].default_value = 0.5
+    links.new(normal_texture.outputs["Color"], normal_map.inputs["Color"])
+    links.new(normal_map.outputs["Normal"], principled.inputs["Normal"])
     return material
 
 
@@ -317,6 +482,178 @@ def add_cylinder_between(
     return finish_mesh(obj, material, bevel=radius * 0.18)
 
 
+def add_woven_cylinder_between(
+    name: str,
+    start: Vector,
+    end: Vector,
+    radius: float,
+    material: bpy.types.Material,
+    parent: bpy.types.Object,
+    *,
+    radial_segments: int = 40,
+    axial_segments: int = 28,
+) -> bpy.types.Object:
+    """Build one rolled wick whose crossed Kevlar weave catches real light."""
+    direction = end - start
+    length = direction.length
+    vertices: list[tuple[float, float, float]] = []
+    faces: list[tuple[int, ...]] = []
+    relief = 0.0003
+    for axial_index in range(axial_segments + 1):
+        t = axial_index / axial_segments
+        edge_fade = min(1.0, t * 8, (1 - t) * 8)
+        for radial_index in range(radial_segments):
+            angle = math.tau * radial_index / radial_segments
+            stitch_height = woven_wick_height(
+                radial_index / radial_segments,
+                t,
+            )
+            edge_fray = (1 - edge_fade) * 0.00028 * (
+                0.65 * math.sin(7 * angle) + 0.35 * math.sin(17 * angle)
+            )
+            handmade_roll = 0.00016 * (
+                0.6 * math.sin(3 * angle + t * 5.1)
+                + 0.4 * math.sin(7 * angle - t * 3.7)
+            )
+            end_sign = -1.0 if t < 0.5 else 1.0
+            axial_fray = (
+                end_sign
+                * (1 - edge_fade)
+                * 0.00055
+                * (0.55 * math.sin(5 * angle) + 0.45 * math.sin(13 * angle))
+            )
+            z = (t - 0.5) * length + axial_fray
+            woven_radius = (
+                radius
+                + relief * edge_fade * (stitch_height - 0.42)
+                + edge_fray
+                + handmade_roll
+            )
+            vertices.append(
+                (
+                    woven_radius * math.cos(angle),
+                    woven_radius * math.sin(angle),
+                    z,
+                )
+            )
+
+    for axial_index in range(axial_segments):
+        ring = axial_index * radial_segments
+        next_ring = (axial_index + 1) * radial_segments
+        for radial_index in range(radial_segments):
+            following = (radial_index + 1) % radial_segments
+            faces.append(
+                (
+                    ring + radial_index,
+                    ring + following,
+                    next_ring + following,
+                    next_ring + radial_index,
+                )
+            )
+
+    lower_center = len(vertices)
+    upper_center = lower_center + 1
+    vertices.extend([(0.0, 0.0, -length / 2), (0.0, 0.0, length / 2)])
+    upper_ring = axial_segments * radial_segments
+    for radial_index in range(radial_segments):
+        following = (radial_index + 1) % radial_segments
+        faces.append((lower_center, following, radial_index))
+        faces.append(
+            (upper_center, upper_ring + radial_index, upper_ring + following)
+        )
+
+    mesh = bpy.data.meshes.new(f"{name}_Mesh")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    obj.location = (start + end) / 2
+    obj.rotation_mode = "QUATERNION"
+    obj.rotation_quaternion = direction.to_track_quat("Z", "Y")
+    obj.rotation_mode = "XYZ"
+    obj.parent = parent
+    obj = finish_mesh(obj, material, smooth=True)
+    uv_layer = obj.data.uv_layers.active or obj.data.uv_layers.new(name="UVMap")
+    for polygon in obj.data.polygons:
+        polygon_uvs: list[tuple[float, float]] = []
+        is_cap = len(polygon.vertices) == 3
+        for loop_index in polygon.loop_indices:
+            vertex = obj.data.vertices[obj.data.loops[loop_index].vertex_index].co
+            if is_cap:
+                polygon_uvs.append(
+                    (
+                        0.5 + vertex.x / (radius * 2.25),
+                        0.5 + vertex.y / (radius * 2.25),
+                    )
+                )
+            else:
+                polygon_uvs.append(
+                    (
+                        (math.atan2(vertex.y, vertex.x) / math.tau) % 1.0,
+                        vertex.z / length + 0.5,
+                    )
+                )
+        u_values = [uv[0] for uv in polygon_uvs]
+        crosses_seam = max(u_values) - min(u_values) > 0.5
+        for loop_index, (u, v) in zip(polygon.loop_indices, polygon_uvs):
+            uv_layer.data[loop_index].uv = (u + 1.0 if crosses_seam and u < 0.5 else u, v)
+    return obj
+
+
+def add_weld_bead(
+    name: str,
+    centre: tuple[float, float, float],
+    radius: float,
+    material: bpy.types.Material,
+    parent: bpy.types.Object,
+) -> bpy.types.Object:
+    bpy.ops.mesh.primitive_uv_sphere_add(
+        segments=16,
+        ring_count=8,
+        radius=radius,
+        location=centre,
+    )
+    obj = bpy.context.object
+    obj.name = name
+    obj.scale.z = 0.72
+    obj.parent = parent
+    return finish_mesh(obj, material)
+
+
+def add_weld_boss(
+    name: str,
+    centre: tuple[float, float, float],
+    half_extents: tuple[float, float, float],
+    phase: float,
+    material: bpy.types.Material,
+    parent: bpy.types.Object,
+) -> bpy.types.Object:
+    """Build the broad, hand-laid weld where the Lotus frame meets its grip."""
+    bpy.ops.mesh.primitive_ico_sphere_add(
+        subdivisions=2,
+        radius=1.0,
+        location=centre,
+    )
+    obj = bpy.context.object
+    obj.name = name
+    for vertex in obj.data.vertices:
+        direction = vertex.co.normalized()
+        angle = math.atan2(direction.y, direction.x)
+        silhouette = (
+            1.0
+            + 0.09 * math.sin(3 * angle + phase)
+            + 0.045 * math.sin(7 * angle - phase * 0.7)
+        )
+        crown = 1.0 + 0.06 * math.sin(5 * angle + phase * 1.3)
+        vertex.co.x = direction.x * half_extents[0] * silhouette
+        vertex.co.y = direction.y * half_extents[1] * silhouette
+        vertex.co.z = direction.z * half_extents[2] * crown
+    obj.parent = parent
+    obj["tka_weld_half_extents_m"] = list(half_extents)
+    obj["tka_weld_phase"] = phase
+    return finish_mesh(obj, material)
+
+
 def ellipse_arc(
     radius_x: float,
     radius_y: float,
@@ -377,6 +714,67 @@ def quadratic_curve(
             )
         )
     return points
+
+
+def import_svg_centerlines(
+    svg_path: Path,
+    expected_path_ids: set[str],
+) -> dict[str, list[tuple[float, float, float]]]:
+    """Import Illustrator paths without turning their handles back into guessed points."""
+    before = set(bpy.data.objects)
+    bpy.ops.import_curve.svg(filepath=str(svg_path))
+    imported = [obj for obj in bpy.data.objects if obj not in before]
+    imported_names = {obj.name for obj in imported}
+    if imported_names != expected_path_ids:
+        missing = sorted(expected_path_ids - imported_names)
+        unexpected = sorted(imported_names - expected_path_ids)
+        raise ValueError(
+            f"Lotus SVG path mismatch; missing={missing}, unexpected={unexpected}"
+        )
+
+    # Blender imports the 480 x 350 mm artboard with its lower-left at (0, 0).
+    # Moving it by this calibrated offset places the SVG pivot at model origin.
+    artboard_offset = Vector((-0.24, -0.08, 0.0))
+    centerlines: dict[str, list[tuple[float, float, float]]] = {}
+    for obj in imported:
+        if obj.type != "CURVE" or len(obj.data.splines) != 1:
+            raise ValueError(f"Lotus SVG path {obj.name} is not one curve spline")
+        spline = obj.data.splines[0]
+        if spline.type != "BEZIER" or spline.use_cyclic_u:
+            raise ValueError(f"Lotus SVG path {obj.name} must be an open Bezier")
+
+        points: list[tuple[float, float, float]] = []
+        bezier_points = spline.bezier_points
+        for index in range(len(bezier_points) - 1):
+            start = bezier_points[index]
+            end = bezier_points[index + 1]
+            segment = interpolate_bezier(
+                start.co,
+                start.handle_right,
+                end.handle_left,
+                end.co,
+                LOTUS_BEZIER_SAMPLES_PER_SPAN,
+            )
+            if index > 0:
+                segment = segment[1:]
+            points.extend(
+                tuple(obj.matrix_world @ point + artboard_offset)
+                for point in segment
+            )
+        centerlines[obj.name] = points
+
+    for obj in imported:
+        bpy.data.objects.remove(obj, do_unlink=True)
+
+    # Illustrator's source paths are exact reflections, but Blender imports
+    # each side through separate 32-bit curve data. Reflecting the authored
+    # right paths here removes the resulting micron-scale bilateral drift.
+    for right_id in sorted(
+        path_id for path_id in expected_path_ids if path_id.endswith("-right")
+    ):
+        left_id = right_id.removesuffix("-right") + "-left"
+        centerlines[left_id] = [(-x, y, z) for x, y, z in centerlines[right_id]]
+    return centerlines
 
 
 def catmull_rom_curve(
@@ -808,6 +1206,329 @@ def build_fire_frame(
     return objects
 
 
+def build_lotus_frame(
+    parent: bpy.types.Object,
+    steel: bpy.types.Material,
+    wick: bpy.types.Material,
+) -> list[bpy.types.Object]:
+    objects: list[bpy.types.Object] = []
+    reference = json.loads(LOTUS_FIRE_REFERENCE.read_text(encoding="utf-8"))
+    published = reference["published_construction"]
+    geometry = reference["geometry_m"]
+    if reference["published_dimensions_m"] != [LOTUS_WIDTH_M, LOTUS_HEIGHT_M]:
+        raise ValueError("Lotus reference no longer matches the 480 x 350 mm fan")
+    if published["spinning_ring_inside_diameter_m"] != LOTUS_RING_DIAMETER_M:
+        raise ValueError("Lotus spinning ring no longer matches the published 3 5/8 inch ID")
+    if published["frame_stock_diameter_m"] != LOTUS_FRAME_RADIUS_M * 2:
+        raise ValueError("Lotus frame stock no longer matches the published 4 mm wire")
+    if published["grip_stock_diameter_m"] != LOTUS_GRIP_RADIUS_M * 2:
+        raise ValueError("Lotus grip stock no longer matches the published 7 mm wire")
+
+    wick_roll_length = geometry["wick_roll_length_m"]
+    wick_roll_lengths = geometry["wick_roll_lengths_m"]
+    wick_diameters = geometry["wick_diameters_m"]
+    if len(wick_roll_lengths) != 5 or len(wick_diameters) != 5:
+        raise ValueError("Lotus reference must describe five measured wick rolls")
+    wick_halves = [length / 2 for length in wick_roll_lengths]
+    wick_centres = [
+        Vector((*centre, 0.0)) for centre in geometry["wick_centers_m"]
+    ]
+    wick_directions = [
+        Vector((*direction, 0.0)).normalized()
+        for direction in geometry["wick_directions"]
+    ]
+    tine_insertion_depth = geometry["wick_tine_insertion_depth_m"]
+
+    path_names = (
+        "center_petal",
+        "upper_outer_petal",
+        "upper_inner_petal",
+        "lower_outer_petal",
+        "lower_inner_petal",
+    )
+    vector_path_ids = {
+        f"{path_name.replace('_', '-')}-{side}"
+        for path_name in path_names
+        for side in ("left", "right")
+    }
+    vector_paths = import_svg_centerlines(
+        LOTUS_FIRE_VECTOR_REFERENCE,
+        vector_path_ids,
+    )
+
+    terminal_path_pairs = (
+        ("lower-outer-petal-left", "lower-inner-petal-left"),
+        ("upper-outer-petal-left", "upper-inner-petal-left"),
+        ("center-petal-left", "center-petal-right"),
+        ("upper-inner-petal-right", "upper-outer-petal-right"),
+        ("lower-inner-petal-right", "lower-outer-petal-right"),
+    )
+    wick_terminal_pairs = [
+        tuple(Vector(vector_paths[path_id][-1]) for path_id in pair)
+        for pair in terminal_path_pairs
+    ]
+    wick_tine_pairs: list[tuple[tuple[Vector, Vector], tuple[Vector, Vector]]] = []
+    # Blender's SVG importer resolves millimetre coordinates through 32-bit
+    # curve data. Keep its sub-0.1 mm conversion noise from invalidating the
+    # exact source endpoints while still rejecting any visible calibration drift.
+    svg_import_tolerance = 1e-4
+    for index, (centre, direction, wick_half, terminal_pair) in enumerate(
+        zip(wick_centres, wick_directions, wick_halves, wick_terminal_pairs)
+    ):
+        wick_base = centre - direction * wick_half
+        traced_base = (terminal_pair[0] + terminal_pair[1]) / 2
+        if (traced_base - wick_base).length > svg_import_tolerance:
+            raise ValueError(
+                f"Lotus wick {index + 1} is not centered on its Illustrator terminal pair: "
+                f"traced={tuple(traced_base)}, calibrated={tuple(wick_base)}, "
+                f"drift={(traced_base - wick_base).length}"
+            )
+        for terminal in terminal_pair:
+            if abs((terminal - wick_base).dot(direction)) > svg_import_tolerance:
+                raise ValueError(
+                    f"Lotus wick {index + 1} terminal is not on the inward-facing cap"
+                )
+        wick_tine_pairs.append(
+            tuple(
+                (terminal, terminal + direction * tine_insertion_depth)
+                for terminal in terminal_pair
+            )
+        )
+    left_path_tines = {
+        "center_petal": wick_tine_pairs[2][0],
+        "upper_outer_petal": wick_tine_pairs[1][0],
+        "upper_inner_petal": wick_tine_pairs[1][1],
+        "lower_outer_petal": wick_tine_pairs[0][0],
+        "lower_inner_petal": wick_tine_pairs[0][1],
+    }
+    right_path_tines = {
+        "center_petal": wick_tine_pairs[2][1],
+        "upper_outer_petal": wick_tine_pairs[3][1],
+        "upper_inner_petal": wick_tine_pairs[3][0],
+        "lower_outer_petal": wick_tine_pairs[4][1],
+        "lower_inner_petal": wick_tine_pairs[4][0],
+    }
+
+    parent["tka_build"] = "Home of Poi Medium Lotus five-wick fire fan"
+    parent["tka_dimensions_m"] = [LOTUS_WIDTH_M, LOTUS_HEIGHT_M]
+    parent["tka_spinning_ring_id_m"] = LOTUS_RING_DIAMETER_M
+    parent["tka_finger_ring_id_m"] = geometry["finger_ring_inside_diameter_m"]
+    parent["tka_finger_ring_center_m"] = [
+        geometry["finger_ring_center_x"],
+        geometry["finger_ring_center_y"],
+    ]
+    parent["tka_grip_ring_center_m"] = [
+        geometry["grip_ring_center_x"],
+        geometry["grip_ring_center_y"],
+    ]
+    parent["tka_wick_tape_width_m"] = published["wick_length_m"]
+    parent["tka_wick_roll_length_m"] = wick_roll_length
+    parent["tka_wick_roll_lengths_m"] = wick_roll_lengths
+    parent["tka_wick_diameters_m"] = wick_diameters
+    parent["tka_wick_diameter_m"] = reference["calibration"]["wick_diameter_m"]
+    parent["tka_wick_mount"] = (
+        "intact Illustrator SVG terminals through inward-facing end caps"
+    )
+    parent["tka_wick_tine_insertion_depth_m"] = tine_insertion_depth
+    parent["tka_frame_stock_diameter_m"] = LOTUS_FRAME_RADIUS_M * 2
+    parent["tka_grip_stock_diameter_m"] = LOTUS_GRIP_RADIUS_M * 2
+    parent["tka_reference_source"] = reference["source"]
+    parent["tka_reference_image"] = reference["source_image"]
+    parent["tka_reference_bbox_px"] = list(reference["fan_bbox_px"].values())
+    parent["tka_reference_pivot_px"] = reference["pivot_px"]
+    parent["tka_reference_pixel_scale_m"] = reference["pixel_scale_m"]
+    parent["tka_reference_symmetry"] = reference["calibration"]["symmetry"]
+    parent["tka_petal_count"] = 5
+    parent["tka_frame_path_count"] = 10
+    parent["tka_frame_symmetry"] = "mirrored Illustrator SVG centerlines"
+    parent["tka_vector_reference"] = str(
+        LOTUS_FIRE_VECTOR_REFERENCE.relative_to(ROOT)
+    ).replace("\\", "/")
+    parent["tka_vector_path_count"] = 10
+    parent["tka_side_weld_boss_count"] = len(geometry["side_weld_bosses"])
+    parent["tka_finger_ring_brace_count"] = 0
+    parent["tka_finger_ring_weld_count"] = 3
+    parent["tka_rail_root_weld_count"] = 10
+    parent["tka_wick_centers_m"] = [list(centre) for centre in wick_centres]
+    parent["tka_wick_directions_m"] = [
+        list(direction) for direction in wick_directions
+    ]
+    parent["tka_wick_tine_pairs_m"] = [
+        [[list(neck), list(entry)] for neck, entry in pair]
+        for pair in wick_tine_pairs
+    ]
+
+    objects.append(
+        add_torus(
+            "Fan_Lotus_GripRing",
+            (
+                geometry["grip_ring_center_x"],
+                geometry["grip_ring_center_y"],
+                0.0,
+            ),
+            LOTUS_RING_DIAMETER_M / 2,
+            LOTUS_GRIP_RADIUS_M,
+            LOTUS_GRIP_RADIUS_M * 2,
+            steel,
+            parent,
+        )
+    )
+    objects.append(
+        add_torus(
+            "Fan_Lotus_FingerRing",
+            (
+                geometry["finger_ring_center_x"],
+                geometry["finger_ring_center_y"],
+                0.0,
+            ),
+            geometry["finger_ring_inside_diameter_m"] / 2,
+            LOTUS_FRAME_RADIUS_M,
+            LOTUS_FRAME_RADIUS_M * 2,
+            steel,
+            parent,
+        )
+    )
+    bottom_weld = geometry["finger_ring_bottom_weld"]
+    objects.append(
+        add_weld_bead(
+            "Fan_Lotus_FingerWeld_Lower",
+            tuple(bottom_weld["center"]),
+            bottom_weld["radius"],
+            steel,
+            parent,
+        )
+    )
+
+    cradle_join_x = abs(geometry["cradle_join"][0])
+    cradle_join_y = geometry["cradle_join"][1]
+    cradle_bottom_y = geometry["cradle_bottom_y"]
+    cradle_centre_y = (
+        cradle_join_x**2 + cradle_join_y**2 - cradle_bottom_y**2
+    ) / (2 * (cradle_join_y - cradle_bottom_y))
+    cradle_radius = cradle_centre_y - cradle_bottom_y
+    cradle_left_angle = math.atan2(
+        cradle_join_y - cradle_centre_y,
+        -cradle_join_x,
+    )
+    cradle_right_angle = math.atan2(
+        cradle_join_y - cradle_centre_y,
+        cradle_join_x,
+    )
+    parent["tka_lower_cradle_geometry"] = "constant-radius circle"
+    parent["tka_lower_cradle_radius_m"] = cradle_radius
+    objects.append(
+        add_round_rod(
+            "Fan_Lotus_LowerCradle",
+            circle_arc(
+                cradle_radius,
+                cradle_centre_y,
+                start_angle=cradle_left_angle,
+                end_angle=math.tau + cradle_right_angle,
+            ),
+            LOTUS_FRAME_RADIUS_M,
+            steel,
+            parent,
+        )
+    )
+
+    def build_frame_rod(
+        name: str,
+        traced_path: list[tuple[float, float, float]],
+        neck: Vector,
+        entry: Vector,
+    ) -> bpy.types.Object:
+        """Keep every visible point authored in Illustrator; extend only inside the wick."""
+        if (Vector(traced_path[-1]) - neck).length > 1e-7:
+            raise ValueError(f"{name} no longer reaches its Illustrator endpoint")
+        path = list(traced_path)
+        path.extend(
+            tuple(neck.lerp(entry, step / 8))
+            for step in range(1, 9)
+        )
+        rod = add_round_rod(
+            name,
+            path,
+            LOTUS_FRAME_RADIUS_M,
+            steel,
+            parent,
+        )
+        rod["tka_wick_tine_neck_m"] = list(neck)
+        rod["tka_wick_tine_entry_m"] = list(entry)
+        return rod
+
+    for path_name in path_names:
+        readable_name = "".join(part.title() for part in path_name.split("_"))
+        objects.append(
+            build_frame_rod(
+                f"Fan_Lotus_{readable_name}_Left",
+                vector_paths[f"{path_name.replace('_', '-')}-left"],
+                *left_path_tines[path_name],
+            )
+        )
+        objects.append(
+            build_frame_rod(
+                f"Fan_Lotus_{readable_name}_Right",
+                vector_paths[f"{path_name.replace('_', '-')}-right"],
+                *right_path_tines[path_name],
+            )
+        )
+
+    for boss in geometry["side_weld_bosses"]:
+        objects.append(
+            add_weld_boss(
+                f"Fan_Lotus_SideWeld_{boss['name']}",
+                tuple(boss["center"]),
+                tuple(boss["half_extents"]),
+                boss["phase"],
+                steel,
+                parent,
+            )
+        )
+
+    weld_points = [
+        vector_paths[f"{path_name.replace('_', '-')}-{side}"][0]
+        for side in ("left", "right")
+        for path_name in (
+            "center_petal",
+            "upper_outer_petal",
+            "upper_inner_petal",
+            "lower_outer_petal",
+            "lower_inner_petal",
+        )
+    ]
+    for index, point in enumerate(weld_points, start=1):
+        objects.append(
+            add_weld_bead(
+                f"Fan_Lotus_Weld_{index}",
+                point,
+                0.0025,
+                steel,
+                parent,
+            )
+        )
+
+    for index, (centre, direction, wick_half, wick_diameter) in enumerate(
+        zip(
+            wick_centres,
+            wick_directions,
+            wick_halves,
+            wick_diameters,
+        ),
+        start=1,
+    ):
+        objects.append(
+            add_woven_cylinder_between(
+                f"Fan_Lotus_Wick_{index}",
+                centre - direction * wick_half,
+                centre + direction * wick_half,
+                wick_diameter / 2,
+                wick,
+                parent,
+            )
+        )
+    return objects
+
+
 def build_cover(
     parent: bpy.types.Object,
     solid: bpy.types.Material,
@@ -897,6 +1618,7 @@ def build_asset() -> tuple[
     root["tka_day_dimensions_m"] = [DAY_WIDTH_M, DAY_HEIGHT_M, DAY_DEPTH_M]
     root["tka_day_ring_diameter_m"] = 0.044
     root["tka_fire_dimensions_m"] = [FIRE_WIDTH_M, FIRE_HEIGHT_M]
+    root["tka_lotus_dimensions_m"] = [LOTUS_WIDTH_M, LOTUS_HEIGHT_M]
     fire_reference = json.loads(DOODLEGRIP_FIRE_REFERENCE.read_text())
     fire_geometry = fire_reference["geometry_m"]
     outer_x, outer_y = fire_geometry["outer_wick_center"]
@@ -908,9 +1630,15 @@ def build_asset() -> tuple[
         [diagonal_x, diagonal_y, 0.0],
         [outer_x, outer_y, 0.0],
     ]
+    lotus_reference = json.loads(LOTUS_FIRE_REFERENCE.read_text())
+    lotus_geometry = lotus_reference["geometry_m"]
+    root["tka_lotus_wick_centers_m"] = [
+        [*centre, 0.0] for centre in lotus_geometry["wick_centers_m"]
+    ]
 
     groups = {
         "fire": add_empty("Fan_Fire", root),
+        "lotus": add_empty("Fan_Lotus", root),
         "day": add_empty("Fan_Day", root),
         "cover": add_empty("Fan_Cover", root),
     }
@@ -918,9 +1646,17 @@ def build_asset() -> tuple[
         "fire": make_material(
             "TKA_Fan_Fire_Steel", (0.045, 0.038, 0.032, 1), roughness=0.48, metallic=0.76
         ),
+        "lotus": make_material(
+            "TKA_Fan_Lotus_Powdercoat",
+            (0.045, 0.05, 0.06, 1),
+            roughness=0.58,
+            metallic=0.0,
+            coat=0.08,
+        ),
         "wick": make_material(
             "TKA_Fan_Wick", (0.72, 0.55, 0.29, 1), roughness=0.96
         ),
+        "lotus_wick": make_woven_wick_material("TKA_Fan_Lotus_Wick"),
         "wick_band": make_material(
             "TKA_Fan_Wick_Wrap", (0.34, 0.22, 0.09, 1), roughness=0.82
         ),
@@ -946,6 +1682,11 @@ def build_asset() -> tuple[
     objects.extend(
         build_fire_frame(
             groups["fire"], materials["fire"], materials["wick"], materials["wick_band"]
+        )
+    )
+    objects.extend(
+        build_lotus_frame(
+            groups["lotus"], materials["lotus"], materials["lotus_wick"]
         )
     )
     objects.extend(
@@ -1052,18 +1793,23 @@ def render_proofs(
             child.hide_render = not show
 
     variants = (
-        ("fire-bare", True, False, False, "black", False),
-        ("fire-bare-back", True, False, False, "black", True),
-        ("fire-covered-solid", True, False, True, "black", False),
-        ("fire-covered-striped", True, False, True, "black", True),
-        ("day-black-bare", False, True, False, "black", False),
-        ("day-black-covered-solid", False, True, True, "black", False),
-        ("day-white-bare", False, True, False, "white", False),
-        ("day-white-covered-solid", False, True, True, "white", False),
-        ("day-white-covered-striped", False, True, True, "white", True),
+        ("fire-bare", True, False, False, False, "black", False),
+        ("fire-bare-back", True, False, False, False, "black", True),
+        ("fire-covered-solid", True, False, False, True, "black", False),
+        ("fire-covered-striped", True, False, False, True, "black", True),
+        ("lotus-bare", False, True, False, False, "black", False),
+        ("lotus-bare-back", False, True, False, False, "black", True),
+        ("lotus-covered-solid", False, True, False, True, "black", False),
+        ("lotus-covered-striped", False, True, False, True, "black", True),
+        ("day-black-bare", False, False, True, False, "black", False),
+        ("day-black-covered-solid", False, False, True, True, "black", False),
+        ("day-white-bare", False, False, True, False, "white", False),
+        ("day-white-covered-solid", False, False, True, True, "white", False),
+        ("day-white-covered-striped", False, False, True, True, "white", True),
     )
-    for label, fire, day, cover, day_color, rear in variants:
+    for label, fire, lotus, day, cover, day_color, rear in variants:
         show_group(groups["fire"], fire)
+        show_group(groups["lotus"], lotus)
         show_group(groups["day"], day)
         show_group(groups["cover"], cover)
         set_material_color(
@@ -1079,11 +1825,28 @@ def render_proofs(
     # straight-on inspection frame that makes a flat spot, changing radius, or
     # left/right mismatch immediately visible.
     show_group(groups["fire"], True)
+    show_group(groups["lotus"], False)
     show_group(groups["day"], False)
     show_group(groups["cover"], False)
     camera.location = (0.0, -0.006, 0.23)
     point_at(camera, Vector((0.0, -0.006, 0.0)))
     scene.render.filepath = str(render_dir / "fan-fire-grip-closeup.png")
+    bpy.ops.render.render(write_still=True)
+
+    show_group(groups["fire"], False)
+    show_group(groups["lotus"], True)
+    camera.location = (0.0, 0.0, 0.32)
+    point_at(camera, Vector((0.0, 0.0, 0.0)))
+    scene.render.filepath = str(render_dir / "fan-lotus-grip-closeup.png")
+    bpy.ops.render.render(write_still=True)
+
+    # The wick relief is real geometry, not a flat colour. Keep a macro proof
+    # so braided rows, rolled edges, and scale remain reviewable after GLB
+    # compression or future material changes.
+    centre_y = groups["lotus"]["tka_wick_centers_m"][2][1]
+    camera.location = (0.0, centre_y, 0.11)
+    point_at(camera, Vector((0.0, centre_y, 0.0)))
+    scene.render.filepath = str(render_dir / "fan-lotus-wick-closeup.png")
     bpy.ops.render.render(write_still=True)
 
 
@@ -1098,6 +1861,7 @@ def print_summary(output_path: Path, objects: list[bpy.types.Object]) -> None:
     print(f"FAN_TRIANGLES={triangles}")
     print(f"FAN_DAY_SIZE_M={DAY_WIDTH_M},{DAY_HEIGHT_M},{DAY_DEPTH_M}")
     print(f"FAN_FIRE_SIZE_M={FIRE_WIDTH_M},{FIRE_HEIGHT_M}")
+    print(f"FAN_LOTUS_SIZE_M={LOTUS_WIDTH_M},{LOTUS_HEIGHT_M}")
     print("FAN_HAND_PIVOT=0,0,0")
 
 

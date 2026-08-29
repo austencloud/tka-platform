@@ -18,7 +18,7 @@ import { createArcadeSession } from "$lib/features/learn/play/state/arcade-sessi
 import { GAME_REGISTRY } from "$lib/features/learn/play/domain/game-registry";
 import type {
   GameDefinition,
-  LevelDefinition,
+  ChallengeDefinition,
 } from "$lib/features/learn/play/domain/arcade-types";
 import type { QuizAnswerEvent } from "$lib/features/learn/quiz/domain/models/quiz-models";
 
@@ -49,7 +49,8 @@ const QUIZ_GAME: GameDefinition = {
   accentColor: "#000",
   quizType: "pictograph_to_letter" as never,
   capabilities: { scoring: "quiz" },
-  levels: [],
+  curriculum: { status: "unclassified" },
+  challenges: [],
 };
 
 const PERF_GAME: GameDefinition = {
@@ -63,14 +64,15 @@ const PERF_GAME: GameDefinition = {
     supportsTwoPointers: true,
     scoring: "performance",
   },
-  levels: [],
+  curriculum: { status: "unclassified" },
+  challenges: [],
 };
 
 /** Star thresholds pinned here so the expected star count below is stable. */
-function fixedLevel(questionCount: number): LevelDefinition {
+function fixedChallenge(questionCount: number): ChallengeDefinition {
   return {
-    levelNumber: 1,
-    title: "Scripted Level",
+    challengeNumber: 1,
+    title: "Scripted Challenge",
     mode: { kind: "fixed", questionCount },
     constraints: {},
     stars: { one: 500, two: 1500, three: 3000 },
@@ -132,7 +134,10 @@ const EXPECTED = {
 type Session = ReturnType<typeof createArcadeSession>;
 
 /** Drives the script through whichever submit entry point is under test. */
-function runScript(session: Session, submit: (s: Session, ok: boolean) => void) {
+function runScript(
+  session: Session,
+  submit: (s: Session, ok: boolean) => void
+) {
   for (const step of SCRIPT) {
     session.markQuestionShown();
     vi.advanceTimersByTime(step.ms);
@@ -171,7 +176,7 @@ describe("arcade quiz scoring is unchanged by performance rounds", () => {
   it("scripted quiz session through submitAnswer hits the hand-computed numbers", () => {
     vi.useFakeTimers();
     const session = createArcadeSession();
-    session.startLevel(QUIZ_GAME, fixedLevel(SCRIPT.length));
+    session.startChallenge(QUIZ_GAME, fixedChallenge(SCRIPT.length));
 
     runScript(session, viaSubmitAnswer);
 
@@ -181,7 +186,7 @@ describe("arcade quiz scoring is unchanged by performance rounds", () => {
   it("the same script through submitRound({kind:'choice'}) is identical", () => {
     vi.useFakeTimers();
     const session = createArcadeSession();
-    session.startLevel(QUIZ_GAME, fixedLevel(SCRIPT.length));
+    session.startChallenge(QUIZ_GAME, fixedChallenge(SCRIPT.length));
 
     runScript(session, viaSubmitRound);
 
@@ -191,14 +196,20 @@ describe("arcade quiz scoring is unchanged by performance rounds", () => {
   it("submitAnswer and submitRound produce the same per-round point ledger", () => {
     vi.useFakeTimers();
     const viaAnswer = createArcadeSession();
-    viaAnswer.startLevel(QUIZ_GAME, fixedLevel(SCRIPT.length));
+    viaAnswer.startChallenge(QUIZ_GAME, fixedChallenge(SCRIPT.length));
     runScript(viaAnswer, viaSubmitAnswer);
-    const answerLedger = viaAnswer.rounds.map((r) => [r.pointsAwarded, r.streakAfter]);
+    const answerLedger = viaAnswer.rounds.map((r) => [
+      r.pointsAwarded,
+      r.streakAfter,
+    ]);
 
     const viaRound = createArcadeSession();
-    viaRound.startLevel(QUIZ_GAME, fixedLevel(SCRIPT.length));
+    viaRound.startChallenge(QUIZ_GAME, fixedChallenge(SCRIPT.length));
     runScript(viaRound, viaSubmitRound);
-    const roundLedger = viaRound.rounds.map((r) => [r.pointsAwarded, r.streakAfter]);
+    const roundLedger = viaRound.rounds.map((r) => [
+      r.pointsAwarded,
+      r.streakAfter,
+    ]);
 
     expect(roundLedger).toEqual(answerLedger);
     // The exact ledger, pinned. Wrong answers score 0; see the table above.
@@ -227,7 +238,7 @@ describe("performance rounds", () => {
   it("award exactly the points they carry — no speed bonus", () => {
     vi.useFakeTimers();
     const session = createArcadeSession();
-    session.startLevel(PERF_GAME, fixedLevel(2));
+    session.startChallenge(PERF_GAME, fixedChallenge(2));
 
     // 400ms would be the top speed band (+50) on the quiz path. It must not
     // apply here: the game already priced the round.
@@ -237,7 +248,7 @@ describe("performance rounds", () => {
       points: 137,
       elapsedMs: 400,
       metrics: { coverage: 0.91, orderCorrect: true },
-      questionData: { levelNumber: 1 },
+      questionData: { challengeNumber: 1 },
     });
 
     expect(session.score).toBe(137);
@@ -250,7 +261,7 @@ describe("performance rounds", () => {
   it("are not scaled by the streak multiplier", () => {
     vi.useFakeTimers();
     const session = createArcadeSession();
-    session.startLevel(PERF_GAME, fixedLevel(10));
+    session.startChallenge(PERF_GAME, fixedChallenge(10));
 
     // Build a streak of 4 — past the x1.5 step the quiz path would apply.
     for (let i = 0; i < 4; i += 1) {
@@ -282,15 +293,39 @@ describe("performance rounds", () => {
   it("a missed performance round zeroes the streak and counts as a miss", () => {
     vi.useFakeTimers();
     const session = createArcadeSession();
-    session.startLevel(PERF_GAME, { ...fixedLevel(10), mode: { kind: "survival", maxMisses: 2 } });
+    session.startChallenge(PERF_GAME, {
+      ...fixedChallenge(10),
+      mode: { kind: "survival", maxMisses: 2 },
+    });
 
-    session.submitRound({ kind: "performance", isCorrect: true, points: 90, elapsedMs: 1000, metrics: {}, questionData: {} });
-    session.submitRound({ kind: "performance", isCorrect: false, points: 0, elapsedMs: 1000, metrics: {}, questionData: {} });
+    session.submitRound({
+      kind: "performance",
+      isCorrect: true,
+      points: 90,
+      elapsedMs: 1000,
+      metrics: {},
+      questionData: {},
+    });
+    session.submitRound({
+      kind: "performance",
+      isCorrect: false,
+      points: 0,
+      elapsedMs: 1000,
+      metrics: {},
+      questionData: {},
+    });
     expect(session.streak).toBe(0);
     expect(session.misses).toBe(1);
     expect(session.phase.name).toBe("playing");
 
-    session.submitRound({ kind: "performance", isCorrect: false, points: 0, elapsedMs: 1000, metrics: {}, questionData: {} });
+    session.submitRound({
+      kind: "performance",
+      isCorrect: false,
+      points: 0,
+      elapsedMs: 1000,
+      metrics: {},
+      questionData: {},
+    });
     expect(session.phase.name).toBe("results");
     if (session.phase.name !== "results") throw new Error("unreachable");
     expect(session.phase.result.totalCount).toBe(3);
@@ -306,7 +341,7 @@ describe("mixed sessions keep both paths intact", () => {
   it("a performance round between quiz answers corrupts neither ledger", () => {
     vi.useFakeTimers();
     const session = createArcadeSession();
-    session.startLevel(QUIZ_GAME, fixedLevel(4));
+    session.startChallenge(QUIZ_GAME, fixedChallenge(4));
 
     // Q1: correct at 1000ms, streakBefore 0 -> (100+50)*1 = 150
     session.markQuestionShown();
@@ -351,11 +386,18 @@ describe("mixed sessions keep both paths intact", () => {
   it("every quiz-log entry still carries a real QuizAnswerEvent", () => {
     vi.useFakeTimers();
     const session = createArcadeSession();
-    session.startLevel(QUIZ_GAME, fixedLevel(3));
+    session.startChallenge(QUIZ_GAME, fixedChallenge(3));
 
     session.markQuestionShown();
     session.submitAnswer(evt(true));
-    session.submitRound({ kind: "performance", isCorrect: false, points: 0, elapsedMs: 500, metrics: {}, questionData: {} });
+    session.submitRound({
+      kind: "performance",
+      isCorrect: false,
+      points: 0,
+      elapsedMs: 500,
+      metrics: {},
+      questionData: {},
+    });
     session.markQuestionShown();
     session.submitAnswer(evt(false));
 
@@ -366,14 +408,20 @@ describe("mixed sessions keep both paths intact", () => {
       expect(record.event.answeredAt).toBeInstanceOf(Date);
       expect(record.round.kind).toBe("choice");
     }
-    expect(session.records.map((r) => r.event.isCorrect)).toEqual([true, false]);
+    expect(session.records.map((r) => r.event.isCorrect)).toEqual([
+      true,
+      false,
+    ]);
   });
 });
 
 describe("game registry capabilities", () => {
   it("every game declares capabilities explicitly", () => {
     for (const game of GAME_REGISTRY) {
-      expect(game.capabilities, `${game.id} is missing capabilities`).toBeDefined();
+      expect(
+        game.capabilities,
+        `${game.id} is missing capabilities`
+      ).toBeDefined();
       expect(["quiz", "performance"]).toContain(game.capabilities.scoring);
     }
   });
@@ -393,7 +441,9 @@ describe("game registry capabilities", () => {
     const quizGames = GAME_REGISTRY.filter((g) => g.id !== "trace-paths");
     expect(quizGames.length).toBeGreaterThanOrEqual(8);
     for (const game of quizGames) {
-      expect(game.capabilities.scoring, `${game.id} changed scoring mode`).toBe("quiz");
+      expect(game.capabilities.scoring, `${game.id} changed scoring mode`).toBe(
+        "quiz"
+      );
       expect(game.quizType, `${game.id} lost its quizType`).toBeDefined();
     }
   });
@@ -408,7 +458,7 @@ describe("game registry capabilities", () => {
       scoring: "performance",
     });
     // The eight progression chapters, in order.
-    expect(trace?.levels.map((l) => l.title)).toEqual([
+    expect(trace?.challenges.map((l) => l.title)).toEqual([
       "Touch the Route",
       "Keep the Line",
       "Remember the Route",
@@ -416,7 +466,7 @@ describe("game registry capabilities", () => {
       "Hold and Move",
       "Chain the Beats",
       "Trace the Sequence",
-      "Challenge",
+      "Survival",
     ]);
   });
 });
@@ -425,27 +475,27 @@ describe("regression: trace-paths star thresholds are reachable", () => {
   /**
    * A performance round is priced by `scoreTraceRound` and hard-capped at 100
    * points (quality is clamped to 1), and the engine takes that number verbatim
-   * — no speed bonus, no streak multiplier. So a fixed level's ceiling is
+   * — no speed bonus, no streak multiplier. So a fixed challenge's ceiling is
    * exactly questionCount * 100. The ladder originally carried thresholds
    * copied from the quiz games, whose rounds stack both bonuses, and the third
-   * star was arithmetically unearnable on seven of the eight levels.
+   * star was arithmetically unearnable on seven of the eight challenges.
    */
   const PERFORMANCE_ROUND_CAP = 100;
 
-  it("a flawless run clears three stars on every fixed level", () => {
+  it("a flawless run clears three stars on every fixed challenge", () => {
     const trace = GAME_REGISTRY.find((g) => g.id === "trace-paths");
     expect(trace).toBeDefined();
 
-    for (const level of trace!.levels) {
-      if (level.mode.kind !== "fixed") continue;
-      const ceiling = level.mode.questionCount * PERFORMANCE_ROUND_CAP;
+    for (const challenge of trace!.challenges) {
+      if (challenge.mode.kind !== "fixed") continue;
+      const ceiling = challenge.mode.questionCount * PERFORMANCE_ROUND_CAP;
       expect(
-        level.stars.three,
-        `level ${level.levelNumber} "${level.title}" caps at ${ceiling}`
+        challenge.stars.three,
+        `challenge ${challenge.challengeNumber} "${challenge.title}" caps at ${ceiling}`
       ).toBeLessThanOrEqual(ceiling);
       // And the ladder still climbs.
-      expect(level.stars.one).toBeLessThan(level.stars.two);
-      expect(level.stars.two).toBeLessThan(level.stars.three);
+      expect(challenge.stars.one).toBeLessThan(challenge.stars.two);
+      expect(challenge.stars.two).toBeLessThan(challenge.stars.three);
     }
   });
 });

@@ -7,6 +7,8 @@ import { LETTER_TYPE_COLORS } from "../../../src/lib/shared/pictograph/shared/do
 import {
   HAND_MOTION_LESSON,
   HAND_MOTION_QUESTIONS,
+  ROTATION_DIRECTION_LESSON,
+  ROTATION_DIRECTION_QUESTIONS,
   TYPE1_ACCENTS,
   TYPE1_LESSON_LETTERS,
   TYPE1_QUESTIONS,
@@ -39,6 +41,20 @@ describe("canonical concept lesson content", () => {
     ).toBe(true);
   });
 
+  it("isolates pro and anti with canonical A/B pictographs", () => {
+    expect(ROTATION_DIRECTION_LESSON.map((item) => item.id)).toEqual([
+      "pro",
+      "anti",
+    ]);
+    expect(ROTATION_DIRECTION_LESSON.map((item) => item.letter)).toEqual([
+      Letter.A,
+      Letter.B,
+    ]);
+    expect(
+      ROTATION_DIRECTION_QUESTIONS.map((question) => question.answer)
+    ).toEqual(["pro", "anti"]);
+  });
+
   it("keeps the published Type 1 lesson scoped to A/B/C and G/H/I", () => {
     expect(TYPE1_LESSON_LETTERS.map((item) => item.letter)).toEqual([
       Letter.A,
@@ -66,7 +82,7 @@ describe("canonical concept lesson content", () => {
 });
 
 describe("canonical concept lesson composition", () => {
-  it("renders motion and Type 1 examples through the production pictograph path", () => {
+  it("renders motion, rotation, and Type 1 examples through the production pictograph path", () => {
     const stage = readSource(
       "src/lib/features/learn/components/interactive/shared/LessonPictographStage.svelte"
     );
@@ -76,18 +92,24 @@ describe("canonical concept lesson composition", () => {
     const type1 = readSource(
       "src/lib/features/learn/components/interactive/letters/type1/Type1ConceptExperience.svelte"
     );
+    const rotation = readSource(
+      "src/lib/features/learn/components/interactive/rotation/RotationDirectionConceptExperience.svelte"
+    );
 
     expect(stage).toContain("PictographContainer");
     expect(stage).toContain("startPositionDeriver");
     expect(stage).toContain("PropType.STAFF");
     expect(motions).toContain("letterQueryHandler");
     expect(motions).toContain("LessonPictographStage");
+    expect(rotation).toContain("letterQueryHandler");
+    expect(rotation).toContain("LessonPictographStage");
     expect(type1).toContain("letterQueryHandler");
     expect(type1).toContain("LessonPictographStage");
 
     expect(motions).not.toContain("MotionVisualizer");
     expect(motions).not.toContain("MOTIONS_INFO");
     expect(motions).not.toContain("MotionTypePage");
+    expect(rotation).not.toContain("StaffPositionVisualizer");
     expect(type1).not.toContain("TYPE1_ALPHABET");
     expect(type1).not.toContain("Type1ProspinPage");
   });

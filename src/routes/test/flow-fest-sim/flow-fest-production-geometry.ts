@@ -35,23 +35,29 @@ import {
 } from "$lib/features/flow-fest-sim/domain/flow-fest-living-fire-jam";
 import type { ImportedTerrainDataV2 } from "$lib/shared/3d/procedural-engine/generation/real-terrain-zone";
 import {
-  allFlowFestSegments,
   type FlowFestBranchId,
   type FlowFestRuntimeContract,
   type FlowFestRuntimePoint,
   type FlowFestRuntimeSegment,
   type FlowFestRuntimeZone,
 } from "../flow-fest-graybox/flow-fest-runtime-contract";
-import { buildFlowFestTerrainRibbonGeometry } from "../flow-fest-graybox/flow-fest-review-geometry";
 import { sampleFlowFestTerrainWorldY } from "../flow-fest-graybox/flow-fest-terrain-host";
 import { type FlowFestCanopyEvidence } from "./flow-fest-site-fidelity";
 import {
+  allFlowFestCampPlanLines,
   createFlowFestCampPlan,
+  flowFestCampPlanLineToRuntimeSegment,
+  FLOW_FEST_LOWER_ENTRANCE_APPROACH_ID,
   FLOW_FEST_PUBLIC_ROAD_SOURCE,
   type FlowFestCampPlan,
   type FlowFestCampPlanLandmark,
   type FlowFestCampPlanLine,
 } from "./flow-fest-camp-plan";
+import {
+  buildFlowFestGroundFamilyMask,
+  type FlowFestGroundFamilyMask,
+} from "./flow-fest-ground-surface";
+import { deriveFlowFestLowerCampOccupancy } from "./flow-fest-lower-camp-occupancy";
 import {
   deriveFlowFestForestEcology,
   type FlowFestForestEcologyLayout,
@@ -63,6 +69,7 @@ import { pointInsideFlowFestEntranceFixtureClearance } from "./flow-fest-entranc
 export interface FlowFestProductionDressing {
   root: Group;
   forestEcology: FlowFestForestEcologyLayout;
+  groundSurface: FlowFestGroundFamilyMask;
   festivalCommunity: FlowFestFestivalCommunityLayout;
   festivalCommunityAudit: ReturnType<typeof auditFlowFestLivingCommunity>;
   collision: FlowFestProductionCollisionSet;
@@ -79,6 +86,7 @@ export interface FlowFestProductionDressing {
   orientationAudit: {
     publicRoadSurfaceCount: number;
     internalDriveSurfaceCount: number;
+    lowerCampgroundLoopSurfaceCount: number;
     tracedConnectorSurfaceCount: number;
     landmarkMarkerCount: number;
     officialRoadFeatureObjectId: number;
@@ -91,6 +99,16 @@ export interface FlowFestProductionDressing {
     minimumTentCenterDistance: number;
     minimumVehicleCenterDistance: number;
     minimumTentVehicleDistance: number;
+    lowerTentPerimeterCount: number;
+    lowerTentMinimumLoopDistance: number;
+    lowerTentMaximumLoopDistance: number;
+    lowerCenterVehicleCount: number;
+    lowerCenterTentCount: number;
+    lowerInnerRoadsideTentCount: number;
+    lowerOuterTreeLineTentCount: number;
+    lowerCenterVehicleOutsideLoopCount: number;
+    lowerInnerRoadsideTentOutsideLoopCount: number;
+    lowerOuterTreeLineTentInsideLoopCount: number;
     minimumCanopyPeakDistance: number;
     tracedConnectorSurfaceCount: number;
     forestTreeRouteIntrusions: number;
@@ -180,6 +198,7 @@ export function buildFlowFestProductionDressing(
   const camp = buildCampClusters(
     contract,
     terrain,
+    campPlan,
     selectedBranch,
     staticCollisionParts,
     campEstablishedCollisionParts
@@ -199,6 +218,11 @@ export function buildFlowFestProductionDressing(
   return {
     root,
     forestEcology,
+    groundSurface: buildFlowFestGroundFamilyMask(
+      campPlan,
+      forestEcology,
+      terrain.worldBounds
+    ),
     festivalCommunity: festival.community,
     festivalCommunityAudit: auditFlowFestLivingCommunity(
       festival.community,
@@ -244,6 +268,7 @@ export function buildFlowFestProductionDressing(
     orientationAudit: {
       publicRoadSurfaceCount: siteSurfaces.publicRoadCount,
       internalDriveSurfaceCount: siteSurfaces.internalDriveCount,
+      lowerCampgroundLoopSurfaceCount: siteSurfaces.lowerLoopCount,
       tracedConnectorSurfaceCount: siteSurfaces.tracedConnectorCount,
       landmarkMarkerCount: wayfinding.count,
       officialRoadFeatureObjectId: FLOW_FEST_PUBLIC_ROAD_SOURCE.featureObjectId,
@@ -324,6 +349,7 @@ function buildMeasuredSiteSurfaces(
   count: number;
   publicRoadCount: number;
   internalDriveCount: number;
+  lowerLoopCount: number;
   tracedConnectorCount: number;
 } {
   const group = new Group();
@@ -347,14 +373,10 @@ function buildMeasuredSiteSurfaces(
   }
 
   for (const drive of plan.internalDrives) {
-    // The measured entrance apron owns the road-to-private-drive junction.
-    // Start the generic private ribbon at the apron join so two differently
-    // tessellated surfaces cannot z-fight or form an angular mound there.
-    const renderedDrive =
-      drive.id === "camp-road-entrance-to-check-in"
-        ? { ...drive, points: drive.points.slice(1) }
-        : drive;
-    const mesh = createPlanRibbon(terrain, renderedDrive, "#aa9676", 0.076);
+    // The entrance scene renders this interpreted centerline as one continuous,
+    // variable-width gravel drive. A second generic ribbon would overlap it.
+    if (drive.id === FLOW_FEST_LOWER_ENTRANCE_APPROACH_ID) continue;
+    const mesh = createPlanRibbon(terrain, drive, "#aa9676", 0.076);
     mesh.name = `FFS_PrivateDrive_${drive.id}_OrthophotoInterpreted`;
     mesh.userData.evidence = drive.evidence;
     group.add(mesh);
@@ -375,6 +397,9 @@ function buildMeasuredSiteSurfaces(
       plan.footConnectors.length,
     publicRoadCount: plan.publicRoads.length,
     internalDriveCount: plan.internalDrives.length,
+    lowerLoopCount: plan.internalDrives.filter(
+      (drive) => drive.id === "lower-campground-loop"
+    ).length,
     tracedConnectorCount: plan.footConnectors.length,
   };
 }
@@ -399,13 +424,7 @@ function createPlanRibbon(
     })),
   };
   const mesh = new Mesh(
-    line.kind === "public-road"
-      ? buildTerrainConformingPlanRibbonGeometry(
-          terrain,
-          segment,
-          elevationMeters
-        )
-      : buildFlowFestTerrainRibbonGeometry(terrain, segment, elevationMeters),
+    buildTerrainConformingPlanRibbonGeometry(terrain, segment, elevationMeters),
     new MeshStandardMaterial({
       color,
       roughness: 1,
@@ -424,17 +443,24 @@ function buildTerrainConformingPlanRibbonGeometry(
   segment: FlowFestRuntimeSegment,
   elevationMeters: number
 ): BufferGeometry {
+  const sourcePoints = segment.points;
+  const closed =
+    sourcePoints.length > 2 &&
+    Math.hypot(
+      sourcePoints[0]!.x - sourcePoints.at(-1)!.x,
+      sourcePoints[0]!.z - sourcePoints.at(-1)!.z
+    ) < 0.15;
+  const pathPoints = closed ? sourcePoints.slice(0, -1) : sourcePoints;
   const samples: Array<{ x: number; z: number }> = [];
-  const first = segment.points[0];
-  if (first) samples.push({ x: first.x, z: first.z });
-  for (let index = 1; index < segment.points.length; index += 1) {
-    const start = segment.points[index - 1]!;
-    const end = segment.points[index]!;
+  const segmentCount = closed ? pathPoints.length : pathPoints.length - 1;
+  for (let index = 0; index < segmentCount; index += 1) {
+    const start = pathPoints[index]!;
+    const end = pathPoints[(index + 1) % pathPoints.length]!;
     const steps = Math.max(
       1,
       Math.ceil(Math.hypot(end.x - start.x, end.z - start.z) / 0.75)
     );
-    for (let step = 1; step <= steps; step += 1) {
+    for (let step = 0; step < steps; step += 1) {
       const ratio = step / steps;
       samples.push({
         x: start.x + (end.x - start.x) * ratio,
@@ -442,13 +468,21 @@ function buildTerrainConformingPlanRibbonGeometry(
       });
     }
   }
+  if (!closed && pathPoints.length > 0) {
+    const last = pathPoints.at(-1)!;
+    samples.push({ x: last.x, z: last.z });
+  }
 
   const columns = 12;
   const positions: number[] = [];
   const indices: number[] = [];
   samples.forEach((sample, index) => {
-    const previous = samples[Math.max(0, index - 1)]!;
-    const next = samples[Math.min(samples.length - 1, index + 1)]!;
+    const previous = closed
+      ? samples[(index - 1 + samples.length) % samples.length]!
+      : samples[Math.max(0, index - 1)]!;
+    const next = closed
+      ? samples[(index + 1) % samples.length]!
+      : samples[Math.min(samples.length - 1, index + 1)]!;
     const directionX = next.x - previous.x;
     const directionZ = next.z - previous.z;
     const directionLength = Math.hypot(directionX, directionZ) || 1;
@@ -465,9 +499,13 @@ function buildTerrainConformingPlanRibbonGeometry(
         z
       );
     }
-    if (index === 0) return;
-    const previousRow = (index - 1) * (columns + 1);
-    const row = index * (columns + 1);
+  });
+
+  const rowLinks = closed ? samples.length : Math.max(0, samples.length - 1);
+  for (let index = 0; index < rowLinks; index += 1) {
+    const nextIndex = (index + 1) % samples.length;
+    const previousRow = index * (columns + 1);
+    const row = nextIndex * (columns + 1);
     for (let column = 0; column < columns; column += 1) {
       const previousLeft = previousRow + column;
       const previousRight = previousLeft + 1;
@@ -482,7 +520,7 @@ function buildTerrainConformingPlanRibbonGeometry(
         right
       );
     }
-  });
+  }
 
   const geometry = new BufferGeometry();
   geometry.setAttribute(
@@ -591,6 +629,7 @@ function wayfindingColor(landmark: FlowFestCampPlanLandmark): string {
 function buildCampClusters(
   contract: FlowFestRuntimeContract,
   terrain: ImportedTerrainDataV2,
+  campPlan: FlowFestCampPlan,
   selectedBranch: FlowFestBranchId,
   staticCollisionParts: BufferGeometry[],
   campEstablishedCollisionParts: BufferGeometry[]
@@ -605,6 +644,16 @@ function buildCampClusters(
     | "minimumTentCenterDistance"
     | "minimumVehicleCenterDistance"
     | "minimumTentVehicleDistance"
+    | "lowerTentPerimeterCount"
+    | "lowerTentMinimumLoopDistance"
+    | "lowerTentMaximumLoopDistance"
+    | "lowerCenterVehicleCount"
+    | "lowerCenterTentCount"
+    | "lowerInnerRoadsideTentCount"
+    | "lowerOuterTreeLineTentCount"
+    | "lowerCenterVehicleOutsideLoopCount"
+    | "lowerInnerRoadsideTentOutsideLoopCount"
+    | "lowerOuterTreeLineTentInsideLoopCount"
   >;
   setEstablished(visible: boolean): void;
   setDressingVisible(visible: boolean): void;
@@ -613,84 +662,121 @@ function buildCampClusters(
   group.name = "FFS_AuthoredFestivalCamps";
   const tentPlacements: Placement[] = [];
   const occupiedTentPlacements: Placement[] = [];
+  const lowerInnerRoadsideTentPlacements: Placement[] = [];
+  const lowerOuterTreeLineTentPlacements: Placement[] = [];
+  const lowerCenterTentPlacements: Placement[] = [];
   const vehiclePlacements: Placement[] = [];
-  const routes = allFlowFestSegments(contract);
+  const routes = allFlowFestCampPlanLines(campPlan).map(
+    flowFestCampPlanLineToRuntimeSegment
+  );
+  const lowerLoop = campPlan.internalDrives.find(
+    (drive) => drive.id === "lower-campground-loop"
+  );
+  if (!lowerLoop) {
+    throw new Error("The shared camp plan is missing the lower road loop");
+  }
   let playerTentPlacement: Placement | null = null;
-  const clusterSpecs: Array<{
-    zoneId: string;
-    branch: FlowFestBranchId;
-    tents: number;
-    vehicles: number;
-  }> = [
-    { zoneId: "lower-tent-zone", branch: "lower-tent", tents: 8, vehicles: 0 },
-    { zoneId: "upper-tent-zone", branch: "upper-tent", tents: 21, vehicles: 0 },
-    { zoneId: "car-camp-zone", branch: "car-camp", tents: 9, vehicles: 9 },
-  ];
+  const registerTent = (
+    placement: Placement,
+    branch: FlowFestBranchId,
+    rng: () => number,
+    playerCandidate: boolean
+  ): Placement => {
+    const tentPlacement: Placement = {
+      ...placement,
+      rotation: placement.rotation + Math.PI + (rng() - 0.5) * 0.4,
+      scale: 0.86 + rng() * 0.26,
+      colorIndex: Math.floor(rng() * TENT_COLORS.length),
+    };
+    occupiedTentPlacements.push(tentPlacement);
+    if (
+      playerCandidate &&
+      branch === selectedBranch &&
+      playerTentPlacement === null
+    ) {
+      playerTentPlacement = { ...tentPlacement, scale: 1.25 };
+    } else {
+      tentPlacements.push(tentPlacement);
+    }
+    return tentPlacement;
+  };
 
-  for (const spec of clusterSpecs) {
-    const zone = contract.zones.find(
-      (candidate) => candidate.id === spec.zoneId
+  const lowerRng = makeRng(
+    childSeed(FLOW_FEST_MASTER_SEED, "lower-campground-occupancy")
+  );
+  const lowerOccupancy = deriveFlowFestLowerCampOccupancy({
+    rng: lowerRng,
+    loop: lowerLoop,
+    routes,
+  });
+  for (const [
+    index,
+    placement,
+  ] of lowerOccupancy.outerTreeLineTents.entries()) {
+    const groundedPlacement = groundTentPlacement(placement, terrain);
+    lowerOuterTreeLineTentPlacements.push(
+      registerTent(groundedPlacement, "lower-tent", lowerRng, index === 0)
     );
-    if (!zone) continue;
-    const radiusX = zone.radiusMeters ?? zone.searchRadiusXMeters ?? 12;
-    const radiusZ = zone.radiusMeters ?? zone.searchRadiusZMeters ?? 12;
-    const rng = makeRng(childSeed(FLOW_FEST_MASTER_SEED, spec.zoneId));
+  }
+  for (const placement of lowerOccupancy.innerRoadsideTents) {
+    lowerInnerRoadsideTentPlacements.push(
+      registerTent(
+        groundTentPlacement(placement, terrain),
+        "lower-tent",
+        lowerRng,
+        false
+      )
+    );
+  }
+  for (const [index, placement] of lowerOccupancy.centerTents.entries()) {
+    lowerCenterTentPlacements.push(
+      registerTent(
+        groundTentPlacement(placement, terrain),
+        "car-camp",
+        lowerRng,
+        index === 0
+      )
+    );
+  }
 
-    for (let index = 0; index < spec.vehicles; index += 1) {
-      const placement = findCampPlacement({
-        rng,
-        zone,
-        terrain,
-        routes,
-        radiusX,
-        radiusZ,
-        index,
-        count: spec.vehicles,
-        routeClearance: 2.5,
-        minimumPeerDistance: 5.2,
-        peers: vehiclePlacements,
-        otherPeers: [],
-        minimumOtherDistance: 0,
-      });
-      vehiclePlacements.push({
-        ...placement,
-        y:
-          sampleFlowFestTerrainWorldY(terrain, placement.x, placement.z) + 0.65,
-        rotation: Math.PI / 2 + (rng() - 0.5) * 0.18,
-        scale: 1,
-        colorIndex: index % 4,
-      });
-    }
+  vehiclePlacements.push(
+    ...lowerOccupancy.centerVehicles.map((placement, index) => ({
+      ...placement,
+      y: sampleFlowFestTerrainWorldY(terrain, placement.x, placement.z) + 0.65,
+      scale: 1,
+      colorIndex: index % 4,
+    }))
+  );
 
-    for (let index = 0; index < spec.tents; index += 1) {
-      const placement = findCampPlacement({
-        rng,
-        zone,
-        terrain,
-        routes,
-        radiusX,
-        radiusZ,
-        index,
-        count: spec.tents,
-        routeClearance: 1.4,
-        minimumPeerDistance: 3.1,
-        peers: occupiedTentPlacements,
-        otherPeers: vehiclePlacements,
-        minimumOtherDistance: 4.1,
-      });
-      const tentPlacement: Placement = {
-        ...placement,
-        rotation: placement.rotation + Math.PI + (rng() - 0.5) * 0.4,
-        scale: 0.86 + rng() * 0.26,
-        colorIndex: Math.floor(rng() * TENT_COLORS.length),
-      };
-      occupiedTentPlacements.push(tentPlacement);
-      if (spec.branch === selectedBranch && index === 0) {
-        playerTentPlacement = { ...tentPlacement, scale: 1.25 };
-      } else {
-        tentPlacements.push(tentPlacement);
-      }
-    }
+  const upperZone = contract.zones.find(
+    (candidate) => candidate.id === "upper-tent-zone"
+  );
+  if (!upperZone) {
+    throw new Error("The runtime contract is missing the upper tent zone");
+  }
+  const upperRng = makeRng(childSeed(FLOW_FEST_MASTER_SEED, "upper-tent-zone"));
+  const upperTentCount = 21;
+  const upperRadiusX =
+    upperZone.radiusMeters ?? upperZone.searchRadiusXMeters ?? 12;
+  const upperRadiusZ =
+    upperZone.radiusMeters ?? upperZone.searchRadiusZMeters ?? 12;
+  for (let index = 0; index < upperTentCount; index += 1) {
+    const placement = findCampPlacement({
+      rng: upperRng,
+      zone: upperZone,
+      terrain,
+      routes,
+      radiusX: upperRadiusX,
+      radiusZ: upperRadiusZ,
+      index,
+      count: upperTentCount,
+      routeClearance: 1.4,
+      minimumPeerDistance: 3.1,
+      peers: occupiedTentPlacements,
+      otherPeers: vehiclePlacements,
+      minimumOtherDistance: 3,
+    });
+    registerTent(placement, "upper-tent", upperRng, index === 0);
   }
 
   const tentGeometry = new ConeGeometry(1.75, 1.85, 4);
@@ -785,6 +871,33 @@ function buildCampClusters(
         allTentPlacements,
         vehiclePlacements
       ),
+      lowerTentPerimeterCount:
+        lowerInnerRoadsideTentPlacements.length +
+        lowerOuterTreeLineTentPlacements.length,
+      lowerTentMinimumLoopDistance: minimumDistanceToPlanLine(
+        [
+          ...lowerInnerRoadsideTentPlacements,
+          ...lowerOuterTreeLineTentPlacements,
+        ],
+        lowerLoop
+      ),
+      lowerTentMaximumLoopDistance: maximumDistanceToPlanLine(
+        [
+          ...lowerInnerRoadsideTentPlacements,
+          ...lowerOuterTreeLineTentPlacements,
+        ],
+        lowerLoop
+      ),
+      lowerCenterVehicleCount: vehiclePlacements.length,
+      lowerCenterTentCount: lowerCenterTentPlacements.length,
+      lowerInnerRoadsideTentCount: lowerInnerRoadsideTentPlacements.length,
+      lowerOuterTreeLineTentCount: lowerOuterTreeLineTentPlacements.length,
+      lowerCenterVehicleOutsideLoopCount:
+        lowerOccupancy.audit.centerVehicleOutsideLoopCount,
+      lowerInnerRoadsideTentOutsideLoopCount:
+        lowerOccupancy.audit.innerRoadsideTentOutsideLoopCount,
+      lowerOuterTreeLineTentInsideLoopCount:
+        lowerOccupancy.audit.outerTreeLineTentInsideLoopCount,
     },
     setEstablished: (visible) => {
       playerTent.visible = visible;
@@ -792,6 +905,18 @@ function buildCampClusters(
     setDressingVisible: (visible) => {
       group.visible = visible;
     },
+  };
+}
+
+function groundTentPlacement(
+  placement: { x: number; z: number; rotation: number },
+  terrain: ImportedTerrainDataV2
+): Placement {
+  return {
+    ...placement,
+    y: sampleFlowFestTerrainWorldY(terrain, placement.x, placement.z) + 0.08,
+    scale: 1,
+    colorIndex: 0,
   };
 }
 
@@ -825,6 +950,47 @@ function minimumCrossDistance(
     }
   }
   return Number.isFinite(minimum) ? minimum : 0;
+}
+
+function minimumDistanceToPlanLine(
+  placements: Placement[],
+  line: FlowFestCampPlanLine
+): number {
+  return planLinePlacementDistances(placements, line).reduce(
+    (minimum, distance) => Math.min(minimum, distance),
+    Number.POSITIVE_INFINITY
+  );
+}
+
+function maximumDistanceToPlanLine(
+  placements: Placement[],
+  line: FlowFestCampPlanLine
+): number {
+  return planLinePlacementDistances(placements, line).reduce(
+    (maximum, distance) => Math.max(maximum, distance),
+    0
+  );
+}
+
+function planLinePlacementDistances(
+  placements: Placement[],
+  line: FlowFestCampPlanLine
+): number[] {
+  return placements.map((placement) => {
+    let minimum = Number.POSITIVE_INFINITY;
+    for (let index = 1; index < line.points.length; index += 1) {
+      minimum = Math.min(
+        minimum,
+        distanceToSegment(
+          placement.x,
+          placement.z,
+          line.points[index - 1]!,
+          line.points[index]!
+        )
+      );
+    }
+    return minimum;
+  });
 }
 
 function findCampPlacement(options: {

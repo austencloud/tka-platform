@@ -11,6 +11,7 @@ import {
   type Material,
   type Mesh,
 } from "three";
+import { childSeed, makeRng } from "$lib/shared/foundation/utils/seeded-rng";
 
 export interface ForestRuntimeTreePlacement {
   x: number;
@@ -32,19 +33,33 @@ export interface ForestRuntimeGrassPlacement {
   colorIndex: number;
 }
 
+export interface ForestRuntimeTreeInstanceOptions {
+  materialSource?: Object3D;
+  distanceTier?: "near" | "mid" | "far";
+}
+
+export interface ForestRuntimeGrassInstanceOptions {
+  distanceTier?: "near" | "mid" | "far";
+}
+
 const GRASS_COLORS = ["#6d7a5c", "#7e8768", "#5d6b50", "#74805d"];
 
 /** Build GPU instances from an accepted Forest tree family without copying it. */
 export function createForestRuntimeTreeInstances(
   source: Object3D,
   placements: ForestRuntimeTreePlacement[],
-  familyId: string
+  familyId: string,
+  options: ForestRuntimeTreeInstanceOptions = {}
 ): Group {
   const root = new Group();
-  root.name = `Forest_RuntimeTreeFamily_${familyId}`;
+  const distanceTier = options.distanceTier ?? "near";
+  root.name = `Forest_RuntimeTreeFamily_${familyId}_${distanceTier}`;
   source.updateMatrixWorld(true);
-  const bounds = new Box3().setFromObject(source);
+  const materialSource = options.materialSource ?? source;
+  materialSource.updateMatrixWorld(true);
+  const bounds = new Box3().setFromObject(materialSource);
   const sourceHeight = Math.max(0.001, bounds.max.y - bounds.min.y);
+  const sourceMaterials = collectMaterialsByName(materialSource);
   const placementMatrix = new Matrix4();
   const combinedMatrix = new Matrix4();
   const quaternion = new Quaternion();
@@ -55,7 +70,9 @@ export function createForestRuntimeTreeInstances(
   source.traverse((child) => {
     const sourceMesh = child as Mesh;
     if (!sourceMesh.isMesh || !sourceMesh.geometry) return;
-    const materials = cloneMaterials(sourceMesh.material);
+    const materials = cloneMaterials(
+      replaceMaterialsByName(sourceMesh.material, sourceMaterials)
+    );
     const instances = new InstancedMesh(
       sourceMesh.geometry,
       materials,
@@ -69,6 +86,7 @@ export function createForestRuntimeTreeInstances(
     instances.frustumCulled = true;
     instances.userData.forestRuntimeEcology = true;
     instances.userData.forestTreeFamily = familyId;
+    instances.userData.forestDistanceTier = distanceTier;
     instances.userData.ownedMaterials = true;
 
     placements.forEach((placement, index) => {
@@ -97,10 +115,12 @@ export function createForestRuntimeTreeInstances(
 /** Create the same tiered, rooted-wind-ready grass contract used by Forest. */
 export function createForestRuntimeGrassField(
   placements: ForestRuntimeGrassPlacement[],
-  sources: ReadonlyMap<ForestRuntimeGrassPlacement["species"], Mesh>
+  sources: ReadonlyMap<ForestRuntimeGrassPlacement["species"], Mesh>,
+  options: ForestRuntimeGrassInstanceOptions = {}
 ): Group {
   const root = new Group();
-  root.name = "Forest_RuntimeGroundEcosystem";
+  const distanceTier = options.distanceTier ?? "near";
+  root.name = `Forest_RuntimeGroundEcosystem_${distanceTier}`;
   for (const tier of ["base", "medium", "high"] as const) {
     for (const species of ["summer-sward", "woodland-grass"] as const) {
       const selected = placements.filter(
@@ -138,6 +158,7 @@ export function createForestRuntimeGrassField(
       mesh.userData.tka_ground_stratum = tier === "base" ? "carpet" : "meadow";
       mesh.userData.tka_wind_response = tier === "high" ? 1.15 : 1;
       mesh.userData.forestRuntimeEcology = true;
+      mesh.userData.forestDistanceTier = distanceTier;
       mesh.userData.ownedMaterials = true;
       const object = new Object3D();
       selected.forEach((placement, index) => {
@@ -163,6 +184,26 @@ export function createForestRuntimeGrassField(
   return root;
 }
 
+/**
+ * Keep a stable spatial subset for distance grass tiers.
+ *
+ * Position-keyed selection avoids grid stripes and stays bit-identical when a
+ * route carve adds or removes an unrelated tuft elsewhere in the campground.
+ */
+export function selectForestRuntimeGrassDensity(
+  placements: readonly ForestRuntimeGrassPlacement[],
+  density: number,
+  seed = "forest-runtime-grass-distance-density"
+): ForestRuntimeGrassPlacement[] {
+  const clampedDensity = Math.min(1, Math.max(0, density));
+  if (clampedDensity === 1) return [...placements];
+  if (clampedDensity === 0) return [];
+  return placements.filter((placement) => {
+    const positionKey = `${placement.x.toFixed(3)}:${placement.z.toFixed(3)}:${placement.species}`;
+    return makeRng(childSeed(seed, positionKey))() < clampedDensity;
+  });
+}
+
 export function disposeForestRuntimeEcology(root: Object3D): void {
   root.traverse((object) => {
     const mesh = object as Mesh;
@@ -183,4 +224,30 @@ function cloneMaterials(
   return Array.isArray(material)
     ? material.map((candidate) => candidate.clone())
     : material.clone();
+}
+
+function collectMaterialsByName(
+  source: Object3D
+): ReadonlyMap<string, Material> {
+  const materials = new Map<string, Material>();
+  source.traverse((object) => {
+    const mesh = object as Mesh;
+    if (!mesh.isMesh) return;
+    const candidates = Array.isArray(mesh.material)
+      ? mesh.material
+      : [mesh.material];
+    for (const material of candidates) {
+      if (material.name) materials.set(material.name, material);
+    }
+  });
+  return materials;
+}
+
+function replaceMaterialsByName(
+  material: Material | Material[],
+  materialsByName: ReadonlyMap<string, Material>
+): Material | Material[] {
+  const replace = (candidate: Material) =>
+    materialsByName.get(candidate.name) ?? candidate;
+  return Array.isArray(material) ? material.map(replace) : replace(material);
 }

@@ -51,6 +51,8 @@ export interface LavaRiverChannelConfig {
   length?: number;
   curvature?: number;
   widthScale: number;
+  /** Fraction of the channel length used to widen a fissure source into the river. */
+  sourceTaperFraction?: number;
   /** Runtime X, Z, and height above the performer ground plane. */
   points?: [number, number, number][];
 }
@@ -231,6 +233,7 @@ export function createDefaultEmberConfig(
       channels: [
         {
           widthScale: 1,
+          sourceTaperFraction: volcanicWorldR7.lavaRiver.sourceTaperFraction,
           points: volcanicWorldR7.lavaRiver.pointsRuntimeXZHeight.map(
             ([x, z, height]) => [x, z, height]
           ) as [number, number, number][],

@@ -18,6 +18,7 @@ export const PROP_LOCKING_ENABLED = false;
 export const CORE_PROPS: readonly PropType[] = [
   PropType.STAFF,
   PropType.CLUB,
+  PropType.CLASSIC_CLUB,
   PropType.FAN,
   PropType.BUUGENG,
   PropType.TRIAD,

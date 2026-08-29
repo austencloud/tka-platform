@@ -1,5 +1,14 @@
 # Stage Locomotion & Formation Choreography Research
 
+> **Historical survey, not current architecture.** This document records the
+> 2026-05-25 research pass and contains recommendations that predate the gait
+> clock, exact-step planner, terminal-transition work, authored turn clips, and
+> Stage footfall handoff. Use
+> [`docs/architecture/locomotion-research-canon.md`](../architecture/locomotion-research-canon.md)
+> for current research, ownership, adoption status, dataset licensing, rejected
+> assumptions, and verification requirements. Do not implement directly from
+> the recommendations below.
+
 > Research compiled 2026-05-25. Covers state of the art for beat-synchronized multi-performer locomotion in web-based 3D (Threlte/Three.js).
 
 ---

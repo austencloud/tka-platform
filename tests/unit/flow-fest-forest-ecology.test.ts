@@ -5,8 +5,13 @@ import type { ImportedTerrainDataV2 } from "$lib/shared/3d/procedural-engine/gen
 import { parseFlowFestRuntimeContract } from "../../src/routes/test/flow-fest-graybox/flow-fest-runtime-contract";
 import {
   deriveFlowFestForestEcology,
+  FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS,
   FLOW_FEST_FOREST_GRASS_ASSET,
   FLOW_FEST_FOREST_GROUND_LIFE_ASSETS,
+  FLOW_FEST_FOREST_DISTANCE_FALLBACK_FAMILY,
+  FLOW_FEST_FOREST_DISTANCE_LOD,
+  FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS,
+  FLOW_FEST_PLANTFACTORY_ACCENT_COUNT,
   FLOW_FEST_PLANTFACTORY_TREE_FAMILIES,
   FLOW_FEST_FOREST_TREE_ASSETS,
 } from "../../src/routes/test/flow-fest-sim/flow-fest-forest-ecology";
@@ -87,6 +92,9 @@ describe("Flow Fest Forest ecology integration", () => {
   it("ships every asset required by the all-family runtime readiness gate", () => {
     const assetPaths = [
       ...Object.values(FLOW_FEST_FOREST_TREE_ASSETS),
+      ...Object.values(FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid),
+      ...Object.values(FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far),
+      ...Object.values(FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS),
       FLOW_FEST_FOREST_GRASS_ASSET,
       ...Object.values(FLOW_FEST_FOREST_GROUND_LIFE_ASSETS),
     ];
@@ -95,6 +103,103 @@ describe("Flow Fest Forest ecology integration", () => {
       expect(existsSync(resolve(root, `static${assetPath}`)), assetPath).toBe(
         true
       );
+    }
+  });
+
+  it("maps every measured tree into deterministic non-overlapping distance tiers", () => {
+    const nearFamilyIds = Object.keys(FLOW_FEST_FOREST_TREE_ASSETS);
+    const midFamilyIds = Object.keys(FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid);
+    const farFamilyIds = Object.keys(FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far);
+
+    expect(Object.keys(FLOW_FEST_FOREST_DISTANCE_FALLBACK_FAMILY)).toEqual(
+      nearFamilyIds
+    );
+    expect(midFamilyIds).toEqual(farFamilyIds);
+    expect(
+      Object.values(FLOW_FEST_FOREST_DISTANCE_FALLBACK_FAMILY).every(
+        (familyId) => midFamilyIds.includes(familyId)
+      )
+    ).toBe(true);
+    expect(FLOW_FEST_FOREST_DISTANCE_LOD.nearMaximumMeters).toBeGreaterThan(0);
+    expect(FLOW_FEST_FOREST_DISTANCE_LOD.midMaximumMeters).toBeGreaterThan(
+      FLOW_FEST_FOREST_DISTANCE_LOD.nearMaximumMeters
+    );
+    expect(FLOW_FEST_FOREST_DISTANCE_LOD.grassMaximumMeters).toBeGreaterThan(
+      FLOW_FEST_FOREST_DISTANCE_LOD.grassMidMaximumMeters
+    );
+    expect(FLOW_FEST_FOREST_DISTANCE_LOD.grassMidMaximumMeters).toBeGreaterThan(
+      FLOW_FEST_FOREST_DISTANCE_LOD.grassNearMaximumMeters
+    );
+    expect(FLOW_FEST_FOREST_DISTANCE_LOD.grassNearMaximumMeters).toBeLessThan(
+      FLOW_FEST_FOREST_DISTANCE_LOD.nearMaximumMeters
+    );
+    expect(FLOW_FEST_FOREST_DISTANCE_LOD.grassMidDensity).toBe(0.5);
+    expect(FLOW_FEST_FOREST_DISTANCE_LOD.grassFarDensity).toBe(0.25);
+  });
+
+  it("ships reproducible geometry-only tiers with a meaningful triangle reduction", () => {
+    const manifest = JSON.parse(
+      readFileSync(
+        resolve(
+          root,
+          "static/models/flow-fest-sim/ecology/distance-lod/manifest.json"
+        ),
+        "utf8"
+      )
+    ) as {
+      schemaVersion: number;
+      assets: Array<{
+        tier: "mid" | "far";
+        sourceTriangles: number;
+        outputTriangles: number;
+        outputSha256: string;
+      }>;
+    };
+
+    expect(manifest.schemaVersion).toBe(1);
+    expect(manifest.assets).toHaveLength(8);
+    expect(
+      manifest.assets.filter((asset) => asset.tier === "mid")
+    ).toHaveLength(4);
+    expect(
+      manifest.assets.filter((asset) => asset.tier === "far")
+    ).toHaveLength(4);
+    for (const asset of manifest.assets) {
+      const maximumRatio = asset.tier === "mid" ? 0.22 : 0.12;
+      expect(asset.outputTriangles / asset.sourceTriangles).toBeLessThanOrEqual(
+        maximumRatio
+      );
+      expect(asset.outputSha256).toMatch(/^[a-f0-9]{64}$/);
+    }
+  });
+
+  it("ships reproducible grass distance tiers with the accepted palette payload", () => {
+    const manifest = JSON.parse(
+      readFileSync(
+        resolve(
+          root,
+          "static/models/flow-fest-sim/ecology/distance-lod/grass/manifest.json"
+        ),
+        "utf8"
+      )
+    ) as {
+      schemaVersion: number;
+      sourceTriangles: number;
+      tiers: Array<{
+        id: "mid" | "far";
+        outputTriangles: number;
+        outputSha256: string;
+      }>;
+    };
+
+    expect(manifest.schemaVersion).toBe(1);
+    expect(manifest.tiers).toHaveLength(2);
+    for (const tier of manifest.tiers) {
+      const maximumRatio = tier.id === "mid" ? 0.6 : 0.25;
+      expect(
+        tier.outputTriangles / manifest.sourceTriangles
+      ).toBeLessThanOrEqual(maximumRatio);
+      expect(tier.outputSha256).toMatch(/^[a-f0-9]{64}$/);
     }
   });
 
@@ -127,7 +232,7 @@ describe("Flow Fest Forest ecology integration", () => {
     expect(first.audit).toMatchObject({
       measuredCanopyPlacements: 440,
       sourceTreeFamilies: 11,
-      plantFactoryTreePlacements: 269,
+      plantFactoryTreePlacements: FLOW_FEST_PLANTFACTORY_ACCENT_COUNT,
       grassPlacements: 22_217,
       groundLifePlacements: 20,
     });
@@ -151,7 +256,7 @@ describe("Flow Fest Forest ecology integration", () => {
     expect(ecology.groundLife.length).toBeGreaterThan(0);
     expect(
       ecology.audit.plantFactoryTreePlacements / ecology.trees.length
-    ).toBeGreaterThanOrEqual(0.6);
+    ).toBeLessThan(0.1);
     expect(
       ecology.trees.filter((tree) =>
         FLOW_FEST_PLANTFACTORY_TREE_FAMILIES.includes(
@@ -168,12 +273,29 @@ describe("Flow Fest Forest ecology integration", () => {
     }
     expect(
       Math.max(...familyCounts.values()) / ecology.trees.length
-    ).toBeLessThanOrEqual(0.2);
+    ).toBeLessThanOrEqual(0.28);
     for (const familyId of Object.keys(FLOW_FEST_FOREST_TREE_ASSETS)) {
       expect(ecology.trees.some((tree) => tree.familyId === familyId)).toBe(
         true
       );
     }
+    const accentIndices = ecology.trees.flatMap((tree, index) =>
+      FLOW_FEST_PLANTFACTORY_TREE_FAMILIES.includes(
+        tree.familyId as (typeof FLOW_FEST_PLANTFACTORY_TREE_FAMILIES)[number]
+      )
+        ? [index]
+        : []
+    );
+    expect(accentIndices).toHaveLength(FLOW_FEST_PLANTFACTORY_ACCENT_COUNT);
+    expect(accentIndices[0]).toBe(0);
+    expect(accentIndices.at(-1)).toBe(ecology.trees.length - 1);
+    expect(
+      Math.max(
+        ...accentIndices.slice(1).map((index, accentIndex) => {
+          return index - accentIndices[accentIndex]!;
+        })
+      )
+    ).toBeLessThanOrEqual(14);
   });
 
   it("carves the shared camp-plan roads and connectors from the measured ecology", () => {

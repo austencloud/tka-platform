@@ -5,7 +5,7 @@
    * Three atmospheric particle layers for the Enchanted Autumn Dusk scene:
    *   1. Leaves    — tumbling amber/red foliage falling through the canopy
    *   2. Spores    — rising bioluminescent motes drifting up from the forest floor
-   *   3. Fireflies — warm-glow pulses clustered near the pond
+   *   3. Fireflies — warm-glow pulses staged from the near clearing to the lane
    *
    * Each layer is wrapped in {#key count} so a quality-tier change remounts the
    * FallingParticles instance and re-allocates the GPU buffer to the new size.
@@ -78,7 +78,8 @@
   </T.Group>
 {/key}
 
-<!-- Warm-glow pulses live around the pond, fallen wood, and the subtle rear arc. -->
+<!-- Warm-glow pulses connect the clearing edge, pond, fallen wood, mushrooms,
+     and distant lane without entering the protected performance clearing. -->
 {#key quality.fireflyCount}
   {#each AUTUMN_FIREFLY_CLUSTERS as cluster, index (cluster.id)}
     <T.Group
@@ -96,10 +97,11 @@
         area={cluster.area}
         speed={0.032}
         colors={cluster.id === "pond"
-          ? ["#c9fff1", "#ffe8a3"]
-          : ["#ffe9a0", "#ffbd52"]}
-        sizeRange={[0.014, 0.04]}
+          ? ["#deff9a", "#fff1ad"]
+          : ["#fff2a0", "#ffbe3b"]}
+        sizeRange={[0.12 * cluster.sizeScale, 0.24 * cluster.sizeScale]}
         spin={false}
+        emissionShape="ellipse"
       />
     </T.Group>
   {/each}

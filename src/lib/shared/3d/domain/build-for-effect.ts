@@ -95,11 +95,17 @@ function fireEquip(
   propType: PropType,
   current: PropBuild
 ): PropBuildEquip | null {
-  // A fire fan burns from five monkey fists, so the cover comes off with it.
-  if (FAN_PROPS.has(propType))
+  // Both physical fire builds burn from five wicks. Keep the fan the performer
+  // chose and only uncover it; pictograph and day builds still equip DoodleGrip.
+  if (FAN_PROPS.has(propType)) {
+    if (current.fanBuild === "fire" || current.fanBuild === "lotus") {
+      return equipBuild({ fanCover: "bare" }, current);
+    }
     return equipBuild({ fanBuild: "fire", fanCover: "bare" }, current);
+  }
 
-  if (FINISH_PROPS.has(propType)) return equipBuild({ finish: "fire" }, current);
+  if (FINISH_PROPS.has(propType))
+    return equipBuild({ finish: "fire" }, current);
 
   return (
     equipProp(DOUBLE_STAFF_FAMILY, PropType.FIRE_DOUBLE_STAFF, propType) ??
@@ -124,11 +130,7 @@ export function buildForEffect(
     case "fire":
       return fireEquip(propType, current);
     case "led":
-      return equipProp(
-        DOUBLE_STAFF_FAMILY,
-        PropType.CAPSULE_BATON,
-        propType
-      );
+      return equipProp(DOUBLE_STAFF_FAMILY, PropType.CAPSULE_BATON, propType);
     default:
       // Coal, trails, sparkles and the rest read whatever build is in hand.
       // Nothing in the catalog is a "coal club" or a "sparkle fan".

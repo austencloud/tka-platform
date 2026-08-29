@@ -40,7 +40,11 @@ import {
   PRESET_VALID_COUNTS,
   createFormationFromPreset,
 } from "@austencloud/scene-3d";
-import { resolveViewerFormationFacingAngle } from "../domain/viewer-formation-facing";
+import {
+  getViewerFrontStageCameraZ,
+  getViewerFrontStageFacingAngle,
+  resolveViewerFormationFacingAngle,
+} from "../domain/viewer-formation-facing";
 import { isWebGL2Available } from "../capabilities/webgl-capabilities";
 import { fits3DViewportNow } from "../capabilities/viewport-3d-gate.svelte";
 import { userProportionsState } from "@austencloud/scene-3d";
@@ -614,6 +618,8 @@ function buildViewer3DState(
     initialAvatarId: DEFAULT_AVATAR_ID,
     maxPerformers: STAGE.MAX_VIEWER_PERFORMERS,
     getDefaults: () => _defaultSettings,
+    getFrontStageFacingAngle: () =>
+      getViewerFrontStageFacingAngle(environmentId),
     persistent,
   });
 
@@ -659,6 +665,53 @@ function buildViewer3DState(
   }
 
   /**
+   * Frame the cast from the environment's authored front-stage side. The
+   * shared choreography preset supplies the distance and elevation; this
+   * viewer adapter supplies the scene-specific stage axis.
+   */
+  function computeViewerFrontStageShot(
+    performers: readonly PerformerShotSubject[],
+    viewportAspect = currentViewportAspect()
+  ) {
+    const shot = computeChoreographerShot(
+      performers,
+      stageGroundOffset,
+      viewportAspect
+    );
+    shot.eye.z = getViewerFrontStageCameraZ(
+      shot.target.z,
+      shot.eye.z - shot.target.z,
+      environmentId
+    );
+    return shot;
+  }
+
+  /**
+   * First load is a hero composition, not a blocking diagram. Keep the
+   * FOV-derived group distance but lower the eye and target to the rig's
+   * shoulder-height origin so the authored environment remains visible behind
+   * the performers. Later cast edits still use the elevated overview above.
+   */
+  function computeViewerOpeningShot(
+    performers: readonly PerformerShotSubject[]
+  ) {
+    const shot = computeViewerFrontStageShot(performers);
+    const horizontalDistance = Math.hypot(
+      shot.eye.x - shot.target.x,
+      shot.eye.z - shot.target.z
+    );
+    shot.eye.x = shot.target.x;
+    shot.eye.y = 0;
+    shot.eye.z = getViewerFrontStageCameraZ(
+      shot.target.z,
+      horizontalDistance,
+      environmentId
+    );
+    shot.target.y = 0;
+    return shot;
+  }
+
+  /**
    * Keep the complete cast in view after a cast or formation edit. The shot is
    * calculated from the destination slots, so the camera arrives with the
    * performers instead of correcting itself after their movement finishes.
@@ -667,11 +720,7 @@ function buildViewer3DState(
     performers: readonly PerformerShotSubject[]
   ): void {
     if (renderMode !== "3d" || !_snapToFn || performers.length === 0) return;
-    const shot = computeChoreographerShot(
-      performers,
-      stageGroundOffset,
-      currentViewportAspect()
-    );
+    const shot = computeViewerFrontStageShot(performers);
     snapCameraTo(
       { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
       { x: shot.target.x, y: shot.target.y, z: shot.target.z },
@@ -694,11 +743,7 @@ function buildViewer3DState(
     const performers = performerManager.performers;
     if (renderMode !== "3d" || !_snapToFn || performers.length === 0) return;
 
-    const shot = computeChoreographerShot(
-      performers,
-      stageGroundOffset,
-      viewportAspect
-    );
+    const shot = computeViewerFrontStageShot(performers, viewportAspect);
     const target = shot.target;
     let position = shot.eye;
 
@@ -751,11 +796,7 @@ function buildViewer3DState(
     const performers = performerManager.performers;
     if (performers.length === 0) return;
 
-    const shot = computeChoreographerShot(
-      performers,
-      stageGroundOffset,
-      currentViewportAspect()
-    );
+    const shot = computeViewerFrontStageShot(performers);
     snapCameraTo(
       { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
       { x: shot.target.x, y: shot.target.y, z: shot.target.z }
@@ -1076,7 +1117,8 @@ function buildViewer3DState(
         const facing = resolveViewerFormationFacingAngle(
           slot,
           targetFormation,
-          p.facingAngle
+          p.facingAngle,
+          getViewerFrontStageFacingAngle(environmentId)
         );
         return {
           id: p.id,
@@ -1645,11 +1687,7 @@ function buildViewer3DState(
     _welcomeAnimationPending = false;
     const performers = performerManager.performers;
     if (performers.length === 0) return;
-    const shot = computeChoreographerShot(
-      performers,
-      stageGroundOffset,
-      currentViewportAspect()
-    );
+    const shot = computeViewerOpeningShot(performers);
     snapCameraTo(
       { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
       { x: shot.target.x, y: shot.target.y, z: shot.target.z }

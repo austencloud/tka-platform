@@ -28,6 +28,10 @@ import type {
 import { buildFlowFestTerrainRibbonGeometry } from "../flow-fest-graybox/flow-fest-review-geometry";
 import { sampleFlowFestTerrainWorldY } from "../flow-fest-graybox/flow-fest-terrain-host";
 import {
+  FLOW_FEST_LOWER_ENTRANCE_APRON,
+  FLOW_FEST_LOWER_ENTRANCE_APRON_ID,
+  FLOW_FEST_LOWER_ENTRANCE_APPROACH_ID,
+  FLOW_FEST_LOWER_GATEHOUSE_SITE,
   FLOW_FEST_PUBLIC_ROAD_SOURCE,
   type FlowFestCampPlan,
 } from "./flow-fest-camp-plan";
@@ -99,7 +103,7 @@ export function buildFlowFestEntranceScene(
   if (!entrance) {
     throw new Error("Flow Fest entrance scene is missing its camp-plan anchor");
   }
-  const anchor = FLOW_FEST_ENTRANCE_REFERENCE.siteLayout.entranceWorld;
+  const anchor = FLOW_FEST_LOWER_GATEHOUSE_SITE;
   const entranceAnchorErrorMeters = Math.hypot(
     entrance.position.x - anchor.x,
     entrance.position.z - anchor.z
@@ -117,7 +121,7 @@ export function buildFlowFestEntranceScene(
   }
 
   const collisionParts: BufferGeometry[] = [];
-  const driveway = buildDrivewayApron(terrain);
+  const driveway = buildDrivewayApron(terrain, plan);
   const roadMarkings = buildRoadMarkings(terrain, plan);
   const gatehouse = buildGatehouse(terrain, collisionParts);
   const fence = buildFence(terrain, collisionParts);
@@ -149,42 +153,84 @@ export function buildFlowFestEntranceScene(
   };
 }
 
-function buildDrivewayApron(terrain: ImportedTerrainDataV2): Mesh {
-  const sections = [
-    { depth: 3.6, halfWidth: 7.5 },
-    { depth: 13.5, halfWidth: 6 },
-    { depth: 31, halfWidth: 4.6 },
+function buildDrivewayApron(
+  terrain: ImportedTerrainDataV2,
+  plan: FlowFestCampPlan
+): Mesh {
+  const drive = plan.internalDrives.find(
+    (candidate) => candidate.id === FLOW_FEST_LOWER_ENTRANCE_APPROACH_ID
+  );
+  if (!drive) {
+    throw new Error("Flow Fest entrance cannot find its private approach");
+  }
+  const centerline = [
+    ...drive.points,
+    ...FLOW_FEST_LOWER_ENTRANCE_APRON.slice(1),
   ];
-  const slices: Array<{ depth: number; halfWidth: number }> = [];
-  sections.forEach((section, index) => {
-    if (index === 0) {
-      slices.push(section);
-      return;
-    }
-    const previous = sections[index - 1]!;
-    const steps = Math.max(
-      1,
-      Math.ceil((section.depth - previous.depth) / 1.5)
-    );
-    for (let step = 1; step <= steps; step += 1) {
+  const approachLength = drive.points.slice(1).reduce((sum, end, index) => {
+    const start = drive.points[index]!;
+    return sum + Math.hypot(end.x - start.x, end.z - start.z);
+  }, 0);
+
+  const slices: Array<{ point: WorldPoint; progress: number }> = [];
+  let travelled = 0;
+  centerline.slice(1).forEach((end, segmentIndex) => {
+    const start = centerline[segmentIndex]!;
+    const length = Math.hypot(end.x - start.x, end.z - start.z);
+    const steps = Math.max(1, Math.ceil(length / 1.5));
+    for (let step = segmentIndex === 0 ? 0 : 1; step <= steps; step += 1) {
       const ratio = step / steps;
       slices.push({
-        depth: previous.depth + (section.depth - previous.depth) * ratio,
-        halfWidth:
-          previous.halfWidth + (section.halfWidth - previous.halfWidth) * ratio,
+        point: {
+          x: start.x + (end.x - start.x) * ratio,
+          z: start.z + (end.z - start.z) * ratio,
+        },
+        progress: travelled + length * ratio,
       });
     }
+    travelled += length;
   });
+
+  const drivewayReference = FLOW_FEST_ENTRANCE_REFERENCE.siteLayout.driveway;
+  const widthProfile = [
+    { progress: 0, halfWidth: drivewayReference.roadHalfWidthMeters },
+    {
+      progress: approachLength,
+      halfWidth: drivewayReference.loopHalfWidthMeters,
+    },
+    { progress: travelled, halfWidth: drivewayReference.loopHalfWidthMeters },
+  ];
+  const halfWidthAt = (progress: number): number => {
+    const endIndex = widthProfile.findIndex(
+      (section) => section.progress >= progress
+    );
+    if (endIndex <= 0) return widthProfile[0]!.halfWidth;
+    const start = widthProfile[endIndex - 1]!;
+    const end = widthProfile[endIndex]!;
+    const ratio = (progress - start.progress) / (end.progress - start.progress);
+    return start.halfWidth + (end.halfWidth - start.halfWidth) * ratio;
+  };
   const positions: number[] = [];
   const indices: number[] = [];
   const columns = 12;
   slices.forEach((slice, index) => {
+    const previous = slices[Math.max(0, index - 1)]!.point;
+    const next = slices[Math.min(slices.length - 1, index + 1)]!.point;
+    const tangentX = next.x - previous.x;
+    const tangentZ = next.z - previous.z;
+    const tangentLength = Math.hypot(tangentX, tangentZ) || 1;
+    const normalX = -tangentZ / tangentLength;
+    const normalZ = tangentX / tangentLength;
+    const halfWidth = halfWidthAt(slice.progress);
     for (let column = 0; column <= columns; column += 1) {
-      const right = -slice.halfWidth + (slice.halfWidth * 2 * column) / columns;
-      const point = flowFestEntranceLocalToWorld({ right, depth: slice.depth });
+      const offset = -halfWidth + (halfWidth * 2 * column) / columns;
+      const point = {
+        x: slice.point.x + normalX * offset,
+        z: slice.point.z + normalZ * offset,
+      };
       positions.push(
         point.x,
-        sampleFlowFestTerrainWorldY(terrain, point.x, point.z) + 0.092,
+        sampleFlowFestTerrainWorldY(terrain, point.x, point.z) + 0.08,
         point.z
       );
     }
@@ -213,7 +259,10 @@ function buildDrivewayApron(terrain: ImportedTerrainDataV2): Mesh {
   const mesh = new Mesh(geometry, GRAVEL.clone());
   mesh.name = "FFS_EntranceDriveway_PaleGravelApron_StreetViewObserved";
   mesh.receiveShadow = true;
-  mesh.userData.evidence = "street-view-observed-proportion";
+  mesh.userData.evidence =
+    "imagery-interpreted-centerline; provisional-interior-apron; street-view-observed-proportion";
+  mesh.userData.centerlineFeatureId = FLOW_FEST_LOWER_ENTRANCE_APPROACH_ID;
+  mesh.userData.apronFeatureId = FLOW_FEST_LOWER_ENTRANCE_APRON_ID;
   return mesh;
 }
 

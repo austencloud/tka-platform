@@ -17,7 +17,10 @@
   import { onDestroy, onMount } from "svelte";
   import { generateSequenceMatchQuestion } from "../../quiz/services/sequence-question-generator";
   import { QuizType } from "../../quiz/domain/enums/quiz-enums";
-  import type { QuizAnswerOption, QuizQuestionData } from "../../quiz/domain/models/quiz-models";
+  import type {
+    QuizAnswerOption,
+    QuizQuestionData,
+  } from "../../quiz/domain/models/quiz-models";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import QuizContainer from "../../quiz/components/shared/QuizContainer.svelte";
@@ -55,8 +58,10 @@
   let error = $state<string | null>(null);
   let showScorePop = $state(false);
 
-  const levelNumber = $derived(
-    session.phase.name === "playing" ? session.phase.level.levelNumber : 1
+  const challengeNumber = $derived(
+    session.phase.name === "playing"
+      ? session.phase.challenge.challengeNumber
+      : 1
   );
   const animateMandala = !reducedMotion();
 
@@ -173,7 +178,7 @@
       questionData = await generateSequenceMatchQuestion(generateQuestionId(), {
         optionCount: constraints.optionCount,
         stepCount: constraints.stepCount,
-        similarDistractors: levelNumber === 3,
+        similarDistractors: challengeNumber === 3,
         lessonType: QuizType.MANDALA_TO_CARD,
       });
       session.markQuestionShown();
@@ -230,7 +235,9 @@
     await loadQuestion();
   }
 
-  function cardState(option: QuizAnswerOption): "default" | "correct" | "incorrect" | "dimmed" {
+  function cardState(
+    option: QuizAnswerOption
+  ): "default" | "correct" | "incorrect" | "dimmed" {
     if (!isAnswered) return "default";
     if (option.isCorrect) return "correct";
     if (option.id === selectedAnswerId) return "incorrect";
@@ -346,7 +353,11 @@
     justify-content: center;
     background: radial-gradient(
       circle,
-      color-mix(in srgb, var(--game-accent, var(--theme-accent)) 14%, transparent),
+      color-mix(
+        in srgb,
+        var(--game-accent, var(--theme-accent)) 14%,
+        transparent
+      ),
       transparent 70%
     );
   }

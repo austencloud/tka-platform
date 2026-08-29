@@ -16,6 +16,7 @@
   import {
     countFailing,
     verdictRows,
+    type GaitManeuverProfile,
     type GaitReportScope,
   } from "./gait-verdicts";
   import type { Vec3 } from "./gait-frame";
@@ -26,6 +27,7 @@
     /** Recent root positions, for scaling the floor trace. */
     trail?: readonly Vec3[];
     scope?: GaitReportScope;
+    maneuver?: GaitManeuverProfile;
   }
 
   let {
@@ -33,10 +35,11 @@
     label = "performer",
     trail = [],
     scope = "gait",
+    maneuver = "walk",
   }: Props = $props();
 
-  const rows = $derived(verdictRows(report, scope));
-  const failing = $derived(countFailing(report, scope));
+  const rows = $derived(verdictRows(report, scope, maneuver));
+  const failing = $derived(countFailing(report, scope, maneuver));
 
   const STRIP_W = 1000;
   const window = $derived.by(() => {
@@ -76,7 +79,7 @@
     <h3>{label}</h3>
     {#if report && report.stances.length > 0}
       <span class="score" class:clean={failing === 0}>
-        {failing} of {rows.length} outside human range
+        {failing} of {rows.length} outside target range
       </span>
     {:else}
       <span class="score waiting">waiting for footfalls</span>

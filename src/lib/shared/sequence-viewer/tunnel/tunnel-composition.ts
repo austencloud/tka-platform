@@ -27,7 +27,32 @@ export interface ShapeMatrixTunnelSourceProvenance {
   redFlower: Flower;
 }
 
-export type TunnelSourceProvenance = ShapeMatrixTunnelSourceProvenance;
+/** The complete generator recipe that produced an embedded performer source.
+ * The sequence remains the performed source of truth; this versioned snapshot
+ * explains how it was made and lets the creator restore the same controls. */
+export interface GeneratorTunnelSourceProvenance {
+  kind: "generator-recipe";
+  version: 1;
+  setup: {
+    config: Record<string, unknown>;
+    startEndOptions: Record<string, unknown> | null;
+  };
+}
+
+/** Library provenance deliberately records only what the picker actually knew.
+ * Older/ad-hoc sources remain `unknown` rather than being presented as public
+ * or personal without evidence. */
+export interface LibraryTunnelSourceProvenance {
+  kind: "library-sequence";
+  version: 1;
+  sequenceId: string;
+  scope: "personal" | "public" | "unknown";
+}
+
+export type TunnelSourceProvenance =
+  | ShapeMatrixTunnelSourceProvenance
+  | GeneratorTunnelSourceProvenance
+  | LibraryTunnelSourceProvenance;
 
 export interface IndependentTunnelSource {
   kind: "independent";
@@ -43,7 +68,8 @@ export interface DerivedTunnelSource {
 }
 
 export type TunnelPerformerSource =
-  IndependentTunnelSource | DerivedTunnelSource;
+  | IndependentTunnelSource
+  | DerivedTunnelSource;
 
 export interface TunnelPerformerTiming {
   stepOffset: number;
@@ -131,14 +157,30 @@ const FlowerSchema = z.object({
   petals: z.number().int().nonnegative(),
 });
 
-export const TunnelSourceProvenanceSchema = z.object({
-  kind: z.literal("shape-matrix-realization"),
-  version: z.literal(1),
-  baseSequenceId: z.string().min(1),
-  mode: z.enum(["SS", "TS", "QS", "SO", "TO", "QO"]),
-  blueFlower: FlowerSchema,
-  redFlower: FlowerSchema,
-});
+export const TunnelSourceProvenanceSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("shape-matrix-realization"),
+    version: z.literal(1),
+    baseSequenceId: z.string().min(1),
+    mode: z.enum(["SS", "TS", "QS", "SO", "TO", "QO"]),
+    blueFlower: FlowerSchema,
+    redFlower: FlowerSchema,
+  }),
+  z.object({
+    kind: z.literal("generator-recipe"),
+    version: z.literal(1),
+    setup: z.object({
+      config: z.record(z.string(), z.unknown()),
+      startEndOptions: z.record(z.string(), z.unknown()).nullable(),
+    }),
+  }),
+  z.object({
+    kind: z.literal("library-sequence"),
+    version: z.literal(1),
+    sequenceId: z.string().min(1),
+    scope: z.enum(["personal", "public", "unknown"]),
+  }),
+]);
 
 const TunnelPerformerSchema = z.object({
   id: z.string().min(1),
@@ -280,13 +322,9 @@ function clonePerformer(performer: TunnelPerformer): TunnelPerformer {
             ...performer.source,
             ...(performer.source.provenance
               ? {
-                  provenance: {
-                    ...performer.source.provenance,
-                    blueFlower: {
-                      ...performer.source.provenance.blueFlower,
-                    },
-                    redFlower: { ...performer.source.provenance.redFlower },
-                  },
+                  provenance: cloneSourceProvenance(
+                    performer.source.provenance
+                  ),
                 }
               : {}),
           }
@@ -296,6 +334,27 @@ function clonePerformer(performer: TunnelPerformer): TunnelPerformer {
           },
     timing: { ...performer.timing },
   };
+}
+
+function cloneSourceProvenance(
+  provenance: TunnelSourceProvenance
+): TunnelSourceProvenance {
+  if (provenance.kind === "shape-matrix-realization") {
+    return {
+      ...provenance,
+      blueFlower: { ...provenance.blueFlower },
+      redFlower: { ...provenance.redFlower },
+    };
+  }
+  if (provenance.kind === "generator-recipe") {
+    return {
+      ...provenance,
+      setup: JSON.parse(
+        JSON.stringify(provenance.setup)
+      ) as GeneratorTunnelSourceProvenance["setup"],
+    };
+  }
+  return { ...provenance };
 }
 
 function cloneConfig(config: TunnelConfig): TunnelConfig {

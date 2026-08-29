@@ -1,120 +1,56 @@
 <!--
-  /q/[code]/+page.svelte
+  Physical-scan ingress.
 
-  QR Scan Landing Page
-
-  Renders the scanned sequence through SequenceViewerShell — the EXACT viewer
-  chrome (header, rail, split pane, export panels, practice) the app drawer
-  uses, so /q and the in-app viewer are identical by construction. This page
-  owns only scan concerns: short-code resolve, the word-glyph loader, scan
-  analytics, the gated download pipeline (account funnel), and the composer
-  handoff. Breaks out of the root layout via +layout@.svelte.
-
-  URL format: /q/{shortCode}
-
-  Flow:
-  1. Resolve short code -> SequenceData
-  2. Lazy-load SequenceViewerOrchestrator + SequenceViewerShell
-     (parallel with step 1)
-  3. Mount orchestrator -> shell (full viewer chrome)
+  /q owns attribution and the one physical scan write. Once the code resolves,
+  it caches the sequence and replaces itself with /sequence/[id], the canonical
+  standalone viewer. Viewer chrome must never return to this route.
 -->
 <script lang="ts">
-  import { page } from "$app/state";
   import { goto } from "$app/navigation";
-  import { onMount, onDestroy } from "svelte";
-  import { browser } from "$app/environment";
-  import {
-    isInlineEncoded,
-    parsePropsFromURL,
-  } from "$lib/shared/navigation/services/sequence-encoder";
-  import {
-    ShortCodeManager,
-    type ShortCodeData,
-    type ShortCodeSequenceLoader,
-  } from "$lib/shared/qr/services/short-code-manager";
-  import { configureShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
-  import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
-  import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-options";
+  import { page } from "$app/state";
+  import { onDestroy, onMount } from "svelte";
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
-  import { registerLoopDetector } from "$lib/shared/create/get-loop-detector";
-  import { registerLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
-  import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
-  import { initPostHog } from "$lib/shared/analytics/services/posthog";
   import {
     beginScanVisit,
-    updateScanAttribution,
     captureScanEvent,
-    captureScanExport,
     endScanViewerSession,
-    registerScanSessionCleanup,
-    refreshScanSessionAttribution,
-    type ScanAnalyticsValue,
+    updateScanAttribution,
   } from "$lib/shared/analytics/scan-analytics";
-  import { markScan } from "$lib/shared/analytics/scan-perf";
-  import { isFirstScanRouteVisit } from "$lib/shared/qr/utils/scan-detection";
-  import { recordCardScan } from "$lib/shared/qr/services/card-scan-ingest";
-  import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
-  import {
-    authState,
-    initializeAuthListener,
-  } from "$lib/shared/auth/state/auth-state.svelte";
-  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-  import { resolveScanPropConfig } from "$lib/shared/qr/services/scan-prop-resolver";
-  import { updateSettings } from "$lib/shared/application/state/app-state.svelte";
-  import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
-  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
-  import {
-    handleHMRInit,
-    clearModuleChunkRecoveryGuard,
-  } from "$lib/shared/hmr-helper";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import { getSequenceMotionProfile } from "$lib/shared/foundation/services/sequence-motion-profile";
-  import type {
-    IVideoExportOrchestrator,
-    VideoExportProgress,
-  } from "$lib/shared/compose/domain/video-export-types";
-  import type { OrchestratorContext } from "$lib/shared/sequence-viewer/domain/viewer-orchestrator-context";
-  import { setScanCardCloudProbe } from "$lib/shared/sequence-viewer/scan-card-cloud-context";
-  import {
-    guideTargetForLetter,
-    GUIDE_CODEX_SLUG,
-  } from "../../(public)/guide/level-1/_data/guide-content-index";
-  import { setGuideScanIntent } from "../../(public)/guide/level-1/_data/guide-scan-intent";
-  import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
-  import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
-  import { sequenceModalExporter } from "$lib/shared/sequence-viewer/services/sequence-modal-exporter.svelte";
-  import {
-    SCAN_PLAYBACK_MAX_BPM,
-    initialScanPlaybackBpm,
-    saveScanPlaybackBpm,
-  } from "$lib/shared/sequence-viewer/services/scan-playback-tempo";
-  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
-  import ScanSequenceLoader from "$lib/shared/sequence-viewer/components/ScanSequenceLoader.svelte";
-  import { getScanLoaderBaseLetters } from "$lib/shared/sequence-viewer/services/scan-sequence-loader";
-  import ToastContainer from "$lib/shared/toast/components/ToastContainer.svelte";
-  import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
-  import { toExportTakeoverPhase } from "$lib/shared/video-export/services/export-takeover-phase";
-  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { scanPropProperties } from "$lib/shared/analytics/scan-prop-attribution";
   import {
     scanResolutionFailureCategory,
     type ScanResolutionFailureCategory,
   } from "$lib/shared/analytics/scan-resolution-analytics";
-  import { ExportAttemptGuard } from "$lib/shared/sequence-viewer/domain/export-attempt-guard";
-  import { getInAppBrowserDetector } from "$lib/shared/auth/get-in-app-browser-detector";
-  import { buildScanAppHandoffHref } from "$lib/shared/qr/services/scan-app-handoff";
-  import { registerLibraryRepository } from "$lib/shared/composition-root/register-library-repository";
-
-  // Scan cards download pre-rendered pictographs from the shared cloud store
-  // instead of rasterizing on the scanner's device. Enables probeCloud on every
-  // descendant ChoreoCard cell render. Must be set during component init (not in
-  // onMount) so the Svelte context resolves for the descendant viewer tree.
-  setScanCardCloudProbe(true);
-
-  // This reset layout skips the root composition module. Register the library
-  // repository before the descendant viewer mounts so its first saved/owner
-  // state sync cannot race route bootstrap.
-  if (browser) registerLibraryRepository();
+  import { markScan } from "$lib/shared/analytics/scan-perf";
+  import { initPostHog } from "$lib/shared/analytics/services/posthog";
+  import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
+  import {
+    authState,
+    initializeAuthListener,
+  } from "$lib/shared/auth/state/auth-state.svelte";
+  import { saveSequenceRouteHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
+  import { registerLoopDetector } from "$lib/shared/create/get-loop-detector";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import {
+    clearModuleChunkRecoveryGuard,
+    handleHMRInit,
+  } from "$lib/shared/hmr-helper";
+  import { registerLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
+  import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
+  import {
+    isInlineEncoded,
+    parsePropsFromURL,
+  } from "$lib/shared/navigation/services/sequence-encoder";
+  import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
+  import { recordCardScan } from "$lib/shared/qr/services/card-scan-ingest";
+  import { resolveScanPropConfig } from "$lib/shared/qr/services/scan-prop-resolver";
+  import { buildScanSequenceDestination } from "$lib/shared/qr/services/scan-sequence-handoff";
+  import {
+    ShortCodeManager,
+    type ShortCodeData,
+    type ShortCodeSequenceLoader,
+  } from "$lib/shared/qr/services/short-code-manager";
+  import { isFirstScanRouteVisit } from "$lib/shared/qr/utils/scan-detection";
 
   interface Props {
     data: {
@@ -147,732 +83,96 @@
   }
 
   const { data, onViewerReady }: Props = $props();
-  const shortCode = $derived(page.params["code"]);
-  const openAppHref = $derived(
-    buildScanAppHandoffHref(shortCode, page.url.searchParams, {
-      android: browser && getInAppBrowserDetector().getPlatform() === "android",
-      origin: page.url.origin,
-    })
-  );
-
-  /**
-   * `?demo=1` — this page is being SHOWN, not scanned.
-   *
-   * The shop hero puts a phone on screen and iframes this exact route so a
-   * visitor sees the literal thing a real scan opens. It is the real component
-   * on purpose; what it must not be is a real scan. Every funnel number this
-   * route feeds — scan sessions, the physical-card scan ledger, PostHog — would
-   * otherwise count a marketing page's own demo as a customer scanning a card,
-   * and the /q funnel is the one number that tells us whether printed cards
-   * work.
-   *
-   * Suppression is three call sites and no forked chrome, because the whole
-   * point is that the chrome is not forked. It works because
-   * `captureScanEvent` reads `scanBaseProperties()` and returns early when no
-   * visit is open: skip `beginScanVisit` and EVERY scan event downstream
-   * no-ops by construction, including ones added later.
-   */
+  const shortCode = $derived(page.params.code);
   const isDemo = $derived(page.url.searchParams.get("demo") === "1");
 
-  type PageState =
-    | { kind: "loading" }
-    | { kind: "error"; message: string }
-    | { kind: "playing"; word: string };
+  type IngressState = { kind: "loading" } | { kind: "error"; message: string };
 
-  let pageState = $state<PageState>({ kind: "loading" });
-
-  // Snapshot of connectivity at the moment resolution failed, so the error
-  // screen can say "you're offline" instead of blaming the code. A failed
-  // resolve while offline is a connectivity problem, not a broken code.
+  let ingressState = $state<IngressState>({ kind: "loading" });
   let failedWhileOffline = $state(false);
-  let resolutionFailureCategory = $state<ScanResolutionFailureCategory | null>(
-    null
-  );
+  let failureCategory = $state<ScanResolutionFailureCategory | null>(null);
+  let handoffInProgress = false;
 
-  function captureResolutionFailure(
+  const stubBrowseLoader = {
+    loadFullSequenceData: async () => null,
+  } satisfies ShortCodeSequenceLoader;
+  const shortCodeManager = new ShortCodeManager(stubBrowseLoader);
+
+  function reportFailure(
+    message: string,
     category: ScanResolutionFailureCategory,
     stage: "bootstrap" | "resolve" | "load"
   ): void {
-    resolutionFailureCategory = category;
+    failureCategory = category;
     captureScanEvent("qr_scan_resolution", {
       outcome: "failure",
       category,
       stage,
     });
+    ingressState = { kind: "error", message };
+    onViewerReady?.();
   }
 
-  function captureResolutionAction(
+  function reportRecoveryAction(
     action: "retry" | "auto_retry_online" | "browse" | "create"
   ): void {
     captureScanEvent("qr_resolution_action", {
       action,
-      category: resolutionFailureCategory,
+      category: failureCategory,
     });
   }
 
-  // Reconnecting while stuck on an offline error: retry automatically.
-  function handleBackOnline() {
-    if (pageState.kind === "error" && failedWhileOffline) {
-      captureResolutionAction("auto_retry_online");
-      location.reload();
-    }
-  }
-
-  // The scanned word arrives at SSR (data.meta.word) long before the heavy
-  // sequence resolve finishes. We priority-load just this word's glyphs so it
-  // paints as a pulsing loader instead of a generic spinner.
-  let glyphsReady = $state(false);
-  let resolvedSeq: SequenceData | null = $state(null);
-  const isSolo = $derived(
-    data?.meta?.payloadKind === "solo" ||
-      (resolvedSeq !== null &&
-        getSequenceMotionProfile(resolvedSeq).kind === "solo")
-  );
-  const loaderWord = $derived(
-    !isSolo && data?.meta?.word ? simplifyRepeatedWord(data.meta.word) : ""
-  );
-
-  // The heavy resolve+cache+player phase is opaque (one big Promise.all with no
-  // sub-progress), so we anchor the bar to real phase completions and trickle
-  // it toward each milestone's ceiling in between — it never stalls and never
-  // lies about reaching a milestone it hasn't hit. Snaps to 100 on success.
-  let loadProgress = $state(0);
-  let trickleTimer: ReturnType<typeof setInterval> | null = null;
-
-  function setProgress(v: number) {
-    loadProgress = Math.max(loadProgress, v);
-  }
-
-  function trickleTo(ceiling: number) {
-    stopTrickle();
-    trickleTimer = setInterval(() => {
-      if (loadProgress < ceiling) {
-        setProgress(
-          loadProgress + Math.max(0.4, (ceiling - loadProgress) * 0.08)
-        );
-      }
-    }, 200);
-  }
-
-  function stopTrickle() {
-    if (trickleTimer) {
-      clearInterval(trickleTimer);
-      trickleTimer = null;
-    }
+  function handleBackOnline(): void {
+    if (ingressState.kind !== "error" || !failedWhileOffline) return;
+    reportRecoveryAction("auto_retry_online");
+    location.reload();
   }
 
   onDestroy(() => {
-    stopTrickle();
-    abandonActiveExports("route_unmount");
-    endScanViewerSession("route_unmount");
-  });
-
-  // Raw word — DATA. Feeds analytics payloads and the OG/title derivations
-  // below, which simplify on their own. Never render it directly.
-  let seqWord = $state("");
-  // Anything a human reads or saves. A LOOP repeats its word by construction,
-  // so "FΨFΨFΨFΨ.mp4" is the common case, not the edge case.
-  const exportWord = $derived(
-    seqWord ? simplifyRepeatedWord(seqWord) : seqWord
-  );
-  let scanInitialBpm = $state(SCAN_PLAYBACK_MAX_BPM);
-
-  function handleScanBpmChange(bpm: number): void {
-    if (shortCode) saveScanPlaybackBpm(shortCode, bpm);
-  }
-
-  // The orchestrator is the full viewer brain; lazy-loaded so the scan page's
-  // first paint (the word-glyph loader) isn't blocked by the viewer chunk.
-  let OrchestratorComponent:
-    | typeof import("$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte").default
-    | null = $state(null);
-  // The shell (header + rail + split pane + export panels + practice — the
-  // entire drawer chrome, shared verbatim with the app viewer) lazy-loads
-  // alongside the orchestrator, so the word-glyph loader paints before the
-  // viewer chunk lands. startInSplit on the shell handles the one-shot reset
-  // of any stale persisted viewer mode.
-  let ShellComponent:
-    | typeof import("$lib/shared/sequence-viewer/components/SequenceViewerShell.svelte").default
-    | null = $state(null);
-
-  // ── Export state (drives the QR ExportTakeover overlay + native share) ──
-  let isExporting = $state(false);
-  let exportProgress = $state<VideoExportProgress | null>(null);
-  let activeVideoExportOrchestrator: IVideoExportOrchestrator | null = null;
-  const videoExportAttempt = new ExportAttemptGuard();
-  let activeVideoExportConfig: Record<string, ScanAnalyticsValue> | null = null;
-  // Separate from isExporting so the card-image export's button-busy state never
-  // triggers the video ExportTakeover overlay (different pipeline, much faster).
-  let isCardExporting = $state(false);
-  const cardExportAttempt = new ExportAttemptGuard();
-  let activeCardExportConfig: Record<string, ScanAnalyticsValue> | null = null;
-
-  onMount(() =>
-    registerScanSessionCleanup((reason) => abandonActiveExports(reason))
-  );
-
-  // ── Export takeover overlay (dim scrim + progress ring over the live canvas) ──
-  const takeover = $derived(toExportTakeoverPhase(exportProgress, isExporting));
-
-  // Same breakpoint as SequenceViewerDrawerHost (<768 = mobile) so the
-  // orchestrator and the shared shell agree with the app viewer exactly.
-  let viewportWidth = $state(0);
-
-  const isViewerMobile = $derived(
-    viewportWidth > 0 ? viewportWidth < 768 : true
-  );
-
-  const rawWord = $derived(
-    (pageState.kind === "playing" ? pageState.word : data?.meta?.word) ||
-      "Sequence"
-  );
-  // Browser-tab title + OG/Twitter meta are all UTF-8, so keep the real Greek
-  // glyphs (Σ, Δ, Λ…) here. greekToAscii ("sig", "del") is for filenames/URLs
-  // only — using it for display turned the tab title into mojibake-looking ASCII.
-  const displayWord = $derived(
-    rawWord !== "Sequence"
-      ? isSolo
-        ? rawWord
-        : simplifyRepeatedWord(rawWord)
-      : "Sequence"
-  );
-  const ogDesc = $derived(
-    displayWord !== "Sequence"
-      ? isSolo
-        ? `Watch and practice ${displayWord}`
-        : `Watch the ${displayWord} flow sequence`
-      : "Watch this flow sequence"
-  );
-  const ogImage = $derived(
-    data?.meta?.thumbnailUrl || "https://tkaflowarts.com/og-default.png"
-  );
-
-  const stubBrowseLoader = {
-    loadFullSequenceData: async () => null,
-  } satisfies ShortCodeSequenceLoader;
-
-  const shortCodeManager = new ShortCodeManager(stubBrowseLoader);
-
-  function videoExportAnalyticsConfig(
-    ctx: OrchestratorContext
-  ): Record<string, ScanAnalyticsValue> {
-    const options = ctx.exportOptions.getVideoOptions();
-    return {
-      fps: options.fps,
-      loop_count: options.loopCount,
-      resolution: String(options.resolution),
-      include_start_position: options.includeStartPosition,
-      include_end_hold: options.includeEndHold,
-      render_mode: ctx.renderMode,
-      playback_mode: ctx.playbackMode,
-      ...scanPropProperties(ctx.bluePropType, ctx.redPropType),
-    };
-  }
-
-  function cardExportAnalyticsConfig(
-    ctx: OrchestratorContext
-  ): Record<string, ScanAnalyticsValue> {
-    return {
-      step_count: resolvedSeq?.steps?.length ?? 0,
-      dark_mode: ctx.exportOptions.imageDarkMode,
-      include_start_position: ctx.splitPaneImageComposition.showStartPos,
-      hand_path: ctx.splitPaneImageComposition.handPathMode ?? false,
-      ...scanPropProperties(ctx.bluePropType, ctx.redPropType),
-    };
-  }
-
-  // ── Download (reuses the orchestrator's live controller + the QR share UX) ──
-  // The orchestrator owns the playback controller driving the canvas; we grab it
-  // from the children-snippet context to feed the offscreen export engine, then
-  // deliver via the native share sheet (mobile) or disk (desktop).
-  async function handleExport(ctx: OrchestratorContext) {
-    const analyticsConfig = videoExportAnalyticsConfig(ctx);
-    if (!resolvedSeq || !ctx.playbackController || !ctx.modalAnimationState) {
-      captureScanExport("video", "failed", {
-        ...analyticsConfig,
-        reason: "not_ready",
-      });
-      return;
-    }
-
-    // The live 2D animation canvas inside the shared shell (AnimatorCanvas
-    // renders into CanvasSurface's .canvas-wrapper).
-    const canvasEl =
-      document.querySelector<HTMLCanvasElement>(
-        ".scan-viewer .canvas-wrapper canvas"
-      ) ?? document.querySelector<HTMLCanvasElement>(".scan-viewer canvas");
-    if (!canvasEl) {
-      captureScanExport("video", "failed", {
-        ...analyticsConfig,
-        reason: "canvas_unavailable",
-      });
-      return;
-    }
-
-    const attemptToken = videoExportAttempt.begin();
-    if (attemptToken === null) return;
-
-    isExporting = true;
-    exportProgress = null;
-    activeVideoExportConfig = analyticsConfig;
-    captureScanExport("video", "started", analyticsConfig);
-
-    let orchestrator: IVideoExportOrchestrator | null = null;
-    try {
-      // Guests never trigger the auth-gated deferred-registrations import
-      // above, so this route reaches export with the factory unregistered.
-      // ensure* loads that module on demand — one registration path for every
-      // host, instead of this route rebuilding the orchestrator by hand.
-      const { ensureVideoExportOrchestrator } =
-        await import("$lib/shared/animation-engine/get-video-export-orchestrator");
-      orchestrator = await ensureVideoExportOrchestrator();
-      activeVideoExportOrchestrator = orchestrator;
-      if (!videoExportAttempt.isActive(attemptToken)) {
-        orchestrator.cancelExport();
-        return;
-      }
-
-      const opts = ctx.exportOptions.getVideoOptions();
-
-      const blob = await orchestrator.executeExport(
-        canvasEl,
-        ctx.playbackController,
-        ctx.modalAnimationState,
-        (progress) => {
-          if (videoExportAttempt.isActive(attemptToken)) {
-            exportProgress = progress;
-          }
-        },
-        {
-          compositeMode: "none",
-          // This page shares/downloads the returned blob itself below
-          // (shareOrDownloadBlob). Suppress the orchestrator's own download.
-          autoDownload: false,
-          fps: opts.fps,
-          loopCount: opts.loopCount,
-          resolution: opts.resolution,
-          includeAnimationStartPosition: opts.includeStartPosition,
-          includeEndHold: opts.includeEndHold,
-          // Thread the orchestrator's resolved prop so the offscreen export
-          // engine loads matching textures. The player mounts dark.
-          bluePropType: ctx.bluePropType,
-          redPropType: ctx.redPropType,
-          previewDarkMode: true,
-        }
-      );
-      if (!videoExportAttempt.isActive(attemptToken)) return;
-
-      // Mobile: open the native share sheet so the user picks where the MP4 goes
-      // (Files, Photos, a message…) instead of a blind background download.
-      // Desktop: straight to disk.
-      const result = await shareOrDownloadBlob(blob, `${exportWord}.mp4`, {
-        title: exportWord,
-      });
-      finishVideoExportAttempt(
-        attemptToken,
-        result.canceled ? "canceled" : result.success ? "completed" : "failed",
-        {
-          ...analyticsConfig,
-          delivery: result.method,
-          ...(result.canceled || result.success
-            ? {}
-            : { reason: "delivery_failed" }),
-        }
-      );
-    } catch (err) {
-      if (
-        finishVideoExportAttempt(attemptToken, "failed", {
-          ...analyticsConfig,
-          reason: "export_error",
-        })
-      ) {
-        console.error("[QR] Download failed:", err);
-      }
-    } finally {
-      if (activeVideoExportOrchestrator === orchestrator) {
-        activeVideoExportOrchestrator = null;
-      }
-      isExporting = false;
-      exportProgress = null;
-    }
-  }
-
-  function finishVideoExportAttempt(
-    token: number,
-    stage: "completed" | "failed" | "canceled",
-    properties: Record<string, ScanAnalyticsValue>
-  ): boolean {
-    if (!videoExportAttempt.finish(token)) return false;
-    captureScanExport("video", stage, properties);
-    activeVideoExportConfig = null;
-    return true;
-  }
-
-  // ── Card-image export (the choreo-card customization row's Share/Download) ──
-  // Built from ctx.splitPaneImageComposition (the resolved values the card is
-  // already rendering), so the downloaded PNG matches the on-screen card exactly.
-  // sequenceModalExporter lazily resolves its renderer via getSequenceRenderer().
-  async function handleCardExport(ctx: OrchestratorContext) {
-    if (!resolvedSeq || isCardExporting) return;
-    const ic = ctx.splitPaneImageComposition;
-    const analyticsConfig = cardExportAnalyticsConfig(ctx);
-    const attemptToken = cardExportAttempt.begin();
-    if (attemptToken === null) return;
-    isCardExporting = true;
-    activeCardExportConfig = analyticsConfig;
-    captureScanExport("card", "started", analyticsConfig);
-    try {
-      const renderOptions = buildCardRenderOptions(resolvedSeq, {
-        darkMode: ic.darkMode,
-        isHandPath: ic.handPathMode ?? false,
-        resolvedAutoLayout: ctx.resolvedCardAutoLayout,
-      });
-      await sequenceModalExporter.exportImage(
-        renderOptions,
-        { sequence: resolvedSeq },
-        {
-          onSuccess: () => {
-            finishCardExportAttempt(attemptToken, "completed", analyticsConfig);
-          },
-          onCanceled: () => {
-            finishCardExportAttempt(attemptToken, "canceled", analyticsConfig);
-          },
-          onError: (m) => {
-            if (
-              finishCardExportAttempt(attemptToken, "failed", {
-                ...analyticsConfig,
-                reason: "export_error",
-              })
-            ) {
-              console.error("[QR] Card export failed:", m);
-            }
-          },
-          onHaptic: () => {},
-        }
-      );
-      if (cardExportAttempt.isActive(attemptToken)) {
-        finishCardExportAttempt(attemptToken, "failed", {
-          ...analyticsConfig,
-          reason: "not_ready",
-        });
-      }
-    } catch (err) {
-      if (
-        finishCardExportAttempt(attemptToken, "failed", {
-          ...analyticsConfig,
-          reason: "export_error",
-        })
-      ) {
-        console.error("[QR] Card export failed:", err);
-      }
-    } finally {
-      isCardExporting = false;
-    }
-  }
-
-  function finishCardExportAttempt(
-    token: number,
-    stage: "completed" | "failed" | "canceled",
-    properties: Record<string, ScanAnalyticsValue>
-  ): boolean {
-    if (!cardExportAttempt.finish(token)) return false;
-    captureScanExport("card", stage, properties);
-    activeCardExportConfig = null;
-    return true;
-  }
-
-  // ── Download gate (account-creation funnel) ──
-  // Watching stays free; taking the export home requires a free account.
-  // invokeGatedAction runs the export immediately for full accounts; for
-  // guests it queues ?pending=download, opens the shared AuthModal, and the
-  // orchestrator's replay resumes the export after sign-in (onGatedDownload
-  // on the orchestrator below). pendingExportKind remembers WHICH export was
-  // requested so the replay resumes the right one — page state only, so a
-  // webview handoff falls back to the primary video export.
-  let pendingExportKind: "video" | "card" = "video";
-
-  function requestGatedExport(
-    ctx: OrchestratorContext,
-    kind: "video" | "card"
-  ) {
-    pendingExportKind = kind;
-    if (!authState.isFullAccount) {
-      captureScanExport(
-        kind,
-        "gated",
-        kind === "card"
-          ? cardExportAnalyticsConfig(ctx)
-          : videoExportAnalyticsConfig(ctx)
-      );
-    }
-    ctx.invokeGatedAction("download", () =>
-      kind === "card" ? handleCardExport(ctx) : handleExport(ctx)
-    );
-  }
-
-  // ── Open in Composer (festival signup funnel) ──
-  // Stores the scanned sequence as a pending edit (the exact handoff the
-  // viewer's Remix uses; the create module consumes it on init) and heads to
-  // the construct tab. ?sheet=auth opens the sign-up sheet on arrival for
-  // signed-out scanners — auth isn't initialized on this bare route, so
-  // MainApplication makes that call and drops the sheet for signed-in users.
-  function openInComposer() {
-    if (!resolvedSeq) return;
-    try {
-      localStorage.setItem(
-        "tka-pending-edit-sequence",
-        JSON.stringify(resolvedSeq)
-      );
-    } catch {
-      // Storage unavailable (private mode) — still navigate; the composer
-      // just starts empty.
-    }
-    void goto("/create/construct?sheet=auth");
-  }
-
-  function closeViewer(): void {
-    // A demo embed has nowhere to close TO — closing navigates the iframe to
-    // the gallery, so the shop hero's phone would sit there showing the browse
-    // app instead of the scan. The shell hides the X under `embedded`; this
-    // guards the path the shell does not own, the orchestrator's Escape key.
-    if (isDemo) return;
-    abandonActiveExports("viewer_close");
-    endScanViewerSession("close_button");
-    void goto(`/browse/gallery?from=scan&code=${shortCode}`);
-  }
-
-  function cancelVideoExport(ctx: OrchestratorContext): void {
-    const token = videoExportAttempt.token;
-    if (token !== null) {
-      finishVideoExportAttempt(token, "canceled", {
-        ...(activeVideoExportConfig ?? videoExportAnalyticsConfig(ctx)),
-        user_initiated: true,
-      });
-    }
-    activeVideoExportOrchestrator?.cancelExport();
-    isExporting = false;
-  }
-
-  function retryVideoExport(ctx: OrchestratorContext): void {
-    if (videoExportAttempt.active) return;
-    captureScanExport("video", "retry", videoExportAnalyticsConfig(ctx));
-    void handleExport(ctx);
-  }
-
-  function abandonActiveExports(reason: string): void {
-    const videoToken = videoExportAttempt.abandon();
-    if (videoToken !== null) {
-      captureScanExport("video", "canceled", {
-        ...(activeVideoExportConfig ?? {}),
-        reason,
-        user_initiated: false,
-      });
-      activeVideoExportConfig = null;
-      activeVideoExportOrchestrator?.cancelExport();
-      activeVideoExportOrchestrator = null;
-      isExporting = false;
-      exportProgress = null;
-    }
-
-    const cardToken = cardExportAttempt.abandon();
-    if (cardToken !== null) {
-      captureScanExport("card", "canceled", {
-        ...(activeCardExportConfig ?? {}),
-        reason,
-        user_initiated: false,
-      });
-      activeCardExportConfig = null;
-      sequenceModalExporter.cancel();
-      isCardExporting = false;
-    }
-  }
-
-  // ── See it in the Guide (physical book companion) ──
-  // Non-destructive: maps the scanned sequence to a guide destination and
-  // navigates there. A single-step sequence is a lone base letter — land on
-  // its codex cell and auto-animate it. Anything longer (a word) lands on the
-  // codex with the full sequence for the companion to play.
-  function seeInGuide(): void {
-    const seq = resolvedSeq;
-    if (!seq) return;
-    const label = seq.steps?.length === 1 ? (seq.word ?? "").trim() : "";
-    const target = label ? guideTargetForLetter(label) : null;
-    if (target?.cellKey) {
-      setGuideScanIntent({ slug: target.slug, cellKey: target.cellKey });
-      void goto(`/learn/guide/${target.slug}`);
-    } else {
-      setGuideScanIntent({ slug: GUIDE_CODEX_SLUG, sequence: seq });
-      void goto(`/learn/guide/${GUIDE_CODEX_SLUG}`);
-    }
-  }
-
-  // Signed-in scanner: wire the heavy video/QR registrations the bare /q route
-  // skipped. Gated on auth so guests never pull the video-export and
-  // profanity-list chunks. One-shot.
-  let deferredWired = false;
-  $effect(() => {
-    const isAuthenticated = authState.isAuthenticated;
-    refreshScanSessionAttribution();
-    if (isAuthenticated && !deferredWired) {
-      deferredWired = true;
-      void import("$lib/shared/composition-root/deferred-registrations");
+    if (!handoffInProgress && !isDemo) {
+      endScanViewerSession("route_unmount");
     }
   });
 
   onMount(async () => {
     markScan("start");
-    if (browser) {
-      // Analytics before anything else on this route. The root layout starts
-      // PostHog too, but it does so from its own onMount — which on a scan is
-      // racing the settings/theme/auth work below. initPostHog is idempotent,
-      // so calling it here just means whichever bootstrap wins arms session
-      // replay at the earliest possible moment instead of the latest.
-      // A demo load arms nothing: no PostHog on this route (so no $pageview
-      // either) and no scan visit, which silences every captureScan* call.
-      if (!isDemo) void initPostHog().catch(() => {});
-
-      // The universal route load already opened this visit before SvelteKit's
-      // automatic SPA $pageview. Enrich that same visit with the live auth
-      // getter; beginScanVisit preserves its id and session progress.
-      if (shortCode && !isDemo) {
-        beginScanVisit(shortCode, {
-          sequenceWord: data.meta?.word ?? null,
-          deckId: data.meta?.deckId ?? null,
-          deckName: data.meta?.deckName ?? null,
-          blueProp: data.meta?.bluePropType ?? null,
-          redProp: data.meta?.redPropType ?? null,
-          isAuthenticated: () => authState.isAuthenticated,
-        });
-      }
-
-      const checkViewport = () => {
-        viewportWidth = window.innerWidth;
-      };
-      checkViewport();
-      window.addEventListener("resize", checkViewport);
-      onDestroy(() => window.removeEventListener("resize", checkViewport));
-
-      // The bare /q layout skips the root-layout bootstrap (composition-root),
-      // so the critical registrations never fire on this route. Wire the three
-      // the scan viewer actually consumes:
-      //  - short-code manager: getShortCodeManager() (ChoreoCard's QR generator)
-      //  - LOOP detector: getLoopDetector() throws otherwise, so the
-      //    compositional QR encoder errors and every code falls back to flat
-      //    (bigger codes + a console warning on every generation).
-      //  - loop display resolver: tryGet…() degrades silently, dropping the
-      //    LOOP component labels on the scanned ChoreoCard.
-      // Library repository registration runs during component initialization,
-      // before the descendant viewer can query saved or ownership state.
-      configureShortCodeManager(stubBrowseLoader);
-      registerLoopDetector(loopDetector);
-      registerLoopDisplayResolver(resolveLoopDisplay);
-
-      // The bare /q layout also skips MainInterface, the only caller of
-      // handleHMRInit(). Without it, NONE of the HMR resilience runs on this
-      // route — a failed HMR apply (a dynamic import transiently resolving to
-      // undefined → `mod.default` throws) dead-ends the page and spams the
-      // console on every refresh with no self-heal. Wire it here so /q gets the
-      // same failed-apply recovery + dynamic-import retry as the rest of the app.
-      handleHMRInit();
-
-      // Auth-aware scan (Increment 3): the bare /q layout skips the root auth
-      // bootstrap, and forceGuest hid every signed-in action. Fire-and-forget the
-      // listener so it reads the already-persisted Firebase session in the
-      // background — guest first paint is unaffected (auth resolves to null;
-      // funnel-only stays), and a signed-in scanner's header lights up. The heavy
-      // library/video/QR registrations those actions need are wired lazily and
-      // only for signed-in users (the auth $effect above), so guests never pull
-      // the video-export / profanity chunks.
-      void initializeAuthListener();
-    }
+    handleHMRInit();
+    registerLoopDetector(loopDetector);
+    registerLoopDisplayResolver(resolveLoopDisplay);
 
     if (!shortCode) {
-      captureResolutionFailure("missing_code", "bootstrap");
-      pageState = { kind: "error", message: "No short code provided" };
-      onViewerReady?.();
+      reportFailure("No short code provided", "missing_code", "bootstrap");
       return;
     }
 
+    if (!isDemo) {
+      void initPostHog().catch(() => {});
+      beginScanVisit(shortCode, {
+        sequenceWord: data.meta.word,
+        deckId: data.meta.deckId,
+        deckName: data.meta.deckName,
+        blueProp: data.meta.bluePropType,
+        redProp: data.meta.redPropType,
+        isAuthenticated: () => authState.isAuthenticated,
+      });
+      void initializeAuthListener();
+    }
+
     try {
-      setProgress(8);
-      trickleTo(30);
-
-      // Start every independent critical-path leg together. The server-loaded
-      // public shortcode record normally makes resolution local; the manager's
-      // Firestore/snapshot ladder remains the fallback when SSR had no record.
       markScan("shortcode-resolve-start");
-      const resolutionPromise = (
-        data.preparedSequence
-          ? Promise.resolve({
-              sequence: data.preparedSequence,
-              record: data.record,
-            })
-          : shortCodeManager.resolveShortCodeWithRecord(shortCode, data.record)
-      ).then((resolution) => {
-        markScan("shortcode-resolved");
-        return resolution;
-      });
+      const resolution = data.preparedSequence
+        ? { sequence: data.preparedSequence, record: data.record }
+        : await shortCodeManager.resolveShortCodeWithRecord(
+            shortCode,
+            data.record
+          );
+      markScan("shortcode-resolved");
 
-      markScan("viewer-load-start");
-      const viewerModulesPromise = Promise.all([
-        import("$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte"),
-        import("$lib/shared/sequence-viewer/components/SequenceViewerShell.svelte"),
-      ]).then((modules) => {
-        markScan("viewer-modules-ready");
-        return modules;
-      });
-
-      // The bare /q layout skips initializeAppServices(). Run its settings/theme
-      // setup alongside resolve and module loading, then join it only before the
-      // viewer reads the prop settings.
-      const bootstrapPromise = (async () => {
-        await initializeAppServices();
-        try {
-          await settingsService.loadSettings();
-          const { applyThemeForBackground } =
-            await import("$lib/shared/settings/utils/background-theme-calculator");
-          const bgType = settingsService.currentSettings?.backgroundType;
-          if (bgType) applyThemeForBackground(bgType);
-        } catch {
-          // Theme pipeline unavailable — component-level var fallbacks still render.
-        }
-        markScan("bootstrap-ready");
-      })();
-
-      // Paint the word as a pulsing glyph loader when its small glyph subset
-      // arrives, but never hold shortcode hydration or the live card behind it.
-      const baseLetters = getScanLoaderBaseLetters(loaderWord);
-      if (baseLetters.length > 0) {
-        void getGlyphCache()
-          .loadGlyphsByLetter(baseLetters)
-          .then(() => {
-            glyphsReady = true;
-          })
-          .catch(() => {
-            /* leave glyphsReady false -> dots placeholder */
-          });
-      }
-
-      // The card is now waiting only on the already-started resolution leg.
-      setProgress(35);
-      trickleTo(85);
-
-      // `/q` is the scan-attribution boundary. This gate only deduplicates the
-      // route visit; browser APIs cannot prove whether a camera opened it.
-      const scanPrintId = page.url.searchParams.get("pid") || null;
-      const shouldRecordScan =
-        !isDemo &&
-        !isInlineEncoded(shortCode) &&
-        isFirstScanRouteVisit(shortCode, scanPrintId);
-
-      const resolution = await resolutionPromise;
-
-      const record = resolution.record;
-      let seq = resolution.sequence;
-      if (!seq) {
-        stopTrickle();
+      let sequence = resolution.sequence;
+      if (!sequence) {
         failedWhileOffline = !navigator.onLine;
-        captureResolutionFailure(
+        reportFailure(
+          "Sequence not found",
           scanResolutionFailureCategory({
             hasShortCode: true,
             online: navigator.onLine,
@@ -880,98 +180,54 @@
           }),
           "resolve"
         );
-        pageState = { kind: "error", message: "Sequence not found" };
-        onViewerReady?.();
         return;
       }
 
-      setProgress(88);
-      trickleTo(96);
-
       if (!data.preparedSequence) {
-        seq = await hydrateSequence(seq, {
-          loopDetector,
-        });
+        sequence = await hydrateSequence(sequence, { loopDetector });
       }
-
-      scanInitialBpm = initialScanPlaybackBpm(shortCode, seq);
-      resolvedSeq = seq;
       markScan("hydrated");
-      const word = seq.word || seq.displayName || seq.name || "Sequence";
-      seqWord = word;
-      // Raw word, not simplified: analytics is DATA, and the expanded form is
-      // what joins against sequence records. Display surfaces simplify on their
-      // own. Every scan event from here on carries it.
-      updateScanAttribution({ sequenceWord: word });
 
-      // The URL identifies the physical card that was scanned. The shortcode
-      // record and sequence intent cover reconstructed links and older cards.
-      // Keep blue and red independent so mixed-prop cards stay mixed.
-      const scanPropConfig =
+      const record = resolution.record;
+      const propConfig =
         data.preparedPropConfig ??
         resolveScanPropConfig(
-          seq,
+          sequence,
           parsePropsFromURL(page.url.searchParams),
           record
         );
-      await bootstrapPromise;
+      const word = sequence.word || sequence.displayName || sequence.name;
       updateScanAttribution({
-        blueProp: String(scanPropConfig.bluePropType),
-        redProp: String(scanPropConfig.redPropType),
-      });
-      updateSettings({
-        bluePropType: scanPropConfig.bluePropType,
-        redPropType: scanPropConfig.redPropType,
-        catDogMode: scanPropConfig.catDogMode,
+        sequenceWord: word || null,
+        deckId: record?.deckId ?? data.meta.deckId,
+        deckName: record?.deckName ?? data.meta.deckName,
+        blueProp: String(propConfig.bluePropType),
+        redProp: String(propConfig.redPropType),
       });
 
-      const [OrchestratorModule, ShellModule] = await viewerModulesPromise;
-      OrchestratorComponent = OrchestratorModule.default;
-      ShellComponent = ShellModule.default;
-
-      // Deck attribution, record first. SSR meta was the SOLE source until
-      // 2026-07-20 and it was null on every scan ever recorded (the
-      // firebase-admin lookup never ran on workerd), so deck_id was
-      // structurally always null. The resolved record is the authoritative
-      // copy — it is the same doc SSR was trying to read — and SSR meta is
-      // now only the backstop for records that predate the stamped fields or
-      // resolved from the skinny R2 snapshot.
-      //
-      // Resolve this outside the first-visit gate. A failed-load retry should
-      // not write another scan, but its remix/download/control events still
-      // need the deck they came from.
-      const deckId = record?.deckId ?? data?.meta?.deckId ?? null;
-      const deckName = record?.deckName ?? data?.meta?.deckName ?? null;
-      updateScanAttribution({ deckId, deckName });
+      const scanPrintId = page.url.searchParams.get("pid") || null;
+      const shouldRecordScan =
+        !isDemo &&
+        !isInlineEncoded(shortCode) &&
+        isFirstScanRouteVisit(shortCode, scanPrintId);
 
       if (shouldRecordScan) {
-        const geo = data?.geo;
-
         captureScanEvent("card_scanned", {
-          country: geo?.country || null,
-          city: geo?.city || null,
+          country: data.geo.country,
+          city: data.geo.city,
           ...scanPropProperties(
-            scanPropConfig.bluePropType,
-            scanPropConfig.redPropType
+            propConfig.bluePropType,
+            propConfig.redPropType
           ),
         });
 
-        // Persist through the server-owned ingestion boundary. It validates the
-        // shortcode/physical-ID pair, derives geo from Cloudflare itself, and
-        // writes the private event plus counters atomically.
-        //
-        // Attribute a signed-in scanner: the bare /q layout fire-and-forgets the
-        // auth listener, so give the persisted Firebase session a brief moment to
-        // resolve before recording. Raced against a short timeout so an anonymous
-        // scan (or a slow auth resolve) never stalls the write — it just records
-        // userId: null and stays anonymous.
         try {
           await Promise.race([
             initializeAuthListener(),
             new Promise((resolve) => setTimeout(resolve, 1500)),
           ]);
         } catch {
-          // The scan stays anonymous when auth initialization is unavailable.
+          // The scan remains anonymous when auth initialization is unavailable.
         }
 
         void recordCardScan({
@@ -979,315 +235,168 @@
           physicalCardId: scanPrintId,
           deviceId: getDeviceId(),
         }).catch((error) => {
-          // Instrumentation is intentionally non-blocking, but a production
-          // outage must remain visible in Worker/browser logs.
           console.error("[q-scan] physical scan ingestion failed:", error);
         });
       }
 
-      stopTrickle();
-      setProgress(100);
-      captureScanEvent("qr_scan_resolution", {
-        outcome: "success",
-        category: "resolved",
-        stage: "ready",
+      saveSequenceRouteHandoff({
+        sequence,
+        returnPath: `/browse/gallery?from=scan&code=${encodeURIComponent(shortCode)}`,
+        returnLabel: "Browse",
       });
-      pageState = { kind: "playing", word };
-      markScan("card-mount");
 
-      // Clean load → re-arm the module-chunk self-heal so a later mid-write edit
-      // can trigger one fresh recovery reload again (the guard is one-shot).
+      const destination = buildScanSequenceDestination(
+        shortCode,
+        page.url.searchParams,
+        propConfig
+      );
       clearModuleChunkRecoveryGuard();
-    } catch (err: unknown) {
-      stopTrickle();
+      handoffInProgress = true;
+      await goto(destination, { replaceState: true });
+    } catch (error) {
+      handoffInProgress = false;
       failedWhileOffline = !navigator.onLine;
-      captureResolutionFailure(
+      reportFailure(
+        error instanceof Error ? error.message : "Failed to load sequence",
         scanResolutionFailureCategory({
           hasShortCode: !!shortCode,
           online: navigator.onLine,
         }),
         "load"
       );
-      pageState = {
-        kind: "error",
-        message: err instanceof Error ? err.message : "Failed to load sequence",
-      };
-      onViewerReady?.();
     }
   });
 </script>
 
 <svelte:window ononline={handleBackOnline} />
 
-<svelte:head>
-  <title>{displayWord} · TKA</title>
-  <meta name="description" content={ogDesc} />
-  <meta property="og:type" content="video.other" />
-  <meta property="og:title" content="{displayWord} · TKA" />
-  <meta property="og:description" content={ogDesc} />
-  <meta property="og:image" content={ogImage} />
-  <meta
-    property="og:url"
-    content="https://tkaflowarts.com/q/{page.params.code}"
-  />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="{displayWord} · TKA" />
-  <meta name="twitter:description" content={ogDesc} />
-  <meta name="twitter:image" content={ogImage} />
-  <meta name="theme-color" content="#0f0f1a" />
-</svelte:head>
-
-<div class="page">
-  {#if pageState.kind === "loading"}
-    <div class="center-content">
-      <ScanSequenceLoader
-        word={loaderWord}
-        {glyphsReady}
-        progress={loadProgress}
-        fitToParent
-      />
+{#if ingressState.kind === "error"}
+  <section class="error-state" aria-labelledby="scan-error-title">
+    <div class="error-card">
+      <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+      <h1 id="scan-error-title">
+        {failedWhileOffline
+          ? "You're offline"
+          : "This sequence isn't available"}
+      </h1>
+      <p>
+        {failedWhileOffline
+          ? "This code needs a connection. It will retry when you're back online."
+          : ingressState.message}
+      </p>
+      <div class="actions">
+        <button
+          type="button"
+          onclick={() => {
+            reportRecoveryAction("retry");
+            location.reload();
+          }}
+        >
+          <i class="fas fa-rotate-right" aria-hidden="true"></i>
+          Try Again
+        </button>
+        <a
+          href="/browse/gallery"
+          onclick={() => reportRecoveryAction("browse")}
+        >
+          <i class="fas fa-compass" aria-hidden="true"></i>
+          Browse Sequences
+        </a>
+        <a
+          class="secondary"
+          href="/create"
+          onclick={() => reportRecoveryAction("create")}
+        >
+          <i class="fas fa-pen" aria-hidden="true"></i>
+          Create Your Own
+        </a>
+      </div>
     </div>
-  {:else if pageState.kind === "error"}
-    <div class="center-content">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="48"
-        height="48"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        class="error-icon"
-      >
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
-      {#if failedWhileOffline}
-        <h1 class="error-heading">You're offline</h1>
-        <p class="status-text">
-          This code needs a connection to look up. It retries automatically when
-          you're back online.
-        </p>
-        <div class="error-actions">
-          <button
-            type="button"
-            class="cta-button"
-            onclick={() => {
-              captureResolutionAction("retry");
-              location.reload();
-            }}
-          >
-            <i class="fas fa-rotate-right" aria-hidden="true"></i>
-            Try Again
-          </button>
-        </div>
-      {:else}
-        <h1 class="error-heading">This sequence isn't available</h1>
-        <p class="status-text">
-          The code may be broken, or the sequence was deleted by its owner.
-        </p>
-        <div class="error-actions">
-          <a
-            href="/browse/gallery"
-            class="cta-button"
-            onclick={() => captureResolutionAction("browse")}
-          >
-            <i class="fas fa-compass" aria-hidden="true"></i>
-            Browse Sequences
-          </a>
-          <a
-            href="/create"
-            class="cta-button ghost"
-            onclick={() => captureResolutionAction("create")}
-          >
-            <i class="fas fa-pen" aria-hidden="true"></i>
-            Create Your Own
-          </a>
-        </div>
-      {/if}
-    </div>
-  {:else if pageState.kind === "playing" && OrchestratorComponent && ShellComponent && resolvedSeq}
-    <OrchestratorComponent
-      sequence={resolvedSeq}
-      isMobile={isViewerMobile}
-      initialRenderMode="2d"
-      initialViewerMode="card"
-      deferInteractiveStartup
-      initialBpm={scanInitialBpm}
-      initialActiveEffect="trails"
-      onCardReady={onViewerReady}
-      onBpmChange={handleScanBpmChange}
-      onClose={closeViewer}
-      onGatedDownload={(ctx) =>
-        pendingExportKind === "card"
-          ? void handleCardExport(ctx)
-          : void handleExport(ctx)}
-    >
-      {#snippet children(ctx)}
-        <div class="scan-viewer">
-          <!-- The one true viewer chrome, shared verbatim with the app drawer.
-               Scan deltas ride in as props: close exits to the gallery, Remix
-               runs the guest-friendly composer handoff, the title menu gains
-               Open TKA, the header carries the account entry, and Download
-               routes through the gated page pipeline (account funnel + native
-               share sheet). A demo load is the same shell with `embedded`,
-               which drops the chrome that would carry a shop visitor out of
-               the iframe (close, account, Share, navigate-away menu items) —
-               one prop on the shared shell, no forked header. -->
-          <ShellComponent
-            {ctx}
-            sequence={resolvedSeq!}
-            isMobile={isViewerMobile}
-            startInCardThenSplit
-            embedded={isDemo}
-            onClose={closeViewer}
-            onRemix={openInComposer}
-            {openAppHref}
-            onAccountSignIn={ctx.openSignInPrompt}
-            guideAction={{ label: "See it in the Guide", onSelect: seeInGuide }}
-            exportOverrides={{
-              onVideoExport: () => requestGatedExport(ctx, "video"),
-              onCardExport: () => requestGatedExport(ctx, "card"),
-              videoBusy: isExporting,
-              videoProgress: exportProgress,
-              cardBusy: isCardExporting,
-              showInlineProgress: false,
-            }}
-          />
-          <ExportTakeover
-            phase={takeover.phase}
-            progress={exportProgress?.progress ?? 0}
-            phaseLabel={takeover.labelKey ? t(takeover.labelKey) : ""}
-            error={exportProgress?.error ?? null}
-            onCancel={() => cancelVideoExport(ctx)}
-            onRetry={() => retryVideoExport(ctx)}
-          >
-            {#snippet title()}
-              {#if isSolo}
-                <span class="solo-export-title">{displayWord}</span>
-              {:else}
-                <!-- displayWord, not rawWord: the glyph row is read by a human,
-                     and a repeated word always renders in its smallest form. -->
-                <TKAWordGlyph
-                  word={displayWord}
-                  height={28}
-                  darkMode
-                  fitToParent
-                />
-              {/if}
-            {/snippet}
-          </ExportTakeover>
-        </div>
-      {/snippet}
-    </OrchestratorComponent>
-    <ToastContainer />
-  {/if}
-</div>
+  </section>
+{/if}
 
 <style>
-  .page {
-    height: 100vh;
-    height: 100dvh;
+  .error-state {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: clamp(1rem, 4vw, 2rem);
     background: #0f0f1a;
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family:
-      system-ui,
-      -apple-system,
-      sans-serif;
-    overflow: hidden;
-
-    /* Non-theme tokens only. The --theme-* / --semantic-* palette comes from
-       the SAME background→theme pipeline the app runs (applyThemeForBackground
-       sets them on :root in onMount) — declaring them here would shadow the
-       root values for this whole subtree and drift the chrome color from the
-       app viewer. */
-    --min-touch-target: 44px;
-    --font-size-min: 14px;
-    --font-size-compact: 12px;
-    --duration-normal: 150ms;
-    --duration-emphasis: 250ms;
-    --duration-dramatic: 350ms;
-    --scrollbar-track: rgba(255, 255, 255, 0.04);
-    --scrollbar-thumb: rgba(255, 255, 255, 0.12);
-    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+    color: white;
   }
 
-
-  .center-content {
+  .error-card {
+    display: grid;
+    justify-items: center;
+    width: min(100%, 30rem);
+    padding: clamp(1.5rem, 5vw, 2.5rem);
     text-align: center;
-    max-width: 400px;
-    width: 100%;
-    padding: 1rem;
+    background: rgba(5, 5, 12, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 1.25rem;
+    box-shadow: 0 1.25rem 4rem rgba(0, 0, 0, 0.42);
   }
 
-  .status-text {
-    font-size: 0.875rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
-    margin: 0 0 0.5rem;
-  }
-
-  .error-icon {
-    color: #ef4444;
+  .error-card > i {
     margin-bottom: 1rem;
+    font-size: 2.5rem;
+    color: #f87171;
   }
 
-  .error-heading {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 0 0 0.5rem;
+  h1 {
+    margin: 0;
+    font-size: clamp(1.4rem, 4vw, 2rem);
   }
 
-  .error-actions {
+  p {
+    margin: 0.75rem 0 1.5rem;
+    color: rgba(255, 255, 255, 0.72);
+    line-height: 1.55;
+  }
+
+  .actions {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 8px;
-    margin-top: 0.5rem;
+    gap: 0.625rem;
   }
 
-  .cta-button {
+  button,
+  a {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    min-height: 2.75rem;
     gap: 0.5rem;
-    min-height: var(--min-touch-target);
-    padding: 0.75rem 1.5rem;
-    background: var(--theme-accent, #0891b2);
+    padding: 0.7rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.7rem;
+    background: linear-gradient(#343442, #20202a);
+    box-shadow:
+      inset 0 1px rgba(255, 255, 255, 0.12),
+      0 0.25rem 0.6rem rgba(0, 0, 0, 0.3);
     color: white;
-    border: none;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
     text-decoration: none;
+    cursor: pointer;
   }
 
-  .cta-button.ghost {
-    background: rgba(18, 18, 28, 0.85);
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.14));
-    color: var(--theme-text, #ffffff);
+  button:hover,
+  a:hover {
+    border-color: rgba(255, 255, 255, 0.38);
+    background: linear-gradient(#404052, #282834);
   }
 
-  .solo-export-title {
-    color: var(--theme-text, #ffffff);
-    font-size: 1.1rem;
-    font-weight: 650;
-    letter-spacing: 0.01em;
+  button:focus-visible,
+  a:focus-visible {
+    outline: 3px solid #a78bfa;
+    outline-offset: 3px;
   }
 
-
-  /* Full-bleed host for the shared viewer shell — no inset card, no max-width
-     cap: the scan page IS the viewer, edge to edge, exactly like the app
-     drawer. position:relative anchors the ExportTakeover overlay (absolute
-     inset:0) over the whole viewer. */
-  .scan-viewer {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
+  a.secondary {
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: none;
   }
 </style>

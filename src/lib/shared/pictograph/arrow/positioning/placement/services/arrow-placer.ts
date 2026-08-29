@@ -228,7 +228,10 @@ export class ArrowPlacer {
   ): Promise<{ x: number; y: number }> {
     // SEEDED_PROPS holds lowercase keys; normalize once so a non-lowercased
     // caller can't silently miss its bucket and fall back to staff.
-    const prop = propType.toLowerCase();
+    // Classic Club is a visual build of the exact Club silhouette. Reuse the
+    // authored Club arrow bucket instead of falling through to staff offsets.
+    const requestedProp = propType.toLowerCase();
+    const prop = requestedProp === "classic_club" ? "club" : requestedProp;
     const placementFrame = PlacementFrame.CANONICAL;
     await this.ensureLoaded(gridMode, prop);
     const turnsStr = this.formatTurnsForLookup(turns);

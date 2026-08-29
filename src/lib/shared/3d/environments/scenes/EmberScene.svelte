@@ -21,6 +21,8 @@
   import EmberFountains from "./ember/EmberFountains.svelte";
   import VolcanicHaze from "./ember/VolcanicHaze.svelte";
   import HeatDistortion from "./ember/HeatDistortion.svelte";
+  import EmberGroundDetail from "./ember/EmberGroundDetail.svelte";
+  import EmberSurfaceEcology from "./ember/EmberSurfaceEcology.svelte";
   import {
     type EmberSceneConfig,
     createDefaultEmberConfig,
@@ -98,6 +100,7 @@
   const logSmall = useGltf("/models/camping/tree-log-small.glb");
   const campfire = useGltf("/models/camping/campfire-pit.glb");
   let productionSliceProgress = $state(0);
+  let productionSliceAsset = $state<Object3D | null>(null);
 
   const { scene, renderer, camera } = useThrelte();
   const adaptiveQuality = tryGetAdaptiveQualityContext();
@@ -212,6 +215,7 @@
   }
 
   function handleProductionSliceReady(asset: Object3D): void {
+    productionSliceAsset = asset;
     const treatments = activeConfig.atmosphere.materials;
     asset.traverse((child) => {
       const mesh = child as {
@@ -237,13 +241,20 @@
       for (const material of materials) {
         if (!material.isMeshStandardMaterial) continue;
         const name = material.name;
-        const treatment = name.includes("Ground_Blackglass")
-          ? treatments.playableSurface
-          : name.includes("Meshy_Geology")
-            ? treatments.meshyGeology
-            : name.includes("Mineral") || name.includes("Ash_Deposit")
-              ? treatments.mineral
-              : treatments.world;
+        const treatment =
+          role === "playable-surface" ||
+          role === "playable-shelf" ||
+          role === "shelf-stratum" ||
+          role === "stage-crust-transition"
+            ? treatments.playableSurface
+            : role?.startsWith("meshy-")
+              ? treatments.meshyGeology
+              : name.includes("iron-contact") ||
+                  name.includes("windborne-ash") ||
+                  name.includes("Mineral") ||
+                  name.includes("Ash_Deposit")
+                ? treatments.mineral
+                : treatments.world;
         material.color.lerp(new Color(treatment.tint), treatment.tintBlend);
         material.emissive.lerp(
           new Color(treatment.emissive),
@@ -313,6 +324,12 @@
   onProgress={handleProductionSliceProgress}
   onReady={handleProductionSliceReady}
 />
+
+<EmberGroundDetail scene={productionSliceAsset} />
+
+<!-- Runtime geology breaks the playable shelf into physical clinker, rafted
+     plates, and heat-stained fragments without consuming the clear stage. -->
+<EmberSurfaceEcology stageRadius={activeConfig.platform.radius} />
 
 <!-- Heat distortion shimmer above lava -->
 {#if activeConfig.lavaPool.enabled}

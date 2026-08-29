@@ -2,7 +2,7 @@
 TracePathsGame — composes the trace round and talks to the arcade.
 
 It does four things and delegates everything else:
-  1. Resolves content for the level (a real sequence, or a generated hand path
+  1. Resolves content for the challenge (a real sequence, or a generated hand path
      walk) and hands it to the converters. It never builds route geometry.
   2. Owns the state factory and publishes it on context.
   3. Reports each finished round to the engine via `submitRound`, already priced
@@ -26,7 +26,10 @@ competing ones.
   import { QuizType } from "../../../quiz/domain/enums/quiz-enums";
   import { getArcadeSession } from "../../state/arcade-session-state.svelte";
   import type { QuestionConstraints } from "../../domain/arcade-types";
-  import type { TraceConversionResult, TraceMetrics } from "./domain/trace-types";
+  import type {
+    TraceConversionResult,
+    TraceMetrics,
+  } from "./domain/trace-types";
   import { sequenceToTraceRound } from "./services/sequence-to-trace";
   import {
     handPathToTraceRound,
@@ -94,7 +97,9 @@ competing ones.
    * for explicitly, not stumbled into.
    */
   function walk(steps: number, from?: GridLocation): GridLocation[] {
-    const locations: GridLocation[] = [from ?? pick(CARDINALS, GridLocation.NORTH)];
+    const locations: GridLocation[] = [
+      from ?? pick(CARDINALS, GridLocation.NORTH),
+    ];
     for (let i = 0; i < steps; i++) {
       const current = locations[locations.length - 1]!;
       const options = CARDINALS.filter((loc) => loc !== current);
@@ -109,7 +114,7 @@ competing ones.
   }
 
   /**
-   * Levels with a `wordLength` trace a REAL sequence from the catalog, so the
+   * Challenges with a `wordLength` trace a REAL sequence from the catalog, so the
    * top of the ladder is the actual choreography rather than a generated shape.
    * Everything below builds a hand-path walk of the requested length.
    */
@@ -259,9 +264,14 @@ competing ones.
     <section class="error-panel" aria-label="Route unavailable">
       <p class="error-message">{phase.error.message}</p>
       <p class="error-note">
-        The rest of Learn is unaffected. Pick up another route when you are ready.
+        The rest of Learn is unaffected. Pick up another route when you are
+        ready.
       </p>
-      <button type="button" class="action primary" onclick={() => void loadNextRound()}>
+      <button
+        type="button"
+        class="action primary"
+        onclick={() => void loadNextRound()}
+      >
         Get another route
       </button>
     </section>
@@ -274,7 +284,7 @@ competing ones.
       onRetry={() => trace.retryRound()}
     />
   {:else}
-    <TraceStage {showRoute} onExit={() => session.backToLevels()} />
+    <TraceStage {showRoute} onExit={() => session.backToChallenges()} />
 
     {#if roundWord}
       <p class="round-word">{roundWord}</p>
@@ -292,7 +302,11 @@ competing ones.
 
     {#if phase.name === "paused"}
       <div class="paused-row">
-        <button type="button" class="action primary" onclick={() => trace.resume()}>
+        <button
+          type="button"
+          class="action primary"
+          onclick={() => trace.resume()}
+        >
           Resume the round
         </button>
       </div>
@@ -350,8 +364,8 @@ competing ones.
         </button>
       </div>
       <p class="step-note">
-        Marking the route walked counts toward the level and does not claim a
-        trace score.
+        Marking the route walked counts toward the challenge and does not claim
+        a trace score.
       </p>
     </section>
   {/if}
@@ -521,12 +535,20 @@ competing ones.
 
   .action.primary {
     border: 1px solid var(--game-accent, #818cf8);
-    background: color-mix(in srgb, var(--game-accent, #818cf8) 24%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--game-accent, #818cf8) 24%,
+      transparent
+    );
     color: var(--theme-text, #fff);
   }
 
   .action.primary:hover {
-    background: color-mix(in srgb, var(--game-accent, #818cf8) 36%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--game-accent, #818cf8) 36%,
+      transparent
+    );
   }
 
   .action:disabled {

@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { viewerModeOptions } from "$lib/shared/sequence-viewer/services/viewer-modes";
+import {
+  viewerModeForRenderMode,
+  viewerModeOptions,
+} from "$lib/shared/sequence-viewer/services/viewer-modes";
 import {
   loadSplitConfig,
   loadViewerMode,
@@ -38,5 +41,11 @@ describe("sequence viewer Video mode", () => {
   it("keeps Video browsing distinct from the upload inspector", () => {
     expect(resolveEditingPane("videos", null, false)).toBeNull();
     expect(resolveEditingPane("videos", null, true)).toBe("video-upload");
+  });
+
+  it("lets an explicit render link outrank a remembered local surface", () => {
+    expect(viewerModeForRenderMode("3d")).toBe("animation-3d");
+    expect(viewerModeForRenderMode("2d")).toBe("animation");
+    expect(viewerModeForRenderMode(null)).toBeUndefined();
   });
 });

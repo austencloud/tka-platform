@@ -119,6 +119,29 @@ describe("BaseModal fit sizing", () => {
     await expectNoA11yViolations();
   });
 
+  it("keeps short fit modals content-sized on phones", async () => {
+    await page.viewport(375, 667);
+    render(BaseModalTestHarness, { shortContent: true });
+    await nextLayout();
+
+    const dialog = document.querySelector<HTMLDialogElement>(
+      "dialog.base-modal[data-size='fit']"
+    );
+    const wrapper = dialog?.querySelector<HTMLElement>(
+      ".modal-content-wrapper"
+    );
+
+    expect(dialog).not.toBeNull();
+    expect(wrapper).not.toBeNull();
+    expect(dialog!.getBoundingClientRect().height).toBeCloseTo(
+      wrapper!.getBoundingClientRect().height,
+      0
+    );
+    expect(dialog!.getBoundingClientRect().height).toBeLessThan(
+      window.innerHeight / 2
+    );
+  });
+
   it("does not report opened when the modal closes before its delayed show", async () => {
     render(BaseModalTestHarness, { cancelBeforeOpen: true });
 

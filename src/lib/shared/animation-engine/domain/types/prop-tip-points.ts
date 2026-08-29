@@ -404,6 +404,7 @@ export const PROP_TIP_POINTS: Record<string, PropTipConfig> = {
 
   // Club family
   club: CLUB_TIP_POINTS,
+  classic_club: CLUB_TIP_POINTS,
   bigclub: BIGCLUB_TIP_POINTS,
 
   // Fan family

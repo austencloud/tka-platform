@@ -1,8 +1,8 @@
 /**
- * Scoped flag: when set on an ancestor (the /q scan route), descendant
+ * Scoped flag: when set on a scan-origin /sequence host, descendant
  * ChoreoCards render their cells with probeCloud=true so a cold scanner
  * downloads pre-rendered pictograph images instead of rasterizing them.
- * Unset everywhere else (browse gallery, main viewer) => probeCloud stays off.
+ * Unset everywhere else (browse gallery, drawer viewer) => probeCloud stays off.
  */
 import { getContext, setContext } from "svelte";
 

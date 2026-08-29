@@ -3,6 +3,10 @@
   import { onMount } from "svelte";
   import { Canvas } from "@threlte/core";
   import { AgXToneMapping, PCFSoftShadowMap, WebGLRenderer } from "three";
+  import PerfMonitor from "$lib/shared/3d/components/PerfMonitor.svelte";
+  import { setAdaptiveQualityContext } from "$lib/shared/3d/context/adaptive-quality-context";
+  import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quality-tier-detector";
+  import { createAdaptiveQualityState } from "$lib/shared/3d/state/adaptive-quality-state.svelte";
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
   import { sceneAudioState } from "$lib/shared/3d/state/scene-audio-state.svelte";
   import { getFlowFestFireJamSoundscape } from "$lib/features/flow-fest-sim/getFlowFestFireJamSoundscape";
@@ -89,6 +93,10 @@
   } from "./flow-fest-visual-system";
 
   const SESSION_KEY = "flow-fest-sim:thursday-session:v1";
+  const adaptiveQuality = createAdaptiveQualityState(getQualityTierDetector(), {
+    devicePixelRatio: 1,
+  });
+  setAdaptiveQualityContext(adaptiveQuality);
   const GATE4_SESSION_KEY = "flow-fest-sim:gate4-fire-jam:v3";
   const GATE4_MOBILITY_SESSION_KEY = "flow-fest-sim:gate4-euc:v3";
   const GATE5_SESSION_KEY = "flow-fest-sim:gate5-integrated-world:v1";
@@ -132,6 +140,7 @@
     null
   );
   let forestCulling = $state<InstanceFrustumCullingStats | null>(null);
+  let forestGrassCulling = $state<InstanceFrustumCullingStats | null>(null);
   let productionCollision = $state<FlowFestProductionCollisionSet | null>(null);
   let festivalCommunity = $state<
     FlowFestProductionDressing["festivalCommunity"] | null
@@ -169,6 +178,7 @@
   let integratedJourney = $state<FlowFestIntegratedJourneyState | null>(null);
   let gate6GnssAudit = $state<FlowFestGnssRoundTripAudit | null>(null);
   let gate5Performance = $state<{
+    captureOrdinal: number;
     samples: number;
     p95FrameMilliseconds: number;
     p99FrameMilliseconds: number;
@@ -198,6 +208,9 @@
   const fieldPositioningSnapshot = $derived(fieldPositioning.snapshot);
   const fixedReviewEnabled = $derived(
     gate3Review.enabled || entranceReferenceReview.enabled
+  );
+  const preserveReviewFrame = $derived(
+    gate5Capture || gate6Capture || fixedReviewEnabled
   );
 
   const objective = $derived(progress ? getFlowFestObjective(progress) : null);
@@ -577,15 +590,17 @@
     const performance = gate2?.performance;
     if (
       typeof performance?.samples !== "number" ||
+      typeof performance.captureOrdinal !== "number" ||
       typeof performance.p95FrameMilliseconds !== "number" ||
       typeof performance.p99FrameMilliseconds !== "number" ||
       typeof performance.drawCalls !== "number" ||
       typeof performance.renderedTriangles !== "number" ||
-      gate5Performance?.samples === performance.samples
+      gate5Performance?.captureOrdinal === performance.captureOrdinal
     ) {
       return;
     }
     gate5Performance = {
+      captureOrdinal: performance.captureOrdinal,
       samples: performance.samples,
       p95FrameMilliseconds: performance.p95FrameMilliseconds,
       p99FrameMilliseconds: performance.p99FrameMilliseconds,
@@ -1061,17 +1076,35 @@
   data-audio-spatial-frames={fireJamAudio.spatialFrameCount}
   data-audio-spatial-sources={fireJamAudio.spatializedSources}
   data-performance-samples={gate5Performance?.samples ?? 0}
+  data-performance-capture-ordinal={gate5Performance?.captureOrdinal ?? 0}
   data-performance-p95-ms={gate5Performance?.p95FrameMilliseconds ?? 0}
   data-performance-p99-ms={gate5Performance?.p99FrameMilliseconds ?? 0}
   data-performance-draw-calls={gate5Performance?.drawCalls ?? 0}
   data-performance-triangles={gate5Performance?.renderedTriangles ?? 0}
+  data-adaptive-quality-tier={adaptiveQuality.contentTier}
+  data-adaptive-quality-dpr={adaptiveQuality.pixelRatio}
+  data-adaptive-quality-fps={adaptiveQuality.fps}
   data-tree-culling-source-batches={forestCulling?.sourceBatches ?? 0}
   data-tree-culling-batches={forestCulling?.culledBatches ?? 0}
+  data-tree-visible-batches={forestCulling?.visibleBatches ?? 0}
   data-tree-culling-batch-instances={forestCulling?.instances ?? 0}
   data-tree-visible-batch-instances={forestCulling?.visibleInstances ?? 0}
   data-tree-culling-covered-vertices={forestCulling?.estimatedVerticesCovered ??
     0}
   data-tree-submitted-vertices={forestCulling?.estimatedSubmittedVertices ?? 0}
+  data-tree-distance-rejected={forestCulling?.distanceRejectedInstances ?? 0}
+  data-tree-frustum-rejected={forestCulling?.frustumRejectedInstances ?? 0}
+  data-tree-culling-updates={forestCulling?.updates ?? 0}
+  data-tree-culling-skipped-updates={forestCulling?.skippedUpdates ?? 0}
+  data-grass-culling-batch-instances={forestGrassCulling?.instances ?? 0}
+  data-grass-visible-batches={forestGrassCulling?.visibleBatches ?? 0}
+  data-grass-visible-batch-instances={forestGrassCulling?.visibleInstances ?? 0}
+  data-grass-submitted-vertices={forestGrassCulling?.estimatedSubmittedVertices ??
+    0}
+  data-grass-distance-rejected={forestGrassCulling?.distanceRejectedInstances ??
+    0}
+  data-grass-frustum-rejected={forestGrassCulling?.frustumRejectedInstances ??
+    0}
   data-review-camera={entranceReferenceReview.view?.camera.id ??
     gate3Review.cameraId ??
     "none"}
@@ -1083,16 +1116,17 @@
 >
   <div class="world">
     <Canvas
-      dpr={1}
-      shadows={PCFSoftShadowMap}
+      dpr={adaptiveQuality.pixelRatio}
+      shadows={adaptiveQuality.config.enableShadows ? PCFSoftShadowMap : false}
       toneMapping={AgXToneMapping}
       createRenderer={(canvas) =>
         new WebGLRenderer({
           canvas,
           antialias: true,
-          preserveDrawingBuffer: true,
+          preserveDrawingBuffer: preserveReviewFrame,
         })}
     >
+      <PerfMonitor adaptive={true} active={true} />
       {#key sceneKey}
         <FlowFestGrayboxWalkScene
           {resetToken}
@@ -1226,6 +1260,9 @@
           }}
           onForestCullingSample={(details) => {
             forestCulling = details;
+          }}
+          onGrassCullingSample={(details) => {
+            forestGrassCulling = details;
           }}
           onError={(message) => (error = message)}
         />

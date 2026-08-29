@@ -8,8 +8,12 @@ import type {
   TunnelComposition,
   TunnelPerformerTiming,
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
+import type { PublicArtifactEnvelope } from "$lib/shared/artifact-revisions/domain/public-artifact";
 import type { TunnelConfig } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
-import type { CollectedTunnel } from "./tunnel-collection-types";
+import {
+  CollectedTunnelSchema,
+  type CollectedTunnel,
+} from "./tunnel-collection-types";
 
 /**
  * The tunnel adapter for the publication boundary: builds the SANITIZED public
@@ -67,6 +71,35 @@ export interface TunnelPublicPayload {
 export interface TunnelPublicRevision extends ArtifactRevisionRef {
   readonly artifactType: "tunnel";
   readonly payload: TunnelPublicPayload;
+}
+
+/**
+ * Validate a guest-readable public revision into the same artifact shape the
+ * Tunnel discovery UI already understands. The zero date is intentional:
+ * publication timestamps live on the envelope and the private creation date
+ * was never part of the public payload, so the adapter does not invent one.
+ */
+export function collectedTunnelFromPublicArtifact(
+  envelope: PublicArtifactEnvelope,
+  payload: TunnelPublicPayload
+): CollectedTunnel | null {
+  if (envelope.artifactType !== "tunnel") return null;
+  const parsed = CollectedTunnelSchema.safeParse({
+    id: envelope.artifactId,
+    name: envelope.title,
+    steps: payload.steps,
+    snapshot: payload.snapshot,
+    poster: payload.poster,
+    createdAt: 0,
+    source: "viewer",
+    ...(payload.sourceWord !== undefined && {
+      sourceWord: payload.sourceWord,
+    }),
+    ...(payload.composition !== undefined && {
+      composition: payload.composition,
+    }),
+  });
+  return parsed.success ? (parsed.data as CollectedTunnel) : null;
 }
 
 /**

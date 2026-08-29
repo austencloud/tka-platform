@@ -29,6 +29,11 @@ Navigation via bottom tabs (mobile-first UX pattern)
     isConceptPath,
   } from "./domain/concept-routes";
   import {
+    readConceptPlaceId,
+    shouldResumeSavedConcept,
+    writeConceptPlaceId,
+  } from "./domain/concept-place-routes";
+  import {
     getActiveConceptId,
     setActiveConceptId,
     clearActiveConceptId,
@@ -47,8 +52,10 @@ Navigation via bottom tabs (mobile-first UX pattern)
   // Props
   let {
     onHeaderChange,
+    publicCourse = false,
   }: {
     onHeaderChange?: (header: string) => void;
+    publicCourse?: boolean;
   } = $props();
 
   const delightOrchestrator = getDelightOrchestrator();
@@ -70,6 +77,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
   // Concept detail view state
   let selectedConcept = $state<LearnConcept | null>(null);
   let conceptOpenCount = $state(0); // Increments each open to force remount
+  let returnPlaceId = $state<string | null>(null);
 
   // Sync with navigation state (bottom nav controls this)
   $effect(() => {
@@ -113,6 +121,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
     if (mode !== prev && prev !== null) {
       untrack(() => {
         selectedConcept = null;
+        returnPlaceId = null;
         if (prev === "concepts") clearActiveConceptId();
       });
     }
@@ -143,12 +152,14 @@ Navigation via bottom tabs (mobile-first UX pattern)
 
   function writeConceptUrl(
     conceptId: string | undefined,
-    mode: "push" | "replace"
+    mode: "push" | "replace",
+    conceptPlaceId: string | null = returnPlaceId
   ) {
     mutateCurrentUrl(
       (url) => {
         url.pathname = buildConceptPath(conceptId);
         url.search = "";
+        writeConceptPlaceId(url, conceptPlaceId);
         url.hash = "";
       },
       { mode }
@@ -157,15 +168,18 @@ Navigation via bottom tabs (mobile-first UX pattern)
 
   function openConcept(
     concept: LearnConcept,
-    routeMode: "push" | "replace" | "none"
+    routeMode: "push" | "replace" | "none",
+    conceptPlaceId: string | null = null
   ) {
     if (!isConceptExperienceAvailable(concept.id)) return;
 
     if (selectedConcept?.id !== concept.id) conceptOpenCount++;
     selectedConcept = concept;
+    returnPlaceId = conceptPlaceId;
     setActiveConceptId(concept.id);
 
-    if (routeMode !== "none") writeConceptUrl(concept.id, routeMode);
+    if (routeMode !== "none")
+      writeConceptUrl(concept.id, routeMode, conceptPlaceId);
   }
 
   function syncConceptFromUrl(restoreSavedConcept: boolean) {
@@ -174,27 +188,37 @@ Navigation via bottom tabs (mobile-first UX pattern)
     if (!isConceptPath(pathname)) return;
 
     const routeConceptId = conceptIdFromPathname(pathname);
+    const routePlaceId = readConceptPlaceId(
+      new URLSearchParams(window.location.search)
+    );
     const routeConcept = routeConceptId
       ? getConceptById(routeConceptId)
       : undefined;
 
     if (routeConcept && isConceptExperienceAvailable(routeConcept.id)) {
-      openConcept(routeConcept, "none");
+      openConcept(routeConcept, "none", routePlaceId);
       return;
     }
 
-    if (!routeConceptId && restoreSavedConcept) {
+    if (
+      shouldResumeSavedConcept(
+        routeConceptId,
+        routePlaceId,
+        restoreSavedConcept
+      )
+    ) {
       const savedConceptId = getActiveConceptId();
       const savedConcept = savedConceptId
         ? getConceptById(savedConceptId)
         : undefined;
       if (savedConcept && isConceptExperienceAvailable(savedConcept.id)) {
-        openConcept(savedConcept, "replace");
+        openConcept(savedConcept, "replace", routePlaceId);
         return;
       }
     }
 
     selectedConcept = null;
+    returnPlaceId = routePlaceId;
     clearActiveConceptId();
     if (routeConceptId) writeConceptUrl(undefined, "replace");
   }
@@ -218,15 +242,15 @@ Navigation via bottom tabs (mobile-first UX pattern)
   });
 
   // Handle concept selection
-  function handleConceptClick(concept: LearnConcept) {
-    openConcept(concept, "push");
+  function handleConceptClick(concept: LearnConcept, conceptPlaceId?: string) {
+    openConcept(concept, "push", conceptPlaceId ?? null);
   }
 
   // Handle back from detail view
   function handleBackToPath() {
     selectedConcept = null;
     clearActiveConceptId();
-    writeConceptUrl(undefined, "replace");
+    writeConceptUrl(undefined, "replace", returnPlaceId);
   }
 
   // Check if mode is active
@@ -235,7 +259,11 @@ Navigation via bottom tabs (mobile-first UX pattern)
   }
 </script>
 
-<div class="learn-tab">
+<div
+  class="learn-tab"
+  class:public-course={publicCourse}
+  class:course-index={publicCourse && selectedConcept === null}
+>
   <!-- Delight components (confetti and toasts) -->
   <ConfettiBurst orchestrator={delightOrchestrator} />
   <AchievementToast orchestrator={delightOrchestrator} />
@@ -292,6 +320,29 @@ Navigation via bottom tabs (mobile-first UX pattern)
     color: var(--foreground, #ffffff);
     container-type: size;
     container-name: learn-tab;
+  }
+
+  .learn-tab.public-course:not(.course-index) {
+    height: calc(100dvh - 64px);
+  }
+
+  .learn-tab.course-index {
+    height: auto;
+    min-height: calc(100dvh - 64px);
+    overflow: visible;
+    container-type: inline-size;
+  }
+
+  .learn-tab.course-index .content-container {
+    height: auto;
+    overflow: visible;
+  }
+
+  .learn-tab.course-index .mode-panel {
+    position: relative;
+    inset: auto;
+    height: auto;
+    overflow: visible;
   }
 
   /* Content container */

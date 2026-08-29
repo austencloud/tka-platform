@@ -9,8 +9,14 @@
 
   interface Props {
     onSettingChange?: ViewerControlSink;
+    /**
+     * A visible scope chip is also an editing intent. Wider workspaces use
+     * this to reveal the existing Performer Hub beside the scene; compact
+     * workspaces already render the spine inside that hub's sheet.
+     */
+    onScopeSelect?: (index: number | null) => void;
   }
-  let { onSettingChange }: Props = $props();
+  let { onSettingChange, onScopeSelect }: Props = $props();
 
   const viewer = getViewer3DContext();
   const performers = $derived(viewer.performerManager.performers);
@@ -25,6 +31,7 @@
     const previous = scopeValue(selectedIndex);
     viewer.selectPerformerScope(null);
     viewer.closePopover();
+    onScopeSelect?.(null);
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_performer",
@@ -37,6 +44,7 @@
   function selectPerformer(i: number): void {
     const previous = scopeValue(selectedIndex);
     viewer.selectPerformerScope(i);
+    onScopeSelect?.(i);
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_performer",
