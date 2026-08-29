@@ -22,7 +22,7 @@ const CONFIGS: Record<AutumnQualityTier, AutumnQualityConfig> = {
   high: {
     leafCount: 140,
     sporeCount: 60,
-    fireflyCount: 36,
+    fireflyCount: 84,
     wispCount: 5,
     shadows: true,
     shadowMapSize: 2048,
@@ -30,7 +30,7 @@ const CONFIGS: Record<AutumnQualityTier, AutumnQualityConfig> = {
   medium: {
     leafCount: 90,
     sporeCount: 40,
-    fireflyCount: 24,
+    fireflyCount: 60,
     wispCount: 4,
     shadows: true,
     shadowMapSize: 1024,
@@ -38,7 +38,7 @@ const CONFIGS: Record<AutumnQualityTier, AutumnQualityConfig> = {
   low: {
     leafCount: 50,
     sporeCount: 20,
-    fireflyCount: 12,
+    fireflyCount: 36,
     wispCount: 3,
     shadows: false,
     shadowMapSize: 1024,
