@@ -1,5 +1,9 @@
 <script lang="ts">
-	import { renderMandalaSVG, renderMandalaToCanvas } from "$lib/shared/mandala/services/mandala-renderer";
+	import {
+		renderMandalaSVG,
+		renderMandalaToCanvas,
+		resolveMandalaRenderExtent,
+	} from "$lib/shared/mandala/services/mandala-renderer";
 	import { onMount, untrack } from "svelte";
 	import { cubicInOut } from "svelte/easing";
 	import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
@@ -15,8 +19,6 @@
 	import {
 		MANDALA_DEFAULT_SIZE,
 		MANDALA_STANDARD_TIP_DX,
-		MANDALA_GRID_RADIUS,
-		ENGINE_GRID_RADIUS,
 		DARK_MOTION_BLUE_STROKE,
 		DARK_MOTION_RED_STROKE,
 		DARK_MOTION_BLUE_FILL,
@@ -517,9 +519,8 @@
 		// Device-space glow blur that matches the SVG `#glow` feGaussianBlur, whose
 		// stdDeviation lives inside the scaled <g> (so its device size is
 		// stdDeviation × renderScale × ratio). Mirrors mandala-frame-renderer.
-		const effTip = Math.max(opts.tipDx ?? MANDALA_STANDARD_TIP_DX, MANDALA_STANDARD_TIP_DX);
-		const tipReach = (effTip * MANDALA_GRID_RADIUS) / ENGINE_GRID_RADIUS;
-		const renderScale = logicalSize / 2 / ((MANDALA_GRID_RADIUS + tipReach) * 1.05);
+		const renderExtent = resolveMandalaRenderExtent(p, opts);
+		const renderScale = logicalSize / 2 / (renderExtent * 1.05);
 
 		renderMandalaToCanvas(ctx, p, {
 			...opts,
