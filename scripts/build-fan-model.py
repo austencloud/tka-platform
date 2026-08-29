@@ -765,6 +765,15 @@ def import_svg_centerlines(
 
     for obj in imported:
         bpy.data.objects.remove(obj, do_unlink=True)
+
+    # Illustrator's source paths are exact reflections, but Blender imports
+    # each side through separate 32-bit curve data. Reflecting the authored
+    # right paths here removes the resulting micron-scale bilateral drift.
+    for right_id in sorted(
+        path_id for path_id in expected_path_ids if path_id.endswith("-right")
+    ):
+        left_id = right_id.removesuffix("-right") + "-left"
+        centerlines[left_id] = [(-x, y, z) for x, y, z in centerlines[right_id]]
     return centerlines
 
 
@@ -1228,35 +1237,63 @@ def build_lotus_frame(
         Vector((*direction, 0.0)).normalized()
         for direction in geometry["wick_directions"]
     ]
-    tine_half_spacing = geometry["wick_tine_half_spacing_m"]
-    tine_straight_length = geometry["wick_tine_straight_length_m"]
-    tine_blend_length = geometry["wick_tine_blend_length_m"]
     tine_insertion_depth = geometry["wick_tine_insertion_depth_m"]
 
-    def wick_tine_pair(
-        centre: Vector,
-        direction: Vector,
-        wick_half: float,
-    ) -> tuple[tuple[Vector, Vector], tuple[Vector, Vector]]:
-        """Return two axial neck/entry pairs for one rolled wick."""
-        wick_base = centre - direction * wick_half
-        transverse = Vector((-direction.y, direction.x, 0.0)).normalized()
-        pairs: list[tuple[Vector, Vector]] = []
-        for side in (1.0, -1.0):
-            base_point = wick_base + transverse * tine_half_spacing * side
-            neck = base_point - direction * tine_straight_length
-            entry = base_point + direction * tine_insertion_depth
-            pairs.append((neck, entry))
-        return pairs[0], pairs[1]
+    path_names = (
+        "center_petal",
+        "upper_outer_petal",
+        "upper_inner_petal",
+        "lower_outer_petal",
+        "lower_inner_petal",
+    )
+    vector_path_ids = {
+        f"{path_name.replace('_', '-')}-{side}"
+        for path_name in path_names
+        for side in ("left", "right")
+    }
+    vector_paths = import_svg_centerlines(
+        LOTUS_FIRE_VECTOR_REFERENCE,
+        vector_path_ids,
+    )
 
-    wick_tine_pairs = [
-        wick_tine_pair(centre, direction, wick_half)
-        for centre, direction, wick_half in zip(
-            wick_centres,
-            wick_directions,
-            wick_halves,
-        )
+    terminal_path_pairs = (
+        ("lower-outer-petal-left", "lower-inner-petal-left"),
+        ("upper-outer-petal-left", "upper-inner-petal-left"),
+        ("center-petal-left", "center-petal-right"),
+        ("upper-inner-petal-right", "upper-outer-petal-right"),
+        ("lower-inner-petal-right", "lower-outer-petal-right"),
+    )
+    wick_terminal_pairs = [
+        tuple(Vector(vector_paths[path_id][-1]) for path_id in pair)
+        for pair in terminal_path_pairs
     ]
+    wick_tine_pairs: list[tuple[tuple[Vector, Vector], tuple[Vector, Vector]]] = []
+    # Blender's SVG importer resolves millimetre coordinates through 32-bit
+    # curve data. Keep its sub-0.1 mm conversion noise from invalidating the
+    # exact source endpoints while still rejecting any visible calibration drift.
+    svg_import_tolerance = 1e-4
+    for index, (centre, direction, wick_half, terminal_pair) in enumerate(
+        zip(wick_centres, wick_directions, wick_halves, wick_terminal_pairs)
+    ):
+        wick_base = centre - direction * wick_half
+        traced_base = (terminal_pair[0] + terminal_pair[1]) / 2
+        if (traced_base - wick_base).length > svg_import_tolerance:
+            raise ValueError(
+                f"Lotus wick {index + 1} is not centered on its Illustrator terminal pair: "
+                f"traced={tuple(traced_base)}, calibrated={tuple(wick_base)}, "
+                f"drift={(traced_base - wick_base).length}"
+            )
+        for terminal in terminal_pair:
+            if abs((terminal - wick_base).dot(direction)) > svg_import_tolerance:
+                raise ValueError(
+                    f"Lotus wick {index + 1} terminal is not on the inward-facing cap"
+                )
+        wick_tine_pairs.append(
+            tuple(
+                (terminal, terminal + direction * tine_insertion_depth)
+                for terminal in terminal_pair
+            )
+        )
     left_path_tines = {
         "center_petal": wick_tine_pairs[2][0],
         "upper_outer_petal": wick_tine_pairs[1][0],
@@ -1289,10 +1326,9 @@ def build_lotus_frame(
     parent["tka_wick_roll_lengths_m"] = wick_roll_lengths
     parent["tka_wick_diameters_m"] = wick_diameters
     parent["tka_wick_diameter_m"] = reference["calibration"]["wick_diameter_m"]
-    parent["tka_wick_mount"] = "paired axial tines through inward-facing end caps"
-    parent["tka_wick_tine_half_spacing_m"] = tine_half_spacing
-    parent["tka_wick_tine_straight_length_m"] = tine_straight_length
-    parent["tka_wick_tine_blend_length_m"] = tine_blend_length
+    parent["tka_wick_mount"] = (
+        "intact Illustrator SVG terminals through inward-facing end caps"
+    )
     parent["tka_wick_tine_insertion_depth_m"] = tine_insertion_depth
     parent["tka_frame_stock_diameter_m"] = LOTUS_FRAME_RADIUS_M * 2
     parent["tka_grip_stock_diameter_m"] = LOTUS_GRIP_RADIUS_M * 2
@@ -1401,44 +1437,10 @@ def build_lotus_frame(
         neck: Vector,
         entry: Vector,
     ) -> bpy.types.Object:
-        """Blend one photographed rail into its measured axial wick tine."""
-        direction = (entry - neck).normalized()
-        cut_index = 1
-        for index in range(len(traced_path) - 2, 0, -1):
-            point = Vector(traced_path[index])
-            axial_offset = (point - neck).dot(direction)
-            if axial_offset <= -tine_blend_length:
-                cut_index = index
-                break
-
-        path = traced_path[: cut_index + 1]
-        core_end = Vector(path[-1])
-        tangent_sample = Vector(path[max(0, len(path) - 5)])
-        core_tangent = (core_end - tangent_sample).normalized()
-        transition_distance = (neck - core_end).length
-        start_handle = min(
-            tine_blend_length * 1.25,
-            transition_distance * 0.45,
-        )
-        axial_handle = min(
-            tine_blend_length * 0.7,
-            transition_distance * 0.4,
-        )
-        path.extend(
-            cubic_bezier_curve(
-                (core_end.x, core_end.y),
-                (
-                    core_end.x + core_tangent.x * start_handle,
-                    core_end.y + core_tangent.y * start_handle,
-                ),
-                (
-                    neck.x - direction.x * axial_handle,
-                    neck.y - direction.y * axial_handle,
-                ),
-                (neck.x, neck.y),
-                segments=24,
-            )[1:]
-        )
+        """Keep every visible point authored in Illustrator; extend only inside the wick."""
+        if (Vector(traced_path[-1]) - neck).length > 1e-7:
+            raise ValueError(f"{name} no longer reaches its Illustrator endpoint")
+        path = list(traced_path)
         path.extend(
             tuple(neck.lerp(entry, step / 8))
             for step in range(1, 9)
@@ -1454,16 +1456,6 @@ def build_lotus_frame(
         rod["tka_wick_tine_entry_m"] = list(entry)
         return rod
 
-    path_names = tuple(left_path_tines)
-    vector_path_ids = {
-        f"{path_name.replace('_', '-')}-{side}"
-        for path_name in path_names
-        for side in ("left", "right")
-    }
-    vector_paths = import_svg_centerlines(
-        LOTUS_FIRE_VECTOR_REFERENCE,
-        vector_path_ids,
-    )
     for path_name in path_names:
         readable_name = "".join(part.title() for part in path_name.split("_"))
         objects.append(

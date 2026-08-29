@@ -20,6 +20,7 @@
     "dev:mobile": "vite --host ::",
     "build:native": "npm run build && npm run verify:native-surface && node scripts/generate-native-env.mjs && npx cap sync",
     "verify:native-surface": "node scripts/verify-native-release-surface.mjs",
+    "verify:workspace-install": "node scripts/verify-workspace-install.mjs",
     "cap:sync": "npx cap sync",
     "cap:android": "npx cap open android",
     "cap:ios": "npx cap open ios",

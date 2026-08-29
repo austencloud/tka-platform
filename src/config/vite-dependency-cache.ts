@@ -12,7 +12,7 @@ export interface ViteDependencyCachePlan {
   cacheDir: string;
   forceRefresh: boolean;
   port: number;
-  reason: "invalid-metadata" | "stale-dependencies" | null;
+  reason: "invalid-metadata" | "repaired-install" | "stale-dependencies" | null;
   staleDependencies: string[];
 }
 
@@ -151,13 +151,14 @@ export function createViteDependencyCachePlan({
   const port = resolveViteDevPort(argv, env);
   const cacheDir = getViteDependencyCacheDir(projectRoot, port);
   const metadataPath = path.join(cacheDir, "deps", "_metadata.json");
+  const repairedInstall = env.TKA_FORCE_VITE_DEPS === "1";
 
   if (!existsSync(metadataPath)) {
     return {
       cacheDir,
-      forceRefresh: false,
+      forceRefresh: repairedInstall,
       port,
-      reason: null,
+      reason: repairedInstall ? "repaired-install" : null,
       staleDependencies: [],
     };
   }
@@ -174,9 +175,13 @@ export function createViteDependencyCachePlan({
 
     return {
       cacheDir,
-      forceRefresh: staleDependencies.length > 0,
+      forceRefresh: repairedInstall || staleDependencies.length > 0,
       port,
-      reason: staleDependencies.length > 0 ? "stale-dependencies" : null,
+      reason: repairedInstall
+        ? "repaired-install"
+        : staleDependencies.length > 0
+          ? "stale-dependencies"
+          : null,
       staleDependencies,
     };
   } catch {

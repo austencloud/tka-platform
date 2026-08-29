@@ -43,6 +43,37 @@ export const FLOW_FEST_FOREST_TREE_ASSETS = {
     "/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-dead-ld-s37.glb",
 } as const;
 
+export const FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS = {
+  mid: {
+    "island-tree-01":
+      "/models/flow-fest-sim/ecology/distance-lod/island-tree-01-mid.glb",
+    "island-tree-02":
+      "/models/flow-fest-sim/ecology/distance-lod/island-tree-02-mid.glb",
+    "island-tree-03":
+      "/models/flow-fest-sim/ecology/distance-lod/island-tree-03-mid.glb",
+    "tree-small-02":
+      "/models/flow-fest-sim/ecology/distance-lod/tree-small-02-mid.glb",
+  },
+  far: {
+    "island-tree-01":
+      "/models/flow-fest-sim/ecology/distance-lod/island-tree-01-far.glb",
+    "island-tree-02":
+      "/models/flow-fest-sim/ecology/distance-lod/island-tree-02-far.glb",
+    "island-tree-03":
+      "/models/flow-fest-sim/ecology/distance-lod/island-tree-03-far.glb",
+    "tree-small-02":
+      "/models/flow-fest-sim/ecology/distance-lod/tree-small-02-far.glb",
+  },
+} as const;
+
+export const FLOW_FEST_FOREST_DISTANCE_LOD = {
+  nearMaximumMeters: 55,
+  midMaximumMeters: 130,
+  grassMaximumMeters: 70,
+  cameraPositionThresholdMeters: 0.75,
+  cameraRotationThresholdRadians: 0.015,
+} as const;
+
 export const FLOW_FEST_FOREST_GRASS_ASSET =
   "/models/flow-fest-sim/ecology/forest-grass-prototypes.glb";
 
@@ -53,6 +84,24 @@ export const FLOW_FEST_FOREST_GROUND_LIFE_ASSETS = {
 
 export type FlowFestForestTreeFamilyId =
   keyof typeof FLOW_FEST_FOREST_TREE_ASSETS;
+export type FlowFestForestDistanceTreeFamilyId =
+  keyof (typeof FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS)["mid"];
+export const FLOW_FEST_FOREST_DISTANCE_FALLBACK_FAMILY = {
+  "island-tree-01": "island-tree-01",
+  "island-tree-02": "island-tree-02",
+  "island-tree-03": "island-tree-03",
+  "tree-small-02": "tree-small-02",
+  "plantcatalog-aesculus-carnea": "island-tree-01",
+  "plantcatalog-oak-urban": "island-tree-02",
+  "plantcatalog-oak-colonised": "island-tree-03",
+  "plantcatalog-willow": "tree-small-02",
+  "plantcatalog-buckeye-31": "island-tree-01",
+  "plantcatalog-buckeye-79": "island-tree-03",
+  "plantcatalog-habitat-snag": "tree-small-02",
+} as const satisfies Record<
+  FlowFestForestTreeFamilyId,
+  FlowFestForestDistanceTreeFamilyId
+>;
 export const FLOW_FEST_PLANTFACTORY_TREE_FAMILIES = [
   "plantcatalog-aesculus-carnea",
   "plantcatalog-oak-urban",
