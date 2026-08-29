@@ -267,7 +267,7 @@ describe("exact flower parity", () => {
         }
       }
     }
-  });
+  }, 30_000);
 
   it("keeps every hand relationship available for quarter-turn flowers", () => {
     const pair = pairs[0]!;

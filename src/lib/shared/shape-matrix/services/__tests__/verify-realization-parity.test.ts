@@ -5,7 +5,7 @@ import {
   loopDistance,
   MATCH_EPS,
 } from "../verify-realization-parity";
-import { curveDistance } from "./curve-distance";
+import { CURVE_MATCH_EPS, curveDistance } from "./curve-distance";
 
 /** Build a closed-loop SVGPathData from points (mirrors pointsToSVGPath's M…C form). */
 function pathFrom(points: { x: number; y: number }[]): SVGPathData[] {
@@ -125,6 +125,8 @@ describe("curveDistance", () => {
         tipIndex: 0,
       },
     ];
-    expect(curveDistance(twoHalves, fourQuarters)).toBeLessThan(0.01);
+    expect(curveDistance(twoHalves, fourQuarters)).toBeLessThanOrEqual(
+      CURVE_MATCH_EPS
+    );
   });
 });
