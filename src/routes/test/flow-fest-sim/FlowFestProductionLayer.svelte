@@ -76,6 +76,7 @@
   let destroyed = false;
   let sceneElapsed = 0;
   let animatedLedRings: Object3D[] = [];
+  let staticSceneSetupComplete = false;
 
   const campEstablished = $derived(
     isFlowFestCampEstablishedPhase(props.progressPhase)
@@ -111,6 +112,16 @@
       y: nightHeartY,
       z: nightHeartPosition.z,
     }
+  );
+  const forestShadowRefreshToken = $derived(
+    [
+      props.selectedBranch,
+      props.moment,
+      props.progressPhase,
+      campEstablished,
+      festivalActive,
+      props.showCampDressing !== false,
+    ].join(":")
   );
 
   async function build(branch: FlowFestBranchId): Promise<void> {
@@ -289,6 +300,8 @@
     treeCullingSourceBatches: number;
     treeCullingBatches: number;
     treeCullingCoveredVertices: number;
+    treeMidRenderedTriangles: number;
+    treeFarRenderedTriangles: number;
   }): void {
     const proof = (globalThis as Record<string, unknown>)
       .__flowFestProduction as
@@ -301,6 +314,10 @@
     proof.forestEcology.treeFamiliesReady = details.treeFamilies;
     proof.forestEcology.treeDrawBatches = details.treeDrawBatches;
     proof.forestEcology.treeRenderedTriangles = details.treeRenderedTriangles;
+    proof.forestEcology.treeMidRenderedTriangles =
+      details.treeMidRenderedTriangles;
+    proof.forestEcology.treeFarRenderedTriangles =
+      details.treeFarRenderedTriangles;
     proof.forestEcology.treeCullingSourceBatches =
       details.treeCullingSourceBatches;
     proof.forestEcology.treeCullingBatches = details.treeCullingBatches;
@@ -323,6 +340,24 @@
       details.estimatedVerticesCovered;
     proof.forestEcology.treeSubmittedVertices =
       details.estimatedSubmittedVertices;
+  }
+
+  function configureStaticScene(activeScene: Object3D): boolean {
+    const reviewOverlay = activeScene.getObjectByName("FFS_ReviewOverlay");
+    if (reviewOverlay) reviewOverlay.visible = false;
+    const terrainMesh = (activeScene.getObjectByName(
+      "FFS_Terrain_ChunkedRenderBatch"
+    ) ?? activeScene.getObjectByName("FFS_Terrain_Bounded")) as
+      | Mesh
+      | undefined;
+    if (!terrainMesh) return false;
+    const material = terrainMesh.material as MeshStandardMaterial;
+    // The grade is a restrained multiplicative color, so the orthophoto still
+    // owns roads and clearing edges instead of collapsing into synthetic turf.
+    material.color.set(atmosphere.grade.terrainTint);
+    material.roughness = 1;
+    terrainMesh.receiveShadow = true;
+    return true;
   }
 
   onMount(() => {
@@ -365,6 +400,7 @@
     if (!activeScene || !activeRenderer) return;
     activeScene.fog = fog;
     activeRenderer.toneMappingExposure = atmosphere.grade.exposure;
+    staticSceneSetupComplete = false;
     const proof = (globalThis as Record<string, unknown>)
       .__flowFestProduction as Record<string, unknown> | undefined;
     if (proof) proof.moment = props.moment;
@@ -394,8 +430,20 @@
     if (proof) {
       proof.visualProfile = atmosphere.id;
       proof.visualExposure = atmosphere.grade.exposure;
-      proof.shadowKey = "camera-bounded-92m-frustum";
+      proof.shadowKey =
+        "camera-bounded-92m-frustum-6m-anchor-grid-30hz-refresh";
     }
+  });
+
+  $effect(() => {
+    const proof = (globalThis as Record<string, unknown>)
+      .__flowFestProduction as
+      | { festivalCommunity?: Record<string, unknown> }
+      | undefined;
+    if (!proof?.festivalCommunity) return;
+    proof.festivalCommunity.interactionState =
+      props.fireJamState ?? "not-started";
+    proof.festivalCommunity.responseIntensity = props.fireJamEnergy ?? 0;
   });
 
   useTask((delta) => {
@@ -409,21 +457,8 @@
     }
     const activeScene = scene.current;
     if (!activeScene) return;
-    const reviewOverlay = activeScene.getObjectByName("FFS_ReviewOverlay");
-    if (reviewOverlay) reviewOverlay.visible = false;
-
-    const terrainMesh = (activeScene.getObjectByName(
-      "FFS_Terrain_ChunkedRenderBatch"
-    ) ?? activeScene.getObjectByName("FFS_Terrain_Bounded")) as
-      | Mesh
-      | undefined;
-    if (terrainMesh) {
-      const material = terrainMesh.material as MeshStandardMaterial;
-      // The grade is a restrained multiplicative color, so the orthophoto still
-      // owns roads and clearing edges instead of collapsing into synthetic turf.
-      material.color.set(atmosphere.grade.terrainTint);
-      material.roughness = 1;
-      terrainMesh.receiveShadow = true;
+    if (!staticSceneSetupComplete) {
+      staticSceneSetupComplete = configureStaticScene(activeScene);
     }
 
     const energy = props.fireJamEnergy ?? 0;
@@ -432,11 +467,6 @@
     for (const ring of animatedLedRings) {
       ring.rotation.z += delta * (0.035 + energy * 0.52);
       ring.scale.setScalar(pulse);
-    }
-    if (proof?.festivalCommunity) {
-      const community = proof.festivalCommunity as Record<string, unknown>;
-      community.interactionState = props.fireJamState ?? "not-started";
-      community.responseIntensity = props.fireJamEnergy ?? 0;
     }
   });
 
@@ -472,6 +502,9 @@
   anchor={forestLightAnchor}
   shadowExtentMeters={46}
   keyLightDistanceMeters={92}
+  shadowAnchorSnapMeters={6}
+  shadowRefreshIntervalSeconds={1 / 30}
+  shadowRefreshToken={forestShadowRefreshToken}
 />
 
 {#if dressing}
