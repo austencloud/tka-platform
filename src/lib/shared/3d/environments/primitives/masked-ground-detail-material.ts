@@ -16,7 +16,6 @@ export interface MaskedGroundDetailMaps {
 
 export interface MaskedGroundSurfaceDetailMaps {
   height: Texture;
-  roughness: Texture;
 }
 
 export interface MaskedGroundSurfaceDetail {
@@ -24,8 +23,6 @@ export interface MaskedGroundSurfaceDetail {
   scale: number;
   albedoStrength: number;
   normalStrength: number;
-  roughnessStrength: number;
-  slopeProjectionStrength: number;
 }
 
 export interface MaskedGroundContactZone {
@@ -172,9 +169,6 @@ export function patchMaskedGroundDetailMaterial(
       shader.uniforms.uMaskedGroundSurfaceHeightMap = {
         value: surfaceDetail.maps.height,
       };
-      shader.uniforms.uMaskedGroundSurfaceRoughnessMap = {
-        value: surfaceDetail.maps.roughness,
-      };
       shader.uniforms.uMaskedGroundSurfaceScale = {
         value: surfaceDetail.scale,
       };
@@ -184,68 +178,23 @@ export function patchMaskedGroundDetailMaterial(
       shader.uniforms.uMaskedGroundSurfaceNormalStrength = {
         value: surfaceDetail.normalStrength,
       };
-      shader.uniforms.uMaskedGroundSurfaceRoughnessStrength = {
-        value: surfaceDetail.roughnessStrength,
-      };
-      shader.uniforms.uMaskedGroundSurfaceSlopeProjectionStrength = {
-        value: surfaceDetail.slopeProjectionStrength,
-      };
     }
 
     const surfaceDeclarations = surfaceDetail
       ? /* glsl */ `
           uniform sampler2D uMaskedGroundSurfaceHeightMap;
-          uniform sampler2D uMaskedGroundSurfaceRoughnessMap;
           uniform float uMaskedGroundSurfaceScale;
           uniform float uMaskedGroundSurfaceAlbedoStrength;
-          uniform float uMaskedGroundSurfaceNormalStrength;
-          uniform float uMaskedGroundSurfaceRoughnessStrength;
-          uniform float uMaskedGroundSurfaceSlopeProjectionStrength;`
+          uniform float uMaskedGroundSurfaceNormalStrength;`
       : "";
     const surfaceSampling = surfaceDetail
       ? /* glsl */ `
           vec2 maskedGroundSurfaceUv = maskedGroundPoint
             / uMaskedGroundSurfaceScale;
-          vec2 maskedGroundSidePoint = abs(vMaskedGroundWorldNormal.x)
-            > abs(vMaskedGroundWorldNormal.z)
-              ? vec2(
-                  vMaskedGroundWorldPosition.z,
-                  vMaskedGroundWorldPosition.y
-                )
-              : vec2(
-                  vMaskedGroundWorldPosition.x,
-                  vMaskedGroundWorldPosition.y
-                );
-          vec2 maskedGroundSurfaceSideUv = maskedGroundSidePoint
-            / uMaskedGroundSurfaceScale + vec2(6.17, -3.83);
-          float maskedGroundSurfaceProjection = clamp(
-            maskedGroundSlopeWeight
-              * uMaskedGroundSurfaceSlopeProjectionStrength,
-            0.0,
-            1.0
-          );
-          float maskedGroundSurfaceHeight = mix(
-            texture2D(
-              uMaskedGroundSurfaceHeightMap,
-              maskedGroundSurfaceUv
-            ).r,
-            texture2D(
-              uMaskedGroundSurfaceHeightMap,
-              maskedGroundSurfaceSideUv
-            ).r,
-            maskedGroundSurfaceProjection
-          );
-          float maskedGroundSurfaceRoughness = mix(
-            texture2D(
-              uMaskedGroundSurfaceRoughnessMap,
-              maskedGroundSurfaceUv
-            ).r,
-            texture2D(
-              uMaskedGroundSurfaceRoughnessMap,
-              maskedGroundSurfaceSideUv
-            ).r,
-            maskedGroundSurfaceProjection
-          );
+          float maskedGroundSurfaceHeight = texture2D(
+            uMaskedGroundSurfaceHeightMap,
+            maskedGroundSurfaceUv
+          ).r;
           float maskedGroundSurfaceValue = (
             smoothstep(0.12, 0.9, maskedGroundSurfaceHeight) - 0.5
           ) * 2.0;
@@ -254,21 +203,7 @@ export function patchMaskedGroundDetailMaterial(
               * uMaskedGroundSurfaceAlbedoStrength
               * uMaskedGroundDetailStrength;`
       : /* glsl */ `
-          float maskedGroundSurfaceHeight = 0.5;
-          float maskedGroundSurfaceRoughness = 1.0;`;
-    const surfaceRoughness = surfaceDetail
-      ? /* glsl */ `
-          roughnessFactor = mix(
-            roughnessFactor,
-            max(roughnessFactor, maskedGroundSurfaceRoughness),
-            clamp(
-              uMaskedGroundSurfaceRoughnessStrength
-                * uMaskedGroundDetailStrength,
-              0.0,
-              1.0
-            )
-          );`
-      : "";
+          float maskedGroundSurfaceHeight = 0.5;`;
     const surfaceHeightContribution = surfaceDetail
       ? "(maskedGroundSurfaceHeight - 0.5) * uMaskedGroundSurfaceNormalStrength"
       : "0.0";
@@ -539,8 +474,7 @@ export function patchMaskedGroundDetailMaterial(
           roughnessFactor = max(
             roughnessFactor,
             uMaskedGroundRoughnessFloor
-          );
-          ${surfaceRoughness}`
+          );`
       );
   };
   material.customProgramCacheKey = () =>
