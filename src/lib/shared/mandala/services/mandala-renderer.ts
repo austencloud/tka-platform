@@ -119,13 +119,127 @@ function drawMaskPath(
 	}
 }
 
+const PATH_TOKEN_PATTERN = /[MC]|[-+]?(?:\d*\.?\d+)(?:[eE][-+]?\d+)?/g;
+const CUBIC_EPSILON = 1e-9;
+
+function cubicValue(
+	p0: number,
+	p1: number,
+	p2: number,
+	p3: number,
+	t: number
+): number {
+	const mt = 1 - t;
+	return (
+		mt * mt * mt * p0 +
+		3 * mt * mt * t * p1 +
+		3 * mt * t * t * p2 +
+		t * t * t * p3
+	);
+}
+
+function cubicAxisExtent(
+	p0: number,
+	p1: number,
+	p2: number,
+	p3: number
+): number {
+	let extent = Math.max(Math.abs(p0), Math.abs(p3));
+	const a = -p0 + 3 * p1 - 3 * p2 + p3;
+	const b = 2 * (p0 - 2 * p1 + p2);
+	const c = p1 - p0;
+	const candidates: number[] = [];
+
+	if (Math.abs(a) < CUBIC_EPSILON) {
+		if (Math.abs(b) >= CUBIC_EPSILON) candidates.push(-c / b);
+	} else {
+		const discriminant = b * b - 4 * a * c;
+		if (discriminant >= 0) {
+			const root = Math.sqrt(discriminant);
+			candidates.push((-b + root) / (2 * a), (-b - root) / (2 * a));
+		}
+	}
+
+	for (const t of candidates) {
+		if (t > 0 && t < 1) {
+			extent = Math.max(extent, Math.abs(cubicValue(p0, p1, p2, p3, t)));
+		}
+	}
+	return extent;
+}
+
+function pathCoordinateExtent(d: string): number {
+	const tokens = d.match(PATH_TOKEN_PATTERN);
+	if (!tokens) return 0;
+
+	let extent = 0;
+	let x = 0;
+	let y = 0;
+	for (let i = 0; i < tokens.length; ) {
+		const command = tokens[i++];
+		if (command === "M") {
+			x = Number.parseFloat(tokens[i++] ?? "0");
+			y = Number.parseFloat(tokens[i++] ?? "0");
+			extent = Math.max(extent, Math.abs(x), Math.abs(y));
+			continue;
+		}
+		if (command !== "C") continue;
+
+		const x1 = Number.parseFloat(tokens[i++] ?? "0");
+		const y1 = Number.parseFloat(tokens[i++] ?? "0");
+		const x2 = Number.parseFloat(tokens[i++] ?? "0");
+		const y2 = Number.parseFloat(tokens[i++] ?? "0");
+		const x3 = Number.parseFloat(tokens[i++] ?? "0");
+		const y3 = Number.parseFloat(tokens[i++] ?? "0");
+		extent = Math.max(
+			extent,
+			cubicAxisExtent(x, x1, x2, x3),
+			cubicAxisExtent(y, y1, y2, y3)
+		);
+		x = x3;
+		y = y3;
+	}
+	return extent;
+}
+
+/**
+ * Preserve the established scale for ordinary mandalas, but make room when a
+ * prop's real traced points extend farther than the standard staff-sized fit.
+ */
+export function resolveMandalaRenderExtent(
+	paths: MandalaPaths,
+	options: Pick<MandalaRenderOptions, "show" | "tipDx">
+): number {
+	const effectiveTipDx = Math.max(
+		options.tipDx ?? MANDALA_STANDARD_TIP_DX,
+		MANDALA_STANDARD_TIP_DX
+	);
+	const standardExtent =
+		MANDALA_GRID_RADIUS +
+		(effectiveTipDx * MANDALA_GRID_RADIUS) / ENGINE_GRID_RADIUS;
+	const visiblePaths =
+		options.show === "blue"
+			? paths.blue
+			: options.show === "red"
+				? paths.red
+				: [...paths.blue, ...paths.red];
+	const tracedExtent = visiblePaths.reduce(
+		(max, path) => Math.max(max, pathCoordinateExtent(path.d)),
+		0
+	);
+
+	// The existing 5% breathing room already contains ordinary prop geometry.
+	// Keep that exact scale until the path would cross the padded boundary.
+	return tracedExtent <= standardExtent * 1.05
+		? standardExtent
+		: tracedExtent;
+}
+
 export function renderMandalaSVG(paths: MandalaPaths, options: MandalaRenderOptions): string {
 	const { size, style, show, strokeWidth = 2.5 } = options;
 	const center = size / 2;
 
-	const effectiveTipDx = Math.max(options.tipDx ?? MANDALA_STANDARD_TIP_DX, MANDALA_STANDARD_TIP_DX);
-	const tipReach = effectiveTipDx * MANDALA_GRID_RADIUS / ENGINE_GRID_RADIUS;
-	const maxExtent = MANDALA_GRID_RADIUS + tipReach;
+	const maxExtent = resolveMandalaRenderExtent(paths, options);
 	const scale = center / (maxExtent * 1.05);
 	// A perfectly horizontal or vertical mandala has no geometric width or
 	// height. SVG ignores object-bounding-box filters and masks in that case,
@@ -254,12 +368,7 @@ export function renderMandalaToCanvas(
 ): void {
 	const { size, style, show, strokeWidth = 2, offsetX, offsetY } = options;
 	const center = size / 2;
-	// Match renderMandalaSVG: the extent grows with the (undulating) tip reach so
-	// breathing frames don't clip. Hardcoding STANDARD here drifted from the SVG
-	// render at larger tipDx — use the same effectiveTipDx formula.
-	const effectiveTipDx = Math.max(options.tipDx ?? MANDALA_STANDARD_TIP_DX, MANDALA_STANDARD_TIP_DX);
-	const tipReach = effectiveTipDx * MANDALA_GRID_RADIUS / ENGINE_GRID_RADIUS;
-	const maxExtent = MANDALA_GRID_RADIUS + tipReach;
+	const maxExtent = resolveMandalaRenderExtent(paths, options);
 	const scale = center / (maxExtent * 1.05);
 
 	const gradient = options.gradient;

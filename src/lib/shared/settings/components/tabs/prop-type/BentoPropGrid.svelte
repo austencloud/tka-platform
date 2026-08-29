@@ -391,14 +391,14 @@
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 12px;
+    padding: 14px 18px 20px;
     scrollbar-width: thin;
   }
 
   .grid-content {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
   }
 
   /* Flat mode: one dense grid, no sections — maximize visible prop count. */
@@ -410,35 +410,45 @@
   }
   .flat-grid :global(.prop-button) {
     width: 100%;
+    padding: 6px 3px 5px;
+    gap: 3px;
+    border-radius: 10px;
+    aspect-ratio: 1 / 1.15;
+  }
+  .flat-grid :global(.prop-label) {
+    font-size: var(--font-size-compact, 12px);
+  }
+  .flat-grid :global(.prop-image-container .prop-composition-preview) {
+    width: 75%;
+    max-height: 75%;
   }
 
   .section-label {
-    font-size: 10px;
-    font-weight: 600;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
     color: var(--theme-text-dim);
     text-transform: uppercase;
-    letter-spacing: 0.4px;
-    opacity: 0.5;
-    padding: 8px 4px 2px;
-    text-align: center;
+    letter-spacing: 0.06em;
+    padding: 16px 2px 8px;
+    text-align: left;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .section-label.first {
     border-top: none;
-    padding-top: 0;
+    padding-top: 2px;
   }
 
   .section-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 10px;
     justify-content: center;
-    padding: 0 4px;
+    padding: 0 2px;
   }
 
   .section-buttons :global(.prop-button) {
-    width: 79px;
+    width: clamp(98px, 28cqw, 124px);
     flex-shrink: 0;
   }
 
@@ -518,30 +528,15 @@
     order: -1;
   }
 
-  /* Paid labels include the product family name. At the narrowest picker
-     container, give those two tiles enough room to keep the full label. */
-  @container prop-grid (max-width: 399px) {
-    .section-buttons .tile-wrapper.premium :global(.prop-button) {
-      width: 95px;
-    }
-  }
-
-  /* Container queries for larger containers */
-  @container prop-grid (min-width: 400px) {
-    .section-buttons :global(.prop-button) {
-      width: 90px;
-    }
-  }
-
   @container prop-grid (min-width: 550px) {
     .section-buttons :global(.prop-button) {
-      width: 100px;
+      width: clamp(104px, 17cqw, 118px);
     }
   }
 
   @container prop-grid (min-width: 700px) {
     .section-buttons :global(.prop-button) {
-      width: 95px;
+      width: clamp(102px, 13cqw, 112px);
     }
   }
 
