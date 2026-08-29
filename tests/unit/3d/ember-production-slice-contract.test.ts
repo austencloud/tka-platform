@@ -10,8 +10,11 @@ import {
 } from "$lib/shared/3d/environments/scenes/ember/ember-surface-ecology";
 import { createEmberSurfacePlateGeometry } from "$lib/shared/3d/environments/scenes/ember/ember-surface-plate-geometry";
 import {
+  DEFAULT_VIEWER_FRONT_STAGE_CAMERA_Z_SIGN,
   DEFAULT_VIEWER_FRONT_STAGE_FACING_ANGLE,
+  EMBER_VIEWER_FRONT_STAGE_CAMERA_Z_SIGN,
   EMBER_VIEWER_FRONT_STAGE_FACING_ANGLE,
+  getViewerFrontStageCameraZ,
   getViewerFrontStageFacingAngle,
   resolveViewerFormationFacingAngle,
 } from "$lib/shared/3d/domain/viewer-formation-facing";
@@ -403,11 +406,17 @@ describe("Ember integrated-room contracts", () => {
       EMBER_VIEWER_FRONT_STAGE_FACING_ANGLE
     );
     expect(EMBER_VIEWER_FRONT_STAGE_FACING_ANGLE).toBe(Math.PI);
+    expect(EMBER_VIEWER_FRONT_STAGE_CAMERA_Z_SIGN).toBe(-1);
+    expect(getViewerFrontStageCameraZ(0.3, 2.8, SceneEnvironmentId.EMBER)).toBe(
+      -2.5
+    );
     for (const environment of SCENE_ENVIRONMENTS) {
       if (environment.id === SceneEnvironmentId.EMBER) continue;
       expect(getViewerFrontStageFacingAngle(environment.id)).toBe(
         DEFAULT_VIEWER_FRONT_STAGE_FACING_ANGLE
       );
+      expect(DEFAULT_VIEWER_FRONT_STAGE_CAMERA_Z_SIGN).toBe(1);
+      expect(getViewerFrontStageCameraZ(0.3, 2.8, environment.id)).toBe(3.1);
     }
 
     const line = createFormationFromPreset("line", 4);
