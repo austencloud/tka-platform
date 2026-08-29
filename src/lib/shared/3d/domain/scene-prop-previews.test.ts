@@ -71,6 +71,13 @@ describe("prop studio build previews", () => {
     expect(builds.find((option) => option.id === "lotus")?.image).toBe(
       "/images/props/build-previews/fan-lotus-bare-complete.webp"
     );
+    expect(
+      builds.find((option) => option.id === "lotus")?.designCredit
+    ).toEqual({
+      originator: "Home of Poi",
+      sourceUrl:
+        "https://www.homeofpoi.com/en/shop/listItems/Medium-Lotus-Fire-Fans",
+    });
 
     const frames = fanFramePreviewOptions("bare");
     expect(frames.map((option) => option.image)).toEqual([

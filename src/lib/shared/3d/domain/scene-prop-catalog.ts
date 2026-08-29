@@ -151,6 +151,10 @@ export interface PropBuildPreviewOption<T extends string> {
   label: string;
   image: string;
   imageScale?: number;
+  designCredit?: {
+    originator: string;
+    sourceUrl: string;
+  };
 }
 
 const PREVIEW_ROOT = "/images/props/build-previews";
@@ -213,7 +217,16 @@ export function fanBuildPreviewOptions(
       image: fanImage("pictograph", frame, cover),
     },
     { id: "fire", label: "Fire", image: fanImage("fire", frame, cover) },
-    { id: "lotus", label: "Lotus", image: fanImage("lotus", frame, cover) },
+    {
+      id: "lotus",
+      label: "Lotus",
+      image: fanImage("lotus", frame, cover),
+      designCredit: {
+        originator: "Home of Poi",
+        sourceUrl:
+          "https://www.homeofpoi.com/en/shop/listItems/Medium-Lotus-Fire-Fans",
+      },
+    },
     { id: "day", label: "Day", image: fanImage("day", frame, cover) },
   ];
 }
