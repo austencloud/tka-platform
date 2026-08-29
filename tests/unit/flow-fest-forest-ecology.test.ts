@@ -122,6 +122,12 @@ describe("Flow Fest Forest ecology integration", () => {
     expect(FLOW_FEST_FOREST_DISTANCE_LOD.midMaximumMeters).toBeGreaterThan(
       FLOW_FEST_FOREST_DISTANCE_LOD.nearMaximumMeters
     );
+    expect(FLOW_FEST_FOREST_DISTANCE_LOD.grassMaximumMeters).toBeGreaterThan(
+      FLOW_FEST_FOREST_DISTANCE_LOD.nearMaximumMeters
+    );
+    expect(FLOW_FEST_FOREST_DISTANCE_LOD.grassMaximumMeters).toBeLessThan(
+      FLOW_FEST_FOREST_DISTANCE_LOD.midMaximumMeters
+    );
   });
 
   it("ships reproducible geometry-only tiers with a meaningful triangle reduction", () => {

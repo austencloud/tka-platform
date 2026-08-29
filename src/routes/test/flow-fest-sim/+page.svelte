@@ -140,6 +140,7 @@
     null
   );
   let forestCulling = $state<InstanceFrustumCullingStats | null>(null);
+  let forestGrassCulling = $state<InstanceFrustumCullingStats | null>(null);
   let productionCollision = $state<FlowFestProductionCollisionSet | null>(null);
   let festivalCommunity = $state<
     FlowFestProductionDressing["festivalCommunity"] | null
@@ -1090,6 +1091,14 @@
   data-tree-frustum-rejected={forestCulling?.frustumRejectedInstances ?? 0}
   data-tree-culling-updates={forestCulling?.updates ?? 0}
   data-tree-culling-skipped-updates={forestCulling?.skippedUpdates ?? 0}
+  data-grass-culling-batch-instances={forestGrassCulling?.instances ?? 0}
+  data-grass-visible-batch-instances={forestGrassCulling?.visibleInstances ?? 0}
+  data-grass-submitted-vertices={forestGrassCulling?.estimatedSubmittedVertices ??
+    0}
+  data-grass-distance-rejected={forestGrassCulling?.distanceRejectedInstances ??
+    0}
+  data-grass-frustum-rejected={forestGrassCulling?.frustumRejectedInstances ??
+    0}
   data-review-camera={entranceReferenceReview.view?.camera.id ??
     gate3Review.cameraId ??
     "none"}
@@ -1245,6 +1254,9 @@
           }}
           onForestCullingSample={(details) => {
             forestCulling = details;
+          }}
+          onGrassCullingSample={(details) => {
+            forestGrassCulling = details;
           }}
           onError={(message) => (error = message)}
         />
