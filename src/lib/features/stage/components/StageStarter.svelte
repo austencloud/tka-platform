@@ -325,6 +325,13 @@
       </div>
     {:else}
       <div class="starter-surface guide-surface">
+        <div class="guide-nav">
+          <PanelButton disabled={applying} onclick={back}>
+            <i class="fas fa-arrow-left" aria-hidden="true"></i>
+            Back
+          </PanelButton>
+        </div>
+
         <div class="guide-body">
           <Crossfade key={currentStep} animateHeight>
             <section class="step-content" aria-live="polite">
@@ -440,9 +447,8 @@
           </Crossfade>
         </div>
 
-        <footer>
-          <PanelButton disabled={applying} onclick={back}>Back</PanelButton>
-          {#if currentStep !== "material"}
+        {#if currentStep !== "material"}
+          <footer>
             {#if currentStepIndex < guideSteps.length - 1}
               <PanelButton
                 variant="primary"
@@ -465,8 +471,8 @@
                 Bring them on stage
               </PanelButton>
             {/if}
-          {/if}
-        </footer>
+          </footer>
+        {/if}
       </div>
     {/if}
   </Crossfade>
@@ -609,6 +615,11 @@
     min-width: 0;
   }
 
+  .guide-nav {
+    display: flex;
+    justify-content: flex-start;
+  }
+
   .step-content {
     display: grid;
     min-width: 0;
@@ -717,7 +728,7 @@
   footer {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 0.75rem;
   }
 
