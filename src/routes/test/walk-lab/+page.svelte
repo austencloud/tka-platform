@@ -258,11 +258,12 @@
     phase: "standing",
     travelled: 0,
     turnRequest: null,
+    terminalStepPlan: null,
   });
   let gaitClock = $state<LocomotionGaitClock | null>(null);
   let gaitTimingSample = $state<ScheduledGaitTimingSample | null>(null);
   let departureGaitStep = $state<number | null>(null);
-  const terminalStepPlan = $derived<TerminalStepPlan | null>(
+  const destinationTerminalStepPlan = $derived<TerminalStepPlan | null>(
     destinationPlan && departureGaitStep !== null
       ? createTerminalStepPlan(
           destinationPlan,
@@ -272,6 +273,9 @@
           gaitTimingPlan?.id
         )
       : null
+  );
+  const activeTerminalStepPlan = $derived(
+    destinationTerminalStepPlan ?? walk.terminalStepPlan ?? null
   );
   const exactMarkArrived = $derived(
     isExactMark && walk.completedSteps === markSteps
@@ -553,7 +557,16 @@
   onkeyup={(e) => onKey(e, false)}
 />
 
-<main class="lab walk-lab">
+<main
+  class="lab walk-lab"
+  data-terminal-status={gaitClock?.terminal?.status ?? "none"}
+  data-terminal-foot={gaitClock?.terminal?.foot ?? "none"}
+  data-terminal-distance={activeTerminalStepPlan?.remainingDistance ?? -1}
+  data-terminal-start-step={activeTerminalStepPlan?.startAtGaitStep ?? -1}
+  data-gait-step={gaitClock?.step ?? -1}
+  data-gait-distance-step={gaitClock?.distanceStep ?? -1}
+  data-gait-cadence={gaitClock?.cadence ?? -1}
+>
   <div class="stage">
     <Canvas shadows>
       <T.PerspectiveCamera makeDefault position={[3.4, 1.5, 0]} fov={45}>
@@ -621,8 +634,9 @@
             moveSpeed={walk.speed}
             moveDirection={walk.direction}
             turnRequestOverride={walk.turnRequest ?? null}
-            {terminalStepPlan}
+            terminalStepPlan={activeTerminalStepPlan}
             {gaitTimingSample}
+            locomotionResetKey={resetNonce}
             onGaitClock={(clock) => (gaitClock = clock)}
           />
         {/key}

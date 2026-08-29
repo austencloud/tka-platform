@@ -198,7 +198,7 @@ describe("walk patterns", () => {
     expect(left.turnRequest?.poseWeight).toBe(1);
     expect(left.isMoving).toBe(false);
 
-    const right = shuttle.tick(13.95, 1);
+    const right = shuttle.tick(14, 1);
     expect(right.turnRequest).toMatchObject({
       planId: "shuttle:return-turn",
       fromHeading: Math.PI,
@@ -212,5 +212,24 @@ describe("walk patterns", () => {
     expect(release.turnRequest?.phase).toBe(1);
     expect(release.turnRequest?.poseWeight).toBeGreaterThan(0);
     expect(release.turnRequest?.poseWeight).toBeLessThan(1);
+  });
+
+  it("keeps each shuttle arrival under the terminal controller until settled", () => {
+    const shuttle = walkPattern("shuttle");
+
+    const outboundTravel = shuttle.tick(4.7, 1);
+    expect(outboundTravel.terminalIntent).toMatchObject({
+      id: "shuttle:outbound-stop",
+      targetFacing: 0,
+    });
+    expect(outboundTravel.terminalIntent?.remainingDistance).toBeCloseTo(0.1);
+
+    const outboundArrival = shuttle.tick(4.9, 1);
+    expect(outboundArrival.phase).toBe("arriving");
+    expect(outboundArrival.waitForTerminalSettle).toBe(true);
+
+    const turn = shuttle.tick(5.7, 1);
+    expect(turn.turnRequest?.planId).toBe("shuttle:outbound-turn");
+    expect(turn.waitForTerminalSettle).toBeUndefined();
   });
 });

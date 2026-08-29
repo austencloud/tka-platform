@@ -18,6 +18,7 @@
   import type {
     LocomotionGaitClock,
     ScheduledGaitTimingSample,
+    TerminalStepPlan,
   } from "@austencloud/scene-3d";
   import { stepOf } from "$lib/shared/3d/diagnostics/gait/walk-patterns";
   import {
@@ -29,6 +30,7 @@
     sampleGaitTimingPlan,
     type GaitTimingPlan,
   } from "$lib/shared/3d/locomotion/gait-timing-plan";
+  import { createPatternTerminalStepPlan } from "$lib/shared/3d/locomotion/pattern-terminal-step-plan";
   import type {
     WalkPattern,
     WalkTick,
@@ -85,6 +87,8 @@
   let previousObservedStep = 0;
   let previousObservedScoreTime = 0;
   let scoreStarted = false;
+  let patternTerminalStepPlan: TerminalStepPlan | null = null;
+  let holdPatternTime = false;
 
   $effect(() => {
     if (destinationPlan && gaitTimingPlan) {
@@ -109,6 +113,8 @@
     previousObservedStep = 0;
     previousObservedScoreTime = gaitTimingPlan?.departureTimeSeconds ?? 0;
     scoreStarted = false;
+    patternTerminalStepPlan = null;
+    holdPatternTime = false;
     onDepartureStep?.(null);
     onGaitTimingSample?.(null);
   });
@@ -241,6 +247,7 @@
         },
       }),
       turnRequest: null,
+      terminalStepPlan: null,
     });
   }
 
@@ -271,11 +278,27 @@
       return;
     }
 
-    if (running) t += dt;
+    if (running && !holdPatternTime) t += dt;
 
     const tick = manual
       ? manualTick(manual, running ? dt : 0)
       : pattern.tick(t % pattern.period(speed), speed);
+
+    if (manual || tick.turnRequest) {
+      patternTerminalStepPlan = null;
+    } else if (!patternTerminalStepPlan && tick.terminalIntent && gaitClock) {
+      patternTerminalStepPlan = createPatternTerminalStepPlan({
+        intent: tick.terminalIntent,
+        gaitStep: gaitClock.step,
+        cadence: gaitClock.cadence,
+        speed: speed * tick.rate,
+      });
+    }
+    const terminalStatus = gaitClock?.terminal?.status;
+    holdPatternTime =
+      !manual &&
+      tick.waitForTerminalSettle === true &&
+      (terminalStatus === "braking" || terminalStatus === "landed");
 
     facing = tick.facing;
 
@@ -299,6 +322,7 @@
       phase: tick.phase,
       travelled,
       turnRequest: tick.turnRequest ?? null,
+      terminalStepPlan: patternTerminalStepPlan,
     });
   });
 </script>

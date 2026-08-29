@@ -11128,7 +11128,7 @@ diff --git a/dist/lib/state/user-proportions-state.svelte.d.ts.map b/dist/lib/st
 deleted file mode 100644
 index a8fd5a41c1434bf568841daf28c8443ba1515e65..0000000000000000000000000000000000000000
 diff --git a/src/lib/components/Avatar3D.svelte b/src/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df41cbb87f0 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..923eed52e40abe1f9b73f159933f41e8d6f9f988 100644
 --- a/src/lib/components/Avatar3D.svelte
 +++ b/src/lib/components/Avatar3D.svelte
 @@ -16,29 +16,42 @@
@@ -11213,7 +11213,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
    // Default Z position for avatars
    // Placing avatar at z=0 (same as grid plane) so hands are exactly at prop positions
    // The avatar's body is thin enough that it won't clip through the grid
-@@ -115,11 +143,48 @@
+@@ -115,11 +143,50 @@
      enableRootMotion?: boolean;
      /** Called each frame with the world-space XZ delta from root motion.
       *  The parent applies this to physics for collision-aware movement. */
@@ -11235,6 +11235,8 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
 +    terminalStepPlan?: TerminalStepPlan | null;
 +    /** Score-authored sample that drives the animator's gait clock. */
 +    gaitTimingSample?: ScheduledGaitTimingSample | null;
++    /** Changes whenever the owner teleports the rig back to a known origin. */
++    locomotionResetKey?: number;
      /** PropAnchor group ref for blue hand IK target (from PerformerRig) */
      bluePropAnchorRef?: import("three").Group;
      /** PropAnchor group ref for red hand IK target (from PerformerRig) */
@@ -11263,7 +11265,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
      /** Disable spine twist (dual-wheel: wide lateral targets twist the torso/feet) */
      disableSpineTwist?: boolean;
      /** Current beat index for collision detection logging */
-@@ -173,8 +238,18 @@
+@@ -173,8 +240,19 @@
      isJumpRequested = false,
      enableRootMotion = false,
      onRootMotion,
@@ -11272,6 +11274,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
 +    onGaitClock,
 +    terminalStepPlan = null,
 +    gaitTimingSample = null,
++    locomotionResetKey = 0,
      bluePropAnchorRef,
      redPropAnchorRef,
 +    bluePropCorrectionRef,
@@ -11282,7 +11285,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
      disableSpineTwist = false,
      stepNumber = 0,
      beatProgress = 0,
-@@ -195,8 +270,17 @@
+@@ -195,8 +273,17 @@
    // Services (manually instantiated to ensure shared skeleton instance)
    let skeletonService: IAvatarSkeletonBuilder | null = $state(null);
    let ikSolver: IIKSolver | null = $state(null);
@@ -11301,7 +11304,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
    let stateMachine: IAnimationStateMachine | null = null;
    let rootMotionExtractor: IRootMotionExtractor | null = null;
    let footPlanter: IFootPlanter | null = null;
-@@ -210,11 +294,18 @@
+@@ -210,11 +297,18 @@
    // Collision detection - logs when props/arms clip through the avatar body
    const collisionDetector = new CollisionDetector();
    const _boneVecs = {
@@ -11325,7 +11328,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
    };
    // Scratch vectors for deriving the face center from the shoulder line.
    // The Mixamo Head bone is at the base of the skull, so we push the face
-@@ -224,7 +315,7 @@
+@@ -224,7 +318,7 @@
    const _faceRight = new Vector3();
    const _faceForward = new Vector3();
    const FACE_FORWARD_OFFSET = 0.08; // 8 cm forward from head bone
@@ -11334,7 +11337,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
  
    /**
     * Base rotation from the staff's local-Y axis to the "horizontal" axis
-@@ -277,10 +368,185 @@
+@@ -277,10 +371,185 @@
    }
  
    const _unitY = new Vector3(0, 1, 0);
@@ -11361,7 +11364,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
 +
 +  function blendRadians(from: number, to: number, weight: number): number {
 +    const twoPi = Math.PI * 2;
-+    const delta = ((to - from + Math.PI) % twoPi + twoPi) % twoPi - Math.PI;
++    const delta = ((((to - from + Math.PI) % twoPi) + twoPi) % twoPi) - Math.PI;
 +    return from + delta * weight;
 +  }
 +
@@ -11388,7 +11391,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
 +    quaternion: _redStaffQuat,
 +    halfLen: 0.457,
 +  };
-+  const _noHeadThreats: typeof _blueHeadThreat[] = [];
++  const _noHeadThreats: (typeof _blueHeadThreat)[] = [];
 +  const _blueHeadThreats = [_blueHeadThreat];
 +  const _redHeadThreats = [_redHeadThreat];
 +  const _bothHeadThreats = [_blueHeadThreat, _redHeadThreat];
@@ -11521,7 +11524,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
    let currentLoadedAvatarId = $state<string | null>(null);
    let isLoading = $state(false);
    let hasShownFallbackToast = $state(false);
-@@ -302,14 +568,46 @@
+@@ -302,14 +571,46 @@
    // feetOffset adjusts so feet touch the ground (it's negative)
    const baseGroupY = $derived(
      position.y !== undefined && position.y !== 0
@@ -11570,7 +11573,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
    // Load a GLTF model for a specific avatar
    // Uses hot-swap pattern: keeps old avatar visible until new one is ready
    async function loadAvatar(targetAvatarId: string) {
-@@ -319,12 +617,22 @@
+@@ -319,12 +620,23 @@
      if (currentLoadedAvatarId === targetAvatarId) return;
  
      const url = getAvatarModelPath(targetAvatarId);
@@ -11588,13 +11591,14 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
 +      const preparedRoot = takePreparedAvatarRoot(url, renderer);
 +      rendererPreparedForSpan = rendererPrepared;
 +      hadPreparedRootForSpan = preparedRoot != null;
-+      const loadModel = () => skeletonService!.loadModel(url, preparedRoot ?? undefined);
++      const loadModel = () =>
++        skeletonService!.loadModel(url, preparedRoot ?? undefined);
 +      if (preparedRoot) await loadModel();
 +      else await schedulePerformerInitialization(loadModel, loadLabel);
  
        // Scale model to match user's height
        // setHeight() calculates proper scale and stores feet offset
-@@ -333,19 +641,43 @@
+@@ -333,19 +645,43 @@
        // Get the feet offset for positioning (negative value)
        feetOffset = skeletonService.getFeetOffset();
  
@@ -11647,7 +11651,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
        currentLoadedAvatarId = targetAvatarId;
        modelLoaded = true;
        useProceduralFallback = false;
-@@ -363,8 +695,14 @@
+@@ -363,8 +699,14 @@
        const rightUpLeg = skState.bones.get("RightUpLeg");
        if (leftUpLeg && rightUpLeg) {
          const stanceAngle = (8 * Math.PI) / 180; // 8° outward each side
@@ -11664,7 +11668,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
          leftUpLeg.quaternion.multiply(leftTilt);
          rightUpLeg.quaternion.multiply(rightTilt);
          leftUpLeg.updateMatrixWorld(true);
-@@ -388,17 +726,21 @@
+@@ -388,17 +730,21 @@
        // use IK only and don't need idle/walk animations.
        if (enableLocomotion && locomotionAnimator && cachedRoot) {
          // Configure before initialize so clips are prepared correctly
@@ -11691,7 +11695,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
            const hipsBone = locomotionAnimator.getHipsBone();
            if (hipsBone) {
              rootMotionExtractor.initialize(hipsBone);
-@@ -416,12 +758,34 @@
+@@ -416,12 +762,33 @@
              idle: `${animBase}idle${rmSuffix}.glb`,
              forward: `${animBase}walk-forward${rmSuffix}.glb`,
              backward: `${animBase}walk-backward${rmSuffix}.glb`,
@@ -11717,8 +11721,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
 +            terminalStops: {
 +              left: {
 +                animation: "/animations/terminal-stops/walk-stop-left.glb",
-+                motion:
-+                  "/animations/terminal-stops/walk-stop-left.motion.json",
++                motion: "/animations/terminal-stops/walk-stop-left.motion.json",
 +              },
 +              right: {
 +                animation: "/animations/terminal-stops/walk-stop-right.glb",
@@ -11729,7 +11732,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
            })
            .catch((err) => {
              console.warn(
-@@ -444,18 +808,39 @@
+@@ -444,18 +811,39 @@
          const turnsBase = "/animations/turns/";
          const probeUrl = `${turnsBase}turn-left-90.glb`;
          const rootForTurns = cachedRoot;
@@ -11778,7 +11781,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
                ])
                .then(() => {
                  // Register turn clip contact curves so FootPlanter can query them
-@@ -476,7 +861,13 @@
+@@ -476,7 +864,13 @@
        // ikSolver, which is still used by arm IK elsewhere in this file).
        // Gated on enableFootPlanting - off by default so the museum FPS player
        // (which wants responsive code-driven movement) isn't affected.
@@ -11793,7 +11796,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
          footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
        }
  
-@@ -502,6 +893,16 @@
+@@ -502,6 +896,16 @@
        }
      } finally {
        isLoading = false;
@@ -11810,7 +11813,23 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
      }
    }
  
-@@ -587,25 +988,30 @@
+@@ -560,6 +964,15 @@
+     }
+   });
+ 
++  $effect(() => {
++    void locomotionResetKey;
++    if (!servicesReady) return;
++    stateMachine?.reset();
++    locomotionAnimator?.reset();
++    footPlanter?.reset();
++    currentLocomotionState = LocomotionState.IDLE;
++  });
++
+   // React to height changes - update avatar scale
+   $effect(() => {
+     if (!skeletonService || !modelLoaded || useProceduralFallback) return;
+@@ -587,25 +1000,30 @@
  
      // Disable spine twist in dual-wheel mode - wide lateral IK targets
      // twist the torso and shift the feet on the ground.
@@ -11852,7 +11871,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
  
          // Feed state to LocomotionAnimator for clip selection
          locomotionAnimator.setActiveState?.(stateOutput.state);
-@@ -627,6 +1033,15 @@
+@@ -627,6 +1045,15 @@
          });
        }
        locomotionAnimator.update(delta);
@@ -11868,7 +11887,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
  
        // Turn clip overlay - when a turn is active, overwrite lower-body
        // and spine bones with the turn clip's authored pose at the current
-@@ -639,20 +1054,52 @@
+@@ -639,20 +1066,52 @@
        if (turnRequestProp && turnAnimator?.isReady() && skeletonService) {
          const sample = turnAnimator.sample(turnRequestProp);
          const bones = skeletonService.getState().bones;
@@ -11932,7 +11951,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
            }
          }
  
-@@ -681,7 +1128,11 @@
+@@ -681,7 +1140,11 @@
        // displacement needs the same conversion.
        if (rootMotionExtractor?.isReady() && onRootMotion) {
          const localDelta = rootMotionExtractor.extract();
@@ -11945,7 +11964,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
            // Convert Mixamo centimeters to scene units.
            // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
            // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
-@@ -708,28 +1159,90 @@
+@@ -708,28 +1171,97 @@
        // clips without authored curves. Gated on enableFootPlanting so the
        // museum FPS player stays fully code-driven.
        if (enableFootPlanting && footPlanter?.isReady()) {
@@ -11961,7 +11980,10 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
 +        // Stride warping happens along the world axis the performer travels,
 +        // and moveDirection is expressed relative to their facing.
 +        let travelDirection: { x: number; z: number } | undefined;
-+        if (performerRootRef && (moveDirection.x !== 0 || moveDirection.z !== 0)) {
++        if (
++          performerRootRef &&
++          (moveDirection.x !== 0 || moveDirection.z !== 0)
++        ) {
 +          performerRootRef.getWorldQuaternion(footTravelQuat);
 +          footTravelVec
 +            .set(moveDirection.x, 0, moveDirection.z)
@@ -11992,10 +12014,14 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
 +          ? 1
 +          : (locomotionAnimator?.getFootPlantConfidence?.() ?? 1);
 +
-+        // A terminal contact is never followed by another swing, so it can
-+        // take hold more gradually than a mid-gait plant. The longer zero-end
-+        // slope removes the last knee twitch without giving up the anchor.
-+        const lockBlendInTime = terminalOwnsContact ? 0.18 : 0.08;
++        // One-shot transitions own their contact schedule, so their anchors
++        // take hold more gradually than a cyclic plant. Terminal contact is
++        // held; a turn still needs its next authored placement.
++        const lockBlendInTime = terminalOwnsContact
++          ? 0.3
++          : currentTurnClipName
++            ? 0.18
++            : 0.08;
 +        if (lockBlendInTime !== appliedLockBlendInTime) {
 +          footPlanter.configure({ lockBlendInTime });
 +          appliedLockBlendInTime = lockBlendInTime;
@@ -12041,7 +12067,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
      }
  
      if (redPropAnchorRef && redPropState) {
-@@ -737,6 +1250,10 @@
+@@ -737,6 +1269,10 @@
        redPropAnchorRef.getWorldPosition(redIKTarget);
      } else if (redPropState) {
        redIKTarget.copy(redPropState.worldPosition);
@@ -12052,7 +12078,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
      }
  
      const blueWorldProp = bluePropState
-@@ -746,15 +1263,74 @@
+@@ -746,15 +1282,74 @@
        ? { ...redPropState, worldPosition: redIKTarget }
        : null;
  
@@ -12127,7 +12153,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
      // 2b. Collision detection - run after IK so bones are at final positions
      if (collisionDetector.enabled && skeletonService) {
        const state = skeletonService.getState();
-@@ -867,20 +1443,15 @@
+@@ -867,20 +1462,15 @@
    // transparent with depth-write off so the fade blends correctly.
    $effect(() => {
      if (!cachedRoot) return;
@@ -12154,7 +12180,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
      // Dispose locomotion animator, state machine, and foot planter
      if (locomotionAnimator) {
        locomotionAnimator.dispose();
-@@ -913,13 +1484,19 @@
+@@ -913,13 +1503,19 @@
  </script>
  
  {#if visible}
@@ -12181,7 +12207,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
      <T.Group
        name={`PERFORMER_${id}`}
        position={[position.x, position.y ?? 0, position.z]}
-@@ -950,6 +1527,7 @@
+@@ -950,6 +1546,7 @@
        preventing visual glitches during avatar swap.
      -->
      <T.Group
@@ -12190,7 +12216,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..d30e4d7cea2f0bdb0fb3e831ec306df4
        position={[position.x, groupY, position.z]}
        rotation.y={facingAngle}
 diff --git a/src/lib/components/PerformerRig.svelte b/src/lib/components/PerformerRig.svelte
-index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8cc21568fe65050cc9154e640f8726b7595a231b 100644
+index 99a40cd26b35183a5e71c93105e0704084dbf9e9..d0631e6dfb5adee4b8377f19d4e67405e4adde0b 100644
 --- a/src/lib/components/PerformerRig.svelte
 +++ b/src/lib/components/PerformerRig.svelte
 @@ -16,11 +16,12 @@
@@ -12243,7 +12269,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8cc21568fe65050cc9154e640f8726b7
  
      /** When true, facingAngle is driven by root motion yawDelta from
       *  the animation clip (accumulated each frame). When false (default),
-@@ -100,6 +114,12 @@
+@@ -100,6 +114,14 @@
       *  is true. The consumer receives the new accumulated angle so it can
       *  sync its own sequence/state representation if needed. */
      onYawIntegrated?: (newAngle: number) => void;
@@ -12253,10 +12279,12 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8cc21568fe65050cc9154e640f8726b7
 +    terminalStepPlan?: TerminalStepPlan | null;
 +    /** Score-authored sample that drives the animator's gait clock. */
 +    gaitTimingSample?: ScheduledGaitTimingSample | null;
++    /** Changes whenever the owning scene teleports this rig. */
++    locomotionResetKey?: number;
      /** Enable idle/walk locomotion animation on the avatar.
       *  When true, the avatar breathes/sways while standing. */
      enableRootMotion?: boolean;
-@@ -119,17 +139,33 @@
+@@ -119,17 +141,33 @@
       * effect orchestrator can place tip-tracking effects (trails, LED, etc.)
       * in the correct rig-root-local frame without duplicating rig internals.
       */
@@ -12301,7 +12329,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8cc21568fe65050cc9154e640f8726b7
      /** Avatar mesh opacity 0-1, forwarded to Avatar3D for swap cross-fades.
       *  1 = fully opaque (default). */
      avatarOpacity?: number;
-@@ -157,16 +193,24 @@
+@@ -157,16 +195,25 @@
      isPlaying = false,
      staffHalfLength: staffHalfLengthProp,
      propLength,
@@ -12317,6 +12345,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8cc21568fe65050cc9154e640f8726b7
 +    onGaitClock,
 +    terminalStepPlan = null,
 +    gaitTimingSample = null,
++    locomotionResetKey = 0,
      enableRootMotion = false,
      enableFootPlanting = false,
      turnRequestOverride,
@@ -12326,7 +12355,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8cc21568fe65050cc9154e640f8726b7
      avatarOpacity = 1,
      onAvatarSwapped,
      gridSlot,
-@@ -174,19 +218,24 @@
+@@ -174,19 +221,24 @@
    }: Props = $props();
  
    const staffHalfLength = $derived(
@@ -12359,7 +12388,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8cc21568fe65050cc9154e640f8726b7
  
    // Derive mode config and grid offset from the current plane mode
    const modeConfig = $derived(PLANE_MODE_CONFIGS[planeMode]);
-@@ -247,7 +296,23 @@
+@@ -247,7 +299,23 @@
  
    // When a turn is active, enable animation-driven yaw so the rig
    // rotates from the turn clip's root motion rather than snapping.
@@ -12384,7 +12413,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8cc21568fe65050cc9154e640f8726b7
  
    // Turn completion snap: when turnRequest goes null after being active,
    // snap avatarState to the post-turn heading so the sync effect below
-@@ -259,6 +324,8 @@
+@@ -259,6 +327,8 @@
        // Turn just completed - snap avatarState to post-turn heading
        avatarState.snapFacingAngle(turnTargetHeading);
        turnTargetHeading = null;
@@ -12393,7 +12422,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8cc21568fe65050cc9154e640f8726b7
      }
    });
  
-@@ -291,45 +358,104 @@
+@@ -291,45 +361,105 @@
    let bluePropAnchorRef = $state<Group | undefined>(undefined);
    let redPropAnchorRef = $state<Group | undefined>(undefined);
  
@@ -12485,6 +12514,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8cc21568fe65050cc9154e640f8726b7
 +      {onGaitClock}
 +      {terminalStepPlan}
 +      {gaitTimingSample}
++      {locomotionResetKey}
 +      {turnRequest}
 +      onTurnYawSample={applyTurnYawSample}
 +      onTurnRootSample={applyTurnRootSample}
@@ -12507,7 +12537,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8cc21568fe65050cc9154e640f8726b7
                accumulatedYaw += delta.yawDelta;
                onYawIntegrated?.(accumulatedYaw);
              }
-@@ -339,15 +465,12 @@
+@@ -339,15 +469,12 @@
    {/if}
  
    <!-- Grid (consumer-provided via gridSlot) -->
@@ -12525,7 +12555,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8cc21568fe65050cc9154e640f8726b7
      {#if bluePropState && blueVisible}
        <T.Group
          bind:ref={bluePropAnchorRef}
-@@ -355,23 +478,23 @@
+@@ -355,23 +482,23 @@
          position.y={bluePropState.worldPosition.y}
          position.z={bluePropState.worldPosition.z}
        >
@@ -12561,7 +12591,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..8cc21568fe65050cc9154e640f8726b7
      {#if redPropState && redVisible}
        <T.Group
          bind:ref={redPropAnchorRef}
-@@ -379,20 +502,23 @@
+@@ -379,20 +506,23 @@
          position.y={redPropState.worldPosition.y}
          position.z={redPropState.worldPosition.z}
        >
@@ -18029,7 +18059,7 @@ index 666a20b6ddead4b33f695ce341c854f937eaabb6..e0b23efe86d24cb2ffedebf41579906d
     * Dispose of the loaded model and free resources
     */
 diff --git a/src/lib/services/contracts/IFootPlanter.ts b/src/lib/services/contracts/IFootPlanter.ts
-index 90ba82c982d73882ebf0ab4456ac422b1468ab37..41515e51b047ea239020f9f8c611c8fcf3c6e214 100644
+index 90ba82c982d73882ebf0ab4456ac422b1468ab37..02271f92174f542c620e89397fbe766270015b6e 100644
 --- a/src/lib/services/contracts/IFootPlanter.ts
 +++ b/src/lib/services/contracts/IFootPlanter.ts
 @@ -35,6 +35,26 @@ export interface FootPlanterInput {
@@ -18082,6 +18112,18 @@ index 90ba82c982d73882ebf0ab4456ac422b1468ab37..41515e51b047ea239020f9f8c611c8fc
  }
  
  export interface IFootPlanter {
+@@ -81,6 +117,11 @@ export interface IFootPlanter {
+    */
+   configure(config: FootPlanterConfig): void;
+ 
++  /**
++   * Clear world-space anchors and cached poses after the owning rig teleports.
++   */
++  reset(): void;
++
+   /**
+    * Whether the foot planter is initialized and has valid leg chains.
+    */
 diff --git a/src/lib/services/contracts/ILegIKSolver.ts b/src/lib/services/contracts/ILegIKSolver.ts
 index df13878005926639ee48b400e7eb19647b92b020..d68905bd3ebda71325e9a332f633a38c0effe02a 100644
 --- a/src/lib/services/contracts/ILegIKSolver.ts
@@ -18198,7 +18240,7 @@ index df13878005926639ee48b400e7eb19647b92b020..d68905bd3ebda71325e9a332f633a38c
 +  solve(input: LegIKInput): LegIKResult;
  }
 diff --git a/src/lib/services/contracts/ILocomotionAnimator.ts b/src/lib/services/contracts/ILocomotionAnimator.ts
-index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..0054e3ff79ce1d7ee28a7064c22766f04bfc1c45 100644
+index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..51c6111b61f4415c8980958e7c615768057725db 100644
 --- a/src/lib/services/contracts/ILocomotionAnimator.ts
 +++ b/src/lib/services/contracts/ILocomotionAnimator.ts
 @@ -25,6 +25,90 @@ export interface LocomotionInput {
@@ -18317,7 +18359,7 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..0054e3ff79ce1d7ee28a7064c22766f0
     */
    animationWalkSpeed?: number;
    /**
-@@ -124,6 +211,56 @@ export interface ILocomotionAnimator {
+@@ -124,6 +211,59 @@ export interface ILocomotionAnimator {
     */
    getHipsBone?(): Bone | null;
  
@@ -18370,6 +18412,9 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..0054e3ff79ce1d7ee28a7064c22766f0
 +
 +  /** Apply a score-time sample, or null to resume native delta integration. */
 +  setGaitTimingSample?(sample: ScheduledGaitTimingSample | null): void;
++
++  /** Reset clip weights, gait time, and one-shot plans after a teleport. */
++  reset(): void;
 +
    /**
     * Clean up all resources (mixer, actions, clips)
@@ -20861,7 +20906,7 @@ index 0000000000000000000000000000000000000000..df9962ddd074ebf26af07bc137a37e88
 +  }
 +}
 diff --git a/src/lib/services/implementations/FootPlanter.ts b/src/lib/services/implementations/FootPlanter.ts
-index a47113296e4edce51a40e2a1c3498c4f13969e4f..cf6b19f90ad2c6fdaa33430afe231fb4d2aab7b3 100644
+index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e10bc1b0f 100644
 --- a/src/lib/services/implementations/FootPlanter.ts
 +++ b/src/lib/services/implementations/FootPlanter.ts
 @@ -8,27 +8,62 @@
@@ -21272,14 +21317,14 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..cf6b19f90ad2c6fdaa33430afe231fb4
 +      this.rightToe,
 +      input
 +    );
-+
-+    // 6. Move the pelvis: down so planted feet reach the floor, across so the
-+    //    body stays over its support.
-+    this.adjustPelvis(input.groundY, delta);
  
 -    // 6. Solve and apply leg IK for each foot
 -    this.applyFootIK(this.leftLegChain, this.leftFoot, input.groundY, this.leftKneeHingeAxis);
 -    this.applyFootIK(this.rightLegChain, this.rightFoot, input.groundY, this.rightKneeHingeAxis);
++    // 6. Move the pelvis: down so planted feet reach the floor, across so the
++    //    body stays over its support.
++    this.adjustPelvis(input.groundY, delta);
+ 
 +    // 7. Solve and apply leg IK for each foot
 +    this.updateFacing(input);
 +    this.applyFootIK(this.leftLegChain, this.leftFoot, this.leftKneeHingeAxis);
@@ -21288,20 +21333,26 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..cf6b19f90ad2c6fdaa33430afe231fb4
 +      this.rightFoot,
 +      this.rightKneeHingeAxis
 +    );
- 
++
 +    this.rememberAppliedPose(this.leftLegChain, this.leftPose);
 +    this.rememberAppliedPose(this.rightLegChain, this.rightPose);
    }
  
    configure(config: FootPlanterConfig): void {
-@@ -219,8 +473,17 @@ export class FootPlanter implements IFootPlanter {
-     this.contactCurveCache = null;
-     this.leftLegChain = null;
-     this.rightLegChain = null;
-+    this.leftToe = null;
-+    this.rightToe = null;
-     this.initialized = false;
-     this.firstFrame = true;
+@@ -213,16 +467,39 @@ export class FootPlanter implements IFootPlanter {
+     return this.initialized;
+   }
+ 
++  reset(): void {
++    this.releasePelvisCorrection();
++    if (this.leftLegChain) {
++      this.restoreAnimatedPose(this.leftLegChain, this.leftPose);
++    }
++    if (this.rightLegChain) {
++      this.restoreAnimatedPose(this.rightLegChain, this.rightPose);
++    }
++
++    this.firstFrame = true;
 +    this.appliedPelvisOffset.set(0, 0, 0);
 +    this.pelvisDrop = 0;
 +    this.pelvisDropVelocity = 0;
@@ -21309,10 +21360,29 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..cf6b19f90ad2c6fdaa33430afe231fb4
 +    this.pelvisShiftXVelocity = 0;
 +    this.pelvisShiftZ = 0;
 +    this.pelvisShiftZVelocity = 0;
-     this.leftFoot = createFootState();
-     this.rightFoot = createFootState();
++    this.leftPose.valid = false;
++    this.rightPose.valid = false;
++    this.leftFoot = createFootState();
++    this.rightFoot = createFootState();
++  }
++
+   dispose(): void {
++    this.reset();
+     this.skeleton = null;
+     this.legIKSolver = null;
+     this.contactCurveCache = null;
+     this.leftLegChain = null;
+     this.rightLegChain = null;
++    this.leftToe = null;
++    this.rightToe = null;
+     this.initialized = false;
+-    this.firstFrame = true;
+-    this.leftFoot = createFootState();
+-    this.rightFoot = createFootState();
    }
-@@ -231,7 +494,11 @@ export class FootPlanter implements IFootPlanter {
+ 
+   // ── Velocity tracking ──
+@@ -231,7 +508,11 @@ export class FootPlanter implements IFootPlanter {
     * Compute smoothed velocity from position delta.
     * Uses exponential smoothing to filter jitter from animation sampling.
     */
@@ -21325,7 +21395,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..cf6b19f90ad2c6fdaa33430afe231fb4
      const dx = currentPos.x - foot.prevWorldPos.x;
      const dy = currentPos.y - foot.prevWorldPos.y;
      const dz = currentPos.z - foot.prevWorldPos.z;
-@@ -239,7 +506,8 @@ export class FootPlanter implements IFootPlanter {
+@@ -239,7 +520,8 @@ export class FootPlanter implements IFootPlanter {
  
      // Exponential smoothing - 0.3 gives quick response while filtering spikes
      const smoothFactor = 0.3;
@@ -21335,7 +21405,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..cf6b19f90ad2c6fdaa33430afe231fb4
      // NOTE: prevWorldPos is updated in the main update() method AFTER velocity
      // computation, using pre-IK positions. Do NOT update it here.
    }
-@@ -247,22 +515,127 @@ export class FootPlanter implements IFootPlanter {
+@@ -247,22 +529,127 @@ export class FootPlanter implements IFootPlanter {
    // ── Contact phase detection ──
  
    /**
@@ -21473,7 +21543,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..cf6b19f90ad2c6fdaa33430afe231fb4
      if (
        this.contactCurveCache &&
        input.currentClipName &&
-@@ -273,77 +646,304 @@ export class FootPlanter implements IFootPlanter {
+@@ -273,77 +660,304 @@ export class FootPlanter implements IFootPlanter {
          input.currentClipName,
          input.currentClipPhase
        );
@@ -21834,7 +21904,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..cf6b19f90ad2c6fdaa33430afe231fb4
    }
  
    /**
-@@ -351,61 +951,232 @@ export class FootPlanter implements IFootPlanter {
+@@ -351,61 +965,232 @@ export class FootPlanter implements IFootPlanter {
     */
    private fadeOutFoot(foot: FootState, delta: number): void {
      foot.isLocked = false;
@@ -21896,14 +21966,14 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..cf6b19f90ad2c6fdaa33430afe231fb4
 -   * without over-extending the leg chain.
 +   * Lower the Hips so planted feet can reach the ground without the leg
 +   * going straight.
-+   *
+    *
+-   * Without this, a planted foot on one side can pull the leg straight
+-   * while the other foot floats above ground.
 +   * Two things ask for the drop: a planted foot still above the floor, and a
 +   * lock the leg is running out of reach for. The second is what a lengthened
 +   * stride produces, and measuring only the first lets the leg saturate while
 +   * the correction stays smooth and looks fine in isolation.
-    *
--   * Without this, a planted foot on one side can pull the leg straight
--   * while the other foot floats above ground.
++   *
 +   * The correction is sprung rather than applied outright. Taking the largest
 +   * drop each foot asks for and writing it straight into the bone means the
 +   * pelvis jumps every time contact changes, which reads as a limp.
@@ -22005,7 +22075,9 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..cf6b19f90ad2c6fdaa33430afe231fb4
 +    ) {
 +      return;
 +    }
-+
+ 
+-    // Scale by max IK weight so the adjustment fades with the IK blend
+-    const adjustedDrop = clampedDrop * maxWeight;
 +    this.applyPelvisCorrection(
 +      hipsBone,
 +      this.pelvisShiftX,
@@ -22013,7 +22085,10 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..cf6b19f90ad2c6fdaa33430afe231fb4
 +      this.pelvisShiftZ
 +    );
 +  }
-+
+ 
+-    // Apply: lower Hips in local space (Y is up for Mixamo skeletons)
+-    hipsBone.position.y -= adjustedDrop;
+-    hipsBone.updateMatrixWorld(true);
 +  /**
 +   * Move the pelvis by a world-space offset, remembering it in the bone's own
 +   * space so releasePelvisCorrection can take exactly it back.
@@ -22074,9 +22149,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..cf6b19f90ad2c6fdaa33430afe231fb4
 +    }
 +    this.appliedPelvisOffset.set(0, 0, 0);
 +  }
- 
--    // Scale by max IK weight so the adjustment fades with the IK blend
--    const adjustedDrop = clampedDrop * maxWeight;
++
 +  /**
 +   * How far this foot wants the pelvis lowered: the distance by which its
 +   * ankle target exceeds the leg.
@@ -22089,10 +22162,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..cf6b19f90ad2c6fdaa33430afe231fb4
 +   */
 +  private pelvisDemand(foot: FootState, legChain: BoneChain | null): number {
 +    if (foot.ikWeight <= 0.01 || !legChain || !foot.isLocked) return 0;
- 
--    // Apply: lower Hips in local space (Y is up for Mixamo skeletons)
--    hipsBone.position.y -= adjustedDrop;
--    hipsBone.updateMatrixWorld(true);
++
 +    legChain.root.getWorldPosition(this.tempHipJoint);
 +    return (
 +      this.tempHipJoint.distanceTo(foot.ankleTarget) -
@@ -22101,7 +22171,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..cf6b19f90ad2c6fdaa33430afe231fb4
    }
  
    // ── Foot IK solve ──
-@@ -414,32 +1185,90 @@ export class FootPlanter implements IFootPlanter {
+@@ -414,32 +1199,90 @@ export class FootPlanter implements IFootPlanter {
     * Solve two-bone IK for one leg using the hinge-constrained leg solver.
     * The solver handles weight blending internally, so no slerp is needed here.
     */
@@ -22617,10 +22687,10 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..605270cc1d1b04401b253e61778aaa16
    }
  }
 diff --git a/src/lib/services/implementations/LocomotionAnimator.ts b/src/lib/services/implementations/LocomotionAnimator.ts
-index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff92709219560264 100644
+index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..909dc3d30eacb9c95742594a85a9364a93c4208d 100644
 --- a/src/lib/services/implementations/LocomotionAnimator.ts
 +++ b/src/lib/services/implementations/LocomotionAnimator.ts
-@@ -13,17 +13,126 @@
+@@ -13,17 +13,131 @@
   */
  
  import type { AnimationAction, Object3D, Bone } from "three";
@@ -22671,7 +22741,10 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
 +  return foot === "left" ? "stopLeft" : "stopRight";
 +}
 +
-+function sampleNonLoopingCurve(curve: readonly number[], phase: number): number {
++function sampleNonLoopingCurve(
++  curve: readonly number[],
++  phase: number
++): number {
 +  if (curve.length === 0) return 0;
 +  if (curve.length === 1) return curve[0]!;
 +  const x = Math.min(1, Math.max(0, phase)) * (curve.length - 1);
@@ -22734,7 +22807,9 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
 +  return motion as TerminalStopMotion;
 +}
 +
-+async function loadTerminalStopMotion(url: string): Promise<TerminalStopMotion> {
++async function loadTerminalStopMotion(
++  url: string
++): Promise<TerminalStopMotion> {
 +  const response = await fetch(url);
 +  if (!response.ok) {
 +    throw new Error(`terminal stop motion failed to load (${response.status})`);
@@ -22749,7 +22824,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
  
  /**
   * Known Mixamo bone prefixes. Animation files may use a different
-@@ -70,20 +179,27 @@ function detectClipPrefix(clip: AnimationClip): string {
+@@ -70,20 +184,27 @@ function detectClipPrefix(clip: AnimationClip): string {
   *   "strip"    - Remove Hips position entirely (default for idle/jump/fall/land)
   *   "rootMotion" - Keep and make Z relative to first frame (for walk/run root motion)
   *   "pose"     - Keep as-is, no baseline subtraction (for crouch - absolute Y is the pose)
@@ -22780,7 +22855,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
    stripLegBones = false
  ): AnimationClip {
    const clipPrefix = detectClipPrefix(clip);
-@@ -95,7 +211,9 @@ function remapClipToSkeleton(
+@@ -95,7 +216,9 @@ function remapClipToSkeleton(
  
        const boneName = track.name.slice(0, dotIdx);
        const property = track.name.slice(dotIdx + 1);
@@ -22791,7 +22866,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
  
        // Skip bones that don't exist on our models
        if (coreName.endsWith("_End")) return false;
-@@ -110,7 +228,13 @@ function remapClipToSkeleton(
+@@ -110,7 +233,12 @@ function remapClipToSkeleton(
        if (coreName === "Hips" && property === "quaternion") return false;
  
        // Keep Hips position track when needed for root motion or crouch pose.
@@ -22802,11 +22877,10 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
 +        hipsMode !== "strip"
 +      )
 +        return true;
-+
  
        // Keep all other quaternion tracks - bone rotations are the animation.
        // Filter out position/scale tracks (position teleports, scale vanishes).
-@@ -122,7 +246,9 @@ function remapClipToSkeleton(
+@@ -122,7 +250,9 @@ function remapClipToSkeleton(
        const dotIdx = track.name.indexOf(".");
        const boneName = track.name.slice(0, dotIdx);
        const property = track.name.slice(dotIdx);
@@ -22817,7 +22891,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
  
        const cloned = track.clone();
  
-@@ -136,7 +262,11 @@ function remapClipToSkeleton(
+@@ -136,7 +266,11 @@ function remapClipToSkeleton(
        // first keyframe's Z preserves the natural vertical bob (hips go up
        // and down ~2-3cm per step) while removing the absolute offset that
        // would slam the avatar underground.
@@ -22830,7 +22904,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
          const values = cloned.values as Float32Array;
          const baseZ = values[2] ?? 0; // First keyframe's Z = rest height
          for (let i = 2; i < values.length; i += 3) {
-@@ -144,13 +274,60 @@ function remapClipToSkeleton(
+@@ -144,13 +278,60 @@ function remapClipToSkeleton(
          }
        }
  
@@ -22892,7 +22966,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
          const values = cloned.values as Float32Array;
          for (let i = 0; i < values.length; i++) {
            values[i]! *= 0.01;
-@@ -167,10 +344,345 @@ function remapClipToSkeleton(
+@@ -167,10 +348,345 @@ function remapClipToSkeleton(
    return new AnimationClip(clip.name, clip.duration, tracks);
  }
  
@@ -23180,7 +23254,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
 +
 +function sampleCurve(curve: Float32Array, phase: number): number {
 +  const n = curve.length;
-+  const x = ((((phase % 1) + 1) % 1)) * n;
++  const x = (((phase % 1) + 1) % 1) * n;
 +  const i = Math.floor(x);
 +  const frac = x - i;
 +  const a = curve[i % n]!;
@@ -23205,7 +23279,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
 +}
 +
 +function sampleRootDistance(curve: Float32Array, phase: number): number {
-+  if (curve.length < 2) return (((phase % 1) + 1) % 1);
++  if (curve.length < 2) return ((phase % 1) + 1) % 1;
 +  const intervals = curve.length - 1;
 +  const wrapped = (((phase % 1) + 1) % 1) * intervals;
 +  const index = Math.floor(wrapped);
@@ -23239,7 +23313,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
    private modelPrefix = "mixamorig";
  
    // Actions - created from raw clips, no processing
-@@ -185,19 +697,47 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -185,19 +701,47 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    private fallAction: AnimationAction | null = null;
    private landAction: AnimationAction | null = null;
    private crouchAction: AnimationAction | null = null;
@@ -23288,7 +23362,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
      animationWalkSpeed: 1.57,
      enableRootMotion: false,
      stripLegBones: false,
-@@ -205,6 +745,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -205,6 +749,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
  
    // Blend weights (smoothed each frame)
    private currentIdleWeight = 1;
@@ -23296,7 +23370,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
    private targetIdleWeight = 1;
    private currentDirWeights: Record<DirectionKey, number> = {
      forward: 0,
-@@ -212,6 +753,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -212,6 +757,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      strafeLeft: 0,
      strafeRight: 0,
    };
@@ -23309,7 +23383,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
    private targetDirWeights: Record<DirectionKey, number> = {
      forward: 0,
      backward: 0,
-@@ -219,32 +766,176 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -219,32 +770,176 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      strafeRight: 0,
    };
  
@@ -23493,7 +23567,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
    }
  
    async loadAnimations(urls: AnimationUrls): Promise<void> {
-@@ -260,16 +951,21 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -260,16 +955,24 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      if (urls.land) entries.push({ key: "land", url: urls.land });
      if (urls.crouch) entries.push({ key: "crouch", url: urls.crouch });
  
@@ -23506,7 +23580,10 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
 +      if (!asset) continue;
 +      const key = terminalKey(foot);
 +      entries.push({ key, url: asset.animation });
-+      terminalMotionLoads.push({ key, load: loadTerminalStopMotion(asset.motion) });
++      terminalMotionLoads.push({
++        key,
++        load: loadTerminalStopMotion(asset.motion),
++      });
 +    }
 +
      const results = await Promise.allSettled(
@@ -23523,7 +23600,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
          return { key, clip };
        })
      );
-@@ -280,6 +976,23 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -280,6 +983,23 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        }
      }
  
@@ -23547,7 +23624,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
      this.clipsLoaded = true;
      if (this.initialized && this.mixer) {
        this.createActions();
-@@ -300,6 +1013,13 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -300,6 +1020,13 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // - Crouch: keep Hips position as-is (absolute Y IS the crouched height)
      // - Everything else: strip Hips position (would teleport the avatar)
      const isLocomotionClip =
@@ -23561,7 +23638,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
        key === "forward" ||
        key === "backward" ||
        key === "strafeLeft" ||
-@@ -308,15 +1028,58 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -308,15 +1035,58 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // Crouch uses "pose" mode - keeps Hips position track but scales cm→m
      // (Mixamo FBX→GLB values are in centimeters, skeleton is in meters).
      // This lets the Hips bone drop to the correct crouched height.
@@ -23623,7 +23700,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
    }
  
    /**
-@@ -327,6 +1090,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -327,6 +1097,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    private createActions(): void {
      if (!this.mixer) return;
  
@@ -23641,7 +23718,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
  
      // Idle - starts at weight 1
      const idleClip = this.prepareClip("idle");
-@@ -338,7 +1112,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -338,7 +1119,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      }
  
      // Walk directions - start at weight 0
@@ -23655,7 +23732,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
        const clip = this.prepareClip(key);
        if (clip && !this.walkActions[key]) {
          const action = this.mixer.clipAction(clip);
-@@ -346,6 +1125,14 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -346,6 +1132,14 @@ export class LocomotionAnimator implements ILocomotionAnimator {
          this.setWeight(action, 0);
          action.play();
          this.walkActions[key] = action;
@@ -23670,7 +23747,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
        }
      }
  
-@@ -386,6 +1173,20 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -386,6 +1180,20 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        this.setWeight(this.crouchAction, 0);
        this.crouchAction.play();
      }
@@ -23691,7 +23768,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
    }
  
    /**
-@@ -398,6 +1199,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -398,6 +1206,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    }
  
    setLocomotion(input: LocomotionInput): void {
@@ -23699,7 +23776,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
      if (input.isMoving) {
        this.targetIdleWeight = 0;
        this.updateDirectionalTargets(input);
-@@ -411,6 +1213,68 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -411,6 +1220,66 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      }
    }
  
@@ -23721,9 +23798,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
 +          (distance) => !Number.isFinite(distance) || distance <= 0
 +        ) ||
 +        Math.abs(
-+          plan.stepDistances[0] +
-+            plan.stepDistances[1] -
-+            plan.remainingDistance
++          plan.stepDistances[0] + plan.stepDistances[1] - plan.remainingDistance
 +        ) > 1e-5
 +      ) {
 +        throw new RangeError("terminal step plan is invalid");
@@ -23768,7 +23843,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
    setActiveState(state: LocomotionState): void {
      this.activeState = state;
    }
-@@ -422,13 +1286,48 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -422,19 +1291,116 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      const blendSpeed = 1 / Math.max(0.01, this.config.blendTime);
      const blendFactor = 1 - Math.exp(-blendSpeed * delta);
  
@@ -23821,7 +23896,75 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
    }
  
    isReady(): boolean {
-@@ -447,40 +1346,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+     return this.initialized && this.clipsLoaded;
+   }
+ 
++  reset(): void {
++    this.activeState = null;
++    this.currentActiveState = null;
++    this.terminalPlan = null;
++    this.terminalPlanId = null;
++    this.terminalStatus = null;
++    this.terminalPhase = 0;
++    this.terminalElapsed = 0;
++    this.terminalDistanceStep = 0;
++    this.gaitTimingSample = null;
++    this.currentTerminalWeight = 0;
++    this.terminalEntryStrideScale = 1;
++    this.terminalEntryContactLeft = -1;
++    this.terminalEntryContactRight = -1;
++    this.terminalContactLeft = -1;
++    this.terminalContactRight = -1;
++    this.masterPhase = 0;
++    this.gaitSteps = 0;
++    this.gaitCadence = 0;
++    this.commandedMoving = false;
++    this.commandedSpeed = 0;
++    this.playRate = 1;
++    this.strideScale = 1;
++    this.contactLeft = -1;
++    this.contactRight = -1;
++    this.currentIdleWeight = 1;
++    this.currentIdleVelocity = 0;
++    this.targetIdleWeight = 1;
++
++    for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
++      this.currentDirWeights[key] = 0;
++      this.dirWeightVelocities[key] = 0;
++      this.targetDirWeights[key] = 0;
++      const action = this.walkActions[key];
++      if (!action) continue;
++      action.setEffectiveWeight(0);
++      action.time = 0;
++    }
++    for (const key of Object.keys(
++      this.terminalEntryDirWeights
++    ) as DirectionKey[]) {
++      this.terminalEntryDirWeights[key] = 0;
++    }
++    for (const action of Object.values(this.stopActions)) {
++      if (!action) continue;
++      action.setEffectiveWeight(0);
++      action.time = 0;
++    }
++    for (const action of [
++      this.crouchAction,
++      this.jumpAction,
++      this.fallAction,
++      this.landAction,
++    ]) {
++      action?.setEffectiveWeight(0);
++    }
++    if (this.idleAction) {
++      this.idleAction.setEffectiveWeight(1);
++      this.idleAction.time = 0;
++    }
++  }
++
+   configure(config: LocomotionConfig): void {
+     this.config = { ...this.config, ...config };
+   }
+@@ -447,40 +1413,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    }
  
    dispose(): void {
@@ -23863,7 +24006,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
    private updateDirectionalTargets(input: LocomotionInput): void {
      const dir = input.moveDirection ?? { x: 0, z: 1 };
      const fw = Math.max(0, dir.z);
-@@ -521,15 +1395,532 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -521,15 +1462,526 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        return;
      }
  
@@ -23926,8 +24069,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
 +  private blendedNativeSpeed(): number {
 +    let sum = 0;
 +    let weight = 0;
-     for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
--      this.walkActions[key]?.setEffectiveTimeScale(timeScale);
++    for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
 +      const gait = this.gaits[key];
 +      // Smoothed weights, not targets: stride and contact have to describe
 +      // the pose on screen, not the pose being blended toward.
@@ -23935,7 +24077,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
 +      if (!gait || w <= 1e-4) continue;
 +      sum += gait.nativeSpeed * w;
 +      weight += w;
-     }
++    }
 +    if (weight <= 1e-4) return 0;
 +    return (sum / weight) * this.rootWorldScale;
 +  }
@@ -23945,9 +24087,8 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
 +    if (!sample) return null;
 +    const timingPlanId = this.terminalPlan?.timingPlanId;
 +    return timingPlanId && timingPlanId !== sample.planId ? null : sample;
-   }
- 
--  private applyStateWeights(blendFactor: number): void {
++  }
++
 +  /**
 +   * Advance the shared phase and write it to every walk action, offset by
 +   * where that clip puts its own left-foot strike so all four agree on which
@@ -24088,7 +24229,8 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
 +
 +    this.terminalElapsed += Math.max(0, delta);
 +    const desiredLandingDuration = 2 / plan.cadence;
-+    const nativeLandingDuration = action.getClip().duration * motion.stepPhases[1];
++    const nativeLandingDuration =
++      action.getClip().duration * motion.stepPhases[1];
 +    const playbackRate = nativeLandingDuration / desiredLandingDuration;
 +    const rawPhase =
 +      (this.terminalElapsed * playbackRate) / action.getClip().duration;
@@ -24200,16 +24342,12 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
 +    const segmentScales = plan.stepDistances.map((distance, segment) =>
 +      Math.min(
 +        1.75,
-+        Math.max(
-+          0.5,
-+          distance / Math.max(1e-4, sourceSegments[segment]!)
-+        )
++        Math.max(0.5, distance / Math.max(1e-4, sourceSegments[segment]!))
 +      )
 +    ) as [number, number];
 +    const segmentBlend = smoothStep01((clampedProgress - 0.9) / 0.2);
 +    const brakingStrideScale =
-+      segmentScales[0] +
-+      (segmentScales[1] - segmentScales[0]) * segmentBlend;
++      segmentScales[0] + (segmentScales[1] - segmentScales[0]) * segmentBlend;
 +    const entryBlend = terminalEntryBlend(motion, this.terminalPhase);
 +    this.strideScale =
 +      this.terminalEntryStrideScale +
@@ -24367,7 +24505,8 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
 +      );
 +    }
 +
-+    for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
+     for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
+-      this.walkActions[key]?.setEffectiveTimeScale(timeScale);
 +      const next = this.terminalEntryDirWeights[key] * (1 - entryBlend);
 +      this.currentDirWeights[key] = next;
 +      this.dirWeightVelocities[key] = 0;
@@ -24378,10 +24517,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
 +    this.blendAction(this.fallAction, 0, blendFactor);
 +    this.blendAction(this.landAction, 0, blendFactor);
 +
-+    if (
-+      this.terminalStatus === "braking" ||
-+      this.terminalStatus === "landed"
-+    ) {
++    if (this.terminalStatus === "braking" || this.terminalStatus === "landed") {
 +      const leftEntry =
 +        this.terminalEntryContactLeft >= 0
 +          ? this.terminalEntryContactLeft
@@ -24394,14 +24530,15 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
 +        leftEntry + (this.terminalContactLeft - leftEntry) * entryBlend;
 +      this.contactRight =
 +        rightEntry + (this.terminalContactRight - rightEntry) * entryBlend;
-+    }
-+  }
-+
+     }
+   }
+ 
+-  private applyStateWeights(blendFactor: number): void {
 +  private applyStateWeights(delta: number, blendFactor: number): void {
      const state = this.activeState!;
  
      // Phase-based jump: each state has its own clip.
-@@ -545,22 +1936,35 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -545,22 +1997,35 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // "hunched walk" without needing a dedicated crouch-walk animation clip.
      // Without movement, 100% crouch-idle plays normally.
      const isCrouching = state === LocomotionState.CROUCHING;
@@ -24442,7 +24579,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
        this.walkActions[key]?.setEffectiveWeight(newWeight);
      }
  
-@@ -573,12 +1977,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -573,12 +2038,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // On state entry: snap weights for instant transitions on one-shot clips.
      if (state !== this.currentActiveState) {
        // Zero out ground animations instantly when entering any airborne state
@@ -24461,7 +24598,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..cfb0c8e298fe44088ee8fc4bff927092
          }
        }
        // Reset one-shot clips on entry
-@@ -601,16 +2010,27 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -601,16 +2071,27 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      }
    }
  

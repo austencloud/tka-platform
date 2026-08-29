@@ -22,6 +22,7 @@
  */
 
 import type { TurnRequest } from "@austencloud/scene-3d";
+import type { PatternTerminalIntent } from "$lib/shared/3d/locomotion/pattern-terminal-step-plan";
 
 /** What the character is being asked to do this frame. */
 export interface WalkTick {
@@ -40,6 +41,10 @@ export interface WalkTick {
   phase: string;
   /** Authored in-place turn pose and root motion, when this tick is a pivot. */
   turnRequest?: TurnRequest;
+  /** Remaining stage distance offered to the shared two-step stop planner. */
+  terminalIntent?: PatternTerminalIntent;
+  /** Do not advance this pause until the captured stop reaches its rest pose. */
+  waitForTerminalSettle?: boolean;
 }
 
 export interface WalkPattern {
@@ -67,8 +72,8 @@ const RUN = 4;
 /** Authored clip time before the outgoing pose releases to locomotion. */
 const QUARTER_TURN_SECONDS = 1;
 const ABOUT_FACE_SECONDS = 50 / 30;
-const TURN_ENTRY_SECONDS = 0.18;
-const TURN_RELEASE_SECONDS = 0.25;
+const TURN_ENTRY_SECONDS = 0.3;
+const TURN_RELEASE_SECONDS = 0.3;
 /** A pause between legs, so each seam is approached from a settled stand. */
 const PAUSE = 0.8;
 
@@ -87,10 +92,10 @@ const go = (
   rate = 1
 ): WalkTick => ({ facing, isMoving: true, rate, direction, phase });
 
-/** Ease an authored pose across its contact-safe entry and release windows. */
+/** Meet an authored pose with zero velocity and acceleration at both seams. */
 function smooth(u: number): number {
   const c = Math.min(1, Math.max(0, u));
-  return c * c * (3 - 2 * c);
+  return c * c * c * (c * (c * 6 - 15) + 10);
 }
 
 /**
@@ -155,8 +160,15 @@ function turnLeg(from: number, to: number, phase: string, planId: string): Leg {
   };
 }
 
-function pauseLeg(facing: number, phase = "settling"): Leg {
-  return { seconds: PAUSE, at: () => stand(facing, phase) };
+function pauseLeg(
+  facing: number,
+  phase = "settling",
+  waitForTerminalSettle = false
+): Leg {
+  return {
+    seconds: PAUSE,
+    at: () => ({ ...stand(facing, phase), waitForTerminalSettle }),
+  };
 }
 
 function travelLeg(
@@ -164,11 +176,21 @@ function travelLeg(
   metres: number,
   facing: number,
   direction: { x: number; z: number },
-  phase: string
+  phase: string,
+  terminalPlanId?: string
 ): Leg {
   return {
     seconds: metres / Math.max(0.05, speed),
-    at: () => go(facing, direction, phase),
+    at: (local) => ({
+      ...go(facing, direction, phase),
+      ...(terminalPlanId && {
+        terminalIntent: {
+          id: terminalPlanId,
+          remainingDistance: Math.max(0, metres - speed * local),
+          targetFacing: facing,
+        },
+      }),
+    }),
   };
 }
 
@@ -217,12 +239,19 @@ const shuttle: WalkPattern = {
 function shuttleLegs(speed: number): Leg[] {
   return [
     pauseLeg(0, "standing"),
-    travelLeg(speed, RUN, 0, AHEAD, "walking out"),
-    pauseLeg(0, "arriving"),
+    travelLeg(speed, RUN, 0, AHEAD, "walking out", "shuttle:outbound-stop"),
+    pauseLeg(0, "arriving", true),
     turnLeg(0, Math.PI, "about-face left", "shuttle:outbound-turn"),
     pauseLeg(Math.PI, "settling"),
-    travelLeg(speed, RUN, Math.PI, AHEAD, "walking back"),
-    pauseLeg(Math.PI, "arriving"),
+    travelLeg(
+      speed,
+      RUN,
+      Math.PI,
+      AHEAD,
+      "walking back",
+      "shuttle:return-stop"
+    ),
+    pauseLeg(Math.PI, "arriving", true),
     turnLeg(Math.PI, 0, "about-face right", "shuttle:return-turn"),
   ];
 }
@@ -443,8 +472,8 @@ const ramp: WalkPattern = {
 const PIVOT_SEGMENT_SECONDS = 3;
 const PIVOT_SETTLE_SECONDS = 0.8;
 const PIVOT_CLIP_SECONDS = 1;
-const PIVOT_RELEASE_SECONDS = 0.25;
-const PIVOT_ENTRY_SECONDS = 0.18;
+const PIVOT_RELEASE_SECONDS = 0.3;
+const PIVOT_ENTRY_SECONDS = 0.3;
 const PIVOT_HEADINGS = [0, Math.PI / 2, 0, -Math.PI / 2, 0] as const;
 
 /** Standing, turning on the spot with the authored quarter-turn clips. */
@@ -470,7 +499,7 @@ const pivot: WalkPattern = {
 
     const turnElapsed = local - PIVOT_SETTLE_SECONDS;
     const phase = Math.min(1, turnElapsed / PIVOT_CLIP_SECONDS);
-    if (turnElapsed < PIVOT_CLIP_SECONDS + PIVOT_RELEASE_SECONDS) {
+    if (turnElapsed < PIVOT_CLIP_SECONDS + PIVOT_RELEASE_SECONDS - 1e-9) {
       const direction = toHeading > fromHeading ? "left" : "right";
       const poseWeight =
         turnElapsed <= PIVOT_CLIP_SECONDS

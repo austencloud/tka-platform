@@ -6,7 +6,7 @@
  * a type from its instance script, and both halves of the page need these.
  */
 
-import type { TurnRequest } from "@austencloud/scene-3d";
+import type { TerminalStepPlan, TurnRequest } from "@austencloud/scene-3d";
 
 /** Held keys, resolved into the character's own frame. */
 export interface ManualInput {
@@ -51,4 +51,6 @@ export interface WalkState {
   };
   /** Turn clip request for a stationary authored pivot. */
   turnRequest?: TurnRequest | null;
+  /** Captured two-step arrival plan for a time-scripted path. */
+  terminalStepPlan?: TerminalStepPlan | null;
 }
