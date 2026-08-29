@@ -31,6 +31,10 @@ const report: GaitReport = {
   legCrossingSeconds: 0,
   legCrossingFraction: 0,
   minimumLegOrderMargin: 0.1,
+  maximumLegOrderMargin: 0.2,
+  minimumFootSeparation: 0.14,
+  minimumLegSegmentSeparation: 0.05,
+  legOrderAlternates: true,
   inPlaceCyclingSeconds: 0,
   inPlaceCyclingFraction: 0,
   weightShiftAmplitude: 0.08,
@@ -52,13 +56,21 @@ describe("maneuver-aware gait verdicts", () => {
   });
 
   it("keeps collision and root-travel safety rows for sidesteps", () => {
-    const names = verdictRows(report, "gait", "lateral").map(
-      (row) => row.name
-    );
+    const names = verdictRows(report, "gait", "lateral").map((row) => row.name);
 
     expect(names).toContain("Leg self-crossing");
     expect(names).toContain("Cycling on the spot");
     expect(names).not.toContain("Step length");
     expect(names).not.toContain("Duty factor");
+  });
+
+  it("grades an intentional crossover by order and 3D clearance", () => {
+    const rows = verdictRows(report, "gait", "crossover");
+    const byName = new Map(rows.map((row) => [row.name, row]));
+
+    expect(byName.has("Leg self-crossing")).toBe(false);
+    expect(byName.get("Crossing order")?.verdict).toBe("good");
+    expect(byName.get("Foot clearance")?.verdict).toBe("good");
+    expect(byName.get("Leg clearance")?.verdict).toBe("good");
   });
 });

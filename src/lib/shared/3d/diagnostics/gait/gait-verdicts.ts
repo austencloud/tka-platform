@@ -11,7 +11,11 @@ import type { GaitReport } from "./gait-analysis";
 
 export type Verdict = "good" | "warn" | "bad" | "none";
 export type GaitReportScope = "gait" | "arrival";
-export type GaitManeuverProfile = "walk" | "lateral" | "turn-in-place";
+export type GaitManeuverProfile =
+  | "walk"
+  | "lateral"
+  | "crossover"
+  | "turn-in-place";
 
 export interface VerdictRow {
   name: string;
@@ -224,6 +228,55 @@ export function verdictRows(
       "Weight alternates",
     ]);
     return rows.filter((row) => turnMetrics.has(row.name));
+  }
+  if (maneuver === "crossover") {
+    const crossoverMetrics = new Set([
+      "Foot slip per step",
+      "Slip share of step",
+      "Heel lift in stance",
+      "Joint teleports",
+      "Worst teleport",
+      "Knee twitches",
+      "Knee jerk",
+      "Cycling on the spot",
+      "Body over the foot",
+      "Weight alternates",
+    ]);
+    return [
+      ...rows.filter((row) => crossoverMetrics.has(row.name)),
+      {
+        name: "Crossing order",
+        value: r.legOrderAlternates ? "yes" : "no",
+        unit: "",
+        human: "front and back order both present",
+        verdict: r.legOrderAlternates ? "good" : "bad",
+        tell: `signed foot order ranged from ${cm(r.minimumLegOrderMargin)}cm to ${cm(r.maximumLegOrderMargin)}cm`,
+      },
+      {
+        name: "Foot clearance",
+        value: cm(r.minimumFootSeparation),
+        unit: "cm",
+        human: "over 10cm between ankle centres",
+        verdict: band(
+          r.minimumFootSeparation,
+          [0.1, Infinity],
+          [0.06, Infinity]
+        ),
+        tell: "closest 3D ankle-centre separation during the crossover",
+      },
+      {
+        name: "Leg clearance",
+        value: cm(r.minimumLegSegmentSeparation),
+        unit: "cm",
+        human: "over 4cm between leg centre lines",
+        verdict: band(
+          r.minimumLegSegmentSeparation,
+          [0.04, Infinity],
+          [0.025, Infinity]
+        ),
+        tell: "closest 3D thigh or shin centre-line separation",
+      },
+    ];
   }
   if (maneuver === "lateral") {
     const lateralMetrics = new Set([

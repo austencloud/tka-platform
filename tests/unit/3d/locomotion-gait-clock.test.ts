@@ -87,6 +87,39 @@ function animatorWithOneSecondGait(): {
 }
 
 describe("locomotion gait clock", () => {
+  it("routes grapevine intent to its authored clips without replacing sidestep", () => {
+    const animator = new LocomotionAnimator();
+    const harness = animator as unknown as {
+      targetDirWeights: Record<
+        | "forward"
+        | "backward"
+        | "strafeLeft"
+        | "strafeRight"
+        | "grapevineLeft"
+        | "grapevineRight",
+        number
+      >;
+    };
+
+    animator.setLocomotion({
+      isMoving: true,
+      speed: 1,
+      moveDirection: { x: -1, z: 0 },
+      lateralGait: "grapevine",
+    });
+    expect(harness.targetDirWeights.grapevineLeft).toBe(1);
+    expect(harness.targetDirWeights.strafeLeft).toBe(0);
+
+    animator.setLocomotion({
+      isMoving: true,
+      speed: 1,
+      moveDirection: { x: 1, z: 0 },
+      lateralGait: "sidestep",
+    });
+    expect(harness.targetDirWeights.strafeRight).toBe(1);
+    expect(harness.targetDirWeights.grapevineRight).toBe(0);
+  });
+
   it("keeps authored steps monotonic when normalized phase wraps", () => {
     const { animator, harness } = animatorWithOneSecondGait();
 

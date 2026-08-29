@@ -9,6 +9,7 @@ import {
   findTwitches,
   latestArrivalFrames,
   latestTravelFrames,
+  legSegmentSeparation,
   legOrderMargin,
   lateralOffsetOverSupport,
   resolveGroundY,
@@ -457,6 +458,34 @@ describe("gait analysis", () => {
     expect(report.legCrossingSeconds).toBeGreaterThan(0);
     expect(report.legCrossingFraction).toBeGreaterThan(0.4);
     expect(report.minimumLegOrderMargin).toBeLessThan(0);
+    expect(report.maximumLegOrderMargin).toBeGreaterThan(0);
+    expect(report.legOrderAlternates).toBe(true);
+  });
+
+  it("distinguishes a depth-cleared crossover from intersecting leg paths", () => {
+    const base = frame(
+      0,
+      { x: 0, z: 0 },
+      { x: 0.1, y: 0, z: 0 },
+      { x: -0.1, y: 0, z: 0 }
+    );
+    const colliding = {
+      ...base,
+      left: { ...base.left, ankle: { ...base.left.ankle, x: -0.08 } },
+      right: { ...base.right, ankle: { ...base.right.ankle, x: 0.08 } },
+    };
+    const cleared = {
+      ...colliding,
+      right: {
+        ...colliding.right,
+        hip: { ...colliding.right.hip, z: 0.12 },
+        knee: { ...colliding.right.knee, z: 0.12 },
+        ankle: { ...colliding.right.ankle, z: 0.12 },
+      },
+    };
+
+    expect(legSegmentSeparation(colliding)).toBeLessThan(0.01);
+    expect(legSegmentSeparation(cleared)).toBeGreaterThan(0.05);
   });
 
   it("throws away stance runs too short to be a step", () => {

@@ -31,6 +31,7 @@
     PerformerRig,
     userProportionsState,
     type AvatarId,
+    type LateralGait,
     type LocomotionGaitClock,
     type ScheduledGaitTimingSample,
     type TerminalStepPlan,
@@ -220,7 +221,12 @@
       ? "turn-in-place"
       : patternId === "sidestep"
         ? "lateral"
-        : "walk"
+        : patternId === "grapevine"
+          ? "crossover"
+          : "walk"
+  );
+  const lateralGait: LateralGait = $derived(
+    patternId === "grapevine" ? "grapevine" : "sidestep"
   );
   const destinationPlan = $derived(
     isExactMark
@@ -633,6 +639,7 @@
             isMoving={walk.isMoving}
             moveSpeed={walk.speed}
             moveDirection={walk.direction}
+            {lateralGait}
             turnRequestOverride={walk.turnRequest ?? null}
             terminalStepPlan={activeTerminalStepPlan}
             {gaitTimingSample}

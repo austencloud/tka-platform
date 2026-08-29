@@ -154,6 +154,23 @@ describe("walk patterns", () => {
     expect(step).toEqual({ dx: 0, dz: 0, distance: 0 });
   });
 
+  it("runs the grapevine as lateral travel in both directions", () => {
+    const grapevine = walkPattern("grapevine");
+    const right = grapevine.tick(1, 1);
+    const left = grapevine.tick(grapevine.period(1) - 1, 1);
+
+    expect(right).toMatchObject({
+      isMoving: true,
+      direction: { x: 1, z: 0 },
+      phase: "grapevine right",
+    });
+    expect(left).toMatchObject({
+      isMoving: true,
+      direction: { x: -1, z: 0 },
+      phase: "grapevine left",
+    });
+  });
+
   it("drives stationary pivots through authored quarter-turn requests", () => {
     const pivot = walkPattern("pivot");
 

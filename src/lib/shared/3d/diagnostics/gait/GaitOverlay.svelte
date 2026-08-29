@@ -10,10 +10,7 @@
    * this free for every surface that carries it and never turns it on.
    */
 
-  import {
-    countFailing,
-    type GaitManeuverProfile,
-  } from "./gait-verdicts";
+  import { countFailing, type GaitManeuverProfile } from "./gait-verdicts";
   import GaitReadout from "./GaitReadout.svelte";
   import { gaitProbeState } from "./gait-probe-state.svelte";
 
@@ -125,7 +122,9 @@
                   ? "turning"
                   : maneuver === "lateral"
                     ? "sidestepping"
-                    : "walking"
+                    : maneuver === "crossover"
+                      ? "grapevine"
+                      : "walking"
             }`}
             report={activeReports.get(active) ?? null}
             trail={gaitProbeState.trail(active)}

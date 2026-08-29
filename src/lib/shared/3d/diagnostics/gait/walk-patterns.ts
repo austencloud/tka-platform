@@ -292,6 +292,24 @@ function sidestepLegs(speed: number): Leg[] {
   ];
 }
 
+/** Grapevine one way and the other, facing held downstage. */
+const grapevine: WalkPattern = {
+  id: "grapevine",
+  label: "Grapevine both ways",
+  hunts: "front/back crossover order, swing clearance, and the reversal seam",
+  period: (speed) => totalSeconds(grapevineLegs(speed)),
+  tick: (t, speed) => runLegs(grapevineLegs(speed), t),
+};
+
+function grapevineLegs(speed: number): Leg[] {
+  return [
+    pauseLeg(0, "standing"),
+    travelLeg(speed, RUN * 0.75, 0, RIGHT, "grapevine right"),
+    pauseLeg(0, "settling after right grapevine"),
+    travelLeg(speed, RUN * 0.75, 0, LEFT, "grapevine left"),
+  ];
+}
+
 /**
  * A circle, facing the way it is going.
  *
@@ -523,6 +541,7 @@ export const WALK_PATTERNS: readonly WalkPattern[] = [
   shuttle,
   reverse,
   sidestep,
+  grapevine,
   circle,
   figureEight,
   zigzag,

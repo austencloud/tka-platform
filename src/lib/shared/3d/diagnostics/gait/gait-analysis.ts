@@ -156,6 +156,14 @@ export interface GaitReport {
   legCrossingFraction: number;
   /** Worst signed lateral clearance. Negative means the feet crossed. */
   minimumLegOrderMargin: number;
+  /** Widest uncrossed ordering in the same recording. */
+  maximumLegOrderMargin: number;
+  /** Closest ankle-centre distance in 3D, metres. */
+  minimumFootSeparation: number;
+  /** Closest distance between either leg's thigh/shin centre lines, metres. */
+  minimumLegSegmentSeparation: number;
+  /** True when the recording contains both crossed and uncrossed placements. */
+  legOrderAlternates: boolean;
 
   /** Seconds the feet kept cycling while the root was not going anywhere. */
   inPlaceCyclingSeconds: number;
@@ -186,6 +194,102 @@ export interface TravelSpan {
 
 function dist2(a: Vec3, b: Vec3): number {
   return Math.hypot(a.x - b.x, a.z - b.z);
+}
+
+function delta(a: Vec3, b: Vec3): Vec3 {
+  return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
+}
+
+function dot(a: Vec3, b: Vec3): number {
+  return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+/** Exact 3D distance between two finite bone-centre segments. */
+function segmentSeparation(a0: Vec3, a1: Vec3, b0: Vec3, b1: Vec3): number {
+  const u = delta(a1, a0);
+  const v = delta(b1, b0);
+  const w = delta(a0, b0);
+  const a = dot(u, u);
+  const b = dot(u, v);
+  const c = dot(v, v);
+  const d = dot(u, w);
+  const e = dot(v, w);
+  const denominator = a * c - b * b;
+  let sNumerator = denominator;
+  let sDenominator = denominator;
+  let tNumerator = denominator;
+  let tDenominator = denominator;
+
+  if (denominator < EPS) {
+    sNumerator = 0;
+    sDenominator = 1;
+    tNumerator = e;
+    tDenominator = c;
+  } else {
+    sNumerator = b * e - c * d;
+    tNumerator = a * e - b * d;
+    if (sNumerator < 0) {
+      sNumerator = 0;
+      tNumerator = e;
+      tDenominator = c;
+    } else if (sNumerator > sDenominator) {
+      sNumerator = sDenominator;
+      tNumerator = e + b;
+      tDenominator = c;
+    }
+  }
+
+  if (tNumerator < 0) {
+    tNumerator = 0;
+    if (-d < 0) {
+      sNumerator = 0;
+    } else if (-d > a) {
+      sNumerator = sDenominator;
+    } else {
+      sNumerator = -d;
+      sDenominator = a;
+    }
+  } else if (tNumerator > tDenominator) {
+    tNumerator = tDenominator;
+    if (-d + b < 0) {
+      sNumerator = 0;
+    } else if (-d + b > a) {
+      sNumerator = sDenominator;
+    } else {
+      sNumerator = -d + b;
+      sDenominator = a;
+    }
+  }
+
+  const s = Math.abs(sNumerator) < EPS ? 0 : sNumerator / sDenominator;
+  const t = Math.abs(tNumerator) < EPS ? 0 : tNumerator / tDenominator;
+  return Math.hypot(
+    w.x + s * u.x - t * v.x,
+    w.y + s * u.y - t * v.y,
+    w.z + s * u.z - t * v.z
+  );
+}
+
+/** Capsule-centre proxy used to distinguish a crossover from interpenetration. */
+export function legSegmentSeparation(frame: GaitFrame): number {
+  const leftSegments = [
+    [frame.left.hip, frame.left.knee],
+    [frame.left.knee, frame.left.ankle],
+  ] as const;
+  const rightSegments = [
+    [frame.right.hip, frame.right.knee],
+    [frame.right.knee, frame.right.ankle],
+  ] as const;
+  let minimum = Infinity;
+  for (const [leftStart, leftEnd] of leftSegments) {
+    for (const [rightStart, rightEnd] of rightSegments) {
+      minimum = Math.min(
+        minimum,
+        segmentSeparation(leftStart, leftEnd, rightStart, rightEnd)
+      );
+    }
+  }
+  return minimum;
 }
 
 /**
@@ -685,6 +789,10 @@ function emptyReport(frameCount: number): GaitReport {
     legCrossingSeconds: 0,
     legCrossingFraction: 0,
     minimumLegOrderMargin: 0,
+    maximumLegOrderMargin: 0,
+    minimumFootSeparation: 0,
+    minimumLegSegmentSeparation: 0,
+    legOrderAlternates: false,
     inPlaceCyclingSeconds: 0,
     inPlaceCyclingFraction: 0,
     weightShiftAmplitude: 0,
@@ -780,9 +888,25 @@ export function analyzeGait(
   const jolt = findJolts(frames, thresholds);
   let legCrossingSeconds = 0;
   let minimumLegOrderMargin = Infinity;
+  let maximumLegOrderMargin = -Infinity;
+  let minimumFootSeparation = Infinity;
+  let minimumLegSegmentSeparation = Infinity;
   for (const frame of frames) {
     const margin = legOrderMargin(frame);
     minimumLegOrderMargin = Math.min(minimumLegOrderMargin, margin);
+    maximumLegOrderMargin = Math.max(maximumLegOrderMargin, margin);
+    minimumFootSeparation = Math.min(
+      minimumFootSeparation,
+      Math.hypot(
+        frame.left.ankle.x - frame.right.ankle.x,
+        frame.left.ankle.y - frame.right.ankle.y,
+        frame.left.ankle.z - frame.right.ankle.z
+      )
+    );
+    minimumLegSegmentSeparation = Math.min(
+      minimumLegSegmentSeparation,
+      legSegmentSeparation(frame)
+    );
     // A centimetre of numerical/skin-width overlap at a foot-to-foot closure
     // is not one leg travelling through the other. Beyond that, it is.
     if (margin < -0.01) legCrossingSeconds += Math.max(0, frame.dt);
@@ -829,11 +953,21 @@ export function analyzeGait(
     peakJoltJoint: jolt.peakJoint,
     peakJoltStep: jolt.peakStep,
     legCrossingSeconds,
-    legCrossingFraction:
-      duration > 0 ? legCrossingSeconds / duration : 0,
+    legCrossingFraction: duration > 0 ? legCrossingSeconds / duration : 0,
     minimumLegOrderMargin: Number.isFinite(minimumLegOrderMargin)
       ? minimumLegOrderMargin
       : 0,
+    maximumLegOrderMargin: Number.isFinite(maximumLegOrderMargin)
+      ? maximumLegOrderMargin
+      : 0,
+    minimumFootSeparation: Number.isFinite(minimumFootSeparation)
+      ? minimumFootSeparation
+      : 0,
+    minimumLegSegmentSeparation: Number.isFinite(minimumLegSegmentSeparation)
+      ? minimumLegSegmentSeparation
+      : 0,
+    legOrderAlternates:
+      minimumLegOrderMargin < -0.01 && maximumLegOrderMargin > 0.01,
     inPlaceCyclingSeconds: inPlace,
     inPlaceCyclingFraction: duration > 0 ? inPlace / duration : 0,
     weightShiftAmplitude,
