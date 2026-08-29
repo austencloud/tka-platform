@@ -172,6 +172,7 @@
     font-weight: 780;
     line-height: 0.98;
     letter-spacing: -0.052em;
+    text-align: left;
   }
 
   .intro > p {
