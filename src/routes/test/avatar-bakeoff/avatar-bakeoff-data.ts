@@ -3,6 +3,7 @@ export const CANDIDATE_IDS = [
   "current-optimized",
   "human-generator-trial",
   "human-generator-parity",
+  "personal-metaperson",
   "avatar-sdk",
   "avaturn",
   "ready-player-me-archived",
@@ -65,6 +66,15 @@ export const BAKEOFF_CANDIDATES: Record<CandidateId, BakeoffCandidate> = {
     bytes: 238_315_964,
     continuity: "current",
     note: "Full meshes, 4K baked textures, transmissive corneas, and dense mesh hair. Deliberately unoptimized.",
+  },
+  "personal-metaperson": {
+    id: "personal-metaperson",
+    label: "Personal MetaPerson",
+    source: "MetaPerson Creator photo export",
+    modelUrl: "/models/avatars/bakeoff/personal-metaperson.glb",
+    bytes: 12_150_852,
+    continuity: "current",
+    note: "Evaluation-only LOD1 GLB with the standard 73-joint MetaPerson skeleton and 1K PBR textures.",
   },
   "avatar-sdk": {
     id: "avatar-sdk",

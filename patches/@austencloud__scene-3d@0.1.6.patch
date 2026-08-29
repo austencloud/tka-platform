@@ -7218,7 +7218,7 @@ diff --git a/dist/lib/services/implementations/AvatarSkeletonBuilder.d.ts.map b/
 deleted file mode 100644
 index c12c9d64f6cc6e7e5dca20f2c415f3d3f215eee0..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/AvatarSkeletonBuilder.js b/dist/lib/services/implementations/AvatarSkeletonBuilder.js
-index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..316a4fd08f2b02a9dab6f9e46d263ff626978378 100644
+index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..7bb8d08e62be2916d033da1afed8aa1de92088ef 100644
 --- a/dist/lib/services/implementations/AvatarSkeletonBuilder.js
 +++ b/dist/lib/services/implementations/AvatarSkeletonBuilder.js
 @@ -5,8 +5,10 @@
@@ -7307,7 +7307,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..316a4fd08f2b02a9dab6f9e46d263ff6
              if (child.isSkinnedMesh) {
                  const skinnedMesh = child;
                  newMeshes.push(skinnedMesh);
-@@ -129,38 +144,30 @@ export class AvatarSkeletonBuilder {
+@@ -129,44 +144,46 @@ export class AvatarSkeletonBuilder {
          });
          // Compute original bounding box of new model (before any transforms)
          // This is done ONCE at load time, before the model is added to the scene
@@ -7362,8 +7362,48 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..316a4fd08f2b02a9dab6f9e46d263ff6
      }
      /**
       * Map a bone to a bones map (used during hot-swap)
-@@ -211,94 +218,25 @@ export class AvatarSkeletonBuilder {
+      */
+     mapBoneToMap(bone, bonesMap) {
+         const boneName = bone.name.toLowerCase();
++        // A rig that already uses TKA's names must keep each spine level exactly
++        // where it authored it. Vendor aliases such as `spine1` and `spine2` are
++        // also used for zero-based rigs, so checking those first silently shifted
++        // canonical Spine1/Spine2 bones down one level.
++        for (const standardName of Object.keys(BONE_NAME_ALIASES)) {
++            if (boneName === standardName.toLowerCase()) {
++                bonesMap.set(standardName, bone);
++                return;
++            }
++        }
+         for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
+             for (const alias of aliases) {
+                 if (boneName === alias.toLowerCase()) {
+@@ -188,117 +205,28 @@ export class AvatarSkeletonBuilder {
          }
+     }
+     mapBone(bone) {
+-        const boneName = bone.name.toLowerCase();
+-        for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
+-            for (const alias of aliases) {
+-                // Use exact match first, then contains as fallback
+-                if (boneName === alias.toLowerCase()) {
+-                    this.state.bones.set(standardName, bone);
+-                    return;
+-                }
+-            }
+-        }
+-        // Fallback: check contains (but only if not already mapped)
+-        for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
+-            if (this.state.bones.has(standardName))
+-                continue; // Skip if already mapped
+-            for (const alias of aliases) {
+-                if (boneName.includes(alias.toLowerCase())) {
+-                    this.state.bones.set(standardName, bone);
+-                    return;
+-                }
+-            }
+-        }
++        this.mapBoneToMap(bone, this.state.bones);
      }
      buildArmChains() {
 -        // Left arm
@@ -7470,7 +7510,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..316a4fd08f2b02a9dab6f9e46d263ff6
      }
      /**
       * Build finger bone chains for both hands.
-@@ -355,28 +293,6 @@ export class AvatarSkeletonBuilder {
+@@ -355,28 +283,6 @@ export class AvatarSkeletonBuilder {
       * Compute the rest direction of a bone (direction to child in bind pose)
       * Returns the direction in the bone's LOCAL space
       */
@@ -7499,7 +7539,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..316a4fd08f2b02a9dab6f9e46d263ff6
      getState() {
          return this.state;
      }
-@@ -452,23 +368,37 @@ export class AvatarSkeletonBuilder {
+@@ -452,23 +358,37 @@ export class AvatarSkeletonBuilder {
          // The model is already positioned with feet at Y=0
          return 0;
      }
@@ -19443,7 +19483,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
    togglePoleVectors(): boolean {
      this._poleVectorsEnabled = !this._poleVectorsEnabled;
 diff --git a/src/lib/services/implementations/AvatarSkeletonBuilder.ts b/src/lib/services/implementations/AvatarSkeletonBuilder.ts
-index d2f43b6b63eacb247573543f3d15c29118926882..d91ad70510d271c5cd4414e2fd9ecc5c14870d40 100644
+index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee09f537d90 100644
 --- a/src/lib/services/implementations/AvatarSkeletonBuilder.ts
 +++ b/src/lib/services/implementations/AvatarSkeletonBuilder.ts
 @@ -5,9 +5,8 @@
@@ -19618,7 +19658,51 @@ index d2f43b6b63eacb247573543f3d15c29118926882..d91ad70510d271c5cd4414e2fd9ecc5c
    }
  
    /**
-@@ -250,55 +264,29 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -203,6 +217,17 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+   private mapBoneToMap(bone: Bone, bonesMap: Map<BoneName, Bone>): void {
+     const boneName = bone.name.toLowerCase();
+ 
++    // A rig that already uses TKA's names must keep each spine level exactly
++    // where it authored it. Vendor aliases such as `spine1` and `spine2` are
++    // also used for zero-based rigs, so checking those first silently shifted
++    // canonical Spine1/Spine2 bones down one level.
++    for (const standardName of Object.keys(BONE_NAME_ALIASES) as BoneName[]) {
++      if (boneName === standardName.toLowerCase()) {
++        bonesMap.set(standardName, bone);
++        return;
++      }
++    }
++
+     for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
+       for (const alias of aliases) {
+         if (boneName === alias.toLowerCase()) {
+@@ -225,80 +250,33 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+   }
+ 
+   private mapBone(bone: Bone): void {
+-    const boneName = bone.name.toLowerCase();
+-
+-    for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
+-      for (const alias of aliases) {
+-        // Use exact match first, then contains as fallback
+-        if (boneName === alias.toLowerCase()) {
+-          this.state.bones.set(standardName as BoneName, bone);
+-          return;
+-        }
+-      }
+-    }
+-
+-    // Fallback: check contains (but only if not already mapped)
+-    for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
+-      if (this.state.bones.has(standardName as BoneName)) continue; // Skip if already mapped
+-      for (const alias of aliases) {
+-        if (boneName.includes(alias.toLowerCase())) {
+-          this.state.bones.set(standardName as BoneName, bone);
+-          return;
+-        }
+-      }
+-    }
++    this.mapBoneToMap(bone, this.state.bones);
    }
  
    private buildArmChains(): void {
@@ -19696,7 +19780,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..d91ad70510d271c5cd4414e2fd9ecc5c
    }
  
    /**
-@@ -306,51 +294,12 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -306,51 +284,12 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
     * Same pattern as arm chains - two-bone IK with rest directions.
     */
    private buildLegChains(): void {
@@ -19754,7 +19838,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..d91ad70510d271c5cd4414e2fd9ecc5c
    }
  
    /**
-@@ -417,34 +366,6 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -417,34 +356,6 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
     * Compute the rest direction of a bone (direction to child in bind pose)
     * Returns the direction in the bone's LOCAL space
     */
@@ -19789,7 +19873,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..d91ad70510d271c5cd4414e2fd9ecc5c
    getState(): SkeletonState {
      return this.state;
    }
-@@ -535,22 +456,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -535,22 +446,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      return 0;
    }
  
