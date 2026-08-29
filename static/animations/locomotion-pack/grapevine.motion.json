@@ -2,8 +2,9 @@
   "version": 1,
   "clipFamily": "grapevine",
   "authoring": {
-    "frameRate": 30,
-    "frameCount": 64,
+    "sourceFrameRate": 30,
+    "frameRate": 120,
+    "frameCount": 253,
     "stepsPerLoop": 4,
     "phaseSourceFrames": [
       10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
@@ -12,12 +13,19 @@
     "crossingRoles": ["back crossover", "front crossover"],
     "minimumCrossDepthMeters": 0.12,
     "minimumFootClearanceMeters": 0.12,
+    "minimumLegClearanceMeters": 0.04,
+    "targetPelvisSwayMeters": 0.09,
+    "minimumOverSupportFraction": 0.15,
     "runtimeOwner": "@austencloud/scene-3d LocomotionAnimator",
     "contactCorrectionOwner": "@austencloud/scene-3d FootPlanter",
-    "method": "offline Blender visual constraint bake"
+    "method": "offline Blender 120Hz visual constraint bake with collision-safe knee search"
   },
   "clips": {
     "grapevine-left": {
+      "asset": {
+        "file": "grapevine-left.glb",
+        "sha256": "f254d71fa706a7e8a3af3b1a88c20c84bed9bc7b08ea6ea8a63a367ed131fae5"
+      },
       "source": {
         "file": "left strafe walking.fbx",
         "sha256": "22353a4b9f4d5ebb20cacf2166f82b9349a77a5d20b799035865b65504f059e4",
@@ -28,20 +36,27 @@
       },
       "crossingSide": "right",
       "cycleTravelMeters": 1.789224,
-      "authoredDepthMinimum": -0.182134,
-      "authoredDepthMaximum": 0.182134,
+      "authoredDepthMinimum": -0.183075,
+      "authoredDepthMaximum": 0.183075,
       "measured": {
-        "depthMinimum": -0.183083,
-        "depthMaximum": 0.170129,
-        "minimumFootClearance": 0.12813,
+        "depthMinimum": -0.183075,
+        "depthMaximum": 0.168063,
+        "minimumFootClearance": 0.136532,
+        "minimumLegClearance": 0.045145,
+        "pelvisSwayAmplitude": 0.092724,
+        "overSupportFraction": 0.184834,
         "heightRanges": {
           "left": [0.082269, 0.250389],
-          "right": [0.083819, 0.262047]
+          "right": [0.083821, 0.262047]
         },
-        "maximumLegLengthError": 6.98e-7
+        "maximumLegLengthError": 1.0189e-5
       }
     },
     "grapevine-right": {
+      "asset": {
+        "file": "grapevine-right.glb",
+        "sha256": "a7e21d3b57bcbeff2155af0184a0b4f77cbd1d2710bbb54f056fea2ae502723c"
+      },
       "source": {
         "file": "right strafe walking.fbx",
         "sha256": "913d30b7adfcb2646b13d11c9a075e681934a54a4eea1b219c957ce676a6919c",
@@ -52,17 +67,20 @@
       },
       "crossingSide": "left",
       "cycleTravelMeters": -1.789224,
-      "authoredDepthMinimum": -0.187177,
-      "authoredDepthMaximum": 0.187177,
+      "authoredDepthMinimum": -0.187343,
+      "authoredDepthMaximum": 0.187343,
       "measured": {
-        "depthMinimum": -0.187344,
-        "depthMaximum": 0.178275,
-        "minimumFootClearance": 0.121815,
+        "depthMinimum": -0.187343,
+        "depthMaximum": 0.178828,
+        "minimumFootClearance": 0.139352,
+        "minimumLegClearance": 0.044724,
+        "pelvisSwayAmplitude": 0.095466,
+        "overSupportFraction": 0.181818,
         "heightRanges": {
-          "left": [0.082883, 0.259924],
-          "right": [0.085961, 0.251596]
+          "left": [0.082884, 0.259924],
+          "right": [0.08596, 0.251596]
         },
-        "maximumLegLengthError": 7.23e-7
+        "maximumLegLengthError": 9.915e-6
       }
     }
   }

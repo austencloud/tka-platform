@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { AnimationClip, VectorKeyframeTrack } from "three";
 
 import { LocomotionAnimator } from "@austencloud/scene-3d";
 
@@ -87,6 +88,34 @@ function animatorWithOneSecondGait(): {
 }
 
 describe("locomotion gait clock", () => {
+  it("keeps authored grapevine weight transfer without enabling it for raw strafes", () => {
+    const rawClip = () =>
+      new AnimationClip("raw-lateral", 1, [
+        new VectorKeyframeTrack(
+          "mixamorigHips.position",
+          [0, 0.5, 1],
+          [0, 0, -100, 55, 0, -96, 100, 0, -100]
+        ),
+      ]);
+    const prepare = (key: "grapevineLeft" | "strafeLeft") => {
+      const animator = new LocomotionAnimator();
+      const harness = animator as unknown as {
+        pendingClips: Map<string, AnimationClip>;
+        prepareClip(name: string): AnimationClip | null;
+      };
+      harness.pendingClips.set(key, rawClip());
+      const clip = harness.prepareClip(key);
+      return clip?.tracks.find((track) => track.name.endsWith("Hips.position"))
+        ?.values as Float32Array;
+    };
+
+    const grapevine = prepare("grapevineLeft");
+    const strafe = prepare("strafeLeft");
+
+    expect(grapevine[3]).toBeCloseTo(5 / (296 / 3), 6);
+    expect(strafe[3]).toBe(0);
+  });
+
   it("routes grapevine intent to its authored clips without replacing sidestep", () => {
     const animator = new LocomotionAnimator();
     const harness = animator as unknown as {

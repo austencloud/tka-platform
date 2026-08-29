@@ -32,14 +32,18 @@ not add another gait clock, movement solver, or foot planter.
 ## Motion source and offline authoring
 
 The two already-shipped Mixamo `left strafe walking.fbx` and
-`right strafe walking.fbx` files contain captured crossover weight transfer and
-lateral root travel. `build-grapevine.py` repeats their two-step cycle, changes
-the crossing ankle's fore/aft target during its airborne window, and uses
-Blender visual constraint baking to alternate back and front crossings.
+`right strafe walking.fbx` files provide the base lateral body motion and root
+travel. `build-grapevine.py` repeats their two-step cycle, changes the crossing
+ankle's fore/aft target during its airborne window, moves the pelvis toward the
+actual support schedule, and solves both knee bend circles against a 4 cm
+self-clearance constraint. Blender bakes the result at 120 Hz so interpolation
+between the original 30 Hz keys cannot reintroduce a collision.
 
-The bake preserves the source body motion and ankle orientation. It adds only
-the depth change and the minimum vertical clearance required while the ankle
-passes the support foot. Runtime IK is not used as an animation generator.
+The bake preserves the source upper-body motion and ankle orientation. It adds
+the crossover depth, the minimum vertical separation required while the ankle
+passes the support foot, contact-timed pelvis transfer, and the least knee-plane
+change that satisfies the leg-clearance gate. Runtime IK is not used as an
+animation generator.
 
 Asset and licensing details live beside the generated clips in
 `static/animations/locomotion-pack/GRAPEVINE.md` and
@@ -71,6 +75,9 @@ The offline build aborts unless both clips:
 - contain front and back crossover depth of at least 12 cm;
 - keep at least 12 cm between ankle centres, sampled at quarter-frame
   intervals;
+- keep at least 4 cm between every opposing thigh/shin centre-line pair at all
+  120 exported samples per second;
+- carry 6–10 cm of detrended pelvis sway tied to the support schedule;
 - preserve both upper- and lower-leg lengths within 2 mm; and
 - keep foot height within 8 cm of the source capture's maximum.
 

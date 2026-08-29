@@ -9529,7 +9529,7 @@ diff --git a/dist/lib/services/implementations/LocomotionAnimator.d.ts.map b/dis
 deleted file mode 100644
 index e2ad276197cfcb019800a407b2fe3d4739b38861..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/LocomotionAnimator.js b/dist/lib/services/implementations/LocomotionAnimator.js
-index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e31714d54 100644
+index 56279f173c47d912a9cb02a35e4e27abc07c41d6..7e7614449f1a34bc66973415e8240b5d051ba664 100644
 --- a/dist/lib/services/implementations/LocomotionAnimator.js
 +++ b/dist/lib/services/implementations/LocomotionAnimator.js
 @@ -11,9 +11,12 @@
@@ -9547,11 +9547,11 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
  /**
   * Known Mixamo bone prefixes. Animation files may use a different
   * variant than the model (e.g., "mixamorig:" vs "mixamorig").
-@@ -59,14 +62,21 @@ function detectClipPrefix(clip) {
+@@ -59,16 +62,23 @@ function detectClipPrefix(clip) {
   *   "strip"    - Remove Hips position entirely (default for idle/jump/fall/land)
   *   "rootMotion" - Keep and make Z relative to first frame (for walk/run root motion)
   *   "pose"     - Keep as-is, no baseline subtraction (for crouch - absolute Y is the pose)
-+ *   "bob"      - Keep only the pelvis's rise, as a fraction of hip height
++ *   "bob"      - Keep pelvis rise and explicitly authored cyclic transfer
   */
  /**
   * Leg bone names to strip when stripLegBones is true.
@@ -9569,8 +9569,11 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
 +    "RightFoot",
 +    "RightToeBase",
  ]);
- function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBones = false) {
+-function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBones = false) {
++function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBones = false, preservePelvisSway = false) {
      const clipPrefix = detectClipPrefix(clip);
+     const tracks = clip.tracks
+         .filter((track) => {
 @@ -77,7 +87,9 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
              return false;
          const boneName = track.name.slice(0, dotIdx);
@@ -9604,7 +9607,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
          const cloned = track.clone();
          // Remap bone prefix if needed
          if (clipPrefix !== modelPrefix) {
-@@ -115,20 +131,65 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
+@@ -115,20 +131,74 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
          // first keyframe's Z preserves the natural vertical bob (hips go up
          // and down ~2-3cm per step) while removing the absolute offset that
          // would slam the avatar underground.
@@ -9630,9 +9633,12 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
 +        // gone - and the plant is then asked to hold a foot the animation is
 +        // still swinging through ten centimetres of air.
 +        //
-+        // Only the vertical survives. Travel belongs to whatever is moving the
-+        // performer, and the sway across it is worth about two centimetres at
-+        // the foot, which is not worth the risk of reintroducing it here.
++        // Travel belongs to whatever is moving the performer. A clip may still
++        // opt into its detrended lateral channel when that channel was authored
++        // against its actual support schedule. Grapevine does: removing it puts
++        // the body on a rail while the legs cross underneath. Ordinary Mixamo
++        // clips keep the established vertical-only behavior because their raw
++        // lateral root channel has not passed that authored-contact gate.
 +        //
 +        // What is left is written as a fraction of the clip's own hip height,
 +        // not as centimetres. Avatars are not all one size, and an absolute
@@ -9653,8 +9659,14 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
 +                sum += values[i * 3 + 2];
 +            const mean = frames > 0 ? sum / frames : 0;
 +            const height = Math.abs(mean) || 1;
++            const firstLateral = values[0] ?? 0;
++            const lastLateral = values[Math.max(0, frames - 1) * 3] ?? firstLateral;
 +            for (let i = 0; i < frames; i++) {
-+                values[i * 3] = 0;
++                const phase = frames > 1 ? i / (frames - 1) : 0;
++                const travel = firstLateral + (lastLateral - firstLateral) * phase;
++                values[i * 3] = preservePelvisSway
++                    ? (values[i * 3] - travel) / height
++                    : 0;
 +                values[i * 3 + 1] = -(values[i * 3 + 2] - mean) / height;
 +                values[i * 3 + 2] = 0;
 +            }
@@ -9672,7 +9684,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
              const values = cloned.values;
              for (let i = 0; i < values.length; i++) {
                  values[i] *= 0.01;
-@@ -142,10 +203,155 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
+@@ -142,10 +212,155 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
      });
      return new AnimationClip(clip.name, clip.duration, tracks);
  }
@@ -9829,7 +9841,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
      modelPrefix = "mixamorig";
      // Actions - created from raw clips, no processing
      idleAction = null;
-@@ -188,31 +394,143 @@ export class LocomotionAnimator {
+@@ -188,31 +403,143 @@ export class LocomotionAnimator {
          strafeLeft: 0,
          strafeRight: 0,
      };
@@ -9980,7 +9992,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
      }
      async loadAnimations(urls) {
          const entries = [
-@@ -231,15 +549,7 @@ export class LocomotionAnimator {
+@@ -231,15 +558,7 @@ export class LocomotionAnimator {
          if (urls.crouch)
              entries.push({ key: "crouch", url: urls.crouch });
          const results = await Promise.allSettled(entries.map(async ({ key, url }) => {
@@ -9997,7 +10009,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
              return { key, clip };
          }));
          for (const result of results) {
-@@ -273,14 +583,37 @@ export class LocomotionAnimator {
+@@ -273,14 +592,38 @@ export class LocomotionAnimator {
          // (Mixamo FBX→GLB values are in centimeters, skeleton is in meters).
          // This lets the Hips bone drop to the correct crouched height.
          let hipsMode = "strip";
@@ -10011,7 +10023,8 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
          // stay perfectly planted during sequence playback.
          const stripLegs = this.config.stripLegBones && key === "idle";
 -        return remapClipToSkeleton(raw, this.modelPrefix, hipsMode, stripLegs);
-+        const cacheKey = `${key}|${this.modelPrefix}|${this.rigSignature}|${hipsMode}|${stripLegs}`;
++        const preservePelvisSway = key === "grapevineLeft" || key === "grapevineRight";
++        const cacheKey = `${key}|${this.modelPrefix}|${this.rigSignature}|${hipsMode}|${stripLegs}|${preservePelvisSway}`;
 +        let variants = preparedClipCache.get(raw);
 +        if (!variants) {
 +            variants = new Map();
@@ -10020,7 +10033,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
 +        const existing = variants.get(cacheKey);
 +        if (existing)
 +            return existing;
-+        let prepared = remapClipToSkeleton(raw, this.modelPrefix, hipsMode, stripLegs);
++        let prepared = remapClipToSkeleton(raw, this.modelPrefix, hipsMode, stripLegs, preservePelvisSway);
 +        // Renaming the tracks is only half of a retarget. The rotations that come
 +        // across put this rig's feet somewhere its own proportions decide, which
 +        // is not where the animator put them - see ContactRetargeter for what that
@@ -10038,7 +10051,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
      }
      /**
       * Create actions from clips - only bone prefix remapping, no track filtering.
-@@ -290,6 +623,18 @@ export class LocomotionAnimator {
+@@ -290,6 +633,18 @@ export class LocomotionAnimator {
      createActions() {
          if (!this.mixer)
              return;
@@ -10057,7 +10070,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
          // Idle - starts at weight 1
          const idleClip = this.prepareClip("idle");
          if (idleClip && !this.idleAction) {
-@@ -299,7 +644,12 @@ export class LocomotionAnimator {
+@@ -299,7 +654,12 @@ export class LocomotionAnimator {
              this.idleAction.play();
          }
          // Walk directions - start at weight 0
@@ -10071,7 +10084,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
              const clip = this.prepareClip(key);
              if (clip && !this.walkActions[key]) {
                  const action = this.mixer.clipAction(clip);
-@@ -307,6 +657,14 @@ export class LocomotionAnimator {
+@@ -307,6 +667,14 @@ export class LocomotionAnimator {
                  this.setWeight(action, 0);
                  action.play();
                  this.walkActions[key] = action;
@@ -10086,7 +10099,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
              }
          }
          // Jump (one-shot)
-@@ -343,6 +701,8 @@ export class LocomotionAnimator {
+@@ -343,6 +711,8 @@ export class LocomotionAnimator {
              this.setWeight(this.crouchAction, 0);
              this.crouchAction.play();
          }
@@ -10095,7 +10108,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
      }
      /**
       * Set weight on an action - same helper as the Three.js example.
-@@ -353,6 +713,7 @@ export class LocomotionAnimator {
+@@ -353,6 +723,7 @@ export class LocomotionAnimator {
          action.setEffectiveWeight(weight);
      }
      setLocomotion(input) {
@@ -10103,7 +10116,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
          if (input.isMoving) {
              this.targetIdleWeight = 0;
              this.updateDirectionalTargets(input);
-@@ -381,7 +742,29 @@ export class LocomotionAnimator {
+@@ -381,7 +752,29 @@ export class LocomotionAnimator {
          else {
              this.applyLegacyWeights(blendFactor);
          }
@@ -10134,7 +10147,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
      }
      isReady() {
          return this.initialized && this.clipsLoaded;
-@@ -397,37 +780,13 @@ export class LocomotionAnimator {
+@@ -397,37 +790,13 @@ export class LocomotionAnimator {
          return obj ?? null;
      }
      dispose() {
@@ -10173,7 +10186,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
      updateDirectionalTargets(input) {
          const dir = input.moveDirection ?? { x: 0, z: 1 };
          const fw = Math.max(0, dir.z);
-@@ -463,11 +822,176 @@ export class LocomotionAnimator {
+@@ -463,11 +832,176 @@ export class LocomotionAnimator {
              }
              return;
          }
@@ -10353,7 +10366,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
      }
      applyStateWeights(blendFactor) {
          const state = this.activeState;
-@@ -483,7 +1007,7 @@ export class LocomotionAnimator {
+@@ -483,7 +1017,7 @@ export class LocomotionAnimator {
          // "hunched walk" without needing a dedicated crouch-walk animation clip.
          // Without movement, 100% crouch-idle plays normally.
          const isCrouching = state === LocomotionState.CROUCHING;
@@ -10362,7 +10375,7 @@ index 56279f173c47d912a9cb02a35e4e27abc07c41d6..493f22e115253469791bb782a9e84a8e
          const crouchWalking = isCrouching && hasMovement;
          const wantWalk = state === LocomotionState.WALKING ? 1 : crouchWalking ? 0.4 : 0;
          const wantCrouch = isCrouching ? (crouchWalking ? 0.6 : 1) : 0;
-@@ -506,7 +1030,8 @@ export class LocomotionAnimator {
+@@ -506,7 +1040,8 @@ export class LocomotionAnimator {
          // On state entry: snap weights for instant transitions on one-shot clips.
          if (state !== this.currentActiveState) {
              // Zero out ground animations instantly when entering any airborne state
@@ -22841,7 +22854,7 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..605270cc1d1b04401b253e61778aaa16
    }
  }
 diff --git a/src/lib/services/implementations/LocomotionAnimator.ts b/src/lib/services/implementations/LocomotionAnimator.ts
-index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31e6c15fb4 100644
+index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065ad0e28238 100644
 --- a/src/lib/services/implementations/LocomotionAnimator.ts
 +++ b/src/lib/services/implementations/LocomotionAnimator.ts
 @@ -13,17 +13,151 @@
@@ -22999,11 +23012,11 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
  
  /**
   * Known Mixamo bone prefixes. Animation files may use a different
-@@ -70,20 +204,27 @@ function detectClipPrefix(clip: AnimationClip): string {
+@@ -70,21 +204,29 @@ function detectClipPrefix(clip: AnimationClip): string {
   *   "strip"    - Remove Hips position entirely (default for idle/jump/fall/land)
   *   "rootMotion" - Keep and make Z relative to first frame (for walk/run root motion)
   *   "pose"     - Keep as-is, no baseline subtraction (for crouch - absolute Y is the pose)
-+ *   "bob"      - Keep only the pelvis's rise, as a fraction of hip height
++ *   "bob"      - Keep pelvis rise and explicitly authored cyclic transfer
   */
  /**
   * Leg bone names to strip when stripLegBones is true.
@@ -23026,11 +23039,14 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
    clip: AnimationClip,
    modelPrefix: string,
 -  hipsMode: "strip" | "rootMotion" | "pose" = "strip",
+-  stripLegBones = false
 +  hipsMode: "strip" | "rootMotion" | "pose" | "bob" = "strip",
-   stripLegBones = false
++  stripLegBones = false,
++  preservePelvisSway = false
  ): AnimationClip {
    const clipPrefix = detectClipPrefix(clip);
-@@ -95,7 +236,9 @@ function remapClipToSkeleton(
+
+@@ -95,7 +237,9 @@ function remapClipToSkeleton(
  
        const boneName = track.name.slice(0, dotIdx);
        const property = track.name.slice(dotIdx + 1);
@@ -23041,7 +23057,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
  
        // Skip bones that don't exist on our models
        if (coreName.endsWith("_End")) return false;
-@@ -110,7 +253,12 @@ function remapClipToSkeleton(
+@@ -110,7 +254,12 @@ function remapClipToSkeleton(
        if (coreName === "Hips" && property === "quaternion") return false;
  
        // Keep Hips position track when needed for root motion or crouch pose.
@@ -23055,7 +23071,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
  
        // Keep all other quaternion tracks - bone rotations are the animation.
        // Filter out position/scale tracks (position teleports, scale vanishes).
-@@ -122,7 +270,9 @@ function remapClipToSkeleton(
+@@ -122,7 +271,9 @@ function remapClipToSkeleton(
        const dotIdx = track.name.indexOf(".");
        const boneName = track.name.slice(0, dotIdx);
        const property = track.name.slice(dotIdx);
@@ -23066,7 +23082,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
  
        const cloned = track.clone();
  
-@@ -136,7 +286,11 @@ function remapClipToSkeleton(
+@@ -136,7 +287,11 @@ function remapClipToSkeleton(
        // first keyframe's Z preserves the natural vertical bob (hips go up
        // and down ~2-3cm per step) while removing the absolute offset that
        // would slam the avatar underground.
@@ -23079,7 +23095,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
          const values = cloned.values as Float32Array;
          const baseZ = values[2] ?? 0; // First keyframe's Z = rest height
          for (let i = 2; i < values.length; i += 3) {
-@@ -144,13 +298,60 @@ function remapClipToSkeleton(
+@@ -144,13 +299,70 @@ function remapClipToSkeleton(
          }
        }
  
@@ -23095,9 +23111,12 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
 +      // gone - and the plant is then asked to hold a foot the animation is
 +      // still swinging through ten centimetres of air.
 +      //
-+      // Only the vertical survives. Travel belongs to whatever is moving the
-+      // performer, and the sway across it is worth about two centimetres at
-+      // the foot, which is not worth the risk of reintroducing it here.
++      // Travel belongs to whatever is moving the performer. A clip may still
++      // opt into its detrended lateral channel when that channel was authored
++      // against its actual support schedule. Grapevine does: removing it puts
++      // the body on a rail while the legs cross underneath. Ordinary Mixamo
++      // clips keep the established vertical-only behavior because their raw
++      // lateral root channel has not passed that authored-contact gate.
 +      //
 +      // What is left is written as a fraction of the clip's own hip height,
 +      // not as centimetres. Avatars are not all one size, and an absolute
@@ -23119,8 +23138,15 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
 +        for (let i = 0; i < frames; i++) sum += values[i * 3 + 2]!;
 +        const mean = frames > 0 ? sum / frames : 0;
 +        const height = Math.abs(mean) || 1;
++        const firstLateral = values[0] ?? 0;
++        const lastLateral = values[Math.max(0, frames - 1) * 3] ?? firstLateral;
 +        for (let i = 0; i < frames; i++) {
-+          values[i * 3] = 0;
++          const phase = frames > 1 ? i / (frames - 1) : 0;
++          const travel =
++            firstLateral + (lastLateral - firstLateral) * phase;
++          values[i * 3] = preservePelvisSway
++            ? (values[i * 3]! - travel) / height
++            : 0;
 +          values[i * 3 + 1] = -(values[i * 3 + 2]! - mean) / height;
 +          values[i * 3 + 2] = 0;
 +        }
@@ -23141,7 +23167,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
          const values = cloned.values as Float32Array;
          for (let i = 0; i < values.length; i++) {
            values[i]! *= 0.01;
-@@ -167,10 +368,377 @@ function remapClipToSkeleton(
+@@ -167,10 +379,377 @@ function remapClipToSkeleton(
    return new AnimationClip(clip.name, clip.duration, tracks);
  }
  
@@ -23520,7 +23546,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
    private modelPrefix = "mixamorig";
  
    // Actions - created from raw clips, no processing
-@@ -180,24 +748,56 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -180,24 +759,56 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      backward: null,
      strafeLeft: null,
      strafeRight: null,
@@ -23578,7 +23604,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
      animationWalkSpeed: 1.57,
      enableRootMotion: false,
      stripLegBones: false,
-@@ -205,46 +805,205 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -205,46 +816,205 @@ export class LocomotionAnimator implements ILocomotionAnimator {
  
    // Blend weights (smoothed each frame)
    private currentIdleWeight = 1;
@@ -23791,7 +23817,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
    }
  
    async loadAnimations(urls: AnimationUrls): Promise<void> {
-@@ -255,21 +1014,33 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -255,21 +1025,33 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        { key: "strafeLeft", url: urls.strafeLeft },
        { key: "strafeRight", url: urls.strafeRight },
      ];
@@ -23833,7 +23859,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
          return { key, clip };
        })
      );
-@@ -280,6 +1051,23 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -280,6 +1062,23 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        }
      }
  
@@ -23857,7 +23883,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
      this.clipsLoaded = true;
      if (this.initialized && this.mixer) {
        this.createActions();
-@@ -300,23 +1088,72 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -300,23 +1099,75 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // - Crouch: keep Hips position as-is (absolute Y IS the crouched height)
      // - Everything else: strip Hips position (would teleport the avatar)
      const isLocomotionClip =
@@ -23885,9 +23911,10 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
      // Strip leg bones from idle clip for exhibit performers so feet
      // stay perfectly planted during sequence playback.
      const stripLegs = this.config.stripLegBones && key === "idle";
- 
--    return remapClipToSkeleton(raw, this.modelPrefix, hipsMode, stripLegs);
-+    const cacheKey = `${key}|${this.modelPrefix}|${this.rigSignature}|${hipsMode}|${stripLegs}`;
++    const preservePelvisSway =
++      key === "grapevineLeft" || key === "grapevineRight";
++
++    const cacheKey = `${key}|${this.modelPrefix}|${this.rigSignature}|${hipsMode}|${stripLegs}|${preservePelvisSway}`;
 +    let variants = preparedClipCache.get(raw);
 +    if (!variants) {
 +      variants = new Map();
@@ -23901,9 +23928,11 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
 +      raw,
 +      this.modelPrefix,
 +      hipsMode,
-+      stripLegs
++      stripLegs,
++      preservePelvisSway
 +    );
-+
+
+-    return remapClipToSkeleton(raw, this.modelPrefix, hipsMode, stripLegs);
 +    // Renaming the tracks is only half of a retarget. The rotations that come
 +    // across put this rig's feet somewhere its own proportions decide, which
 +    // is not where the animator put them - see ContactRetargeter for what that
@@ -23937,7 +23966,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
    }
  
    /**
-@@ -327,6 +1164,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -327,6 +1178,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    private createActions(): void {
      if (!this.mixer) return;
  
@@ -23955,7 +23984,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
  
      // Idle - starts at weight 1
      const idleClip = this.prepareClip("idle");
-@@ -338,7 +1186,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -338,7 +1200,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      }
  
      // Walk directions - start at weight 0
@@ -23964,7 +23993,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
        const clip = this.prepareClip(key);
        if (clip && !this.walkActions[key]) {
          const action = this.mixer.clipAction(clip);
-@@ -346,6 +1194,19 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -346,6 +1208,19 @@ export class LocomotionAnimator implements ILocomotionAnimator {
          this.setWeight(action, 0);
          action.play();
          this.walkActions[key] = action;
@@ -23984,7 +24013,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
        }
      }
  
-@@ -386,6 +1247,20 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -386,6 +1261,20 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        this.setWeight(this.crouchAction, 0);
        this.crouchAction.play();
      }
@@ -24005,7 +24034,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
    }
  
    /**
-@@ -398,19 +1273,77 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -398,19 +1287,77 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    }
  
    setLocomotion(input: LocomotionInput): void {
@@ -24021,9 +24050,9 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
 -      this.targetDirWeights.strafeLeft = 0;
 -      this.targetDirWeights.strafeRight = 0;
 +      for (const key of DIRECTION_KEYS) this.targetDirWeights[key] = 0;
-+    }
-+  }
-+
+     }
+   }
+
 +  setTerminalStepPlan(plan: TerminalStepPlan | null): void {
 +    if (plan?.id === this.terminalPlanId) return;
 +
@@ -24065,9 +24094,9 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
 +      if (!action) continue;
 +      action.setEffectiveWeight(0);
 +      action.time = 0;
-     }
-   }
- 
++    }
++  }
++
 +  setGaitTimingSample(sample: ScheduledGaitTimingSample | null): void {
 +    if (
 +      sample &&
@@ -24087,7 +24116,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
    setActiveState(state: LocomotionState): void {
      this.activeState = state;
    }
-@@ -422,19 +1355,116 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -422,19 +1369,116 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      const blendSpeed = 1 / Math.max(0.01, this.config.blendTime);
      const blendFactor = 1 - Math.exp(-blendSpeed * delta);
  
@@ -24208,7 +24237,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
    configure(config: LocomotionConfig): void {
      this.config = { ...this.config, ...config };
    }
-@@ -447,40 +1477,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -447,40 +1491,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    }
  
    dispose(): void {
@@ -24250,7 +24279,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
    private updateDirectionalTargets(input: LocomotionInput): void {
      const dir = input.moveDirection ?? { x: 0, z: 1 };
      const fw = Math.max(0, dir.z);
-@@ -493,20 +1498,22 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -493,20 +1512,22 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // pose. The physics still moves diagonally - only the animation is pure
      // backward. This matches how most third-person games handle it.
      if (bw > 0) {
@@ -24279,7 +24308,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
    }
  
    private updatePlaybackSpeed(speed: number): void {
-@@ -521,15 +1528,530 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -521,15 +1542,530 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        return;
      }
  
@@ -24346,7 +24375,8 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
 +  private blendedNativeSpeed(): number {
 +    let sum = 0;
 +    let weight = 0;
-+    for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
+     for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
+-      this.walkActions[key]?.setEffectiveTimeScale(timeScale);
 +      const gait = this.gaits[key];
 +      // Smoothed weights, not targets: stride and contact have to describe
 +      // the pose on screen, not the pose being blended toward.
@@ -24354,7 +24384,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
 +      if (!gait || w <= 1e-4) continue;
 +      sum += gait.nativeSpeed * w;
 +      weight += w;
-+    }
+     }
 +    if (weight <= 1e-4) return 0;
 +    return (sum / weight) * this.rootWorldScale;
 +  }
@@ -24364,8 +24394,9 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
 +    if (!sample) return null;
 +    const timingPlanId = this.terminalPlan?.timingPlanId;
 +    return timingPlanId && timingPlanId !== sample.planId ? null : sample;
-+  }
-+
+   }
+
+-  private applyStateWeights(blendFactor: number): void {
 +  /**
 +   * Advance the shared phase and write it to every walk action, offset by
 +   * where that clip puts its own left-foot strike so all four agree on which
@@ -24782,8 +24813,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
 +      );
 +    }
 +
-     for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
--      this.walkActions[key]?.setEffectiveTimeScale(timeScale);
++    for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
 +      const next = this.terminalEntryDirWeights[key] * (1 - entryBlend);
 +      this.currentDirWeights[key] = next;
 +      this.dirWeightVelocities[key] = 0;
@@ -24807,15 +24837,14 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
 +        leftEntry + (this.terminalContactLeft - leftEntry) * entryBlend;
 +      this.contactRight =
 +        rightEntry + (this.terminalContactRight - rightEntry) * entryBlend;
-     }
-   }
- 
--  private applyStateWeights(blendFactor: number): void {
++    }
++  }
++
 +  private applyStateWeights(delta: number, blendFactor: number): void {
      const state = this.activeState!;
  
      // Phase-based jump: each state has its own clip.
-@@ -545,22 +2067,35 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -545,22 +2081,35 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // "hunched walk" without needing a dedicated crouch-walk animation clip.
      // Without movement, 100% crouch-idle plays normally.
      const isCrouching = state === LocomotionState.CROUCHING;
@@ -24856,7 +24885,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
        this.walkActions[key]?.setEffectiveWeight(newWeight);
      }
  
-@@ -573,12 +2108,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -573,12 +2122,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // On state entry: snap weights for instant transitions on one-shot clips.
      if (state !== this.currentActiveState) {
        // Zero out ground animations instantly when entering any airborne state
@@ -24875,7 +24904,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..4305a04a0b201342a5421e8f6f5f5c31
          }
        }
        // Reset one-shot clips on entry
-@@ -601,16 +2141,27 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+@@ -601,16 +2155,27 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      }
    }
  
