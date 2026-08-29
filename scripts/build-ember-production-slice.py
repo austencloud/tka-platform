@@ -247,13 +247,9 @@ RIVER_POINTS_RUNTIME = [
 RIVER_POINTS_BLENDER = [
     (x, -runtime_z, height) for x, runtime_z, height in RIVER_POINTS_RUNTIME
 ]
-SOUTH_CASCADE_POINTS_RUNTIME = [
-    tuple(float(value) for value in point)
-    for point in WORLD_CONTRACT["southVentCascade"]["pointsRuntimeXZHeight"]
-]
-SOUTH_CASCADE_POINTS_BLENDER = [
-    (x, -runtime_z, height) for x, runtime_z, height in SOUTH_CASCADE_POINTS_RUNTIME
-]
+DISTANT_VENT_CENTER_RUNTIME_XZ = tuple(
+    float(value) for value in WORLD_CONTRACT["distantVent"]["centerRuntimeXZ"]
+)
 ACTION_RADIUS = 4.5
 SURFACE_Z = 0.5
 HERO_CENTER = (-8.5, -27.0, 5.25)
@@ -2220,6 +2216,9 @@ def create_lava_channel_levees(
     """Raise irregular banks around the runtime river so its surface is never a decal."""
 
     width = float(WORLD_CONTRACT["lavaRiver"]["width"])
+    source_taper_fraction = float(
+        WORLD_CONTRACT["lavaRiver"].get("sourceTaperFraction", 0.0)
+    )
     objects: list[bpy.types.Object] = []
     for side_index, side_sign in enumerate((-1.0, 1.0), start=1):
         vertices: list[tuple[float, float, float]] = []
@@ -2230,11 +2229,30 @@ def create_lava_channel_levees(
             tangent = Vector((after.x - before.x, after.y - before.y)).normalized()
             normal = Vector((-tangent.y, tangent.x)) * side_sign
             t = index / (len(river) - 1)
-            half_width = width * (0.9 + math.sin(math.pi * t) * 0.1 + math.sin(t * 17.3 + 0.7) * 0.025) * 0.5
-            irregular = math.sin(t * 41.0 + side_index * 2.1) * 0.12 + math.sin(t * 17.0) * 0.08
-            inner = Vector((center.x, center.y)) + normal * (half_width + 0.16)
-            crest = Vector((center.x, center.y)) + normal * (half_width + 0.92 + irregular)
-            outer = Vector((center.x, center.y)) + normal * (half_width + 2.45 + irregular * 0.5)
+            source_taper = smoothstep(0.0, source_taper_fraction, t)
+            half_width = (
+                width
+                * (
+                    0.9
+                    + math.sin(math.pi * t) * 0.1
+                    + math.sin(t * 17.3 + 0.7) * 0.025
+                )
+                * 0.5
+                * source_taper
+            )
+            irregular = (
+                math.sin(t * 41.0 + side_index * 2.1) * 0.12
+                + math.sin(t * 17.0) * 0.08
+            ) * source_taper
+            inner = Vector((center.x, center.y)) + normal * (
+                half_width + 0.16 * source_taper
+            )
+            crest = Vector((center.x, center.y)) + normal * (
+                half_width + 0.92 * source_taper + irregular
+            )
+            outer = Vector((center.x, center.y)) + normal * (
+                half_width + 2.45 * source_taper + irregular * 0.5
+            )
             vertices.extend(
                 [
                     (inner.x, inner.y, center.z + 0.03),
@@ -2274,6 +2292,9 @@ def create_qa_lava_river(
     crust_material: bpy.types.Material | None = None,
 ) -> bpy.types.Object:
     width = float(WORLD_CONTRACT["lavaRiver"]["width"])
+    source_taper_fraction = float(
+        WORLD_CONTRACT["lavaRiver"].get("sourceTaperFraction", 0.0)
+    )
     vertices: list[tuple[float, float, float]] = []
     faces: list[tuple[int, int, int, int]] = []
     for index, center in enumerate(river):
@@ -2282,7 +2303,13 @@ def create_qa_lava_river(
         tangent = Vector((after.x - before.x, after.y - before.y)).normalized()
         normal = Vector((-tangent.y, tangent.x))
         t = index / (len(river) - 1)
-        half_width = width * (0.9 + math.sin(math.pi * t) * 0.1) * 0.5
+        source_taper = smoothstep(0.0, source_taper_fraction, t)
+        half_width = (
+            width
+            * (0.9 + math.sin(math.pi * t) * 0.1)
+            * 0.5
+            * source_taper
+        )
         left = Vector((center.x, center.y)) - normal * half_width
         right = Vector((center.x, center.y)) + normal * half_width
         vertices.extend([(left.x, left.y, center.z + 0.045), (right.x, right.y, center.z + 0.045)])
@@ -2846,7 +2873,11 @@ def create_meshy_geology_ensemble(
     distant_caldera = import_meshy_geology(
         "distant-breached-caldera.glb",
         "Ember_Meshy_Distant_Breached_Caldera",
-        (1.0, 122.0, 1.6),
+        (
+            DISTANT_VENT_CENTER_RUNTIME_XZ[0],
+            -DISTANT_VENT_CENTER_RUNTIME_XZ[1],
+            1.6,
+        ),
         28.0,
         8.0,
         "meshy-distant-caldera",
@@ -3280,13 +3311,6 @@ def create_qa_scene(qa: bpy.types.Collection) -> dict[str, bpy.types.Object]:
     )
     river = sample_river_centerline(144)
     create_qa_lava_river(qa_lava_material, qa, river, qa_lava_crust_material)
-    south_cascade = sample_river_centerline(56, SOUTH_CASCADE_POINTS_BLENDER)
-    create_qa_lava_river(
-        qa_lava_material,
-        qa,
-        south_cascade,
-        qa_lava_crust_material,
-    )
 
     lights: list[bpy.types.Object] = []
     light_specs = [
@@ -3715,6 +3739,11 @@ def scene_report(
     lava_bank = next(
         obj for obj in mesh_objects if obj.get("tka_role") == "meshy-lava-bank"
     )
+    distant_vent = next(
+        obj
+        for obj in mesh_objects
+        if obj.get("tka_role") == "meshy-distant-caldera"
+    )
     river = sample_river_centerline()
     lava_bank_centerline_clearance = min(
         river_distance_and_height(
@@ -3841,7 +3870,10 @@ def scene_report(
             ),
             "performerFacing": "negative-runtime-z-toward-front-stage-audience",
             "lavaRiverControlPointsRuntimeXZHeight": RIVER_POINTS_RUNTIME,
-            "southVentCascadeControlPointsRuntimeXZHeight": SOUTH_CASCADE_POINTS_RUNTIME,
+            "distantVentCenterRuntimeXZ": [
+                round(distant_vent.location.x, 4),
+                round(-distant_vent.location.y, 4),
+            ],
             "collapsedLavaBankCenterRuntimeXZ": [
                 round(lava_bank.location.x, 4),
                 round(-lava_bank.location.y, 4),
