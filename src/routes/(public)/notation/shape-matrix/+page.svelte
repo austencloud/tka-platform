@@ -1,109 +1,70 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import Seo from "$lib/shared/components/Seo.svelte";
-  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
-  import ShapeMatrixGrid from "$lib/shared/shape-matrix/components/ShapeMatrixGrid.svelte";
-  import ShapeMatrixDrill from "$lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte";
+  import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
+  import ShapeMatrixApp from "$lib/shared/shape-matrix/app/ShapeMatrixApp.svelte";
+  import type { ShapeMatrixAppSnapshot } from "$lib/shared/shape-matrix/app/state/shape-matrix-app-state.svelte";
   import {
-    loadShapeMatrix,
-    type ShapeMatrixData,
-  } from "$lib/shared/shape-matrix/services/shape-matrix-flowers";
-  import { applyFilter } from "$lib/shared/shape-matrix/domain/filter-flower-axis";
-  import {
-    matrixFiltersForSize,
-    type MatrixSize,
-  } from "$lib/shared/shape-matrix/domain/matrix-size-preset";
-  import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
-  import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
-  import "$lib/shared/landing/styles/public-editorial.css";
+    readShapeMatrixRouteState,
+    writeShapeMatrixRouteState,
+  } from "./_state/shape-matrix-url";
 
-  // Not "| The Kinetic Alphabet" — the Shape Matrix is Lorq Nichols' work,
-  // published on page 32 of Vulcan Tech Gospel Book of P.H.A.T. Volume 1.
-  // This page is an interactive reading of it, not a TKA component.
-  const TITLE = "Interactive Shape Matrix | Flow Arts Notation Archive";
+  const TITLE = "Shape Matrix Explorer | Flow Arts Composer";
   const DESCRIPTION =
-    "Lorq Nichols' 144 shape matrix, made interactive: click any cell to open the six timing-and-direction realizations that draw that mandala, then watch the prop draw it live.";
+    "Explore shape pairings in an interactive matrix, then open six timing-and-direction realizations and watch each path traced live.";
   const URL = "https://tkaflowarts.com/notation/shape-matrix";
-
-  // Cumulative ratio-band sizes: Small = 1:1 (16 tiles), Medium = 1:1 + 1:3
-  // (64 tiles), Large = 1:1 + 1:3 + 1:5 (144 tiles). Matches the domain ratio
-  // labels — never described as "half turns" / "quarter turns".
-  const SIZE_OPTIONS: { value: MatrixSize; label: string }[] = [
-    { value: "small", label: "Small · 16" },
-    { value: "medium", label: "Medium · 64" },
-    { value: "large", label: "Large · 144" },
+  const ROUTE_STATE_PARAMS = [
+    "level",
+    "turn",
+    "blueTurn",
+    "redTurn",
+    "axis",
+    "labels",
+    "prop",
+    "driver",
+    "size",
+    "blue",
+    "red",
+    "mode",
+    "propMode",
   ];
-
-  // Read once at init (client render, real `window`) so the mobile default
-  // wins on first paint; an INITIAL value only, never fought after the visitor
-  // picks a size themselves (spec: Phase 3 size-default requirement).
-  const initialMobile =
-    typeof window !== "undefined" && window.innerWidth < BREAKPOINTS.MOBILE;
-  let size = $state<MatrixSize>(initialMobile ? "medium" : "large");
-  let data = $state<ShapeMatrixData | null>(null);
-  let err = $state("");
-
-  // The realization panel is a permanent fixture of the instrument band
-  // (bespoke two-pane layout, Austen's direction 2026-07-19): on wide screens
-  // matrix and realizations sit side by side, top- and bottom-aligned; on
-  // narrow screens the panel stacks below and scrolls into view on select.
-  let selectedPair = $state<{ blue: Flower; red: Flower } | null>(null);
-  let drillPane = $state<HTMLElement | null>(null);
-
-  const rowAxis = $derived(
-    data ? applyFilter(data.axis, matrixFiltersForSize(size).blue, false) : [],
-  );
-  const colAxis = $derived(
-    data ? applyFilter(data.axis, matrixFiltersForSize(size).red, false) : [],
-  );
-
-  function selectPair(pair: { blue: Flower; red: Flower }) {
-    selectedPair = pair;
-    // Stacked layout (the panes wrap): bring the realizations on screen.
-    if (drillPane && window.innerWidth < 1360) {
-      drillPane.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }
-
-  onMount(async () => {
-    try {
-      data = await loadShapeMatrix();
-    } catch (e) {
-      err = String(e);
-    }
-  });
+  const persistence = {
+    restore: (): ShapeMatrixAppSnapshot | null => {
+      const params = new URLSearchParams(window.location.search);
+      return ROUTE_STATE_PARAMS.some((name) => params.has(name))
+        ? readShapeMatrixRouteState(params.toString())
+        : null;
+    },
+    persist: (snapshot: ShapeMatrixAppSnapshot): void => {
+      mutateCurrentUrl((url) => writeShapeMatrixRouteState(url, snapshot));
+    },
+  };
 </script>
 
-<Seo title={TITLE} description={DESCRIPTION} canonical={URL} ogType="article">
+<Seo title={TITLE} description={DESCRIPTION} canonical={URL} ogType="website">
   {@html `<script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": "Interactive Shape Matrix",
+    "@type": "WebApplication",
+    "name": "Shape Matrix Explorer",
     "url": "${URL}",
     "description": "${DESCRIPTION}",
-    "inLanguage": "en-US",
-    "author": { "@type": "Person", "name": "Austen Cloud", "url": "https://tkaflowarts.com/about" },
-    "publisher": { "@type": "Organization", "name": "The Kinetic Alphabet", "url": "https://tkaflowarts.com/" },
-    "about": {
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "Web",
+    "isBasedOn": {
       "@type": "CreativeWork",
       "name": "144 Shape Matrix",
-      "creator": { "@type": "Person", "name": "Lorq Nichols", "alternateName": "Spin Science" },
-      "isPartOf": {
-        "@type": "Book",
-        "name": "Vulcan Tech Gospel Book of P.H.A.T. Volume 1",
-        "author": [
-          { "@type": "Person", "name": "Lorq Nichols" },
-          { "@type": "Person", "name": "Brian Thompson" },
-          { "@type": "Person", "name": "David Cantor" },
-          { "@type": "Person", "name": "Noel Yee" }
-        ]
+      "url": "http://spinscience.xyz/2014/07/10/144-shape-matrix-even-petaled-flowers-rework/",
+      "creator": {
+        "@type": "Person",
+        "name": "Lorq Nichols",
+        "alternateName": "Spin Science"
       }
     },
-    "citation": [
-      { "@type": "CreativeWork", "name": "Book of P.H.A.T.", "url": "https://sirlorq.wordpress.com/tech-tiles/" },
-      { "@type": "CreativeWork", "name": "324 Patterns", "url": "https://sirlorq.wordpress.com/324-patterns/" }
-    ]
+    "provider": {
+      "@type": "Organization",
+      "name": "The Kinetic Alphabet",
+      "url": "https://tkaflowarts.com/"
+    }
   }
   </script>`}
   {@html `<script type="application/ld+json">
@@ -113,421 +74,23 @@
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://tkaflowarts.com/" },
       { "@type": "ListItem", "position": 2, "name": "Notation", "item": "https://tkaflowarts.com/notation" },
-      { "@type": "ListItem", "position": 3, "name": "Shape Matrix", "item": "${URL}" }
+      { "@type": "ListItem", "position": 3, "name": "Shape Matrix Explorer", "item": "${URL}" }
     ]
   }
   </script>`}
 </Seo>
 
-<div class="editorial">
-  <a class="back-link" href="/notation">← Flow Arts Notation</a>
-
-  <header class="editorial-header">
-    <h1 class="page-title">Interactive Shape Matrix</h1>
-    <p class="page-subtitle">Every cell is live. Click one to open its realizations.</p>
-  </header>
-
-  <section class="editorial-section shape-matrix-section" style="--accent: #f59e0b">
-    <!-- Lineage band: the story and the original chart side by side, sharing
-         the same rail as the instrument band below. -->
-    <div class="lineage-band">
-      <div class="lineage-copy">
-        <span class="section-kicker">The lineage</span>
-        <div class="prose lineage-prose">
-          <p>
-            The Shape Matrix is Lorq Nichols', who publishes as
-            <a href="http://spinscience.xyz/" target="_blank" rel="noopener noreferrer"
-              >Spin Science</a
-            >. He describes it best himself: “A Shape Matrix is like a multiplication
-            table for tricks (moves, patterns) that you can do with your left or right
-            hand.” Twelve left-hand driving styles against twelve right-hand ones: the
-            even-petaled prospin and antispin shapes across the 1:1, 1:3 and 1:5 ratios.
-            He charted it in 2012 and reworked it in 2014 and 2016.
-          </p>
-          <p>
-            It is not a separate tradition from the Vulcan Tech Gospel. It is
-            <em>page 32</em> of one: the Shape Matrix appears in
-            <a
-              href="https://sirlorq.wordpress.com/tech-tiles/"
-              target="_blank"
-              rel="noopener noreferrer">Vulcan Tech Gospel Book of P.H.A.T. Volume 1</a
-            >, illustrated and written by Nichols in collaboration with Brian Thompson,
-            David Cantor and Noel Yee. Yee lists all four as VTG authors. Nichols, for his
-            part, thanked “Noel Yee (this chart intrinsically encompasses transition
-            theory), and all the Vulcan Tech Gospel crew.”
-          </p>
-          <p>
-            The chart was paper doing what a simulator does today: lay the space out so
-            you can find what you have not tried. This page draws the same table live from
-            the alphabet, one shape per cell, every cell clickable. Rows are blue-hand
-            flowers, columns red-hand; matched styles on the diagonal are basic shapes,
-            and every other cell overlaps the two into a hybrid.
-          </p>
-        </div>
-
-        <!--
-          Outbound credit block. Spin Science links are http:// on purpose — the
-          site's HTTPS certificate is expired, so an https:// link fails outright.
-          A working http link beats a broken https one.
-
-          DO NOT "fix" these to https://. .claude/rules/clickable-links.md makes
-          https the default for every link we hand out, and spinscience.xyz is the
-          standing exception to it. All four verified 200 on 2026-07-29. Note
-          sirlorq.com already died and took /27armpaths, /3axes, /9armfacings and
-          /27transitiontheory with it, so if one of these starts 404ing, reach for
-          a Wayback snapshot rather than dropping the credit.
-        -->
-        <nav class="credit-links" aria-label="Lorq Nichols and Spin Science">
-          <a href="http://spinscience.xyz/work/" target="_blank" rel="noopener noreferrer"
-            >Spin Science: the work <span aria-hidden="true">&nearr;</span></a
-          >
-          <a
-            href="http://spinscience.xyz/2014/07/10/144-shape-matrix-even-petaled-flowers-rework/"
-            target="_blank"
-            rel="noopener noreferrer"
-            >The 144 Shape Matrix <span aria-hidden="true">&nearr;</span></a
-          >
-          <a
-            href="https://sirlorq.wordpress.com/tech-tiles/"
-            target="_blank"
-            rel="noopener noreferrer">Book of P.H.A.T. <span aria-hidden="true">&nearr;</span></a
-          >
-          <!-- Trailing slash matters: /store 301s to /store/. -->
-          <a href="http://spinscience.xyz/store/" target="_blank" rel="noopener noreferrer"
-            >Posters and prints <span aria-hidden="true">&nearr;</span></a
-          >
-        </nav>
-      </div>
-
-      <figure class="matrix-figure">
-        <!-- Axes per Nichols' own caption on the 2014 rework: "the driving style
-             of the left hand (columns) paired with a driving style of the right
-             hand (rows)". Do not swap these to match OUR grid below, which is
-             rows-blue / columns-red by our own choice. -->
-        <img
-          class="matrix-img"
-          src="/notation/lorq-144-shape-matrix.webp"
-          width="1400"
-          height="1812"
-          alt="Lorq Nichols' 144 Shape Matrix: a twelve by twelve grid of even-petaled flower shapes. Columns are twelve left-hand driving styles, rows are twelve right-hand styles, grouped by 1:1, 1:3, and 1:5 hand-to-prop ratios."
-          loading="lazy"
-        />
-        <!-- sirlorq.com no longer resolves; his current home is spinscience.xyz
-             (http:// — expired cert on https). -->
-        <figcaption>
-          The original: Lorq Nichols' 144 Shape Matrix. Diagram &copy; Lorq Nichols,
-          <a href="http://spinscience.xyz/" target="_blank" rel="noopener noreferrer"
-            >Spin Science</a
-          >, used with credit. The live table below is TKA's rendering of the same space.
-        </figcaption>
-      </figure>
-    </div>
-
-    <!-- The instrument: live matrix and the realization panel as one aligned
-         two-pane band. Header row carries the kickers and the size control;
-         the two panels share top and bottom edges and one surface treatment.
-         Accent stays in the kicker text only, per the editorial system. -->
-    <div class="instrument">
-      <div class="pane-head matrix-head">
-        <span class="section-kicker">The live table</span>
-        <div class="size-control" role="group" aria-label="Matrix size">
-          <SegmentedControl
-            options={SIZE_OPTIONS}
-            value={size}
-            onchange={(v) => (size = v)}
-            color="accent"
-          />
-        </div>
-      </div>
-
-      <div class="pane-head drill-head">
-        <span class="section-kicker">Realizations</span>
-        <span class="head-hint">six per cell</span>
-      </div>
-
-      <div class="matrix-stage">
-        {#if err}
-          <p class="matrix-status err">{err}</p>
-        {:else if !data}
-          <p class="matrix-status">Building flowers…</p>
-        {:else}
-          <ShapeMatrixGrid {data} {rowAxis} {colAxis} onselect={selectPair} />
-        {/if}
-      </div>
-
-      <aside class="drill-pane" bind:this={drillPane} aria-label="Cell realizations">
-        {#if data}
-          <ShapeMatrixDrill pair={selectedPair} {data} />
-        {:else}
-          <div class="drill-loading">Building flowers…</div>
-        {/if}
-      </aside>
-
-      <p class="stage-caption">
-        Rows are <span class="cap-blue">blue-hand</span> flowers · columns are
-        <span class="cap-red">red-hand</span> flowers
-      </p>
-    </div>
-  </section>
+<div class="shape-matrix-page">
+  <ShapeMatrixApp {persistence} />
 </div>
 
 <style>
-  /* ── Shared rail ──
-     Both bands compute the same width from the instrument's parts (stage +
-     gap + panel), so their left and right edges align at every viewport. The
-     100vw term is capped generously below the visible width so the breakout
-     never spawns a horizontal scrollbar. */
-  .shape-matrix-section {
-    --stage-cap: min(78vh, 66rem);
-    --drill-w: clamp(30rem, 30vw, 44rem);
-    --pane-gap: 2rem;
-    --band-width: min(
-      calc(var(--stage-cap) + var(--pane-gap) + var(--drill-w)),
-      calc(100vw - 5rem)
-    );
-  }
-
-  .lineage-band,
-  .instrument {
-    width: var(--band-width);
-    margin-inline: calc((100% - var(--band-width)) / 2);
-  }
-
-  .lineage-band {
-    display: grid;
-    gap: 2rem clamp(3rem, 6vw, 7rem);
-    align-items: center;
-    margin-block: 0.4rem 4.5rem;
-  }
-  @media (min-width: 1100px) {
-    .lineage-band {
-      grid-template-columns: minmax(0, 1fr) minmax(0, clamp(28rem, 26vw, 40rem));
-    }
-  }
-
-  /* Larger reading type: this text sits in a wide band and carries the whole
-     story, so it earns the lede-adjacent size. No width cap — prose spans its
-     column (Austen 2026-07-19). */
-  .lineage-prose p {
-    font-size: clamp(1.02rem, 0.96rem + 0.22vw, 1.24rem);
-    line-height: 1.7;
-  }
-
-  /* Buttons, not a row of text links: these are standalone calls to action, and
-     the point of them is that people actually click through to Lorq's site
-     (.claude/rules/clickables-look-like-buttons.md). Wrapping, 44px floor. */
-  /* Explicit column counts, not `flex-wrap`. Four buttons wrapped freely land
-     on 3+1 in this column, stranding a row of one
-     (.claude/rules/4k-native-layout.md). For four items the wraps that do not
-     orphan are 4, 2 and 1, so those are the only counts offered. */
-  .credit-links {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.6rem;
-    margin-top: 1.4rem;
-  }
-
-  @media (max-width: 30rem) {
-    .credit-links {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
-
-  /* The site-wide big-screen seam: above it the lineage column is wide enough
-     to carry all four on one row. */
-  @media (min-width: 1680px) {
-    .credit-links {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-  }
-
-  .credit-links a {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0.4rem;
-    min-height: 44px;
-    padding: 0 1rem;
-    border-radius: 999px;
-    border: 1px solid color-mix(in oklab, var(--accent, #f59e0b) 45%, transparent);
-    background: color-mix(in oklab, var(--accent, #f59e0b) 10%, transparent);
-    color: inherit;
-    font-size: 0.95rem;
-    font-weight: 600;
-    text-decoration: none;
-    transition:
-      background 160ms ease,
-      border-color 160ms ease;
-  }
-
-  .credit-links a:hover,
-  .credit-links a:focus-visible {
-    background: color-mix(in oklab, var(--accent, #f59e0b) 22%, transparent);
-    border-color: color-mix(in oklab, var(--accent, #f59e0b) 75%, transparent);
-  }
-
-  .matrix-figure {
-    margin: 0;
-    justify-self: center;
-    max-width: min(40rem, 100%);
-  }
-  .matrix-img {
-    display: block;
-    width: 100%;
-    height: auto;
-    border-radius: 14px;
-    border: 1px solid oklch(1 0 0 / 0.08);
-    box-shadow: 0 10px 34px oklch(0.05 0.02 270 / 0.4);
-  }
-  .matrix-figure figcaption {
-    margin-top: 0.7rem;
-    font-size: 0.85rem;
-    line-height: 1.5;
-    color: oklch(0.6 0.02 270);
-    text-align: center;
-  }
-  .matrix-figure figcaption a {
-    color: oklch(0.8 0.12 275);
-    text-decoration: none;
-    border-bottom: 1px solid oklch(0.8 0.12 275 / 0.4);
-  }
-  .matrix-figure figcaption a:hover {
-    border-bottom-color: oklch(0.8 0.12 275 / 0.9);
-  }
-
-  /* ── The instrument ──
-     2×2 grid: header row (kickers + size control), then the two panels
-     sharing top and bottom edges. The stage caption hangs below the stage
-     like a figure caption. */
-  .instrument {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--drill-w);
-    grid-template-areas:
-      "mhead dhead"
-      "stage drill"
-      "mcap  .";
-    column-gap: var(--pane-gap);
-    align-items: stretch;
-  }
-
-  .pane-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    min-height: 44px;
-    margin-bottom: 0.9rem;
-  }
-  .pane-head .section-kicker {
-    margin: 0;
-  }
-  .matrix-head {
-    grid-area: mhead;
-    /* Kicker + size control read as one left-aligned cluster that clearly
-       belongs to the table — not pushed against the realization panel. */
-    justify-content: flex-start;
-    gap: 2rem;
-  }
-  .drill-head {
-    grid-area: dhead;
-  }
-  .head-hint {
-    font-size: clamp(0.75rem, 0.7rem + 0.12vw, 0.85rem);
-    color: oklch(0.58 0.015 270);
-    letter-spacing: 0.03em;
-  }
-
-  .size-control {
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    /* Room for the three labels on one line each — the shared control wraps
-       labels when squeezed, which reads broken here. */
-    flex: 0 0 auto;
-    min-width: min(23rem, 100%);
-  }
-
-  /* The grid is ~square (12 flowers + header per side), so the stage is a
-     square. Reserved up front at its final size, so neither the size preset
-     nor load state ever moves the panels (no-layout-shift.md). */
-  .matrix-stage {
-    grid-area: stage;
-    width: min(var(--stage-cap), 100%);
-    aspect-ratio: 1 / 1;
-    justify-self: center;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid oklch(0.4 0.04 270 / 0.16);
-    background: #0a0f14;
-  }
-  .matrix-status {
-    display: grid;
-    place-items: center;
-    height: 100%;
-    color: oklch(0.72 0.012 270);
-    margin: 0;
-  }
-  .matrix-status.err {
-    color: #fb8a8a;
-  }
-
-  .stage-caption {
-    grid-area: mcap;
-    justify-self: center;
-    margin: 0.7rem 0 0;
-    font-size: 0.85rem;
-    line-height: 1.5;
-    color: oklch(0.6 0.02 270);
-    text-align: center;
-  }
-  .cap-blue {
-    color: var(--prop-blue, oklch(0.68 0.14 255));
-  }
-  .cap-red {
-    color: var(--prop-red, oklch(0.68 0.16 25));
-  }
-
-  /* ── Realization panel: same surface as the stage, a true sibling ── */
-  .drill-pane {
-    grid-area: drill;
-    border-radius: 16px;
-    border: 1px solid oklch(0.4 0.04 270 / 0.16);
-    background: #0a0f14;
-    padding: 1.1rem 1.2rem 1.2rem;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
+  .shape-matrix-page {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
     min-width: 0;
-    scroll-margin-top: 90px;
-  }
-
-  /* Pre-data loading hint: the drill itself owns the "Pick a cell" empty
-     state once the flower data lands (ShapeMatrixDrill takes pair = null). */
-  .drill-loading {
-    flex: 1;
     min-height: 0;
-    display: grid;
-    place-items: center;
-    font-size: clamp(0.85rem, 0.8rem + 0.12vw, 0.95rem);
-    color: oklch(0.68 0.02 270);
-  }
-
-  /* ── Stacked layout: the panel follows the stage, full width ── */
-  @media (max-width: 1359.98px) {
-    .instrument {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-areas:
-        "mhead"
-        "stage"
-        "mcap"
-        "dhead"
-        "drill";
-    }
-    .drill-head {
-      margin-top: 2.2rem;
-    }
-    .drill-pane {
-      min-height: 34rem;
-    }
+    overflow: hidden;
   }
 </style>

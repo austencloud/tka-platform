@@ -21,6 +21,8 @@ export interface ShapeMatrixTunnelSourceProvenance {
   version: 1;
   baseSequenceId: string;
   mode: VtgMode;
+  /** Present when prop-first selection rephased the realization. */
+  propMode?: VtgMode;
   blueFlower: Flower;
   redFlower: Flower;
 }

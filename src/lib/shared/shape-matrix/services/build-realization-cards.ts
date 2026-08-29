@@ -1,18 +1,25 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SVGPathData } from "$lib/shared/mandala/domain/mandala-types";
+import type { TipPoint } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
 import { loadDiamondEdges } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
 import { TND_BY_FAMILY } from "$lib/features/choreo-card/domain/tnd-element";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+// prettier-ignore
 import { bakeVariationFront, bakeVariationBack } from "$lib/features/lab/vtg-lab/services/resolve-rotation-style-matrices";
 import { loadBaseIndex, resolveBase } from "./build-realization-sequence";
 import { verifyAndCorrect } from "./verify-realization-parity";
-import { MODE_ORDER, MODE_LABEL, type VtgMode } from "./shape-matrix-realizations";
+import {
+  MODE_ORDER,
+  MODE_LABEL,
+  type VtgMode,
+} from "./shape-matrix-realizations";
 import { type Flower } from "../domain/flower-signature";
 
 /** The cell overlay loci a realization must reproduce (single-tip club geometry). */
 export interface CellOverlay {
   blue: SVGPathData[];
   red: SVGPathData[];
+  tipPoint?: TipPoint;
   clubTipDx: number;
 }
 
@@ -68,13 +75,18 @@ export interface ModeCard {
  */
 export async function buildModeCards(
   pair: { blue: Flower; red: Flower },
-  overlay: CellOverlay,
+  overlay: CellOverlay
 ): Promise<ModeCard[]> {
   const [idx, edges] = await Promise.all([loadBaseIndex(), loadDiamondEdges()]);
 
   const cards = await Promise.all(
     MODE_ORDER.map(async (mode): Promise<ModeCard | null> => {
-      const base = resolveBase(idx, mode, pair.blue.style, pair.red.style);
+      const base = resolveBase(
+        idx,
+        mode,
+        pair.blue.style === "float" ? "pro" : pair.blue.style,
+        pair.red.style === "float" ? "pro" : pair.red.style
+      );
       if (!base) return null;
       const familyId = FAMILY_BY_MODE[mode];
       try {
@@ -84,7 +96,7 @@ export async function buildModeCards(
           overlay.blue,
           overlay.red,
           edges,
-          overlay.clubTipDx,
+          overlay.tipPoint ?? overlay.clubTipDx
         );
         const sequence = parity.sequence;
         const [frontUrl, backUrl] = await Promise.all([
@@ -109,7 +121,7 @@ export async function buildModeCards(
       } catch {
         return null;
       }
-    }),
+    })
   );
   return cards.filter((c): c is ModeCard => c !== null);
 }

@@ -26,6 +26,7 @@
     showTabs = false,
     activeTab = $bindable<"blue" | "red">("blue"),
     autoClose = true,
+    onOpenChange,
     showCatDogToggle = false,
     catDogEnabled = false,
     onCatDogToggle,
@@ -42,6 +43,8 @@
     activeTab?: "blue" | "red";
     /** Auto-close after selection. Set false when parent manages closing (e.g. cat/dog flow). */
     autoClose?: boolean;
+    /** Reports drawer dismissal when the owner does not use two-way binding. */
+    onOpenChange?: (open: boolean) => void;
     /** Show a cat/dog mode toggle in the drawer header */
     showCatDogToggle?: boolean;
     /** Current cat/dog mode state (read by toggle) */
@@ -77,12 +80,18 @@
 
   const placement = $derived(isSideBySide ? "right" : "bottom");
 
+  function setOpen(open: boolean) {
+    if (isOpen === open) return;
+    isOpen = open;
+    onOpenChange?.(open);
+  }
+
   function handlePropSelect(propType: PropType) {
     const hapticService = getHapticFeedback();
     hapticService?.trigger("selection");
     onSelect(propType);
     if (autoClose) {
-      isOpen = false;
+      setOpen(false);
     }
   }
 
@@ -95,7 +104,7 @@
   function handleClose() {
     const hapticService = getHapticFeedback();
     hapticService?.trigger("selection");
-    isOpen = false;
+    setOpen(false);
   }
 </script>
 
@@ -109,7 +118,7 @@
   ariaLabel={title}
   class="prop-selection-drawer"
   onOpenChange={(open) => {
-    if (!open) isOpen = false;
+    if (!open) setOpen(false);
   }}
 >
   <div class="sheet-content">
@@ -126,14 +135,21 @@
     <!-- Header row: cat/dog toggle when enabled -->
     {#if showCatDogToggle}
       <div class="drawer-header-row">
-        <CatDogToggle catDogMode={catDogEnabled} onToggle={() => onCatDogToggle?.()} />
+        <CatDogToggle
+          catDogMode={catDogEnabled}
+          onToggle={() => onCatDogToggle?.()}
+        />
       </div>
     {/if}
 
     <!-- Blue/Red tabs for cat/dog mode -->
     {#if showTabs}
       <div class="segment-wrapper">
-        <div class="segment-control" role="tablist" aria-label="Prop hand selection">
+        <div
+          class="segment-control"
+          role="tablist"
+          aria-label="Prop hand selection"
+        >
           <button
             type="button"
             role="tab"
@@ -188,7 +204,8 @@
     /* left:0/right:0 match the Drawer bottom defaults — dropped. */
     margin-left: auto;
     margin-right: auto;
-    border-radius: var(--sheet-radius-large, 20px) var(--sheet-radius-large, 20px) 0 0;
+    border-radius: var(--sheet-radius-large, 20px)
+      var(--sheet-radius-large, 20px) 0 0;
   }
 
   /* Desktop side drawer: full-height right panel (matches the inbox/messages
@@ -295,12 +312,17 @@
     cursor: pointer;
     transition: all var(--duration-fast, 150ms) ease;
     min-height: 36px;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     -webkit-tap-highlight-color: transparent;
   }
 
   .segment-btn:hover {
-    background: color-mix(in srgb, var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08)) 50%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08)) 50%,
+      transparent
+    );
     color: var(--theme-text, white);
   }
 

@@ -1,16 +1,28 @@
 import { renderMandalaToCanvas } from "$lib/shared/mandala/services/mandala-renderer";
-import { MANDALA_GRID_RADIUS, ENGINE_GRID_RADIUS } from "$lib/shared/mandala/domain/mandala-constants";
-import type { MandalaPaths, MandalaPalette } from "$lib/shared/mandala/domain/mandala-types";
 import {
-  DARK_MOTION_BLUE_STROKE, DARK_MOTION_BLUE_FILL,
-  DARK_MOTION_RED_STROKE, DARK_MOTION_RED_FILL,
-  DARK_MOTION_PURPLE_STROKE, DARK_MOTION_PURPLE_FILL,
+  MANDALA_GRID_RADIUS,
+  ENGINE_GRID_RADIUS,
+} from "$lib/shared/mandala/domain/mandala-constants";
+import type {
+  MandalaPaths,
+  MandalaPalette,
+} from "$lib/shared/mandala/domain/mandala-types";
+import {
+  DARK_MOTION_BLUE_STROKE,
+  DARK_MOTION_BLUE_FILL,
+  DARK_MOTION_RED_STROKE,
+  DARK_MOTION_RED_FILL,
+  DARK_MOTION_PURPLE_STROKE,
+  DARK_MOTION_PURPLE_FILL,
 } from "$lib/shared/mandala/domain/mandala-constants";
 
 const DARK_PALETTE: MandalaPalette = {
-  blueStroke: DARK_MOTION_BLUE_STROKE, blueFill: DARK_MOTION_BLUE_FILL,
-  redStroke: DARK_MOTION_RED_STROKE, redFill: DARK_MOTION_RED_FILL,
-  purpleStroke: DARK_MOTION_PURPLE_STROKE, purpleFill: DARK_MOTION_PURPLE_FILL,
+  blueStroke: DARK_MOTION_BLUE_STROKE,
+  blueFill: DARK_MOTION_BLUE_FILL,
+  redStroke: DARK_MOTION_RED_STROKE,
+  redFill: DARK_MOTION_RED_FILL,
+  purpleStroke: DARK_MOTION_PURPLE_STROKE,
+  purpleFill: DARK_MOTION_PURPLE_FILL,
 };
 
 /**
@@ -35,7 +47,7 @@ export function drawAlignedMandala(
   ctx: CanvasRenderingContext2D,
   paths: MandalaPaths,
   sizePx: number,
-  opts: { clubTipDx: number; opacity?: number },
+  opts: { clubTipDx: number; opacity?: number }
 ): void {
   const { clubTipDx, opacity = 1 } = opts;
   const s = alignScale(clubTipDx);
@@ -52,7 +64,6 @@ export function drawAlignedMandala(
     palette: DARK_PALETTE,
     offsetX: 0,
     offsetY: 0,
-    glow: { blur: Math.max(2, sizePx * 0.012) },
   });
   ctx.restore();
 }
