@@ -47,6 +47,7 @@ import {
   allFlowFestCampPlanLines,
   createFlowFestCampPlan,
   flowFestCampPlanLineToRuntimeSegment,
+  FLOW_FEST_LOWER_ENTRANCE_APPROACH_ID,
   FLOW_FEST_PUBLIC_ROAD_SOURCE,
   type FlowFestCampPlan,
   type FlowFestCampPlanLandmark,
@@ -372,14 +373,10 @@ function buildMeasuredSiteSurfaces(
   }
 
   for (const drive of plan.internalDrives) {
-    // The measured entrance apron owns the road-to-private-drive junction.
-    // Start the generic private ribbon at the apron join so two differently
-    // tessellated surfaces cannot z-fight or form an angular mound there.
-    const renderedDrive =
-      drive.id === "camp-road-entrance-to-check-in"
-        ? { ...drive, points: drive.points.slice(1) }
-        : drive;
-    const mesh = createPlanRibbon(terrain, renderedDrive, "#aa9676", 0.076);
+    // The entrance scene renders this interpreted centerline as one continuous,
+    // variable-width gravel drive. A second generic ribbon would overlap it.
+    if (drive.id === FLOW_FEST_LOWER_ENTRANCE_APPROACH_ID) continue;
+    const mesh = createPlanRibbon(terrain, drive, "#aa9676", 0.076);
     mesh.name = `FFS_PrivateDrive_${drive.id}_OrthophotoInterpreted`;
     mesh.userData.evidence = drive.evidence;
     group.add(mesh);

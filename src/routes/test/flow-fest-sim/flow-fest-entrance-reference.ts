@@ -2,7 +2,12 @@ import rawReference from "./flow-fest-entrance-reference.json";
 import type { FlowFestReviewCamera } from "../flow-fest-graybox/flow-fest-runtime-contract";
 import {
   FLOW_FEST_CAMP_ROAD_ENTRANCE,
+  FLOW_FEST_LOWER_ENTRANCE_APRON,
+  FLOW_FEST_LOWER_ENTRANCE_APPROACH,
+  FLOW_FEST_LOWER_ENTRANCE_BASIS,
   FLOW_FEST_ENTRANCE_REGISTRATION,
+  FLOW_FEST_LOWER_GATEHOUSE_SITE,
+  flowFestLowerEntranceLocalToWorld,
 } from "./flow-fest-camp-plan";
 
 export const FLOW_FEST_ENTRANCE_VIEW_IDS = [
@@ -81,6 +86,8 @@ export interface FlowFestEntranceReferenceManifest {
     roadTangentUnit: { x: number; z: number };
     driveway: {
       localPolygon: FlowFestEntranceLocalPoint[];
+      roadHalfWidthMeters: number;
+      loopHalfWidthMeters: number;
       surface: string;
     };
     gatehouse: {
@@ -124,6 +131,31 @@ function finite(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function distanceToSegment(
+  point: { x: number; z: number },
+  start: { x: number; z: number },
+  end: { x: number; z: number }
+): number {
+  const deltaX = end.x - start.x;
+  const deltaZ = end.z - start.z;
+  const lengthSquared = deltaX * deltaX + deltaZ * deltaZ;
+  if (lengthSquared <= Number.EPSILON) {
+    return Math.hypot(point.x - start.x, point.z - start.z);
+  }
+  const progress = Math.min(
+    1,
+    Math.max(
+      0,
+      ((point.x - start.x) * deltaX + (point.z - start.z) * deltaZ) /
+        lengthSquared
+    )
+  );
+  return Math.hypot(
+    point.x - (start.x + deltaX * progress),
+    point.z - (start.z + deltaZ * progress)
+  );
+}
+
 export function parseFlowFestEntranceReferenceManifest(
   value: unknown
 ): FlowFestEntranceReferenceManifest {
@@ -139,6 +171,10 @@ export function parseFlowFestEntranceReferenceManifest(
     !finite(candidate.registration?.roadSnapOffsetMeters) ||
     candidate.registration.roadSnapOffsetMeters > 1 ||
     candidate.registration?.naipRasterObjectId !== 146870 ||
+    !finite(candidate.siteLayout?.driveway?.roadHalfWidthMeters) ||
+    !finite(candidate.siteLayout?.driveway?.loopHalfWidthMeters) ||
+    candidate.siteLayout.driveway.roadHalfWidthMeters <=
+      candidate.siteLayout.driveway.loopHalfWidthMeters ||
     !Array.isArray(candidate.views) ||
     candidate.views.length !== FLOW_FEST_ENTRANCE_VIEW_IDS.length
   ) {
@@ -149,8 +185,37 @@ export function parseFlowFestEntranceReferenceManifest(
     candidate.siteLayout.entranceWorld.x - FLOW_FEST_CAMP_ROAD_ENTRANCE.x,
     candidate.siteLayout.entranceWorld.z - FLOW_FEST_CAMP_ROAD_ENTRANCE.z
   );
+  const basisError = Math.max(
+    Math.hypot(
+      candidate.siteLayout.driveInwardUnit.x -
+        FLOW_FEST_LOWER_ENTRANCE_BASIS.driveInwardUnit.x,
+      candidate.siteLayout.driveInwardUnit.z -
+        FLOW_FEST_LOWER_ENTRANCE_BASIS.driveInwardUnit.z
+    ),
+    Math.hypot(
+      candidate.siteLayout.driveRightUnit.x -
+        FLOW_FEST_LOWER_ENTRANCE_BASIS.driveRightUnit.x,
+      candidate.siteLayout.driveRightUnit.z -
+        FLOW_FEST_LOWER_ENTRANCE_BASIS.driveRightUnit.z
+    ),
+    Math.hypot(
+      candidate.siteLayout.roadTangentUnit.x -
+        FLOW_FEST_LOWER_ENTRANCE_BASIS.roadTangentUnit.x,
+      candidate.siteLayout.roadTangentUnit.z -
+        FLOW_FEST_LOWER_ENTRANCE_BASIS.roadTangentUnit.z
+    )
+  );
+  const manifestGatehouse = flowFestLowerEntranceLocalToWorld(
+    candidate.siteLayout.gatehouse.localCenter
+  );
+  const gatehouseError = Math.hypot(
+    manifestGatehouse.x - FLOW_FEST_LOWER_GATEHOUSE_SITE.x,
+    manifestGatehouse.z - FLOW_FEST_LOWER_GATEHOUSE_SITE.z
+  );
   if (
     anchorError > 0.001 ||
+    basisError > 0.001 ||
+    gatehouseError > 0.001 ||
     candidate.sourceReference.panoramaId !==
       FLOW_FEST_ENTRANCE_REGISTRATION.panoramaId
   ) {
@@ -171,7 +236,11 @@ export function parseFlowFestEntranceReferenceManifest(
       !finite(view.camera.horizontalFovDegrees) ||
       view.sourceView.panoramaId !== candidate.sourceReference.panoramaId ||
       view.expectedScreenRegions.length === 0 ||
-      view.baselineDiscrepancies.length === 0
+      view.baselineDiscrepancies.length === 0 ||
+      Math.hypot(
+        view.camera.targetWorld[0]! - FLOW_FEST_LOWER_GATEHOUSE_SITE.x,
+        view.camera.targetWorld[2]! - FLOW_FEST_LOWER_GATEHOUSE_SITE.z
+      ) > 0.002
     ) {
       throw new Error(`Flow Fest entrance reference view is malformed: ${id}`);
     }
@@ -202,28 +271,17 @@ export function parseFlowFestEntranceReferenceRequest(
 export function flowFestEntranceLocalToWorld(
   point: FlowFestEntranceLocalPoint
 ): { x: number; z: number } {
-  const { entranceWorld, driveInwardUnit, driveRightUnit } =
-    FLOW_FEST_ENTRANCE_REFERENCE.siteLayout;
-  return {
-    x:
-      entranceWorld.x +
-      driveRightUnit.x * point.right +
-      driveInwardUnit.x * point.depth,
-    z:
-      entranceWorld.z +
-      driveRightUnit.z * point.right +
-      driveInwardUnit.z * point.depth,
-  };
+  return flowFestLowerEntranceLocalToWorld(point);
 }
 
 export function flowFestEntranceWorldToLocal(point: {
   x: number;
   z: number;
 }): FlowFestEntranceLocalPoint {
-  const { entranceWorld, driveInwardUnit, driveRightUnit } =
-    FLOW_FEST_ENTRANCE_REFERENCE.siteLayout;
-  const deltaX = point.x - entranceWorld.x;
-  const deltaZ = point.z - entranceWorld.z;
+  const { origin, driveInwardUnit, driveRightUnit } =
+    FLOW_FEST_LOWER_ENTRANCE_BASIS;
+  const deltaX = point.x - origin.x;
+  const deltaZ = point.z - origin.z;
   return {
     right: deltaX * driveRightUnit.x + deltaZ * driveRightUnit.z,
     depth: deltaX * driveInwardUnit.x + deltaZ * driveInwardUnit.z,
@@ -236,14 +294,6 @@ export function pointInsideFlowFestEntranceFixtureClearance(
 ): boolean {
   const local = flowFestEntranceWorldToLocal(point);
   const clearance = Math.min(Math.max(crownRadiusMeters, 0), 5.2);
-  const drivewayHalfWidth =
-    local.depth <= 13.5
-      ? 7.5 - ((local.depth - 1.5) / 12) * 1.5
-      : 6 - ((local.depth - 13.5) / 17.5) * 1.4;
-  const insideDriveway =
-    local.depth >= 1.5 - clearance &&
-    local.depth <= 31 + clearance &&
-    Math.abs(local.right) <= drivewayHalfWidth + clearance;
 
   const gatehouse = FLOW_FEST_ENTRANCE_REFERENCE.siteLayout.gatehouse;
   const insideGatehouse =
@@ -258,5 +308,24 @@ export function pointInsideFlowFestEntranceFixtureClearance(
     local.right >= 7 - clearance &&
     local.right <= 20 + clearance;
 
-  return insideDriveway || insideGatehouse || insideRoadRightSightline;
+  const insideApproach = FLOW_FEST_LOWER_ENTRANCE_APPROACH.slice(1).some(
+    (end, index) =>
+      distanceToSegment(
+        point,
+        FLOW_FEST_LOWER_ENTRANCE_APPROACH[index]!,
+        end
+      ) <=
+      FLOW_FEST_ENTRANCE_REFERENCE.siteLayout.driveway.roadHalfWidthMeters +
+        clearance
+  );
+  const insideApron = FLOW_FEST_LOWER_ENTRANCE_APRON.slice(1).some(
+    (end, index) =>
+      distanceToSegment(point, FLOW_FEST_LOWER_ENTRANCE_APRON[index]!, end) <=
+      FLOW_FEST_ENTRANCE_REFERENCE.siteLayout.driveway.loopHalfWidthMeters +
+        clearance
+  );
+
+  return (
+    insideApproach || insideApron || insideGatehouse || insideRoadRightSightline
+  );
 }
