@@ -29,7 +29,6 @@ export const EMBER_GROUND_DETAIL_MASK =
 
 export const EMBER_GROUND_SURFACE_TEXTURES = {
   height: "/textures/ember-surface-r11/rock-ground-height.jpg",
-  roughness: "/textures/ember-surface-r11/rock-ground-roughness.jpg",
 } as const;
 
 export type EmberGroundSurfaceDetailMaps = MaskedGroundSurfaceDetailMaps;
@@ -111,10 +110,8 @@ export function patchEmberGroundDetailMaterial(
       surfaceDetail: {
         maps: surfaceMaps,
         scale: 1.55,
-        albedoStrength: 0.28,
+        albedoStrength: 0.22,
         normalStrength: 0.72,
-        roughnessStrength: 0.46,
-        slopeProjectionStrength: 0.9,
       },
     }
   );

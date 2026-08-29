@@ -48,6 +48,7 @@
     playerPosition?: { x: number; y: number; z: number };
     showCampDressing?: boolean;
     onForestCullingSample?: (details: InstanceFrustumCullingStats) => void;
+    onGrassCullingSample?: (details: InstanceFrustumCullingStats) => void;
     onReady?: (
       details: FlowFestProductionDressing["counts"] & {
         contract: FlowFestRuntimeContract;
@@ -342,6 +343,21 @@
       details.estimatedSubmittedVertices;
   }
 
+  function recordForestGrassCulling(
+    details: InstanceFrustumCullingStats
+  ): void {
+    props.onGrassCullingSample?.({ ...details });
+    const proof = (globalThis as Record<string, unknown>)
+      .__flowFestProduction as
+      | { forestEcology?: Record<string, unknown> }
+      | undefined;
+    if (!proof?.forestEcology) return;
+    proof.forestEcology.grassCullingBatchInstances = details.instances;
+    proof.forestEcology.grassVisibleBatchInstances = details.visibleInstances;
+    proof.forestEcology.grassSubmittedVertices =
+      details.estimatedSubmittedVertices;
+  }
+
   function configureStaticScene(activeScene: Object3D): boolean {
     const reviewOverlay = activeScene.getObjectByName("FFS_ReviewOverlay");
     if (reviewOverlay) reviewOverlay.visible = false;
@@ -519,6 +535,7 @@
     barkTint={atmosphere.grade.barkTint}
     onReady={recordForestEcologyReady}
     onCullingSample={recordForestEcologyCulling}
+    onGrassCullingSample={recordForestGrassCulling}
   />
 {/if}
 

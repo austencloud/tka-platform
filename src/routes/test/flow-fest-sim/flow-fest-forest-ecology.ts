@@ -69,6 +69,7 @@ export const FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS = {
 export const FLOW_FEST_FOREST_DISTANCE_LOD = {
   nearMaximumMeters: 55,
   midMaximumMeters: 130,
+  grassMaximumMeters: 70,
   cameraPositionThresholdMeters: 0.75,
   cameraRotationThresholdRadians: 0.015,
 } as const;

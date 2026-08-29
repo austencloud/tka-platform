@@ -29,6 +29,11 @@
 
   let { scene = null, strength = 0.92 }: Props = $props();
   const { renderer } = useThrelte();
+  const groundDetailDisabled =
+    import.meta.env.DEV &&
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("emberGroundDetail") ===
+      "off";
   let detailMaps = $state<Partial<Record<EmberGroundDetailFamily, Texture>>>(
     {}
   );
@@ -132,6 +137,7 @@
   });
 
   $effect(() => {
+    if (groundDetailDisabled) return;
     const loadedScene = scene;
     const textures = detailMaps;
     const surfaces = surfaceMaps;
@@ -140,7 +146,7 @@
       !loadedScene ||
       !mask ||
       Object.keys(textures).length < 4 ||
-      Object.keys(surfaces).length < 2
+      Object.keys(surfaces).length < 1
     )
       return;
 
