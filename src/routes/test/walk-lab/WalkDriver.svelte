@@ -20,10 +20,7 @@
     ScheduledGaitTimingSample,
     TerminalStepPlan,
   } from "@austencloud/scene-3d";
-  import {
-    stepOf,
-    stepOfGaitDistance,
-  } from "$lib/shared/3d/diagnostics/gait/walk-patterns";
+  import { stepOf } from "$lib/shared/3d/diagnostics/gait/walk-patterns";
   import {
     sampleDestinationWalkPlan,
     type DestinationWalkPlan,
@@ -92,7 +89,6 @@
   let scoreStarted = false;
   let patternTerminalStepPlan: TerminalStepPlan | null = null;
   let holdPatternTime = false;
-  let previousGaitDistanceStep: number | null = null;
 
   $effect(() => {
     if (destinationPlan && gaitTimingPlan) {
@@ -119,7 +115,6 @@
     scoreStarted = false;
     patternTerminalStepPlan = null;
     holdPatternTime = false;
-    previousGaitDistanceStep = null;
     onDepartureStep?.(null);
     onGaitTimingSample?.(null);
   });
@@ -307,25 +302,7 @@
 
     facing = tick.facing;
 
-    const fallbackStep = stepOf(tick, running ? speed : 0, dt);
-    const distanceStep = gaitClock?.distanceStep;
-    const canDistanceMatch =
-      !manual &&
-      tick.isMoving &&
-      gaitClock?.moving === true &&
-      gaitClock.cadence > 1e-6 &&
-      distanceStep !== undefined &&
-      previousGaitDistanceStep !== null &&
-      distanceStep >= previousGaitDistanceStep;
-    const step = canDistanceMatch
-      ? stepOfGaitDistance(
-          tick,
-          running ? speed : 0,
-          gaitClock!.cadence,
-          distanceStep! - previousGaitDistanceStep!
-        )
-      : fallbackStep;
-    previousGaitDistanceStep = distanceStep ?? null;
+    const step = stepOf(tick, running ? speed : 0, dt);
     x += step.dx;
     z += step.dz;
     travelled += step.distance;
