@@ -46,6 +46,8 @@
 
 <style>
   .variant-picker {
+    width: min(100%, 17.5rem);
+    box-sizing: border-box;
     padding: 0.65rem;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid
