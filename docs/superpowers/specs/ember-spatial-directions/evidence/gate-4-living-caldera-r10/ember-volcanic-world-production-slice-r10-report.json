@@ -48,15 +48,15 @@
   "artifacts": {
     "blend": "blender/ember-volcanic-world-production-slice-r10.blend",
     "rawGlb": "static/models/ember/ember-production-slice_raw.glb",
-    "rawGlbSha256": "aa4a1a5068929863a48754d82a71a8e9123d7f3b2d016edf61e35a29aeda966e",
-    "rawGlbBytes": 14773344,
+    "rawGlbSha256": "02e4302e0b6237b84750bb87ef70c36c3e9ae423964540b551ce353fc8ed6d1d",
+    "rawGlbBytes": 14777292,
     "worldContract": "src/lib/shared/3d/environments/domain/models/scene-configs/ember-volcanic-world-r7.json",
-    "worldContractSha256": "77eb5fb39b97f629d86653524e92d1d4ddb039e6265351b2d1b42e1b77d7f82e"
+    "worldContractSha256": "ef89c5aa41863d0d7c8dda1b631a7858be0a9c7312f3caee35d54d3e3aca5140"
   },
   "contract": {
     "stageSurfaceLocalY": 0.5,
     "clearActionRadiusMeters": 4.5,
-    "minimumStructuralRadialClearanceMeters": 6.156,
+    "minimumStructuralRadialClearanceMeters": 5.8594,
     "heroCenterBlenderXYZ": [
       -8.5,
       -27.0,
@@ -124,37 +124,37 @@
         0.55
       ],
       [
-        14.0,
+        13.0,
         2.0,
         0.25
       ],
       [
-        12.0,
+        10.5,
         -8.0,
         0.1
       ],
       [
-        8.0,
+        -3.5,
         -24.0,
         -0.02
       ],
       [
-        -1.0,
+        -11.0,
         -43.0,
         -0.12
       ],
       [
-        -14.0,
+        -9.0,
         -64.0,
         -0.18
       ],
       [
-        -10.0,
+        -4.0,
         -91.0,
         -0.24
       ],
       [
-        2.0,
+        1.0,
         -122.0,
         -0.32
       ]
@@ -163,7 +163,7 @@
       30.5,
       6.0
     ],
-    "collapsedLavaBankRiverEdgeClearanceMeters": 6.181,
+    "collapsedLavaBankRiverEdgeClearanceMeters": 6.8799,
     "continuousOrbitDepthBands": [
       "foreground",
       "midground",
@@ -185,12 +185,13 @@
     ]
   },
   "geometry": {
-    "meshObjectCount": 87,
-    "triangleCount": 197898,
+    "meshObjectCount": 90,
+    "triangleCount": 197908,
     "maximumMeshTriangleCount": 49345,
     "maximumMeshTriangleObject": "Ember_Meshy_Columnar_Escarpment",
-    "materialCount": 5,
+    "materialCount": 6,
     "materials": [
+      "Ember_Live_Fissure",
       "Ember_R9_fresh-rift-synthesis_Blended_Terrain",
       "Ember_R9_fresh-rift-synthesis_fractured-basalt",
       "Ember_R9_fresh-rift-synthesis_iron-contact-crust",
@@ -201,6 +202,7 @@
       "caldera-bank": 3,
       "cooled-fissure": 3,
       "lava-channel-levee": 2,
+      "live-fissure": 3,
       "meshy-distant-caldera": 1,
       "meshy-fumarole-talus": 1,
       "meshy-hero-geology": 1,
@@ -217,18 +219,18 @@
     "columnHeightRangeMeters": [],
     "maximumCapLossMeters": null,
     "authoredHeroMeshCount": 55,
-    "authoredWorldMeshCount": 87,
+    "authoredWorldMeshCount": 90,
     "volcanicBasinCount": 1,
     "lavaChannelLeveeCount": 2,
     "boundsBlenderXYZ": {
       "min": [
         -190.0,
-        -224.1357,
+        -190.0,
         -5.968
       ],
       "max": [
         190.0,
-        145.0,
+        206.1728,
         51.8287
       ]
     }
@@ -362,10 +364,10 @@
     "direction": "fresh-rift-synthesis",
     "approvalTrackerItem": "ahPuPwh34G3FeqvUEHsB",
     "familyPolygonCounts": {
-      "0": 5359,
-      "1": 38437,
-      "2": 50034,
-      "3": 82205
+      "0": 5363,
+      "1": 38438,
+      "2": 50050,
+      "3": 82184
     },
     "runtimeAssets": {
       "detailTextures": [
@@ -392,8 +394,8 @@
       ],
       "familyMask": {
         "path": "static/textures/ember-surface-r9/fresh-rift-family-mask.png",
-        "bytes": 675862,
-        "sha256": "5977864278919dcb14cce03b9426950e4bc8decf78cf79be43a96ea25ba56fc4",
+        "bytes": 674113,
+        "sha256": "e5592d2c02b48ec20cb5948a61d655639ab0ddd6175acb26c5d34347eb64cd75",
         "resolution": [
           1024,
           1024

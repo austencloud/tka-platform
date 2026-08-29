@@ -279,8 +279,8 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
     ],
     materials: {
       world: {
-        tint: "#071014",
-        tintBlend: 0.3,
+        tint: "#03070a",
+        tintBlend: 0.52,
         emissive: "#3a0903",
         emissiveBlend: 0.08,
         emissiveIntensity: 0.16,
@@ -288,8 +288,8 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
         metalnessAdd: -0.05,
       },
       playableSurface: {
-        tint: "#0b1215",
-        tintBlend: 0.18,
+        tint: "#070b0d",
+        tintBlend: 0.34,
         emissive: "#681704",
         emissiveBlend: 0.025,
         emissiveIntensity: 0.05,

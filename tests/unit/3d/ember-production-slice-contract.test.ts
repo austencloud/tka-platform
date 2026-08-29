@@ -84,6 +84,7 @@ describe("Ember production-slice contracts", () => {
         "stage-crust-transition",
         "playable-surface",
         "cooled-fissure",
+        "live-fissure",
         "caldera-bank",
         "perimeter-talus-cluster",
         "volcanic-basin",
@@ -131,7 +132,7 @@ describe("Ember production-slice contracts", () => {
     );
   });
 
-  it("ships only the approved Fresh Rift material families", () => {
+  it("ships only the approved Fresh Rift families and live-fissure source", () => {
     expect(new Set(gltf.materials?.map((material) => material.name))).toEqual(
       new Set([
         "Ember_R9_fresh-rift-synthesis_roped-pahoehoe",
@@ -139,6 +140,7 @@ describe("Ember production-slice contracts", () => {
         "Ember_R9_fresh-rift-synthesis_iron-contact-crust",
         "Ember_R9_fresh-rift-synthesis_windborne-ash",
         "Ember_R9_fresh-rift-synthesis_Blended_Terrain",
+        "Ember_Live_Fissure",
       ])
     );
   });

@@ -2126,6 +2126,7 @@ def create_volcanic_basin(
                     (-24.0, 24.0, 14.0, 27.0, -0.22),
                     (30.5, 6.0, 5.0, 10.0, -0.18),
                     (19.0, 15.0, 6.2, 13.0, -0.2),
+                    (1.0, -122.0, 17.0, 34.0, 1.35),
                 ):
                     asset_distance = math.hypot(x - asset_x, runtime_z - asset_z)
                     asset_blend = 1.0 - smoothstep(inner_radius, outer_radius, asset_distance)
@@ -2825,9 +2826,9 @@ def create_meshy_geology_ensemble(
     distant_caldera = import_meshy_geology(
         "distant-breached-caldera.glb",
         "Ember_Meshy_Distant_Breached_Caldera",
-        (108.0, -158.0, 2.0),
-        22.0,
-        172.0,
+        (1.0, 122.0, 1.6),
+        28.0,
+        8.0,
         "meshy-distant-caldera",
         "distant-breached-caldera",
         "01a045d9-7610-7858-bf2d-3caba206f23a",
@@ -2960,10 +2961,12 @@ def build_production_geometry(
             "cooled-fissure",
             f"fissure-{index + 1:02d}",
         )
-        # The responsive platform owns the active floor heat in runtime. The
-        # production shelf only carries cooled seams so the scene never doubles
-        # into a drawn-on neon diagram.
-        live_ranges: list[tuple[int, int]] = []
+        # Short live breaks give the lava-bounce lights a physical source while
+        # most of each fault remains cooled blackglass. Keeping the hot spans
+        # discontinuous avoids turning the performance floor into a neon map.
+        live_ranges: list[tuple[int, int]] = (
+            [(1, 3)] if index == 0 else [(3, 5)] if index == 1 else [(1, 2)]
+        )
         for live_index, (start, end) in enumerate(live_ranges):
             live_points = points[start : end + 1]
             if len(live_points) < 2:
