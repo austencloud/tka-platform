@@ -1945,8 +1945,7 @@ def r8_geological_height(
         breach = math.exp(
             -(((x - 1.0) / 42.0) ** 2 + ((runtime_z - 132.0) / 68.0) ** 2)
         ) * 5.5
-        living_base = 0.14 + terrain_weight * (0.16 + radial_distance * 0.009)
-        return living_base + terrain_weight * (
+        return base + terrain_weight * (
             west_scarp
             + east_scarp
             + west_rear_mass
@@ -2018,7 +2017,16 @@ def r8_geological_height(
             max(0.0, math.sin(x * 0.055 + runtime_z * 0.019 + seed_phase)) ** 3
         ) * smoothstep(72.0, 176.0, radial_distance) * 3.6
 
-        return base + terrain_weight * (
+        # Keep the continuous basin just below the playable blackglass skin.
+        # At the old generic -0.36 m base, every buried shelf stratum and crust
+        # transition was exposed edge-on from the audience and hero cameras,
+        # turning the foreground into a stack of polygon sheets. The 6 cm
+        # reveal preserves the authored action surface while the surrounding
+        # country now swallows all of that construction geometry.
+        living_base = float(WORLD_CONTRACT["terrain"]["actionTerrainBaseHeight"]) + terrain_weight * (
+            0.02 + radial_distance * 0.003
+        )
+        return living_base + terrain_weight * (
             north_west_wall
             + north_east_wall
             + north_west_crown

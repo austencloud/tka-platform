@@ -200,6 +200,7 @@ describe("Ember production-slice contracts", () => {
         runtimeXRange: [number, number];
         runtimeZRange: [number, number];
         actionFloorRadius: number;
+        actionTerrainBaseHeight: number;
         direction: string;
       };
     };
@@ -246,6 +247,8 @@ describe("Ember production-slice contracts", () => {
     expect(world.terrain.runtimeZRange[1]).toBeGreaterThanOrEqual(180);
     expect(world.terrain.direction).toBe("living-caldera");
     expect(world.terrain.actionFloorRadius).toBe(10.8);
+    expect(world.terrain.actionTerrainBaseHeight).toBeCloseTo(0.44);
+    expect(world.terrain.actionTerrainBaseHeight).toBeLessThan(0.5);
     expect(getCanonicalPerformerStageBounds(8).radius).toBeLessThan(
       world.terrain.actionFloorRadius
     );

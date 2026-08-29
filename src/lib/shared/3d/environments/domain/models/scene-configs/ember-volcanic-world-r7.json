@@ -48,6 +48,7 @@
     "nearMaterialEndsAtDistance": 66.0,
     "middleMaterialEndsAtDistance": 126.0,
     "actionFloorRadius": 10.8,
+    "actionTerrainBaseHeight": 0.44,
     "direction": "living-caldera",
     "seed": 6301
   },

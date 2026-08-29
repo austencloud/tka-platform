@@ -48,10 +48,10 @@
   "artifacts": {
     "blend": "blender/ember-volcanic-world-production-slice-r10.blend",
     "rawGlb": "static/models/ember/ember-production-slice_raw.glb",
-    "rawGlbSha256": "02e4302e0b6237b84750bb87ef70c36c3e9ae423964540b551ce353fc8ed6d1d",
-    "rawGlbBytes": 14777292,
+    "rawGlbSha256": "28aab770d29055065e6b4b4adf2ab53d1df31dee0ffd91a5c80e223621912e36",
+    "rawGlbBytes": 14777116,
     "worldContract": "src/lib/shared/3d/environments/domain/models/scene-configs/ember-volcanic-world-r7.json",
-    "worldContractSha256": "e8c27b1ed0dab823d8123bbf9fce64294185d58d6a61ba176736e9136a0684d5"
+    "worldContractSha256": "da17fad5fd4be2b7b97772c2df5f37be87d8deda5e07866361c63c99858bce70"
   },
   "contract": {
     "stageSurfaceLocalY": 0.5,
@@ -268,12 +268,12 @@
       "min": [
         -190.0,
         -190.0,
-        -5.968
+        -6.3883
       ],
       "max": [
         190.0,
         206.1728,
-        51.8287
+        51.3248
       ]
     }
   },
@@ -407,9 +407,9 @@
     "approvalTrackerItem": "ahPuPwh34G3FeqvUEHsB",
     "familyPolygonCounts": {
       "0": 5363,
-      "1": 38438,
-      "2": 50050,
-      "3": 82184
+      "1": 38439,
+      "2": 50055,
+      "3": 82178
     },
     "runtimeAssets": {
       "detailTextures": [
