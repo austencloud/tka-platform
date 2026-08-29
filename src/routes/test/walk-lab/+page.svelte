@@ -639,7 +639,6 @@
             isMoving={walk.isMoving}
             moveSpeed={walk.speed}
             moveDirection={walk.direction}
-            worldMotionMatchesGait={walk.worldMotionMatchesGait ?? false}
             {lateralGait}
             turnRequestOverride={walk.turnRequest ?? null}
             terminalStepPlan={activeTerminalStepPlan}

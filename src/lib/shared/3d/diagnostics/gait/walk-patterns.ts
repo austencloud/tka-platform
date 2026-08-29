@@ -202,22 +202,6 @@ export interface WalkStep {
   distance: number;
 }
 
-function stepAlong(tick: WalkTick, distance: number): WalkStep {
-  const length = Math.hypot(tick.direction.x, tick.direction.z);
-  if (!tick.isMoving || length < 1e-6 || distance <= 0) {
-    return { dx: 0, dz: 0, distance: 0 };
-  }
-  const ux = tick.direction.x / length;
-  const uz = tick.direction.z / length;
-  const sin = Math.sin(tick.facing);
-  const cos = Math.cos(tick.facing);
-  return {
-    dx: (ux * -cos + uz * sin) * distance,
-    dz: (ux * sin + uz * cos) * distance,
-    distance,
-  };
-}
-
 /**
  * Turn one tick into a world-space step.
  *
@@ -227,27 +211,20 @@ function stepAlong(tick: WalkTick, distance: number): WalkStep {
  * looks like a rig fault rather than a bug here, so this lives in one place.
  */
 export function stepOf(tick: WalkTick, speed: number, dt: number): WalkStep {
-  return stepAlong(tick, Math.max(0, speed * tick.rate * dt));
-}
-
-/**
- * Advance the world owner by the animator's contact-matched distance clock.
- *
- * One distance-step is one authored footfall. `speed / cadence` is therefore
- * the commanded metres per footfall; multiplying by the observed clock delta
- * preserves the captured acceleration inside the step without changing its
- * total distance.
- */
-export function stepOfGaitDistance(
-  tick: WalkTick,
-  speed: number,
-  cadence: number,
-  distanceStepDelta: number
-): WalkStep {
-  if (speed <= 0 || cadence <= 1e-6 || distanceStepDelta <= 0) {
+  const length = Math.hypot(tick.direction.x, tick.direction.z);
+  if (!tick.isMoving || length < 1e-6 || speed <= 0 || dt <= 0) {
     return { dx: 0, dz: 0, distance: 0 };
   }
-  return stepAlong(tick, distanceStepDelta * ((speed * tick.rate) / cadence));
+  const ux = tick.direction.x / length;
+  const uz = tick.direction.z / length;
+  const sin = Math.sin(tick.facing);
+  const cos = Math.cos(tick.facing);
+  const distance = speed * tick.rate * dt;
+  return {
+    dx: (ux * -cos + uz * sin) * distance,
+    dz: (ux * sin + uz * cos) * distance,
+    distance,
+  };
 }
 
 /** Out, about-face, back. The plainest walk there is, plus its two ends. */

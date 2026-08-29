@@ -153,31 +153,6 @@ describe("locomotion gait clock", () => {
     expect(harness.strideScale).toBeCloseTo(1, 8);
   });
 
-  it("grants lateral foot locks only when the host follows the gait distance clock", () => {
-    const animator = new LocomotionAnimator();
-    const harness = animator as unknown as {
-      currentDirWeights: Record<string, number>;
-    };
-    harness.currentDirWeights.grapevineLeft = 1;
-
-    animator.setLocomotion({
-      isMoving: true,
-      speed: 1,
-      moveDirection: { x: -1, z: 0 },
-      lateralGait: "grapevine",
-    });
-    expect(animator.getFootPlantConfidence()).toBe(0);
-
-    animator.setLocomotion({
-      isMoving: true,
-      speed: 1,
-      moveDirection: { x: -1, z: 0 },
-      lateralGait: "grapevine",
-      worldMotionMatchesGait: true,
-    });
-    expect(animator.getFootPlantConfidence()).toBe(1);
-  });
-
   it("keeps authored steps monotonic when normalized phase wraps", () => {
     const { animator, harness } = animatorWithOneSecondGait();
 
