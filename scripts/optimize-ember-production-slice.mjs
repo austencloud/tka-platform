@@ -94,13 +94,13 @@ function applyEmberMaterialProfile(document) {
 }
 
 const runtimeOutput = "static/models/ember/ember-production-slice.glb";
-const versionedOutput = "static/models/ember/ember-production-slice-r9.glb";
+const versionedOutput = "static/models/ember/ember-production-slice-r10.glb";
 
 await optimizeGltfKtx2({
   input: "static/models/ember/ember-production-slice_raw.glb",
   output: runtimeOutput,
   temporaryStem: "ember-production-slice",
-  label: "Ember Fresh Rift breached-caldera terraces and surface ecology",
+  label: "Ember Living Caldera and Fresh Rift surface ecology",
   textureSize: 1024,
   materialTextureSize: 512,
   simplifyRatio: 0.92,
@@ -109,4 +109,4 @@ await optimizeGltfKtx2({
 });
 
 await copyFile(runtimeOutput, versionedOutput);
-console.log(`  preserved reversible R9 asset: ${versionedOutput}`);
+console.log(`  preserved reversible R10 asset: ${versionedOutput}`);
