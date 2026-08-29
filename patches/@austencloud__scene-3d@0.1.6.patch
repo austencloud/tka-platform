@@ -6486,7 +6486,7 @@ diff --git a/dist/lib/services/implementations/AvatarAnimator.d.ts.map b/dist/li
 deleted file mode 100644
 index f8e47d42167b6ea9bb4fd8f44f41273f48f1943b..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/AvatarAnimator.js b/dist/lib/services/implementations/AvatarAnimator.js
-index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903b59b90b3 100644
+index bdd5ae35ed47c58d29c537a7805705783f9b9066..f84abaddcc08dc0e7f85dd79e372fb2953189a10 100644
 --- a/dist/lib/services/implementations/AvatarAnimator.js
 +++ b/dist/lib/services/implementations/AvatarAnimator.js
 @@ -4,7 +4,38 @@
@@ -6529,7 +6529,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
  export class AvatarAnimator {
      ikSolver;
      skeleton;
-@@ -67,6 +98,71 @@ export class AvatarAnimator {
+@@ -67,6 +98,74 @@ export class AvatarAnimator {
       * on top of the twist rest pose before arm IK runs. 0 = disabled.
       */
      externalSpinePitchRad = 0;
@@ -6570,12 +6570,15 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
 +    reachLeanDirSmoothed = new Vector3(0, 0, 1);
 +    reachLeanAngleSmoothed = 0;
 +    _frameLeanVec = new Vector3();
-+    // The body's own horizontal axes in world space (from the skeleton
-+    // root), so spine twist and depth terms survive rig yaw.
++    // The body's own horizontal axes in world space. Anatomical right is
++    // measured from the mapped shoulders because exporters disagree about
++    // whether model +X means left or right. Forward still comes from the root.
 +    _bodyFrame = {
 +        lateral: new Vector3(1, 0, 0),
 +        forward: new Vector3(0, 0, 1),
 +    };
++    _leftShoulderWorld = new Vector3();
++    _rightShoulderWorld = new Vector3();
 +    // Scratch objects for per-frame math (no allocation in the hot path)
 +    _v1 = new Vector3();
 +    _v2 = new Vector3();
@@ -6601,7 +6604,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
      constructor(ikSolver, skeleton, poleComputer, clavicleRaiser, spineTwister) {
          this.ikSolver = ikSolver;
          this.skeleton = skeleton;
-@@ -142,7 +238,7 @@ export class AvatarAnimator {
+@@ -142,7 +241,7 @@ export class AvatarAnimator {
              : null;
          this.targetPose.timestamp = Date.now();
      }
@@ -6610,7 +6613,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
          this.leftArmIK.targetWeight = blueProp ? 1 : 0;
          this.rightArmIK.targetWeight = redProp ? 1 : 0;
          const ox = offset?.x ?? 0;
-@@ -154,6 +250,7 @@ export class AvatarAnimator {
+@@ -154,6 +253,7 @@ export class AvatarAnimator {
          this.targetPose.leftHand = blueProp
              ? {
                  targetPosition: new Vector3(blueProp.worldPosition.x - ox, blueProp.worldPosition.y - oy, blueProp.worldPosition.z - oz),
@@ -6618,7 +6621,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
                  staffAngle: blueProp.staffRotationAngle,
                  plane: blueProp.plane,
                  weight: 1,
-@@ -162,6 +259,7 @@ export class AvatarAnimator {
+@@ -162,6 +262,7 @@ export class AvatarAnimator {
          this.targetPose.rightHand = redProp
              ? {
                  targetPosition: new Vector3(redProp.worldPosition.x - ox, redProp.worldPosition.y - oy, redProp.worldPosition.z - oz),
@@ -6626,7 +6629,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
                  staffAngle: redProp.staffRotationAngle,
                  plane: redProp.plane,
                  weight: 1,
-@@ -169,6 +267,37 @@ export class AvatarAnimator {
+@@ -169,6 +270,37 @@ export class AvatarAnimator {
              : null;
          this.targetPose.timestamp = Date.now();
      }
@@ -6664,7 +6667,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
      setLeftHandTarget(target) {
          this.targetPose.leftHand = { ...target };
          this.targetPose.timestamp = Date.now();
-@@ -197,7 +326,7 @@ export class AvatarAnimator {
+@@ -197,7 +329,7 @@ export class AvatarAnimator {
          // Apply combined layers
          const finalPose = this.computeFinalPose();
          // Solve IK for arms
@@ -6673,7 +6676,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
      }
      blendToTarget(_deltaTime) {
          // Hands snap directly to prop positions - no lerp.
-@@ -273,18 +402,47 @@ export class AvatarAnimator {
+@@ -273,18 +405,65 @@ export class AvatarAnimator {
          }
          return result;
      }
@@ -6697,32 +6700,50 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
          if (hipsBone) {
              hipsBone.getWorldPosition(bodyCenter);
          }
-+        // The body's own horizontal axes, from the skeleton root's world
-+        // orientation. Rig yaw lives OUTSIDE the avatar (PerformerRig rotates
-+        // the wrapper group), so raw world X/Z comparisons break as soon as
-+        // the rig faces anywhere but the audience. The root is never modified
-+        // by IK, so this can't feed back.
++        // Build an anatomical body frame. Rig yaw lives OUTSIDE the avatar
++        // (PerformerRig rotates the wrapper group), and model exporters disagree
++        // about whether +X is anatomical left or right. The mapped shoulder line
++        // is the only reliable source of that answer.
 +        if (state.root) {
 +            state.root.getWorldQuaternion(this._q1);
 +            this._bodyFrame.lateral.set(1, 0, 0).applyQuaternion(this._q1);
 +            this._bodyFrame.lateral.y = 0;
 +            this._bodyFrame.forward.set(0, 0, 1).applyQuaternion(this._q1);
 +            this._bodyFrame.forward.y = 0;
-+            if (this._bodyFrame.lateral.lengthSq() > 1e-6 &&
-+                this._bodyFrame.forward.lengthSq() > 1e-6) {
-+                this._bodyFrame.lateral.normalize();
++        }
++        else {
++            this._bodyFrame.lateral.set(1, 0, 0);
++            this._bodyFrame.forward.set(0, 0, 1);
++        }
++        if (leftChain && rightChain) {
++            leftChain.root.getWorldPosition(this._leftShoulderWorld);
++            rightChain.root.getWorldPosition(this._rightShoulderWorld);
++            this._bodyFrame.lateral
++                .subVectors(this._rightShoulderWorld, this._leftShoulderWorld);
++            this._bodyFrame.lateral.y = 0;
++        }
++        if (this._bodyFrame.lateral.lengthSq() > 1e-6 &&
++            this._bodyFrame.forward.lengthSq() > 1e-6) {
++            this._bodyFrame.lateral.normalize();
++            // Remove any exporter skew so forward and lateral remain an orthogonal
++            // frame. This also keeps projections stable under wrapper yaw.
++            this._bodyFrame.forward.addScaledVector(this._bodyFrame.lateral, -this._bodyFrame.forward.dot(this._bodyFrame.lateral));
++            if (this._bodyFrame.forward.lengthSq() > 1e-6) {
 +                this._bodyFrame.forward.normalize();
 +            }
 +            else {
-+                // Degenerate (root pitched ~90 deg): fall back to world axes.
-+                this._bodyFrame.lateral.set(1, 0, 0);
 +                this._bodyFrame.forward.set(0, 0, 1);
 +            }
++        }
++        else {
++            // Degenerate (missing shoulder span or root pitched ~90°).
++            this._bodyFrame.lateral.set(1, 0, 0);
++            this._bodyFrame.forward.set(0, 0, 1);
 +        }
          // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
          // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
          // position feeds back and causes oscillation.
-@@ -335,7 +493,7 @@ export class AvatarAnimator {
+@@ -335,7 +514,7 @@ export class AvatarAnimator {
              // Nullable hands are first-class: SpineTwister handles the
              // single-hand-gaze branch and the no-hand identity branch
              // internally, so we pass pose hands through as-is.
@@ -6731,7 +6752,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
              // Apply twist to each bone individually for a natural spinal curve.
              // Each bone gets its own weighted quaternion from SpineTwister.
              const applySpineTwist = (boneName, key, twistQuat) => {
-@@ -389,11 +547,80 @@ export class AvatarAnimator {
+@@ -389,11 +568,88 @@ export class AvatarAnimator {
                      hipsBoneForUpdate.updateMatrixWorld(true);
              }
          }
@@ -6807,13 +6828,21 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
 +        }
          const leftHand = pose.leftHand;
          const rightHand = pose.rightHand;
++        let pairRouting = {
++            left: "natural",
++            right: "natural",
++            crossing: 0,
++        };
++        if (this.poleComputer && leftHand && rightHand) {
++            pairRouting = this.poleComputer.computePairRouting(leftHand.targetPosition, rightHand.targetPosition, bodyCenter, this._bodyFrame);
++        }
          if (leftChain && leftHand) {
              if (this.leftArmIK.weight > 0.001) {
 -                const leftTarget = leftHand.targetPosition;
                  // Save what the locomotion animation wrote to bone quaternions
                  const animRootQuat = leftChain.root.quaternion.clone();
                  const animMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -402,7 +629,7 @@ export class AvatarAnimator {
+@@ -402,7 +658,7 @@ export class AvatarAnimator {
                  if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
                      const leftShoulder = state.bones.get("LeftShoulder");
                      if (leftShoulder) {
@@ -6822,7 +6851,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
                          this.leftClavicleQuat.slerp(targetQuat, this.smoothingFactor);
                          leftShoulder.quaternion
                              .copy(this.leftClavicleRestQuat)
-@@ -410,6 +637,9 @@ export class AvatarAnimator {
+@@ -410,17 +666,28 @@ export class AvatarAnimator {
                          leftShoulder.updateMatrixWorld(true);
                      }
                  }
@@ -6832,7 +6861,17 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
                  // Build IK target with optional pole vector
                  const target = {
                      position: leftTarget,
-@@ -421,6 +651,9 @@ export class AvatarAnimator {
+                     weight: leftHand.weight,
+                 };
+                 if (this._poleVectorsEnabled && this.poleComputer && leftHand.plane) {
+-                    const idealPole = this.poleComputer.computePoleVector(leftTarget, leftHand.plane, "left", bodyCenter);
++                    leftChain.root.getWorldPosition(this._leftShoulderWorld);
++                    const idealPole = this.poleComputer.computePoleVector(leftTarget, leftHand.plane, "left", bodyCenter, {
++                        bodyFrame: this._bodyFrame,
++                        shoulderPosition: this._leftShoulderWorld,
++                        routing: pairRouting.left,
++                    });
+                     this.leftPoleVector.lerp(idealPole, this.smoothingFactor);
                      this.leftPoleVector.normalize();
                      target.poleHint = this.leftPoleVector.clone();
                  }
@@ -6842,7 +6881,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
                  // Solve IK (overwrites bone quaternions)
                  this.ikSolver.solveAndApply(leftChain, target);
                  // Save IK results BEFORE blending - .copy() would overwrite them
-@@ -432,12 +665,13 @@ export class AvatarAnimator {
+@@ -432,12 +699,13 @@ export class AvatarAnimator {
                  leftChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
                  leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
                  leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
@@ -6857,7 +6896,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
                  // Save what the locomotion animation wrote to bone quaternions
                  const animRootQuat = rightChain.root.quaternion.clone();
                  const animMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -446,7 +680,7 @@ export class AvatarAnimator {
+@@ -446,7 +714,7 @@ export class AvatarAnimator {
                  if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
                      const rightShoulder = state.bones.get("RightShoulder");
                      if (rightShoulder) {
@@ -6866,7 +6905,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
                          this.rightClavicleQuat.slerp(targetQuat, this.smoothingFactor);
                          rightShoulder.quaternion
                              .copy(this.rightClavicleRestQuat)
-@@ -454,6 +688,9 @@ export class AvatarAnimator {
+@@ -454,17 +722,28 @@ export class AvatarAnimator {
                          rightShoulder.updateMatrixWorld(true);
                      }
                  }
@@ -6876,7 +6915,17 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
                  // Build IK target with optional pole vector
                  const target = {
                      position: rightTarget,
-@@ -465,6 +702,9 @@ export class AvatarAnimator {
+                     weight: rightHand.weight,
+                 };
+                 if (this._poleVectorsEnabled && this.poleComputer && rightHand.plane) {
+-                    const idealPole = this.poleComputer.computePoleVector(rightTarget, rightHand.plane, "right", bodyCenter);
++                    rightChain.root.getWorldPosition(this._rightShoulderWorld);
++                    const idealPole = this.poleComputer.computePoleVector(rightTarget, rightHand.plane, "right", bodyCenter, {
++                        bodyFrame: this._bodyFrame,
++                        shoulderPosition: this._rightShoulderWorld,
++                        routing: pairRouting.right,
++                    });
+                     this.rightPoleVector.lerp(idealPole, this.smoothingFactor);
                      this.rightPoleVector.normalize();
                      target.poleHint = this.rightPoleVector.clone();
                  }
@@ -6886,7 +6935,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
                  // Solve IK (overwrites bone quaternions)
                  this.ikSolver.solveAndApply(rightChain, target);
                  // Save IK results BEFORE blending - .copy() would overwrite them
-@@ -476,11 +716,299 @@ export class AvatarAnimator {
+@@ -476,11 +755,299 @@ export class AvatarAnimator {
                  rightChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
                  rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
                  rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
@@ -7186,7 +7235,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903
      addLayer(layer) {
          this.layers.set(layer.id, layer);
      }
-@@ -521,6 +1049,12 @@ export class AvatarAnimator {
+@@ -521,6 +1088,12 @@ export class AvatarAnimator {
      setExternalSpinePitch(radians) {
          this.externalSpinePitchRad = radians;
      }
@@ -8165,6 +8214,191 @@ index 458843c31763aed60b1638cf9f3a511acfa118a3..00000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/ElbowPoleComputer.d.ts.map b/dist/lib/services/implementations/ElbowPoleComputer.d.ts.map
 deleted file mode 100644
 index 173449a757714cbbd61602f8af64218d423e9c39..0000000000000000000000000000000000000000
+diff --git a/dist/lib/services/implementations/ElbowPoleComputer.js b/dist/lib/services/implementations/ElbowPoleComputer.js
+index d42bcd447471742c09a421dc92e9eb63986abbb4..0729807236922d57af994d099b1e900b02214b63 100644
+--- a/dist/lib/services/implementations/ElbowPoleComputer.js
++++ b/dist/lib/services/implementations/ElbowPoleComputer.js
+@@ -18,20 +18,45 @@ import { Plane } from "../../domain/enums/Plane";
+  * to the body's actual width.
+  */
+ const SHOULDER_HALF_WIDTH = 0.2;
++/** Arms this close to an equal height keep the same semantic layering. */
++const LAYER_HEIGHT_DEAD_ZONE = 0.04;
++/** Both hands must meaningfully cross before paired routing engages. */
++const PAIRED_CROSS_ENGAGE = 0.25;
++const WORLD_UP = new Vector3(0, 1, 0);
++const DEFAULT_LATERAL = new Vector3(1, 0, 0);
++const DEFAULT_FORWARD = new Vector3(0, 0, 1);
+ export class ElbowPoleComputer {
+-    computePoleVector(handTarget, plane, side, bodyCenter) {
++    computePoleVector(handTarget, plane, side, bodyCenter, context) {
+         switch (plane) {
+             case Plane.WALL:
+-                return this.computeWallPole(handTarget, side, bodyCenter);
++                return this.computeWallPole(handTarget, side, bodyCenter, context);
+             case Plane.WHEEL:
+-                return this.computeWheelPole(handTarget, side, bodyCenter);
++                return this.computeWheelPole(handTarget, side, bodyCenter, context);
+             case Plane.FLOOR:
+-                return this.computeFloorPole(handTarget, side, bodyCenter);
++                return this.computeFloorPole(handTarget, side, bodyCenter, context);
+             default:
+                 // Exhaustiveness safety net - all Plane enum values are handled above
+                 return new Vector3(0, 0, 1);
+         }
+     }
++    computePairRouting(leftHandTarget, rightHandTarget, bodyCenter, bodyFrame) {
++        const lateral = bodyFrame?.lateral ?? DEFAULT_LATERAL;
++        const leftX = leftHandTarget.clone().sub(bodyCenter).dot(lateral);
++        const rightX = rightHandTarget.clone().sub(bodyCenter).dot(lateral);
++        // In anatomical coordinates left lives at -X and right at +X.
++        const leftCross = this.clamp01(leftX / SHOULDER_HALF_WIDTH);
++        const rightCross = this.clamp01(-rightX / SHOULDER_HALF_WIDTH);
++        const crossing = Math.min(leftCross, rightCross);
++        if (crossing < PAIRED_CROSS_ENGAGE) {
++            return { left: "natural", right: "natural", crossing };
++        }
++        const heightDelta = leftHandTarget.y - rightHandTarget.y;
++        const leftIsOver = heightDelta > LAYER_HEIGHT_DEAD_ZONE ||
++            Math.abs(heightDelta) <= LAYER_HEIGHT_DEAD_ZONE;
++        return leftIsOver
++            ? { left: "over", right: "under", crossing }
++            : { left: "under", right: "over", crossing };
++    }
+     /**
+      * Wall plane (XY): props move on the vertical plane facing the audience.
+      * Base direction: forward (+Z, toward the viewer).
+@@ -41,28 +66,37 @@ export class ElbowPoleComputer {
+      * instead of through it. When the hand is low (south positions),
+      * we add a slight outward bias so the elbows don't pinch inward.
+      */
+-    computeWallPole(handTarget, side, bodyCenter) {
+-        const pole = new Vector3(0, 0, 1); // Base: forward
+-        const localX = handTarget.x - bodyCenter.x;
+-        const localY = handTarget.y - bodyCenter.y;
+-        // TKA/Mixamo convention: character's right = +X, so the character's
+-        // LEFT shoulder sits at -X and the RIGHT shoulder at +X.
+-        // sideSign points in each arm's natural outward direction.
+-        // Left arm: -1 (outward is -X). Right arm: +1 (outward is +X).
++    computeWallPole(handTarget, side, bodyCenter, context) {
++        const lateral = context?.bodyFrame?.lateral ?? DEFAULT_LATERAL;
++        const forward = context?.bodyFrame?.forward ?? DEFAULT_FORWARD;
+         const sideSign = side === "left" ? -1 : 1;
++        const outward = lateral.clone().multiplyScalar(sideSign);
++        // A little lateral flare is part of the neutral posture, not merely an
++        // emergency low-hand correction. It gives the elbow an anatomical side
++        // before the reach becomes singular.
++        const pole = forward.clone().addScaledVector(outward, 0.32);
++        const offset = handTarget.clone().sub(bodyCenter);
++        const localX = offset.dot(lateral);
+         // Cross-body factor: high when the hand is on the WRONG side of the
+-        // body centerline. Left arm's wrong side is +X; right arm's is -X.
+-        // For left  (sideSign=-1): localX>0 → crossBody = -localX*-1 / half = localX/half > 0 ✓
+-        // For right (sideSign=+1): localX<0 → crossBody = -localX*+1 / half = -localX/half > 0 ✓
+-        const crossBody = Math.max(0, Math.min(1, (-localX * sideSign) / SHOULDER_HALF_WIDTH));
+-        pole.z += crossBody * 0.8;
+-        // Low position: add OUTWARD X bias so the elbow flares away from the
+-        // torso instead of pinching into it. Outward = sideSign direction.
+-        const lowFactor = Math.max(0, Math.min(1, -localY * 2));
+-        pole.x += sideSign * lowFactor * 0.3;
++        // anatomical centerline. `lateral` always points to the body's right,
++        // regardless of the source model's X convention.
++        const crossBody = this.clamp01((-localX * sideSign) / SHOULDER_HALF_WIDTH);
++        pole.addScaledVector(forward, crossBody * 0.7);
++        // Measure "low" from the shoulder, not the hips. Ordinary neutral holds
++        // are below the shoulder and need lateral room even though they are above
++        // the body's origin.
++        const shoulderY = context?.shoulderPosition?.y ?? bodyCenter.y + 0.45;
++        const belowShoulder = shoulderY - handTarget.y;
++        const lowFactor = this.clamp01((belowShoulder - 0.1) / 0.35);
++        pole.addScaledVector(outward, lowFactor * 0.3);
+         // Overhead: slight downward bias for natural raised-arm pose
+-        const highFactor = Math.max(0, Math.min(1, (localY - 0.5) * 2));
+-        pole.y -= highFactor * 0.2;
++        const highFactor = this.clamp01((handTarget.y - shoulderY - 0.15) / 0.35);
++        pole.addScaledVector(WORLD_UP, -highFactor * 0.2);
++        // Mutually crossed arms need complementary corridors. The over arm takes
++        // the higher/front path; the under arm stays forward of the chest but
++        // drops its elbow so the two forearms cannot solve into the same plane.
++        const routing = context?.routing ?? "natural";
++        this.applyRoutingLayer(pole, routing, forward, crossBody);
+         return pole.normalize();
+     }
+     /**
+@@ -73,19 +107,20 @@ export class ElbowPoleComputer {
+      * When the hand is in front of or behind the body, we add a vertical
+      * bias so the elbow doesn't collide with the torso's side.
+      */
+-    computeWheelPole(handTarget, side, bodyCenter) {
+-        // TKA/Mixamo convention: character's right = +X, left shoulder at -X.
+-        // Left arm outward = -X, right arm outward = +X.
++    computeWheelPole(handTarget, side, bodyCenter, context) {
+         const outwardSign = side === "left" ? -1 : 1;
+-        const pole = new Vector3(outwardSign, 0, 0); // Base: lateral outward
+-        const localZ = handTarget.z - bodyCenter.z;
++        const lateral = context?.bodyFrame?.lateral ?? DEFAULT_LATERAL;
++        const forward = context?.bodyFrame?.forward ?? DEFAULT_FORWARD;
++        const pole = lateral.clone().multiplyScalar(outwardSign);
++        const offset = handTarget.clone().sub(bodyCenter);
++        const localZ = offset.dot(forward);
+         const localY = handTarget.y - bodyCenter.y;
+         // Forward/back adjustment: add upward bias when hand is in front/behind
+         const depthFactor = Math.min(1, Math.abs(localZ) / SHOULDER_HALF_WIDTH);
+-        pole.y += depthFactor * 0.3;
++        pole.addScaledVector(WORLD_UP, depthFactor * 0.3);
+         // Low position: increase outward bias
+         const lowFactor = Math.max(0, Math.min(1, -localY * 2));
+-        pole.x += outwardSign * lowFactor * 0.2;
++        pole.addScaledVector(lateral, outwardSign * lowFactor * 0.2);
+         return pole.normalize();
+     }
+     /**
+@@ -96,20 +131,37 @@ export class ElbowPoleComputer {
+      * When the hand is near the body center on the horizontal plane,
+      * we add outward X bias so the elbow doesn't drop into the torso.
+      */
+-    computeFloorPole(handTarget, side, bodyCenter) {
+-        const pole = new Vector3(0, 1, 0); // Base: upward
+-        const localX = handTarget.x - bodyCenter.x;
+-        const localZ = handTarget.z - bodyCenter.z;
++    computeFloorPole(handTarget, side, bodyCenter, context) {
++        const lateral = context?.bodyFrame?.lateral ?? DEFAULT_LATERAL;
++        const forward = context?.bodyFrame?.forward ?? DEFAULT_FORWARD;
++        const pole = WORLD_UP.clone();
++        const offset = handTarget.clone().sub(bodyCenter);
++        const localX = offset.dot(lateral);
++        const localZ = offset.dot(forward);
+         // How close is the hand to body center on the horizontal plane?
+         const horizontalDist = Math.sqrt(localX * localX + localZ * localZ);
+         const centerProximity = Math.max(0, Math.min(1, 1 - horizontalDist / SHOULDER_HALF_WIDTH));
+-        // Near center: push elbow outward.
+-        // TKA/Mixamo convention: left outward = -X, right outward = +X.
++        // Near center: push elbow outward in anatomical space.
+         const outwardSign = side === "left" ? -1 : 1;
+-        pole.x += outwardSign * centerProximity * 0.5;
++        pole.addScaledVector(lateral, outwardSign * centerProximity * 0.5);
+         // Also add a slight forward bias to avoid degenerate cases
+         // when hand is directly above (pole parallel to target direction)
+-        pole.z += 0.15;
++        pole.addScaledVector(forward, 0.15);
+         return pole.normalize();
+     }
++    applyRoutingLayer(pole, routing, forward, crossBody) {
++        if (routing === "natural" || crossBody <= 0)
++            return;
++        const strength = 0.35 + crossBody * 0.65;
++        if (routing === "over") {
++            pole.addScaledVector(WORLD_UP, 0.95 * strength);
++            pole.addScaledVector(forward, 0.45 * strength);
++            return;
++        }
++        pole.addScaledVector(WORLD_UP, -0.95 * strength);
++        pole.addScaledVector(forward, 0.25 * strength);
++    }
++    clamp01(value) {
++        return Math.max(0, Math.min(1, value));
++    }
+ }
 diff --git a/dist/lib/services/implementations/FingerAnimator.d.ts b/dist/lib/services/implementations/FingerAnimator.d.ts
 deleted file mode 100644
 index d49f92aedabc5145aac812b52d74784fc1b5429c..0000000000000000000000000000000000000000
@@ -17651,7 +17885,7 @@ index a6a29aa9b928eb98fc102f572da1ed2035c658ba..08994c5b2a1f5816db497d58a030af04
  	BIGTORCH = "bigtorch",
  	POI = "poi",
 diff --git a/src/lib/index.ts b/src/lib/index.ts
-index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..cb9ee62e8642e3f7dc8eb05c56994c6ec48945f0 100644
+index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..4437edbbf78536edafaa571e41bf19ed9b56456b 100644
 --- a/src/lib/index.ts
 +++ b/src/lib/index.ts
 @@ -71,6 +71,16 @@ export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shoul
@@ -17687,7 +17921,21 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..cb9ee62e8642e3f7dc8eb05c56994c6e
  export type { IAnimationStateMachine } from "./services/contracts/IAnimationStateMachine";
  export { LocomotionState } from "./services/contracts/IAnimationStateMachine";
  export type { IFootPlanter } from "./services/contracts/IFootPlanter";
-@@ -113,6 +130,10 @@ export { IKSolver } from "./services/implementations/IKSolver";
+@@ -89,7 +106,12 @@ export type { IRootMotionExtractor } from "./services/contracts/IRootMotionExtra
+ export type { IFingerAnimator } from "./services/contracts/IFingerAnimator";
+ export type { IClavicleRaiser } from "./services/contracts/IClavicleRaiser";
+ export type { ISpineTwister } from "./services/contracts/ISpineTwister";
+-export type { IElbowPoleComputer } from "./services/contracts/IElbowPoleComputer";
++export type {
++  ElbowPairRouting,
++  ElbowPoleContext,
++  ElbowRoutingLayer,
++  IElbowPoleComputer,
++} from "./services/contracts/IElbowPoleComputer";
+ export type { IAngleMathCalculator } from "./services/contracts/IAngleMathCalculator";
+ export type { ICollisionDetector, CollisionEvent, BodySnapshot, PropSegment } from "./services/contracts/ICollisionDetector";
+ export type { ICameraChoreographer, PerformerPositionProvider } from "./services/contracts/ICameraChoreographer";
+@@ -113,6 +135,10 @@ export { IKSolver } from "./services/implementations/IKSolver";
  export { LocomotionAnimator } from "./services/implementations/LocomotionAnimator";
  export { AnimationStateMachine } from "./services/implementations/AnimationStateMachine";
  export { FootPlanter } from "./services/implementations/FootPlanter";
@@ -17698,7 +17946,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..cb9ee62e8642e3f7dc8eb05c56994c6e
  export { RootMotionExtractor } from "./services/implementations/RootMotionExtractor";
  export { FingerAnimator } from "./services/implementations/FingerAnimator";
  export { ClavicleRaiser } from "./services/implementations/ClavicleRaiser";
-@@ -151,3 +172,7 @@ export { PROP_COLORS, METAL_COLORS } from "./components/props/Prop3DProps";
+@@ -151,3 +177,7 @@ export { PROP_COLORS, METAL_COLORS } from "./components/props/Prop3DProps";
  
  // Data
  export { STAFF_GRIP_POSES } from "./data/grip-poses/staff-grip-poses";
@@ -18164,6 +18412,63 @@ index 666a20b6ddead4b33f695ce341c854f937eaabb6..e0b23efe86d24cb2ffedebf41579906d
    /**
     * Dispose of the loaded model and free resources
     */
+diff --git a/src/lib/services/contracts/IElbowPoleComputer.ts b/src/lib/services/contracts/IElbowPoleComputer.ts
+index e1d06d6b7212d8689bbd087c62c023714629d718..8e3690c5deed1d43a2b3ad37f5c5d77517885d78 100644
+--- a/src/lib/services/contracts/IElbowPoleComputer.ts
++++ b/src/lib/services/contracts/IElbowPoleComputer.ts
+@@ -10,6 +10,25 @@
+
+ import type { Vector3 } from "three";
+ import type { Plane } from "../../domain/enums/Plane";
++import type { BodyFrame } from "./ISpineTwister";
++
++export type ElbowRoutingLayer = "natural" | "over" | "under";
++
++export interface ElbowPoleContext {
++  /** Anatomical right and chest-forward axes measured from the live rig. */
++  bodyFrame?: BodyFrame;
++  /** Current arm-root position, after torso and clavicle adjustments. */
++  shoulderPosition?: Vector3;
++  /** Optional paired-arm corridor for a crossed two-hand reach. */
++  routing?: ElbowRoutingLayer;
++}
++
++export interface ElbowPairRouting {
++  left: ElbowRoutingLayer;
++  right: ElbowRoutingLayer;
++  /** 0 = not mutually crossed, 1 = both hands fully across center. */
++  crossing: number;
++}
+
+ export interface IElbowPoleComputer {
+   /**
+@@ -19,12 +38,25 @@ export interface IElbowPoleComputer {
+    * @param plane - Which plane the prop is operating on (wall, wheel, floor)
+    * @param side - Which arm ("left" or "right")
+    * @param bodyCenter - Avatar's torso center position (world space)
++   * @param context - Live body axes, shoulder position, and paired-arm layer
+    * @returns Normalized direction vector for elbow bend
+    */
+   computePoleVector(
+     handTarget: Vector3,
+     plane: Plane,
+     side: "left" | "right",
+-    bodyCenter: Vector3
++    bodyCenter: Vector3,
++    context?: ElbowPoleContext
+   ): Vector3;
++
++  /**
++   * Assign complementary over/under corridors when both hands cross the
++   * anatomical centerline. Equal-height targets use a stable left-over tie.
++   */
++  computePairRouting(
++    leftHandTarget: Vector3,
++    rightHandTarget: Vector3,
++    bodyCenter: Vector3,
++    bodyFrame?: BodyFrame
++  ): ElbowPairRouting;
+ }
 diff --git a/src/lib/services/contracts/IFootPlanter.ts b/src/lib/services/contracts/IFootPlanter.ts
 index 90ba82c982d73882ebf0ab4456ac422b1468ab37..02271f92174f542c620e89397fbe766270015b6e 100644
 --- a/src/lib/services/contracts/IFootPlanter.ts
@@ -18548,18 +18853,19 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..fc1fc4f75c294ebb0861e825214bb99b
     * Clean up all resources (mixer, actions, clips)
     */
 diff --git a/src/lib/services/contracts/ISpineTwister.ts b/src/lib/services/contracts/ISpineTwister.ts
-index 2627f729e9f27d0eafff53491ea15d219472ac24..9978035424ef915241040845a6806a4ff3e9867a 100644
+index 2627f729e9f27d0eafff53491ea15d219472ac24..486597269ab9d8e29cadfb88c69b67e8e2512b16 100644
 --- a/src/lib/services/contracts/ISpineTwister.ts
 +++ b/src/lib/services/contracts/ISpineTwister.ts
-@@ -15,6 +15,19 @@
+@@ -15,6 +15,20 @@
  
  import type { Vector3, Quaternion } from "three";
  
 +/**
 + * The body's horizontal reference frame in world space. Both vectors are
-+ * unit-length and horizontal. Derived from the skeleton root's world
-+ * orientation so hand offsets are measured in the body's own axes -
-+ * world-axis X/Z comparisons silently break as soon as the rig is yawed.
++ * unit-length and horizontal. `lateral` is measured from the mapped shoulder
++ * line so it means anatomical right even when an exporter mirrors model X.
++ * `forward` comes from the skeleton root's facing direction. World-axis X/Z
++ * comparisons silently break as soon as a rig is mirrored or yawed.
 + */
 +export interface BodyFrame {
 +  /** Points toward the body's right side (+lateral). */
@@ -18571,7 +18877,7 @@ index 2627f729e9f27d0eafff53491ea15d219472ac24..9978035424ef915241040845a6806a4f
  export interface SpineTwistResult {
    spine1: Quaternion;
    spine2: Quaternion;
-@@ -36,16 +49,25 @@ export interface ISpineTwister {
+@@ -36,16 +50,25 @@ export interface ISpineTwister {
     *   held prop doesn't need a counter-balanced stance).
     * - **Both null** - no prop in either hand. Identity (no twist).
     *
@@ -18636,7 +18942,7 @@ index f906b396cdb9f1a924c617f9a44c5978f9cfd46b..d78c415dce9399f16b6c8654b88ba70a
    hipsPosition: Vector3 | null;
    /** Per-foot contact state: 0 = airborne, 1 = fully planted. */
 diff --git a/src/lib/services/implementations/AvatarAnimator.ts b/src/lib/services/implementations/AvatarAnimator.ts
-index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0dae5dd163 100644
+index c73bcabe86e07dd117e6f737532aea88ac9ec194..75241c08cc7e62f2b06fc5b579aac0a9c59750c0 100644
 --- a/src/lib/services/implementations/AvatarAnimator.ts
 +++ b/src/lib/services/implementations/AvatarAnimator.ts
 @@ -5,7 +5,8 @@
@@ -18649,7 +18955,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
  import type {
    IAvatarAnimator,
    HandPose,
-@@ -13,13 +14,62 @@ import type {
+@@ -13,13 +14,65 @@ import type {
    AnimationLayer,
    TransitionConfig,
    PositionOffset,
@@ -18664,7 +18970,11 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
 +  SkeletonState,
 +} from "../contracts/IAvatarSkeletonBuilder";
  import type { PropState3D } from "../../domain/models/PropState3D";
- import type { IElbowPoleComputer } from "../contracts/IElbowPoleComputer";
+-import type { IElbowPoleComputer } from "../contracts/IElbowPoleComputer";
++import type {
++  ElbowPairRouting,
++  IElbowPoleComputer,
++} from "../contracts/IElbowPoleComputer";
  import type { IClavicleRaiser } from "../contracts/IClavicleRaiser";
 -import type { ISpineTwister } from "../contracts/ISpineTwister";
 +import type { ISpineTwister, BodyFrame } from "../contracts/ISpineTwister";
@@ -18714,7 +19024,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
  
  export class AvatarAnimator implements IAvatarAnimator {
    private currentPose: BodyPose;
-@@ -85,6 +135,81 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -85,6 +138,84 @@ export class AvatarAnimator implements IAvatarAnimator {
     */
    private externalSpinePitchRad = 0;
  
@@ -18763,12 +19073,15 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
 +  private reachLeanAngleSmoothed = 0;
 +  private readonly _frameLeanVec = new Vector3();
 +
-+  // The body's own horizontal axes in world space (from the skeleton
-+  // root), so spine twist and depth terms survive rig yaw.
++  // The body's own horizontal axes in world space. Anatomical right is
++  // measured from the mapped shoulders because exporters disagree about
++  // whether model +X means left or right. Forward still comes from the root.
 +  private readonly _bodyFrame: BodyFrame = {
 +    lateral: new Vector3(1, 0, 0),
 +    forward: new Vector3(0, 0, 1),
 +  };
++  private readonly _leftShoulderWorld = new Vector3();
++  private readonly _rightShoulderWorld = new Vector3();
 +
 +  // Scratch objects for per-frame math (no allocation in the hot path)
 +  private readonly _v1 = new Vector3();
@@ -18796,7 +19109,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
    constructor(
      private ikSolver: IIKSolver,
      private skeleton: IAvatarSkeletonBuilder,
-@@ -186,7 +311,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -186,7 +317,8 @@ export class AvatarAnimator implements IAvatarAnimator {
    setPropsAndBlend(
      blueProp: PropState3D | null,
      redProp: PropState3D | null,
@@ -18806,7 +19119,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
    ): void {
      this.leftArmIK.targetWeight = blueProp ? 1 : 0;
      this.rightArmIK.targetWeight = redProp ? 1 : 0;
-@@ -205,6 +331,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -205,6 +337,7 @@ export class AvatarAnimator implements IAvatarAnimator {
              blueProp.worldPosition.y - oy,
              blueProp.worldPosition.z - oz
            ),
@@ -18814,7 +19127,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
            staffAngle: blueProp.staffRotationAngle,
            plane: blueProp.plane,
            weight: 1,
-@@ -218,6 +345,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -218,6 +351,7 @@ export class AvatarAnimator implements IAvatarAnimator {
              redProp.worldPosition.y - oy,
              redProp.worldPosition.z - oz
            ),
@@ -18822,7 +19135,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
            staffAngle: redProp.staffRotationAngle,
            plane: redProp.plane,
            weight: 1,
-@@ -227,6 +355,44 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -227,6 +361,44 @@ export class AvatarAnimator implements IAvatarAnimator {
      this.targetPose.timestamp = Date.now();
    }
  
@@ -18867,7 +19180,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
    setLeftHandTarget(target: HandPose): void {
      this.targetPose.leftHand = { ...target };
      this.targetPose.timestamp = Date.now();
-@@ -259,7 +425,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -259,7 +431,7 @@ export class AvatarAnimator implements IAvatarAnimator {
      const finalPose = this.computeFinalPose();
  
      // Solve IK for arms
@@ -18876,7 +19189,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
    }
  
    private blendToTarget(_deltaTime: number): void {
-@@ -378,13 +544,22 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -378,13 +550,22 @@ export class AvatarAnimator implements IAvatarAnimator {
      return result;
    }
  
@@ -18900,38 +19213,59 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
      // Compute body center from Hips bone (or default to origin)
      const bodyCenter = new Vector3(0, 0, 0);
      const hipsBone = state.bones.get("Hips");
-@@ -392,6 +567,30 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -392,6 +573,51 @@ export class AvatarAnimator implements IAvatarAnimator {
        hipsBone.getWorldPosition(bodyCenter);
      }
  
-+    // The body's own horizontal axes, from the skeleton root's world
-+    // orientation. Rig yaw lives OUTSIDE the avatar (PerformerRig rotates
-+    // the wrapper group), so raw world X/Z comparisons break as soon as
-+    // the rig faces anywhere but the audience. The root is never modified
-+    // by IK, so this can't feed back.
++    // Build an anatomical body frame. Rig yaw lives OUTSIDE the avatar
++    // (PerformerRig rotates the wrapper group), and model exporters disagree
++    // about whether +X is anatomical left or right. The mapped shoulder line
++    // is the only reliable source of that answer.
 +    if (state.root) {
 +      state.root.getWorldQuaternion(this._q1);
 +      this._bodyFrame.lateral.set(1, 0, 0).applyQuaternion(this._q1);
 +      this._bodyFrame.lateral.y = 0;
 +      this._bodyFrame.forward.set(0, 0, 1).applyQuaternion(this._q1);
 +      this._bodyFrame.forward.y = 0;
-+      if (
-+        this._bodyFrame.lateral.lengthSq() > 1e-6 &&
-+        this._bodyFrame.forward.lengthSq() > 1e-6
-+      ) {
-+        this._bodyFrame.lateral.normalize();
++    } else {
++      this._bodyFrame.lateral.set(1, 0, 0);
++      this._bodyFrame.forward.set(0, 0, 1);
++    }
++
++    if (leftChain && rightChain) {
++      leftChain.root.getWorldPosition(this._leftShoulderWorld);
++      rightChain.root.getWorldPosition(this._rightShoulderWorld);
++      this._bodyFrame.lateral
++        .subVectors(this._rightShoulderWorld, this._leftShoulderWorld);
++      this._bodyFrame.lateral.y = 0;
++    }
++
++    if (
++      this._bodyFrame.lateral.lengthSq() > 1e-6 &&
++      this._bodyFrame.forward.lengthSq() > 1e-6
++    ) {
++      this._bodyFrame.lateral.normalize();
++      // Remove any exporter skew so forward and lateral remain an orthogonal
++      // frame. This also keeps projections stable under wrapper yaw.
++      this._bodyFrame.forward.addScaledVector(
++        this._bodyFrame.lateral,
++        -this._bodyFrame.forward.dot(this._bodyFrame.lateral)
++      );
++      if (this._bodyFrame.forward.lengthSq() > 1e-6) {
 +        this._bodyFrame.forward.normalize();
 +      } else {
-+        // Degenerate (root pitched ~90 deg): fall back to world axes.
-+        this._bodyFrame.lateral.set(1, 0, 0);
 +        this._bodyFrame.forward.set(0, 0, 1);
 +      }
++    } else {
++      // Degenerate (missing shoulder span or root pitched ~90°).
++      this._bodyFrame.lateral.set(1, 0, 0);
++      this._bodyFrame.forward.set(0, 0, 1);
 +    }
 +
      // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
      // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
      // position feeds back and causes oscillation.
-@@ -445,7 +644,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -445,7 +671,8 @@ export class AvatarAnimator implements IAvatarAnimator {
          pose.leftHand?.targetPosition ?? null,
          pose.rightHand?.targetPosition ?? null,
          bodyCenter,
@@ -18941,7 +19275,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
        );
  
        // Apply twist to each bone individually for a natural spinal curve.
-@@ -511,12 +711,90 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -511,12 +738,103 @@ export class AvatarAnimator implements IAvatarAnimator {
        }
      }
  
@@ -19026,6 +19360,19 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
 +
      const leftHand = pose.leftHand;
      const rightHand = pose.rightHand;
++    let pairRouting: ElbowPairRouting = {
++      left: "natural",
++      right: "natural",
++      crossing: 0,
++    };
++    if (this.poleComputer && leftHand && rightHand) {
++      pairRouting = this.poleComputer.computePairRouting(
++        leftHand.targetPosition,
++        rightHand.targetPosition,
++        bodyCenter,
++        this._bodyFrame
++      );
++    }
  
      if (leftChain && leftHand) {
        if (this.leftArmIK.weight > 0.001) {
@@ -19033,7 +19380,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = leftChain.root.quaternion.clone();
          const animMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -527,7 +805,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -527,7 +845,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const leftShoulder = state.bones.get("LeftShoulder");
            if (leftShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -19042,7 +19389,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
                "left",
                this.leftShoulderRestY,
                leftChain.totalLength
-@@ -540,6 +818,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -540,6 +858,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -19057,7 +19404,25 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: leftTarget,
-@@ -558,6 +844,10 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -547,17 +873,27 @@ export class AvatarAnimator implements IAvatarAnimator {
+         };
+
+         if (this._poleVectorsEnabled && this.poleComputer && leftHand.plane) {
++          leftChain.root.getWorldPosition(this._leftShoulderWorld);
+           const idealPole = this.poleComputer.computePoleVector(
+             leftTarget,
+             leftHand.plane,
+             "left",
+-            bodyCenter
++            bodyCenter,
++            {
++              bodyFrame: this._bodyFrame,
++              shoulderPosition: this._leftShoulderWorld,
++              routing: pairRouting.left,
++            }
+           );
+           this.leftPoleVector.lerp(idealPole, this.smoothingFactor);
+           this.leftPoleVector.normalize();
            target.poleHint = this.leftPoleVector.clone();
          }
  
@@ -19068,7 +19433,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
          // Solve IK (overwrites bone quaternions)
          this.ikSolver.solveAndApply(leftChain, target);
  
-@@ -572,13 +862,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -572,13 +908,14 @@ export class AvatarAnimator implements IAvatarAnimator {
          leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -19084,7 +19449,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = rightChain.root.quaternion.clone();
          const animMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -589,7 +880,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -589,7 +926,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const rightShoulder = state.bones.get("RightShoulder");
            if (rightShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -19093,7 +19458,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
                "right",
                this.rightShoulderRestY,
                rightChain.totalLength
-@@ -602,6 +893,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -602,6 +939,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -19108,7 +19473,25 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: rightTarget,
-@@ -620,6 +919,10 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -609,17 +954,27 @@ export class AvatarAnimator implements IAvatarAnimator {
+         };
+
+         if (this._poleVectorsEnabled && this.poleComputer && rightHand.plane) {
++          rightChain.root.getWorldPosition(this._rightShoulderWorld);
+           const idealPole = this.poleComputer.computePoleVector(
+             rightTarget,
+             rightHand.plane,
+             "right",
+-            bodyCenter
++            bodyCenter,
++            {
++              bodyFrame: this._bodyFrame,
++              shoulderPosition: this._rightShoulderWorld,
++              routing: pairRouting.right,
++            }
+           );
+           this.rightPoleVector.lerp(idealPole, this.smoothingFactor);
+           this.rightPoleVector.normalize();
            target.poleHint = this.rightPoleVector.clone();
          }
  
@@ -19119,7 +19502,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
          // Solve IK (overwrites bone quaternions)
          this.ikSolver.solveAndApply(rightChain, target);
  
-@@ -634,13 +937,359 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -634,13 +989,359 @@ export class AvatarAnimator implements IAvatarAnimator {
          rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -19479,7 +19862,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0d
  
    addLayer(layer: AnimationLayer): void {
      this.layers.set(layer.id, layer);
-@@ -689,6 +1338,20 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -689,6 +1390,20 @@ export class AvatarAnimator implements IAvatarAnimator {
      this.externalSpinePitchRad = radians;
    }
  
@@ -21077,6 +21460,261 @@ index 0000000000000000000000000000000000000000..df9962ddd074ebf26af07bc137a37e88
 +    entry.object.quaternion.copy(entry.quaternion);
 +  }
 +}
+diff --git a/src/lib/services/implementations/ElbowPoleComputer.ts b/src/lib/services/implementations/ElbowPoleComputer.ts
+index 626111debe6cf0d4a8846c94e3b6847e3aa2758f..fb1e87c53351c76b4ae8908034c417edb5edbfc2 100644
+--- a/src/lib/services/implementations/ElbowPoleComputer.ts
++++ b/src/lib/services/implementations/ElbowPoleComputer.ts
+@@ -12,7 +12,13 @@
+  */
+
+ import { Vector3 } from "three";
+-import type { IElbowPoleComputer } from "../contracts/IElbowPoleComputer";
++import type {
++  ElbowPairRouting,
++  ElbowPoleContext,
++  ElbowRoutingLayer,
++  IElbowPoleComputer,
++} from "../contracts/IElbowPoleComputer";
++import type { BodyFrame } from "../contracts/ISpineTwister";
+ import { Plane } from "../../domain/enums/Plane";
+
+ /**
+@@ -22,26 +28,66 @@ import { Plane } from "../../domain/enums/Plane";
+  */
+ const SHOULDER_HALF_WIDTH = 0.2;
+
++/** Arms this close to an equal height keep the same semantic layering. */
++const LAYER_HEIGHT_DEAD_ZONE = 0.04;
++
++/** Both hands must meaningfully cross before paired routing engages. */
++const PAIRED_CROSS_ENGAGE = 0.25;
++
++const WORLD_UP = new Vector3(0, 1, 0);
++const DEFAULT_LATERAL = new Vector3(1, 0, 0);
++const DEFAULT_FORWARD = new Vector3(0, 0, 1);
++
+ export class ElbowPoleComputer implements IElbowPoleComputer {
+   computePoleVector(
+     handTarget: Vector3,
+     plane: Plane,
+     side: "left" | "right",
+-    bodyCenter: Vector3
++    bodyCenter: Vector3,
++    context?: ElbowPoleContext
+   ): Vector3 {
+     switch (plane) {
+       case Plane.WALL:
+-        return this.computeWallPole(handTarget, side, bodyCenter);
++        return this.computeWallPole(handTarget, side, bodyCenter, context);
+       case Plane.WHEEL:
+-        return this.computeWheelPole(handTarget, side, bodyCenter);
++        return this.computeWheelPole(handTarget, side, bodyCenter, context);
+       case Plane.FLOOR:
+-        return this.computeFloorPole(handTarget, side, bodyCenter);
++        return this.computeFloorPole(handTarget, side, bodyCenter, context);
+       default:
+         // Exhaustiveness safety net - all Plane enum values are handled above
+         return new Vector3(0, 0, 1);
+     }
+   }
+
++  computePairRouting(
++    leftHandTarget: Vector3,
++    rightHandTarget: Vector3,
++    bodyCenter: Vector3,
++    bodyFrame?: BodyFrame
++  ): ElbowPairRouting {
++    const lateral = bodyFrame?.lateral ?? DEFAULT_LATERAL;
++    const leftX = leftHandTarget.clone().sub(bodyCenter).dot(lateral);
++    const rightX = rightHandTarget.clone().sub(bodyCenter).dot(lateral);
++
++    // In anatomical coordinates left lives at -X and right at +X.
++    const leftCross = this.clamp01(leftX / SHOULDER_HALF_WIDTH);
++    const rightCross = this.clamp01(-rightX / SHOULDER_HALF_WIDTH);
++    const crossing = Math.min(leftCross, rightCross);
++
++    if (crossing < PAIRED_CROSS_ENGAGE) {
++      return { left: "natural", right: "natural", crossing };
++    }
++
++    const heightDelta = leftHandTarget.y - rightHandTarget.y;
++    const leftIsOver =
++      heightDelta > LAYER_HEIGHT_DEAD_ZONE ||
++      Math.abs(heightDelta) <= LAYER_HEIGHT_DEAD_ZONE;
++
++    return leftIsOver
++      ? { left: "over", right: "under", crossing }
++      : { left: "under", right: "over", crossing };
++  }
++
+   /**
+    * Wall plane (XY): props move on the vertical plane facing the audience.
+    * Base direction: forward (+Z, toward the viewer).
+@@ -54,36 +100,47 @@ export class ElbowPoleComputer implements IElbowPoleComputer {
+   private computeWallPole(
+     handTarget: Vector3,
+     side: "left" | "right",
+-    bodyCenter: Vector3
++    bodyCenter: Vector3,
++    context?: ElbowPoleContext
+   ): Vector3 {
+-    const pole = new Vector3(0, 0, 1); // Base: forward
++    const lateral = context?.bodyFrame?.lateral ?? DEFAULT_LATERAL;
++    const forward = context?.bodyFrame?.forward ?? DEFAULT_FORWARD;
++    const sideSign = side === "left" ? -1 : 1;
++    const outward = lateral.clone().multiplyScalar(sideSign);
+
+-    const localX = handTarget.x - bodyCenter.x;
+-    const localY = handTarget.y - bodyCenter.y;
++    // A little lateral flare is part of the neutral posture, not merely an
++    // emergency low-hand correction. It gives the elbow an anatomical side
++    // before the reach becomes singular.
++    const pole = forward.clone().addScaledVector(outward, 0.32);
+
+-    // TKA/Mixamo convention: character's right = +X, so the character's
+-    // LEFT shoulder sits at -X and the RIGHT shoulder at +X.
+-    // sideSign points in each arm's natural outward direction.
+-    // Left arm: -1 (outward is -X). Right arm: +1 (outward is +X).
+-    const sideSign = side === "left" ? -1 : 1;
++    const offset = handTarget.clone().sub(bodyCenter);
++    const localX = offset.dot(lateral);
+
+     // Cross-body factor: high when the hand is on the WRONG side of the
+-    // body centerline. Left arm's wrong side is +X; right arm's is -X.
+-    // For left  (sideSign=-1): localX>0 → crossBody = -localX*-1 / half = localX/half > 0 ✓
+-    // For right (sideSign=+1): localX<0 → crossBody = -localX*+1 / half = -localX/half > 0 ✓
+-    const crossBody = Math.max(0, Math.min(1,
++    // anatomical centerline. `lateral` always points to the body's right,
++    // regardless of the source model's X convention.
++    const crossBody = this.clamp01(
+       (-localX * sideSign) / SHOULDER_HALF_WIDTH
+-    ));
+-    pole.z += crossBody * 0.8;
++    );
++    pole.addScaledVector(forward, crossBody * 0.7);
+
+-    // Low position: add OUTWARD X bias so the elbow flares away from the
+-    // torso instead of pinching into it. Outward = sideSign direction.
+-    const lowFactor = Math.max(0, Math.min(1, -localY * 2));
+-    pole.x += sideSign * lowFactor * 0.3;
++    // Measure "low" from the shoulder, not the hips. Ordinary neutral holds
++    // are below the shoulder and need lateral room even though they are above
++    // the body's origin.
++    const shoulderY = context?.shoulderPosition?.y ?? bodyCenter.y + 0.45;
++    const belowShoulder = shoulderY - handTarget.y;
++    const lowFactor = this.clamp01((belowShoulder - 0.1) / 0.35);
++    pole.addScaledVector(outward, lowFactor * 0.3);
+
+     // Overhead: slight downward bias for natural raised-arm pose
+-    const highFactor = Math.max(0, Math.min(1, (localY - 0.5) * 2));
+-    pole.y -= highFactor * 0.2;
++    const highFactor = this.clamp01((handTarget.y - shoulderY - 0.15) / 0.35);
++    pole.addScaledVector(WORLD_UP, -highFactor * 0.2);
++
++    // Mutually crossed arms need complementary corridors. The over arm takes
++    // the higher/front path; the under arm stays forward of the chest but
++    // drops its elbow so the two forearms cannot solve into the same plane.
++    const routing = context?.routing ?? "natural";
++    this.applyRoutingLayer(pole, routing, forward, crossBody);
+
+     return pole.normalize();
+   }
+@@ -99,23 +156,25 @@ export class ElbowPoleComputer implements IElbowPoleComputer {
+   private computeWheelPole(
+     handTarget: Vector3,
+     side: "left" | "right",
+-    bodyCenter: Vector3
++    bodyCenter: Vector3,
++    context?: ElbowPoleContext
+   ): Vector3 {
+-    // TKA/Mixamo convention: character's right = +X, left shoulder at -X.
+-    // Left arm outward = -X, right arm outward = +X.
+     const outwardSign = side === "left" ? -1 : 1;
+-    const pole = new Vector3(outwardSign, 0, 0); // Base: lateral outward
++    const lateral = context?.bodyFrame?.lateral ?? DEFAULT_LATERAL;
++    const forward = context?.bodyFrame?.forward ?? DEFAULT_FORWARD;
++    const pole = lateral.clone().multiplyScalar(outwardSign);
+
+-    const localZ = handTarget.z - bodyCenter.z;
++    const offset = handTarget.clone().sub(bodyCenter);
++    const localZ = offset.dot(forward);
+     const localY = handTarget.y - bodyCenter.y;
+
+     // Forward/back adjustment: add upward bias when hand is in front/behind
+     const depthFactor = Math.min(1, Math.abs(localZ) / SHOULDER_HALF_WIDTH);
+-    pole.y += depthFactor * 0.3;
++    pole.addScaledVector(WORLD_UP, depthFactor * 0.3);
+
+     // Low position: increase outward bias
+     const lowFactor = Math.max(0, Math.min(1, -localY * 2));
+-    pole.x += outwardSign * lowFactor * 0.2;
++    pole.addScaledVector(lateral, outwardSign * lowFactor * 0.2);
+
+     return pole.normalize();
+   }
+@@ -131,12 +190,16 @@ export class ElbowPoleComputer implements IElbowPoleComputer {
+   private computeFloorPole(
+     handTarget: Vector3,
+     side: "left" | "right",
+-    bodyCenter: Vector3
++    bodyCenter: Vector3,
++    context?: ElbowPoleContext
+   ): Vector3 {
+-    const pole = new Vector3(0, 1, 0); // Base: upward
++    const lateral = context?.bodyFrame?.lateral ?? DEFAULT_LATERAL;
++    const forward = context?.bodyFrame?.forward ?? DEFAULT_FORWARD;
++    const pole = WORLD_UP.clone();
+
+-    const localX = handTarget.x - bodyCenter.x;
+-    const localZ = handTarget.z - bodyCenter.z;
++    const offset = handTarget.clone().sub(bodyCenter);
++    const localX = offset.dot(lateral);
++    const localZ = offset.dot(forward);
+
+     // How close is the hand to body center on the horizontal plane?
+     const horizontalDist = Math.sqrt(localX * localX + localZ * localZ);
+@@ -144,15 +207,37 @@ export class ElbowPoleComputer implements IElbowPoleComputer {
+       1 - horizontalDist / SHOULDER_HALF_WIDTH
+     ));
+
+-    // Near center: push elbow outward.
+-    // TKA/Mixamo convention: left outward = -X, right outward = +X.
++    // Near center: push elbow outward in anatomical space.
+     const outwardSign = side === "left" ? -1 : 1;
+-    pole.x += outwardSign * centerProximity * 0.5;
++    pole.addScaledVector(lateral, outwardSign * centerProximity * 0.5);
+
+     // Also add a slight forward bias to avoid degenerate cases
+     // when hand is directly above (pole parallel to target direction)
+-    pole.z += 0.15;
++    pole.addScaledVector(forward, 0.15);
+
+     return pole.normalize();
+   }
++
++  private applyRoutingLayer(
++    pole: Vector3,
++    routing: ElbowRoutingLayer,
++    forward: Vector3,
++    crossBody: number
++  ): void {
++    if (routing === "natural" || crossBody <= 0) return;
++
++    const strength = 0.35 + crossBody * 0.65;
++    if (routing === "over") {
++      pole.addScaledVector(WORLD_UP, 0.95 * strength);
++      pole.addScaledVector(forward, 0.45 * strength);
++      return;
++    }
++
++    pole.addScaledVector(WORLD_UP, -0.95 * strength);
++    pole.addScaledVector(forward, 0.25 * strength);
++  }
++
++  private clamp01(value: number): number {
++    return Math.max(0, Math.min(1, value));
++  }
+ }
 diff --git a/src/lib/services/implementations/FootPlanter.ts b/src/lib/services/implementations/FootPlanter.ts
 index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e10bc1b0f 100644
 --- a/src/lib/services/implementations/FootPlanter.ts
