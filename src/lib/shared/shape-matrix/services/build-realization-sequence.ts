@@ -1,20 +1,17 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { loadCatalogSequences } from "$lib/features/choreo-card/services/catalog-loader";
-import { TND_BASE_CATALOG_ID } from "$lib/features/choreo-card/services/deck-composer";
+import { loadTndBaseWords } from "$lib/features/choreo-card/services/tnd-base-word-snapshot";
 import { buildBaseIndex } from "./tnd-base-index";
 
 /**
- * Firestore loader for the shape-matrix base-word index (app path).
+ * Static snapshot loader for the shape-matrix base-word index.
  *
- * The pure index builder (`buildBaseIndex`/`resolveBase`) lives in
- * `tnd-base-index.ts` (no Firebase) and is re-exported here so existing
- * consumers keep importing it from this module. The firebase-free landing hero
- * pool builds its index from statically-baked words instead of calling this.
+ * The 22 canonical words are baked from the system catalog and versioned with
+ * the public app, so the matrix does not wait on Firebase before it can draw.
  */
 export { buildBaseIndex, resolveBase } from "./tnd-base-index";
 
 let baseIndex: Map<string, SequenceData> | null = null;
 export async function loadBaseIndex(): Promise<Map<string, SequenceData>> {
-  if (!baseIndex) baseIndex = buildBaseIndex(await loadCatalogSequences(TND_BASE_CATALOG_ID));
+  if (!baseIndex) baseIndex = buildBaseIndex(await loadTndBaseWords());
   return baseIndex;
 }
