@@ -7,6 +7,9 @@ describe("avatar bake-off query parsing", () => {
     expect(parseCandidateId("human-generator-trial")).toBe(
       "human-generator-trial"
     );
+    expect(parseCandidateId("human-generator-parity")).toBe(
+      "human-generator-parity"
+    );
     expect(parseCandidateId("missing-vendor")).toBe("current-optimized");
   });
 

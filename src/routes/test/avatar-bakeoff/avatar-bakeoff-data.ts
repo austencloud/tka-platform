@@ -2,6 +2,7 @@ export const CANDIDATE_IDS = [
   "current-raw",
   "current-optimized",
   "human-generator-trial",
+  "human-generator-parity",
   "avatar-sdk",
   "avaturn",
   "ready-player-me-archived",
@@ -55,6 +56,15 @@ export const BAKEOFF_CANDIDATES: Record<CandidateId, BakeoffCandidate> = {
     bytes: 19_853_800,
     continuity: "current",
     note: "Trial-watermarked LOD1 export with 1K baked textures and trial-compatible mesh hair.",
+  },
+  "human-generator-parity": {
+    id: "human-generator-parity",
+    label: "Human Generator · parity",
+    source: "Full-fidelity Human Generator control export",
+    modelUrl: "/models/avatars/bakeoff/human-generator-parity.glb",
+    bytes: 238_315_964,
+    continuity: "current",
+    note: "Full meshes, 4K baked textures, transmissive corneas, and dense mesh hair. Deliberately unoptimized.",
   },
   "avatar-sdk": {
     id: "avatar-sdk",
