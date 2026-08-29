@@ -64,7 +64,8 @@
 
   .variant-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(6.5rem, 7.75rem));
+    justify-content: start;
     gap: 0.5rem;
   }
 </style>
