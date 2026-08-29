@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { AnimationClip, VectorKeyframeTrack } from "three";
 
 import { LocomotionAnimator } from "@austencloud/scene-3d";
 
@@ -88,40 +87,6 @@ function animatorWithOneSecondGait(): {
 }
 
 describe("locomotion gait clock", () => {
-  it("keeps cyclic pelvis sway while removing lateral clip travel", () => {
-    const animator = new LocomotionAnimator();
-    const harness = animator as unknown as {
-      pendingClips: Map<string, AnimationClip>;
-      prepareClip(key: string): AnimationClip | null;
-    };
-    const raw = new AnimationClip("raw-strafe", 1, [
-      new VectorKeyframeTrack(
-        "mixamorigHips.position",
-        [0, 0.5, 1],
-        [
-          0, 0, -100,
-          // Linear travel would put the hips at 50. The extra five centimetres
-          // are the support-side transfer that must survive clip preparation.
-          55, 0, -96,
-          100, 0, -100,
-        ]
-      ),
-    ]);
-    harness.pendingClips.set("strafeLeft", raw);
-
-    const prepared = harness.prepareClip("strafeLeft");
-    const hips = prepared?.tracks.find((track) =>
-      track.name.endsWith("Hips.position")
-    );
-    const values = hips?.values as Float32Array;
-
-    expect(Array.from(values.filter((_, index) => index % 3 === 0))).toEqual([
-      0,
-      expect.closeTo(5 / (296 / 3), 6),
-      0,
-    ]);
-  });
-
   it("routes grapevine intent to its authored clips without replacing sidestep", () => {
     const animator = new LocomotionAnimator();
     const harness = animator as unknown as {
