@@ -1,8 +1,9 @@
-import type { FormationPresetId } from '../domain/stage-types';
+import type { FormationPresetId } from "../domain/stage-types";
 
 export interface PresetPosition {
   x: number;
   z: number;
+  facingAngle?: number;
 }
 
 export function generatePresetPositions(
@@ -12,15 +13,32 @@ export function generatePresetPositions(
   stageDepth: number
 ): PresetPosition[] {
   const normalized = PRESET_GENERATORS[preset](performerCount);
-  return normalized.slice(0, performerCount).map((p) => ({
-    x: p.x * stageWidth,
-    z: p.z * stageDepth,
-  }));
+  return normalized.slice(0, performerCount).map((p) => {
+    const position: PresetPosition = {
+      x: p.x * stageWidth,
+      z: p.z * stageDepth,
+    };
+    if (p.facing === "center") {
+      const worldDx = (0.5 - p.x) * stageWidth;
+      const worldDz = (p.z - 0.5) * stageDepth;
+      position.facingAngle = Math.atan2(worldDx, worldDz);
+    } else if (p.facing !== undefined) {
+      position.facingAngle = p.facing;
+    }
+    return position;
+  });
 }
 
-type NormalizedPoint = { x: number; z: number };
+type NormalizedPoint = {
+  x: number;
+  z: number;
+  facing?: number | "center";
+};
 
-const PRESET_GENERATORS: Record<FormationPresetId, (n: number) => NormalizedPoint[]> = {
+const PRESET_GENERATORS: Record<
+  FormationPresetId,
+  (n: number) => NormalizedPoint[]
+> = {
   line: (n) =>
     Array.from({ length: n }, (_, i) => ({
       x: (i + 1) / (n + 1),
@@ -60,10 +78,14 @@ const PRESET_GENERATORS: Record<FormationPresetId, (n: number) => NormalizedPoin
   circle: (n) =>
     Array.from({ length: n }, (_, i) => {
       const a = (i / n) * Math.PI * 2 - Math.PI / 2;
-      return { x: 0.5 + Math.cos(a) * 0.3, z: 0.5 + Math.sin(a) * 0.3 };
+      return {
+        x: 0.5 + Math.cos(a) * 0.3,
+        z: 0.5 + Math.sin(a) * 0.3,
+        facing: "center" as const,
+      };
     }),
 
-  'v-shape': (n) => {
+  "v-shape": (n) => {
     const pts: NormalizedPoint[] = [];
     const half = Math.ceil(n / 2);
     for (let i = 0; i < n; i++) {
@@ -106,7 +128,7 @@ const PRESET_GENERATORS: Record<FormationPresetId, (n: number) => NormalizedPoin
       return { x: 0.5 + Math.cos(a) * r, z: 0.5 + Math.sin(a) * r };
     }),
 
-  'grid-2x2': (n) => {
+  "grid-2x2": (n) => {
     const cols = 2;
     const rows = Math.ceil(n / cols);
     return Array.from({ length: n }, (_, i) => ({
@@ -123,17 +145,17 @@ const PRESET_GENERATORS: Record<FormationPresetId, (n: number) => NormalizedPoin
 
   solo: () => [{ x: 0.5, z: 0.5 }],
 
-  'tunnel-stack': (n) =>
+  "tunnel-stack": (n) =>
     Array.from({ length: n }, (_, i) => ({
       x: 0.5,
       z: (i + 1) / (n + 1),
     })),
 
-  'back-to-back': (n) => {
+  "back-to-back": (n) => {
     if (n === 1) return [{ x: 0.5, z: 0.5 }];
     const pts: NormalizedPoint[] = [
-      { x: 0.5, z: 0.4 },
-      { x: 0.5, z: 0.6 },
+      { x: 0.5, z: 0.4, facing: 0 },
+      { x: 0.5, z: 0.6, facing: Math.PI },
     ];
     for (let i = 2; i < n; i++) {
       pts.push({ x: 0.3 + (i - 2) * 0.2, z: 0.5 });
@@ -141,11 +163,11 @@ const PRESET_GENERATORS: Record<FormationPresetId, (n: number) => NormalizedPoin
     return pts;
   },
 
-  'facing-each-other': (n) => {
+  "facing-each-other": (n) => {
     if (n === 1) return [{ x: 0.5, z: 0.5 }];
     const pts: NormalizedPoint[] = [
-      { x: 0.5, z: 0.35 },
-      { x: 0.5, z: 0.65 },
+      { x: 0.5, z: 0.35, facing: Math.PI },
+      { x: 0.5, z: 0.65, facing: 0 },
     ];
     for (let i = 2; i < n; i++) {
       pts.push({ x: 0.3 + (i - 2) * 0.2, z: 0.5 });
@@ -153,15 +175,15 @@ const PRESET_GENERATORS: Record<FormationPresetId, (n: number) => NormalizedPoin
     return pts;
   },
 
-  'stage-lr': (n) => {
+  "stage-lr": (n) => {
     const half = Math.ceil(n / 2);
     return Array.from({ length: n }, (_, i) => ({
       x: i < half ? 0.25 : 0.75,
-      z: (((i < half ? i : i - half) + 1) / (half + 1)),
+      z: ((i < half ? i : i - half) + 1) / (half + 1),
     }));
   },
 
-  'side-by-side': (n) =>
+  "side-by-side": (n) =>
     Array.from({ length: n }, (_, i) => ({
       x: (i + 1) / (n + 1),
       z: 0.5,
