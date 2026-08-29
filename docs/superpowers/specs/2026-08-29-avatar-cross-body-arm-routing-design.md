@@ -93,9 +93,11 @@ verification; no second hunch control is introduced.
 
 ### Neutral anatomy
 
-Wall-plane poles include a persistent, modest outward component, strengthened
-when a target is below its shoulder. This replaces the current hips-relative
-low test, which does nothing for ordinary chest-height holds. The component is
+Wall-plane poles begin outward from the ribcage. Forward bend is introduced
+only as a hand crosses the anatomical centerline. This prevents ordinary holds
+beside the hips from driving the elbows toward the audience, a defect that is
+easy to miss from the front and unmistakable from a side or rear-quarter view.
+Targets below the shoulder strengthen the lateral corridor. Every component is
 expressed in the measured body frame, so left and right remain mirror images on
 every supported rig convention.
 
@@ -121,4 +123,3 @@ not register, publish, or deploy that asset.
    on the personal MetaPerson plus at least one legacy candidate. Cross-body
    must show forward torso participation and no arm-arm or arm-torso
    interpenetration from front and quarter views.
-

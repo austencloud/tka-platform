@@ -8215,10 +8215,10 @@ diff --git a/dist/lib/services/implementations/ElbowPoleComputer.d.ts.map b/dist
 deleted file mode 100644
 index 173449a757714cbbd61602f8af64218d423e9c39..0000000000000000000000000000000000000000
 diff --git a/dist/lib/services/implementations/ElbowPoleComputer.js b/dist/lib/services/implementations/ElbowPoleComputer.js
-index d42bcd447471742c09a421dc92e9eb63986abbb4..0729807236922d57af994d099b1e900b02214b63 100644
+index d42bcd447471742c09a421dc92e9eb63986abbb4..c77e19eb147e1a0cc9bac7c11d8a490436aa9c2b 100644
 --- a/dist/lib/services/implementations/ElbowPoleComputer.js
 +++ b/dist/lib/services/implementations/ElbowPoleComputer.js
-@@ -18,20 +18,45 @@ import { Plane } from "../../domain/enums/Plane";
+@@ -18,51 +18,81 @@ import { Plane } from "../../domain/enums/Plane";
   * to the body's actual width.
   */
  const SHOULDER_HALF_WIDTH = 0.2;
@@ -8267,10 +8267,16 @@ index d42bcd447471742c09a421dc92e9eb63986abbb4..0729807236922d57af994d099b1e900b
 +    }
      /**
       * Wall plane (XY): props move on the vertical plane facing the audience.
-      * Base direction: forward (+Z, toward the viewer).
-@@ -41,28 +66,37 @@ export class ElbowPoleComputer {
-      * instead of through it. When the hand is low (south positions),
-      * we add a slight outward bias so the elbows don't pinch inward.
+-     * Base direction: forward (+Z, toward the viewer).
++     * Base direction: outward, away from the ribcage.
+      *
+-     * When the hand crosses the body's centerline, we push the elbow
+-     * forward more aggressively so the arm goes in front of the chest
+-     * instead of through it. When the hand is low (south positions),
+-     * we add a slight outward bias so the elbows don't pinch inward.
++     * Forward bend is reserved for a real cross-body reach. Starting every wall
++     * pose forward makes a hand held beside the hip fold the elbow toward the
++     * audience, which only looks acceptable until the avatar is viewed in depth.
       */
 -    computeWallPole(handTarget, side, bodyCenter) {
 -        const pole = new Vector3(0, 0, 1); // Base: forward
@@ -8285,10 +8291,7 @@ index d42bcd447471742c09a421dc92e9eb63986abbb4..0729807236922d57af994d099b1e900b
 +        const forward = context?.bodyFrame?.forward ?? DEFAULT_FORWARD;
          const sideSign = side === "left" ? -1 : 1;
 +        const outward = lateral.clone().multiplyScalar(sideSign);
-+        // A little lateral flare is part of the neutral posture, not merely an
-+        // emergency low-hand correction. It gives the elbow an anatomical side
-+        // before the reach becomes singular.
-+        const pole = forward.clone().addScaledVector(outward, 0.32);
++        const pole = outward.clone();
 +        const offset = handTarget.clone().sub(bodyCenter);
 +        const localX = offset.dot(lateral);
          // Cross-body factor: high when the hand is on the WRONG side of the
@@ -8304,7 +8307,7 @@ index d42bcd447471742c09a421dc92e9eb63986abbb4..0729807236922d57af994d099b1e900b
 +        // anatomical centerline. `lateral` always points to the body's right,
 +        // regardless of the source model's X convention.
 +        const crossBody = this.clamp01((-localX * sideSign) / SHOULDER_HALF_WIDTH);
-+        pole.addScaledVector(forward, crossBody * 0.7);
++        pole.addScaledVector(forward, crossBody * 0.9);
 +        // Measure "low" from the shoulder, not the hips. Ordinary neutral holds
 +        // are below the shoulder and need lateral room even though they are above
 +        // the body's origin.
@@ -8325,7 +8328,7 @@ index d42bcd447471742c09a421dc92e9eb63986abbb4..0729807236922d57af994d099b1e900b
          return pole.normalize();
      }
      /**
-@@ -73,19 +107,20 @@ export class ElbowPoleComputer {
+@@ -73,19 +103,20 @@ export class ElbowPoleComputer {
       * When the hand is in front of or behind the body, we add a vertical
       * bias so the elbow doesn't collide with the torso's side.
       */
@@ -8353,7 +8356,7 @@ index d42bcd447471742c09a421dc92e9eb63986abbb4..0729807236922d57af994d099b1e900b
          return pole.normalize();
      }
      /**
-@@ -96,20 +131,37 @@ export class ElbowPoleComputer {
+@@ -96,20 +127,37 @@ export class ElbowPoleComputer {
       * When the hand is near the body center on the horizontal plane,
       * we add outward X bias so the elbow doesn't drop into the torso.
       */
@@ -21456,7 +21459,7 @@ index 0000000000000000000000000000000000000000..df9962ddd074ebf26af07bc137a37e88
 +  }
 +}
 diff --git a/src/lib/services/implementations/ElbowPoleComputer.ts b/src/lib/services/implementations/ElbowPoleComputer.ts
-index 626111debe6cf0d4a8846c94e3b6847e3aa2758f..fb1e87c53351c76b4ae8908034c417edb5edbfc2 100644
+index 626111debe6cf0d4a8846c94e3b6847e3aa2758f..6415ea41ff453a31e7acb713dd9ef68c59a00f03 100644
 --- a/src/lib/services/implementations/ElbowPoleComputer.ts
 +++ b/src/lib/services/implementations/ElbowPoleComputer.ts
 @@ -12,7 +12,13 @@
@@ -21474,7 +21477,7 @@ index 626111debe6cf0d4a8846c94e3b6847e3aa2758f..fb1e87c53351c76b4ae8908034c417ed
  import { Plane } from "../../domain/enums/Plane";
 
  /**
-@@ -22,26 +28,66 @@ import { Plane } from "../../domain/enums/Plane";
+@@ -22,68 +28,115 @@ import { Plane } from "../../domain/enums/Plane";
   */
  const SHOULDER_HALF_WIDTH = 0.2;
 
@@ -21544,8 +21547,17 @@ index 626111debe6cf0d4a8846c94e3b6847e3aa2758f..fb1e87c53351c76b4ae8908034c417ed
 +
    /**
     * Wall plane (XY): props move on the vertical plane facing the audience.
-    * Base direction: forward (+Z, toward the viewer).
-@@ -54,36 +100,47 @@ export class ElbowPoleComputer implements IElbowPoleComputer {
+-   * Base direction: forward (+Z, toward the viewer).
++   * Base direction: outward, away from the ribcage.
+    *
+-   * When the hand crosses the body's centerline, we push the elbow
+-   * forward more aggressively so the arm goes in front of the chest
+-   * instead of through it. When the hand is low (south positions),
+-   * we add a slight outward bias so the elbows don't pinch inward.
++   * Forward bend is reserved for a real cross-body reach. Starting every wall
++   * pose forward makes a hand held beside the hip fold the elbow toward the
++   * audience, which only looks acceptable until the avatar is viewed in depth.
+    */
    private computeWallPole(
      handTarget: Vector3,
      side: "left" | "right",
@@ -21561,10 +21573,7 @@ index 626111debe6cf0d4a8846c94e3b6847e3aa2758f..fb1e87c53351c76b4ae8908034c417ed
 
 -    const localX = handTarget.x - bodyCenter.x;
 -    const localY = handTarget.y - bodyCenter.y;
-+    // A little lateral flare is part of the neutral posture, not merely an
-+    // emergency low-hand correction. It gives the elbow an anatomical side
-+    // before the reach becomes singular.
-+    const pole = forward.clone().addScaledVector(outward, 0.32);
++    const pole = outward.clone();
 
 -    // TKA/Mixamo convention: character's right = +X, so the character's
 -    // LEFT shoulder sits at -X and the RIGHT shoulder at +X.
@@ -21586,7 +21595,7 @@ index 626111debe6cf0d4a8846c94e3b6847e3aa2758f..fb1e87c53351c76b4ae8908034c417ed
 -    ));
 -    pole.z += crossBody * 0.8;
 +    );
-+    pole.addScaledVector(forward, crossBody * 0.7);
++    pole.addScaledVector(forward, crossBody * 0.9);
 
 -    // Low position: add OUTWARD X bias so the elbow flares away from the
 -    // torso instead of pinching into it. Outward = sideSign direction.
@@ -21614,7 +21623,7 @@ index 626111debe6cf0d4a8846c94e3b6847e3aa2758f..fb1e87c53351c76b4ae8908034c417ed
 
      return pole.normalize();
    }
-@@ -99,23 +156,25 @@ export class ElbowPoleComputer implements IElbowPoleComputer {
+@@ -99,23 +152,25 @@ export class ElbowPoleComputer implements IElbowPoleComputer {
    private computeWheelPole(
      handTarget: Vector3,
      side: "left" | "right",
@@ -21647,7 +21656,7 @@ index 626111debe6cf0d4a8846c94e3b6847e3aa2758f..fb1e87c53351c76b4ae8908034c417ed
 
      return pole.normalize();
    }
-@@ -131,12 +190,16 @@ export class ElbowPoleComputer implements IElbowPoleComputer {
+@@ -131,12 +186,16 @@ export class ElbowPoleComputer implements IElbowPoleComputer {
    private computeFloorPole(
      handTarget: Vector3,
      side: "left" | "right",
@@ -21668,7 +21677,7 @@ index 626111debe6cf0d4a8846c94e3b6847e3aa2758f..fb1e87c53351c76b4ae8908034c417ed
 
      // How close is the hand to body center on the horizontal plane?
      const horizontalDist = Math.sqrt(localX * localX + localZ * localZ);
-@@ -144,15 +207,37 @@ export class ElbowPoleComputer implements IElbowPoleComputer {
+@@ -144,15 +203,37 @@ export class ElbowPoleComputer implements IElbowPoleComputer {
        1 - horizontalDist / SHOULDER_HALF_WIDTH
      ));
 

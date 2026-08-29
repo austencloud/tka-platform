@@ -106,31 +106,49 @@ describe("ElbowPoleComputer", () => {
     );
   });
 
-  it("gives neutral elbows a mirrored outward corridor below the shoulders", () => {
-    const left = computer.computePoleVector(
-      new Vector3(-0.48, 1.12, 0.08),
-      Plane.WALL,
-      "left",
-      bodyCenter,
-      {
-        bodyFrame: conventionalFrame,
-        shoulderPosition: new Vector3(-0.18, 1.5, 0),
-      }
-    );
-    const right = computer.computePoleVector(
-      new Vector3(0.48, 1.12, 0.08),
-      Plane.WALL,
-      "right",
-      bodyCenter,
-      {
-        bodyFrame: conventionalFrame,
-        shoulderPosition: new Vector3(0.18, 1.5, 0),
-      }
-    );
+  it("solves neutral elbows sideways instead of toward the viewer", () => {
+    const leftShoulder = new Vector3(0.18, 1.5, 0);
+    const rightShoulder = new Vector3(-0.18, 1.5, 0);
+    const leftTarget = new Vector3(0.52, 1.08, 0.08);
+    const rightTarget = new Vector3(-0.52, 1.08, 0.08);
+    const leftOutward = new Vector3(1, 0, 0);
+    const rightOutward = new Vector3(-1, 0, 0);
+    const leftChain = makeArm(leftShoulder, leftOutward);
+    const rightChain = makeArm(rightShoulder, rightOutward);
+    const solver = new IKSolver();
 
-    expect(left.x).toBeLessThan(-0.35);
-    expect(right.x).toBeGreaterThan(0.35);
-    expect(left.z).toBeCloseTo(right.z, 6);
+    solver.solveAndApply(leftChain, {
+      position: leftTarget,
+      poleHint: computer.computePoleVector(
+        leftTarget,
+        Plane.WALL,
+        "left",
+        bodyCenter,
+        { bodyFrame: mirroredFrame, shoulderPosition: leftShoulder }
+      ),
+    });
+    solver.solveAndApply(rightChain, {
+      position: rightTarget,
+      poleHint: computer.computePoleVector(
+        rightTarget,
+        Plane.WALL,
+        "right",
+        bodyCenter,
+        { bodyFrame: mirroredFrame, shoulderPosition: rightShoulder }
+      ),
+    });
+
+    const leftElbowOffset = new Vector3();
+    const rightElbowOffset = new Vector3();
+    leftChain.middle.getWorldPosition(leftElbowOffset);
+    rightChain.middle.getWorldPosition(rightElbowOffset);
+    leftElbowOffset.sub(leftShoulder);
+    rightElbowOffset.sub(rightShoulder);
+
+    expect(leftElbowOffset.dot(leftOutward)).toBeGreaterThan(0.22);
+    expect(rightElbowOffset.dot(rightOutward)).toBeGreaterThan(0.22);
+    expect(Math.abs(leftElbowOffset.dot(mirroredFrame.forward))).toBeLessThan(0.06);
+    expect(Math.abs(rightElbowOffset.dot(mirroredFrame.forward))).toBeLessThan(0.06);
   });
 
   it("assigns stable complementary layers to an equal-height crossed pair", () => {
