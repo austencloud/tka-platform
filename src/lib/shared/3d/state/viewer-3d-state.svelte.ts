@@ -40,7 +40,10 @@ import {
   PRESET_VALID_COUNTS,
   createFormationFromPreset,
 } from "@austencloud/scene-3d";
-import { resolveViewerFormationFacingAngle } from "../domain/viewer-formation-facing";
+import {
+  getViewerFrontStageFacingAngle,
+  resolveViewerFormationFacingAngle,
+} from "../domain/viewer-formation-facing";
 import { isWebGL2Available } from "../capabilities/webgl-capabilities";
 import { fits3DViewportNow } from "../capabilities/viewport-3d-gate.svelte";
 import { userProportionsState } from "@austencloud/scene-3d";
@@ -614,6 +617,8 @@ function buildViewer3DState(
     initialAvatarId: DEFAULT_AVATAR_ID,
     maxPerformers: STAGE.MAX_VIEWER_PERFORMERS,
     getDefaults: () => _defaultSettings,
+    getFrontStageFacingAngle: () =>
+      getViewerFrontStageFacingAngle(environmentId),
     persistent,
   });
 
@@ -1076,7 +1081,8 @@ function buildViewer3DState(
         const facing = resolveViewerFormationFacingAngle(
           slot,
           targetFormation,
-          p.facingAngle
+          p.facingAngle,
+          getViewerFrontStageFacingAngle(environmentId)
         );
         return {
           id: p.id,

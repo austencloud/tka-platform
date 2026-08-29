@@ -15,7 +15,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import demoSequenceJson from "$lib/shared/landing/data/demo-sequence.json";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { VIEWER_FRONT_STAGE_FACING_ANGLE } from "$lib/shared/3d/domain/viewer-formation-facing";
+  import { EMBER_VIEWER_FRONT_STAGE_FACING_ANGLE } from "$lib/shared/3d/domain/viewer-formation-facing";
 
   const WORKBENCH_SCENES = new Set<string>([
     BackgroundType.FOREST,
@@ -64,12 +64,12 @@
 
   function requestedPerformers() {
     if (requestedScene() !== BackgroundType.EMBER) return [];
-    // Seed the same audience-facing heading used by the live formation owner.
-    // Add/remove and formation changes must preserve this visible front.
+    // Ember deliberately looks down the opposite stage axis. The shared
+    // formation owner keeps that exception scoped to this environment.
     return [
       {
         position: { x: 0, z: 0 },
-        facingAngle: VIEWER_FRONT_STAGE_FACING_ANGLE,
+        facingAngle: EMBER_VIEWER_FRONT_STAGE_FACING_ANGLE,
         customBluePlane: Plane.WALL,
         customRedPlane: Plane.WALL,
       },
