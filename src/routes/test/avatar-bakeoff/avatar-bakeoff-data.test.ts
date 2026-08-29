@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import {
-  parseCandidateId,
-  parseStressPoseId,
-} from "./avatar-bakeoff-data";
+import { parseCandidateId, parseStressPoseId } from "./avatar-bakeoff-data";
 
 describe("avatar bake-off query parsing", () => {
   it("accepts known candidates and falls back from stale links", () => {
     expect(parseCandidateId("avatar-sdk")).toBe("avatar-sdk");
+    expect(parseCandidateId("human-generator-trial")).toBe(
+      "human-generator-trial"
+    );
     expect(parseCandidateId("missing-vendor")).toBe("current-optimized");
   });
 

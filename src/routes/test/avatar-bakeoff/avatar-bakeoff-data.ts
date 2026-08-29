@@ -1,6 +1,7 @@
 export const CANDIDATE_IDS = [
   "current-raw",
   "current-optimized",
+  "human-generator-trial",
   "avatar-sdk",
   "avaturn",
   "ready-player-me-archived",
@@ -45,6 +46,15 @@ export const BAKEOFF_CANDIDATES: Record<CandidateId, BakeoffCandidate> = {
     bytes: 2_431_624,
     continuity: "control",
     note: "The model class currently shipped by TKA.",
+  },
+  "human-generator-trial": {
+    id: "human-generator-trial",
+    label: "Human Generator · trial",
+    source: "Locally generated Human Generator trial",
+    modelUrl: "/models/avatars/bakeoff/human-generator-trial.glb",
+    bytes: 19_853_800,
+    continuity: "current",
+    note: "Trial-watermarked LOD1 export with 1K baked textures and trial-compatible mesh hair.",
   },
   "avatar-sdk": {
     id: "avatar-sdk",
