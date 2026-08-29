@@ -242,8 +242,11 @@
     min-height: 100dvh;
     padding: clamp(10px, 1.8cqh, 22px);
     color: #f4f7ef;
-    background:
-      radial-gradient(circle at 50% 0%, rgb(31 61 46 / 45%), transparent 45%),
+    background: radial-gradient(
+        circle at 50% 0%,
+        rgb(31 61 46 / 45%),
+        transparent 45%
+      ),
       #07110d;
     container-type: size;
   }
@@ -433,7 +436,7 @@
     background: #64ff9a;
   }
 
-  @container (max-width: 700px) {
+  @media (max-width: 700px) {
     .tracer-shell {
       gap: 8px;
       padding: 8px;
@@ -474,7 +477,7 @@
     }
   }
 
-  @container (max-height: 520px) {
+  @media (max-height: 520px) {
     .tracer-shell {
       grid-template-columns: minmax(0, 1fr) auto;
       grid-template-rows: auto minmax(0, 1fr);
