@@ -49,6 +49,26 @@ describe("performer manager count transitions", () => {
     manager.destroy();
   });
 
+  it("uses the host stage's heading for same-direction casts", () => {
+    const frontStageFacingAngle = Math.PI;
+    const manager = createPerformerManager({
+      initialAvatarId: DEFAULT_AVATAR_ID,
+      maxPerformers: 8,
+      getFrontStageFacingAngle: () => frontStageFacingAngle,
+    });
+
+    manager.initialize();
+    expect(manager.performers[0]?.facingAngle).toBe(frontStageFacingAngle);
+
+    manager.addPerformer();
+    manager.updateFormationTransition(now + 320);
+    expect(
+      manager.performers.map((performer) => performer.facingAngle)
+    ).toEqual([frontStageFacingAngle, frontStageFacingAngle]);
+
+    manager.destroy();
+  });
+
   it("removes immediately and slides survivors into the closed layout", () => {
     const manager = createPerformerManager({
       initialAvatarId: DEFAULT_AVATAR_ID,
