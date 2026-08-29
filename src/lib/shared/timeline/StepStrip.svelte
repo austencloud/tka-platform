@@ -13,6 +13,7 @@
   into smaller editorial surfaces without changing the established default.
 -->
 <script lang="ts">
+  import { untrack } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -21,6 +22,7 @@
   let {
     cells = null,
     sequence = null,
+    includeStartPosition = true,
     currentStep,
     bpm,
     cellSize = 72,
@@ -32,6 +34,7 @@
     bluePropType = null,
     redPropType = null,
     stepPulse = false,
+    staggerCellUpdates = false,
     onCellClick = null,
   }: {
     /** Prebuilt cells for callers that already own the notation mapping. */
@@ -40,6 +43,9 @@
      *  derivation inside this component's deferred chunk. Ignored when cells
      *  are supplied. */
     sequence?: SequenceData | null;
+    /** Keep the sequence's static start pose in the rail. Continuously playing
+     *  surfaces can omit it so every visible cell represents a performed beat. */
+    includeStartPosition?: boolean;
     /** Float: integer = step number, fraction = progress within step. */
     currentStep: number;
     bpm: number;
@@ -65,28 +71,82 @@
     redPropType?: PropType | null;
     /** Flash the focus frame each time the active step advances. */
     stepPulse?: boolean;
+    /** Replace a reused strip one pictograph per frame. Dense live surfaces use
+     *  this to keep SVG preparation out of their animation handoff; the first
+     *  sequence still mounts atomically, and existing callers retain that
+     *  behavior unless they opt in. */
+    staggerCellUpdates?: boolean;
     /** Seek callback when a cell is tapped (receives the cell's stepNumber). */
     onCellClick?: ((stepNumber: number) => void) | null;
   } = $props();
 
   const GAP = 6;
   const BUFFER = 3;
+  const renderBuffer = $derived(density === "compact" ? 1 : BUFFER);
   const resolvedCells = $derived(cells ?? buildNotationCells(sequence));
+  const requestedDisplayedCells = $derived(
+    includeStartPosition
+      ? resolvedCells
+      : resolvedCells.filter((cell) => !cell.isStart)
+  );
+  // This buffer is replaced atomically (or one cell at a time) and never
+  // mutated in place. Keeping the notation records raw preserves their stable
+  // identity, which is what the staggered handoff comparison needs.
+  let stagedDisplayedCells = $state.raw<NotationCell[]>([]);
+  let stagingGeneration = 0;
+
+  function nextFrame(): Promise<void> {
+    return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  }
+
+  $effect(() => {
+    const requested = requestedDisplayedCells;
+    const stagger = staggerCellUpdates;
+    const generation = ++stagingGeneration;
+    const current = untrack(() => stagedDisplayedCells);
+
+    if (
+      !stagger ||
+      current.length === 0 ||
+      current.length !== requested.length
+    ) {
+      stagedDisplayedCells = requested;
+      return;
+    }
+
+    void (async () => {
+      for (let index = 0; index < requested.length; index += 1) {
+        if (current[index]?.data === requested[index]?.data) continue;
+        await nextFrame();
+        if (generation !== stagingGeneration) return;
+        stagedDisplayedCells = stagedDisplayedCells.map((cell, cellIndex) =>
+          cellIndex === index ? requested[index]! : cell
+        );
+      }
+    })();
+  });
+
+  const displayedCells = $derived(
+    staggerCellUpdates ? stagedDisplayedCells : requestedDisplayedCells
+  );
+  const displayedStep = $derived(
+    Math.max(0, (currentStep ?? 0) - (includeStartPosition ? 0 : 1))
+  );
   const heroScale = $derived(density === "compact" ? 1.15 : 1.32);
   const vertical = $derived(orientation === "vertical");
 
-  let currentStepNumber = $derived(Math.floor(currentStep ?? 0));
+  let currentStepNumber = $derived(Math.floor(displayedStep));
   let activeIndex = $derived(
     Math.min(
       Math.max(currentStepNumber, 0),
-      Math.max(0, resolvedCells.length - 1)
+      Math.max(0, displayedCells.length - 1)
     )
   );
 
   // Smooth progress within the current step (0→1) from the float step — drives
   // the calm per-step countdown cue under the focus frame.
   let stepPhase = $derived(
-    Math.min(1, Math.max(0, (currentStep ?? 0) - currentStepNumber))
+    Math.min(1, Math.max(0, displayedStep - currentStepNumber))
   );
 
   // Monotonic virtual index for seamless looping: the raw step wraps (…N→0…), so
@@ -105,7 +165,7 @@
       return;
     }
     if (loop && prevRawStep !== -1 && raw < prevRawStep) {
-      loopOffset += resolvedCells.length;
+      loopOffset += displayedCells.length;
     }
     prevRawStep = raw;
   });
@@ -175,7 +235,7 @@
   // run past the ends and map to cells circularly (seamless wrap); otherwise they
   // clamp to the real range. Cells are absolutely placed at vi * STRIDE.
   let renderCells = $derived.by(() => {
-    const len = resolvedCells.length;
+    const len = displayedCells.length;
     if (len === 0)
       return [] as { vi: number; cell: NotationCell; dist: number }[];
     const a = virtualActive;
@@ -185,11 +245,11 @@
       // Forward-biased: one finished cell (graceful exit) + as many upcoming as
       // the primary axis holds. No deep past — practice only needs what's next.
       const ahead =
-        Math.ceil((stripPrimarySize - focusOffset) / STRIDE) + BUFFER;
+        Math.ceil((stripPrimarySize - focusOffset) / STRIDE) + renderBuffer;
       start = a - 1;
       end = a + ahead + 1;
     } else {
-      const half = Math.ceil(stripPrimarySize / STRIDE / 2) + BUFFER;
+      const half = Math.ceil(stripPrimarySize / STRIDE / 2) + renderBuffer;
       start = a - half;
       end = a + half + 1;
     }
@@ -200,7 +260,7 @@
     const out: { vi: number; cell: NotationCell; dist: number }[] = [];
     for (let vi = start; vi < end; vi++) {
       const ci = loop ? ((vi % len) + len) % len : vi;
-      const cell = resolvedCells[ci];
+      const cell = displayedCells[ci];
       if (cell) out.push({ vi, cell, dist: Math.abs(vi - a) });
     }
     return out;
@@ -254,7 +314,7 @@
   });
 </script>
 
-{#if resolvedCells.length > 0}
+{#if displayedCells.length > 0}
   <div
     class="step-viewport"
     class:anchor-start={anchor === "start"}

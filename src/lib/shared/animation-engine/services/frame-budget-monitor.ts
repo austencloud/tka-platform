@@ -26,7 +26,11 @@ const DEFAULT_CONFIG: QualityAdaptationConfig = {
 };
 
 /** Ordered tiers from lowest to highest quality */
-const TIER_ORDER: QualityTier[] = [QualityTier.LOW, QualityTier.MEDIUM, QualityTier.HIGH];
+const TIER_ORDER: QualityTier[] = [
+  QualityTier.LOW,
+  QualityTier.MEDIUM,
+  QualityTier.HIGH,
+];
 
 function deviceTierToQualityTier(deviceTier: DeviceTier): QualityTier {
   switch (deviceTier) {
@@ -105,6 +109,20 @@ export class FrameBudgetMonitor {
 
   getQualityHints(): QualityHints {
     return this.cachedHints;
+  }
+
+  /**
+   * Start a constrained embed at a known ceiling instead of spending its first
+   * seconds over budget. The monitor may still step down, but never recovers
+   * above the host-selected tier.
+   */
+  setMaximumTier(tier: QualityTier): void {
+    this.currentTier = tier;
+    this.maxTier = tier;
+    this.consecutiveOverBudget = 0;
+    this.consecutiveUnderBudget = 0;
+    this.lastTierChangeTime = 0;
+    this.cachedHints = this.buildHints();
   }
 
   setConfig(config: Partial<QualityAdaptationConfig>): void {

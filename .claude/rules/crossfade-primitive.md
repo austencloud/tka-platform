@@ -12,9 +12,9 @@ annoying having you create crossfades that don't work."_ The fix was known and
 used in feature-specific code, but there was no generic primitive to reach for,
 so each new crossfade re-derived it (and often got it wrong).
 
-A single shared primitive now exists and is the only sanctioned way to crossfade
-content. This rule names it and the routing decision explicitly, the same way
-`chip-primitives.md` did for filter bars.
+Shared primitives now own both sanctioned crossfade paths. This rule names them
+and the routing decision explicitly, the same way `chip-primitives.md` did for
+filter bars.
 
 ## The Canonical Primitive
 
@@ -41,6 +41,15 @@ It grid-stacks (or `fill`-stacks) the old and new content in one cell so neither
 reflows the other — zero layout shift, by construction. Reduced-motion is owned
 by the primitive (collapses duration to 0); consumers must NOT re-implement it.
 
+`src/lib/shared/components/DualSourceCrossfade.svelte` owns heavy/stateful
+crossfades. Its two snippets stay mounted in one fixed stage; the host prepares
+the hidden source and changes `active` only when that source is ready. It owns
+stacking, opacity, pointer routing, accessibility hiding, duration tokens, and
+reduced motion. A host that retires the outgoing source does so from
+`onsettled`, which follows the active layer's real `transitionend`; a duration
+timer is forbidden because a late compositor frame can make timer time and
+presented transition time diverge.
+
 ## The Routing Rule
 
 A **true crossfade** = two mutually-exclusive states that swap in the same box.
@@ -60,9 +69,9 @@ So:
 1. Cheap true crossfade → `<Crossfade>` (add `animateHeight` when the wrapper
    follows materially different layer heights, `fill` if a sized parent owns
    the box, `mode="swap"` for sequential, or `delay` for a stagger).
-2. Heavy/stateful true crossfade → CellRenderer dual-source
-   (`src/lib/shared/sequence-viewer/components/CellRenderer.svelte` +
-   `crossfader-state.svelte.ts`). No remount.
+2. Heavy/stateful true crossfade → `<DualSourceCrossfade>`. No remount. The
+   existing `CellRenderer` + `crossfader-state` path remains its specialized
+   bitmap implementation.
 3. Single enter/exit (a modal appears, a toast dismisses, a panel mounts — NO
    second state) → plain `transition:fade`. This is NOT a crossfade. Do not wrap
    it in `<Crossfade>` (a fake `key` makes the code lie about its intent).
@@ -71,8 +80,9 @@ Full boundary + rationale: `docs/architecture/crossfade-primitive.md`.
 
 ## Keep-Separate (deliberate carve-outs — do NOT migrate to the primitive)
 
-- `CellRenderer` + `crossfader-state` — dual-source, no remount, perf-tuned,
-  dark-mode aware. The heavy-content path.
+- `CellRenderer` + `crossfader-state` — specialized bitmap crossfade with URL
+  lifecycle and dark-mode coordination. Keep it on that focused owner rather
+  than routing the images through the generic heavy-stage primitive.
 - `ToolPanel`/workspace-scale swaps that are heavy but already keyed migrate only
   with `fill`; genuinely heavy non-keyed swaps (`FuseTab`, `CreationWorkspaceArea`)
   stay hand-rolled (remount cost).

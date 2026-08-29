@@ -30,10 +30,10 @@
   REMOUNT — read before reaching for this on heavy content: `{#key}` REMOUNTS
   children on every change. Cheap for icons/labels/light panels; wasteful (and
   state-losing: scroll, focus, in-progress work) for canvases, large pictograph
-  renders, or stateful heavy panels. Those route through the dual-source
-  CellRenderer (`src/lib/shared/sequence-viewer/components/CellRenderer.svelte` +
-  `crossfader-state.svelte.ts`) so nothing remounts — solved, perf-tuned,
-  dark-mode aware. The remount cost (not the sizing) is the carve-out line.
+  renders, or stateful heavy panels. Those route through
+  `DualSourceCrossfade.svelte`, which keeps two host-prepared sources mounted.
+  CellRenderer retains its specialized image/bitmap dual-source path. The
+  remount cost (not the sizing) is the carve-out line.
 
   Boundary + rationale: docs/architecture/crossfade-primitive.md
   Routing rule: .claude/rules/crossfade-primitive.md
@@ -78,7 +78,7 @@
 
   let reducedMotion = $state(
     typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
 
   $effect(() => {
@@ -98,7 +98,7 @@
   // (delay = out duration), mirroring CellRenderer's sequential swap timing.
   // Crossfade mode uses the explicit `delay` prop (0 = pure overlap).
   const inDelay = $derived(
-    reducedMotion ? 0 : mode === "swap" ? duration : delay,
+    reducedMotion ? 0 : mode === "swap" ? duration : delay
   );
 
   const heightEnabled = $derived(animateHeight && !fill);
@@ -144,7 +144,7 @@
         // fill the box would jump there and only then animate away from it.
         fill: "backwards",
         easing: HEIGHT_EASING,
-      },
+      }
     );
   }
 

@@ -21,16 +21,18 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import { type TrailSettings } from "../domain/types/trail-types";
 import type { AdditionalLayerProps } from "../domain/types/trail-capture-types";
-import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
+import {
+  getAnimationVisibilityManager,
+  type AnimationVisibilityStateManager,
+} from "../state/animation-visibility-state.svelte";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { TipEffortMap } from "../domain/types/tip-effect-types";
 
 // Services
-import {
-  DEFAULT_CANVAS_SIZE,
-} from "./canvas-resizer.svelte";
+import { DEFAULT_CANVAS_SIZE } from "./canvas-resizer.svelte";
 import { FrameBudgetMonitor } from "./frame-budget-monitor";
 import { detectDeviceTier } from "./device-tier-detector";
+import type { QualityTier } from "../domain/types/quality-types";
 import { AnimatorCanvasInitializer } from "./animator-canvas-initializer";
 import type { FireOverlayConfig } from "../domain/types/fire-types";
 import type { FireDefaultsLoader } from "./fire-defaults-loader";
@@ -41,20 +43,32 @@ import { LiveRenderContext } from "./render-context";
 import type { RenderContext } from "./render-context-registry";
 
 // Extracted modules
-import { CanvasLifecycleManager, type LifecycleInitCtx } from "./canvas-lifecycle-manager";
+import {
+  CanvasLifecycleManager,
+  type LifecycleInitCtx,
+} from "./canvas-lifecycle-manager";
 import { PropSystem } from "./managers/prop-system";
 import { FrameSystem } from "./managers/frame-system";
 import { EffectSystem } from "./managers/effect-system";
 import { PlaybackSync } from "./managers/playback-sync";
-import type { EffectType, TipEffectMap } from '../domain/types/tip-effect-types';
-import { createAnimatorState, type AnimatorState } from '../state/animator-state.svelte';
+import type {
+  EffectType,
+  TipEffectMap,
+} from "../domain/types/tip-effect-types";
+import {
+  createAnimatorState,
+  type AnimatorState,
+} from "../state/animator-state.svelte";
 
 // ── Effects helper utility (used by initialize + hasEffectInMap) ────────────
 
 /** Returns true if any entry in the map has the given effect type. */
-function hasEffectInMap(map: TipEffectMap | undefined, effect: string): boolean {
+function hasEffectInMap(
+  map: TipEffectMap | undefined,
+  effect: string
+): boolean {
   if (!map) return false;
-  return Object.values(map).some(a => a.effect === effect);
+  return Object.values(map).some((a) => a.effect === effect);
 }
 
 /**
@@ -124,17 +138,24 @@ export interface AnimationEngineCallbacks {
   prewarmEffects?: EffectType[];
 }
 
-
 export class AnimationEngine {
   // REACTIVE STATE - Component derives from this
   private readonly _animatorState = createAnimatorState();
 
-  get state(): AnimatorState { return this._animatorState; }
-  get animatorState(): AnimatorState { return this._animatorState; }
+  get state(): AnimatorState {
+    return this._animatorState;
+  }
+  get animatorState(): AnimatorState {
+    return this._animatorState;
+  }
 
   private readonly lifecycleManager = new CanvasLifecycleManager();
-  private readonly effectSystem = new EffectSystem(this._animatorState, { lifecycleManager: this.lifecycleManager });
-  private readonly propSystem = new PropSystem(this._animatorState, { lifecycleManager: this.lifecycleManager });
+  private readonly effectSystem = new EffectSystem(this._animatorState, {
+    lifecycleManager: this.lifecycleManager,
+  });
+  private readonly propSystem = new PropSystem(this._animatorState, {
+    lifecycleManager: this.lifecycleManager,
+  });
   private readonly frameSystem = new FrameSystem(this._animatorState, {
     lifecycleManager: this.lifecycleManager,
     propSystem: this.propSystem,
@@ -153,7 +174,9 @@ export class AnimationEngine {
     getVM: () => this.getVM(),
     getCallbacks: () => this.callbacks,
     getCanvasSize: () => this._canvasSize,
-    setCanvasSize: (s) => { this._canvasSize = s; },
+    setCanvasSize: (s) => {
+      this._canvasSize = s;
+    },
     buildFrameDeps: () => this.buildFrameDeps(),
   });
 
@@ -168,13 +191,14 @@ export class AnimationEngine {
   /** Per-instance visibility manager override. When set, this engine uses its own
    * manager instead of the global singleton, allowing multiple canvases to have
    * independent visibility/effect settings. */
-  private visibilityManagerOverride: AnimationVisibilityStateManager | null = null;
+  private visibilityManagerOverride: AnimationVisibilityStateManager | null =
+    null;
   private unsubscribeVisibility: (() => void) | null = null;
 
   /** Per-performer effort resolver. When set, getEffortForPerformer() calls it
    *  instead of reading the global visibility manager. */
-  private _performerEffortResolver: ((performerId: string) => EffortId) | null = null;
-
+  private _performerEffortResolver: ((performerId: string) => EffortId) | null =
+    null;
 
   /**
    * Set a per-instance visibility manager override. Must be called before
@@ -183,6 +207,12 @@ export class AnimationEngine {
    */
   setVisibilityManager(manager: AnimationVisibilityStateManager): void {
     this.visibilityManagerOverride = manager;
+  }
+
+  /** Set the adaptive quality ceiling before this engine initializes. */
+  setInitialQualityTier(tier: QualityTier): void {
+    if (this.state.isInitialized) return;
+    this.frameBudgetMonitor.setMaximumTier(tier);
   }
 
   /**
@@ -231,7 +261,10 @@ export class AnimationEngine {
     this.state.setMotionVisibility(blue, red);
     if (this.state.isInitialized) {
       this.lifecycleManager.renderLoop?.triggerRender(() =>
-        this.frameSystem.buildFrameParams(this.playbackSync.lastPropsRef ?? DEFAULT_ENGINE_PROPS, this.buildFrameDeps())
+        this.frameSystem.buildFrameParams(
+          this.playbackSync.lastPropsRef ?? DEFAULT_ENGINE_PROPS,
+          this.buildFrameDeps()
+        )
       );
     }
   }
@@ -289,7 +322,9 @@ export class AnimationEngine {
     this.propSystem.initPrevDarkMode(vm.isDarkMode());
 
     // PlaybackSync owns prevTrailsActive / prevPropsVisible
-    this.playbackSync.setPrevTrailsActive(hasEffectInMap(ecs?.tipEffectMap, "trails"));
+    this.playbackSync.setPrevTrailsActive(
+      hasEffectInMap(ecs?.tipEffectMap, "trails")
+    );
     this.playbackSync.setPrevPropsVisible(vm.getVisibility("props"));
 
     // Initialize effect-system prev-state (fire sliders, charcoal, effort, ERM flags)
@@ -297,7 +332,8 @@ export class AnimationEngine {
 
     // fireDefaultsLoader - load on demand via getter
     try {
-      const { getFireDefaultsLoader } = await import("$lib/shared/animation-engine/get-fire-defaults-loader");
+      const { getFireDefaultsLoader } =
+        await import("$lib/shared/animation-engine/get-fire-defaults-loader");
       this.fireDefaultsLoader = getFireDefaultsLoader();
     } catch {
       console.warn("[AnimationEngine] Fire defaults loader not available");
@@ -331,17 +367,21 @@ export class AnimationEngine {
       callbacks,
       prevDarkMode: this.propSystem.prevDarkMode,
       initialGridMode: this.playbackSync.lastPropsRef?.gridMode,
-      initialShowNonRadialPoints: this.playbackSync.lastPropsRef?.showNonRadialPoints ?? true,
-      buildFrameParams: (props) => this.frameSystem.buildFrameParams(props, this.buildFrameDeps()),
+      initialShowNonRadialPoints:
+        this.playbackSync.lastPropsRef?.showNonRadialPoints ?? true,
+      buildFrameParams: (props) =>
+        this.frameSystem.buildFrameParams(props, this.buildFrameDeps()),
       getVM: () => this.getVM(),
-      onVisibilityChange: (state) => this.playbackSync.handleVisibilityChange(state),
+      onVisibilityChange: (state) =>
+        this.playbackSync.handleVisibilityChange(state),
       instanceId: this.instanceId,
     };
 
     await this.lifecycleManager.initialize(ctx);
 
     // Sync previousGridMode with the grid texture loaded during initialization.
-    const initGridMode = this.playbackSync.lastPropsRef?.gridMode?.toString() ?? "diamond";
+    const initGridMode =
+      this.playbackSync.lastPropsRef?.gridMode?.toString() ?? "diamond";
     this.playbackSync.setPreviousGridMode(initGridMode);
     this.playbackSync.setPreviousShowNonRadialPoints(
       this.playbackSync.lastPropsRef?.showNonRadialPoints ?? true
@@ -359,7 +399,8 @@ export class AnimationEngine {
     // (nothing animating yet) and the first switch to them never freezes.
     const prewarm = callbacks.prewarmEffects;
     if (prewarm) {
-      for (const id of prewarm) this.effectSystem.rendererManager.prewarmRenderer(id);
+      for (const id of prewarm)
+        this.effectSystem.rendererManager.prewarmRenderer(id);
     }
   }
 
@@ -413,7 +454,7 @@ export class AnimationEngine {
   async prepareExportPropTypes(
     blue: string,
     red: string,
-    darkMode: boolean,
+    darkMode: boolean
   ): Promise<void> {
     const ptm = this.propSystem.propTypeManager;
     // Register overrides so loadPropTextures uses these exact types (not settings).
@@ -437,19 +478,23 @@ export class AnimationEngine {
    */
   async prepareExportAdditionalLayers(
     layerCount: number,
-    spectrum: boolean,
+    spectrum: boolean
   ): Promise<void> {
     await this.propSystem.propTypeManager.preloadAdditionalLayerTextures(
       layerCount,
       spectrum,
-      this.state.currentBluePropType,
+      this.state.currentBluePropType
     );
   }
 
   /** Render one export frame synchronously and deterministically. `timeMs` is
    *  the frame's virtual time; `dtSeconds` is the fixed sim step (e.g. 1/fps).
    *  Used by the offscreen export driver — no rAF, no live-engine mutation. */
-  renderFrame(props: AnimationEngineProps, timeMs: number, dtSeconds: number): void {
+  renderFrame(
+    props: AnimationEngineProps,
+    timeMs: number,
+    dtSeconds: number
+  ): void {
     // Honor the caller's trail settings the same way the live update() path does.
     // buildFrameParams resolves trailSettings from STATE (getEffectiveTrailSettings
     // reads state.trailSettings), NOT from props — so without this sync the
@@ -462,7 +507,10 @@ export class AnimationEngine {
     if (props.externalTrailSettings) {
       this._animatorState.setTrailSettings(props.externalTrailSettings);
     }
-    const params = this.frameSystem.buildFrameParams(props, this.buildFrameDeps());
+    const params = this.frameSystem.buildFrameParams(
+      props,
+      this.buildFrameDeps()
+    );
     params.virtualTime = timeMs;
     this.lifecycleManager.renderLoop?.renderSync(params, timeMs, dtSeconds);
   }
@@ -528,7 +576,9 @@ export class AnimationEngine {
   }
 
   // --- EXPORT DIAGNOSTIC (remove after debugging) ---
-  getLedRenderer() { return this.effectSystem.getLedRenderer(); }
+  getLedRenderer() {
+    return this.effectSystem.getLedRenderer();
+  }
 
   enableFireDiagnostics(): void {
     this.effectSystem.enableFireDiagnostics();
@@ -567,18 +617,22 @@ export class AnimationEngine {
     return {
       ...core,
       visibility: {
-        activeEffect: this.effectSystem.effectsConfigState?.activeEffect ?? "none",
+        activeEffect:
+          this.effectSystem.effectsConfigState?.activeEffect ?? "none",
         tipEffectMap: this.effectSystem.effectsConfigState?.tipEffectMap ?? {},
         effortPreset: settings.effortPreset,
         pathShape: settings.pathShape,
       },
       renderLoop: this.lifecycleManager.renderLoop?.getDiagnostics() ?? null,
       qualityHints: this.frameBudgetMonitor?.getQualityHints() ?? null,
-      sequenceInfo: this.playbackSync.prevSequenceDataForDiag ? {
-        word: this.playbackSync.prevSequenceDataForDiag.word,
-        stepCount: this.playbackSync.prevSequenceDataForDiag.steps?.length ?? 0,
-        gridMode: this.playbackSync.prevSequenceDataForDiag.gridMode,
-      } : null,
+      sequenceInfo: this.playbackSync.prevSequenceDataForDiag
+        ? {
+            word: this.playbackSync.prevSequenceDataForDiag.word,
+            stepCount:
+              this.playbackSync.prevSequenceDataForDiag.steps?.length ?? 0,
+            gridMode: this.playbackSync.prevSequenceDataForDiag.gridMode,
+          }
+        : null,
       propTypes: {
         blue: this.state.currentBluePropType,
         red: this.state.currentRedPropType,
@@ -587,7 +641,10 @@ export class AnimationEngine {
     };
   }
 
-  getRenderContext(id: string, container: HTMLDivElement): RenderContext | null {
+  getRenderContext(
+    id: string,
+    container: HTMLDivElement
+  ): RenderContext | null {
     const renderer = this.lifecycleManager.animationRenderer;
     const renderLoop = this.lifecycleManager.renderLoop;
     const trailCapturer = this.lifecycleManager.trailCapturer;
@@ -616,7 +673,9 @@ export class AnimationEngine {
   dispose(): void {
     this.lifecycleManager.dispose({
       onCanvasReady: (canvas) => this.callbacks.onCanvasReady?.(canvas),
-      onInitialized: (initialized) => { this.state.setInitialized(initialized); },
+      onInitialized: (initialized) => {
+        this.state.setInitialized(initialized);
+      },
     });
 
     this.containerElement = null;
@@ -624,8 +683,12 @@ export class AnimationEngine {
     this.frameSystem.resetHandPresenceCache();
   }
 
-  pauseResize(): void { this.lifecycleManager.pauseResize(); }
-  resumeResize(): void { this.lifecycleManager.resumeResize(); }
+  pauseResize(): void {
+    this.lifecycleManager.pauseResize();
+  }
+  resumeResize(): void {
+    this.lifecycleManager.resumeResize();
+  }
 
   setFireConfig(config: Partial<FireOverlayConfig>): void {
     this.effectSystem.setFireConfig(config);
@@ -650,7 +713,6 @@ export class AnimationEngine {
   setCellTipEffortMap(map: TipEffortMap | undefined): void {
     this.effectSystem.setCellTipEffortMap(map);
   }
-
 
   /**
    * Build the per-frame deps object passed to FrameSystem.buildFrameParams().
