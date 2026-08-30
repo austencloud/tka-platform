@@ -6,9 +6,15 @@
     BackSide,
     AdditiveBlending,
     Color,
+    Vector2,
+    Vector3,
     type Mesh,
   } from "three";
   import type { VolcanicHazeConfig } from "../../domain/models/scene-configs";
+  import {
+    sampleVolcanicLightning,
+    volcanicLightningCell,
+  } from "./volcanic-lightning";
 
   interface Props {
     config: VolcanicHazeConfig;
@@ -17,6 +23,13 @@
   let { config }: Props = $props();
   const { camera } = useThrelte();
   let hazeMesh = $state<Mesh>();
+
+  /** Horizontal bearing of the vent the low haze is lit by. */
+  function underglowBearing(source: VolcanicHazeConfig): Vector2 {
+    const [x, , z] = source.underglowDirection ?? [0, 0, 1];
+    const bearing = new Vector2(x, z);
+    return bearing.lengthSq() > 0 ? bearing.normalize() : new Vector2(0, 1);
+  }
 
   let geometry = $state<SphereGeometry | undefined>(undefined);
 
@@ -41,9 +54,13 @@
     uniform float uOpacity;
     uniform float uScale;
     uniform float uTime;
-    uniform float uLightningInterval;
+    uniform float uFlashEnergy;
+    uniform vec3 uFlashCell;
     uniform float uLightningIntensity;
     uniform vec3 uInnerGlowColor;
+    uniform vec3 uUnderglowColor;
+    uniform vec2 uUnderglowBearing;
+    uniform float uUnderglowStrength;
     varying vec3 vHazeDirection;
 
     // 3D Simplex noise implementation
@@ -121,10 +138,14 @@
       // === Volcanic hemisphere glow ===
       // Lit from below — bottom hemisphere glows warmly
       float bottomGlow = smoothstep(0.1, -0.6, dir.y);
-      float topFade = smoothstep(0.34, -0.2, dir.y);
+      // The dome has to carry the upper half of the frame, so cloud bodies
+      // reach well past eye level before they fade out.
+      float topFade = smoothstep(0.72, -0.28, dir.y);
       // Cut visible cloud bodies out of the noise instead of tinting the whole
-      // dome evenly. The old low-contrast wash was the flat graybox ceiling.
-      float cloudBody = smoothstep(0.4, 0.7, combined);
+      // dome evenly. Three averaged noise layers land near 0.42 with a spread
+      // of roughly 0.1, so the band has to sit across that distribution or the
+      // dome resolves to nothing at all.
+      float cloudBody = smoothstep(0.30, 0.58, combined);
       float strata = 0.78 + snoise(
         vec3(dir.x * 7.0, dir.y * 1.4, dir.z * 7.0)
           + vec3(uTime * 0.018)
@@ -132,28 +153,40 @@
       float alpha = cloudBody * strata * uOpacity * topFade;
 
       // Horizon boost — volcanic glow at eye level
-      float horizonBoost = exp(-pow(abs(dir.y) * 5.2, 1.45)) * 0.24;
+      float horizonBoost = exp(-pow(abs(dir.y) * 3.6, 1.4)) * 0.42;
       alpha += horizonBoost * uOpacity * (0.72 + combined * 0.28);
 
       // Warm underglow
       color = mix(color, vec3(0.46, 0.11, 0.015), bottomGlow * 0.42);
 
+      // === Caldera underglow ===
+      // A distant vent lights the low haze from one bearing. Without this the
+      // dome is an even ring at eye level and the sky carries no direction.
+      if (uUnderglowStrength > 0.0) {
+        vec2 flatDir = vec2(dir.x, dir.z);
+        float flatLength = length(flatDir);
+        float bearing = flatLength > 0.0001
+          ? dot(flatDir / flatLength, uUnderglowBearing) * 0.5 + 0.5
+          : 0.5;
+        // pow() is undefined for a negative base; rounding can push the dot
+        // product a hair past -1.
+        float lateral = pow(clamp(bearing, 0.0, 1.0), 3.4);
+        float vertical = exp(-pow(max(dir.y, 0.0) * 3.2, 1.3));
+        // Modulated by the same cloud field, so the glow reads as light caught
+        // by layered haze rather than a painted gradient.
+        float underglow = lateral * vertical * uUnderglowStrength
+          * (0.55 + combined * 0.85);
+        color += uUnderglowColor * underglow;
+        alpha = clamp(alpha + underglow * 0.5, 0.0, 1.0);
+      }
+
       // === Lightning flashes ===
-      float flashCycle = mod(uTime / uLightningInterval, 1.0);
-      float flash = 0.0;
-      if (flashCycle < 0.03) {
-        // Sharp flash — quick bright pulse
-        flash = pow(1.0 - flashCycle / 0.03, 4.0) * uLightningIntensity;
-        // Localize to a random-ish area using noise seeded by flash index
-        float flashSeed = floor(uTime / uLightningInterval);
-        float flashNoise = snoise(dir * 2.0 + vec3(flashSeed * 73.7, flashSeed * 41.3, flashSeed * 97.1));
-        flash *= smoothstep(-0.2, 0.3, flashNoise);
-      } else if (flashCycle < 0.08) {
-        // Secondary afterglow — dimmer, broader
-        float afterglow = pow(1.0 - (flashCycle - 0.03) / 0.05, 2.0) * uLightningIntensity * 0.3;
-        float flashSeed = floor(uTime / uLightningInterval);
-        float flashNoise = snoise(dir * 1.5 + vec3(flashSeed * 73.7, flashSeed * 41.3, flashSeed * 97.1));
-        flash = afterglow * smoothstep(-0.3, 0.2, flashNoise);
+      // The envelope is sampled on the CPU in real seconds; the dome only
+      // decides where the flash sits.
+      float flash = uFlashEnergy * uLightningIntensity;
+      if (flash > 0.0) {
+        float flashNoise = snoise(dir * 1.9 + uFlashCell);
+        flash *= smoothstep(-0.25, 0.35, flashNoise);
       }
 
       color += uInnerGlowColor * flash;
@@ -163,7 +196,10 @@
     }
   `;
 
-  let time = 0;
+  // Two clocks. `driftTime` is scaled so the cloud field crawls; `flashTime`
+  // stays in real seconds so `lightningInterval` means seconds between strikes.
+  let driftTime = 0;
+  let flashTime = 0;
   let material = $state<ShaderMaterial | undefined>(undefined);
 
   $effect(() => {
@@ -174,9 +210,15 @@
         uOpacity: { value: config.opacity },
         uScale: { value: config.scale },
         uTime: { value: 0 },
-        uLightningInterval: { value: config.lightningInterval },
+        uFlashEnergy: { value: 0 },
+        uFlashCell: { value: new Vector3() },
         uLightningIntensity: { value: config.lightningIntensity },
         uInnerGlowColor: { value: new Color(config.innerGlowColor) },
+        uUnderglowColor: {
+          value: new Color(config.underglowColor ?? config.innerGlowColor),
+        },
+        uUnderglowBearing: { value: underglowBearing(config) },
+        uUnderglowStrength: { value: config.underglowStrength ?? 0 },
       },
       vertexShader,
       fragmentShader,
@@ -191,8 +233,18 @@
 
   useTask((delta) => {
     if (!material) return;
-    time += delta * config.animationSpeed;
-    material.uniforms.uTime!.value = time;
+    driftTime += delta * config.animationSpeed;
+    flashTime += delta;
+    material.uniforms.uTime!.value = driftTime;
+
+    const flash = sampleVolcanicLightning(flashTime, config.lightningInterval);
+    material.uniforms.uFlashEnergy!.value = flash.energy;
+    if (flash.energy > 0) {
+      material.uniforms.uFlashCell!.value.set(
+        ...volcanicLightningCell(flash.cycle)
+      );
+    }
+
     if (hazeMesh && camera.current) {
       hazeMesh.position.copy(camera.current.position);
     }
@@ -204,9 +256,13 @@
     material.uniforms.uColor2!.value = new Color(config.color2);
     material.uniforms.uOpacity!.value = config.opacity;
     material.uniforms.uScale!.value = config.scale;
-    material.uniforms.uLightningInterval!.value = config.lightningInterval;
     material.uniforms.uLightningIntensity!.value = config.lightningIntensity;
     material.uniforms.uInnerGlowColor!.value = new Color(config.innerGlowColor);
+    material.uniforms.uUnderglowColor!.value = new Color(
+      config.underglowColor ?? config.innerGlowColor
+    );
+    material.uniforms.uUnderglowBearing!.value = underglowBearing(config);
+    material.uniforms.uUnderglowStrength!.value = config.underglowStrength ?? 0;
   });
 </script>
 

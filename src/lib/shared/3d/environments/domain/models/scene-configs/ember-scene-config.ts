@@ -154,10 +154,17 @@ export interface VolcanicHazeConfig {
   opacity: number;
   scale: number;
   animationSpeed: number;
+  /** Seconds between lightning strikes. */
   lightningInterval: number;
   lightningIntensity: number;
   innerGlowColor: string;
   radius: number;
+  /** Bearing of the distant vent lighting the low haze. Horizontal part only. */
+  underglowDirection?: [number, number, number];
+  /** Defaults to `innerGlowColor`. */
+  underglowColor?: string;
+  /** Zero leaves the dome evenly lit at eye level. */
+  underglowStrength?: number;
 }
 
 export interface EmberSceneConfig {

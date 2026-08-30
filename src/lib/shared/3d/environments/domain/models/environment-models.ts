@@ -21,6 +21,22 @@ export interface GroundPlaneConfig {
 }
 
 /**
+ * A directional glow banked along the horizon — a distant caldera, a city, a
+ * fire beyond the ridge. Omitted, the sky dome renders exactly as before.
+ */
+export interface SkyHorizonGlowConfig {
+  color: string;
+  /** World direction the glow is centred on. Only its horizontal part is used. */
+  direction: [number, number, number];
+  /** Reach above the horizon, as a fraction of the way to the zenith. */
+  height?: number;
+  /** 1 wraps the whole horizon; 0 concentrates the glow on `direction`. */
+  spread?: number;
+  /** Zero disables the band. */
+  intensity?: number;
+}
+
+/**
  * Sky gradient configuration
  */
 export interface SkyGradientConfig {
@@ -28,6 +44,7 @@ export interface SkyGradientConfig {
   bottomColor: string;
   midColor?: string;
   radius?: number;
+  horizonGlow?: SkyHorizonGlowConfig;
 }
 
 /** A camera-centred solar disk rendered by the shared sky dome. */
