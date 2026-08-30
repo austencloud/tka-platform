@@ -70,7 +70,7 @@
     };
   });
 
-  const { scene, renderer, camera } = useThrelte();
+  const { scene, renderer } = useThrelte();
   const adaptiveQuality = tryGetAdaptiveQualityContext();
   const deviceTier = $derived(
     adaptiveQuality?.contentTier ?? detectWinterQuality(renderer.current)
@@ -152,9 +152,6 @@
     sceneFeatures?.reportProgress("environment", loaded);
     if (loaded === 1 && !readyReported) {
       readyReported = true;
-      if (renderer.current && camera.current && scene.current) {
-        renderer.current.compile(scene.current, camera.current);
-      }
       sceneFeatures?.reportReady("environment");
     }
   });

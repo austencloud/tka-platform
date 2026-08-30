@@ -79,7 +79,7 @@
       : 0,
   });
 
-  const { scene, renderer, camera } = useThrelte();
+  const { scene } = useThrelte();
   const groundY = $derived(userProportionsState.groundY);
   const environmentGlb = useGltf("/models/cosmic/cosmic-reliquary.glb", {
     meshoptDecoder: useMeshopt(),
@@ -121,9 +121,6 @@
       (authoredReady ? 0.7 : 0) + (planetReady ? 0.3 : 0)
     );
     if (authoredReady && planetReady) {
-      if (renderer.current && camera.current && scene.current) {
-        renderer.current.compile(scene.current, camera.current);
-      }
       sceneFeatures.reportReady("environment");
     }
   });

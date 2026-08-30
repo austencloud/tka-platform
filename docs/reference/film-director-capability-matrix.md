@@ -2,7 +2,7 @@
 
 <!-- directive-axes: avatarId,prop,effect,effort,staffLengthCm,environmentId,formation,bluePlane,redPlane,stepPlane -->
 
-One row per speakable axis of the `/test/film-director` schema (v2). "Source
+One row per speakable axis of the `/test/film-director` schema (v3). "Source
 of truth" is the live registry/enum — never copy value lists here.
 
 ## Directive-capable axes
@@ -48,6 +48,8 @@ the pick/oneOf/not vocabulary.
 | performer `position` | performer | literal `{x, z}` | `performerSchema` | Only required (and only meaningful) for `formation: "custom"`; otherwise the formation preset's slot geometry places the performer. |
 | performer `facingDegrees` | performer | literal number (degrees) | `performerSchema` | Falls back to the formation slot's computed facing angle when omitted. |
 | performer `beatOffset` | performer | literal number | `performerSchema` | Defaults to 0. |
+| performer `blocking` | performer | literal array of 1–16 moves: `{move: "stand" \| "walk" \| "turn", to?, direction?, amount?, facing?, durationSeconds?, easing?}` | `blockingMoveSchema` in `film-director-schema.ts` (shape); `src/routes/test/film-director/_lib/blocking-language.ts` (meaning + resolution) | `walk` takes `to: {x, z}` (world point) or `direction` + `amount` (performer-relative); `facing` ∈ `travel`/`hold`/`audience`/`{degrees}` (`audience` faces the default camera side at −Z, NOT the seated crowd at +Z). Travel speed is capped at `MAX_TRAVEL_SPEED` (2.6 m/s) — a faster leg rejects — and below ~0.47 m/s the walk clip hits its playback-rate floor and the feet skate. Deliberately not directive-capable: a path is authored geometry, not a pick. |
+| `performance.blocking` | scene | literal `{endFormation, durationSeconds?, easing?, facing?}` | `sceneBlockingSchema` in `film-director-schema.ts` | Cast-wide staging: walks every performer from their opening slot into the named formation's slots — the spoken "and then they all form a line". A performer with their own `blocking` list ignores it. `endFormation` validates against the same formation catalog (and per-count validity) as the `formation` axis. |
 | performer `sequence` | performer | one source (`{source:"demo"}` \| `word` \| `length` \| `mirrorOf`) plus, for the two generated sources, any of the twelve controls below | `src/routes/test/film-director/_lib/sequence-language.ts` (grammar + meaning), `film-director-schema.ts` `performerSequenceSchema` (shape); resolved async by `director-sequence-library.ts` | Defaults to `{source:"demo"}` (the film's shared sequence). See "Sequence directives" below. Deliberately not directive-capable: `mirrorOf` names one specific performer, so a random pick would have nothing to mean. Rejections: `A sequence names one source…`; `performer "<id>" cannot mirror themselves.`; `mirrors "<id>", who is not in this scene.`; `mirrors "<id>", who is already a mirror. Mirror the original instead.` Generation happens after the first frame, so a scene opens on the shared sequence and re-applies when the library resolves. |
 | bpm | scene (`performance.bpm`) | literal number, 20–300 | `performanceSchema` | Defaults to 90. |
 | durationSeconds | scene | literal number, 1–60 | `sceneSchema` | Defaults to 8. |

@@ -51,8 +51,8 @@
     },
   ];
   const LABEL_OPTIONS = [
-    { value: "turns" as const, label: "TKA turns" },
-    { value: "ratios" as const, label: "VTG ratios" },
+    { value: "turns" as const, label: "TKA turns", shortLabel: "Turns" },
+    { value: "ratios" as const, label: "VTG ratios", shortLabel: "Ratios" },
   ];
   const turnControlLabel = $derived(
     appState.labelMode === "ratios" ? "VTG ratio" : "TKA turn"
@@ -188,23 +188,20 @@
           />
         </div>
         <div class="turn-editor">
-          <label class="axis-control">
+          <div class="axis-control">
             <span class="control-label">Apply to</span>
-            <select
-              class:axis-blue={appState.activeAxis === "blue"}
-              class:axis-red={appState.activeAxis === "red"}
+            <SegmentedControl
+              options={AXIS_OPTIONS}
               value={appState.activeAxis}
-              aria-label="Axis edited by the turn control"
-              onchange={(event) =>
-                appState.setActiveAxis(
-                  event.currentTarget.value as ShapeMatrixAxisTarget
-                )}
-            >
-              {#each AXIS_OPTIONS as option (option.value)}
-                <option value={option.value}>{option.shortLabel}</option>
-              {/each}
-            </select>
-          </label>
+              onchange={(axis: ShapeMatrixAxisTarget) =>
+                appState.setActiveAxis(axis)}
+              size="sm"
+              density="tight"
+              color="accent"
+              semantics="radiogroup"
+              ariaLabel="Axis edited by the turn control"
+            />
+          </div>
           <div class="turn-scroller">
             <span class="control-label">{turnControlLabel}</span>
             {#if appState.availableTurns.length === 1}
@@ -517,6 +514,12 @@
   .matrix-controls {
     grid-area: controls;
     --theme-accent: #d9901a;
+    /* One shared control height for all four ribbon groups: a one-line sm
+       SegmentedControl (44px segment + its own padding and border). Groups
+       size to content — fixed group widths overflowed once the four level
+       tiles outgrew them, and stretched the tiles into full-width swatches
+       in the stacked compact bands. */
+    --ribbon-control-h: 3.25rem;
     width: fit-content;
     max-width: 100%;
     display: flex;
@@ -537,10 +540,8 @@
 
   .level-control {
     grid-area: level;
-    width: 18rem;
     flex: 0 0 auto;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    display: flex;
     align-items: center;
     gap: 0.45rem;
     min-width: 0;
@@ -558,13 +559,10 @@
     display: none;
   }
 
-  .level-control :global(.level-selector) {
-    width: 100%;
-  }
-
   .level-control :global(.lvl) {
-    flex: 1;
-    height: var(--min-touch-target, 44px);
+    flex: 0 0 auto;
+    min-width: var(--min-touch-target, 44px);
+    height: var(--ribbon-control-h);
     min-height: var(--min-touch-target, 44px);
     padding-inline: 0.45rem;
     border-radius: 8px;
@@ -576,13 +574,17 @@
 
   .label-control {
     grid-area: labels;
-    width: 12rem;
     flex: 0 0 auto;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    display: flex;
     align-items: center;
     gap: 0.45rem;
     min-width: 0;
+  }
+
+  /* SegmentedControl's sliding indicator assumes equal-width segments, so
+     each wrapper hands it a definite width sized to its longest label. */
+  .label-control :global(.segmented-control) {
+    width: 7.5rem;
   }
 
   .axis-control {
@@ -593,36 +595,8 @@
     min-width: 0;
   }
 
-  .axis-control select {
-    min-width: 4.75rem;
-    min-height: 2.25rem;
-    padding: 0.35rem 1.5rem 0.35rem 0.55rem;
-    border: 1px solid transparent;
-    border-radius: 7px;
-    background-color: rgb(255 255 255 / 0.045);
-    color: var(--theme-text, #fff);
-    font: inherit;
-    font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 650;
-    cursor: pointer;
-  }
-
-  .axis-control select.axis-blue {
-    color: #69a3ff;
-  }
-
-  .axis-control select.axis-red {
-    color: #ff6f75;
-  }
-
-  .axis-control select:hover {
-    border-color: var(--theme-stroke, rgb(255 255 255 / 0.16));
-    background-color: rgb(255 255 255 / 0.075);
-  }
-
-  .axis-control select:focus-visible {
-    outline: 2px solid var(--theme-accent, #d9901a);
-    outline-offset: 2px;
+  .axis-control :global(.segmented-control) {
+    width: 9.75rem;
   }
 
   .turn-editor {
@@ -663,7 +637,7 @@
     display: inline-flex;
     width: fit-content;
     min-width: 7rem;
-    min-height: 2.25rem;
+    min-height: var(--ribbon-control-h);
     align-items: center;
     justify-content: center;
     gap: 0.45rem;
@@ -727,14 +701,6 @@
       gap: 0.4rem;
     }
 
-    .level-control {
-      width: 15.625rem;
-    }
-
-    .label-control {
-      width: 7rem;
-    }
-
     .difficulty-full,
     .label-control .control-label,
     .axis-control .control-label,
@@ -766,15 +732,11 @@
     .matrix-controls {
       width: 100%;
       display: grid;
-      grid-template-columns: minmax(15.625rem, 1fr) minmax(7rem, 0.5fr);
+      grid-template-columns: max-content 1fr;
       grid-template-areas:
         "level labels"
         "turns turns";
-    }
-
-    .level-control,
-    .label-control {
-      width: 100%;
+      justify-items: start;
     }
 
     .turn-editor {
@@ -796,16 +758,12 @@
     .matrix-controls {
       width: 100%;
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr);
       grid-template-areas:
-        "level level"
-        "labels labels"
-        "turns turns";
-    }
-
-    .level-control,
-    .label-control {
-      width: 100%;
+        "level"
+        "labels"
+        "turns";
+      justify-items: start;
     }
 
     .turn-editor {

@@ -14,6 +14,7 @@ import {
 } from "three";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { ModelRegistry } from "../vegetation/services/model-registry";
+import { attachGltfDecoders } from "../../scene-boot/gltf-decoders";
 import type { VegetationCategory, ManifestBiome } from "../vegetation/domain/vegetation-categories";
 
 
@@ -60,6 +61,7 @@ export class ModelCache {
 
   constructor() {
     this.loader = new GLTFLoader();
+    attachGltfDecoders(this.loader);
     this.registry = new ModelRegistry();
   }
 

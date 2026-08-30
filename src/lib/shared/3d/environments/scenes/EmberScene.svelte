@@ -102,7 +102,7 @@
   let productionSliceProgress = $state(0);
   let productionSliceAsset = $state<Object3D | null>(null);
 
-  const { scene, renderer, camera } = useThrelte();
+  const { scene } = useThrelte();
   const adaptiveQuality = tryGetAdaptiveQualityContext();
   const shadowsEnabled = $derived(
     adaptiveQuality?.config.enableShadows ?? true
@@ -283,9 +283,6 @@
     const total = glbs.length + 1;
     sceneFeatures.reportProgress("environment", loaded / total);
     if (loaded === total) {
-      if (renderer.current && camera.current && scene.current) {
-        renderer.current.compile(scene.current, camera.current);
-      }
       sceneFeatures.reportReady("environment");
     }
   });

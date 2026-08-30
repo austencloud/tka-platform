@@ -53,11 +53,8 @@
   });
 
   const sceneFeatures = getSceneFeatureContext();
-  const { scene, renderer, camera } = useThrelte();
+  const { scene } = useThrelte();
   $effect(() => {
-    if (renderer.current && camera.current && scene.current) {
-      renderer.current.compile(scene.current, camera.current);
-    }
     sceneFeatures?.reportReady("environment");
   });
   const groundY = $derived(userProportionsState.groundY);

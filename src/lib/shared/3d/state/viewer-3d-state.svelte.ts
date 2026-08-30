@@ -57,6 +57,7 @@ import type { OceanVariant } from "../environments/domain/enums/environment-enum
 import type { TimedTransition } from "../camera/transitions";
 import {
   DEFAULT_SCENE_ENVIRONMENT_ID,
+  VIEWER_3D_ENVIRONMENT_STORAGE_KEY,
   normalizeSceneEnvironmentId,
   type SceneEnvironmentId,
 } from "../environments/domain/scene-environment";
@@ -91,7 +92,7 @@ const STORAGE_KEY_NAV_MODE = "tka-viewer3d-navMode";
 const STORAGE_KEY_GRID_LABELS = "tka-viewer3d-gridLabels";
 const STORAGE_KEY_EFFECT_TOGGLES = "tka-viewer3d-effectToggles";
 const STORAGE_KEY_OCEAN_VARIANT = "tka-viewer3d-oceanVariant";
-const STORAGE_KEY_ENVIRONMENT = "tka-viewer3d-environment";
+const STORAGE_KEY_ENVIRONMENT = VIEWER_3D_ENVIRONMENT_STORAGE_KEY;
 
 export type ViewerNavMode = "orbit" | "fly" | "walk";
 
