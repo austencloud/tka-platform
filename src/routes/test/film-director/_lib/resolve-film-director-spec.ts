@@ -27,6 +27,7 @@ import {
   compileBlockingMoves,
   type DirectorBlockingMove,
 } from "./blocking-language";
+import { convertSceneBeatTimes } from "./director-beat-times";
 import { resolveDirectorCameraTrack } from "./director-camera-track";
 import { isDirectiveExpression, type DirectiveValue } from "./directives";
 import {
@@ -452,12 +453,16 @@ function buildResolvedPerformers(
 }
 
 function resolveScene(
-  scene: DirectorSceneInput,
+  rawScene: DirectorSceneInput,
   sceneIndex: number,
   startSeconds: number,
   aspectRatio: number,
   filmSeed: FilmSeed
 ): ResolvedDirectorScene {
+  // Beats convert against the scene's own bpm, so bpm resolves first; every
+  // line below this one thinks purely in seconds.
+  const bpm = rawScene.performance?.bpm ?? 90;
+  const scene = convertSceneBeatTimes(rawScene, bpm);
   const durationSeconds = scene.durationSeconds ?? 8;
   const cast = scene.performance?.cast;
 
@@ -753,7 +758,7 @@ function resolveScene(
     },
     location: { environmentId, showStage, showAudience, sceneFeatures, visiblePlanes },
     performance: {
-      bpm: scene.performance?.bpm ?? 90,
+      bpm,
       sequence: {
         source: "demo",
         loop: scene.performance?.sequence?.loop ?? true,
