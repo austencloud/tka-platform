@@ -62,13 +62,12 @@
 
   let fogInstance: FogExp2 | null = null;
   $effect(() => {
-    if (!scene.current) return;
     if (!fogInstance) {
       fogInstance = new FogExp2("#08001a", 0.008);
-      scene.current.fog = fogInstance;
+      scene.fog = fogInstance;
     }
     return () => {
-      if (scene.current) scene.current.fog = null;
+      scene.fog = null;
       fogInstance = null;
     };
   });

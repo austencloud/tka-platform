@@ -187,24 +187,20 @@
   let fogInstance: FogExp2 | null = null;
   let fogBackground: Color | null = null;
   $effect(() => {
-    if (!scene.current) return;
     const fog = activeConfig.fog;
     if (!fogInstance) {
       fogInstance = new FogExp2(fog.color, fog.density);
       fogBackground = new Color(fog.color);
-      scene.current.fog = fogInstance;
-      scene.current.background = fogBackground;
+      scene.fog = fogInstance;
+      scene.background = fogBackground;
     } else {
       fogInstance.color.set(fog.color);
       fogBackground?.set(fog.color);
       fogInstance.density = fog.density;
     }
     return () => {
-      if (scene.current) {
-        if (scene.current.fog === fogInstance) scene.current.fog = null;
-        if (scene.current.background === fogBackground)
-          scene.current.background = null;
-      }
+      if (scene.fog === fogInstance) scene.fog = null;
+      if (scene.background === fogBackground) scene.background = null;
       fogInstance = null;
       fogBackground = null;
     };

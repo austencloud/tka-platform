@@ -64,11 +64,9 @@
       return;
     }
 
-    // Lazy-initialize on first frame with scene available
-    const s = scene.current;
-    if (!s) return;
+    // Lazy-initialize on first frame
     if (!initialized) {
-      renderer.initialize(s, materialOptions);
+      renderer.initialize(scene, materialOptions);
       initialized = true;
     }
 

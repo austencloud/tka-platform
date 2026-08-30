@@ -174,8 +174,7 @@
 
   $effect(() => {
     if (!active) return;
-    const s = scene.current;
-    if (!s) return;
+    const s = scene;
     // Fog and background are deliberately DIFFERENT colours now. The fog is a
     // lighter, warmer violet than the sky, so distant geometry fades toward a
     // haze that separates it from the near-black upper sky instead of

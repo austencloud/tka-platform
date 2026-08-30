@@ -73,7 +73,7 @@
   const { scene, renderer } = useThrelte();
   const adaptiveQuality = tryGetAdaptiveQualityContext();
   const deviceTier = $derived(
-    adaptiveQuality?.contentTier ?? detectWinterQuality(renderer.current)
+    adaptiveQuality?.contentTier ?? detectWinterQuality(renderer)
   );
   const requestedTier = $derived(
     winterDetailTierFromAmount(activeConfig.forestDetail ?? 1)
@@ -133,15 +133,13 @@
   });
 
   $effect(() => {
-    if (!scene.current) return;
     const fog = activeConfig.fog;
     const fogInstance = new FogExp2(fog.color, fog.density);
-    scene.current.fog = fogInstance;
-    scene.current.background = new Color(fog.color);
+    scene.fog = fogInstance;
+    scene.background = new Color(fog.color);
     return () => {
-      if (!scene.current) return;
-      scene.current.fog = null;
-      scene.current.background = null;
+      scene.fog = null;
+      scene.background = null;
     };
   });
 

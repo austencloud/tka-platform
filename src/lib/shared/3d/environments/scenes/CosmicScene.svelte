@@ -101,11 +101,10 @@
   });
 
   $effect(() => {
-    if (!scene.current) return;
     const fog = activeConfig.fog;
-    scene.current.fog = new FogExp2(new Color(fog.color), fog.density);
+    scene.fog = new FogExp2(new Color(fog.color), fog.density);
     return () => {
-      if (scene.current) scene.current.fog = null;
+      scene.fog = null;
     };
   });
 

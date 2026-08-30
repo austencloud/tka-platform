@@ -68,17 +68,14 @@
 
   $effect(() => {
     if (!active) return;
-    if (!scene.current) return;
     const fog = activeConfig.fog;
     const fogInstance = new FogExp2(fog.color, fog.density);
-    scene.current.fog = fogInstance;
+    scene.fog = fogInstance;
     const background = new Color(activeConfig.sky.topColor);
-    scene.current.background = background;
+    scene.background = background;
     return () => {
-      if (!scene.current) return;
-      if (scene.current.fog === fogInstance) scene.current.fog = null;
-      if (scene.current.background === background)
-        scene.current.background = null;
+      if (scene.fog === fogInstance) scene.fog = null;
+      if (scene.background === background) scene.background = null;
     };
   });
 
