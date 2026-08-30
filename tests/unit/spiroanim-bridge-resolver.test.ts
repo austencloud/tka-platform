@@ -15,13 +15,18 @@
  * Invariant 1 is the load-bearing one: it can only pass if the resolver picked
  * the right dataframe row for all 8,640 steps.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
   formatCellKey,
+  parseCellKey,
   type BridgeConcept,
 } from "$lib/features/spiroanim-bridge/domain/cell-key";
+import {
+  getReturnLink,
+  type DeepLinkMap,
+} from "$lib/features/spiroanim-bridge/domain/return-links";
 import {
   resolveCell,
   type TranscriptionEntry,
@@ -170,5 +175,74 @@ describe("spiroanim bridge resolver", () => {
     expect(resolved!.entry.concept).toBe("vtg");
     expect(resolved!.entry.reference).toBe("1-1");
     expect(resolved!.sequence.startPosition).toBeTruthy();
+  });
+});
+
+/**
+ * The trip back. `vtg-qtr-deep-links.json` is generated in the SpiroAnim repo
+ * with his own codec at its current version and vendored here; the 8-Step map
+ * is the legacy v6 export. Without the vtg/qtr artifact the coverage sweep has
+ * nothing to measure, so it skips loudly rather than passing vacuously.
+ */
+const VTG_QTR_LINKS_PATH = DATA("vtg-qtr-deep-links.json");
+const hasVtgQtrLinks = existsSync(VTG_QTR_LINKS_PATH);
+
+const linkSources = {
+  vtgQtr: hasVtgQtrLinks
+    ? (JSON.parse(readFileSync(VTG_QTR_LINKS_PATH, "utf8")) as DeepLinkMap)
+    : null,
+  eightStep: JSON.parse(
+    readFileSync(DATA("eightstep-deep-links.json"), "utf8")
+  ) as DeepLinkMap,
+};
+
+describe("spiroanim bridge return links", () => {
+  it.skipIf(!hasVtgQtrLinks)(
+    "covers every diamond cell in the catalogue",
+    () => {
+      const missing: string[] = [];
+      let checked = 0;
+      for (const key of addressable.keys()) {
+        const parsed = parseCellKey(key);
+        if (!parsed || parsed.shape !== "diamond") continue;
+        checked++;
+        const link = getReturnLink(parsed, linkSources);
+        if (!link) missing.push(key);
+        else expect(link.startsWith("https://spiroanim.com/player?")).toBe(true);
+      }
+      console.log(`return links checked: ${checked}, missing: ${missing.length}`);
+      expect(checked).toBe(504);
+      expect(missing).toEqual([]);
+    }
+  );
+
+  it("omits a link it does not have rather than inventing one", () => {
+    // Box cells were never exported — his VTG/QTR catalogue is diamond-only.
+    expect(getReturnLink(parseCellKey("vtg.1-1.1x1.box.base")!, linkSources)).toBeNull();
+    // The 8-Step export has no anti variant.
+    expect(
+      getReturnLink(parseCellKey("8stp.1-aa.1x1.diamond.anti")!, linkSources)
+    ).toBeNull();
+    // No vendored data at all is a missing link, not a crash.
+    expect(
+      getReturnLink(parseCellKey("vtg.1-1.1x1.diamond.base")!, {})
+    ).toBeNull();
+  });
+
+  it("reads the legacy 8-Step map by its uppercase row label", () => {
+    const link = getReturnLink(
+      parseCellKey("8stp.1-aa.1x1.diamond.base")!,
+      linkSources
+    );
+    expect(link).toBe(linkSources.eightStep["1-AA"]);
+    expect(link?.startsWith("https://spiroanim.com/player?")).toBe(true);
+  });
+
+  it("refuses a vendored value that is not a player URL", () => {
+    expect(
+      getReturnLink(parseCellKey("vtg.1-1.1x1.diamond.base")!, {
+        vtgQtr: { "vtg.1-1.1x1.diamond.base": "javascript:alert(1)" },
+      })
+    ).toBeNull();
   });
 });
