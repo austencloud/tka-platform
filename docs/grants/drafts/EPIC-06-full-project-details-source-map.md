@@ -163,5 +163,6 @@ library separately.
 
 ## Gate status
 
-Awaiting Austen's approval or revision of the proposed angle. No full-project-
-details portal prose has been drafted.
+Austen approved the proposed angle on August 30, 2026. The response may now be
+drafted from this source map. Exact portal prose still requires authorship
+review and Austen's approval before it is saved or entered.
