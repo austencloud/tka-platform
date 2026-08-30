@@ -396,6 +396,11 @@
     font-family: "Times New Roman", Times, Georgia, serif;
     color: #141414;
   }
+  .intro :global(strong),
+  .para :global(strong) {
+    color: #141414;
+    font-weight: 700;
+  }
   .intro.edit {
     outline: 1px dashed rgba(55, 48, 163, 0.4);
     cursor: move;

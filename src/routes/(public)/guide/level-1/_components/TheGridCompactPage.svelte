@@ -190,8 +190,15 @@
   p {
     margin: 0 auto 0.75rem;
     max-width: 43rem;
+    color: #141414;
     font-size: 1rem;
+    font-weight: 400;
     line-height: 1.45;
+  }
+
+  p :global(strong) {
+    color: #141414;
+    font-weight: 700;
   }
 
   .lead {
@@ -293,7 +300,7 @@
     min-height: 2.1em;
     margin-bottom: 0.3rem;
     font-family: var(--guide-display, "Cormorant Garamond", Georgia, serif);
-    font-size: clamp(0.75rem, 3vw, 1rem);
+    font-size: max(14px, clamp(0.875rem, 3vw, 1rem));
     font-style: italic;
     font-weight: 600;
     line-height: 1.05;
