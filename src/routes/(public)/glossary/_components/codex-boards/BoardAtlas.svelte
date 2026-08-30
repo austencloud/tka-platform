@@ -4,19 +4,28 @@
   The sheet's two-column letter-paper grid is what forces six tall rows and a
   scroll. Drop the paper but keep the thing the paper was carrying: each type is
   its own band, named, with its boxes flowing across the whole width. Types 1-3
-  hold 8 or more letters and earn a full-width band each. Types 4, 5 and 6 hold
-  three apiece, so a full-width row for each would be three rows spent on nine
-  cells - they share one row instead, each still named.
-
-  That costs one more row of height than the ungrouped run did (five instead of
-  four at desktop) and buys back the organisation the guide reads by.
+  hold 8 or more letters and earn a full-width band each. Type 1 keeps A-L and
+  M-V in separate flows so responsive packing cannot merge the alpha/beta and
+  gamma position lands. Types 4, 5 and 6 hold three apiece, so a full-width row
+  for each would be three rows spent on nine cells - they share one row instead,
+  each still named.
 -->
 <script lang="ts">
   import CodexFlow from "./CodexFlow.svelte";
   import CodexBandHead from "./CodexBandHead.svelte";
-  import { MAJOR_TYPE_BANDS, MINOR_TYPE_BANDS } from "./codex-letters";
+  import {
+    MAJOR_TYPE_BANDS,
+    MINOR_TYPE_BANDS,
+    type CodexTypeBand,
+    type TaggedBox,
+  } from "./codex-letters";
 
   let { onSelect }: { onSelect: (id: string) => void } = $props();
+
+  function positionLandFlows(band: CodexTypeBand): TaggedBox[][] {
+    if (band.type.n !== 1) return [band.boxes];
+    return [band.boxes.slice(0, 4), band.boxes.slice(4)];
+  }
 </script>
 
 <div class="board-atlas">
@@ -28,7 +37,9 @@
         aria-label={band.type.word.replace(/:\s*$/, "")}
       >
         <CodexBandHead type={band.type} />
-        <CodexFlow boxes={band.boxes} {onSelect} />
+        {#each positionLandFlows(band) as boxes, index (`${band.type.n}-${index}`)}
+          <CodexFlow {boxes} {onSelect} />
+        {/each}
       </section>
     {/each}
 
@@ -61,8 +72,8 @@
     --abox-gap: 0.4rem;
     --codex-flow-justify: center;
 
-    /* Five rows of cells at desktop: Type 1 wraps to two (its boxes are 3+3+3+3
-       then 3+3+4), Types 2 and 3 are one each, and the short types share one.
+    /* Five rows of cells at desktop: Type 1 uses one row for A-L and one for
+       M-V, Types 2 and 3 are one each, and the short types share one.
        Whichever binds first - twelve cells across the band, or those five rows'
        share of the screen left under the page chrome. The subtrahend is the
        measured chrome plus the four band headings and the type rules; it is why
@@ -87,37 +98,17 @@
     gap: 0.75rem 2.5rem;
   }
 
-  /* A true 4K canvas (2350px of band and up, which no 1080p or 1440p screen
-     reaches) is also 2160px tall. Twelve across leaves the bottom third empty,
-     so drop to nine - Type 1's boxes are three cells wide, so nine is the next
-     packing down - which puts Type 1 on three rows and the board on six. The
-     width reserve includes the two wide gaps between Types 4, 5 and 6; without
-     it, Type 6 wraps onto a seventh row and falls below the screen. */
-  @container (min-width: 2350px) {
-    .bands {
-      --abox-gap: 0.5rem;
-      --band-rows: 6;
-      --codex-picto-size: min(
-        calc((100cqi - 8rem) / 9),
-        calc((100dvh - var(--codex-atlas-chrome, 28.5rem)) / var(--band-rows))
+  /* At a true 4K CSS viewport the public shell stops at 2600px, which makes a
+     twelve-letter visual reference occupy barely two thirds of the canvas.
+     The Atlas is an artifact workspace rather than a reading column, so it may
+     use the wider canvas while the page heading and prose stay in the shell. */
+  @media (min-width: 3000px) {
+    .board-atlas {
+      --settings-codex-atlas-wide: min(88vw, 3400px);
+      width: var(--settings-codex-atlas-wide);
+      margin-inline: calc(
+        (100% - var(--settings-codex-atlas-wide)) / 2
       );
-    }
-  }
-
-  /* A split desktop pane can be nearly square even when it is still wide
-     enough for the full Atlas. Twelve columns make width bind first there,
-     leaving a short board floating above the footer. Nine columns spend that
-     available height on the pictographs and keep each type grouped. */
-  @media (max-aspect-ratio: 4 / 3) {
-    @container (min-width: 70rem) {
-      .bands {
-        --abox-gap: 0.5rem;
-        --band-rows: 6;
-        --codex-picto-size: min(
-          calc((100cqi - 8rem) / 9),
-          calc((100dvh - var(--codex-atlas-chrome, 28.5rem)) / var(--band-rows))
-        );
-      }
     }
   }
 
