@@ -31,8 +31,7 @@ export function typeName(type: CodexTypeDef): string {
   return `${type.word}${type.segs.map((s) => s.t).join("")}`;
 }
 
-/** The last coloured segment is the type's distinguishing word, so its colour
- *  is the one that reads as "this type" (Type 1 is Dual-Shift: purple Shift). */
+/** The trailing motion is the compact accent used by cells and inspectors. */
 export function typeColor(type: CodexTypeDef): string {
   return type.segs.at(-1)?.c ?? "currentColor";
 }
@@ -84,11 +83,16 @@ export interface TaggedBox {
  *  untouched - they render CodexSheet, not this list. */
 function splitStrip(tagged: TaggedBox): TaggedBox[] {
   if (!tagged.box.cells.some((cell) => cell.top)) return [tagged];
-  return tagged.box.cells.map((cell, i) => ({
-    type: tagged.type,
-    key: `${tagged.key}-${i}`,
-    box: { cells: [cell] },
-  }));
+  return tagged.box.cells.map((cell, i) => {
+    const { top, ...body } = cell;
+    return {
+      type: tagged.type,
+      key: `${tagged.key}-${i}`,
+      // Flat boards put every transition in the same reserved box header. The
+      // printable sheet still receives the untouched per-cell caption above.
+      box: { header: top, cells: [body] },
+    };
+  });
 }
 
 export const CODEX_BOXES: TaggedBox[] = CODEX_TYPES.flatMap((type) =>
