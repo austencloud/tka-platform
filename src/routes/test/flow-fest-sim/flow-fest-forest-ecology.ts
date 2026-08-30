@@ -1,4 +1,4 @@
-import { BufferGeometry, IcosahedronGeometry } from "three";
+import { BufferAttribute, BufferGeometry, IcosahedronGeometry } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { childSeed, makeRng } from "$lib/shared/foundation/utils/seeded-rng";
 import { FLOW_FEST_MASTER_SEED } from "$lib/features/flow-fest-sim/domain/flow-fest-simulation-contract";
@@ -316,6 +316,7 @@ export function buildFlowFestCanopyShellGeometry(
     throw new Error(`Flow Fest canopy shell failed to merge for ${seedLabel}`);
   }
   fitGeometryToBounds(merged, bounds, FLOW_FEST_CANOPY_SHELL_INSET);
+  bakeCanopyShellShade(merged);
   merged.computeBoundingSphere();
   merged.computeBoundingBox();
   return merged;
@@ -323,6 +324,97 @@ export function buildFlowFestCanopyShellGeometry(
 
 /** Fraction of the leaf envelope the crown occupies; the rest lets branch tips through. */
 const FLOW_FEST_CANOPY_SHELL_INSET = 0.96;
+
+/**
+ * Vertical shade range baked into the shell's vertex colours. The near tier
+ * renders `leafAtlas × foliageTint`; a shell has no atlas, so raw tint paints
+ * every crown one flat pastel and the whole tree line fuses into a pale wall.
+ * The bake stands in for the atlas: crown bases sink toward
+ * {@link FLOW_FEST_CANOPY_SHELL_SHADE_FLOOR} (canopy self-shadow), tops reach
+ * {@link FLOW_FEST_CANOPY_SHELL_SHADE_CEILING}, and the mean lands near the
+ * atlas's own average so a tree keeps its colour across the LOD swap.
+ * Shade derives from final vertex position only — the geometry is non-indexed,
+ * so the copies of a shared corner must colour identically or facets seam.
+ */
+export const FLOW_FEST_CANOPY_SHELL_SHADE_FLOOR = 0.5;
+export const FLOW_FEST_CANOPY_SHELL_SHADE_CEILING = 1.0;
+
+/**
+ * Stand-in for the leaf atlas's own colour. A near canopy renders
+ * `leafAtlas × foliageTint`, and the atlas texels average a deep saturated
+ * green, so the near tier always reads darker and greener than the moment
+ * tint. A shell has no atlas, so without this its sunlit top renders the raw
+ * tint and the LOD swap shows as a pale colour-temperature step at the 55 m
+ * seam. Multiplied into shell foliage only (never bark, never near-tier
+ * materials): value below 1 on every channel, green kept strongest so the
+ * compensation deepens without shifting toward teal or khaki.
+ */
+export const FLOW_FEST_CANOPY_SHELL_ATLAS_COMPENSATION = {
+  r: 0.52,
+  g: 0.68,
+  b: 0.42,
+};
+
+function bakeCanopyShellShade(geometry: BufferGeometry): void {
+  geometry.computeBoundingBox();
+  const box = geometry.boundingBox;
+  if (!box) return;
+  const positions = geometry.attributes.position;
+  const spanY = Math.max(1e-6, box.max.y - box.min.y);
+  const shadeSpan =
+    FLOW_FEST_CANOPY_SHELL_SHADE_CEILING - FLOW_FEST_CANOPY_SHELL_SHADE_FLOOR;
+  const colors = new Float32Array(positions.count * 3);
+  for (let vertex = 0; vertex < positions.count; vertex += 1) {
+    const x = positions.getX(vertex);
+    const y = positions.getY(vertex);
+    const z = positions.getZ(vertex);
+    const height = (y - box.min.y) / spanY;
+    // Ease the gradient so shadow pools in the lower third instead of grading
+    // the whole crown linearly, then ripple it laterally so adjacent lobes do
+    // not read as one uniform surface.
+    const eased = height * height * (3 - 2 * height);
+    const ripple = 1 + 0.07 * Math.sin(x * 1.9 + z * 2.5) * (1 - eased * 0.6);
+    const shade = Math.min(
+      1,
+      (FLOW_FEST_CANOPY_SHELL_SHADE_FLOOR + shadeSpan * eased) * ripple
+    );
+    colors[vertex * 3] = shade;
+    colors[vertex * 3 + 1] = shade;
+    colors[vertex * 3 + 2] = shade;
+  }
+  geometry.setAttribute("color", new BufferAttribute(colors, 3));
+}
+
+/**
+ * Deterministic per-tree colour multiplier, applied through
+ * `InstancedMesh.setColorAt` so it composes with the moment tint exactly like
+ * the grass palette does. Foliage swings along a warm–cool axis (yellow-green
+ * toward blue-green) with a value spread; bark takes a subtler value-only
+ * jitter. Without this every tree in a family renders the same flat colour and
+ * the canopy line reads as one merged mass.
+ */
+export function deriveFlowFestTreeInstanceTint(
+  placement: { x: number; z: number },
+  part: "foliage" | "bark"
+): { r: number; g: number; b: number } {
+  const rng = makeRng(
+    childSeed(
+      FLOW_FEST_MASTER_SEED,
+      `forest-tree-tint:${placement.x}:${placement.z}`
+    )
+  );
+  const warm = (rng() - 0.5) * 2;
+  const foliageValue = 0.78 + rng() * 0.34;
+  const barkValue = 0.88 + rng() * 0.2;
+  if (part === "bark") {
+    return { r: barkValue, g: barkValue, b: barkValue };
+  }
+  return {
+    r: foliageValue * (1 + 0.11 * warm),
+    g: foliageValue * (1 + 0.03 * warm),
+    b: foliageValue * (1 - 0.13 * warm),
+  };
+}
 
 function fitGeometryToBounds(
   geometry: BufferGeometry,
