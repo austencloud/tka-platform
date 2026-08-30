@@ -720,6 +720,7 @@
       getBpm: () => playback.bpmLocal,
       getDarkMode: () => imgComp.imgDarkMode,
       getHapticService: () => interactive.hapticService,
+      getStateParams: () => urlSession.captureNowAsParams(),
     },
     {
       getCurrentUrl: () => (browser ? window.location.href : ""),
