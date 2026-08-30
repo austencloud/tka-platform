@@ -21,25 +21,39 @@
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import type { GuideBlock, PictographRender } from "../_data/guide-content-blocks";
+  import type {
+    GuideBlock,
+    PictographRender,
+  } from "../_data/guide-content-blocks";
 
   let {
     content,
     darkMode = false,
     tagline = "",
-  }: { content: GuideBlock[]; darkMode?: boolean; tagline?: string } = $props();
+    layout = "standard",
+  }: {
+    content: GuideBlock[];
+    darkMode?: boolean;
+    tagline?: string;
+    layout?: "standard" | "grid-overview";
+  } = $props();
 
   // Theme handed to each pictograph: "dark" renders on the dark editorial theme
   // (dark fill + light grid/props); "light" keeps the print ink-on-white look.
   const picTheme = $derived(darkMode ? "dark" : "light");
 
-  const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  const stripHtml = (html: string) =>
+    html
+      .replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
 
   // The prose carries hard <br> line-wraps authored for the fixed-width print
   // sheet; in the reflow column they force awkward mid-phrase breaks. Drop them so
   // the text wraps to the column naturally (a flow-only transform - the sheet keeps
   // its <br>s). Keep every other tag (the red/blue spans, <strong>, <em>).
-  const flowProse = (html: string) => html.replace(/<br\s*\/?>/gi, " ").replace(/\s{2,}/g, " ");
+  const flowProse = (html: string) =>
+    html.replace(/<br\s*\/?>/gi, " ").replace(/\s{2,}/g, " ");
 
   // The page title (level-1 heading) and the intro line are already shown by the
   // host hero (calligraphic title + tagline deck). Drop them here so the flow
@@ -55,6 +69,20 @@
       if (!firstProseSeen && b.kind === "prose") {
         firstProseSeen = true;
         if (tag && stripHtml(b.html) === tag) continue;
+        if (
+          layout === "grid-overview" &&
+          tag &&
+          stripHtml(b.html).startsWith(tag)
+        ) {
+          const source = b.html.trimStart();
+          if (source.startsWith(tagline)) {
+            const html = source
+              .slice(tagline.length)
+              .replace(/^(?:\s*<br\s*\/?>\s*)+/i, "");
+            if (stripHtml(html)) out.push({ ...b, html });
+            continue;
+          }
+        }
       }
       out.push(b);
     }
@@ -82,16 +110,28 @@
   type CardBlock = Extract<GuideBlock, { kind: "pictographGroup" }>;
   type RenderItem =
     | { type: "block"; block: GuideBlock }
-    | { type: "showcase"; card: CardBlock; text: GuideBlock[]; variant: "feature" | "compact" };
-  const isCard = (b: GuideBlock): b is CardBlock => b.kind === "pictographGroup" && !!b.card;
-  const isFlowText = (b: GuideBlock) => b.kind === "prose" || b.kind === "glyphImage";
-  const isSectionHead = (it: RenderItem): it is { type: "block"; block: GuideBlock } =>
+    | {
+        type: "showcase";
+        card: CardBlock;
+        text: GuideBlock[];
+        variant: "feature" | "compact";
+      };
+  const isCard = (b: GuideBlock): b is CardBlock =>
+    b.kind === "pictographGroup" && !!b.card;
+  const isFlowText = (b: GuideBlock) =>
+    b.kind === "prose" || b.kind === "glyphImage";
+  const isSectionHead = (
+    it: RenderItem
+  ): it is { type: "block"; block: GuideBlock } =>
     it.type === "block" && it.block.kind === "heading" && it.block.level !== 1;
   // Substantial = a heading, or more plain-text than a caption-sized label.
   const FEATURE_TEXT_CHARS = 180;
   const showcaseVariant = (text: GuideBlock[]): "feature" | "compact" => {
     if (text.some((b) => b.kind === "heading")) return "feature";
-    const chars = text.reduce((n, b) => n + (b.kind === "prose" ? stripHtml(b.html).length : 0), 0);
+    const chars = text.reduce(
+      (n, b) => n + (b.kind === "prose" ? stripHtml(b.html).length : 0),
+      0
+    );
     return chars > FEATURE_TEXT_CHARS ? "feature" : "compact";
   };
   const renderItems = $derived.by(() => {
@@ -107,9 +147,16 @@
       }
       // Collect the run of consecutive cards.
       const run: CardBlock[] = [];
-      while (i < blocks.length && isCard(blocks[i]!)) run.push(blocks[i++] as CardBlock);
+      while (i < blocks.length && isCard(blocks[i]!))
+        run.push(blocks[i++] as CardBlock);
       if (run.length >= 2) {
-        for (const c of run) items.push({ type: "showcase", card: c, text: [], variant: "compact" });
+        for (const c of run)
+          items.push({
+            type: "showcase",
+            card: c,
+            text: [],
+            variant: "compact",
+          });
         continue;
       }
       // Lone card. Measure the contiguous text run already emitted above it,
@@ -124,13 +171,20 @@
       const before: GuideBlock[] = [];
       if (k < items.length && k > 0 && isSectionHead(items[k - 1]!)) {
         const section = items.splice(k - 1);
-        for (const it of section) before.push((it as { type: "block"; block: GuideBlock }).block);
+        for (const it of section)
+          before.push((it as { type: "block"; block: GuideBlock }).block);
       }
       // Trailing prose/glyphs are the card's own label or explanation.
       const after: GuideBlock[] = [];
-      while (i < blocks.length && isFlowText(blocks[i]!)) after.push(blocks[i++]!);
+      while (i < blocks.length && isFlowText(blocks[i]!))
+        after.push(blocks[i++]!);
       const text = [...before, ...after];
-      items.push({ type: "showcase", card: run[0]!, text, variant: showcaseVariant(text) });
+      items.push({
+        type: "showcase",
+        card: run[0]!,
+        text,
+        variant: showcaseVariant(text),
+      });
     }
     return items;
   });
@@ -159,7 +213,8 @@
       .map((s) => (s.letter as unknown as string) ?? "")
       .filter(Boolean)
       .join("");
-    const full = fromLetters || deriveWord(stripToSequence(strip, {})) || "sequence";
+    const full =
+      fromLetters || deriveWord(stripToSequence(strip, {})) || "sequence";
     // A LOOP repeats its word by construction - show the smallest form (AABB, not
     // AABBAABB), per the simplified-word-display rule.
     const w = simplifyRepeatedWord(full) || full;
@@ -174,7 +229,7 @@
         : "8-point grid: diamond and box combined";
 </script>
 
-<div class="flow-frame">
+<div class="flow-frame" class:grid-overview={layout === "grid-overview"}>
   {#each renderItems as item, i (i)}
     {#if item.type === "showcase"}
       <!-- A word sequence's showcase: square live animation beside the section's
@@ -205,7 +260,11 @@
                 {:else if tb.kind === "prose"}
                   <p class="flow-p showcase-p">{@html flowProse(tb.html)}</p>
                 {:else if tb.kind === "glyphImage"}
-                  <img class="flow-glyph showcase-glyph" src={tb.src} alt={tb.alt} />
+                  <img
+                    class="flow-glyph showcase-glyph"
+                    src={tb.src}
+                    alt={tb.alt}
+                  />
                 {/if}
               {/each}
             {:else if scard.caption}
@@ -221,92 +280,103 @@
     {:else}
       {@const block = item.block}
       {#if block.kind === "heading"}
-      {#if block.level === 2}
-        <h2 class="flow-h2">{block.text}</h2>
-      {:else}
-        <h3 class="flow-h3">{block.text}</h3>
-      {/if}
-    {:else if block.kind === "prose"}
-      <p class="flow-p">{@html flowProse(block.html)}</p>
-    {:else if block.kind === "glyphImage"}
-      <img class="flow-glyph" src={block.src} alt={block.alt} />
-    {:else if block.kind === "pictograph"}
-      {@const rp = r(block.render)}
-      <figure class="flow-figure">
-        <div class="pic-card">
-          <GuidePictograph
-            data={block.data}
-            size="md"
-            eager
-            forceTheme={picTheme}
-            propType={rp.propType}
-            showTKA={rp.showTKA}
-            showPositions={rp.showPositions}
-            showElemental={rp.showElemental}
-            showReversals={rp.showReversals}
-            showNonRadialPoints={rp.showNonRadialPoints}
-          />
-        </div>
-        {#if block.caption}<figcaption>{block.caption}</figcaption>{/if}
-      </figure>
-    {:else if block.kind === "pictographGroup"}
-      {@const rp = r(block.render)}
-      {#if block.layout === "strip"}
-        <!-- A sequence: one left-to-right strip (scrolls on narrow screens),
+        {#if block.level === 2}
+          <h2 class="flow-h2">{block.text}</h2>
+        {:else}
+          <h3 class="flow-h3">{block.text}</h3>
+        {/if}
+      {:else if block.kind === "prose"}
+        <p class="flow-p">{@html flowProse(block.html)}</p>
+      {:else if block.kind === "glyphImage"}
+        <img class="flow-glyph" src={block.src} alt={block.alt} />
+      {:else if block.kind === "pictograph"}
+        {@const rp = r(block.render)}
+        <figure class="flow-figure">
+          <div class="pic-card">
+            <GuidePictograph
+              data={block.data}
+              size="md"
+              eager
+              forceTheme={picTheme}
+              propType={rp.propType}
+              showTKA={rp.showTKA}
+              showPositions={rp.showPositions}
+              showElemental={rp.showElemental}
+              showReversals={rp.showReversals}
+              showNonRadialPoints={rp.showNonRadialPoints}
+            />
+          </div>
+          {#if block.caption}<figcaption>{block.caption}</figcaption>{/if}
+        </figure>
+      {:else if block.kind === "pictographGroup"}
+        {@const rp = r(block.render)}
+        {#if block.layout === "strip"}
+          <!-- A sequence: one left-to-right strip (scrolls on narrow screens),
              the mobile-faithful form of the sheet's step rows. -->
-        <GuideStepStrip
-          items={block.items}
-          stepLabels={block.stepLabels}
-          caption={block.caption}
-          render={block.render}
-          {picTheme}
-        />
-      {:else}
-        <div class="flow-grid" style:--cols={block.flowCols ?? 4}>
-          {#each block.items as pos, n (pos.id ?? n)}
-            <div class="pic-card">
-              <GuidePictograph
-                data={pos}
-                size="sm"
-                eager
-                forceTheme={picTheme}
-                propType={rp.propType}
-                showTKA={rp.showTKA}
-                showPositions={rp.showPositions}
-                showElemental={rp.showElemental}
-                showReversals={rp.showReversals}
-                showNonRadialPoints={rp.showNonRadialPoints}
+          <GuideStepStrip
+            items={block.items}
+            stepLabels={block.stepLabels}
+            caption={block.caption}
+            render={block.render}
+            {picTheme}
+          />
+        {:else}
+          <div class="flow-grid" style:--cols={block.flowCols ?? 4}>
+            {#each block.items as pos, n (pos.id ?? n)}
+              <div class="pic-card">
+                <GuidePictograph
+                  data={pos}
+                  size="sm"
+                  eager
+                  forceTheme={picTheme}
+                  propType={rp.propType}
+                  showTKA={rp.showTKA}
+                  showPositions={rp.showPositions}
+                  showElemental={rp.showElemental}
+                  showReversals={rp.showReversals}
+                  showNonRadialPoints={rp.showNonRadialPoints}
+                />
+              </div>
+            {/each}
+          </div>
+          {#if block.caption}<p class="flow-caption">{block.caption}</p>{/if}
+        {/if}
+      {:else if block.kind === "gridFigure"}
+        <figure class="flow-grid-figure">
+          <svg
+            class="grid-fig"
+            viewBox="0 0 950 950"
+            role="img"
+            aria-label={block.caption ?? gridLabel(block.mode)}
+            style:background={darkMode ? "#0a0a0f" : "#ffffff"}
+          >
+            <desc>{block.caption ?? gridLabel(block.mode)}</desc>
+            <rect
+              width="950"
+              height="950"
+              fill={darkMode ? "#0a0a0f" : "#ffffff"}
+            />
+            {#if block.mode === "merged"}
+              <GridSvg gridMode={GridMode.DIAMOND} {darkMode} />
+              <GridSvg gridMode={GridMode.BOX} {darkMode} />
+            {:else}
+              <GridSvg
+                gridMode={block.mode === "box"
+                  ? GridMode.BOX
+                  : GridMode.DIAMOND}
+                {darkMode}
               />
-            </div>
-          {/each}
-        </div>
-        {#if block.caption}<p class="flow-caption">{block.caption}</p>{/if}
-      {/if}
-    {:else if block.kind === "gridFigure"}
-      <figure class="flow-grid-figure">
-        <svg
-          class="grid-fig"
-          viewBox="0 0 950 950"
-          role="img"
-          aria-label={block.caption ?? gridLabel(block.mode)}
-          style:background={darkMode ? "#0a0a0f" : "#ffffff"}
-        >
-          <desc>{block.caption ?? gridLabel(block.mode)}</desc>
-          <rect width="950" height="950" fill={darkMode ? "#0a0a0f" : "#ffffff"} />
-          {#if block.mode === "merged"}
-            <GridSvg gridMode={GridMode.DIAMOND} {darkMode} />
-            <GridSvg gridMode={GridMode.BOX} {darkMode} />
-          {:else}
-            <GridSvg gridMode={block.mode === "box" ? GridMode.BOX : GridMode.DIAMOND} {darkMode} />
-          {/if}
-        </svg>
-        {#if block.caption}<figcaption>{block.caption}</figcaption>{/if}
-      </figure>
-    {:else if block.kind === "printOnly"}
-      {#each block.flow as fb, m (m)}
-        {#if fb.kind === "prose"}<p class="flow-p">{@html flowProse(fb.html)}</p>{/if}
-        {#if fb.kind === "heading"}<h3 class="flow-h3">{fb.text}</h3>{/if}
-      {/each}
+            {/if}
+          </svg>
+          {#if block.caption}<figcaption>{block.caption}</figcaption>{/if}
+        </figure>
+      {:else if block.kind === "printOnly"}
+        {#each block.flow as fb, m (m)}
+          {#if fb.kind === "prose"}<p class="flow-p">
+              {@html flowProse(fb.html)}
+            </p>{/if}
+          {#if fb.kind === "heading"}<h3 class="flow-h3">{fb.text}</h3>{/if}
+        {/each}
       {/if}
       <!-- rule blocks are print-only chrome; the flow column uses spacing, not hairlines -->
     {/if}
@@ -414,7 +484,8 @@
     border: 1px solid color-mix(in oklab, var(--ink, #1a1a1a) 16%, transparent);
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 1px 4px color-mix(in oklab, var(--ink, #1a1a1a) 7%, transparent);
+    box-shadow: 0 1px 4px
+      color-mix(in oklab, var(--ink, #1a1a1a) 7%, transparent);
   }
   .pic-card :global(.guide-pictograph) {
     width: 100%;
@@ -554,6 +625,103 @@
   }
   .grid-fig :global(.grid-container) {
     opacity: 1;
+  }
+
+  /* The opening Grid topic is a visual overview, not a long prose chapter.
+     Keep its authored block order in the DOM, then compose those same blocks
+     into a single spread when the route has room. On phones the three simple
+     coordinate diagrams still share one row; the explanation remains linear. */
+  .grid-overview {
+    max-width: 76rem;
+    padding: 0.25rem 1rem 2rem;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: center;
+    gap: 0.85rem;
+    line-height: 1.55;
+  }
+  .grid-overview > .flow-p,
+  .grid-overview > .flow-figure {
+    grid-column: 1 / -1;
+  }
+  .grid-overview > .flow-p {
+    max-width: 36rem;
+    margin: 0 auto;
+    font-size: 1.08rem;
+    line-height: 1.55;
+    text-wrap: pretty;
+  }
+  .grid-overview > .flow-figure {
+    width: min(12.5rem, 70cqw);
+    margin: 0.15rem auto;
+  }
+  .grid-overview > .flow-grid-figure {
+    width: 100%;
+    max-width: 13rem;
+    margin: 0 auto;
+    gap: 0.3rem;
+  }
+  .grid-overview > .flow-grid-figure figcaption {
+    font-size: 0.9rem;
+  }
+
+  @container (min-width: 46rem) {
+    .grid-overview {
+      grid-template-columns:
+        minmax(13rem, 1fr)
+        minmax(12rem, 15rem)
+        minmax(13rem, 1fr);
+      grid-template-areas:
+        "intro hands points"
+        "comparison comparison comparison"
+        "diamond box merged"
+        "closing closing closing";
+      column-gap: clamp(1.25rem, 3cqw, 2.75rem);
+      row-gap: 0.8rem;
+    }
+    .grid-overview > :nth-child(1) {
+      grid-area: intro;
+    }
+    .grid-overview > :nth-child(2) {
+      grid-area: hands;
+    }
+    .grid-overview > :nth-child(3) {
+      grid-area: points;
+    }
+    .grid-overview > :nth-child(4) {
+      grid-area: comparison;
+    }
+    .grid-overview > :nth-child(5) {
+      grid-area: diamond;
+    }
+    .grid-overview > :nth-child(6) {
+      grid-area: box;
+    }
+    .grid-overview > :nth-child(7) {
+      grid-area: merged;
+    }
+    .grid-overview > :nth-child(8) {
+      grid-area: closing;
+    }
+    .grid-overview > .flow-p,
+    .grid-overview > .flow-figure {
+      grid-column: auto;
+    }
+    .grid-overview > .flow-p {
+      max-width: 24rem;
+      margin-inline: 0;
+      text-align: left;
+    }
+    .grid-overview > .flow-p:nth-child(4),
+    .grid-overview > .flow-p:nth-child(8) {
+      max-width: none;
+      margin-inline: auto;
+      text-align: center;
+    }
+    .grid-overview > .flow-figure {
+      width: 100%;
+      max-width: 14rem;
+    }
   }
 
   /* Wide/4K ramp: FlowFrame's own reading measures stay narrow-centred (prose is

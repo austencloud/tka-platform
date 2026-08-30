@@ -91,12 +91,14 @@ describe("crawl route (paginated, one surface)", () => {
     expect(ts).toContain("entries");
     expect(ts).toContain("GUIDE_BODY_PAGES");
   });
-  it("the host renders the flow/sheet switcher over one topic's single source", () => {
+  it("the host renders crawlable flow content with a sheet fallback but no topic mode switch", () => {
     const src = read(host);
     expect(src).toContain("FlowFrame"); // flow (mobile-first, crawlable) view
-    expect(src).toContain("BUILT"); // sheet (book layout) view
-    expect(src).toContain("SegmentedControl"); // the sheet<->flow switcher
+    expect(src).toContain("BUILT"); // fallback for topics not migrated to reflow
     expect(src).toContain("GUIDE_CONTENT"); // single-source content lookup
+    expect(src).not.toContain("SegmentedControl");
+    expect(src).not.toContain("guideFramePrefs");
+    expect(src).toContain('slug === "the-grid" ? "grid-overview"');
   });
   it("delegates companion wiring to the shared GuideCompanionHost (also used by level-2)", () => {
     const src = read(host);
