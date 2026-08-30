@@ -67,6 +67,7 @@ export interface StageChoreographyState extends UnifiedPlaybackContext {
   onBpmChange(bpm: number): void;
   getPerformer(id: string): Performer | undefined;
   setPerformerCount(count: number): void;
+  removePerformers(performerIds: readonly string[]): boolean;
   /** Seed the existing Stage document from the guided Studio entry point. */
   applyStudioStarter(starter: StudioStarter): void;
   addFormation(atBeat: number, presetId?: FormationPresetId): Formation | null;
@@ -84,6 +85,7 @@ export interface StageChoreographyState extends UnifiedPlaybackContext {
     performerId: string,
     stepCount: number | null
   ): void;
+  resetPerformerTravelTiming(formationId: string, performerId: string): boolean;
   setFormationLabel(formationId: string, label: string): void;
   updateSpotPosition(
     formationId: string,
@@ -485,6 +487,29 @@ export function createStageChoreographyState(
     normalizeFormationTrack();
   }
 
+  function removePerformers(performerIds: readonly string[]): boolean {
+    const requestedIds = new Set(performerIds);
+    const removedCount = choreography.performers.filter((performer) =>
+      requestedIds.has(performer.id)
+    ).length;
+    if (removedCount === 0 || removedCount >= choreography.performers.length) {
+      return false;
+    }
+
+    pushUndo();
+    choreography.performers = choreography.performers
+      .filter((performer) => !requestedIds.has(performer.id))
+      .map((performer, index) => ({
+        ...performer,
+        index,
+        // These letters identify timeline rows, not durable performer names.
+        // Closing the gap keeps a later Add from creating a duplicate label.
+        label: PERFORMER_LABELS[index] ?? `P${index}`,
+      }));
+    normalizeFormationTrack();
+    return true;
+  }
+
   function applyStudioStarter(starter: StudioStarter) {
     pushUndo();
 
@@ -690,6 +715,19 @@ export function createStageChoreographyState(
       ...(stepCount !== null && { stepCount }),
     };
     normalizeFormationTrack();
+  }
+
+  function resetPerformerTravelTiming(
+    formationId: string,
+    performerId: string
+  ): boolean {
+    const spot = findFormation(formationId)?.spots[performerId];
+    if (!spot?.travel) return false;
+
+    pushUndo();
+    spot.travel = undefined;
+    normalizeFormationTrack();
+    return true;
   }
 
   function setFormationLabel(formationId: string, label: string) {
@@ -1022,6 +1060,7 @@ export function createStageChoreographyState(
     onBpmChange: setBpm,
     getPerformer,
     setPerformerCount,
+    removePerformers,
     applyStudioStarter,
     addFormation,
     removeFormation,
@@ -1029,6 +1068,7 @@ export function createStageChoreographyState(
     setFormationTransitionBeats,
     updatePerformerTravelTiming,
     setPerformerTravelStepCount,
+    resetPerformerTravelTiming,
     setFormationLabel,
     updateSpotPosition,
     updateSpotWalkStyle,

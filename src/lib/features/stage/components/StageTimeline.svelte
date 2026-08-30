@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { tick } from "svelte";
+
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
@@ -6,7 +8,16 @@
   import TimeRuler from "$lib/features/compose/timeline/components/TimeRuler.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import { flyFade, growFade, popIn } from "$lib/shared/transitions/motion";
+  import {
+    flyFade,
+    growFade,
+    motionDuration,
+    popIn,
+  } from "$lib/shared/transitions/motion";
+  import {
+    createLayoutMotion,
+    LAYOUT_MOTION_DURATION_MS,
+  } from "$lib/shared/transitions/layout-flip";
   import { DURATION } from "$lib/shared/transitions/transitions";
 
   import { getStageChoreographyContext } from "../context/stage-choreography-context";
@@ -26,7 +37,10 @@
     Performer,
     StageSequenceClip,
   } from "../domain/stage-types";
-  import type { StageEditMode } from "../state/stage-edit-mode.svelte";
+  import type {
+    StageEditMode,
+    StageSelection,
+  } from "../state/stage-edit-mode.svelte";
   import StageFloorLane from "./StageFloorLane.svelte";
   import StageHandsClipContent from "./StageHandsClipContent.svelte";
   import StageMotionLane from "./StageMotionLane.svelte";
@@ -63,6 +77,7 @@
     timelineLens?: TimelineLens;
     onExpand?: () => void;
     onCollapse?: () => void;
+    onDeleteSelection: (selection: StageSelection) => void;
   }
 
   type ClipDrag = {
@@ -107,10 +122,49 @@
     timelineLens = $bindable("hands"),
     onExpand = () => {},
     onCollapse = () => {},
+    onDeleteSelection,
   }: Props = $props();
 
   const stageState = getStageChoreographyContext();
   const choreography = $derived(stageState.choreography);
+  let timelineGridElement: HTMLElement | null = null;
+  const performerRowMotion = createLayoutMotion({
+    getRoot: () => timelineGridElement,
+    groups: [
+      {
+        selector: "[data-performer-row-label]",
+        datasetKey: "performerRowLabel",
+      },
+      {
+        selector: "[data-performer-row-lane]",
+        datasetKey: "performerRowLane",
+      },
+    ],
+    getDuration: () => motionDuration(LAYOUT_MOTION_DURATION_MS),
+  });
+  const performerRowSignature = $derived(
+    choreography.performers.map((performer) => performer.id).join("|")
+  );
+  let previousPerformerRowSignature: string | null = null;
+  let performerRowTransitionToken = 0;
+
+  // A removed performer changes every row below it. Capture the surviving
+  // labels and lanes before the document changes, then carry them together to
+  // their new rows so the eye never has to reconstruct where they went.
+  $effect.pre(() => {
+    const signature = performerRowSignature;
+    const previous = previousPerformerRowSignature;
+    previousPerformerRowSignature = signature;
+    if (previous === null || previous === signature) return;
+
+    const captured = performerRowMotion.capture();
+    const token = ++performerRowTransitionToken;
+    void tick().then(() => {
+      if (token === performerRowTransitionToken && captured) {
+        performerRowMotion.play();
+      }
+    });
+  });
   const maxBeats = $derived(Math.max(16, Math.ceil(stageState.maxTotalBeats)));
   const activeClipIds = $derived.by(() => {
     const ids = new Set<string>();
@@ -162,14 +216,12 @@
   });
 
   const selectedFloorTravel = $derived.by(() => {
-    if (!editMode.selectedPerformerId || !editMode.selectedFormationId) {
-      return null;
-    }
+    if (editMode.selection.kind !== "travel") return null;
     return (
       floorTravelByPerformer
-        .get(editMode.selectedPerformerId)
+        .get(editMode.selection.performerId)
         ?.find(
-          (segment) => segment.formationId === editMode.selectedFormationId
+          (segment) => segment.formationId === editMode.selection.formationId
         ) ?? null
     );
   });
@@ -256,11 +308,6 @@
     );
     const total = Math.max(1, stageState.maxTotalBeats);
     stageState.seek(Math.min(beat, total) / total);
-  }
-
-  function removeClip(performer: Performer, clip: StageSequenceClip): void {
-    stageState.removeSequenceClip(clip.id);
-    editMode.selectPerformer(performer.id);
   }
 
   function selectClip(
@@ -379,11 +426,6 @@
     if (formation) editMode.selectFormation(formation.id);
   }
 
-  function removeFormation(formationId: string): void {
-    stageState.removeFormation(formationId);
-    editMode.selectFormation(null);
-  }
-
   function beginFormationDrag(
     event: PointerEvent,
     formation: Formation,
@@ -447,7 +489,7 @@
   }
 
   function selectFloorTravel(segment: StageFloorTravelSegment): void {
-    editMode.selectSpot(segment.formationId, segment.performerId);
+    editMode.selectTravel(segment.formationId, segment.performerId);
   }
 
   function beginFloorTravelDrag(
@@ -534,6 +576,18 @@
     segment: StageFloorTravelSegment,
     mode: FloorTravelHandle
   ): void {
+    if (event.key === "Delete" || event.key === "Backspace") {
+      event.preventDefault();
+      event.stopPropagation();
+      selectFloorTravel(segment);
+      onDeleteSelection({
+        kind: "travel",
+        formationId: segment.formationId,
+        performerId: segment.performerId,
+      });
+      return;
+    }
+
     const smaller = event.shiftKey ? 1 : 0.25;
     const delta =
       event.key === "ArrowRight" || event.key === "ArrowUp"
@@ -613,6 +667,7 @@
     formation: Formation,
     index: number
   ): void {
+    if (event.target !== event.currentTarget) return;
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       editMode.selectFormation(formation.id);
@@ -632,7 +687,7 @@
     }
     if (index > 0 && (event.key === "Delete" || event.key === "Backspace")) {
       event.preventDefault();
-      removeFormation(formation.id);
+      onDeleteSelection({ kind: "formation", formationId: formation.id });
     }
   }
 
@@ -641,6 +696,7 @@
     performer: Performer,
     clip: StageSequenceClip
   ): void {
+    if (event.target !== event.currentTarget) return;
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       editMode.selectClip(performer.id, clip.id);
@@ -657,7 +713,11 @@
     }
     if (event.key === "Delete" || event.key === "Backspace") {
       event.preventDefault();
-      removeClip(performer, clip);
+      onDeleteSelection({
+        kind: "clip",
+        performerId: performer.id,
+        clipId: clip.id,
+      });
     }
   }
 </script>
@@ -867,6 +927,7 @@
     >
       <div
         class="timeline-grid"
+        bind:this={timelineGridElement}
         style:--timeline-width="{Math.max(
           720,
           maxBeats * effectivePixelsPerBeat
@@ -982,6 +1043,7 @@
               {/if}
               <div
                 class="formation-block"
+                data-keyboard-shortcuts-ignore
                 class:selected
                 class:dragging={formationDrag?.formationId === formation.id}
                 style="left: {beat * effectivePixelsPerBeat}px"
@@ -1040,7 +1102,10 @@
                     onpointerdown={(event) => event.stopPropagation()}
                     onclick={(event) => {
                       event.stopPropagation();
-                      removeFormation(formation.id);
+                      onDeleteSelection({
+                        kind: "formation",
+                        formationId: formation.id,
+                      });
                     }}
                   >
                     <i class="fas fa-trash" aria-hidden="true"></i>
@@ -1074,6 +1139,7 @@
         {#each choreography.performers as performer (performer.id)}
           <div
             class="lane-label"
+            data-performer-row-label={performer.id}
             class:selected={editMode.selectedPerformerId === performer.id}
             style:--performer-color={performer.color}
           >
@@ -1121,6 +1187,7 @@
 
           <div
             class="sequence-lane"
+            data-performer-row-lane={performer.id}
             class:selected={editMode.selectedPerformerId === performer.id}
             data-lens={timelineLens}
             style="--performer-color: {performer.color}; --pixels-per-beat: {effectivePixelsPerBeat}px"
@@ -1149,6 +1216,7 @@
               {#each performer.sequenceClips as clip (clip.id)}
                 <div
                   class="sequence-clip"
+                  data-keyboard-shortcuts-ignore
                   class:selected={editMode.selectedClipId === clip.id}
                   class:active={activeClipIds.has(clip.id)}
                   class:dragging={drag?.clipId === clip.id}
@@ -1207,7 +1275,11 @@
                       onpointerdown={(event) => event.stopPropagation()}
                       onclick={(event) => {
                         event.stopPropagation();
-                        removeClip(performer, clip);
+                        onDeleteSelection({
+                          kind: "clip",
+                          performerId: performer.id,
+                          clipId: clip.id,
+                        });
                       }}
                     >
                       <i class="fas fa-trash" aria-hidden="true"></i>
