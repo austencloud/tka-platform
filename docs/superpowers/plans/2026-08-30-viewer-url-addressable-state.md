@@ -561,6 +561,13 @@ git commit -m "feat(effects): snapshot() and loadPersistedEffectsConfig for URL 
 
 ---
 
+**Task 3 landed note (orchestrator):** `loadPersistedEffectsConfig()` mirrors the
+persist:true boot path except the closure-local `healStaleTrailColors` pass
+(legacy `#8b5cf6`/`#ec4899` leak). Accepted: the healer schedules a save on any
+persist:true boot, so disk self-repairs on the next normal open; worst case is
+one view-only session for a user still carrying the leaked pair. Task 5 needs no
+special handling.
+
 ### Task 4: fx slice — capture/seed + zero-write guard
 
 **Files:**
