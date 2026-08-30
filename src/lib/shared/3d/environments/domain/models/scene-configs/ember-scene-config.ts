@@ -57,16 +57,40 @@ export interface LavaRiverChannelConfig {
   points?: [number, number, number][];
 }
 
+/** Point lights that sit above the channel to light the rock it runs between. */
+export interface LavaRiverBankLightConfig {
+  count?: number;
+  intensity?: number;
+  distance?: number;
+  /** Metres above the channel surface. Low values lay a hard disc on the bank. */
+  heightOffset?: number;
+}
+
 export interface LavaRiversConfig {
   enabled: boolean;
   channels: LavaRiverChannelConfig[];
   baseColor: string;
   hotColor: string;
   crustColor: string;
+  /** Chilled rock flanking the molten channel. Falls back to `crustColor`. */
+  leveeColor?: string;
   flowSpeed: number;
   width: number;
   warpIntensity: number;
   crustCoverage: number;
+  /**
+   * How far the chilled margin reaches in from the nominal edge, as a fraction
+   * of the channel half-width. Higher values leave a narrower incandescent
+   * thread and a wider cooled shoulder.
+   */
+  edgeCooling?: number;
+  /** Strength of the channel's radiance falling on the levee beside it. */
+  bankRadiance?: number;
+  /** Strip width reserved beyond the channel for the ragged shore contour. */
+  bankMarginFraction?: number;
+  /** Metres the reserved margin drops so its polygon edge tucks into the bank. */
+  bankPlunge?: number;
+  bankLight?: LavaRiverBankLightConfig;
 }
 
 /**
@@ -173,6 +197,19 @@ export interface EmberSceneConfig {
   platform: ObsidianPlatformConfig;
 }
 
+/**
+ * Three lights across a 271 metre channel, high enough that each one washes the
+ * bank instead of stamping a disc on it. The earlier rig sat 0.7 metres above
+ * the surface at intensity 86, which put roughly twenty times more light
+ * directly beneath it than on the rock it was meant to be illuminating.
+ */
+const EMBER_LAVA_RIVER_BANK_LIGHT: LavaRiverBankLightConfig = {
+  count: 3,
+  intensity: 58,
+  distance: 30,
+  heightOffset: 2.6,
+};
+
 const EMBER_PILLAR_RINGS: TreeRingConfig[] = [
   {
     radius: 8,
@@ -242,10 +279,14 @@ export function createDefaultEmberConfig(
       baseColor: look.lavaRivers.baseColor,
       hotColor: look.lavaRivers.hotColor,
       crustColor: look.lavaRivers.crustColor,
+      leveeColor: look.lavaRivers.leveeColor,
       flowSpeed: look.lavaRivers.flowSpeed,
       width: volcanicWorldR7.lavaRiver.width,
       warpIntensity: look.lavaRivers.warpIntensity,
       crustCoverage: look.lavaRivers.crustCoverage,
+      edgeCooling: look.lavaRivers.edgeCooling,
+      bankRadiance: look.lavaRivers.bankRadiance,
+      bankLight: EMBER_LAVA_RIVER_BANK_LIGHT,
     },
     obsidianPillars: {
       enabled: false,
