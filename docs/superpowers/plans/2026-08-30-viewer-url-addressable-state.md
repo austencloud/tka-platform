@@ -26,7 +26,7 @@
 
 The codec owns param names and the headline/blob split. Headline params are canonical for their fields; the blob never duplicates them.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { describe, it, expect } from "vitest";
@@ -96,12 +96,12 @@ describe("viewer-url-state-codec", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run --config tests/config/vitest.config.ts src/lib/shared/sequence-viewer/services/viewer-url-state-codec.test.ts`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Implement the codec**
+- [x] **Step 3: Implement the codec**
 
 ```ts
 /**
@@ -244,12 +244,12 @@ export function deepEqual(a: unknown, b: unknown): boolean {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run --config tests/config/vitest.config.ts src/lib/shared/sequence-viewer/services/viewer-url-state-codec.test.ts`
 Expected: PASS (7 tests). Note: the codec runs in Node too — `compressForURL` uses `btoa`; if the vitest environment lacks it, the test file sets `globalThis.btoa/atob` from `Buffer` in a `beforeAll`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/shared/sequence-viewer/services/viewer-url-state-codec.ts src/lib/shared/sequence-viewer/services/viewer-url-state-codec.test.ts
@@ -964,7 +964,7 @@ Every Phase B task follows the same five steps: **(1) Discovery** — read the b
 
 ## Ledger
 
-- [ ] Task 1 — codec
+- [x] Task 1 — codec
 - [ ] Task 2 — session
 - [ ] Task 3 — effects snapshot/export
 - [ ] Task 4 — fx slice
