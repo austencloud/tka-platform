@@ -134,8 +134,8 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   bigdoublefrostedball: { width: 600, height: 300 },
 
   // Poi — grip to head CENTRE is the club's 129.335 reach, and the head's own
-  // 15-unit radius overhangs that, so the box is 2 x 144.335.
-  poi: { width: 288.67, height: 38 },
+  // 16.5-unit radius overhangs that, so the box is 2 x 145.835.
+  poi: { width: 291.67, height: 38 },
 
   // Torch family
   // The flame extends beyond the old wick-only artwork. These viewBoxes grow
