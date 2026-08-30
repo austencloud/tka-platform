@@ -100,6 +100,23 @@
     }
   }
 
+  /* A split desktop pane can be nearly square even when it is still wide
+     enough for the full Atlas. Twelve columns make width bind first there,
+     leaving a short board floating above the footer. Nine columns spend that
+     available height on the pictographs and keep each type grouped. */
+  @media (max-aspect-ratio: 4 / 3) {
+    @container (min-width: 70rem) {
+      .bands {
+        --abox-gap: 0.5rem;
+        --band-rows: 6;
+        --codex-picto-size: min(
+          calc((100cqi - 8rem) / 9),
+          calc((100dvh - var(--codex-atlas-chrome, 28.5rem)) / var(--band-rows))
+        );
+      }
+    }
+  }
+
   /* Below desktop the board scrolls, so the height term comes off entirely and
      the divisor is the only thing that changes. Twelve across on a phone is a
      row of 25px thumbnails. */
