@@ -10,14 +10,16 @@
        - which is why "poi" is in SELECTIVE_COLOR_PROP_TYPES. The head fill is
        the club body's #BDBDBD (unsaturated, so selective mode repaints it);
        the knob and cord carry the club's blue-grey tint, which selective mode
-       preserves. -->
+       preserves. The knob is a full step darker than the cord (luminance 0.39
+       vs 0.64) and the cord is thin, so at animation scale the eye separates
+       head, cord and handle instead of reading one grey mass. -->
   <g data-poi-art="regular">
     <!-- Mirror reserve (invisible): keeps the geometric bbox symmetric about
          the grip, matching the unilateral-prop convention. -->
     <circle cx="16.5" cy="19" r="16.5" fill="none"/>
 
     <!-- tether: cord from the grip out to the head centre. -->
-    <rect data-poi-part="tether" x="145.83" y="16.25" width="129.34" height="5.5" rx="2.75"
+    <rect data-poi-part="tether" x="145.83" y="16.8" width="129.34" height="4.4" rx="2.2"
       fill="#9AA4B2" stroke="#202126" stroke-width=".7"/>
 
     <!-- weighted head: far edge at 291.67, so grip-to-tip spans 145.835. -->
@@ -31,6 +33,6 @@
          dome. Centred on the handpoint. -->
     <path data-poi-part="knob"
       d="M137.6 19C137.6 10.9 140.2 9 145 9C150.2 9 154.1 13 154.1 19C154.1 25 150.2 29 145 29C140.2 29 137.6 27.1 137.6 19Z"
-      fill="#7B8798" stroke="#202126" stroke-width=".8"/>
+      fill="#5A6472" stroke="#202126" stroke-width=".8"/>
   </g>
 </svg>
