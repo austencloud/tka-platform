@@ -3,6 +3,7 @@
   import { useDraco, useGltf, useMeshopt } from "@threlte/extras";
   import { untrack } from "svelte";
   import {
+    Color,
     Group,
     type InstancedMesh,
     type Mesh,
@@ -23,6 +24,8 @@
   import ForestClearingWind from "$lib/shared/3d/environments/scenes/forest/ForestClearingWind.svelte";
   import {
     buildFlowFestCanopyShellGeometry,
+    deriveFlowFestTreeInstanceTint,
+    FLOW_FEST_CANOPY_SHELL_ATLAS_COMPENSATION,
     FLOW_FEST_CANOPY_SHELL_TIERS,
     FLOW_FEST_FOREST_GRASS_ASSET,
     FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS,
@@ -39,6 +42,7 @@
     type FlowFestForestEcologyLayout,
     type FlowFestForestDistanceTreeFamilyId,
     type FlowFestForestTreeFamilyId,
+    type FlowFestForestTreePlacement,
   } from "./flow-fest-forest-ecology";
 
   interface Props {
@@ -468,9 +472,42 @@
       );
       substituteDistanceTierCanopy(tierInstances, familyId, tier);
       flattenUntexturedDistanceMaterials(tierInstances);
+      applyTreeInstanceTints(tierInstances, placements);
       root.add(tierInstances);
     }
     return root;
+  }
+
+  /**
+   * Give every tree its own colour through the instancing seam. The tint is
+   * seeded from the placement's measured coordinates, so a tree keeps the same
+   * personal colour in every distance tier and across reloads. `instanceColor`
+   * multiplies into the moment tint, so the day/night grade still owns the
+   * palette — this only stops a family rendering as one flat mass.
+   */
+  function applyTreeInstanceTints(
+    root: Object3D,
+    placements: FlowFestForestTreePlacement[]
+  ): void {
+    const scratch = new Color();
+    root.traverse((object) => {
+      const mesh = object as InstancedMesh;
+      if (!mesh.isMesh || !("instanceMatrix" in mesh)) return;
+      const materials = Array.isArray(mesh.material)
+        ? mesh.material
+        : [mesh.material];
+      const part = materials.some((candidate) =>
+        isFlowFestForestFoliageMaterial(candidate as MeshStandardMaterial)
+      )
+        ? ("foliage" as const)
+        : ("bark" as const);
+      placements.forEach((placement, index) => {
+        if (index >= mesh.count) return;
+        const tint = deriveFlowFestTreeInstanceTint(placement, part);
+        mesh.setColorAt(index, scratch.setRGB(tint.r, tint.g, tint.b));
+      });
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    });
   }
 
   /**
@@ -506,6 +543,13 @@
         `${familyId}-${tier}-${mesh.name}`,
         FLOW_FEST_CANOPY_SHELL_TIERS[tier]
       );
+      // The shell bakes its canopy self-shadow as vertex colours; the materials
+      // here are this mesh's own clones, so the near tier keeps its atlas path.
+      for (const candidate of materials) {
+        const material = candidate as MeshStandardMaterial;
+        material.vertexColors = true;
+        material.needsUpdate = true;
+      }
       mesh.userData.ownsGeometry = true;
       mesh.computeBoundingSphere();
       replaced += 1;
@@ -562,11 +606,14 @@
       const placements = layout.trees.filter(
         (placement) => placement.familyId === familyId
       );
-      nextNearTrees.add(
-        createForestRuntimeTreeInstances(source, placements, familyId, {
-          distanceTier: "near",
-        })
+      const nearInstances = createForestRuntimeTreeInstances(
+        source,
+        placements,
+        familyId,
+        { distanceTier: "near" }
       );
+      applyTreeInstanceTints(nearInstances, placements);
+      nextNearTrees.add(nearInstances);
     }
     const nextMidTrees = buildDistanceTierRoot(
       "mid",
@@ -675,6 +722,12 @@
     };
   });
 
+  const shellAtlasCompensation = new Color(
+    FLOW_FEST_CANOPY_SHELL_ATLAS_COMPENSATION.r,
+    FLOW_FEST_CANOPY_SHELL_ATLAS_COMPENSATION.g,
+    FLOW_FEST_CANOPY_SHELL_ATLAS_COMPENSATION.b
+  );
+
   $effect(() => {
     for (const root of [...treeRoots, groundLifeRoot]) {
       root?.traverse((object) => {
@@ -694,6 +747,12 @@
           material.color.set(isFoliage ? foliageTint : barkTint);
           const adjustment = grade?.[isFoliage ? "foliage" : "bark"];
           if (adjustment) material.color.offsetHSL(...adjustment);
+          // Foliage with no map is a flattened distance shell — near-tier
+          // canopies multiply their leaf atlas over the tint; shells must
+          // multiply the atlas's stand-in instead or they render pale.
+          if (isFoliage && material.map == null) {
+            material.color.multiply(shellAtlasCompensation);
+          }
         }
       });
     }
