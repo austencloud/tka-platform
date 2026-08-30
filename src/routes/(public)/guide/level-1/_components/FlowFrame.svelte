@@ -30,12 +30,10 @@
     content,
     darkMode = false,
     tagline = "",
-    layout = "standard",
   }: {
     content: GuideBlock[];
     darkMode?: boolean;
     tagline?: string;
-    layout?: "standard" | "grid-overview";
   } = $props();
 
   // Theme handed to each pictograph: "dark" renders on the dark editorial theme
@@ -69,20 +67,6 @@
       if (!firstProseSeen && b.kind === "prose") {
         firstProseSeen = true;
         if (tag && stripHtml(b.html) === tag) continue;
-        if (
-          layout === "grid-overview" &&
-          tag &&
-          stripHtml(b.html).startsWith(tag)
-        ) {
-          const source = b.html.trimStart();
-          if (source.startsWith(tagline)) {
-            const html = source
-              .slice(tagline.length)
-              .replace(/^(?:\s*<br\s*\/?>\s*)+/i, "");
-            if (stripHtml(html)) out.push({ ...b, html });
-            continue;
-          }
-        }
       }
       out.push(b);
     }
@@ -229,7 +213,7 @@
         : "8-point grid: diamond and box combined";
 </script>
 
-<div class="flow-frame" class:grid-overview={layout === "grid-overview"}>
+<div class="flow-frame">
   {#each renderItems as item, i (i)}
     {#if item.type === "showcase"}
       <!-- A word sequence's showcase: square live animation beside the section's
@@ -625,105 +609,6 @@
   }
   .grid-fig :global(.grid-container) {
     opacity: 1;
-  }
-
-  /* The opening Grid topic is a visual overview, not a long prose chapter.
-     Keep its authored block order in the DOM, then compose those same blocks
-     into a single spread when the route has room. On phones the three simple
-     coordinate diagrams still share one row; the explanation remains linear. */
-  .grid-overview {
-    max-width: 76rem;
-    padding: 0.25rem 1rem 2rem;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    align-items: center;
-    gap: 0.85rem;
-    line-height: 1.55;
-  }
-  .grid-overview > .flow-p,
-  .grid-overview > .flow-figure {
-    grid-column: 1 / -1;
-  }
-  .grid-overview > .flow-p {
-    max-width: 36rem;
-    margin: 0 auto;
-    font-size: 1.08rem;
-    line-height: 1.55;
-    text-wrap: pretty;
-  }
-  .grid-overview > .flow-figure {
-    width: min(12.5rem, 70cqw);
-    margin: 0.15rem auto;
-  }
-  .grid-overview > .flow-grid-figure {
-    width: 100%;
-    max-width: 13rem;
-    margin: 0 auto;
-    gap: 0.3rem;
-  }
-  .grid-overview > .flow-grid-figure figcaption {
-    font-size: 0.9rem;
-  }
-
-  @container (min-width: 46rem) {
-    .grid-overview {
-      grid-template-columns:
-        minmax(13rem, 1fr)
-        minmax(12rem, 15rem)
-        minmax(13rem, 1fr);
-      grid-template-areas:
-        "intro hands points"
-        "comparison comparison comparison"
-        "diamond box merged"
-        "closing closing closing";
-      column-gap: clamp(1.25rem, 3cqw, 2.75rem);
-      row-gap: 0.8rem;
-    }
-    .grid-overview > :nth-child(1) {
-      grid-area: intro;
-    }
-    .grid-overview > :nth-child(2) {
-      grid-area: hands;
-    }
-    .grid-overview > :nth-child(3) {
-      grid-area: points;
-    }
-    .grid-overview > :nth-child(4) {
-      grid-area: comparison;
-    }
-    .grid-overview > :nth-child(5) {
-      grid-area: diamond;
-    }
-    .grid-overview > :nth-child(6) {
-      grid-area: box;
-    }
-    .grid-overview > :nth-child(7) {
-      grid-area: merged;
-    }
-    .grid-overview > :nth-child(8) {
-      grid-area: closing;
-    }
-    .grid-overview > .flow-p,
-    .grid-overview > .flow-figure {
-      grid-column: auto;
-    }
-    .grid-overview > .flow-p {
-      max-width: 24rem;
-      margin-inline: 0;
-      text-align: left;
-    }
-    .grid-overview > .flow-p:nth-child(4),
-    .grid-overview > .flow-p:nth-child(8) {
-      grid-column: 1 / -1;
-      width: 100%;
-      max-width: none;
-      margin-inline: auto;
-      text-align: center;
-    }
-    .grid-overview > .flow-figure {
-      width: 100%;
-      max-width: 14rem;
-    }
   }
 
   /* Wide/4K ramp: FlowFrame's own reading measures stay narrow-centred (prose is

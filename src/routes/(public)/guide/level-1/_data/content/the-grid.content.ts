@@ -8,29 +8,8 @@
  * spec + no-ghostwriting rule.
  */
 import type { GuideBlock } from "../guide-content-blocks";
-import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
-import { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
-
-// ALPHA3 (blue hand at west, red hand at east), prop forced to HAND - copied from
-// _pages/TheGridPage.svelte so the flow diagram matches the printed one's figure.
-const ALPHA3_RAW = startPositionManager
-  .getAllStartPositionVariations(GridMode.DIAMOND)
-  .find((p) => p.startPosition === GridPosition.ALPHA3);
-const ALPHA3: PictographData | undefined = ALPHA3_RAW
-  ? ({
-      ...ALPHA3_RAW,
-      motions: {
-        blue: ALPHA3_RAW.motions?.blue
-          ? { ...ALPHA3_RAW.motions.blue, propType: PropType.HAND }
-          : undefined,
-        red: ALPHA3_RAW.motions?.red
-          ? { ...ALPHA3_RAW.motions.red, propType: PropType.HAND }
-          : undefined,
-      },
-    } as unknown as PictographData)
-  : undefined;
+import { THE_GRID_ALPHA3 } from "../the-grid-pictograph";
 
 export const theGridContent: GuideBlock[] = [
   { kind: "heading", level: 1, text: "The Grid" },
@@ -42,11 +21,11 @@ export const theGridContent: GuideBlock[] = [
       "<strong>This guide is written in diamond, but everything translates to box.</strong><br><br>" +
       "On this grid, there are three types of points:",
   },
-  ...(ALPHA3
+  ...(THE_GRID_ALPHA3
     ? [
         {
           kind: "pictograph",
-          data: ALPHA3,
+          data: THE_GRID_ALPHA3,
           render: { propType: PropType.HAND, showTKA: false },
           caption: "Two hands on the diamond grid: blue at west, red at east.",
         } as GuideBlock,

@@ -16,10 +16,16 @@
    */
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
-  import { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
+  import { THE_GRID_ALPHA3 } from "../_data/the-grid-pictograph";
+  import {
+    guideEdit,
+    ptDrag,
+    pt,
+    editText,
+    registerEditSource,
+  } from "../_data/guide-edit.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
 
@@ -27,26 +33,17 @@
   // West, red hand at East) rendered with the prop forced to HAND, so the hand
   // size and the red right-hand mirror come from the canonical renderer instead
   // of a hand-rolled SVG path.
-  const ALPHA3_RAW = startPositionManager
-    .getAllStartPositionVariations(GridMode.DIAMOND)
-    .find((p) => p.startPosition === GridPosition.ALPHA3);
-  // Force the motions' prop to HAND so the prepared motion carries HAND (what
-  // PropSvg's red-hand mirror reads); the manager bakes STAFF by default.
-  const ALPHA3 = ALPHA3_RAW
-    ? {
-        ...ALPHA3_RAW,
-        motions: {
-          blue: ALPHA3_RAW.motions?.blue
-            ? { ...ALPHA3_RAW.motions.blue, propType: PropType.HAND }
-            : undefined,
-          red: ALPHA3_RAW.motions?.red
-            ? { ...ALPHA3_RAW.motions.red, propType: PropType.HAND }
-            : undefined,
-        },
-      }
-    : undefined;
-
-  type Run = { x: number; y: number; w: number; h: number; t: string; b?: boolean; s?: boolean; title?: boolean; op?: boolean };
+  type Run = {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    t: string;
+    b?: boolean;
+    s?: boolean;
+    title?: boolean;
+    op?: boolean;
+  };
 
   // Intro: the four proof lines merged into ONE centred block that moves as a
   // unit. Double <br> reproduces the proof's blank-line gaps; the diamond/box
@@ -76,7 +73,13 @@
     { x: 509.6, y: 437.4, w: 35.1, h: 13, t: "points" },
 
     // Centered transition line
-    { x: 130.2, y: 524.0, w: 351.5, h: 17, t: "Together, diamond and box form an 8-point grid:" },
+    {
+      x: 130.2,
+      y: 524.0,
+      w: 351.5,
+      h: 17,
+      t: "Together, diamond and box form an 8-point grid:",
+    },
 
     // Grid section headings (script font)
     { x: 82.7, y: 556.8, w: 65.6, h: 20, s: true, t: "Diamond" },
@@ -89,7 +92,13 @@
     { x: 379.5, y: 650, w: 40, h: 34, op: true, t: "=" },
 
     // Footer line
-    { x: 116.5, y: 760.9, w: 379.0, h: 19, t: "We’ll use diamond mode to learn each concept." },
+    {
+      x: 116.5,
+      y: 760.9,
+      w: 379.0,
+      h: 19,
+      t: "We’ll use diamond mode to learn each concept.",
+    },
   ]);
 
   // The three point descriptions as SINGLE selectable text blocks (bold term
@@ -123,9 +132,17 @@
   // Edit mode: dump current coords for CoordsPanel's Copy button.
   const r1 = (n: number) => Math.round(n * 10) / 10;
   function dumpCoords(): string {
-    const A = ARROWS.map((a) => `  { id: "${a.id}", x1: ${r1(a.x1)}, y1: ${r1(a.y1)}, x2: ${r1(a.x2)}, y2: ${r1(a.y2)} },`).join("\n");
-    const P = PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join("\n");
-    const R = RUNS.map((r) => `  ${JSON.stringify(r.t).slice(0, 30)}: x: ${r1(r.x)}, y: ${r1(r.y)}`).join("\n");
+    const A = ARROWS.map(
+      (a) =>
+        `  { id: "${a.id}", x1: ${r1(a.x1)}, y1: ${r1(a.y1)}, x2: ${r1(a.x2)}, y2: ${r1(a.y2)} },`
+    ).join("\n");
+    const P = PARAS.map(
+      (p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`
+    ).join("\n");
+    const R = RUNS.map(
+      (r) =>
+        `  ${JSON.stringify(r.t).slice(0, 30)}: x: ${r1(r.x)}, y: ${r1(r.y)}`
+    ).join("\n");
     const I = `  intro: x: ${r1(intro.x)}, y: ${r1(intro.y)}`;
     return `INTRO\n${I}\n\nARROWS\n${A}\n\nPARAS\n${P}\n\nRUNS\n${R}`;
   }
@@ -163,7 +180,10 @@
       <GridSvg gridMode={GridMode.DIAMOND} darkMode={false} />
       <GridSvg gridMode={GridMode.BOX} darkMode={false} />
     {:else}
-      <GridSvg gridMode={type === "box" ? GridMode.BOX : GridMode.DIAMOND} darkMode={false} />
+      <GridSvg
+        gridMode={type === "box" ? GridMode.BOX : GridMode.DIAMOND}
+        darkMode={false}
+      />
     {/if}
   </svg>
 {/snippet}
@@ -172,11 +192,12 @@
   <!-- Figures first so their white sheets sit BENEATH the text + arrows. -->
   <div
     class="diagram"
-    style="left:{DIAG.x * S}px; top:{DIAG.y * S}px; width:{DIAG.w * S}px; height:{DIAG.h * S}px"
+    style="left:{DIAG.x * S}px; top:{DIAG.y * S}px; width:{DIAG.w *
+      S}px; height:{DIAG.h * S}px"
   >
-    {#if ALPHA3}
+    {#if THE_GRID_ALPHA3}
       <PictographContainer
-        pictographData={ALPHA3}
+        pictographData={THE_GRID_ALPHA3}
         gridMode={GridMode.DIAMOND}
         bluePropTypeOverride={PropType.HAND}
         redPropTypeOverride={PropType.HAND}
@@ -198,7 +219,8 @@
   {#each minis as m}
     <div
       class="mini"
-      style="left:{m.x * S}px; top:{MINI.y * S}px; width:{MINI.w * S}px; height:{MINI.h * S}px"
+      style="left:{m.x * S}px; top:{MINI.y * S}px; width:{MINI.w *
+        S}px; height:{MINI.h * S}px"
     >
       {@render figure(m.type)}
     </div>
@@ -209,7 +231,8 @@
     class="intro"
     class:edit={guideEdit.on}
     class:selected={guideEdit.selectedId === `grid-intro`}
-    style="top:{intro.y * S}px; font-size:{intro.fs * S}px; line-height:{intro.lh * S}px"
+    style="top:{intro.y * S}px; font-size:{intro.fs *
+      S}px; line-height:{intro.lh * S}px"
     use:ptDrag={pt(`grid-intro`, "intro", intro)}
   >
     {@html intro.html}
@@ -224,9 +247,9 @@
       class:op={r.op}
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === `grid-run-${i}`}
-      style="left:{r.x * S}px; top:{r.y * S}px; width:{r.w * S}px; font-size:{r.h * S}px"
-      use:ptDrag={pt(`grid-run-${i}`, r.t, r)}
-      >{r.t}</span
+      style="left:{r.x * S}px; top:{r.y * S}px; width:{r.w *
+        S}px; font-size:{r.h * S}px"
+      use:ptDrag={pt(`grid-run-${i}`, r.t, r)}>{r.t}</span
     >
   {/each}
 
@@ -236,18 +259,36 @@
       class="para"
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === `grid-para-${i}`}
-      style="left:{p.x * S}px; top:{p.y * S}px; width:{p.w * S}px; font-size:{17 * S}px; line-height:{p.lh * S}px"
+      style="left:{p.x * S}px; top:{p.y * S}px; width:{p.w *
+        S}px; font-size:{17 * S}px; line-height:{p.lh * S}px"
       use:ptDrag={pt(`grid-para-${i}`, "paragraph", p)}
-      use:editText={{ id: `grid-para-${i}`, label: "paragraph", get: () => p.html, set: (h) => (p.html = h) }}
+      use:editText={{
+        id: `grid-para-${i}`,
+        label: "paragraph",
+        get: () => p.html,
+        set: (h) => (p.html = h),
+      }}
     >
       {@html p.html}
     </p>
   {/each}
 
   <!-- Callout arrows, drawn directly in PDF coordinate space (612×792), on top. -->
-  <svg class="arrows" viewBox="0 0 612 792" preserveAspectRatio="none" aria-hidden="true">
+  <svg
+    class="arrows"
+    viewBox="0 0 612 792"
+    preserveAspectRatio="none"
+    aria-hidden="true"
+  >
     <defs>
-      <marker id="ah" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto">
+      <marker
+        id="ah"
+        markerWidth="7"
+        markerHeight="7"
+        refX="5.5"
+        refY="3"
+        orient="auto"
+      >
         <path d="M0,0 L6,3 L0,6 Z" fill="#222" />
       </marker>
     </defs>
@@ -269,9 +310,19 @@
           use:ptDrag={{
             id: `grid-arrow-${a.id}-shaft`,
             label: a.id,
-            apply: (dx, dy) => { a.x1 += dx; a.y1 += dy; a.x2 += dx; a.y2 += dy; },
+            apply: (dx, dy) => {
+              a.x1 += dx;
+              a.y1 += dy;
+              a.x2 += dx;
+              a.y2 += dy;
+            },
             snapshot: () => [a.x1, a.y1, a.x2, a.y2],
-            restore: (s) => { a.x1 = s[0] ?? a.x1; a.y1 = s[1] ?? a.y1; a.x2 = s[2] ?? a.x2; a.y2 = s[3] ?? a.y2; },
+            restore: (s) => {
+              a.x1 = s[0] ?? a.x1;
+              a.y1 = s[1] ?? a.y1;
+              a.x2 = s[2] ?? a.x2;
+              a.y2 = s[3] ?? a.y2;
+            },
           }}
         />
         <circle
@@ -280,7 +331,13 @@
           cx={a.x1}
           cy={a.y1}
           r="4"
-          use:ptDrag={pt(`grid-arrow-${a.id}-tail`, `${a.id} tail`, a, "x1", "y1")}
+          use:ptDrag={pt(
+            `grid-arrow-${a.id}-tail`,
+            `${a.id} tail`,
+            a,
+            "x1",
+            "y1"
+          )}
         />
         <circle
           class="edit-handle head"
@@ -288,7 +345,13 @@
           cx={a.x2}
           cy={a.y2}
           r="4"
-          use:ptDrag={pt(`grid-arrow-${a.id}-head`, `${a.id} head`, a, "x2", "y2")}
+          use:ptDrag={pt(
+            `grid-arrow-${a.id}-head`,
+            `${a.id} head`,
+            a,
+            "x2",
+            "y2"
+          )}
         />
       {/each}
     {/if}
