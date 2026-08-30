@@ -144,5 +144,6 @@ a physical image. It may name the system after the image is established. The
 institution's collapse can move to the full project details because the 225
 characters now need to explain both the activity and the real-world payoff.
 
-Awaiting Austen's approval of this revised angle. No replacement draft has been
-written.
+The revised angle was approved. Austen approved the replacement 223-character
+draft on August 30, 2026. The final text and authorship review are saved in
+`EPIC-03-elevator-pitch.md`.

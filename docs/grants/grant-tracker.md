@@ -56,6 +56,7 @@
         (draft: EPIC-01-portal-prompt-inventory.md)
   - [ ] Lock the project identity, category, phase, Unreal status, and
         open-source claim
+  - [x] Project elevator pitch (draft: EPIC-03-elevator-pitch.md) — 223 chars
   - [ ] Complete an interview and source map for every prose response
   - [ ] Approve each response angle before drafting
   - [ ] Run AI-bust and voice comparison on every draft
