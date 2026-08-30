@@ -574,7 +574,7 @@ special handling.
 - Create: `src/lib/shared/sequence-viewer/services/viewer-url-slices/fx-slice.ts`
 - Test: `src/lib/shared/sequence-viewer/services/viewer-url-slices/fx-slice.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { describe, it, expect, vi, afterEach } from "vitest";
@@ -631,12 +631,12 @@ describe("fx slice", () => {
 
 Note: `updateEffect`'s exact partial-update signature must be read from the store before writing this test — if it differs (e.g. takes a full section), adapt the test to the real API. Never change the store to fit the test.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run --config tests/config/vitest.config.ts src/lib/shared/sequence-viewer/services/viewer-url-slices/fx-slice.test.ts`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```ts
 /**
@@ -686,12 +686,12 @@ export function seedFromFxSlice(payload: FxSlicePayload): EffectsConfig {
 
 (`createEffectsConfigState` normalizes the seed via its own `normalizeEffectsConfig` path — an invalid `active` from a hand-edited URL is healed by the owner, not re-validated here.)
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run --config tests/config/vitest.config.ts src/lib/shared/sequence-viewer/services/viewer-url-slices/fx-slice.test.ts`
 Expected: PASS (5 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(viewer): fx URL slice — capture/seed with zero-write guard" -- src/lib/shared/sequence-viewer/services/viewer-url-slices/fx-slice.ts src/lib/shared/sequence-viewer/services/viewer-url-slices/fx-slice.test.ts
@@ -974,7 +974,7 @@ Every Phase B task follows the same five steps: **(1) Discovery** — read the b
 - [x] Task 1 — codec
 - [x] Task 2 — session
 - [x] Task 3 — effects snapshot/export
-- [ ] Task 4 — fx slice
+- [x] Task 4 — fx slice
 - [ ] Task 5 — view seam + wiring
 - [ ] Task 6 — share captureNow
 - [ ] Task 7 — close cleanup
