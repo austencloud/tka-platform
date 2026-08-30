@@ -14,7 +14,7 @@ describe("viewer-url-state-codec", () => {
       tn: { speed: 2, cameraMode: "orbit" },
     };
     const patch = encodeViewerStateParams(slices);
-    expect(patch.set.vm).toBe("split");
+    expect(patch.set.pane).toBe("split");
     expect(patch.set.split).toBe("animation,card");
     expect(patch.set.fx).toBe("sparkles");
     expect(patch.set.s).toMatch(/^(d1:|raw:)/);
@@ -31,7 +31,7 @@ describe("viewer-url-state-codec", () => {
 
   it("headline-only state emits no blob", () => {
     const patch = encodeViewerStateParams({ vw: { mode: "animation" } });
-    expect(patch.set.vm).toBe("animation");
+    expect(patch.set.pane).toBe("animation");
     expect(patch.set.s).toBeUndefined();
     expect(patch.remove).toContain("s");
   });
@@ -44,7 +44,7 @@ describe("viewer-url-state-codec", () => {
   });
 
   it("ignores a corrupt blob but keeps headline params", () => {
-    const params = new URLSearchParams({ vm: "card", s: "d1:%%%not-base64%%%" });
+    const params = new URLSearchParams({ pane: "card", s: "d1:%%%not-base64%%%" });
     expect(decodeViewerStateParams(params)).toEqual({ vw: { mode: "card" } });
   });
 

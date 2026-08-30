@@ -7,7 +7,7 @@ describe("ViewerUrlSession", () => {
 
   it("exposes decoded seeds", () => {
     const session = createViewerUrlSession(
-      new URLSearchParams({ vm: "split", fx: "sparkles" }),
+      new URLSearchParams({ pane: "split", fx: "sparkles" }),
       { writeParams: vi.fn() }
     );
     expect(session.getSeed("vw")).toEqual({ mode: "split" });
@@ -28,7 +28,7 @@ describe("ViewerUrlSession", () => {
 
   it("captureNow merges live captures over URL seeds (unmounted pass-through)", () => {
     const session = createViewerUrlSession(
-      new URLSearchParams({ vm: "animation", fx: "fire" }),
+      new URLSearchParams({ pane: "animation", fx: "fire" }),
       { writeParams: vi.fn() }
     );
     session.registerSlice("vw", () => ({ mode: "card" }));
@@ -40,7 +40,7 @@ describe("ViewerUrlSession", () => {
   });
 
   it("a capture returning null clears that slice from the snapshot", () => {
-    const session = createViewerUrlSession(new URLSearchParams({ vm: "card" }), {
+    const session = createViewerUrlSession(new URLSearchParams({ pane: "card" }), {
       writeParams: vi.fn(),
     });
     session.registerSlice("vw", () => null); // back at defaults
@@ -56,11 +56,11 @@ describe("ViewerUrlSession", () => {
     expect(writeParams).not.toHaveBeenCalled();
     vi.advanceTimersByTime(400);
     expect(writeParams).toHaveBeenCalledTimes(1);
-    expect(writeParams.mock.calls[0][0].set.vm).toBe("card");
+    expect(writeParams.mock.calls[0][0].set.pane).toBe("card");
   });
 
   it("unregister removes the live hook; seed pass-through resumes", () => {
-    const session = createViewerUrlSession(new URLSearchParams({ vm: "split" }), {
+    const session = createViewerUrlSession(new URLSearchParams({ pane: "split" }), {
       writeParams: vi.fn(),
     });
     const off = session.registerSlice("vw", () => ({ mode: "card" }));

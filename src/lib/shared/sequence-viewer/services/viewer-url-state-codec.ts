@@ -17,7 +17,10 @@ export type SlicePayloads = Partial<Record<SliceId, unknown>>;
 
 const BLOB_SLICE_IDS: readonly SliceId[] = ["fx", "an", "ex", "t3", "cd", "tn", "ps"];
 
-export const VIEWER_STATE_PARAM_NAMES = ["vm", "split", "fx", "cols", "s"] as const;
+// Viewer mode rides on `pane`, not `vm`: printed QR cards already own `vm`
+// as the BROWSE view-mode code (`short-code-manager.ts` prints `vm=hsb`),
+// and physical artifacts cannot be re-parameterized.
+export const VIEWER_STATE_PARAM_NAMES = ["pane", "split", "fx", "cols", "s"] as const;
 
 export interface ViewerUrlParamPatch {
   set: Record<string, string>;
@@ -42,7 +45,7 @@ export function encodeViewerStateParams(slices: SlicePayloads): ViewerUrlParamPa
   const blob: Record<string, unknown> = {};
 
   const vw = slices.vw as VwPayload | undefined;
-  if (vw?.mode) set.vm = vw.mode;
+  if (vw?.mode) set.pane = vw.mode;
   if (vw?.split) set.split = `${vw.split.leftPane},${vw.split.rightPane}`;
 
   const fx = slices.fx as FxPayload | undefined;
@@ -82,7 +85,7 @@ export function decodeViewerStateParams(params: URLSearchParams): SlicePayloads 
   }
 
   const vw: VwPayload = {};
-  const vm = params.get("vm");
+  const vm = params.get("pane");
   if (vm) vw.mode = vm;
   const split = params.get("split");
   if (split) {

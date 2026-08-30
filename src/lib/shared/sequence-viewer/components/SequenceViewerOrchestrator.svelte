@@ -36,9 +36,7 @@
     type FxSlicePayload,
   } from "../services/viewer-url-slices/fx-slice";
   import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
-  import { decodeViewMode } from "$lib/shared/browse/domain/browse-view-mode";
   import {
-    isValidViewerMode,
     loadSplitConfig,
     loadViewerMode,
     type SplitConfig,
@@ -178,39 +176,25 @@
   // own saved state mount view-only (`persist:false`) — looking at someone
   // else's link never rewrites the visitor's disk.
   //
-  // `vm` collision: `short-code-manager.ts` prints `vm=hsb` (a BROWSE view
-  // mode: props/hands, solo/combined, blue/red) onto physical QR cards, and
-  // `SequenceViewerPage` decodes it with `decodeViewMode`. That param name is
-  // locked by physical artifacts, so a `vm` that parses as one of those codes
-  // is not ours: it is never seeded from, never overwritten, and never removed.
-  // The cost is that a viewer opened from a printed card cannot also record its
-  // viewer mode in the URL — see the report note on renaming the codec's
-  // headline param if both are ever needed at once.
-  function foreignBrowseViewMode(params: URLSearchParams): string | null {
-    const raw = params.get("vm");
-    if (!raw || isValidViewerMode(raw)) return null;
-    return decodeViewMode(raw) ? raw : null;
-  }
-
-  const urlSessionParams = new URLSearchParams(
-    browser ? window.location.search : ""
+  // The viewer-mode headline param is `pane`, not `vm`: printed QR cards own
+  // `vm` as the BROWSE view-mode code (`short-code-manager.ts` prints
+  // `vm=hsb`; `SequenceViewerPage` decodes it into hand-path mode and per-prop
+  // visibility). The session never reads or writes `vm`, so scanned-card links
+  // pass through untouched by construction.
+  const urlSession = createViewerUrlSession(
+    new URLSearchParams(browser ? window.location.search : ""),
+    {
+      writeParams: (patch) =>
+        mutateCurrentUrl((url) => {
+          for (const name of patch.remove) {
+            url.searchParams.delete(name);
+          }
+          for (const [name, value] of Object.entries(patch.set)) {
+            url.searchParams.set(name, value);
+          }
+        }),
+    }
   );
-  const foreignViewModeParam = foreignBrowseViewMode(urlSessionParams);
-  if (foreignViewModeParam) urlSessionParams.delete("vm");
-
-  const urlSession = createViewerUrlSession(urlSessionParams, {
-    writeParams: (patch) =>
-      mutateCurrentUrl((url) => {
-        for (const name of patch.remove) {
-          if (name === "vm" && foreignViewModeParam) continue;
-          url.searchParams.delete(name);
-        }
-        for (const [name, value] of Object.entries(patch.set)) {
-          if (name === "vm" && foreignViewModeParam) continue;
-          url.searchParams.set(name, value);
-        }
-      }),
-  });
 
   interface VwSlicePayload {
     mode?: string;
