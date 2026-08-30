@@ -19,10 +19,23 @@
   import type { ShortCodeSequenceLoader } from "$lib/shared/qr/services/short-code-manager";
 
   // Same reason as the /sequence host: this route never mounts
-  // MainApplication's composition root, so nothing else registers the library
-  // repository and the shell's Save and saved-state sync would throw on the
-  // first tap. Registering is idempotent.
-  if (browser) registerLibraryRepository();
+  // MainApplication's composition root, so nothing else registers these owners.
+  // Unlike /sequence, the sequence arrives synchronously from load(), so the
+  // orchestrator's playback boot races the host's onMount — registration must
+  // happen at component init, before the orchestrator mounts. Registering is
+  // idempotent.
+  if (browser) {
+    registerLibraryRepository();
+    registerLoopDetector(loopDetector);
+    registerLoopDisplayResolver(resolveLoopDisplay);
+    try {
+      getShortCodeManager();
+    } catch {
+      configureShortCodeManager({
+        loadFullSequenceData: async () => null,
+      } satisfies ShortCodeSequenceLoader);
+    }
+  }
 
   let { data }: { data: PageData } = $props();
 
