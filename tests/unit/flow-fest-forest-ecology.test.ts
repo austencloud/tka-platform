@@ -6,6 +6,10 @@ import { parseFlowFestRuntimeContract } from "../../src/routes/test/flow-fest-gr
 import {
   buildFlowFestCanopyShellGeometry,
   deriveFlowFestForestEcology,
+  deriveFlowFestTreeInstanceTint,
+  FLOW_FEST_CANOPY_SHELL_ATLAS_COMPENSATION,
+  FLOW_FEST_CANOPY_SHELL_SHADE_CEILING,
+  FLOW_FEST_CANOPY_SHELL_SHADE_FLOOR,
   FLOW_FEST_CANOPY_SHELL_TIERS,
   FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS,
   FLOW_FEST_FOREST_GRASS_ASSET,
@@ -672,5 +676,110 @@ describe("Flow Fest distance canopy shells", () => {
     first.dispose();
     repeat.dispose();
     other.dispose();
+  });
+
+  it("bakes a canopy self-shadow gradient the raw tint cannot provide", () => {
+    const bounds = { min: { x: -3, y: 5, z: -3 }, max: { x: 3, y: 12, z: 3 } };
+    const shell = buildFlowFestCanopyShellGeometry(
+      bounds,
+      "island-tree-01-mid-leaves",
+      FLOW_FEST_CANOPY_SHELL_TIERS.mid
+    );
+    const colors = shell.getAttribute("color");
+    const positions = shell.attributes.position;
+    expect(colors).toBeTruthy();
+    expect(colors.count).toBe(positions.count);
+
+    let sum = 0;
+    let minimum = Infinity;
+    let maximum = -Infinity;
+    const byPosition = new Map<string, number>();
+    for (let index = 0; index < colors.count; index += 1) {
+      const shade = colors.getX(index);
+      // Grayscale multiplier: hue stays with the moment tint.
+      expect(colors.getY(index)).toBe(shade);
+      expect(colors.getZ(index)).toBe(shade);
+      sum += shade;
+      minimum = Math.min(minimum, shade);
+      maximum = Math.max(maximum, shade);
+      // Non-indexed geometry: every copy of a shared corner must shade
+      // identically or facet seams appear.
+      const key = [
+        positions.getX(index).toFixed(5),
+        positions.getY(index).toFixed(5),
+        positions.getZ(index).toFixed(5),
+      ].join(",");
+      const previous = byPosition.get(key);
+      if (previous !== undefined) expect(shade).toBeCloseTo(previous, 6);
+      else byPosition.set(key, shade);
+    }
+    // The crown base sinks toward the floor, the top stays bright, and the
+    // mean lands well under 1 so the shell compensates for the missing atlas
+    // multiplication instead of rendering the raw pastel tint.
+    expect(minimum).toBeGreaterThanOrEqual(
+      FLOW_FEST_CANOPY_SHELL_SHADE_FLOOR * 0.9
+    );
+    expect(maximum).toBeLessThanOrEqual(FLOW_FEST_CANOPY_SHELL_SHADE_CEILING);
+    expect(maximum).toBeGreaterThan(0.9);
+    const mean = sum / colors.count;
+    expect(mean).toBeGreaterThan(0.55);
+    expect(mean).toBeLessThan(0.9);
+    shell.dispose();
+  });
+});
+
+describe("Flow Fest per-tree instance tints", () => {
+  it("is deterministic per placement and part", () => {
+    const placement = { x: 128.375, z: -42.5 };
+    expect(deriveFlowFestTreeInstanceTint(placement, "foliage")).toEqual(
+      deriveFlowFestTreeInstanceTint(placement, "foliage")
+    );
+    expect(deriveFlowFestTreeInstanceTint(placement, "bark")).toEqual(
+      deriveFlowFestTreeInstanceTint(placement, "bark")
+    );
+  });
+
+  it("varies between trees so a family cannot render as one flat mass", () => {
+    const tints = [
+      deriveFlowFestTreeInstanceTint({ x: 10, z: 20 }, "foliage"),
+      deriveFlowFestTreeInstanceTint({ x: 11, z: 20 }, "foliage"),
+      deriveFlowFestTreeInstanceTint({ x: 10, z: 21 }, "foliage"),
+      deriveFlowFestTreeInstanceTint({ x: -55.25, z: 140 }, "foliage"),
+    ];
+    const distinct = new Set(tints.map((tint) => JSON.stringify(tint)));
+    expect(distinct.size).toBe(tints.length);
+  });
+
+  it("keeps the jitter inside a multiplicative band the grade can own", () => {
+    for (let index = 0; index < 200; index += 1) {
+      const placement = { x: index * 3.7 - 300, z: index * 5.1 - 500 };
+      const foliage = deriveFlowFestTreeInstanceTint(placement, "foliage");
+      for (const channel of [foliage.r, foliage.g, foliage.b]) {
+        expect(channel).toBeGreaterThan(0.6);
+        expect(channel).toBeLessThan(1.3);
+      }
+      const bark = deriveFlowFestTreeInstanceTint(placement, "bark");
+      // Bark jitters value only, so it never shifts the wood's hue.
+      expect(bark.r).toBe(bark.g);
+      expect(bark.g).toBe(bark.b);
+      expect(bark.r).toBeGreaterThan(0.8);
+      expect(bark.r).toBeLessThan(1.15);
+    }
+  });
+});
+
+describe("Flow Fest canopy shell atlas compensation", () => {
+  it("deepens toward green like the leaf atlas it stands in for", () => {
+    const { r, g, b } = FLOW_FEST_CANOPY_SHELL_ATLAS_COMPENSATION;
+    // Every channel darkens — a compensation ≥ 1 would brighten shells past
+    // the near tier's atlas-multiplied canopies and re-create the pale seam.
+    for (const channel of [r, g, b]) {
+      expect(channel).toBeGreaterThan(0);
+      expect(channel).toBeLessThan(1);
+    }
+    // Green survives strongest and blue weakest, so the multiply saturates
+    // toward foliage green instead of graying the tint toward teal or khaki.
+    expect(g).toBeGreaterThan(r);
+    expect(r).toBeGreaterThan(b);
   });
 });
