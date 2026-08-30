@@ -33,6 +33,9 @@
   import { motionDuration } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import type { ViewerSplitPaneProps } from "./viewer-split-pane-types";
+  import { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
+  import { createViewerTunnelStageState } from "../state/viewer-tunnel-stage-state.svelte";
+  import { setViewerTunnelStageContext } from "../context/viewer-tunnel-stage-context";
   import "./viewer-split-pane.css";
 
   let {
@@ -84,6 +87,16 @@
     tunnelComposition = null,
     tunnelSaveTarget = null,
   }: ViewerSplitPaneProps = $props();
+
+  // The tunnel's controls, renderer, and export path all steer this one
+  // controller. Keeping it above both pane surfaces lets the already-mounted 2D
+  // canvas adopt the tunnel without growing a second controller or render loop.
+  const tunnelController = new TunnelViewController({
+    getSequence: () => playback.animationState.sequenceData ?? sequence,
+    getComposition: () => tunnelComposition,
+  });
+  const tunnelStage = createViewerTunnelStageState(tunnelController);
+  setViewerTunnelStageContext(tunnelStage);
 
   // Both canvas renderers share one effects state. The orchestrator normally
   // provides it; standalone shell consumers receive the same local fallback.
@@ -275,6 +288,34 @@
   $effect(() => {
     if (needs3D) startSceneAssetPreload();
   });
+  const needsTunnel = $derived(
+    splitConfig.leftPane === "tunnel" || splitConfig.rightPane === "tunnel"
+  );
+  let tunnelReleaseTimer: ReturnType<typeof setTimeout> | undefined;
+  $effect(() => {
+    clearTimeout(tunnelReleaseTimer);
+    tunnelReleaseTimer = undefined;
+
+    if (needsTunnel) {
+      tunnelController.active = true;
+      return;
+    }
+
+    const releaseDelay = motionDuration(DURATION.emphasis);
+    if (releaseDelay === 0) {
+      tunnelController.active = false;
+      return;
+    }
+
+    // The shared canvas fades its tunnel layers away after the mode changes.
+    // Keep the controller's rendered layers alive for that final envelope so
+    // leaving Tunnel never collapses into an abrupt one-frame disappearance.
+    tunnelReleaseTimer = setTimeout(() => {
+      tunnelReleaseTimer = undefined;
+      tunnelController.active = false;
+    }, releaseDelay);
+  });
+  $effect(() => () => clearTimeout(tunnelReleaseTimer));
 </script>
 
 {#snippet animationPanel()}

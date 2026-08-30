@@ -27,6 +27,9 @@
   } from "../transition-geometry-trace";
 
   type ReplayCommand = TransitionTraceCommand;
+  type ReviewModeLabel =
+    "Side by Side" | "2D Animation" | "3D Animation" | "Card" | "Tunnel";
+  type ReviewMode = "split" | "animation" | "animation-3d" | "card" | "tunnel";
 
   interface ReplayMessage {
     source: "sequence-viewer-transition-review";
@@ -55,6 +58,8 @@
   let activeTrace: TransitionGeometryTrace | null = null;
   let traceStartedAt = 0;
   let tracePhase: TransitionTracePhase = "focus-2d";
+  let nextElementIdentity = 1;
+  const elementIdentities = new WeakMap<Element, number>();
 
   function report(
     status: "ready" | "running" | "complete" | "error",
@@ -186,11 +191,23 @@
     return Number.isFinite(value) ? value : 0;
   }
 
-  function selectedViewerMode(): "split" | "animation" | "card" | null {
+  function elementIdentity(selector: string): number {
+    const element = document.querySelector(selector);
+    if (!element) return 0;
+    const existing = elementIdentities.get(element);
+    if (existing) return existing;
+    const identity = nextElementIdentity++;
+    elementIdentities.set(element, identity);
+    return identity;
+  }
+
+  function selectedViewerMode(): ReviewMode | null {
     const labels = {
       "Side by Side": "split",
       "2D Animation": "animation",
+      "3D Animation": "animation-3d",
       Card: "card",
+      Tunnel: "tunnel",
     } as const;
     for (const button of document.querySelectorAll<HTMLButtonElement>(
       "button[aria-label]"
@@ -206,16 +223,16 @@
     return null;
   }
 
-  function expectedViewerMode(
-    label: "Side by Side" | "2D Animation" | "Card"
-  ): "split" | "animation" | "card" {
+  function expectedViewerMode(label: ReviewModeLabel): ReviewMode {
     if (label === "Side by Side") return "split";
     if (label === "2D Animation") return "animation";
+    if (label === "3D Animation") return "animation-3d";
+    if (label === "Tunnel") return "tunnel";
     return "card";
   }
 
   async function waitForModeCommit(
-    label: "Side by Side" | "2D Animation" | "Card",
+    label: ReviewModeLabel,
     version: number
   ): Promise<number> {
     const expected = expectedViewerMode(label);
@@ -227,6 +244,55 @@
       await wait(16);
     }
     return Math.round((performance.now() - startedAt) * 10) / 10;
+  }
+
+  async function waitForMotionPresentation(
+    surface: "2d" | "3d",
+    version: number
+  ): Promise<boolean> {
+    const startedAt = performance.now();
+    const selector = `[data-motion-surface="${surface}"][data-presented="true"]`;
+    while (
+      version === replayVersion &&
+      !document.querySelector<HTMLElement>(selector)
+    ) {
+      if (performance.now() - startedAt > 20_000) {
+        throw new Error(
+          `${surface.toUpperCase()} did not present a ready frame.`
+        );
+      }
+      await wait(16);
+    }
+    return version === replayVersion;
+  }
+
+  function tunnelSurface(): HTMLElement | null {
+    return document.querySelector<HTMLElement>(
+      '[data-persistent-animator][data-renderer-mode="tunnel"]'
+    );
+  }
+
+  function tunnelCanvas(): HTMLCanvasElement | null {
+    return document.querySelector<HTMLCanvasElement>(
+      '[data-persistent-animator] canvas[data-animation-layer="mandala"]'
+    );
+  }
+
+  async function waitForTunnelPresentation(version: number): Promise<boolean> {
+    const startedAt = performance.now();
+    while (version === replayVersion) {
+      const surface = tunnelSurface();
+      const canvas = tunnelCanvas();
+      const ready = canvas !== null && canvas.width > 0 && canvas.height > 0;
+      if (surface && ready && Number(surface.dataset.tunnelBlend) >= 0.95) {
+        return true;
+      }
+      if (performance.now() - startedAt > 20_000) {
+        throw new Error("Tunnel did not present a ready canvas.");
+      }
+      await wait(16);
+    }
+    return false;
   }
 
   function captureGeometrySample(): void {
@@ -257,6 +323,18 @@
     const mandalaDisplaySize = mandalaBounds
       ? Math.min(mandalaBounds.width, mandalaBounds.height)
       : 0;
+    const activeTunnelSurface = tunnelSurface();
+    const activeTunnelCanvas = tunnelCanvas();
+    const persistentAnimator = document.querySelector<HTMLElement>(
+      "[data-persistent-animator]"
+    );
+    const tunnelBlend = Number(persistentAnimator?.dataset.tunnelBlend) || 0;
+    const tunnelBounds = activeTunnelCanvas?.getBoundingClientRect();
+    const tunnelCanvasReady = Boolean(
+      activeTunnelCanvas &&
+      activeTunnelCanvas.width > 0 &&
+      activeTunnelCanvas.height > 0
+    );
     const sample: TransitionGeometrySample = {
       time: Math.round((performance.now() - traceStartedAt) * 10) / 10,
       phase: tracePhase,
@@ -325,6 +403,10 @@
         direction
       ),
       inspectorFlexGrow: elementFlexGrow('[data-panel-id="export-inspector"]'),
+      inspectorIdentity: elementIdentity('[data-panel-id="export-inspector"]'),
+      desktopInspectorExpected: Boolean(
+        document.querySelector(".viewer-and-export.desktop")
+      ),
       cardSettingsWidth: cardSettings.width,
       cardSettingsHeight: cardSettings.height,
       cardSettingsCenterY: cardSettings.top + cardSettings.height / 2,
@@ -334,6 +416,46 @@
       ),
       animationOpacity: elementOpacity(".split-column.animation-column"),
       cardOpacity: elementOpacity(".split-column.preview-column"),
+      motion2DOpacity: elementOpacity('[data-motion-surface="2d"]'),
+      motion3DOpacity: elementOpacity('[data-motion-surface="3d"]'),
+      motion2DPresented: elementDataFlag(
+        '[data-motion-surface="2d"]',
+        "presented"
+      ),
+      motion3DPresented: elementDataFlag(
+        '[data-motion-surface="3d"]',
+        "presented"
+      ),
+      motion3DReady: elementDataFlag(
+        '[data-motion-surface="3d"]',
+        "sceneReady"
+      ),
+      motion3DPreparing: Boolean(
+        document.querySelector(".viewer-3d-handoff-status")
+      ),
+      sceneCurtainVisible: Boolean(
+        document.querySelector(
+          '[data-motion-surface="3d"][data-presented="true"] .curtain'
+        )
+      ),
+      tunnelOpacity: tunnelBlend,
+      tunnelPresented: Boolean(activeTunnelSurface) || tunnelBlend > 0,
+      tunnelCanvasReady,
+      animatorIdentity: elementIdentity("[data-persistent-animator]"),
+      animatorCanvasCount: document.querySelectorAll(
+        '[data-persistent-animator] canvas[data-animation-layer="mandala"]'
+      ).length,
+      activeArtSettingsCount: document.querySelectorAll(
+        '[data-viewer-art-inspector-target] [data-active="true"][data-art-settings]'
+      ).length,
+      tunnelBackingWidth: activeTunnelCanvas
+        ? activeTunnelCanvas.width / Math.max(1, window.devicePixelRatio || 1)
+        : 0,
+      tunnelBackingHeight: activeTunnelCanvas
+        ? activeTunnelCanvas.height / Math.max(1, window.devicePixelRatio || 1)
+        : 0,
+      tunnelDisplayWidth: tunnelBounds?.width ?? 0,
+      tunnelDisplayHeight: tunnelBounds?.height ?? 0,
     };
     activeTrace.samples.push(sample);
     traceFrame = requestAnimationFrame(captureGeometrySample);
@@ -388,7 +510,7 @@
   }
 
   async function chooseMode(
-    label: "Side by Side" | "2D Animation" | "Card",
+    label: ReviewModeLabel,
     version: number,
     settle = true
   ): Promise<boolean> {
@@ -420,7 +542,11 @@
     report("running", command);
 
     try {
-      if (!(await chooseMode("Side by Side", version))) return;
+      if (command === "2d" || command === "card" || command === "interrupt") {
+        if (!(await chooseMode("Side by Side", version))) return;
+      } else if (!(await chooseMode("2D Animation", version))) {
+        return;
+      }
 
       if (command === "2d") {
         beginGeometryTrace(command, "focus-2d");
@@ -432,7 +558,7 @@
         if (!(await chooseMode("Card", version))) return;
         setTracePhase("return-split");
         if (!(await chooseMode("Side by Side", version))) return;
-      } else {
+      } else if (command === "interrupt") {
         beginGeometryTrace(command, "interrupt-2d");
         if (!(await chooseMode("2D Animation", version, false))) return;
         setTracePhase("interrupt-split");
@@ -441,6 +567,70 @@
         if (!(await chooseMode("Card", version, false))) return;
         setTracePhase("interrupt-return");
         if (!(await chooseMode("Side by Side", version))) return;
+      } else if (command === "3d-first") {
+        beginGeometryTrace(command, "prepare-3d");
+        if (!(await chooseMode("3D Animation", version, false))) return;
+        if (!(await waitForMotionPresentation("3d", version))) return;
+        setTracePhase("show-3d");
+        await wait(DURATION.emphasis + 90);
+        setTracePhase("return-2d");
+        if (!(await chooseMode("2D Animation", version))) return;
+      } else if (command === "3d-repeat") {
+        if (!(await chooseMode("3D Animation", version, false))) return;
+        if (!(await waitForMotionPresentation("3d", version))) return;
+        await wait(DURATION.emphasis + 90);
+        if (!(await chooseMode("2D Animation", version))) return;
+
+        beginGeometryTrace(command, "repeat-3d");
+        if (!(await chooseMode("3D Animation", version, false))) return;
+        if (!(await waitForMotionPresentation("3d", version))) return;
+        await wait(DURATION.emphasis + 90);
+        setTracePhase("return-2d");
+        if (!(await chooseMode("2D Animation", version))) return;
+      } else if (command === "3d-interrupt") {
+        beginGeometryTrace(command, "interrupt-3d");
+        if (!(await chooseMode("3D Animation", version, false))) return;
+        await wait(motionDuration(DURATION.instant));
+        setTracePhase("interrupt-2d-return");
+        if (!(await chooseMode("2D Animation", version, false))) return;
+        setTracePhase("interrupt-3d");
+        if (!(await chooseMode("3D Animation", version, false))) return;
+        await wait(motionDuration(DURATION.instant));
+        setTracePhase("interrupt-2d-return");
+        if (!(await chooseMode("2D Animation", version))) return;
+      } else if (command === "tunnel-first") {
+        beginGeometryTrace(command, "prepare-tunnel");
+        if (!(await chooseMode("Tunnel", version, false))) return;
+        if (!(await waitForTunnelPresentation(version))) return;
+        setTracePhase("show-tunnel");
+        await wait(motionDuration(DURATION.emphasis) + 90);
+        setTracePhase("return-stage");
+        if (!(await chooseMode("2D Animation", version))) return;
+      } else if (command === "tunnel-3d") {
+        if (!(await chooseMode("3D Animation", version, false))) return;
+        if (!(await waitForMotionPresentation("3d", version))) return;
+        await wait(motionDuration(DURATION.emphasis) + 90);
+
+        beginGeometryTrace(command, "prepare-tunnel-from-3d");
+        if (!(await chooseMode("Tunnel", version, false))) return;
+        if (!(await waitForTunnelPresentation(version))) return;
+        setTracePhase("show-tunnel");
+        await wait(motionDuration(DURATION.emphasis) + 90);
+        setTracePhase("return-3d");
+        if (!(await chooseMode("3D Animation", version, false))) return;
+        if (!(await waitForMotionPresentation("3d", version))) return;
+        await wait(motionDuration(DURATION.emphasis) + 90);
+      } else {
+        beginGeometryTrace(command, "interrupt-tunnel");
+        if (!(await chooseMode("Tunnel", version, false))) return;
+        await wait(motionDuration(DURATION.instant));
+        setTracePhase("interrupt-stage");
+        if (!(await chooseMode("2D Animation", version, false))) return;
+        setTracePhase("interrupt-tunnel");
+        if (!(await chooseMode("Tunnel", version, false))) return;
+        await wait(motionDuration(DURATION.instant));
+        setTracePhase("interrupt-stage");
+        if (!(await chooseMode("2D Animation", version))) return;
       }
 
       const elapsed = Math.round(performance.now() - startedAt);
@@ -469,7 +659,13 @@
       ((message.action === "replay" &&
         (message.command === "2d" ||
           message.command === "card" ||
-          message.command === "interrupt")) ||
+          message.command === "interrupt" ||
+          message.command === "3d-first" ||
+          message.command === "3d-repeat" ||
+          message.command === "3d-interrupt" ||
+          message.command === "tunnel-first" ||
+          message.command === "tunnel-3d" ||
+          message.command === "tunnel-interrupt")) ||
         (message.action === "motion" &&
           (message.preference === "full" || message.preference === "reduce")))
     );

@@ -49,6 +49,8 @@ function sample(
     cardAutoLayoutLockRows: 0,
     inspectorSize: 0,
     inspectorFlexGrow: 0,
+    inspectorIdentity: 0,
+    desktopInspectorExpected: true,
     cardSettingsWidth: 0,
     cardSettingsHeight: 0,
     cardSettingsCenterY: 0,
@@ -56,6 +58,23 @@ function sample(
     dissolveActive: false,
     animationOpacity,
     cardOpacity: 1,
+    motion2DOpacity: 1,
+    motion3DOpacity: 0,
+    motion2DPresented: true,
+    motion3DPresented: false,
+    motion3DReady: false,
+    motion3DPreparing: false,
+    sceneCurtainVisible: false,
+    tunnelOpacity: 0,
+    tunnelPresented: false,
+    tunnelCanvasReady: true,
+    animatorIdentity: 1,
+    animatorCanvasCount: 1,
+    activeArtSettingsCount: 0,
+    tunnelBackingWidth: 0,
+    tunnelBackingHeight: 0,
+    tunnelDisplayWidth: 0,
+    tunnelDisplayHeight: 0,
   };
 }
 
@@ -267,5 +286,247 @@ describe("Sequence Viewer geometry trace", () => {
     expect(summary.cardSettingsFocusHeight?.variation).toBe(180);
     expect(summary.cardSettingsFocusCenterY?.variation).toBe(80);
     expect(summary.cardSettingsReturnWidth).toBeNull();
+  });
+
+  it("flags a blank frame or an unready 3D surface in the motion handoff", () => {
+    const blank = {
+      ...sample(80, 450, 1),
+      phase: "prepare-3d" as const,
+      selectedMode: "animation-3d" as const,
+      motion2DOpacity: 0,
+      motion3DOpacity: 0,
+      motion2DPresented: false,
+      motion3DPresented: true,
+      motion3DReady: false,
+    };
+    const ready = {
+      ...blank,
+      time: 160,
+      phase: "show-3d" as const,
+      motion3DOpacity: 1,
+      motion3DReady: true,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "3d-first",
+      duration: 200,
+      samples: [sample(0, 450, 1), blank, ready],
+      modeCommits: [],
+    });
+
+    expect(summary.motionBlankFrames).toBe(1);
+    expect(summary.motionUnready3DFrames).toBe(1);
+    expect(summary.motionHandoffLatency).toBe(80);
+  });
+
+  it("accepts a first 3D reveal that stays behind 2D until ready", () => {
+    const preparing = {
+      ...sample(40, 450, 1),
+      phase: "prepare-3d" as const,
+      selectedMode: "animation-3d" as const,
+      motion3DPreparing: true,
+    };
+    const reveal = {
+      ...preparing,
+      time: 180,
+      phase: "show-3d" as const,
+      motion2DOpacity: 0.7,
+      motion3DOpacity: 0.3,
+      motion2DPresented: false,
+      motion3DPresented: true,
+      motion3DReady: true,
+      motion3DPreparing: false,
+    };
+    const settled = {
+      ...reveal,
+      time: 260,
+      motion2DOpacity: 0,
+      motion3DOpacity: 1,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "3d-first",
+      duration: 260,
+      samples: [sample(0, 450, 1), preparing, reveal, settled],
+      modeCommits: [],
+    });
+
+    expect(summary.motionBlankFrames).toBe(0);
+    expect(summary.motionUnready3DFrames).toBe(0);
+    expect(summary.motionCurtainFrames).toBe(0);
+    expect(summary.motionCrossfadeFrames).toBe(1);
+    expect(summary.motionPreparationFrames).toBe(1);
+    expect(summary.motionSurfacePath).toEqual(["2D", "3D"]);
+    expect(summary.motionHandoffLatency).toBe(140);
+  });
+
+  it("flags a 2D backing-store rebuild after the returning surface is opaque", () => {
+    const returning = {
+      ...sample(200, 940, 1),
+      phase: "return-2d" as const,
+      selectedMode: "animation" as const,
+      motion2DPresented: true,
+      motion2DOpacity: 1,
+      mandalaBackingSize: 963,
+    };
+    const lateResize = {
+      ...returning,
+      time: 280,
+      mandalaBackingSize: 940,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "3d-repeat",
+      duration: 280,
+      samples: [returning, lateResize],
+      modeCommits: [],
+    });
+
+    expect(summary.motionLate2DBackingChanges).toBe(1);
+  });
+
+  it("flags a Tunnel that becomes visible before its canvas is ready", () => {
+    const unready = {
+      ...sample(80, 900, 1),
+      phase: "prepare-tunnel" as const,
+      selectedMode: "tunnel" as const,
+      tunnelOpacity: 0.25,
+      tunnelPresented: true,
+      tunnelCanvasReady: false,
+    };
+    const ready = {
+      ...unready,
+      time: 180,
+      phase: "show-tunnel" as const,
+      tunnelOpacity: 1,
+      tunnelCanvasReady: true,
+      tunnelBackingWidth: 900,
+      tunnelBackingHeight: 900,
+      tunnelDisplayWidth: 900,
+      tunnelDisplayHeight: 900,
+    };
+    const hiddenAfterReturn = {
+      ...ready,
+      time: 280,
+      selectedMode: "animation" as const,
+      tunnelOpacity: 0,
+      tunnelPresented: false,
+      tunnelDisplayWidth: 200,
+      tunnelDisplayHeight: 200,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "tunnel-first",
+      duration: 280,
+      samples: [sample(0, 900, 1), unready, ready, hiddenAfterReturn],
+      modeCommits: [],
+    });
+
+    expect(summary.tunnelUnreadyFrames).toBe(1);
+    expect(summary.tunnelCrossfadeFrames).toBe(1);
+    expect(summary.tunnelDoubleFadeFrames).toBe(0);
+    expect(summary.tunnelBlankFrames).toBe(0);
+    expect(summary.tunnelSurfacePath).toEqual([
+      "2D base",
+      "2D base + Tunnel layers",
+      "Tunnel",
+      "2D base",
+    ]);
+    expect(summary.tunnelHandoffLatency).toBe(100);
+    expect(summary.tunnelDisplaySize).toEqual({
+      start: 900,
+      end: 900,
+      minimum: 900,
+      maximum: 900,
+      variation: 0,
+    });
+  });
+
+  it("flags a Tunnel backing-store change after the overlay is opaque", () => {
+    const settled = {
+      ...sample(180, 900, 1),
+      phase: "show-tunnel" as const,
+      selectedMode: "tunnel" as const,
+      tunnelOpacity: 1,
+      tunnelPresented: true,
+      tunnelCanvasReady: true,
+      tunnelBackingWidth: 940,
+      tunnelBackingHeight: 940,
+      tunnelDisplayWidth: 940,
+      tunnelDisplayHeight: 940,
+    };
+    const lateResize = {
+      ...settled,
+      time: 240,
+      tunnelBackingWidth: 900,
+      tunnelBackingHeight: 900,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "tunnel-first",
+      duration: 280,
+      samples: [settled, lateResize],
+      modeCommits: [],
+    });
+
+    expect(summary.tunnelLateBackingChanges).toBe(1);
+  });
+
+  it("retains the persistent 2D base during a 3D-to-Tunnel handoff", () => {
+    const doubleFade = {
+      ...sample(80, 900, 1),
+      phase: "prepare-tunnel-from-3d" as const,
+      selectedMode: "tunnel" as const,
+      motion2DOpacity: 0,
+      motion3DOpacity: 0.6,
+      tunnelOpacity: 0.4,
+      tunnelPresented: true,
+      tunnelCanvasReady: true,
+    };
+    const blank = {
+      ...doubleFade,
+      time: 160,
+      motion3DOpacity: 0,
+      tunnelOpacity: 0,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "tunnel-3d",
+      duration: 200,
+      samples: [sample(0, 900, 1), doubleFade, blank],
+      modeCommits: [],
+    });
+
+    expect(summary.tunnelDoubleFadeFrames).toBe(1);
+    expect(summary.tunnelBlankFrames).toBe(0);
+    expect(summary.tunnelSurfacePath).toEqual([
+      "2D base",
+      "2D base + Tunnel layers",
+      "2D base",
+    ]);
+  });
+
+  it("flags remounted inspector and Animator identities", () => {
+    const first = {
+      ...sample(0, 900, 1),
+      inspectorIdentity: 4,
+      animatorIdentity: 7,
+    };
+    const remounted = {
+      ...first,
+      time: 160,
+      inspectorIdentity: 5,
+      animatorIdentity: 8,
+    };
+
+    const summary = summarizeTransitionGeometry({
+      command: "tunnel-first",
+      duration: 160,
+      samples: [first, remounted],
+      modeCommits: [],
+    });
+
+    expect(summary.tunnelInspectorIdentityChanges).toBe(1);
+    expect(summary.tunnelAnimatorIdentityChanges).toBe(1);
   });
 });

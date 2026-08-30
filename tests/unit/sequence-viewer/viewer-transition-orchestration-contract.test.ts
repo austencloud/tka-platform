@@ -28,6 +28,18 @@ const reviewPage = read(
 const reviewFrame = read(
   "src/routes/test/sequence-viewer-transitions/_components/SequenceViewerTransitionReviewFrame.svelte"
 );
+const geometryTrace = read(
+  "src/routes/test/sequence-viewer-transitions/_components/TransitionGeometryTrace.svelte"
+);
+const motionSurface = read(
+  "src/lib/shared/sequence-viewer/components/ViewerMotionSurface.svelte"
+);
+const companionSurface = read(
+  "src/lib/shared/sequence-viewer/components/ViewerCompanionSurface.svelte"
+);
+const artPane = read(
+  "src/lib/shared/sequence-viewer/components/ArtPane.svelte"
+);
 
 describe("Sequence Viewer transition orchestration contract", () => {
   it("routes split geometry through the canonical PanelGroup owner", () => {
@@ -116,7 +128,7 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(reviewFrame).toContain('button.classList.contains("active")');
     expect(reviewPage).toContain("onchange={setViewport}");
     expect(reviewPage).toContain(
-      "{#key `${selectedViewport.id}-${review.activeGateId}`}"
+      "{#key `${selectedViewport.id}-${review.activeGateId}-${frameVersion}`}"
     );
     expect(reviewPage).toContain("height: 100dvh;");
     expect(reviewPage).toContain("overflow-y: auto;");
@@ -135,5 +147,99 @@ describe("Sequence Viewer transition orchestration contract", () => {
     expect(viewTransitions).toContain("sequence-viewer-dissolve-out");
     expect(viewTransitions).toContain("sequence-viewer-dissolve-in");
     expect(reviewPage).toContain("Reduced motion · dissolve");
+  });
+
+  it("holds the live 2D frame until the first 3D frame is ready", () => {
+    expect(motionSurface).toContain("const is3DPresented = $derived(");
+    expect(motionSurface).toContain(
+      "(is3DActive && (scene3DReady || !is2DMounted)) ||"
+    );
+    expect(motionSurface).toContain(
+      "(is3DActive && is2DMounted && !scene3DReady)"
+    );
+    expect(motionSurface).toContain(
+      'side === "left" && is2DMounted ? "streaming" : "gated"'
+    );
+    expect(motionSurface).toContain("Preparing 3D");
+    expect(motionSurface).toContain("data-scene-ready={scene3DReady}");
+    expect(motionSurface).toContain("inert={!is3DActive}");
+    expect(motionSurface).toContain("inert={!isAnimatorActive}");
+    expect(motionSurface).toContain(
+      "const duration = motionDuration(DURATION.emphasis);"
+    );
+    expect(splitPaneCss).toContain("opacity var(--transition-emphasis)");
+    expect(viewerModeDissolve).toContain(
+      'previousMode === "animation" && nextMode === "animation-3d"'
+    );
+    expect(reviewFrame).toContain('message.command === "3d-first"');
+    expect(reviewPage).toContain("Replay first 3D");
+    expect(reviewPage).toContain("Replay repeat switch");
+    expect(reviewPage).toContain(
+      'import { fits3DViewport } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte"'
+    );
+    expect(reviewPage).toContain("!activeGateCanReplay");
+    expect(reviewPage).toContain(
+      "3D is intentionally withheld at this viewport."
+    );
+  });
+
+  it("keeps reduced 2D and 3D motion to a canonical opacity-only handoff", () => {
+    expect(splitPaneCss).toContain(
+      ".media-pane.persistent-3d[data-motion-surface]"
+    );
+    expect(splitPaneCss).toContain(
+      ".media-pane.persistent-2d[data-motion-surface]"
+    );
+    expect(splitPaneCss).toContain(
+      "transition-property: opacity, visibility !important;"
+    );
+    expect(splitPaneCss).toContain(
+      "transition-duration: var(--duration-normal), 0s !important;"
+    );
+    expect(splitPaneCss).toContain(
+      "transition-delay: 0s, var(--duration-normal) !important;"
+    );
+  });
+
+  it("keeps one inspector shell while 2D and Tunnel controls trade places", () => {
+    expect(shell).toContain("createViewerInspectorHostState()");
+    expect(shell).toContain("setViewerInspectorHostContext(inspectorHost)");
+    expect(shell).toContain("layout.isWorkspaceInspectorActive");
+    expect(shell).toContain("data-viewer-art-inspector-target");
+    expect(artPane).toContain(
+      "use:reparentToInspector={externalInspectorTarget}"
+    );
+    expect(artPane).toContain("data-art-settings={artType}");
+    expect(artPane).toContain("data-active={presented}");
+  });
+
+  it("morphs the persistent Animator canvas into Tunnel without a canvas swap", () => {
+    expect(companionSurface).toContain('data-companion-surface="tunnel"');
+    expect(companionSurface).toContain("sharedTunnelCanvas");
+    expect(companionSurface).toContain("controller={tunnelStage.controller}");
+    expect(motionSurface).toContain("data-persistent-animator");
+    expect(motionSurface).toContain("data-tunnel-blend");
+    expect(motionSurface).toContain("additionalLayers={tunnelLayers}");
+    expect(motionSurface.match(/<AnimatorCanvas/g)).toHaveLength(1);
+    expect(motionSurface).toContain(
+      "resolveTunnelLayerOpacity(\n        tunnelReveal.current"
+    );
+    expect(viewerModeDissolve).toContain(
+      'GATE_THREE_STAGE_MODES.has(previousMode) && nextMode === "tunnel"'
+    );
+    expect(reviewFrame).toContain('message.command === "tunnel-first"');
+    expect(reviewPage).toContain("Replay first Tunnel");
+    expect(reviewPage).toContain("Replay from 3D");
+  });
+
+  it("instruments singleton identity instead of inferring continuity from opacity", () => {
+    expect(reviewFrame).toContain("const elementIdentities = new WeakMap");
+    expect(reviewFrame).toContain(
+      'animatorIdentity: elementIdentity("[data-persistent-animator]")'
+    );
+    expect(reviewFrame).toContain("activeArtSettingsCount:");
+    expect(geometryTrace).toContain("Animator remounts:");
+    expect(geometryTrace).toContain("Inspector remounts:");
+    expect(geometryTrace).toContain("Non-singleton canvas frames:");
   });
 });

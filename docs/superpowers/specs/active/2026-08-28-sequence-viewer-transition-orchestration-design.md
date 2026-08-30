@@ -253,16 +253,161 @@ normal transition, rapid interruption, and reduced motion.
   warnings. The production build currently stops on the unrelated existing
   `@austencloud/scene-3d` package export mismatch for `propFinishState`.
 
+## Gate 2 contract
+
+2D ⇄ 3D uses the existing mounted layers in `ViewerMotionSurface`. A first 3D
+request mounts and prepares the scene behind the still-live 2D canvas. The 3D
+layer becomes presentable only after its ready event, then the two surfaces
+crossfade on the shared emphasis clock. Later switches use the same path with an
+already-ready scene. No keyed remount or second surface-switching abstraction is
+introduced.
+
+Reduced motion keeps the stage geometry fixed. The two overlapping motion
+surfaces retain only the canonical opacity handoff, while the outer workspace
+uses the existing reduced-motion View Transition dissolve. Compact viewports
+that fail the production 3D shortest-side gate remain layout-only review sizes.
+
+Acceptance requires:
+
+1. The live 2D frame remains visible for the entire first 3D preparation.
+2. The first visible 3D frame is ready and never exposes its loading curtain.
+3. Warm 2D ⇄ 3D round trips use the same opacity clock in both directions.
+4. Rapid reversals expose neither a blank stage nor an unready 3D surface.
+5. Reduced motion has no spatial interpolation and retains a short opacity-only
+   handoff.
+6. Every viewport passes overflow and responsive-axis checks; transition replay
+   runs only where the canonical production 3D gate passes.
+
+### Gate 2 evidence · 2026-08-30
+
+- The cold 1440×900 full-motion replay kept 2D visible for 82 sampled preparation
+  frames, then crossed through five sampled opacity frames. It reported zero
+  blank frames, zero unready 3D frames, zero visible loading-curtain frames, and
+  the expected `2D → 3D → 2D` surface path.
+- The warm 1440×900 replay reported seven crossfade frames and the same zero-
+  defect counts. The rapid reversal trace traveled
+  `2D → 3D → 2D → 3D → 2D` through 14 crossfade frames without exposing a blank
+  or unready stage.
+- The global reduced-motion rule initially collapsed the inner surface opacity
+  change to `0.01 ms`; instrumentation caught the resulting snap even though the
+  outer workspace dissolve was present. The two canonical mounted motion layers
+  now retain only `opacity` and delayed `visibility` on `--duration-normal`.
+- A cold 1440×900 reduced-motion replay held 2D for 48 sampled preparation
+  frames, used seven crossfade frames and 25 outer dissolve frames, and reported
+  zero blank, unready, or loading-curtain frames. The warm replay used eight
+  inner crossfade frames and 30 dissolve frames.
+- Tablet 820×1180 passed in its vertical panel composition with nine full-motion
+  crossfade frames and 13 reduced-motion crossfade frames. Native 3840×2160
+  passed in its horizontal composition with four full-motion and seven reduced-
+  motion crossfade frames. Both reported zero blank, unready, and loading-
+  curtain frames.
+- The complete 375×667 through 3840×2160 sweep reported no viewport overflow.
+  The 375×667 and 960×412 sizes correctly withhold 3D under the shared
+  `fits3DViewport()` predicate; the review surface disables impossible replays
+  and labels those sizes as responsive-layout checks.
+- Austen's visual pass then caught a one-frame mandala twitch after the returning
+  2D surface appeared settled. The 1920×1080 trace reproduced the hidden 2D
+  stage expanding from `940 px` to `1740 px`, rebuilding its mandala backing at
+  the hidden geometry, then rebuilding again `79 ms` after the pane was fully
+  opaque and back at `940 px`.
+- The existing mounted motion layers are now true `inert` boundaries while
+  hidden, so `CanvasResizer` retains the last readable backing store through the
+  temporary 3D allocation and resumes only after the shared settle clock. The
+  layer opacity and width lease now share `DURATION.emphasis`; no new crossfade
+  or resize owner was introduced.
+- The polished 1920×1080 replay records 11 full-motion crossfade frames and six
+  reduced-motion crossfade frames with zero late 2D backing changes. Rapid
+  reversal records nine overlap frames and the full
+  `2D → 3D → 2D → 3D → 2D` path with the same zero count. Tablet records 13/7
+  full/reduced overlap frames and 4K records 12/13, all without blank, unready,
+  loading-curtain, overflow, or late-backing frames.
+- Fifty-six focused tests pass, `svelte-check` reports zero errors and zero
+  warnings, `git diff --check` is clean, and the in-app browser console reports
+  no warnings or errors.
+- Austen approved the final 1920×1080 full-motion handoff and measured trace at
+  16:27 CDT on 2026-08-30, with no remaining visual notes. Gate 2 is complete.
+
+## Gate 3 contract
+
+2D and Tunnel are two presentations of one shell-owned `AnimatorCanvas`, not
+two canvases that crossfade. `ViewerSplitPane` owns the shared
+`TunnelViewController`; `ViewerMotionSurface` feeds that controller's performers,
+effects, spectrum, grid, and save actions into the already-mounted Animator.
+Entering Tunnel blooms the additional performer layers over the live 2D base.
+Exiting reverses the same envelope. The playback clock, backing store, base prop
+state, and canvas DOM identity never change.
+
+The outer `PanelGroup` inspector also remains mounted on desktop. The existing
+Animation settings and `ArtSettingsPanel` stay alive in stacked content layers;
+the art settings node is reparented into the shell-owned inspector slot without
+remounting. Their opacity changes while the inspector's width and DOM identity
+stay fixed. Compact layouts retain the production bottom-dock composition, so
+desktop inspector identity is not treated as a mobile invariant.
+
+3D remains a genuinely different renderer and therefore keeps the canonical
+ready-frame surface crossfade. Its destination is a fully composed Tunnel:
+Tunnel layers snap to their completed internal state before the 3D crossfade,
+then reset only after the outgoing canvas is hidden. This prevents the old
+double fade where 3D opacity and Tunnel-layer opacity moved at the same time.
+Reduced motion snaps the internal layer envelope and lets the existing
+opacity-only workspace View Transition provide the accessible dissolve.
+
+Acceptance requires:
+
+1. 2D ⇄ Tunnel retains one Animator DOM identity, one backing store, and one
+   playback clock for the complete round trip.
+2. Desktop 2D ⇄ Tunnel retains one outer inspector identity and never exposes
+   duplicate active settings content.
+3. Full-motion 2D entry, exit, and interruption use the canonical emphasis
+   clock and a staggered per-layer opacity envelope.
+4. 3D ⇄ Tunnel has one surface-opacity owner; its fully composed Tunnel
+   destination never double-fades, blanks, or appears unready.
+5. Reduced motion uses the existing opacity-only workspace dissolve, with no
+   internal spatial animation or delayed state swap.
+6. Every required viewport passes overflow, responsive-axis, canvas singleton,
+   readiness, and late-backing checks. The 3D replay remains disabled where the
+   production viewport gate does not pass.
+
+### Gate 3 evidence · 2026-08-30
+
+- The architecture gate now assigns stable DOM identities to the persistent
+  Animator and desktop inspector on every sampled frame. It also counts live
+  Animator canvases and active settings panels, so a remount or duplicate can no
+  longer hide behind a visually plausible fade.
+- The fresh 1440×900 2D round trip records 12 layer-bloom frames, a fixed
+  `700 px` stage and canvas, and the expected
+  `2D base → 2D base + Tunnel layers → Tunnel → … → 2D base` path. It reports
+  zero Animator remounts, inspector remounts, non-singleton canvases, duplicate
+  settings, blank frames, unready frames, double fades, and late backing changes.
+- The rapid-reversal trace records 23 reversible layer-bloom frames through
+  `animation → tunnel → animation → tunnel → animation`, with the same zero
+  defect counts and zero-millisecond mode commits.
+- Reduced motion records zero internal bloom frames and 18 workspace-dissolve
+  frames. The Animator and inspector identities remain stable, and the surface
+  path collapses cleanly to `2D base → Tunnel → 2D base`.
+- The first shared-renderer 3D replay exposed six double-fade frames because the
+  3D surface and the Tunnel layers were both changing opacity. The corrected
+  handoff precomposes Tunnel before the surface crossfade and holds it intact on
+  exit. Its rerun reports zero bloom, double-fade, blank, unready, remount,
+  duplicate, and late-backing frames, with a zero-millisecond ready handoff.
+- The 375×667 mobile replay uses its intentional vertical/bottom-dock
+  composition and reports a fixed `375 px` Tunnel display, zero overflow, and
+  zero canvas/remount/readiness defects. Native 3840×2160 reports a fixed
+  `2660 px` stage and `2107 px` Tunnel display with the same zero counts.
+- Forty-seven focused tests pass, `svelte-check` reports zero errors and zero
+  warnings, `git diff --check` is clean, and the final in-app-browser run emits
+  no console warning or error. Gate 3 is ready for Austen's visual review.
+
 ## Approval ledger
 
-| Gate                           | Status   | Approved by | Approved at          | Notes                                                              |
-| ------------------------------ | -------- | ----------- | -------------------- | ------------------------------------------------------------------ |
-| 1. Side by Side ⇄ 2D / Card    | Approved | Austen      | 2026-08-29 09:57 CDT | Approved after full/reduced, mobile-to-4K, and transformed-cell QA |
-| 2. 2D ⇄ 3D                     | Pending  |             |                      |                                                                    |
-| 3. 2D / 3D ⇄ Tunnel            | Pending  |             |                      |                                                                    |
-| 4. Card ⇄ left-side modes      | Pending  |             |                      |                                                                    |
-| 5. Viewer stage ⇄ Performances | Pending  |             |                      |                                                                    |
-| 6. Viewer stage ⇄ Post Studio  | Pending  |             |                      |                                                                    |
-| 7. Export inspector            | Pending  |             |                      |                                                                    |
-| 8. Practice                    | Pending  |             |                      |                                                                    |
-| 9. Mode switchers              | Pending  |             |                      |                                                                    |
+| Gate                           | Status           | Approved by | Approved at          | Notes                                                              |
+| ------------------------------ | ---------------- | ----------- | -------------------- | ------------------------------------------------------------------ |
+| 1. Side by Side ⇄ 2D / Card    | Approved         | Austen      | 2026-08-29 09:57 CDT | Approved after full/reduced, mobile-to-4K, and transformed-cell QA |
+| 2. 2D ⇄ 3D                     | Approved         | Austen      | 2026-08-30 16:27 CDT | Approved after shared-clock crossfade and canvas-settle QA         |
+| 3. 2D / 3D ⇄ Tunnel            | Ready for review |             |                      | Single-owner fade; 3D, reversal, reduced, mobile-to-4K green       |
+| 4. Card ⇄ left-side modes      | Pending          |             |                      |                                                                    |
+| 5. Viewer stage ⇄ Performances | Pending          |             |                      |                                                                    |
+| 6. Viewer stage ⇄ Post Studio  | Pending          |             |                      |                                                                    |
+| 7. Export inspector            | Pending          |             |                      |                                                                    |
+| 8. Practice                    | Pending          |             |                      |                                                                    |
+| 9. Mode switchers              | Pending          |             |                      |                                                                    |

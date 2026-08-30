@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  TRANSITION_REVIEW_GATES,
   createEmptyTransitionReviewDecisions,
   parseTransitionReviewDecisions,
 } from "../../../src/routes/test/sequence-viewer-transitions/transition-review-gates";
@@ -14,6 +15,14 @@ describe("transition review decisions", () => {
       note: "",
       reviewedAt: null,
     });
+  });
+
+  it("opens the completed and current transition gates for review", () => {
+    const readyGateIds = TRANSITION_REVIEW_GATES.filter(
+      (gate) => gate.availability === "ready"
+    ).map((gate) => gate.id);
+
+    expect(readyGateIds).toEqual(["split-focus", "2d-3d", "stage-tunnel"]);
   });
 
   it("restores valid decisions and ignores unknown gates", () => {

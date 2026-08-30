@@ -30,15 +30,15 @@ export const TRANSITION_REVIEW_GATES = [
     summary:
       "Repeat switches and the first 3D activation share one clean handoff.",
     fromGrade: "B+ / C",
-    availability: "pending",
+    availability: "ready",
   },
   {
     id: "stage-tunnel",
     title: "2D / 3D ⇄ Tunnel",
     summary:
-      "The stage becomes the tunnel without remount flashes or a seam jump.",
+      "One Animator canvas gains Tunnel layers while one inspector swaps its controls.",
     fromGrade: "B",
-    availability: "pending",
+    availability: "ready",
   },
   {
     id: "card-stage",

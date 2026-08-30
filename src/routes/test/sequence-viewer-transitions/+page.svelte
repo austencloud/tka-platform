@@ -2,6 +2,7 @@
   import { page } from "$app/state";
   import { onMount } from "svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import { fits3DViewport } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import SequenceViewerTransitionReviewFrame from "./_components/SequenceViewerTransitionReviewFrame.svelte";
   import TransitionGeometryTrace from "./_components/TransitionGeometryTrace.svelte";
@@ -10,9 +11,12 @@
     type TransitionReviewGateId,
   } from "./transition-review-gates";
   import { createTransitionReviewState } from "./transition-review-state.svelte";
-  import type { TransitionGeometryTrace } from "./transition-geometry-trace";
+  import type {
+    TransitionGeometryTrace,
+    TransitionTraceCommand,
+  } from "./transition-geometry-trace";
 
-  type ReplayCommand = "2d" | "card" | "interrupt";
+  type ReplayCommand = TransitionTraceCommand;
   type ReplayStatus = "loading" | "ready" | "running" | "complete" | "error";
 
   interface FrameMetrics {
@@ -70,7 +74,81 @@
   const selectedViewport = $derived(
     VIEWPORTS.find((viewport) => viewport.id === viewportId) ?? VIEWPORTS[3]
   );
+  const selectedViewportFits3D = $derived(
+    fits3DViewport(selectedViewport.width, selectedViewport.height)
+  );
+  const activeGateCanReplay = $derived(
+    review.activeGateId !== "2d-3d" || selectedViewportFits3D
+  );
   const activeDecision = $derived(review.activeDecision);
+  const activeGateNumber = $derived(
+    Math.max(
+      1,
+      TRANSITION_REVIEW_GATES.findIndex(
+        (gate) => gate.id === review.activeGateId
+      ) + 1
+    )
+  );
+  const readyGateCount = $derived(
+    TRANSITION_REVIEW_GATES.filter((gate) => gate.availability === "ready")
+      .length
+  );
+  const acceptanceItems = $derived(
+    review.activeGateId === "2d-3d"
+      ? [
+          "the live 2D frame remains visible until 3D is ready",
+          "the first ready 3D frame arrives without its loading curtain",
+          "repeat switches crossfade on the same clock in both directions",
+          "rapid reversals never expose a blank or unready stage",
+        ]
+      : review.activeGateId === "stage-tunnel"
+        ? [
+            "2D and Tunnel retain the same Animator canvas and backing store",
+            "Tunnel performers and effects bloom into the live 2D base without a surface crossfade",
+            "the outer inspector stays mounted while its 2D and Tunnel controls trade places",
+            "3D, rapid reversals, and reduced motion retain a ready continuous stage",
+          ]
+        : [
+            "one continuous edge traveling across the workspace",
+            "no canvas or card remount flash",
+            "clean reversals during interrupted motion",
+            "an opacity-only dissolve with reduced motion",
+          ]
+  );
+  const replayOptions = $derived<
+    Array<{
+      command: ReplayCommand;
+      label: string;
+      primary?: boolean;
+      requires3D?: boolean;
+    }>
+  >(
+    review.activeGateId === "2d-3d"
+      ? [
+          { command: "3d-first", label: "Replay first 3D" },
+          { command: "3d-repeat", label: "Replay repeat switch" },
+          { command: "3d-interrupt", label: "Stress reversal", primary: true },
+        ]
+      : review.activeGateId === "stage-tunnel"
+        ? [
+            { command: "tunnel-first", label: "Replay first Tunnel" },
+            {
+              command: "tunnel-3d",
+              label: "Replay from 3D",
+              requires3D: true,
+            },
+            {
+              command: "tunnel-interrupt",
+              label: "Stress reversal",
+              primary: true,
+            },
+          ]
+        : [
+            { command: "2d", label: "Replay 2D" },
+            { command: "card", label: "Replay Card" },
+            { command: "interrupt", label: "Stress reversal", primary: true },
+          ]
+  );
   const frameSource = $derived(
     `/test/sequence-viewer-transitions?frame=1&gate=${review.activeGateId}`
   );
@@ -82,6 +160,8 @@
   let lastTrace = $state<TransitionGeometryTrace | null>(null);
   let replayStatus = $state<ReplayStatus>("loading");
   let replayDetail = $state("Loading the production viewer…");
+  let frameVersion = $state(0);
+  let pendingReplay = $state<ReplayCommand | null>(null);
 
   function statusLabel(gateId: TransitionReviewGateId): string {
     const gate = TRANSITION_REVIEW_GATES.find(
@@ -103,14 +183,23 @@
     }).format(new Date(value));
   }
 
-  function replay(command: ReplayCommand): void {
+  function postReplay(command: ReplayCommand): void {
     if (!frameElement?.contentWindow || replayStatus === "loading") return;
-    lastTrace = null;
     replayStatus = "running";
     replayDetail =
-      command === "interrupt"
+      command === "interrupt" ||
+      command === "3d-interrupt" ||
+      command === "tunnel-interrupt"
         ? "Reversing the workspace before each prior move settles…"
-        : `Replaying the ${command === "2d" ? "2D" : "Card"} round trip…`;
+        : command === "3d-first"
+          ? "Loading 3D behind the live 2D frame, then returning…"
+          : command === "3d-repeat"
+            ? "Replaying the warmed 2D and 3D round trip…"
+            : command === "tunnel-first"
+              ? "Preparing the first Tunnel behind the live 2D stage, then returning…"
+              : command === "tunnel-3d"
+                ? "Moving from the ready 3D stage into Tunnel and back…"
+                : `Replaying the ${command === "2d" ? "2D" : "Card"} round trip…`;
     frameElement.contentWindow.postMessage(
       {
         source: "sequence-viewer-transition-review",
@@ -119,6 +208,31 @@
       },
       window.location.origin
     );
+  }
+
+  function replay(command: ReplayCommand): void {
+    if (replayStatus === "loading" || replayStatus === "running") return;
+    lastTrace = null;
+    if (command === "3d-first" || command === "tunnel-first") {
+      pendingReplay = command;
+      replayStatus = "loading";
+      replayDetail =
+        command === "3d-first"
+          ? "Reloading a fresh production viewer for first 3D…"
+          : "Reloading a fresh production viewer for first Tunnel…";
+      frameVersion += 1;
+      return;
+    }
+    postReplay(command);
+  }
+
+  function selectGate(gateId: TransitionReviewGateId): void {
+    review.selectGate(gateId);
+    frameMetrics = null;
+    lastTrace = null;
+    pendingReplay = null;
+    replayStatus = "loading";
+    replayDetail = "Loading the production viewer for this gate…";
   }
 
   function sendMotionPreference(): void {
@@ -138,7 +252,9 @@
   }
 
   function setViewport(value: string): void {
-    viewportId = value as (typeof VIEWPORTS)[number]["id"];
+    const nextViewportId = value as (typeof VIEWPORTS)[number]["id"];
+    if (nextViewportId === viewportId) return;
+    viewportId = nextViewportId;
     frameMetrics = null;
     lastTrace = null;
     replayStatus = "loading";
@@ -175,7 +291,13 @@
           trace &&
           (trace.command === "2d" ||
             trace.command === "card" ||
-            trace.command === "interrupt") &&
+            trace.command === "interrupt" ||
+            trace.command === "3d-first" ||
+            trace.command === "3d-repeat" ||
+            trace.command === "3d-interrupt" ||
+            trace.command === "tunnel-first" ||
+            trace.command === "tunnel-3d" ||
+            trace.command === "tunnel-interrupt") &&
           typeof trace.duration === "number" &&
           Array.isArray(trace.samples)
         ) {
@@ -211,7 +333,12 @@
       }
 
       replayStatus = message.status;
-      if (message.status === "ready") sendMotionPreference();
+      if (message.status === "ready") {
+        sendMotionPreference();
+        const command = pendingReplay;
+        pendingReplay = null;
+        if (command) queueMicrotask(() => postReplay(command));
+      }
       replayDetail =
         typeof message.detail === "string"
           ? message.detail
@@ -257,7 +384,8 @@
       <aside class="gate-rail">
         <header>
           <strong>Transition map</strong>
-          <span>1 of {TRANSITION_REVIEW_GATES.length} ready</span>
+          <span>{readyGateCount} of {TRANSITION_REVIEW_GATES.length} ready</span
+          >
         </header>
         <nav aria-label="Sequence Viewer transition gates">
           {#each TRANSITION_REVIEW_GATES as gate, index}
@@ -267,7 +395,7 @@
               class:active={gate.id === review.activeGateId}
               class:pending={gate.availability === "pending"}
               disabled={gate.availability === "pending"}
-              onclick={() => review.selectGate(gate.id)}
+              onclick={() => selectGate(gate.id)}
             >
               <span class="gate-number">{index + 1}</span>
               <span class="gate-copy">
@@ -287,7 +415,10 @@
       <section class="review-workspace" aria-labelledby="active-gate-title">
         <header class="workspace-header">
           <div>
-            <span>Gate 1 · Current grade {review.activeGate.fromGrade}</span>
+            <span
+              >Gate {activeGateNumber} · Current grade {review.activeGate
+                .fromGrade}</span
+            >
             <h2 id="active-gate-title">{review.activeGate.title}</h2>
           </div>
           <div class="target-grade" aria-label="Target grade A plus">A+</div>
@@ -296,10 +427,9 @@
         <div class="acceptance-strip">
           <span>Look for</span>
           <ul>
-            <li>one continuous edge traveling across the workspace</li>
-            <li>no canvas or card remount flash</li>
-            <li>clean reversals during interrupted motion</li>
-            <li>an opacity-only dissolve with reduced motion</li>
+            {#each acceptanceItems as item}
+              <li>{item}</li>
+            {/each}
           </ul>
         </div>
 
@@ -337,26 +467,33 @@
             class="replay-controls"
             aria-label="Automated transition replays"
           >
-            <PanelButton
-              variant="secondary"
-              disabled={replayStatus === "loading" ||
-                replayStatus === "running"}
-              onclick={() => replay("2d")}>Replay 2D</PanelButton
-            >
-            <PanelButton
-              variant="secondary"
-              disabled={replayStatus === "loading" ||
-                replayStatus === "running"}
-              onclick={() => replay("card")}>Replay Card</PanelButton
-            >
-            <PanelButton
-              variant="primary"
-              disabled={replayStatus === "loading" ||
-                replayStatus === "running"}
-              onclick={() => replay("interrupt")}>Stress reversal</PanelButton
-            >
+            {#each replayOptions as option}
+              <PanelButton
+                variant={option.primary ? "primary" : "secondary"}
+                disabled={replayStatus === "loading" ||
+                  replayStatus === "running" ||
+                  !activeGateCanReplay ||
+                  (option.requires3D && !selectedViewportFits3D)}
+                onclick={() => replay(option.command)}
+                >{option.label}</PanelButton
+              >
+            {/each}
           </div>
         </div>
+
+        {#if !activeGateCanReplay}
+          <p class="viewport-gate-note">
+            3D is intentionally withheld at this viewport. Use this size to
+            review the responsive layout; transition replays resume when the
+            production 3D viewport gate passes.
+          </p>
+        {:else if review.activeGateId === "stage-tunnel" && !selectedViewportFits3D}
+          <p class="viewport-gate-note">
+            The 3D-to-Tunnel replay is intentionally withheld at this viewport.
+            The first-Tunnel and reversal replays remain available against the
+            production 2D stage.
+          </p>
+        {/if}
 
         <div class="review-feedback">
           <p
@@ -405,7 +542,7 @@
               style:width={`${selectedViewport.width * selectedViewport.scale}px`}
               style:height={`${selectedViewport.height * selectedViewport.scale}px`}
             >
-              {#key `${selectedViewport.id}-${review.activeGateId}`}
+              {#key `${selectedViewport.id}-${review.activeGateId}-${frameVersion}`}
                 <iframe
                   bind:this={frameElement}
                   src={frameSource}
@@ -446,7 +583,7 @@
             <PanelButton
               variant="primary"
               onclick={() => review.mark("approved")}
-              >Approve Gate 1</PanelButton
+              >Approve Gate {activeGateNumber}</PanelButton
             >
           </div>
           {#if !review.storageAvailable}
@@ -762,6 +899,17 @@
     justify-content: space-between;
     gap: 12px;
     margin-top: 8px;
+  }
+
+  .viewport-gate-note {
+    margin: 0;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    border-radius: 0.7rem;
+    background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
+    color: var(--theme-text-secondary);
+    font-size: 0.82rem;
+    line-height: 1.45;
   }
 
   .replay-status {

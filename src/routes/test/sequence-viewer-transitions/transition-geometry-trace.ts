@@ -1,4 +1,13 @@
-export type TransitionTraceCommand = "2d" | "card" | "interrupt";
+export type TransitionTraceCommand =
+  | "2d"
+  | "card"
+  | "interrupt"
+  | "3d-first"
+  | "3d-repeat"
+  | "3d-interrupt"
+  | "tunnel-first"
+  | "tunnel-3d"
+  | "tunnel-interrupt";
 
 export type TransitionTracePhase =
   | "focus-2d"
@@ -7,14 +16,28 @@ export type TransitionTracePhase =
   | "interrupt-2d"
   | "interrupt-split"
   | "interrupt-card"
-  | "interrupt-return";
+  | "interrupt-return"
+  | "prepare-3d"
+  | "show-3d"
+  | "return-2d"
+  | "repeat-3d"
+  | "interrupt-3d"
+  | "interrupt-2d-return"
+  | "prepare-tunnel"
+  | "show-tunnel"
+  | "return-stage"
+  | "prepare-tunnel-from-3d"
+  | "return-3d"
+  | "interrupt-tunnel"
+  | "interrupt-stage";
 
 export interface TransitionGeometrySample {
   time: number;
   phase: TransitionTracePhase;
   direction: "horizontal" | "vertical";
   focusedPane: string | null;
-  selectedMode: "split" | "animation" | "card" | null;
+  selectedMode:
+    "split" | "animation" | "animation-3d" | "card" | "tunnel" | null;
   outerDirection: "horizontal" | "vertical";
   stageSize: number;
   stageFlexGrow: number;
@@ -48,6 +71,8 @@ export interface TransitionGeometrySample {
   cardAutoLayoutLockRows: number;
   inspectorSize: number;
   inspectorFlexGrow: number;
+  inspectorIdentity: number;
+  desktopInspectorExpected: boolean;
   cardSettingsWidth: number;
   cardSettingsHeight: number;
   cardSettingsCenterY: number;
@@ -55,6 +80,23 @@ export interface TransitionGeometrySample {
   dissolveActive: boolean;
   animationOpacity: number;
   cardOpacity: number;
+  motion2DOpacity: number;
+  motion3DOpacity: number;
+  motion2DPresented: boolean;
+  motion3DPresented: boolean;
+  motion3DReady: boolean;
+  motion3DPreparing: boolean;
+  sceneCurtainVisible: boolean;
+  tunnelOpacity: number;
+  tunnelPresented: boolean;
+  tunnelCanvasReady: boolean;
+  animatorIdentity: number;
+  animatorCanvasCount: number;
+  activeArtSettingsCount: number;
+  tunnelBackingWidth: number;
+  tunnelBackingHeight: number;
+  tunnelDisplayWidth: number;
+  tunnelDisplayHeight: number;
 }
 
 export interface TransitionGeometryTrace {
@@ -62,7 +104,7 @@ export interface TransitionGeometryTrace {
   duration: number;
   samples: TransitionGeometrySample[];
   modeCommits: Array<{
-    mode: "split" | "animation" | "card";
+    mode: "split" | "animation" | "animation-3d" | "card" | "tunnel";
     latency: number;
   }>;
 }
@@ -102,6 +144,29 @@ export interface TransitionGeometrySummary {
   cardSettingsReturnWidth: TransitionValueRange | null;
   cardSettingsReturnHeight: TransitionValueRange | null;
   cardSettingsReturnCenterY: TransitionValueRange | null;
+  motionBlankFrames: number;
+  motionUnready3DFrames: number;
+  motionCurtainFrames: number;
+  motionCrossfadeFrames: number;
+  motionPreparationFrames: number;
+  motionLate2DBackingChanges: number;
+  motionSurfacePath: string[];
+  motionHandoffLatency: number | null;
+  motionStageSize: TransitionValueRange | null;
+  motionInspectorSize: TransitionValueRange | null;
+  tunnelUnreadyFrames: number;
+  tunnelCrossfadeFrames: number;
+  tunnelDoubleFadeFrames: number;
+  tunnelBlankFrames: number;
+  tunnelLateBackingChanges: number;
+  tunnelInspectorIdentityChanges: number;
+  tunnelAnimatorIdentityChanges: number;
+  tunnelDuplicateCanvasFrames: number;
+  tunnelDuplicateSettingsFrames: number;
+  tunnelSurfacePath: string[];
+  tunnelHandoffLatency: number | null;
+  tunnelStageSize: TransitionValueRange | null;
+  tunnelDisplaySize: TransitionValueRange | null;
 }
 
 export interface TransitionEndpointUndershoot {
@@ -168,7 +233,7 @@ function uniqueModePath(samples: TransitionGeometrySample[]): string[] {
   return path;
 }
 
-function uniqueValuePath<T extends string>(values: T[]): T[] {
+function uniqueValuePath<T extends string | number>(values: T[]): T[] {
   const path: T[] = [];
   for (const value of values) {
     if (path.at(-1) !== value) path.push(value);
@@ -203,6 +268,21 @@ function uniqueCardLayoutLockPath(
     if (path.at(-1) !== state) path.push(state);
   }
   return path;
+}
+
+function uniqueMotionSurfacePath(
+  samples: TransitionGeometrySample[]
+): string[] {
+  return uniqueValuePath(
+    samples.map((sample) => {
+      if (sample.motion2DPresented && sample.motion3DPresented) {
+        return "2D + 3D";
+      }
+      if (sample.motion3DPresented) return "3D";
+      if (sample.motion2DPresented) return "2D";
+      return "hidden";
+    })
+  );
 }
 
 function minimumVisibleSize(
@@ -299,9 +379,141 @@ function visiblePhaseRange(
   };
 }
 
+function valueRange(
+  samples: TransitionGeometrySample[],
+  value: (sample: TransitionGeometrySample) => number
+): TransitionValueRange | null {
+  const values = samples.map(value).filter((candidate) => candidate > 0);
+  if (values.length === 0) return null;
+  const minimum = Math.min(...values);
+  const maximum = Math.max(...values);
+  return {
+    start: values[0],
+    end: values.at(-1)!,
+    minimum,
+    maximum,
+    variation: maximum - minimum,
+  };
+}
+
+function visibleTunnelRange(
+  samples: TransitionGeometrySample[],
+  value: (sample: TransitionGeometrySample) => number
+): TransitionValueRange | null {
+  return valueRange(
+    samples.filter((sample) => sample.tunnelOpacity >= 0.05),
+    value
+  );
+}
+
+export function tunnelStageOpacity(sample: TransitionGeometrySample): number {
+  return Math.max(sample.motion2DOpacity, sample.motion3DOpacity);
+}
+
+function motionHandoffLatency(trace: TransitionGeometryTrace): number | null {
+  if (!trace.command.startsWith("3d")) return null;
+  const request = trace.samples.find(
+    (sample) => sample.selectedMode === "animation-3d"
+  );
+  if (!request) return null;
+  const reveal = trace.samples.find(
+    (sample) =>
+      sample.time >= request.time &&
+      sample.motion3DPresented &&
+      sample.motion3DReady
+  );
+  return reveal ? Math.max(0, reveal.time - request.time) : null;
+}
+
+function late2DBackingChanges(samples: TransitionGeometrySample[]): number {
+  const settledReturn = samples.filter(
+    (sample) =>
+      sample.phase === "return-2d" &&
+      sample.motion2DPresented &&
+      sample.motion2DOpacity >= 0.99 &&
+      sample.mandalaBackingSize > 0
+  );
+  let changes = 0;
+  for (let index = 1; index < settledReturn.length; index += 1) {
+    if (
+      Math.abs(
+        settledReturn[index].mandalaBackingSize -
+          settledReturn[index - 1].mandalaBackingSize
+      ) > 0.5
+    ) {
+      changes += 1;
+    }
+  }
+  return changes;
+}
+
+function uniqueTunnelSurfacePath(
+  samples: TransitionGeometrySample[]
+): string[] {
+  return uniqueValuePath(
+    samples.map((sample) => {
+      if (sample.tunnelOpacity >= 0.95) return "Tunnel";
+      if (sample.tunnelOpacity >= 0.05) return "2D base + Tunnel layers";
+      return sample.tunnelCanvasReady ? "2D base" : "Blank";
+    })
+  );
+}
+
+function identityChanges(
+  samples: TransitionGeometrySample[],
+  identity: (sample: TransitionGeometrySample) => number
+): number {
+  const path = uniqueValuePath(
+    samples.map(identity).filter((candidate) => candidate > 0)
+  );
+  return Math.max(0, path.length - 1);
+}
+
+function tunnelHandoffLatency(trace: TransitionGeometryTrace): number | null {
+  if (!trace.command.startsWith("tunnel")) return null;
+  const request = trace.samples.find(
+    (sample) => sample.selectedMode === "tunnel"
+  );
+  if (!request) return null;
+  const reveal = trace.samples.find(
+    (sample) =>
+      sample.time >= request.time &&
+      sample.tunnelPresented &&
+      sample.tunnelCanvasReady &&
+      sample.tunnelOpacity >= 0.05
+  );
+  return reveal ? Math.max(0, reveal.time - request.time) : null;
+}
+
+function lateTunnelBackingChanges(samples: TransitionGeometrySample[]): number {
+  const settledTunnel = samples.filter(
+    (sample) =>
+      sample.tunnelPresented &&
+      sample.tunnelCanvasReady &&
+      sample.tunnelOpacity >= 0.99 &&
+      sample.tunnelBackingWidth > 0 &&
+      sample.tunnelBackingHeight > 0
+  );
+  let changes = 0;
+  for (let index = 1; index < settledTunnel.length; index += 1) {
+    const previous = settledTunnel[index - 1];
+    const current = settledTunnel[index];
+    if (
+      Math.abs(current.tunnelBackingWidth - previous.tunnelBackingWidth) >
+        0.5 ||
+      Math.abs(current.tunnelBackingHeight - previous.tunnelBackingHeight) > 0.5
+    ) {
+      changes += 1;
+    }
+  }
+  return changes;
+}
+
 export function summarizeTransitionGeometry(
   trace: TransitionGeometryTrace
 ): TransitionGeometrySummary {
+  const isMotionTrace = trace.command.startsWith("3d");
+  const isTunnelTrace = trace.command.startsWith("tunnel");
   const tinyCardFrames = trace.samples.filter(
     (sample) =>
       !sample.dissolveActive &&
@@ -477,5 +689,107 @@ export function summarizeTransitionGeometry(
       "return-split",
       (sample) => sample.cardSettingsCenterY
     ),
+    motionBlankFrames: isMotionTrace
+      ? trace.samples.filter(
+          (sample) =>
+            !sample.dissolveActive &&
+            sample.motion2DOpacity < 0.05 &&
+            sample.motion3DOpacity < 0.05
+        ).length
+      : 0,
+    motionUnready3DFrames: isMotionTrace
+      ? trace.samples.filter(
+          (sample) => sample.motion3DPresented && !sample.motion3DReady
+        ).length
+      : 0,
+    motionCurtainFrames: isMotionTrace
+      ? trace.samples.filter(
+          (sample) => sample.motion3DPresented && sample.sceneCurtainVisible
+        ).length
+      : 0,
+    motionCrossfadeFrames: isMotionTrace
+      ? trace.samples.filter(
+          (sample) =>
+            sample.motion2DOpacity >= 0.05 && sample.motion3DOpacity >= 0.05
+        ).length
+      : 0,
+    motionPreparationFrames: isMotionTrace
+      ? trace.samples.filter((sample) => sample.motion3DPreparing).length
+      : 0,
+    motionLate2DBackingChanges: isMotionTrace
+      ? late2DBackingChanges(trace.samples)
+      : 0,
+    motionSurfacePath: isMotionTrace
+      ? uniqueMotionSurfacePath(trace.samples)
+      : [],
+    motionHandoffLatency: motionHandoffLatency(trace),
+    motionStageSize: isMotionTrace
+      ? valueRange(trace.samples, (sample) => sample.stageSize)
+      : null,
+    motionInspectorSize: isMotionTrace
+      ? valueRange(trace.samples, (sample) => sample.inspectorSize)
+      : null,
+    tunnelUnreadyFrames: isTunnelTrace
+      ? trace.samples.filter(
+          (sample) => sample.tunnelOpacity >= 0.05 && !sample.tunnelCanvasReady
+        ).length
+      : 0,
+    tunnelCrossfadeFrames: isTunnelTrace
+      ? trace.samples.filter(
+          (sample) =>
+            sample.tunnelOpacity >= 0.05 && sample.tunnelOpacity <= 0.95
+        ).length
+      : 0,
+    tunnelDoubleFadeFrames: isTunnelTrace
+      ? trace.samples.filter((sample) => {
+          const stageOpacity = tunnelStageOpacity(sample);
+          return (
+            sample.tunnelOpacity >= 0.05 &&
+            sample.tunnelOpacity <= 0.95 &&
+            stageOpacity >= 0.05 &&
+            stageOpacity <= 0.95
+          );
+        }).length
+      : 0,
+    tunnelBlankFrames: isTunnelTrace
+      ? trace.samples.filter(
+          (sample) =>
+            !sample.dissolveActive &&
+            !sample.tunnelCanvasReady &&
+            tunnelStageOpacity(sample) < 0.05
+        ).length
+      : 0,
+    tunnelLateBackingChanges: isTunnelTrace
+      ? lateTunnelBackingChanges(trace.samples)
+      : 0,
+    tunnelInspectorIdentityChanges: isTunnelTrace
+      ? identityChanges(
+          trace.samples.filter((sample) => sample.desktopInspectorExpected),
+          (sample) => sample.inspectorIdentity
+        )
+      : 0,
+    tunnelAnimatorIdentityChanges: isTunnelTrace
+      ? identityChanges(trace.samples, (sample) => sample.animatorIdentity)
+      : 0,
+    tunnelDuplicateCanvasFrames: isTunnelTrace
+      ? trace.samples.filter((sample) => sample.animatorCanvasCount !== 1)
+          .length
+      : 0,
+    tunnelDuplicateSettingsFrames: isTunnelTrace
+      ? trace.samples.filter((sample) => sample.activeArtSettingsCount > 1)
+          .length
+      : 0,
+    tunnelSurfacePath: isTunnelTrace
+      ? uniqueTunnelSurfacePath(trace.samples)
+      : [],
+    tunnelHandoffLatency: tunnelHandoffLatency(trace),
+    tunnelStageSize: isTunnelTrace
+      ? valueRange(trace.samples, (sample) => sample.stageSize)
+      : null,
+    tunnelDisplaySize: isTunnelTrace
+      ? visibleTunnelRange(trace.samples, (sample) =>
+          Math.min(sample.tunnelDisplayWidth, sample.tunnelDisplayHeight)
+        )
+      : null,
   };
 }

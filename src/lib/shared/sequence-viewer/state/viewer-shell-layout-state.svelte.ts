@@ -74,6 +74,10 @@ export function createViewerShellLayoutState(
   const isSidebarExportActive = $derived(
     isAnyExportActive && !isRecordSceneActive && !isVideoUploadActive
   );
+  const isArtInspectorActive = $derived(
+    inputs.getContext().viewerState.viewerMode === "mandala" ||
+      inputs.getContext().viewerState.viewerMode === "tunnel"
+  );
   const showVideoGallery = $derived(
     inputs.getContext().viewerState.viewerMode === "videos" &&
       !isSidebarExportActive
@@ -108,6 +112,9 @@ export function createViewerShellLayoutState(
   );
   const effectiveMobile = $derived(
     isMobile || cardExportNarrow || videoExportNarrow
+  );
+  const isWorkspaceInspectorActive = $derived(
+    isSidebarExportActive || (isArtInspectorActive && !effectiveMobile)
   );
   const showRail = $derived(!isMobile);
   const stackedExportWithRail = $derived(
@@ -522,6 +529,12 @@ export function createViewerShellLayoutState(
     },
     get isSidebarExportActive() {
       return isSidebarExportActive;
+    },
+    get isArtInspectorActive() {
+      return isArtInspectorActive;
+    },
+    get isWorkspaceInspectorActive() {
+      return isWorkspaceInspectorActive;
     },
     get showVideoGallery() {
       return showVideoGallery;

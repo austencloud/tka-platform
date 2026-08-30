@@ -29,6 +29,12 @@ export function createTransitionReviewState() {
       decisions = parseTransitionReviewDecisions(
         localStorage.getItem(TRANSITION_REVIEW_STORAGE_KEY)
       );
+      const nextGate = TRANSITION_REVIEW_GATES.find(
+        (gate) =>
+          gate.availability === "ready" &&
+          decisions[gate.id].status !== "approved"
+      );
+      if (nextGate) activeGateId = nextGate.id;
       storageAvailable = true;
     } catch {
       decisions = createEmptyTransitionReviewDecisions();

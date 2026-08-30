@@ -24,6 +24,8 @@
   // ResizeObserver can publish one frame after the structural panel clock.
   // Two 60 Hz frames is the largest skew that still reads as one gesture.
   const maxCardClockSkew = 34;
+  const isMotionTrace = $derived(trace.command.startsWith("3d"));
+  const isTunnelTrace = $derived(trace.command.startsWith("tunnel"));
   const summary = $derived(summarizeTransitionGeometry(trace));
   const maximumSize = $derived(
     Math.max(
@@ -240,186 +242,292 @@
   <header>
     <div>
       <span>Measured geometry</span>
-      <h3 id="geometry-trace-title">Pane size through the last replay</h3>
+      <h3 id="geometry-trace-title">
+        {isMotionTrace
+          ? "2D and 3D through the last replay"
+          : isTunnelTrace
+            ? "One canvas becoming Tunnel through the last replay"
+            : "Pane size through the last replay"}
+      </h3>
     </div>
     <div class="trace-legend" aria-label="Geometry trace legend">
-      <span class="animation">Animation</span>
-      <span class="card">Card visual</span>
+      <span class="animation"
+        >{isMotionTrace
+          ? "2D opacity"
+          : isTunnelTrace
+            ? "2D base"
+            : "Animation"}</span
+      >
+      <span class="card"
+        >{isMotionTrace
+          ? "3D opacity"
+          : isTunnelTrace
+            ? "Tunnel layer blend"
+            : "Card visual"}</span
+      >
       <span class="stage">Stage</span>
     </div>
   </header>
 
   <div class="trace-summary">
-    <span
-      data-problem={summary.animationExitMinimum !== null &&
-        summary.animationExitMinimum < READABLE_PANE_SIZE}
-      >Animation exit: {formatSize(summary.animationExitMinimum)}</span
-    >
-    <span
-      data-problem={summary.animationEntryMinimum !== null &&
-        summary.animationEntryMinimum < READABLE_PANE_SIZE}
-      >Animation entry: {formatSize(summary.animationEntryMinimum)}</span
-    >
-    <span
-      data-problem={summary.cardExitMinimum !== null &&
-        summary.cardExitMinimum < READABLE_PANE_SIZE}
-      >Card exit: {formatSize(summary.cardExitMinimum)}</span
-    >
-    <span
-      data-problem={summary.cardEntryMinimum !== null &&
-        summary.cardEntryMinimum < READABLE_PANE_SIZE}
-      >Card entry: {formatSize(summary.cardEntryMinimum)}</span
-    >
-    <span data-problem={summary.tinyCardFrames > 0}
-      >Tiny Card frames: {summary.tinyCardFrames}</span
-    >
-    <span data-problem={summary.tinyAnimationFrames > 0}
-      >Tiny Animation frames: {summary.tinyAnimationFrames}</span
-    >
-    <span data-problem={summary.magnifiedMandalaReturnFrames > 0}
-      >Mandala return scale: {summary.mandalaReturnRasterScaleMaximum === null
-        ? "n/a"
-        : `${summary.mandalaReturnRasterScaleMaximum.toFixed(2)}×`}</span
-    >
-    <span data-problem={summary.magnifiedMandalaReturnFrames > 0}
-      >Magnified Mandala frames: {summary.magnifiedMandalaReturnFrames}</span
-    >
-    <span data-dissolve={summary.dissolveFrames > 0}
-      >Dissolve frames: {summary.dissolveFrames}</span
-    >
-    <span data-problem={summary.squashedCardFrames > 0}
-      >Card minimum box: {formatCardBox(summary.cardBoxMinimum)}</span
-    >
-    <span data-problem={summary.squashedCardFrames > 0}
-      >Card aspect: {formatAspectRange(
-        summary.cardAspectMinimum,
-        summary.cardAspectMaximum
-      )}</span
-    >
-    <span data-problem={summary.squashedCardFrames > 0}
-      >Squashed Card frames: {summary.squashedCardFrames}</span
-    >
-    <span data-dissolve={summary.dissolveCoveredCardFrames > 0}
-      >Dissolve-covered Card reflow: {summary.dissolveCoveredCardFrames}</span
-    >
-    <span data-problem={summary.transformedCardCellFrames > 0}
-      >Transformed Card cell frames: {summary.transformedCardCellFrames} · max
-      {summary.maximumTransformedCardCells} cells</span
-    >
-    <span>Mode path: {summary.modePath.join(" → ") || "n/a"}</span>
-    <span data-problem={slowModeCommit}
-      >Mode commit: {modeCommitSummary || "n/a"}</span
-    >
-    <span>Panel axis: {summary.panelDirectionPath.join(" → ") || "n/a"}</span>
-    <span>Outer axis: {summary.outerDirectionPath.join(" → ") || "n/a"}</span>
-    <span>Card layout: {summary.cardLayoutPath.join(" → ") || "n/a"}</span>
-    <span>Layout lease: {summary.cardLayoutLockPath.join(" → ") || "n/a"}</span>
-    <span
-      data-problem={cardGeometryVisible &&
-        ((cardFocusOnsetSkew ?? 0) > maxCardClockSkew ||
-          (cardFocusSettleSkew ?? 0) > maxCardClockSkew)}
-      >Card focus width: {formatMotionTiming(cardFocusWidthMotion)}</span
-    >
-    <span
-      data-problem={cardGeometryVisible &&
-        ((cardFocusOnsetSkew ?? 0) > maxCardClockSkew ||
-          (cardFocusSettleSkew ?? 0) > maxCardClockSkew)}
-      >Card focus rise: {formatMotionTiming(cardFocusVerticalMotion)} · onset skew
-      {cardFocusOnsetSkew === null
-        ? "n/a"
-        : `${Math.round(cardFocusOnsetSkew)} ms`} · settle skew
-      {cardFocusSettleSkew === null
-        ? "n/a"
-        : `${Math.round(cardFocusSettleSkew)} ms`}</span
-    >
-    <span
-      data-problem={cardGeometryVisible &&
-        ((cardReturnOnsetSkew ?? 0) > maxCardClockSkew ||
-          (cardReturnSettleSkew ?? 0) > maxCardClockSkew)}
-      >Card return width: {formatMotionTiming(cardReturnWidthMotion)}</span
-    >
-    <span
-      data-problem={cardGeometryVisible &&
-        ((cardReturnOnsetSkew ?? 0) > maxCardClockSkew ||
-          (cardReturnSettleSkew ?? 0) > maxCardClockSkew)}
-      >Card return fall: {formatMotionTiming(cardReturnVerticalMotion)} · onset skew
-      {cardReturnOnsetSkew === null
-        ? "n/a"
-        : `${Math.round(cardReturnOnsetSkew)} ms`} · settle skew
-      {cardReturnSettleSkew === null
-        ? "n/a"
-        : `${Math.round(cardReturnSettleSkew)} ms`}</span
-    >
-    <span data-problem={(summary.cardReturnPanelWidth?.undershoot ?? 0) > 1}
-      >Return panel: {formatUndershoot(summary.cardReturnPanelWidth)}</span
-    >
-    <span data-problem={(summary.cardReturnPanelHeight?.undershoot ?? 0) > 1}
-      >Return panel height: {formatUndershoot(
-        summary.cardReturnPanelHeight
-      )}</span
-    >
-    <span data-problem={(summary.cardReturnRootWidth?.undershoot ?? 0) > 1}
-      >Return root width: {formatUndershoot(summary.cardReturnRootWidth)}</span
-    >
-    <span data-problem={(summary.cardReturnRootHeight?.undershoot ?? 0) > 1}
-      >Return root height: {formatUndershoot(
-        summary.cardReturnRootHeight
-      )}</span
-    >
-    <span data-problem={(summary.cardReturnVisualWidth?.undershoot ?? 0) > 1}
-      >Return visual width: {formatUndershoot(
-        summary.cardReturnVisualWidth
-      )}</span
-    >
-    <span data-problem={(summary.cardReturnVisualHeight?.undershoot ?? 0) > 1}
-      >Return visual height: {formatUndershoot(
-        summary.cardReturnVisualHeight
-      )}</span
-    >
-    <span
-      data-problem={(summary.cardReturnTravel?.backtrack ?? 0) > 1 ||
-        (summary.cardReturnTravel?.overshoot ?? 0) > 1}
-      >Return travel: {formatTravel(summary.cardReturnTravel)}</span
-    >
-    <span
-      data-problem={settingsReflow(
-        summary.cardSettingsFocusWidth,
-        summary.cardSettingsFocusHeight,
-        summary.cardSettingsFocusCenterY
-      )}
-      >Settings enter: width {formatRange(summary.cardSettingsFocusWidth)} · height
-      {formatRange(summary.cardSettingsFocusHeight)} · center Y
-      {formatRange(summary.cardSettingsFocusCenterY)}</span
-    >
-    <span
-      data-problem={settingsReflow(
-        summary.cardSettingsReturnWidth,
-        summary.cardSettingsReturnHeight,
-        summary.cardSettingsReturnCenterY
-      )}
-      >Settings leave: width {formatRange(summary.cardSettingsReturnWidth)} · height
-      {formatRange(summary.cardSettingsReturnHeight)} · center Y
-      {formatRange(summary.cardSettingsReturnCenterY)}</span
-    >
-    {#if returnPanelMinimumSample}
-      <span data-problem={(summary.cardReturnPanelWidth?.undershoot ?? 0) > 1}
-        >Minimum at {Math.round(returnPanelMinimumSample.time)} ms · stage
-        {Math.round(returnPanelMinimumSample.stageSize)} px · pane flex
-        {returnPanelMinimumSample.animationFlexGrow.toFixed(2)} / {returnPanelMinimumSample.cardFlexGrow.toFixed(
-          2
-        )} · inspector {Math.round(returnPanelMinimumSample.inspectorSize)} px</span
+    {#if isTunnelTrace}
+      <span data-problem={summary.tunnelUnreadyFrames > 0}
+        >Unready Tunnel frames: {summary.tunnelUnreadyFrames}</span
       >
-    {/if}
-    {#if returnMotionOnsets}
+      <span data-dissolve={summary.tunnelCrossfadeFrames > 0}
+        >Layer-bloom frames: {summary.tunnelCrossfadeFrames}</span
+      >
+      <span data-problem={summary.tunnelDoubleFadeFrames > 0}
+        >Double-fade frames: {summary.tunnelDoubleFadeFrames}</span
+      >
+      <span data-problem={summary.tunnelBlankFrames > 0}
+        >Blank frames: {summary.tunnelBlankFrames}</span
+      >
+      <span data-problem={summary.tunnelLateBackingChanges > 0}
+        >Late Tunnel backing changes: {summary.tunnelLateBackingChanges}</span
+      >
+      <span data-problem={summary.tunnelAnimatorIdentityChanges > 0}
+        >Animator remounts: {summary.tunnelAnimatorIdentityChanges}</span
+      >
+      <span data-problem={summary.tunnelInspectorIdentityChanges > 0}
+        >Inspector remounts: {summary.tunnelInspectorIdentityChanges}</span
+      >
+      <span data-problem={summary.tunnelDuplicateCanvasFrames > 0}
+        >Non-singleton canvas frames: {summary.tunnelDuplicateCanvasFrames}</span
+      >
+      <span data-problem={summary.tunnelDuplicateSettingsFrames > 0}
+        >Duplicate active settings frames: {summary.tunnelDuplicateSettingsFrames}</span
+      >
       <span
-        >Return onset: {Math.round(returnMotionOnsets.phaseStart)} ms · inner
-        {returnMotionOnsets.innerStart === null
+        >Ready-frame handoff: {summary.tunnelHandoffLatency === null
           ? "n/a"
-          : `${Math.round(returnMotionOnsets.innerStart)} ms`} · outer
-        {returnMotionOnsets.outerStart === null
-          ? "n/a"
-          : `${Math.round(returnMotionOnsets.outerStart)} ms`}</span
+          : `${Math.round(summary.tunnelHandoffLatency)} ms`}</span
       >
+      <span>Surface path: {summary.tunnelSurfacePath.join(" → ") || "n/a"}</span
+      >
+      <span>Stage allocation: {formatRange(summary.tunnelStageSize)}</span>
+      <span>Tunnel display: {formatRange(summary.tunnelDisplaySize)}</span>
+      <span data-dissolve={summary.dissolveFrames > 0}
+        >Workspace dissolve frames: {summary.dissolveFrames}</span
+      >
+      <span>Mode path: {summary.modePath.join(" → ") || "n/a"}</span>
+      <span data-problem={slowModeCommit}
+        >Mode commit: {modeCommitSummary || "n/a"}</span
+      >
+      <span>Outer axis: {summary.outerDirectionPath.join(" → ") || "n/a"}</span>
+    {:else if isMotionTrace}
+      <span data-problem={summary.motionBlankFrames > 0}
+        >Blank motion frames: {summary.motionBlankFrames}</span
+      >
+      <span data-problem={summary.motionUnready3DFrames > 0}
+        >Unready 3D frames: {summary.motionUnready3DFrames}</span
+      >
+      <span data-problem={summary.motionCurtainFrames > 0}
+        >Visible loading-curtain frames: {summary.motionCurtainFrames}</span
+      >
+      <span data-dissolve={summary.motionCrossfadeFrames > 0}
+        >Crossfade frames: {summary.motionCrossfadeFrames}</span
+      >
+      <span>Preparing frames: {summary.motionPreparationFrames}</span>
+      <span data-problem={summary.motionLate2DBackingChanges > 0}
+        >Late 2D backing changes: {summary.motionLate2DBackingChanges}</span
+      >
+      <span
+        >Ready-frame handoff: {summary.motionHandoffLatency === null
+          ? "n/a"
+          : `${Math.round(summary.motionHandoffLatency)} ms`}</span
+      >
+      <span>Surface path: {summary.motionSurfacePath.join(" → ") || "n/a"}</span
+      >
+      <span>Stage allocation: {formatRange(summary.motionStageSize)}</span>
+      <span
+        >Inspector allocation: {formatRange(summary.motionInspectorSize)}</span
+      >
+      <span data-dissolve={summary.dissolveFrames > 0}
+        >Workspace dissolve frames: {summary.dissolveFrames}</span
+      >
+      <span>Mode path: {summary.modePath.join(" → ") || "n/a"}</span>
+      <span data-problem={slowModeCommit}
+        >Mode commit: {modeCommitSummary || "n/a"}</span
+      >
+      <span>Outer axis: {summary.outerDirectionPath.join(" → ") || "n/a"}</span>
+    {:else}
+      <span
+        data-problem={summary.animationExitMinimum !== null &&
+          summary.animationExitMinimum < READABLE_PANE_SIZE}
+        >Animation exit: {formatSize(summary.animationExitMinimum)}</span
+      >
+      <span
+        data-problem={summary.animationEntryMinimum !== null &&
+          summary.animationEntryMinimum < READABLE_PANE_SIZE}
+        >Animation entry: {formatSize(summary.animationEntryMinimum)}</span
+      >
+      <span
+        data-problem={summary.cardExitMinimum !== null &&
+          summary.cardExitMinimum < READABLE_PANE_SIZE}
+        >Card exit: {formatSize(summary.cardExitMinimum)}</span
+      >
+      <span
+        data-problem={summary.cardEntryMinimum !== null &&
+          summary.cardEntryMinimum < READABLE_PANE_SIZE}
+        >Card entry: {formatSize(summary.cardEntryMinimum)}</span
+      >
+      <span data-problem={summary.tinyCardFrames > 0}
+        >Tiny Card frames: {summary.tinyCardFrames}</span
+      >
+      <span data-problem={summary.tinyAnimationFrames > 0}
+        >Tiny Animation frames: {summary.tinyAnimationFrames}</span
+      >
+      <span data-problem={summary.magnifiedMandalaReturnFrames > 0}
+        >Mandala return scale: {summary.mandalaReturnRasterScaleMaximum === null
+          ? "n/a"
+          : `${summary.mandalaReturnRasterScaleMaximum.toFixed(2)}×`}</span
+      >
+      <span data-problem={summary.magnifiedMandalaReturnFrames > 0}
+        >Magnified Mandala frames: {summary.magnifiedMandalaReturnFrames}</span
+      >
+      <span data-dissolve={summary.dissolveFrames > 0}
+        >Dissolve frames: {summary.dissolveFrames}</span
+      >
+      <span data-problem={summary.squashedCardFrames > 0}
+        >Card minimum box: {formatCardBox(summary.cardBoxMinimum)}</span
+      >
+      <span data-problem={summary.squashedCardFrames > 0}
+        >Card aspect: {formatAspectRange(
+          summary.cardAspectMinimum,
+          summary.cardAspectMaximum
+        )}</span
+      >
+      <span data-problem={summary.squashedCardFrames > 0}
+        >Squashed Card frames: {summary.squashedCardFrames}</span
+      >
+      <span data-dissolve={summary.dissolveCoveredCardFrames > 0}
+        >Dissolve-covered Card reflow: {summary.dissolveCoveredCardFrames}</span
+      >
+      <span data-problem={summary.transformedCardCellFrames > 0}
+        >Transformed Card cell frames: {summary.transformedCardCellFrames} · max
+        {summary.maximumTransformedCardCells} cells</span
+      >
+      <span>Mode path: {summary.modePath.join(" → ") || "n/a"}</span>
+      <span data-problem={slowModeCommit}
+        >Mode commit: {modeCommitSummary || "n/a"}</span
+      >
+      <span>Panel axis: {summary.panelDirectionPath.join(" → ") || "n/a"}</span>
+      <span>Outer axis: {summary.outerDirectionPath.join(" → ") || "n/a"}</span>
+      <span>Card layout: {summary.cardLayoutPath.join(" → ") || "n/a"}</span>
+      <span
+        >Layout lease: {summary.cardLayoutLockPath.join(" → ") || "n/a"}</span
+      >
+      <span
+        data-problem={cardGeometryVisible &&
+          ((cardFocusOnsetSkew ?? 0) > maxCardClockSkew ||
+            (cardFocusSettleSkew ?? 0) > maxCardClockSkew)}
+        >Card focus width: {formatMotionTiming(cardFocusWidthMotion)}</span
+      >
+      <span
+        data-problem={cardGeometryVisible &&
+          ((cardFocusOnsetSkew ?? 0) > maxCardClockSkew ||
+            (cardFocusSettleSkew ?? 0) > maxCardClockSkew)}
+        >Card focus rise: {formatMotionTiming(cardFocusVerticalMotion)} · onset skew
+        {cardFocusOnsetSkew === null
+          ? "n/a"
+          : `${Math.round(cardFocusOnsetSkew)} ms`} · settle skew
+        {cardFocusSettleSkew === null
+          ? "n/a"
+          : `${Math.round(cardFocusSettleSkew)} ms`}</span
+      >
+      <span
+        data-problem={cardGeometryVisible &&
+          ((cardReturnOnsetSkew ?? 0) > maxCardClockSkew ||
+            (cardReturnSettleSkew ?? 0) > maxCardClockSkew)}
+        >Card return width: {formatMotionTiming(cardReturnWidthMotion)}</span
+      >
+      <span
+        data-problem={cardGeometryVisible &&
+          ((cardReturnOnsetSkew ?? 0) > maxCardClockSkew ||
+            (cardReturnSettleSkew ?? 0) > maxCardClockSkew)}
+        >Card return fall: {formatMotionTiming(cardReturnVerticalMotion)} · onset
+        skew
+        {cardReturnOnsetSkew === null
+          ? "n/a"
+          : `${Math.round(cardReturnOnsetSkew)} ms`} · settle skew
+        {cardReturnSettleSkew === null
+          ? "n/a"
+          : `${Math.round(cardReturnSettleSkew)} ms`}</span
+      >
+      <span data-problem={(summary.cardReturnPanelWidth?.undershoot ?? 0) > 1}
+        >Return panel: {formatUndershoot(summary.cardReturnPanelWidth)}</span
+      >
+      <span data-problem={(summary.cardReturnPanelHeight?.undershoot ?? 0) > 1}
+        >Return panel height: {formatUndershoot(
+          summary.cardReturnPanelHeight
+        )}</span
+      >
+      <span data-problem={(summary.cardReturnRootWidth?.undershoot ?? 0) > 1}
+        >Return root width: {formatUndershoot(
+          summary.cardReturnRootWidth
+        )}</span
+      >
+      <span data-problem={(summary.cardReturnRootHeight?.undershoot ?? 0) > 1}
+        >Return root height: {formatUndershoot(
+          summary.cardReturnRootHeight
+        )}</span
+      >
+      <span data-problem={(summary.cardReturnVisualWidth?.undershoot ?? 0) > 1}
+        >Return visual width: {formatUndershoot(
+          summary.cardReturnVisualWidth
+        )}</span
+      >
+      <span data-problem={(summary.cardReturnVisualHeight?.undershoot ?? 0) > 1}
+        >Return visual height: {formatUndershoot(
+          summary.cardReturnVisualHeight
+        )}</span
+      >
+      <span
+        data-problem={(summary.cardReturnTravel?.backtrack ?? 0) > 1 ||
+          (summary.cardReturnTravel?.overshoot ?? 0) > 1}
+        >Return travel: {formatTravel(summary.cardReturnTravel)}</span
+      >
+      <span
+        data-problem={settingsReflow(
+          summary.cardSettingsFocusWidth,
+          summary.cardSettingsFocusHeight,
+          summary.cardSettingsFocusCenterY
+        )}
+        >Settings enter: width {formatRange(summary.cardSettingsFocusWidth)} · height
+        {formatRange(summary.cardSettingsFocusHeight)} · center Y
+        {formatRange(summary.cardSettingsFocusCenterY)}</span
+      >
+      <span
+        data-problem={settingsReflow(
+          summary.cardSettingsReturnWidth,
+          summary.cardSettingsReturnHeight,
+          summary.cardSettingsReturnCenterY
+        )}
+        >Settings leave: width {formatRange(summary.cardSettingsReturnWidth)} · height
+        {formatRange(summary.cardSettingsReturnHeight)} · center Y
+        {formatRange(summary.cardSettingsReturnCenterY)}</span
+      >
+      {#if returnPanelMinimumSample}
+        <span data-problem={(summary.cardReturnPanelWidth?.undershoot ?? 0) > 1}
+          >Minimum at {Math.round(returnPanelMinimumSample.time)} ms · stage
+          {Math.round(returnPanelMinimumSample.stageSize)} px · pane flex
+          {returnPanelMinimumSample.animationFlexGrow.toFixed(2)} / {returnPanelMinimumSample.cardFlexGrow.toFixed(
+            2
+          )} · inspector {Math.round(returnPanelMinimumSample.inspectorSize)} px</span
+        >
+      {/if}
+      {#if returnMotionOnsets}
+        <span
+          >Return onset: {Math.round(returnMotionOnsets.phaseStart)} ms · inner
+          {returnMotionOnsets.innerStart === null
+            ? "n/a"
+            : `${Math.round(returnMotionOnsets.innerStart)} ms`} · outer
+          {returnMotionOnsets.outerStart === null
+            ? "n/a"
+            : `${Math.round(returnMotionOnsets.outerStart)} ms`}</span
+        >
+      {/if}
     {/if}
   </div>
 
@@ -459,42 +567,77 @@
   <svg
     viewBox={`0 0 ${chartWidth} ${chartHeight}`}
     role="img"
-    aria-label={`Pane sizes during the ${trace.command} replay. The Card pane was visibly smaller than ${READABLE_PANE_SIZE} pixels for ${summary.tinyCardFrames} sampled frames.`}
+    aria-label={isMotionTrace
+      ? `2D and 3D opacity during the ${trace.command} replay. ${summary.motionBlankFrames} blank frames were sampled.`
+      : isTunnelTrace
+        ? `The persistent 2D base and Tunnel layer blend during the ${trace.command} replay. ${summary.tunnelAnimatorIdentityChanges} Animator remounts were sampled.`
+        : `Pane sizes during the ${trace.command} replay. The Card pane was visibly smaller than ${READABLE_PANE_SIZE} pixels for ${summary.tinyCardFrames} sampled frames.`}
   >
-    <line
-      class="readable-threshold"
-      x1={chartInset}
-      x2={chartWidth - chartInset}
-      y1={y(READABLE_PANE_SIZE)}
-      y2={y(READABLE_PANE_SIZE)}
-    />
-    <text x={chartInset + 4} y={y(READABLE_PANE_SIZE) - 5}
-      >{READABLE_PANE_SIZE}px readable floor</text
-    >
+    {#if !isMotionTrace && !isTunnelTrace}
+      <line
+        class="readable-threshold"
+        x1={chartInset}
+        x2={chartWidth - chartInset}
+        y1={y(READABLE_PANE_SIZE)}
+        y2={y(READABLE_PANE_SIZE)}
+      />
+      <text x={chartInset + 4} y={y(READABLE_PANE_SIZE) - 5}
+        >{READABLE_PANE_SIZE}px readable floor</text
+      >
+    {/if}
     <polyline
       class="stage-line"
       points={points(trace.samples, (sample) => sample.stageSize)}
     />
-    <polyline
-      class="animation-line"
-      points={points(trace.samples, (sample) => sample.animationSize)}
-    />
-    <polyline
-      class="card-line"
-      points={points(trace.samples, (sample) => sample.cardContentWidth)}
-    />
-    <polyline
-      class="card-height-line"
-      points={points(trace.samples, (sample) => sample.cardContentHeight)}
-    />
-    {#each tinyCardSamples as sample}
-      <circle
-        class="problem-point"
-        cx={x(sample.time)}
-        cy={y(sample.cardContentWidth)}
-        r="3"
+    {#if isTunnelTrace}
+      <polyline
+        class="animation-line"
+        points={points(trace.samples, () => maximumSize)}
       />
-    {/each}
+      <polyline
+        class="card-line"
+        points={points(
+          trace.samples,
+          (sample) => sample.tunnelOpacity * maximumSize
+        )}
+      />
+    {:else if isMotionTrace}
+      <polyline
+        class="animation-line"
+        points={points(
+          trace.samples,
+          (sample) => sample.motion2DOpacity * maximumSize
+        )}
+      />
+      <polyline
+        class="card-line"
+        points={points(
+          trace.samples,
+          (sample) => sample.motion3DOpacity * maximumSize
+        )}
+      />
+    {:else}
+      <polyline
+        class="animation-line"
+        points={points(trace.samples, (sample) => sample.animationSize)}
+      />
+      <polyline
+        class="card-line"
+        points={points(trace.samples, (sample) => sample.cardContentWidth)}
+      />
+      <polyline
+        class="card-height-line"
+        points={points(trace.samples, (sample) => sample.cardContentHeight)}
+      />
+      {#each tinyCardSamples as sample}
+        <circle
+          class="problem-point"
+          cx={x(sample.time)}
+          cy={y(sample.cardContentWidth)}
+          r="3"
+        />
+      {/each}
+    {/if}
   </svg>
 </section>
 

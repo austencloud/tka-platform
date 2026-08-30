@@ -20,7 +20,7 @@ afterEach(() => {
 });
 
 describe("viewer mode reduced-motion dissolve", () => {
-  it("covers only the Side by Side, 2D, and Card family", () => {
+  it("covers the first three viewer transition gates", () => {
     expect(isViewerModeDissolve("split", "animation")).toBe(true);
     expect(isViewerModeDissolve("animation", "split")).toBe(true);
     expect(isViewerModeDissolve("split", "card")).toBe(true);
@@ -29,7 +29,13 @@ describe("viewer mode reduced-motion dissolve", () => {
     expect(isViewerModeDissolve("animation", "card")).toBe(true);
 
     expect(isViewerModeDissolve("split", "split")).toBe(false);
-    expect(isViewerModeDissolve("animation", "animation-3d")).toBe(false);
+    expect(isViewerModeDissolve("animation", "animation-3d")).toBe(true);
+    expect(isViewerModeDissolve("animation-3d", "animation")).toBe(true);
+    expect(isViewerModeDissolve("animation", "tunnel")).toBe(true);
+    expect(isViewerModeDissolve("tunnel", "animation")).toBe(true);
+    expect(isViewerModeDissolve("animation-3d", "tunnel")).toBe(true);
+    expect(isViewerModeDissolve("tunnel", "animation-3d")).toBe(true);
+    expect(isViewerModeDissolve("card", "animation-3d")).toBe(false);
     expect(isViewerModeDissolve("split", "videos")).toBe(false);
   });
 

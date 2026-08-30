@@ -23,8 +23,16 @@
   inset: 0;
   opacity: 1;
   transition:
-    opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+    opacity var(--transition-emphasis),
     visibility 0s linear 0s;
+}
+
+.split-view .media-pane.persistent-3d {
+  z-index: 2;
+}
+
+.split-view .media-pane.persistent-2d {
+  z-index: 1;
 }
 
 .split-view .media-pane.content-overlay {
@@ -33,7 +41,7 @@
   z-index: 3;
   opacity: 1;
   transition:
-    opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+    opacity var(--transition-normal),
     visibility 0s linear 0s;
 }
 
@@ -42,8 +50,21 @@
   visibility: hidden;
   pointer-events: none;
   transition:
-    opacity 200ms cubic-bezier(0.2, 0, 0, 1),
-    visibility 0s linear 200ms;
+    opacity var(--transition-normal),
+    visibility 0s linear var(--duration-normal);
+}
+
+/* Tunnel's visual stage is the persistent AnimatorCanvas underneath this
+   companion layer. The transparent layer now owns only export results, so it
+   must never intercept canvas gestures or manufacture a second opacity owner. */
+.split-view .media-pane[data-shared-tunnel-canvas] {
+  z-index: 10;
+  background: transparent;
+  pointer-events: none;
+}
+
+.split-view .media-pane[data-shared-tunnel-canvas] > * {
+  pointer-events: none;
 }
 
 .split-view .media-pane.persistent-3d-hidden,
@@ -54,8 +75,8 @@
   pointer-events: none;
   opacity: 0;
   transition:
-    opacity 200ms cubic-bezier(0.2, 0, 0, 1),
-    visibility 0s linear 200ms;
+    opacity var(--transition-emphasis),
+    visibility 0s linear var(--duration-emphasis);
 }
 
 .split-view .persistent-rail {
@@ -65,7 +86,7 @@
   z-index: 9;
   opacity: 1;
   transition:
-    opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+    opacity var(--transition-normal),
     visibility 0s linear 0s;
 }
 
@@ -73,8 +94,8 @@
   opacity: 0;
   visibility: hidden;
   transition:
-    opacity 200ms cubic-bezier(0.2, 0, 0, 1),
-    visibility 0s linear 200ms;
+    opacity var(--transition-normal),
+    visibility 0s linear var(--duration-normal);
 }
 
 .split-view .persistent-rail-hidden > * {
@@ -163,7 +184,7 @@
   right: var(--scene-control-reserved-width, 0px);
   z-index: 2;
   transition:
-    opacity 250ms ease,
+    opacity var(--transition-normal),
     right var(--duration-emphasis, 280ms)
       var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
@@ -172,7 +193,34 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  transition: opacity 250ms ease;
+  transition: opacity var(--transition-normal);
+}
+
+.split-view .viewer-3d-handoff-anchor {
+  position: absolute;
+  top: max(16px, 3cqh);
+  right: 0;
+  left: 0;
+  z-index: 6;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.split-view .viewer-3d-handoff-status {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+  border-radius: 999px;
+  background: var(--theme-panel-bg, rgba(18, 18, 28, 0.96));
+  color: var(--theme-text, #f7f8fb);
+  box-shadow: var(--shadow-sm, 0 6px 18px rgba(0, 0, 0, 0.24));
+  font-size: var(--font-size-min, 14px);
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .split-view .practice-mirror-layer {
@@ -306,10 +354,6 @@
   .split-view .split-column,
   .split-view .preview-column,
   .split-view .pane-close-btn,
-  .split-view .media-pane.persistent-3d,
-  .split-view .media-pane.persistent-2d,
-  .split-view .media-pane.persistent-3d-hidden,
-  .split-view .media-pane.persistent-2d-hidden,
   .split-view .persistent-rail,
   .split-view .persistent-rail-hidden,
   .split-view .content-overlay,
@@ -335,20 +379,36 @@
 :root[data-motion-preference="reduce"] .split-view .split-column,
 :root[data-motion-preference="reduce"] .split-view .preview-column,
 :root[data-motion-preference="reduce"] .split-view .pane-close-btn,
-:root[data-motion-preference="reduce"] .split-view .media-pane.persistent-3d,
-:root[data-motion-preference="reduce"] .split-view .media-pane.persistent-2d,
-:root[data-motion-preference="reduce"]
-  .split-view
-  .media-pane.persistent-3d-hidden,
-:root[data-motion-preference="reduce"]
-  .split-view
-  .media-pane.persistent-2d-hidden,
 :root[data-motion-preference="reduce"] .split-view .persistent-rail,
 :root[data-motion-preference="reduce"] .split-view .persistent-rail-hidden,
 :root[data-motion-preference="reduce"] .split-view .content-overlay,
 :root[data-motion-preference="reduce"] .split-view .content-overlay-hidden,
 :root[data-motion-preference="reduce"] .split-view .practice-deck {
   transition: none !important;
+}
+
+/* 2D and 3D occupy the same stage, so their reduced-motion handoff can retain
+   one quiet opacity cue without moving any geometry. This narrowly overrides
+   the global 0.01ms reduction for these two surfaces only. */
+:root[data-motion-preference="reduce"]
+  .split-view
+  .media-pane.persistent-3d[data-motion-surface],
+:root[data-motion-preference="reduce"]
+  .split-view
+  .media-pane.persistent-2d[data-motion-surface] {
+  transition-property: opacity, visibility !important;
+  transition-duration: var(--duration-normal), 0s !important;
+  transition-timing-function: var(--ease-in-out), linear !important;
+  transition-delay: 0s, 0s !important;
+}
+
+:root[data-motion-preference="reduce"]
+  .split-view
+  .media-pane.persistent-3d-hidden[data-motion-surface],
+:root[data-motion-preference="reduce"]
+  .split-view
+  .media-pane.persistent-2d-hidden[data-motion-surface] {
+  transition-delay: 0s, var(--duration-normal) !important;
 }
 
 :root[data-motion-preference="reduce"]
@@ -358,4 +418,19 @@
   .split-view:not([data-focused])
   .split-column[data-readable="false"] {
   opacity: 0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root .split-view .media-pane.persistent-3d[data-motion-surface],
+  :root .split-view .media-pane.persistent-2d[data-motion-surface] {
+    transition-property: opacity, visibility !important;
+    transition-duration: var(--duration-normal), 0s !important;
+    transition-timing-function: var(--ease-in-out), linear !important;
+    transition-delay: 0s, 0s !important;
+  }
+
+  :root .split-view .media-pane.persistent-3d-hidden[data-motion-surface],
+  :root .split-view .media-pane.persistent-2d-hidden[data-motion-surface] {
+    transition-delay: 0s, var(--duration-normal) !important;
+  }
 }

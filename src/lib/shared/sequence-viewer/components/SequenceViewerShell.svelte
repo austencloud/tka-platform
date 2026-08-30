@@ -89,6 +89,8 @@
     TunnelComposition,
     TunnelSaveTarget,
   } from "../tunnel/tunnel-composition";
+  import { createViewerInspectorHostState } from "../state/viewer-inspector-host-state.svelte";
+  import { setViewerInspectorHostContext } from "../context/viewer-inspector-host-context";
 
   /** Host-owned export pipeline (the scan page's gated share-sheet flow).
       Absent → the orchestrator's own ctx.handleExport pipeline (the app). */
@@ -179,6 +181,10 @@
   }: Props = $props();
 
   let viewerWorkspaceElement = $state<HTMLElement | null>(null);
+  let artInspectorTarget = $state<HTMLElement | null>(null);
+  const inspectorHost = createViewerInspectorHostState();
+  setViewerInspectorHostContext(inspectorHost);
+  $effect(() => inspectorHost.setTarget(artInspectorTarget));
 
   const scanInstrumentationEnabled = isScanVisit();
   const layout = createViewerShellLayoutState(
@@ -565,7 +571,7 @@
         <div
           bind:this={viewerWorkspaceElement}
           class="viewer-and-export"
-          class:export-active={layout.isSidebarExportActive}
+          class:export-active={layout.isWorkspaceInspectorActive}
           class:record-scene-active={layout.isRecordSceneActive}
           class:desktop={!layout.effectiveMobile}
           class:stacked-rail={layout.stackedExportWithRail}
@@ -593,7 +599,7 @@
           {/if}
           <ViewerWorkspacePanels
             direction={layout.effectiveMobile ? "vertical" : "horizontal"}
-            inspectorActive={layout.isSidebarExportActive}
+            inspectorActive={layout.isWorkspaceInspectorActive}
             inspectorCollapsed={layout.exportSidebarCollapsed &&
               !layout.isImageExportActive}
           >
@@ -794,53 +800,67 @@
               <div
                 class="export-panel-container"
                 class:card-settings={layout.isImageExportActive}
+                class:art-settings={layout.isArtInspectorActive}
                 class:sidebar={!layout.effectiveMobile &&
                   (layout.isVideoExportActive || layout.isVideoUploadActive)}
               >
-                {#if layout.isVideoExportActive}
-                  {#if ctx.previewBlobUrl}
-                    <VideoPreviewPanel
-                      blobUrl={ctx.previewBlobUrl}
-                      saveLabel="Save"
-                      onDismiss={interactions.handleDismissExportedVideo}
-                      onRedownload={() =>
-                        void interactions.handleRedownloadExportedVideo()}
-                    />
-                  {:else}
-                    <!-- No tempo and no playback mode on the Motion page: the
+                {#if layout.isVideoExportActive || layout.isArtInspectorActive}
+                  <div
+                    class="inspector-content-layer motion-settings-layer"
+                    data-active={layout.isVideoExportActive}
+                    inert={!layout.isVideoExportActive || undefined}
+                    aria-hidden={!layout.isVideoExportActive}
+                  >
+                    {#if ctx.previewBlobUrl}
+                      <VideoPreviewPanel
+                        blobUrl={ctx.previewBlobUrl}
+                        saveLabel="Save"
+                        onDismiss={interactions.handleDismissExportedVideo}
+                        onRedownload={() =>
+                          void interactions.handleRedownloadExportedVideo()}
+                      />
+                    {:else}
+                      <!-- No tempo and no playback mode on the Motion page: the
                        transport under the canvas carries both and is visible
                        from every page of this panel. Showing them here too put
                        one setting on screen twice in two different controls.
                        `bpm` and `playbackMode` still come in — the export page
                        reads them for its duration estimate. -->
-                    <ExportVideoDrawer
-                      exportOptions={ctx.exportOptions}
-                      isExporting={interactions.videoBusy}
-                      exportProgress={interactions.videoProgress}
-                      canvasReady={ctx.canvasReady}
-                      layout={layout.effectiveMobile ? "bottom" : "sidebar"}
-                      singlePlayDuration={ctx.singlePlayDuration}
-                      isPlaying={ctx.isPlayingLocal}
-                      bpm={ctx.bpmLocal}
-                      renderMode={ctx.renderMode}
-                      playbackMode={ctx.playbackMode}
-                      selectedPropType={ctx.bluePropType}
-                      sequence={ctx.effectiveSequence}
-                      showInlineExportProgress={false}
-                      showTempoControls={false}
-                      onPropChange={(prop) =>
-                        interactions.handlePropChange(prop, "video_export")}
-                      onPlaybackToggle={() =>
-                        interactions.handlePlaybackToggle("video_export")}
-                      onBpmChange={(bpm) =>
-                        interactions.handleBpmChange(bpm, "video_export")}
-                      onExport={() => interactions.handleVideoExport()}
-                      onCancel={interactions.handleCancelVideoExport}
-                      onSettingChange={scanInstrumentationEnabled
-                        ? interactions.handleViewerControlSetting
-                        : undefined}
-                    />
-                  {/if}
+                      <ExportVideoDrawer
+                        exportOptions={ctx.exportOptions}
+                        isExporting={interactions.videoBusy}
+                        exportProgress={interactions.videoProgress}
+                        canvasReady={ctx.canvasReady}
+                        layout={layout.effectiveMobile ? "bottom" : "sidebar"}
+                        singlePlayDuration={ctx.singlePlayDuration}
+                        isPlaying={ctx.isPlayingLocal}
+                        bpm={ctx.bpmLocal}
+                        renderMode={ctx.renderMode}
+                        playbackMode={ctx.playbackMode}
+                        selectedPropType={ctx.bluePropType}
+                        sequence={ctx.effectiveSequence}
+                        showInlineExportProgress={false}
+                        showTempoControls={false}
+                        onPropChange={(prop) =>
+                          interactions.handlePropChange(prop, "video_export")}
+                        onPlaybackToggle={() =>
+                          interactions.handlePlaybackToggle("video_export")}
+                        onBpmChange={(bpm) =>
+                          interactions.handleBpmChange(bpm, "video_export")}
+                        onExport={() => interactions.handleVideoExport()}
+                        onCancel={interactions.handleCancelVideoExport}
+                        onSettingChange={scanInstrumentationEnabled
+                          ? interactions.handleViewerControlSetting
+                          : undefined}
+                      />
+                    {/if}
+                  </div>
+                  <div
+                    class="inspector-content-layer art-settings-layer"
+                    data-active={layout.isArtInspectorActive}
+                    bind:this={artInspectorTarget}
+                    data-viewer-art-inspector-target
+                  ></div>
                 {:else if layout.isImageExportActive && !isMobile}
                   <!-- No onClose on desktop widths: the card settings shape what
                      Share hands over and must stay put. Leave the Card pane via
@@ -1217,12 +1237,48 @@
   }
 
   .export-panel-container {
+    position: relative;
     overflow: hidden;
     overflow-y: auto;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     isolation: isolate;
     min-width: 0;
+  }
+
+  .export-panel-container.art-settings {
+    overflow: hidden;
+  }
+
+  .inspector-content-layer {
+    position: absolute;
+    inset: 0;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity var(--transition-normal),
+      visibility 0s linear var(--duration-normal);
+  }
+
+  .inspector-content-layer[data-active="true"] {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+      opacity var(--transition-normal),
+      visibility 0s linear 0s;
+  }
+
+  .motion-settings-layer {
+    overflow-y: auto;
+  }
+
+  :global(:root[data-motion-preference="reduce"]) .inspector-content-layer {
+    transition-duration: 0ms, 0s;
   }
 
   /* PanelGroup owns the dock's structural motion. Keep Card settings composed

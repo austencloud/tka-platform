@@ -19,7 +19,8 @@ export const VIEWER_MODE_DISSOLVE_NAME = "sequence-viewer-workspace";
 export const VIEWER_MODE_DISSOLVE_CLASS = "sequence-viewer-reduced-dissolve";
 export const VIEWER_MODE_DISSOLVE_DURATION = DURATION.normal;
 
-const DISSOLVE_MODES = new Set(["split", "animation", "card"]);
+const GATE_ONE_DISSOLVE_MODES = new Set(["split", "animation", "card"]);
+const GATE_THREE_STAGE_MODES = new Set(["animation", "animation-3d"]);
 
 interface WorkspaceLease {
   count: number;
@@ -30,15 +31,24 @@ const workspaceLeases = new WeakMap<HTMLElement, WorkspaceLease>();
 const activeWorkspaceTransitions = new WeakMap<HTMLElement, ViewTransition>();
 let activeDissolves = 0;
 
-/** True only for the Side by Side / 2D / Card family governed by Gate 1. */
+/** True for the mounted viewer surfaces governed by Gates 1 through 3. */
 export function isViewerModeDissolve(
   previousMode: string,
   nextMode: string
 ): boolean {
+  const isGateOnePair =
+    GATE_ONE_DISSOLVE_MODES.has(previousMode) &&
+    GATE_ONE_DISSOLVE_MODES.has(nextMode);
+  const isGateTwoPair =
+    (previousMode === "animation" && nextMode === "animation-3d") ||
+    (previousMode === "animation-3d" && nextMode === "animation");
+  const isGateThreePair =
+    (GATE_THREE_STAGE_MODES.has(previousMode) && nextMode === "tunnel") ||
+    (previousMode === "tunnel" && GATE_THREE_STAGE_MODES.has(nextMode));
+
   return (
     previousMode !== nextMode &&
-    DISSOLVE_MODES.has(previousMode) &&
-    DISSOLVE_MODES.has(nextMode)
+    (isGateOnePair || isGateTwoPair || isGateThreePair)
   );
 }
 
@@ -83,7 +93,7 @@ function endDissolve(workspace: HTMLElement): void {
 
 /**
  * Apply a viewer mode mutation through an opacity-only snapshot dissolve when
- * reduced motion is active. Unsupported browsers and non-Gate-1 mode changes
+ * reduced motion is active. Unsupported browsers and ungoverned mode changes
  * receive the same synchronous mutation with no transition.
  */
 export function withViewerModeDissolve(

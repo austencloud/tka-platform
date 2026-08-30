@@ -67,6 +67,9 @@
     type TunnelComposition,
     type TunnelSaveTarget,
   } from "../tunnel/tunnel-composition";
+  import { getOptionalViewerInspectorHostContext } from "../context/viewer-inspector-host-context";
+  import { getOptionalViewerTunnelStageContext } from "../context/viewer-tunnel-stage-context";
+  import { reparentToInspector } from "./reparent-to-inspector";
 
   // Mandala is the static tip-path bloom; Tunnel is the live kaleidoscope. The
   // viewer's mode rail picks one — this pane renders the chosen view, fixed.
@@ -76,9 +79,11 @@
     sequence,
     playback,
     artType,
+    controller: providedController,
     active = true,
     shown,
     layout = "sidebar",
+    sharedTunnelCanvas = false,
     bluePropType,
     redPropType,
     bpm = 60,
@@ -95,12 +100,14 @@
     onArtAction,
     tunnelComposition = null,
     tunnelSaveTarget = null,
+    onTunnelCanvasReadyChange,
   }: {
     sequence: SequenceData;
     playback: ViewerPlaybackState;
     /** Which art view this pane renders. The mode rail switches between Mandala
      *  and Tunnel now, so the pane no longer hosts an in-panel toggle. */
     artType: ArtType;
+    controller?: TunnelViewController;
     /** False while a persistent art pane is parked behind another viewer mode. */
     active?: boolean;
     /**
@@ -113,6 +120,8 @@
     /** "bottom" (mobile) swaps the right sidebar for a ControlDock floating over
      *  the art; "sidebar" (default, desktop) keeps the right rail. */
     layout?: "sidebar" | "bottom";
+    /** The viewer's already-mounted AnimatorCanvas renders Tunnel in place. */
+    sharedTunnelCanvas?: boolean;
     bluePropType?: string;
     redPropType?: string;
     bpm?: number;
@@ -166,24 +175,30 @@
     onArtAction?: ViewerActionSink;
     tunnelComposition?: TunnelComposition | null;
     tunnelSaveTarget?: TunnelSaveTarget | null;
+    onTunnelCanvasReadyChange?: (ready: boolean) => void;
   } = $props();
 
-  // The tunnel controller is owned HERE and shared with both the rendering view
-  // (TunnelArtView) and the controls (ArtSettingsPanel), so the panel's look /
-  // grid / spectrum controls drive the same instance the canvas reads — and the
-  // export entry can derive per-beat layers from it.
-  const controller = new TunnelViewController({
-    getSequence: () => playback.animationState.sequenceData ?? sequence,
-    getComposition: () => tunnelComposition,
+  // The sequence viewer supplies its shell-owned controller so the persistent
+  // Animator canvas and these controls always read the same tunnel state.
+  // Standalone ArtPane callers retain the same behavior through this fallback.
+  const controller =
+    providedController ??
+    new TunnelViewController({
+      getSequence: () => playback.animationState.sequenceData ?? sequence,
+      getComposition: () => tunnelComposition,
+    });
+  $effect(() => {
+    if (!providedController) controller.active = artType === "tunnel";
   });
   const saveTunnelLabel = $derived(
     tunnelSaveTarget ? "Save changes" : "Save tunnel"
   );
-  // Only build/animate the kaleidoscope layers when this pane is the tunnel —
-  // a mandala pane keeps a (cheap) controller but doesn't drive the layer build.
-  $effect(() => {
-    controller.active = artType === "tunnel";
-  });
+  const inspectorHost = getOptionalViewerInspectorHostContext();
+  const tunnelStage = getOptionalViewerTunnelStageContext();
+  const presented = $derived(shown ?? active);
+  const externalInspectorTarget = $derived(
+    layout === "sidebar" ? (inspectorHost?.target ?? null) : null
+  );
 
   // The mandala controller is owned HERE (not inside MandalaPane) so the same
   // instance backs the in-pane dock/takeover AND the Art panel's Export button —
@@ -548,10 +563,9 @@
 
   onDestroy(() => abandonArtExport("component_destroy"));
 
-  // Capture the live tunnel (config + effects + poster) into the collection. The
-  // whole flow lives here — ArtPane owns the controller and the effects context,
-  // so both the settings-panel button and the canvas right-click route through
-  // this one handler.
+  // Capture the live tunnel (config + effects + poster) into the collection.
+  // ArtPane coordinates the controller and effects context, so both the
+  // settings-panel button and canvas right-click route through one handler.
   async function handleSaveTunnel(
     source: "settings_panel" | "canvas_context_menu"
   ) {
@@ -612,7 +626,12 @@
     onArtAction?.("tunnel_save", { stage: "requested", source });
     // Composite ALL stage layers (props + trails + effect overlays), not just the
     // first canvas, so the saved thumbnail matches the live look.
-    const poster = capturePosterFromContainer(artBodyEl);
+    const posterContainer = sharedTunnelCanvas
+      ? (tunnelStage?.canvas?.closest<HTMLElement>(
+          "[data-persistent-animator]"
+        ) ?? null)
+      : artBodyEl;
+    const poster = capturePosterFromContainer(posterContainer);
     // The name describes the TUNNEL — cast, formation, props, effects, rates —
     // not just the sequence under it, so two tunnels built on one word are
     // still telling apart in the collection. An existing save target keeps the
@@ -710,9 +729,30 @@
       );
     }
   }
+
+  $effect(() => {
+    if (
+      !sharedTunnelCanvas ||
+      artType !== "tunnel" ||
+      !presented ||
+      !tunnelStage
+    ) {
+      return;
+    }
+
+    return tunnelStage.registerSaveAction({
+      label: saveTunnelLabel,
+      run: () => void handleSaveTunnel("canvas_context_menu"),
+    });
+  });
 </script>
 
-<div class="art-pane" class:dock-mode={layout === "bottom"}>
+<div
+  class="art-pane"
+  class:dock-mode={layout === "bottom"}
+  class:external-inspector={externalInspectorTarget !== null}
+  class:shared-tunnel-canvas={sharedTunnelCanvas && artType === "tunnel"}
+>
   <div class="art-body" bind:this={artBodyEl}>
     {#if artType === "mandala"}
       <!-- controlsPlacement="external": the mandala's controls live in the Art
@@ -727,7 +767,7 @@
         onExportCancel={cancelMandalaExport}
         onExportRetry={retryMandalaExport}
       />
-    {:else}
+    {:else if !sharedTunnelCanvas}
       <TunnelArtView
         {sequence}
         {playback}
@@ -739,6 +779,7 @@
         {saveTunnelLabel}
         playing={tunnelPlaying}
         onPlayingChange={() => handleTunnelPlaybackToggle("canvas")}
+        onCanvasReady={(canvas) => onTunnelCanvasReadyChange?.(canvas !== null)}
       />
     {/if}
 
@@ -768,32 +809,48 @@
     {/if}
   </div>
 
-  <ArtSettingsPanel
-    {sequence}
-    {playback}
-    {controller}
-    {mandalaController}
-    {artType}
-    {layout}
-    onExport={handleExport}
-    onSaveTunnel={() => void handleSaveTunnel("settings_panel")}
-    {saveTunnelLabel}
-    {bpm}
-    {playbackMode}
-    {stepSize}
-    isPlaying={artType === "tunnel" ? tunnelPlaying : playback.isPlaying}
-    {onBpmChange}
-    {onPlaybackModeChange}
-    onStepSizeChange={() => {}}
-    onPlaybackToggle={artType === "tunnel"
-      ? () => handleTunnelPlaybackToggle("sidebar")
-      : onPlaybackToggle}
-    bluePropType={bluePropType ?? null}
-    redPropType={redPropType ?? null}
-    {onPropChange}
-    {onArtSettingChange}
-    exporting={exportAttemptBusy}
-  />
+  <div
+    class="art-settings-host"
+    class:external={externalInspectorTarget !== null}
+    data-art-settings={artType}
+    data-active={presented}
+    inert={!presented || undefined}
+    aria-hidden={!presented}
+    use:reparentToInspector={externalInspectorTarget}
+  >
+    <ArtSettingsPanel
+      {sequence}
+      {playback}
+      {controller}
+      {mandalaController}
+      {artType}
+      {layout}
+      onExport={handleExport}
+      onSaveTunnel={() => void handleSaveTunnel("settings_panel")}
+      {saveTunnelLabel}
+      {bpm}
+      {playbackMode}
+      {stepSize}
+      isPlaying={sharedTunnelCanvas && artType === "tunnel"
+        ? playback.isPlaying
+        : artType === "tunnel"
+          ? tunnelPlaying
+          : playback.isPlaying}
+      {onBpmChange}
+      {onPlaybackModeChange}
+      onStepSizeChange={() => {}}
+      onPlaybackToggle={sharedTunnelCanvas && artType === "tunnel"
+        ? onPlaybackToggle
+        : artType === "tunnel"
+          ? () => handleTunnelPlaybackToggle("sidebar")
+          : onPlaybackToggle}
+      bluePropType={bluePropType ?? null}
+      redPropType={redPropType ?? null}
+      {onPropChange}
+      {onArtSettingChange}
+      exporting={exportAttemptBusy}
+    />
+  </div>
 </div>
 
 <style>
@@ -808,6 +865,52 @@
     box-sizing: border-box;
     container-type: inline-size;
   }
+  .art-pane.external-inspector,
+  .art-pane.shared-tunnel-canvas {
+    gap: 0;
+    padding: 0;
+  }
+  .art-pane.shared-tunnel-canvas {
+    background: transparent;
+    pointer-events: none;
+  }
+  .art-pane.shared-tunnel-canvas .preview-overlay,
+  .art-pane.shared-tunnel-canvas :global(.export-takeover) {
+    pointer-events: auto;
+  }
+  .art-settings-host {
+    display: flex;
+    height: 100%;
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+  .art-settings-host.external {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity var(--transition-normal),
+      visibility 0s linear var(--duration-normal);
+  }
+  .art-settings-host.external[data-active="true"] {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+      opacity var(--transition-normal),
+      visibility 0s linear 0s;
+  }
+  .art-settings-host.external :global(.art-settings-panel) {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+  }
   /* Dock mode (mobile): the settings become a flow ControlDock at the bottom
      (overlay dropped), and the art shrinks above it — the same lift the card
      export uses — instead of the dock floating over and covering the art.
@@ -816,6 +919,10 @@
     flex-direction: column;
     gap: 0;
     padding: 0;
+  }
+  .art-pane.dock-mode .art-settings-host {
+    width: 100%;
+    height: auto;
   }
   .art-body {
     position: relative;
@@ -829,6 +936,13 @@
   .art-pane.dock-mode .art-body {
     height: auto;
     min-height: 0;
+  }
+  .art-pane.shared-tunnel-canvas .art-body {
+    pointer-events: none;
+  }
+
+  :global(:root[data-motion-preference="reduce"]) .art-settings-host.external {
+    transition-duration: 0ms, 0s;
   }
 
   /* Inline export preview floated over the canvas. Dim + blur the kaleidoscope

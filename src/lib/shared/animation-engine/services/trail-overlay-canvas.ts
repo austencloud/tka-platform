@@ -108,9 +108,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   // prevent polygon-edge seams on the stamp pass.
   private bufferCanvas: OffscreenCanvas | null = null;
   private bufferCtx:
-    | CanvasRenderingContext2D
-    | OffscreenCanvasRenderingContext2D
-    | null = null;
+    CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null = null;
   private trailRenderer = new Canvas2DTrailRenderer();
   private width = 0;
   private height = 0;
@@ -138,8 +136,10 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   // Overlaid tunnel-layer rings (one left/right pair per layer per color). These
   // composite into the SAME blue/red accumulators as the base pair — so the
   // memory cost stays at two accumulator canvases regardless of fold count.
-  private blueLayerRings: Array<{ left: TrailPoint[]; right: TrailPoint[] }> = [];
-  private redLayerRings: Array<{ left: TrailPoint[]; right: TrailPoint[] }> = [];
+  private blueLayerRings: Array<{ left: TrailPoint[]; right: TrailPoint[] }> =
+    [];
+  private redLayerRings: Array<{ left: TrailPoint[]; right: TrailPoint[] }> =
+    [];
 
   // Track previous tracking mode to detect changes
   private lastTrackingMode: TrackingMode | null = null;
@@ -189,7 +189,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   // A mask change resets source rings but deliberately leaves painted pixels
   // in the per-color accumulator, where normal destination-out decay retires
   // them without an abrupt visual cut.
-  private prevTipTrailMask = 0xF;
+  private prevTipTrailMask = 0xf;
 
   initialize(container: HTMLElement, width: number, height: number): void {
     this.dispose();
@@ -311,11 +311,11 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
 
     this.leadingEdge = Math.max(
       2,
-      Math.floor(trailSettings.tailLength ?? DEFAULT_LEADING_EDGE),
+      Math.floor(trailSettings.tailLength ?? DEFAULT_LEADING_EDGE)
     );
     this.ringCapacity = Math.max(
       RING_BUFFER_MIN,
-      this.leadingEdge + RING_BUFFER_HEADROOM,
+      this.leadingEdge + RING_BUFFER_HEADROOM
     );
 
     // 1. Capture current prop tip positions into ring buffers
@@ -323,7 +323,10 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     // Clear ring buffers when tracking mode changes so stale points
     // don't create artifact lines. The overlay's painted pixels fade
     // naturally via destination-out.
-    if (this.lastTrackingMode !== null && this.lastTrackingMode !== trailSettings.trackingMode) {
+    if (
+      this.lastTrackingMode !== null &&
+      this.lastTrackingMode !== trailSettings.trackingMode
+    ) {
       this.blueLeftRing = [];
       this.blueRightRing = [];
       this.redLeftRing = [];
@@ -395,8 +398,8 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     const blueHasTwoEnds = propTipEnds(bluePropType ?? undefined) === 2;
     const redHasTwoEnds = propTipEnds(redPropType ?? undefined) === 2;
     const modeTracksLeft =
-      (trailSettings.trackingMode === TrackingMode.LEFT_END ||
-       trailSettings.trackingMode === TrackingMode.BOTH_ENDS);
+      trailSettings.trackingMode === TrackingMode.LEFT_END ||
+      trailSettings.trackingMode === TrackingMode.BOTH_ENDS;
     // HAND tracks the single prop-center source, carried on the right slot of
     // the resolved config. Routing it through modeTracksRight makes both single-
     // and two-ended props emit exactly one hand trail (left stays off).
@@ -413,16 +416,50 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     // the tip effect map. When no map is provided, all tips are eligible.
     const tipMap = params.tipEffectMap;
     const hasMap = tipMap && Object.keys(tipMap).length > 0;
-    const blueTrailConfig = resolveTrailPointConfig(bluePropType, trailSettings.trackingMode);
-    const redTrailConfig = resolveTrailPointConfig(redPropType, trailSettings.trackingMode);
-    const blueLeftTrails = blueTrailConfig.left.type !== "none" &&
-      (!hasMap || resolveEffect(0, effectTipIndex(blueTrailConfig.left, 0), tipMap!, {}) === "trails");
-    const blueRightTrails = blueTrailConfig.right.type !== "none" &&
-      (!hasMap || resolveEffect(0, effectTipIndex(blueTrailConfig.right, 1), tipMap!, {}) === "trails");
-    const redLeftTrails = redTrailConfig.left.type !== "none" &&
-      (!hasMap || resolveEffect(1, effectTipIndex(redTrailConfig.left, 0), tipMap!, {}) === "trails");
-    const redRightTrails = redTrailConfig.right.type !== "none" &&
-      (!hasMap || resolveEffect(1, effectTipIndex(redTrailConfig.right, 1), tipMap!, {}) === "trails");
+    const blueTrailConfig = resolveTrailPointConfig(
+      bluePropType,
+      trailSettings.trackingMode
+    );
+    const redTrailConfig = resolveTrailPointConfig(
+      redPropType,
+      trailSettings.trackingMode
+    );
+    const blueLeftTrails =
+      blueTrailConfig.left.type !== "none" &&
+      (!hasMap ||
+        resolveEffect(
+          0,
+          effectTipIndex(blueTrailConfig.left, 0),
+          tipMap!,
+          {}
+        ) === "trails");
+    const blueRightTrails =
+      blueTrailConfig.right.type !== "none" &&
+      (!hasMap ||
+        resolveEffect(
+          0,
+          effectTipIndex(blueTrailConfig.right, 1),
+          tipMap!,
+          {}
+        ) === "trails");
+    const redLeftTrails =
+      redTrailConfig.left.type !== "none" &&
+      (!hasMap ||
+        resolveEffect(
+          1,
+          effectTipIndex(redTrailConfig.left, 0),
+          tipMap!,
+          {}
+        ) === "trails");
+    const redRightTrails =
+      redTrailConfig.right.type !== "none" &&
+      (!hasMap ||
+        resolveEffect(
+          1,
+          effectTipIndex(redTrailConfig.right, 1),
+          tipMap!,
+          {}
+        ) === "trails");
 
     // Detect tip-set changes. Reset source rings so a newly enabled tip cannot
     // connect to an old endpoint, but preserve each affected accumulator. Its
@@ -435,7 +472,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       (redRightTrails ? 8 : 0);
     if (tipMask !== this.prevTipTrailMask) {
       const blueBitsChanged = (tipMask & 0x3) !== (this.prevTipTrailMask & 0x3);
-      const redBitsChanged = (tipMask & 0xC) !== (this.prevTipTrailMask & 0xC);
+      const redBitsChanged = (tipMask & 0xc) !== (this.prevTipTrailMask & 0xc);
       if (blueBitsChanged) {
         this.blueLeftRing = [];
         this.blueRightRing = [];
@@ -457,10 +494,28 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     const blueCaptureLive = hasBlue || blueFade.alpha > 0;
     const redCaptureLive = hasRed || redFade.alpha > 0;
     if (blueProp && blueCaptureLive && !bluePropSwapSuppressed) {
-      this.capturePropTips(blueProp, canvasSize, bluePropType, 0, blueTrackLeft && blueLeftTrails, blueTrackRight && blueRightTrails, blueTrailConfig, currentTime);
+      this.capturePropTips(
+        blueProp,
+        canvasSize,
+        bluePropType,
+        0,
+        blueTrackLeft && blueLeftTrails,
+        blueTrackRight && blueRightTrails,
+        blueTrailConfig,
+        currentTime
+      );
     }
     if (redProp && redCaptureLive && !redPropSwapSuppressed) {
-      this.capturePropTips(redProp, canvasSize, redPropType, 1, redTrackLeft && redLeftTrails, redTrackRight && redRightTrails, redTrailConfig, currentTime);
+      this.capturePropTips(
+        redProp,
+        canvasSize,
+        redPropType,
+        1,
+        redTrackLeft && redLeftTrails,
+        redTrackRight && redRightTrails,
+        redTrailConfig,
+        currentTime
+      );
     }
 
     // Capture overlaid tunnel-layer tips into per-layer rings (same color/tip
@@ -471,20 +526,49 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
         const layer = additionalLayers[i]!;
         const blueRings = this.blueLayerRings[i]!;
         const redRings = this.redLayerRings[i]!;
-        if (layer.blueProp && layer.hasBlue && blueCaptureLive && !bluePropSwapSuppressed) {
+        if (
+          layer.blueProp &&
+          layer.hasBlue &&
+          blueCaptureLive &&
+          !bluePropSwapSuppressed
+        ) {
           this.capturePropTipsInto(
-            layer.blueProp, canvasSize, bluePropType, 0, blueRings.left, blueRings.right,
-            blueTrackLeft && blueLeftTrails, blueTrackRight && blueRightTrails, blueTrailConfig, currentTime,
+            layer.blueProp,
+            canvasSize,
+            bluePropType,
+            0,
+            blueRings.left,
+            blueRings.right,
+            blueTrackLeft && blueLeftTrails,
+            blueTrackRight && blueRightTrails,
+            blueTrailConfig,
+            currentTime
           );
         }
-        if (layer.redProp && layer.hasRed && redCaptureLive && !redPropSwapSuppressed) {
+        if (
+          layer.redProp &&
+          layer.hasRed &&
+          redCaptureLive &&
+          !redPropSwapSuppressed
+        ) {
           this.capturePropTipsInto(
-            layer.redProp, canvasSize, redPropType, 1, redRings.left, redRings.right,
-            redTrackLeft && redLeftTrails, redTrackRight && redRightTrails, redTrailConfig, currentTime,
+            layer.redProp,
+            canvasSize,
+            redPropType,
+            1,
+            redRings.left,
+            redRings.right,
+            redTrackLeft && redLeftTrails,
+            redTrackRight && redRightTrails,
+            redTrailConfig,
+            currentTime
           );
         }
       }
-    } else if (this.blueLayerRings.length > 0 || this.redLayerRings.length > 0) {
+    } else if (
+      this.blueLayerRings.length > 0 ||
+      this.redLayerRings.length > 0
+    ) {
       this.blueLayerRings = [];
       this.redLayerRings = [];
     }
@@ -523,6 +607,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       fadeAmount,
       /* isBlue */ true,
       this.blueLayerRings,
+      additionalLayers?.map((layer) => layer.opacity) ?? []
     );
     this.advanceAccumulator(
       this.redAccumCtx,
@@ -536,6 +621,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       fadeAmount,
       /* isBlue */ false,
       this.redLayerRings,
+      additionalLayers?.map((layer) => layer.opacity) ?? []
     );
 
     // Mark each accumulator as "fully cleared while hidden" once its
@@ -592,6 +678,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     fadeAmount: number,
     isBlue: boolean,
     extraRings: Array<{ left: TrailPoint[]; right: TrailPoint[] }> = [],
+    extraRingOpacities: number[] = []
   ): void {
     if (!accumCtx) return;
     if (!hasColor && !envelopeLive) {
@@ -618,32 +705,39 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
 
     const leftLeading = this.getLeadingEdge(leftRing, canvasSize);
     const rightLeading = this.getLeadingEdge(rightRing, canvasSize);
-    const passes: TrailPoint[][] = [];
-    if (leftLeading.length >= 2) passes.push(leftLeading);
-    if (rightLeading.length >= 2) passes.push(rightLeading);
+    const passes: Array<{ points: TrailPoint[]; opacity: number }> = [];
+    if (leftLeading.length >= 2)
+      passes.push({ points: leftLeading, opacity: 1 });
+    if (rightLeading.length >= 2)
+      passes.push({ points: rightLeading, opacity: 1 });
 
     // Overlaid tunnel-layer leading edges — drawn into the same accumulator.
-    for (const lr of extraRings) {
+    for (let index = 0; index < extraRings.length; index++) {
+      const lr = extraRings[index]!;
+      const opacity = Math.max(0, Math.min(1, extraRingOpacities[index] ?? 1));
       const l = this.getLeadingEdge(lr.left, canvasSize);
-      if (l.length >= 2) passes.push(l);
+      if (l.length >= 2) passes.push({ points: l, opacity });
       const r = this.getLeadingEdge(lr.right, canvasSize);
-      if (r.length >= 2) passes.push(r);
+      if (r.length >= 2) passes.push({ points: r, opacity });
     }
 
-    for (const leading of passes) {
+    for (const pass of passes) {
       // renderTrails takes a blue ring and a red ring separately - pass
       // the leading edge in only the active color's slot and an empty
       // array (with its `has*` flag set false) in the other.
+      bCtx.save();
+      bCtx.globalAlpha = pass.opacity;
       this.trailRenderer.renderTrails(
         bCtx as CanvasRenderingContext2D,
-        isBlue ? leading : [],
-        isBlue ? [] : leading,
+        isBlue ? pass.points : [],
+        isBlue ? [] : pass.points,
         overlaySettings,
         currentTime,
         isBlue,
         !isBlue,
-        canvasSize,
+        canvasSize
       );
+      bCtx.restore();
       drew = true;
     }
 
@@ -673,7 +767,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.blueAccumClearedWhileHidden = true;
     this.redAccumClearedWhileHidden = true;
     this.warmupFramesRemaining = TrailOverlayCanvas.WARMUP_FRAMES;
-    this.prevTipTrailMask = 0xF;
+    this.prevTipTrailMask = 0xf;
   }
 
   /** Flush stale trail data on sequence change. Applies a short warmup
@@ -749,7 +843,16 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     const leftRing = propIndex === 0 ? this.blueLeftRing : this.redLeftRing;
     const rightRing = propIndex === 0 ? this.blueRightRing : this.redRightRing;
     this.capturePropTipsInto(
-      prop, canvasSize, propType, propIndex, leftRing, rightRing, trackLeft, trackRight, trailConfig, currentTime,
+      prop,
+      canvasSize,
+      propType,
+      propIndex,
+      leftRing,
+      rightRing,
+      trackLeft,
+      trackRight,
+      trailConfig,
+      currentTime
     );
   }
 
@@ -779,10 +882,18 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
         prop,
         endpointConfig,
         trailConfig.left,
-        propType,
+        propType
       );
       if (endpoint) {
-        this.appendToRing(leftRing, endpoint.x, endpoint.y, canvasSize, propIndex, endpoint.tipIndex ?? 0, currentTime);
+        this.appendToRing(
+          leftRing,
+          endpoint.x,
+          endpoint.y,
+          canvasSize,
+          propIndex,
+          endpoint.tipIndex ?? 0,
+          currentTime
+        );
       }
     }
     if (trackRight) {
@@ -790,10 +901,18 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
         prop,
         endpointConfig,
         trailConfig.right,
-        propType,
+        propType
       );
       if (endpoint) {
-        this.appendToRing(rightRing, endpoint.x, endpoint.y, canvasSize, propIndex, endpoint.tipIndex ?? 1, currentTime);
+        this.appendToRing(
+          rightRing,
+          endpoint.x,
+          endpoint.y,
+          canvasSize,
+          propIndex,
+          endpoint.tipIndex ?? 1,
+          currentTime
+        );
       }
     }
   }
@@ -819,7 +938,6 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     tipIndex: number,
     currentTime: number
   ): void {
-
     if (ring.length > 0) {
       const last = ring[ring.length - 1]!;
       const dx = worldX - last.x;
@@ -858,10 +976,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
    * Extract the leading edge from a ring buffer, sanitized for
    * discontinuities. Returns at most `this.leadingEdge` points.
    */
-  private getLeadingEdge(
-    ring: TrailPoint[],
-    canvasSize: number
-  ): TrailPoint[] {
+  private getLeadingEdge(ring: TrailPoint[], canvasSize: number): TrailPoint[] {
     if (ring.length < 2) return ring;
 
     const start = Math.max(0, ring.length - this.leadingEdge);
@@ -882,10 +997,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     return slice;
   }
 
-  private computeFadeAmount(
-    fadeDurationMs: number,
-    deltaTime: number
-  ): number {
+  private computeFadeAmount(fadeDurationMs: number, deltaTime: number): number {
     const safeDuration = Math.max(fadeDurationMs, 16.67);
     const framesForFullFade = safeDuration / 16.67;
     const baseFade = 3.5 / framesForFullFade;
@@ -903,22 +1015,31 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
    */
   private smoothAlphaDecay(
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-    isBlue: boolean,
+    isBlue: boolean
   ): void {
     if (
       typeof window !== "undefined" &&
-      (window as { __TKA_DISABLE_SMOOTH_DECAY?: boolean }).__TKA_DISABLE_SMOOTH_DECAY === true
+      (window as { __TKA_DISABLE_SMOOTH_DECAY?: boolean })
+        .__TKA_DISABLE_SMOOTH_DECAY === true
     ) {
       return;
     }
 
     if (isBlue) {
       this.blueAlphaDecayFrameCounter++;
-      if (this.blueAlphaDecayFrameCounter < TrailOverlayCanvas.SMOOTH_ALPHA_DECAY_INTERVAL) return;
+      if (
+        this.blueAlphaDecayFrameCounter <
+        TrailOverlayCanvas.SMOOTH_ALPHA_DECAY_INTERVAL
+      )
+        return;
       this.blueAlphaDecayFrameCounter = 0;
     } else {
       this.redAlphaDecayFrameCounter++;
-      if (this.redAlphaDecayFrameCounter < TrailOverlayCanvas.SMOOTH_ALPHA_DECAY_INTERVAL) return;
+      if (
+        this.redAlphaDecayFrameCounter <
+        TrailOverlayCanvas.SMOOTH_ALPHA_DECAY_INTERVAL
+      )
+        return;
       this.redAlphaDecayFrameCounter = 0;
     }
 
