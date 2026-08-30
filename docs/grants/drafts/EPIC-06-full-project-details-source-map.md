@@ -161,8 +161,39 @@ library separately.
 - Budget for tracked props, synchronization, calibration, cleanup, and
   retargeting in addition to the suit and gloves.
 
+## Approved cold-reader revision
+
+After reviewing the first draft as a reader with no Flow Arts background,
+Austen approved these revisions on August 30, 2026:
+
+- define the relationship among the Kinetic Alphabet, Flow Arts Composer, and
+  The Kinetic Archive before using the three names freely;
+- translate double staff as one short staff in each hand and describe body
+  routing in ordinary anatomical language instead of relying on terms such as
+  reel or negative space;
+- explain inverse kinematics, retargeting, contact labels, and the organized
+  motion library when they first appear;
+- make Unreal's animation system part of the development argument rather than
+  naming Unreal only as the destination;
+- use Unreal Motion Matching and its Pose Search database as the funded
+  captured-data implementation, with Control Rig for contact corrections and
+  IK Retargeting for differently proportioned characters;
+- retain model-assisted motion generation as later research after the capture
+  library is large and varied enough;
+- make the three-room milestone tangible through the story bible's existing
+  four-beat matching interaction: the player can move around and slow down a
+  performing avatar, then match a notated sequence to the movement.
+
+Current official Unreal references supporting this implementation direction:
+
+- https://www.unrealengine.com/megagrants
+- https://dev.epicgames.com/documentation/en-us/unreal-engine/motion-matching-in-unreal-engine
+- https://dev.epicgames.com/documentation/en-us/unreal-engine/how-to-create-control-rigs-in-unreal-engine
+- https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-ik-rig
+
 ## Gate status
 
-Austen approved the proposed angle on August 30, 2026. The response may now be
-drafted from this source map. Exact portal prose still requires authorship
-review and Austen's approval before it is saved or entered.
+Austen approved the original angle and the cold-reader revision on August 30,
+2026. The response may now be redrafted from this source map. Exact portal prose
+still requires authorship review and Austen's approval before it is saved or
+entered.
