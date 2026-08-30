@@ -19,6 +19,7 @@ export interface ChoreoCardSizingDeps {
   readonly forceContain: boolean;
   readonly needsScroll: boolean;
   readonly fitWidth: boolean;
+  readonly containSizeMotion: "focus" | "return" | null;
   readonly containModel: ContainModel;
 }
 
@@ -41,6 +42,8 @@ export function createChoreoCardSizingState(
   let flipSuppressed = $state(false);
   let containerWasZero = false;
   let flipTimer: ReturnType<typeof setTimeout> | null = null;
+  let splitContainedSize: Size | null = null;
+  let previousContainSizeMotion: "focus" | "return" | null = null;
 
   /**
    * `measured` carries the size a ResizeObserver already computed for us.
@@ -78,6 +81,20 @@ export function createChoreoCardSizingState(
     const aspectRatio = deps.previewAspectRatio;
     if (!container || !aspectRatio || !Number.isFinite(aspectRatio)) return;
 
+    if (deps.containSizeMotion !== previousContainSizeMotion) {
+      if (
+        deps.containSizeMotion === "focus" &&
+        containedWidth !== null &&
+        containedHeight !== null
+      ) {
+        splitContainedSize = {
+          width: containedWidth,
+          height: containedHeight,
+        };
+      }
+      previousContainSizeMotion = deps.containSizeMotion;
+    }
+
     let availableWidth: number;
     let availableHeight: number;
     if (content) {
@@ -97,8 +114,9 @@ export function createChoreoCardSizingState(
 
     if (availableWidth === 0 || availableHeight === 0) {
       containerWasZero = true;
-      containedWidth = null;
-      containedHeight = null;
+      // A structural transition can briefly measure a mounted pane at zero.
+      // Keep the last painted card through that frame; clearing its dimensions
+      // makes the whole card collapse before the next ResizeObserver delivery.
       return;
     }
 
@@ -115,9 +133,13 @@ export function createChoreoCardSizingState(
     let nextHeight: number | null;
     const containerRatio = availableWidth / availableHeight;
 
-    if (deps.forceContain && deps.fitWidth) {
+    if (deps.containSizeMotion === "return" && splitContainedSize) {
+      nextWidth = splitContainedSize.width;
+      nextHeight = splitContainedSize.height;
+    } else if (deps.forceContain && deps.fitWidth) {
       const heightFromWidth = availableWidth / aspectRatio;
       if (
+        deps.containSizeMotion !== "focus" &&
         Number.isFinite(heightFromWidth) &&
         heightFromWidth > availableHeight
       ) {
@@ -157,6 +179,16 @@ export function createChoreoCardSizingState(
         nextWidth = width;
         nextHeight = model.headerMinPx + width * perWidthUnits;
       }
+    }
+
+    if (
+      nextWidth === null ||
+      nextHeight === null ||
+      nextWidth < 1 ||
+      nextHeight < 1
+    ) {
+      containerWasZero = true;
+      return;
     }
 
     const widthChanged =
@@ -226,7 +258,9 @@ export function createChoreoCardSizingState(
 
     const observer = new ResizeObserver((entries) => {
       const rect = entries[entries.length - 1]?.contentRect;
-      const size = rect ? { width: rect.width, height: rect.height } : undefined;
+      const size = rect
+        ? { width: rect.width, height: rect.height }
+        : undefined;
       captureContainerDimensions(size);
       updateContainedDimensions(size);
     });
@@ -242,6 +276,7 @@ export function createChoreoCardSizingState(
     void deps.forceContain;
     void deps.needsScroll;
     void deps.fitWidth;
+    void deps.containSizeMotion;
     updateContainedDimensions();
   });
 
@@ -280,7 +315,10 @@ export function createChoreoCardSizingState(
       return cellWidth;
     },
     get flipSuppressed() {
-      return flipSuppressed;
+      // The Card surface already owns the workspace resize. Letting its cells
+      // FLIP against page-space measurements at the same time makes them hover
+      // in the old pane, then race and snap back into the moving Card.
+      return flipSuppressed || getDeps().containSizeMotion !== null;
     },
     captureContainerDimensions,
     updateContainedDimensions,

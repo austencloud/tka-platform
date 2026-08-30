@@ -5,12 +5,16 @@
 }
 
 .split-view {
-  display: grid;
-  grid-template-rows: 50% 50%;
-  grid-template-columns: 1fr;
+  display: flex;
   height: 100%;
   width: 100%;
   position: relative;
+}
+
+.split-view > .panel-group {
+  flex: 1;
+  width: 100%;
+  height: 100%;
 }
 
 .split-view .media-pane.persistent-3d,
@@ -89,6 +93,8 @@
   font: inherit;
   -webkit-tap-highlight-color: transparent;
   overflow: visible;
+  opacity: 1;
+  transition: opacity var(--transition-fast);
 }
 
 .split-view .animation-column {
@@ -98,6 +104,11 @@
 .split-view .preview-column {
   background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
   border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+}
+
+.split-view[data-panel-direction="horizontal"] .preview-column {
+  border-top: none;
+  border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 }
 
 .split-view .preview-column-inner {
@@ -229,73 +240,17 @@
   pointer-events: none;
 }
 
+/* The returning surface waits for actual room instead of racing a timer. On a
+   busy canvas frame or a narrow landscape layout, time can advance while the
+   pane is still a sliver; measured geometry cannot. */
+.split-view:not([data-focused]) .split-column[data-readable="false"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .split-view[data-focused] .preview-column {
   border-left-color: transparent;
   border-top-color: transparent;
-}
-
-.split-view[data-focused="animation"] {
-  grid-template-rows: 100% 0%;
-}
-
-.split-view[data-focused="image"] {
-  grid-template-rows: 0% 100%;
-}
-
-.split-view[data-landscape="true"] {
-  grid-template-rows: 1fr;
-  grid-template-columns: 50% 50%;
-}
-
-.split-view[data-landscape="true"] .preview-column {
-  border-top: none;
-  border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-}
-
-.split-view[data-landscape="true"][data-focused="animation"] {
-  grid-template-rows: 1fr;
-  grid-template-columns: 100% 0%;
-}
-
-.split-view[data-landscape="true"][data-focused="image"] {
-  grid-template-rows: 1fr;
-  grid-template-columns: 0% 100%;
-}
-
-.split-view[data-fullscreen-stack="horizontal"] {
-  grid-template-rows: 1fr;
-  grid-template-columns: 50% 50%;
-}
-
-.split-view[data-fullscreen-stack="horizontal"] .preview-column {
-  border-top: none;
-  border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-}
-
-.split-view[data-fullscreen-stack="horizontal"][data-focused="animation"] {
-  grid-template-columns: 100% 0%;
-}
-
-.split-view[data-fullscreen-stack="horizontal"][data-focused="image"] {
-  grid-template-columns: 0% 100%;
-}
-
-.split-view[data-fullscreen-stack="vertical"] {
-  grid-template-rows: 50% 50%;
-  grid-template-columns: 1fr;
-}
-
-.split-view[data-fullscreen-stack="vertical"] .preview-column {
-  border-left: none;
-  border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-}
-
-.split-view[data-fullscreen-stack="vertical"][data-focused="animation"] {
-  grid-template-rows: 100% 0%;
-}
-
-.split-view[data-fullscreen-stack="vertical"][data-focused="image"] {
-  grid-template-rows: 0% 100%;
 }
 
 .split-view .media-pane > * {
@@ -325,16 +280,6 @@
   text-align: center;
 }
 
-.split-view.practice {
-  grid-template-columns: 1fr;
-  grid-template-rows: minmax(0, 1fr) auto;
-}
-
-.split-view.practice[data-landscape="true"] {
-  grid-template-columns: calc(var(--canvas-frac) * 100%) 1fr;
-  grid-template-rows: 1fr;
-}
-
 @media (max-width: 767px) {
   .split-view .split-column.preview-column.focused {
     overflow-y: auto;
@@ -347,57 +292,12 @@
 }
 
 @media (min-width: 768px) {
-  .split-view {
-    grid-template-rows: 1fr;
-    grid-template-columns: 50% 50%;
-  }
-
-  .split-view[data-focused="animation"] {
-    grid-template-rows: 1fr;
-    grid-template-columns: 100% 0%;
-  }
-
-  .split-view[data-focused="image"] {
-    grid-template-rows: 1fr;
-    grid-template-columns: 0% 100%;
-  }
-
-  .split-view .preview-column {
-    border-top: none;
-    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
   .split-view .media-pane {
     padding: 24px;
   }
 
   .split-view .preview-pane {
     padding: 4px;
-  }
-
-  .split-view.practice {
-    grid-template-columns: calc(var(--canvas-frac) * 100%) 1fr;
-    grid-template-rows: 1fr;
-  }
-
-  .split-view[data-adaptive-stack="true"] {
-    grid-template-columns: 1fr;
-    grid-template-rows: 50% 50%;
-  }
-
-  .split-view[data-adaptive-stack="true"] .preview-column {
-    border-left: none;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  .split-view[data-adaptive-stack="true"][data-focused="animation"] {
-    grid-template-columns: 1fr;
-    grid-template-rows: 100% 0%;
-  }
-
-  .split-view[data-adaptive-stack="true"][data-focused="image"] {
-    grid-template-columns: 1fr;
-    grid-template-rows: 0% 100%;
   }
 }
 
@@ -425,4 +325,37 @@
   .split-view .canvas-3d-layer {
     transition: none !important;
   }
+}
+
+/* The review surface and first-party motion setting express the same preference
+   on the document root. Disable the transition itself here, not merely its
+   duration: a running CSS transition temporarily outranks the new opacity
+   declaration in the cascade and can otherwise paint one stale frame. */
+:root[data-motion-preference="reduce"] .split-view,
+:root[data-motion-preference="reduce"] .split-view .split-column,
+:root[data-motion-preference="reduce"] .split-view .preview-column,
+:root[data-motion-preference="reduce"] .split-view .pane-close-btn,
+:root[data-motion-preference="reduce"] .split-view .media-pane.persistent-3d,
+:root[data-motion-preference="reduce"] .split-view .media-pane.persistent-2d,
+:root[data-motion-preference="reduce"]
+  .split-view
+  .media-pane.persistent-3d-hidden,
+:root[data-motion-preference="reduce"]
+  .split-view
+  .media-pane.persistent-2d-hidden,
+:root[data-motion-preference="reduce"] .split-view .persistent-rail,
+:root[data-motion-preference="reduce"] .split-view .persistent-rail-hidden,
+:root[data-motion-preference="reduce"] .split-view .content-overlay,
+:root[data-motion-preference="reduce"] .split-view .content-overlay-hidden,
+:root[data-motion-preference="reduce"] .split-view .practice-deck {
+  transition: none !important;
+}
+
+:root[data-motion-preference="reduce"]
+  .split-view[data-focused]
+  .split-column[data-hidden="true"],
+:root[data-motion-preference="reduce"]
+  .split-view:not([data-focused])
+  .split-column[data-readable="false"] {
+  opacity: 0 !important;
 }

@@ -1,9 +1,13 @@
+// @vitest-environment jsdom
+
 import { effect_root } from "svelte/internal/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
 import type { OrchestratorContext } from "$lib/shared/sequence-viewer/domain/viewer-orchestrator-context";
 import { createViewerEditModeState } from "$lib/shared/sequence-viewer/state/viewer-edit-mode-state.svelte";
 import { createViewerShellLayoutState } from "$lib/shared/sequence-viewer/state/viewer-shell-layout-state.svelte";
+import { DURATION, STAGGER } from "$lib/shared/transitions/transitions";
 import type {
   ExportContext,
   SplitConfig,
@@ -16,7 +20,10 @@ const sequence = {
   steps: [],
 } as unknown as SequenceData;
 
-function createHarness(initialPlaying: boolean) {
+function createHarness(
+  initialPlaying: boolean,
+  resolvedCardAutoLayout: ResolvedAutoLayout | null = null
+) {
   let playing = initialPlaying;
   let viewerMode: ViewerMode = "animation";
   let exportContext: ExportContext = "animation-export";
@@ -117,6 +124,9 @@ function createHarness(initialPlaying: boolean) {
     get cardReady() {
       return false;
     },
+    get resolvedCardAutoLayout() {
+      return resolvedCardAutoLayout;
+    },
     ensureInteractiveServices: vi.fn(),
     enterEditMode: editMode.enterEditMode,
     exitEditMode: editMode.exitEditMode,
@@ -130,6 +140,7 @@ function createHarness(initialPlaying: boolean) {
         getContext: () => context,
         getSequence: () => sequence,
         getIsMobile: () => true,
+        getWorkspaceElement: () => null,
         startInSplit: false,
         startInCardThenSplit: false,
       },
@@ -166,6 +177,8 @@ function createHarness(initialPlaying: boolean) {
 const disposals: Array<() => void> = [];
 
 afterEach(() => {
+  vi.useRealTimers();
+  delete document.documentElement.dataset.motionPreference;
   while (disposals.length > 0) disposals.pop()?.();
 });
 
@@ -193,6 +206,139 @@ describe("sequence viewer Card playback", () => {
 
     expect(harness.playing).toBe(false);
     expect(harness.togglePlayback).not.toHaveBeenCalled();
+  });
+
+  it("leases the readable split Card shape for the entire Card visit", () => {
+    vi.useFakeTimers();
+    const resolved = {
+      cols: 4,
+      rows: 3,
+      startPlacement: "row",
+      widthUnits: 4,
+      stepCount: 0,
+    } satisfies ResolvedAutoLayout;
+    const harness = createHarness(false, resolved);
+    disposals.push(harness.dispose);
+
+    harness.layout.rememberReadableCardAutoLayout(resolved, 322, 280);
+    harness.layout.selectViewerMode("card");
+
+    expect(harness.layout.cardAutoLayoutOverride).toEqual(resolved);
+    vi.advanceTimersByTime(DURATION.emphasis * 2);
+    expect(harness.layout.cardAutoLayoutOverride).toEqual(resolved);
+
+    harness.layout.selectViewerMode("animation");
+    vi.advanceTimersByTime(DURATION.emphasis - 1);
+    expect(harness.layout.cardAutoLayoutOverride).toEqual(resolved);
+    vi.advanceTimersByTime(1);
+    expect(harness.layout.cardAutoLayoutOverride).toEqual(resolved);
+    vi.advanceTimersByTime(32);
+    expect(harness.layout.cardAutoLayoutOverride).toBeNull();
+  });
+
+  it("rejects the wide shallow Card grid measured while a pane collapses", () => {
+    const stable = {
+      cols: 4,
+      rows: 3,
+      startPlacement: "row",
+      widthUnits: 4,
+      stepCount: 0,
+    } satisfies ResolvedAutoLayout;
+    const collapsing = {
+      cols: 5,
+      rows: 2,
+      startPlacement: "row",
+      widthUnits: 5,
+      stepCount: 0,
+    } satisfies ResolvedAutoLayout;
+    const harness = createHarness(false, collapsing);
+    disposals.push(harness.dispose);
+
+    harness.layout.rememberReadableCardAutoLayout(stable, 322, 280);
+    harness.layout.rememberReadableCardAutoLayout(collapsing, 375, 186);
+    harness.layout.selectViewerMode("card");
+
+    expect(harness.layout.cardAutoLayoutOverride).toEqual(stable);
+  });
+
+  it("lets the export dock lead the focused pane by one motion stagger", () => {
+    vi.useFakeTimers();
+    const harness = createHarness(false);
+    disposals.push(harness.dispose);
+
+    harness.layout.selectViewerMode("card");
+    harness.layout.selectSplitMode();
+
+    expect(harness.exportContext).toBeNull();
+    expect(harness.viewerMode).toBe("card");
+    vi.advanceTimersByTime(STAGGER.normal - 1);
+    expect(harness.viewerMode).toBe("card");
+    vi.advanceTimersByTime(1);
+    expect(harness.viewerMode).toBe("split");
+  });
+
+  it("keeps contained Card sizing on only for the workspace handoff", () => {
+    vi.useFakeTimers();
+    const harness = createHarness(false);
+    disposals.push(harness.dispose);
+
+    harness.layout.selectSplitMode();
+    vi.advanceTimersByTime(STAGGER.normal);
+    harness.layout.selectViewerMode("card");
+    expect(harness.layout.cardContainSizeMotion).toBe("focus");
+    vi.advanceTimersByTime(DURATION.emphasis + DURATION.normal - 1);
+    expect(harness.layout.cardContainSizeMotion).toBe("focus");
+    vi.advanceTimersByTime(1);
+    expect(harness.layout.cardContainSizeMotion).toBeNull();
+
+    harness.layout.selectSplitMode();
+    expect(harness.layout.cardContainSizeMotion).toBeNull();
+    vi.advanceTimersByTime(STAGGER.normal);
+    expect(harness.layout.cardContainSizeMotion).toBe("return");
+    vi.advanceTimersByTime(DURATION.emphasis + DURATION.normal);
+    expect(harness.layout.cardContainSizeMotion).toBeNull();
+  });
+
+  it("pins Card cells through the reduced-motion dissolve settle", () => {
+    vi.useFakeTimers();
+    document.documentElement.dataset.motionPreference = "reduce";
+    const harness = createHarness(false);
+    disposals.push(harness.dispose);
+
+    harness.layout.selectSplitMode();
+    harness.layout.selectViewerMode("card");
+    expect(harness.layout.cardContainSizeMotion).toBe("focus");
+    vi.advanceTimersByTime(DURATION.normal + STAGGER.normal - 1);
+    expect(harness.layout.cardContainSizeMotion).toBe("focus");
+    vi.advanceTimersByTime(1);
+    expect(harness.layout.cardContainSizeMotion).toBeNull();
+
+    harness.layout.selectSplitMode();
+    expect(harness.layout.cardContainSizeMotion).toBe("return");
+    vi.advanceTimersByTime(DURATION.normal + STAGGER.normal);
+    expect(harness.layout.cardContainSizeMotion).toBeNull();
+  });
+
+  it("keeps the stable Card layout leased throughout a 2D focus visit", () => {
+    vi.useFakeTimers();
+    const resolved = {
+      cols: 3,
+      rows: 4,
+      startPlacement: "column",
+      widthUnits: 3,
+      stepCount: 0,
+    } satisfies ResolvedAutoLayout;
+    const harness = createHarness(false, resolved);
+    disposals.push(harness.dispose);
+
+    harness.layout.rememberReadableCardAutoLayout(resolved, 581, 839);
+    harness.layout.selectSplitMode();
+    vi.advanceTimersByTime(STAGGER.normal);
+    harness.layout.selectViewerMode("animation");
+
+    expect(harness.layout.cardAutoLayoutOverride).toEqual(resolved);
+    vi.advanceTimersByTime(DURATION.emphasis * 2);
+    expect(harness.layout.cardAutoLayoutOverride).toEqual(resolved);
   });
 
   it("does not cancel the restored playback when the card QR opens animation", () => {

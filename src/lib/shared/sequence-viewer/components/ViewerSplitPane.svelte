@@ -17,11 +17,21 @@
     setEffectsConfigContext,
   } from "$lib/shared/effects/state/effects-config-context";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
   import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
   import ViewerCompanionSurface from "./ViewerCompanionSurface.svelte";
   import ViewerMotionSurface from "./ViewerMotionSurface.svelte";
   import ViewerPracticeLane from "./ViewerPracticeLane.svelte";
   import PracticeCountInOverlay from "./PracticeCountInOverlay.svelte";
+  import {
+    resolveViewerPanelDirection,
+    resolveViewerPanelLayout,
+    resolveViewerPaneRevealReady,
+    type ViewerFocusedPane,
+    type ViewerPanelDirection,
+  } from "./viewer-panel-layout";
+  import { motionDuration } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import type { ViewerSplitPaneProps } from "./viewer-split-pane-types";
   import "./viewer-split-pane.css";
 
@@ -41,6 +51,8 @@
     onQrPlayClick,
     onCanvasReady,
     onChoreoCardContextMenu,
+    cardAutoLayoutOverride,
+    cardContainSizeMotion = null,
     onAutoLayoutResolved,
     onPlaybackToggle,
     onSystemPlaybackChange,
@@ -120,6 +132,17 @@
   let splitHeight = $state(
     typeof window !== "undefined" ? window.innerHeight : 0
   );
+  let animationPanelWidth = $state(0);
+  let animationPanelHeight = $state(0);
+  let previewPanelWidth = $state(0);
+  let previewPanelHeight = $state(0);
+  let animationPanelReady = $state(false);
+  let previewPanelReady = $state(false);
+  const viewerFocusedPane = $derived<"animation" | "image" | null>(
+    layout.focusedPane === "animation" || layout.focusedPane === "image"
+      ? layout.focusedPane
+      : null
+  );
   const adaptiveVerticalSplit = $derived(
     !practiceActive &&
       layout.focusedPane === null &&
@@ -127,6 +150,103 @@
       !layout.isFullscreen &&
       splitHeight > splitWidth
   );
+  const responsivePanelLayout = $derived(
+    resolveViewerPanelLayout({
+      isFullscreen: layout.isFullscreen,
+      fullscreenStackVertical: layout.fullscreenStackVertical,
+      isMobile: layout.isMobile,
+      isLandscapeMobile: layout.isLandscapeMobile,
+      adaptiveVerticalSplit,
+      focusedPane: viewerFocusedPane,
+      practiceActive,
+      practiceCanvasFraction,
+    })
+  );
+  let retainedSplitDirection = $state<ViewerPanelDirection | null>(null);
+  let focusReleasePending = $state(false);
+  let previousFocusedPane: ViewerFocusedPane = viewerFocusedPane;
+  let directionReleaseTimer: ReturnType<typeof setTimeout> | undefined;
+
+  $effect(() => {
+    const focusedPane = viewerFocusedPane;
+    const responsiveDirection = responsivePanelLayout.direction;
+
+    if (practiceActive) {
+      clearTimeout(directionReleaseTimer);
+      directionReleaseTimer = undefined;
+      focusReleasePending = false;
+      retainedSplitDirection = responsiveDirection;
+    } else if (retainedSplitDirection === null) {
+      retainedSplitDirection = responsiveDirection;
+    }
+
+    if (!practiceActive && focusedPane !== null) {
+      clearTimeout(directionReleaseTimer);
+      directionReleaseTimer = undefined;
+      focusReleasePending = false;
+    } else if (
+      !practiceActive &&
+      previousFocusedPane !== null &&
+      focusedPane === null
+    ) {
+      clearTimeout(directionReleaseTimer);
+      const duration = motionDuration(DURATION.emphasis);
+      focusReleasePending = duration > 0;
+      if (duration > 0) {
+        directionReleaseTimer = setTimeout(() => {
+          directionReleaseTimer = undefined;
+          focusReleasePending = false;
+        }, duration);
+      }
+    } else if (!practiceActive && !focusReleasePending) {
+      retainedSplitDirection = responsiveDirection;
+    }
+
+    previousFocusedPane = focusedPane;
+  });
+
+  $effect(() => () => clearTimeout(directionReleaseTimer));
+
+  const panelDirection = $derived(
+    resolveViewerPanelDirection({
+      responsiveDirection: responsivePanelLayout.direction,
+      retainedSplitDirection,
+      focusedPane: practiceActive ? null : viewerFocusedPane,
+      focusReleasePending: !practiceActive && focusReleasePending,
+    })
+  );
+  const panelLayout = $derived({
+    ...responsivePanelLayout,
+    direction: panelDirection,
+  });
+  $effect.pre(() => {
+    // Clear the covered pane's bound measurements before focus is released.
+    // Its first split-mode measurement is therefore guaranteed to be fresh,
+    // rather than the large value it had before the focus transition began.
+    if (viewerFocusedPane === "image") {
+      animationPanelWidth = 0;
+      animationPanelHeight = 0;
+    } else if (viewerFocusedPane === "animation") {
+      previewPanelWidth = 0;
+      previewPanelHeight = 0;
+    }
+  });
+  $effect(() => {
+    animationPanelReady = resolveViewerPaneRevealReady({
+      pane: "animation",
+      focusedPane: viewerFocusedPane,
+      direction: panelLayout.direction,
+      width: animationPanelWidth,
+      height: animationPanelHeight,
+    });
+    previewPanelReady = resolveViewerPaneRevealReady({
+      pane: "image",
+      focusedPane: viewerFocusedPane,
+      direction: panelLayout.direction,
+      width: previewPanelWidth,
+      height: previewPanelHeight,
+    });
+  });
 
   // During the practice layout glide, CSS scales the current canvas buffer.
   // Resume rasterization once the 300ms workspace transition has settled.
@@ -157,25 +277,16 @@
   });
 </script>
 
-<div
-  class="split-view view-container"
-  class:practice={practiceActive}
-  bind:clientWidth={splitWidth}
-  bind:clientHeight={splitHeight}
-  style="--canvas-frac: {practiceCanvasFraction};"
-  data-fullscreen-stack={layout.isFullscreen
-    ? layout.fullscreenStackVertical
-      ? "vertical"
-      : "horizontal"
-    : undefined}
-  data-landscape={layout.isLandscapeMobile || undefined}
-  data-adaptive-stack={adaptiveVerticalSplit || undefined}
-  data-focused={layout.focusedPane}
->
+{#snippet animationPanel()}
   <div
     class="split-column animation-column"
     class:focused={layout.focusedPane === "animation"}
     data-hidden={layout.focusedPane === "image"}
+    data-readable={animationPanelReady}
+    inert={layout.focusedPane === "image"}
+    aria-hidden={layout.focusedPane === "image"}
+    bind:clientWidth={animationPanelWidth}
+    bind:clientHeight={animationPanelHeight}
   >
     <ViewerMotionSurface
       side="left"
@@ -222,6 +333,8 @@
       {onStepClick}
       {onQrPlayClick}
       {onChoreoCardContextMenu}
+      {cardAutoLayoutOverride}
+      {cardContainSizeMotion}
       {onAutoLayoutResolved}
       {onPlaybackToggle}
       {playbackMode}
@@ -240,11 +353,18 @@
     />
     <PracticeCountInOverlay count={practiceCountdown} />
   </div>
+{/snippet}
 
+{#snippet previewPanel()}
   <div
     class="split-column preview-column"
     class:focused={layout.focusedPane === "image"}
     data-hidden={layout.focusedPane === "animation"}
+    data-readable={previewPanelReady}
+    inert={layout.focusedPane === "animation"}
+    aria-hidden={layout.focusedPane === "animation"}
+    bind:clientWidth={previewPanelWidth}
+    bind:clientHeight={previewPanelHeight}
   >
     <div
       class="preview-column-inner"
@@ -295,6 +415,8 @@
         {onStepClick}
         {onQrPlayClick}
         {onChoreoCardContextMenu}
+        {cardAutoLayoutOverride}
+        {cardContainSizeMotion}
         {onAutoLayoutResolved}
         {onPlaybackToggle}
         {playbackMode}
@@ -324,4 +446,28 @@
       {/if}
     </div>
   </div>
+{/snippet}
+
+<div
+  class="split-view view-container"
+  class:practice={practiceActive}
+  bind:clientWidth={splitWidth}
+  bind:clientHeight={splitHeight}
+  data-panel-direction={panelLayout.direction}
+  data-focused={layout.focusedPane}
+>
+  <PanelGroup
+    direction={panelLayout.direction}
+    sizes={panelLayout.sizes}
+    gap={0}
+    panels={[
+      { id: "animation", content: animationPanel, resizable: false },
+      {
+        id: "preview",
+        content: previewPanel,
+        resizable: false,
+        preferredSize: panelLayout.previewPreferredSize,
+      },
+    ]}
+  />
 </div>

@@ -219,19 +219,22 @@
   }
 
   // Get flex style for a panel
-  function getFlexStyle(index: number): string {
-    const fixedSize = panels[index]?.fixedSize;
+  function getFlexStyle(panel: PanelDefinition, index: number): string {
+    // A keyed panel keeps its captured definition while its outro runs. Reading
+    // `panels[index]` here used the next array instead, so a departing fixed or
+    // content-sized dock briefly became `flex: 1` and starved its neighbour.
+    const fixedSize = panel.fixedSize;
     if (fixedSize) {
       return `flex-grow: 0; flex-shrink: 0; flex-basis: ${fixedSize}`;
     }
 
-    const panelKey = panels[index]?.id ?? index;
-    const preferredSize = panels[index]?.preferredSize;
+    const panelKey = panel.id ?? index;
+    const preferredSize = panel.preferredSize;
     if (preferredSize && !manuallySizedPanels.has(panelKey)) {
       return `flex-grow: 0; flex-shrink: 0; flex-basis: ${preferredSize}`;
     }
 
-    return `flex-grow: ${sizes[index] ?? 1}; flex-shrink: 1; flex-basis: 0px`;
+    return `flex-grow: ${sizes[index] ?? panel.defaultSize ?? 1}; flex-shrink: 1; flex-basis: 0px`;
   }
 </script>
 
@@ -248,7 +251,8 @@
     <!-- Panel wrapper with flex sizing -->
     <div
       class="panel-wrapper"
-      style={getFlexStyle(i)}
+      style={getFlexStyle(panel, i)}
+      data-panel-id={panel.id}
       data-min-size={panel.minSize}
       data-max-size={panel.maxSize}
       transition:flexPresence={{

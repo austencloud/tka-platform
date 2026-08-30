@@ -22,6 +22,8 @@
     onStepClick,
     onQrPlayClick,
     onChoreoCardContextMenu,
+    cardAutoLayoutOverride,
+    cardContainSizeMotion = null,
     onAutoLayoutResolved,
     onPlaybackToggle,
     playbackMode,
@@ -106,6 +108,8 @@
       catDogModeEnabled={propRendering.catDogModeEnabled}
       {rerenderTrigger}
       onContextMenu={onChoreoCardContextMenu}
+      autoLayoutOverride={cardAutoLayoutOverride}
+      containSizeMotion={cardContainSizeMotion}
       onAutoLayoutResolved={card.shown ? onAutoLayoutResolved : undefined}
     />
   </div>

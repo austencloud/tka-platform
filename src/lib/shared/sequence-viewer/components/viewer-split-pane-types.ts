@@ -41,7 +41,13 @@ export interface ViewerSplitPaneProps {
   onQrPlayClick?: () => void;
   onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
   onChoreoCardContextMenu?: (x: number, y: number) => void;
-  onAutoLayoutResolved?: (layout: ResolvedAutoLayout | null) => void;
+  cardAutoLayoutOverride?: ResolvedAutoLayout | null;
+  cardContainSizeMotion?: "focus" | "return" | null;
+  onAutoLayoutResolved?: (
+    layout: ResolvedAutoLayout | null,
+    width: number,
+    height: number
+  ) => void;
   onPlaybackToggle?: () => void;
   onSystemPlaybackChange?: (
     playing: boolean,
@@ -145,7 +151,9 @@ export interface ViewerCompanionSurfaceProps {
   onStepClick: (stepIndex: number) => void;
   onQrPlayClick?: () => void;
   onChoreoCardContextMenu?: (x: number, y: number) => void;
-  onAutoLayoutResolved?: (layout: ResolvedAutoLayout | null) => void;
+  cardAutoLayoutOverride?: ResolvedAutoLayout | null;
+  cardContainSizeMotion?: "focus" | "return" | null;
+  onAutoLayoutResolved?: ViewerSplitPaneProps["onAutoLayoutResolved"];
   onPlaybackToggle?: () => void;
   playbackMode?: "continuous" | "step";
   onPlaybackModeChange?: (mode: "continuous" | "step") => void;

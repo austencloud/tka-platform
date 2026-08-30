@@ -119,8 +119,16 @@
     // setting via compositionManager). Embedded contexts (landing page,
     // marketing previews) need a fixed layout independent of viewer prefs.
     startPositionLayoutOverride?: "row" | "column" | null;
+    /** Holds a resolved Auto grid while a parent workspace changes geometry. */
+    autoLayoutOverride?: ResolvedAutoLayout | null;
+    /** Keeps contain sizing on the viewer's transition clock. */
+    containSizeMotion?: "focus" | "return" | null;
     /** Reports the measured Auto winner so Download Card can reuse it for PNG export. */
-    onAutoLayoutResolved?: (layout: ResolvedAutoLayout | null) => void;
+    onAutoLayoutResolved?: (
+      layout: ResolvedAutoLayout | null,
+      width: number,
+      height: number
+    ) => void;
   }
 
   const {
@@ -153,6 +161,8 @@
     hideSoloHeader = false,
     onContextMenu,
     startPositionLayoutOverride = null,
+    autoLayoutOverride = null,
+    containSizeMotion = null,
     onAutoLayoutResolved,
   }: Props = $props();
 
@@ -376,6 +386,7 @@
     forceContain,
     needsScroll: layoutState.needsScroll,
     fitWidth,
+    containSizeMotion,
     containModel: layoutState.containModel,
   }));
 
@@ -402,6 +413,7 @@
     durationColCount,
     containerWidth: sizingState.containerWidth,
     containerHeight: sizingState.containerHeight,
+    autoLayoutOverride,
   }));
 
   // Reactive aliases for values that move to the layout state factory.
@@ -441,12 +453,18 @@
       return;
     }
     const fit = layoutState.autoFit;
+    const measuredWidth = containedWidth ?? 0;
+    const measuredHeight = containedHeight ?? 0;
     const key = fit
-      ? `${sequence.steps.length}:${fit.cols}:${fit.rows}:${fit.startPlacement}:${fit.widthUnits ?? fit.cols}`
+      ? `${sequence.steps.length}:${fit.cols}:${fit.rows}:${fit.startPlacement}:${fit.widthUnits ?? fit.cols}:${Math.round(measuredWidth)}x${Math.round(measuredHeight)}`
       : "none";
     if (key === lastReportedAutoLayoutKey) return;
     lastReportedAutoLayoutKey = key;
-    report(fit ? { ...fit, stepCount: sequence.steps.length } : null);
+    report(
+      fit ? { ...fit, stepCount: sequence.steps.length } : null,
+      measuredWidth,
+      measuredHeight
+    );
   });
 
   // Filtered cells based on includeStartPosition.
@@ -488,7 +506,9 @@
   // it is a global handedness preference, not a per-host override. Hosts that
   // override bluePropType/redPropType are unaffected — chirality only applies
   // to buugeng-family props.
-  const blueBuugengFlipped = $derived(getSettings().blueBuugengFlipped ?? false);
+  const blueBuugengFlipped = $derived(
+    getSettings().blueBuugengFlipped ?? false
+  );
   const redBuugengFlipped = $derived(getSettings().redBuugengFlipped ?? false);
 
   /**
@@ -734,7 +754,14 @@
   class:dark-mode={activeDarkMode}
   class:scroll-mode={needsScroll}
   class:force-contain={forceContain}
+  data-contain-size-motion={containSizeMotion}
   aria-busy={isRefreshing ? "true" : undefined}
+  data-layout-columns={effectiveColumns}
+  data-layout-rows={effectiveRows}
+  data-preview-aspect={previewAspectRatio}
+  data-auto-layout-locked={autoLayoutOverride ? "true" : "false"}
+  data-auto-layout-lock-columns={autoLayoutOverride?.cols ?? 0}
+  data-auto-layout-lock-rows={autoLayoutOverride?.rows ?? 0}
   bind:this={containerElement}
   oncontextmenu={(e: MouseEvent) => {
     e.preventDefault();
@@ -962,6 +989,18 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .choreo-card-root[data-contain-size-motion="focus"] .preview-stack {
+    transition:
+      width var(--transition-dramatic),
+      height var(--transition-dramatic);
+  }
+
+  .choreo-card-root[data-contain-size-motion="return"] .preview-stack {
+    transition:
+      width var(--transition-emphasis),
+      height var(--transition-emphasis);
   }
 
   /* In scroll mode, fill the parent edge-to-edge instead of using
