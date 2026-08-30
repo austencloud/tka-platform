@@ -196,7 +196,7 @@
     line-height: 1.45;
   }
 
-  p :global(strong) {
+  .compact-page p :global(strong) {
     color: #141414;
     font-weight: 700;
   }
