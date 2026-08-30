@@ -89,6 +89,18 @@ is [`active/2026-08-28-unified-learn-atlas-design.md`](active/2026-08-28-unified
   the root stayed 16px, and the console reported no errors. The broader landing
   morph suite still has its pre-existing `/glossary` participant failure on
   both the task branch and the baseline `main` checkout.
+- The standalone Grid Guide topic was recomposed as a compact overview in
+  `d4ce6a0b4b`, `0b30889e9e`, `e01a38f084`, and `0894d8d9a2`. The topic no
+  longer asks readers to choose Page versus Reflow: it uses the semantic reflow
+  content directly, keeps the print/book sheet as the separate print owner, and
+  places the contextual Grid lesson link in the title row instead of a dedicated
+  vertical band. The authored explanation now pairs its opening and point
+  definitions with the real hand pictograph, then compares Diamond, Box, and the
+  combined 8-point grid in one row on wide layouts. At 1440x900 the teaching
+  content ends at 826px instead of producing the previous 2967px document.
+  Focused Guide contracts passed 14/14, both changed Svelte components compiled
+  with 0 warnings, the root stayed 16px through 3840x2160, and every checked
+  viewport had zero page-width overflow.
 
 ## Believed done - unverified
 
