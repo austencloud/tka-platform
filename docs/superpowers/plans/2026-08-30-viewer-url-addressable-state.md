@@ -264,7 +264,7 @@ git commit -m "feat(viewer): URL state codec for full-state links" -- src/lib/sh
 - Create: `src/lib/shared/sequence-viewer/services/viewer-url-session.ts`
 - Test: `src/lib/shared/sequence-viewer/services/viewer-url-session.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -349,12 +349,12 @@ describe("ViewerUrlSession", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run --config tests/config/vitest.config.ts src/lib/shared/sequence-viewer/services/viewer-url-session.test.ts`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Implement the session**
+- [x] **Step 3: Implement the session**
 
 ```ts
 /**
@@ -459,12 +459,12 @@ export function createViewerUrlSession(
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run --config tests/config/vitest.config.ts src/lib/shared/sequence-viewer/services/viewer-url-session.test.ts`
 Expected: PASS (7 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(viewer): ViewerUrlSession — seeds, own-link rule, capture, debounced sync" -- src/lib/shared/sequence-viewer/services/viewer-url-session.ts src/lib/shared/sequence-viewer/services/viewer-url-session.test.ts
@@ -965,7 +965,7 @@ Every Phase B task follows the same five steps: **(1) Discovery** — read the b
 ## Ledger
 
 - [x] Task 1 — codec
-- [ ] Task 2 — session
+- [x] Task 2 — session
 - [ ] Task 3 — effects snapshot/export
 - [ ] Task 4 — fx slice
 - [ ] Task 5 — view seam + wiring
