@@ -34,6 +34,15 @@ function proArchetype(): SequenceData {
     id: "arch-pro",
     name: "arch",
     word: "A",
+    startPosition: {
+      isStartPosition: true,
+      id: "SP",
+      startPos: "alpha",
+      endPos: "alpha",
+      letter: null,
+      gridMode: "diamond",
+      motions: { blue: motion("blue"), red: motion("red") },
+    },
     steps: [step as any],
     thumbnails: [],
     isFavorite: false,
@@ -49,14 +58,68 @@ describe("buildFlowerSequence", () => {
   // (the StepData/Step unification — "absence = invisible placeholder"). The
   // stripped hand therefore stays on the step with isVisible: false.
   it("strips to the requested hand only", () => {
-    const seq = buildFlowerSequence(proArchetype(), { style: "pro", turns: 1, ori: "in", grid: "diamond", petals: 2 }, "blue", []);
+    const seq = buildFlowerSequence(
+      proArchetype(),
+      { style: "pro", turns: 1, ori: "in", grid: "diamond", petals: 2 },
+      "blue",
+      []
+    );
     const m = seq.steps[0]!.motions;
     expect(m.blue?.isVisible).toBe(true);
     expect(m.red?.isVisible).toBe(false);
   });
 
   it("tags the shown hand's prop as a club", () => {
-    const seq = buildFlowerSequence(proArchetype(), { style: "pro", turns: 1, ori: "in", grid: "diamond", petals: 2 }, "blue", []);
+    const seq = buildFlowerSequence(
+      proArchetype(),
+      { style: "pro", turns: 1, ori: "in", grid: "diamond", petals: 2 },
+      "blue",
+      []
+    );
     expect(seq.steps[0]!.motions.blue?.propType).toBe("club");
+  });
+
+  it("repeats a quarter-turn position path until the prop orientation closes", () => {
+    const seq = buildFlowerSequence(
+      proArchetype(),
+      { style: "pro", turns: 0.25, ori: "in", grid: "diamond", petals: 1 },
+      "blue",
+      []
+    );
+
+    expect(seq.orientationCycleCount).toBe(8);
+    expect(seq.steps).toHaveLength(8);
+    expect(seq.steps.at(-1)!.motions.blue?.endOrientation).toBe(
+      seq.steps[0]!.motions.blue?.startOrientation
+    );
+  });
+
+  it("starts the second quarter-turn flower on its complementary phase", () => {
+    const inside = buildFlowerSequence(
+      proArchetype(),
+      { style: "pro", turns: 0.75, ori: "in", grid: "diamond", petals: 3 },
+      "blue",
+      []
+    );
+    const outside = buildFlowerSequence(
+      proArchetype(),
+      { style: "pro", turns: 0.75, ori: "out", grid: "diamond", petals: 3 },
+      "blue",
+      []
+    );
+
+    expect(inside.steps[0]!.motions.blue?.startOrientation).toBe("in");
+    expect(outside.steps[0]!.motions.blue?.startOrientation).toBe("clock");
+  });
+
+  it("preserves the radial in/out pair for denominator-one flowers", () => {
+    const outside = buildFlowerSequence(
+      proArchetype(),
+      { style: "pro", turns: 1.5, ori: "out", grid: "diamond", petals: 3 },
+      "blue",
+      []
+    );
+
+    expect(outside.steps[0]!.motions.blue?.startOrientation).toBe("out");
   });
 });

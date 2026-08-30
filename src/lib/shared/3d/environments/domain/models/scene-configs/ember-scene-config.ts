@@ -51,8 +51,19 @@ export interface LavaRiverChannelConfig {
   length?: number;
   curvature?: number;
   widthScale: number;
+  /** Fraction of the channel length used to widen a fissure source into the river. */
+  sourceTaperFraction?: number;
   /** Runtime X, Z, and height above the performer ground plane. */
   points?: [number, number, number][];
+}
+
+/** Point lights that sit above the channel to light the rock it runs between. */
+export interface LavaRiverBankLightConfig {
+  count?: number;
+  intensity?: number;
+  distance?: number;
+  /** Metres above the channel surface. Low values lay a hard disc on the bank. */
+  heightOffset?: number;
 }
 
 export interface LavaRiversConfig {
@@ -61,10 +72,25 @@ export interface LavaRiversConfig {
   baseColor: string;
   hotColor: string;
   crustColor: string;
+  /** Chilled rock flanking the molten channel. Falls back to `crustColor`. */
+  leveeColor?: string;
   flowSpeed: number;
   width: number;
   warpIntensity: number;
   crustCoverage: number;
+  /**
+   * How far the chilled margin reaches in from the nominal edge, as a fraction
+   * of the channel half-width. Higher values leave a narrower incandescent
+   * thread and a wider cooled shoulder.
+   */
+  edgeCooling?: number;
+  /** Strength of the channel's radiance falling on the levee beside it. */
+  bankRadiance?: number;
+  /** Strip width reserved beyond the channel for the ragged shore contour. */
+  bankMarginFraction?: number;
+  /** Metres the reserved margin drops so its polygon edge tucks into the bank. */
+  bankPlunge?: number;
+  bankLight?: LavaRiverBankLightConfig;
 }
 
 /**
@@ -128,10 +154,17 @@ export interface VolcanicHazeConfig {
   opacity: number;
   scale: number;
   animationSpeed: number;
+  /** Seconds between lightning strikes. */
   lightningInterval: number;
   lightningIntensity: number;
   innerGlowColor: string;
   radius: number;
+  /** Bearing of the distant vent lighting the low haze. Horizontal part only. */
+  underglowDirection?: [number, number, number];
+  /** Defaults to `innerGlowColor`. */
+  underglowColor?: string;
+  /** Zero leaves the dome evenly lit at eye level. */
+  underglowStrength?: number;
 }
 
 export interface EmberSceneConfig {
@@ -170,6 +203,19 @@ export interface EmberSceneConfig {
   } | null;
   platform: ObsidianPlatformConfig;
 }
+
+/**
+ * Three lights across a 271 metre channel, high enough that each one washes the
+ * bank instead of stamping a disc on it. The earlier rig sat 0.7 metres above
+ * the surface at intensity 86, which put roughly twenty times more light
+ * directly beneath it than on the rock it was meant to be illuminating.
+ */
+const EMBER_LAVA_RIVER_BANK_LIGHT: LavaRiverBankLightConfig = {
+  count: 3,
+  intensity: 58,
+  distance: 30,
+  heightOffset: 2.6,
+};
 
 const EMBER_PILLAR_RINGS: TreeRingConfig[] = [
   {
@@ -231,13 +277,8 @@ export function createDefaultEmberConfig(
       channels: [
         {
           widthScale: 1,
+          sourceTaperFraction: volcanicWorldR7.lavaRiver.sourceTaperFraction,
           points: volcanicWorldR7.lavaRiver.pointsRuntimeXZHeight.map(
-            ([x, z, height]) => [x, z, height]
-          ) as [number, number, number][],
-        },
-        {
-          widthScale: volcanicWorldR7.southVentCascade.widthScale,
-          points: volcanicWorldR7.southVentCascade.pointsRuntimeXZHeight.map(
             ([x, z, height]) => [x, z, height]
           ) as [number, number, number][],
         },
@@ -245,10 +286,14 @@ export function createDefaultEmberConfig(
       baseColor: look.lavaRivers.baseColor,
       hotColor: look.lavaRivers.hotColor,
       crustColor: look.lavaRivers.crustColor,
+      leveeColor: look.lavaRivers.leveeColor,
       flowSpeed: look.lavaRivers.flowSpeed,
       width: volcanicWorldR7.lavaRiver.width,
       warpIntensity: look.lavaRivers.warpIntensity,
       crustCoverage: look.lavaRivers.crustCoverage,
+      edgeCooling: look.lavaRivers.edgeCooling,
+      bankRadiance: look.lavaRivers.bankRadiance,
+      bankLight: EMBER_LAVA_RIVER_BANK_LIGHT,
     },
     obsidianPillars: {
       enabled: false,

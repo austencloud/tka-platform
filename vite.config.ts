@@ -1298,7 +1298,10 @@ export default defineConfig(({ command, mode }) => ({
       "Cross-Origin-Embedder-Policy": "unsafe-none",
     },
     fs: {
-      allow: [".", "../../", "../../../animator", "../../../desktop"],
+      // "../../../" keeps the primary checkout's node_modules reachable when the
+      // server runs from a worktree under E:/worktrees/<repo>/<name> whose
+      // node_modules is a junction into the primary checkout.
+      allow: [".", "../../", "../../../", "../../../animator", "../../../desktop"],
       strict: true, // 2026: Security best practice
     },
     hmr: {

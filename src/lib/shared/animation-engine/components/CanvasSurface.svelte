@@ -46,11 +46,18 @@ captureEffectDiagnostics to the context menu.
   import PathLinesOverlay from "./layers/PathLinesOverlay.svelte";
   import ProgressOverlay from "./layers/ProgressOverlay.svelte";
   import { AnimationEngine } from "../services/animation-engine.svelte";
-  import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
+  import {
+    getAnimationVisibilityManager,
+    type AnimationVisibilityStateManager,
+  } from "../state/animation-visibility-state.svelte";
   import { isSeamlesslyLoopable as sequenceLoopabilityCheck } from "$lib/shared/foundation/services/sequence-loopability-checker";
   import type { FireOverlayConfig } from "../domain/types/fire-types";
   import type { LedOverlayConfig } from "../domain/types/led-types";
-  import type { TipEffectMap, TipEffortMap, EffectType } from "../domain/types/tip-effect-types";
+  import type {
+    TipEffectMap,
+    TipEffortMap,
+    EffectType,
+  } from "../domain/types/tip-effect-types";
   import { untrack, type Snippet } from "svelte";
   import { fireCacheInvalidation } from "../state/fire-invalidation-signal.svelte";
   import { effectErrorSignal } from "../state/effect-error-signal.svelte";
@@ -59,6 +66,7 @@ captureEffectDiagnostics to the context menu.
   import { tryGetViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
   import { getRenderContextRegistry } from "../get-render-context-registry";
   import { installAnimatorDiagnostics } from "../debug/animator-diagnostics";
+  import type { QualityTier } from "../domain/types/quality-types";
 
   let {
     // Engine-driving props
@@ -106,6 +114,7 @@ captureEffectDiagnostics to the context menu.
     effectsConfigState = undefined,
     prewarmEffects = undefined,
     contextId = undefined,
+    initialQualityTier = undefined,
     // Callbacks
     onCanvasReady = () => {},
     onInitialized = undefined,
@@ -164,6 +173,8 @@ captureEffectDiagnostics to the context menu.
      *  first switch to them never freezes. Omit on memory-sensitive surfaces. */
     prewarmEffects?: EffectType[];
     contextId?: string;
+    /** Optional adaptive-quality ceiling applied before engine startup. */
+    initialQualityTier?: QualityTier;
     onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
     onInitialized?: () => void;
     onEffectError?: (effectName: string, error: Error) => void;
@@ -173,12 +184,16 @@ captureEffectDiagnostics to the context menu.
     cornerControl?: Snippet;
   } = $props();
 
-  const resolvedContextId = contextId ?? `canvas-${Math.random().toString(36).slice(2, 8)}`;
+  const resolvedContextId =
+    contextId ?? `canvas-${Math.random().toString(36).slice(2, 8)}`;
 
   let containerElement: HTMLDivElement | undefined = $state();
 
   // Engine instance - created here in the leaf and bound back out to the parent.
   const engineInstance = new AnimationEngine();
+  if (initialQualityTier) {
+    engineInstance.setInitialQualityTier(initialQualityTier);
+  }
   engine = engineInstance;
 
   // Sync 2D overlay suppression (for 3D mode)
@@ -187,11 +202,16 @@ captureEffectDiagnostics to the context menu.
   });
 
   // Use $derived to read visibilityManagerOverride reactively (avoids state_referenced_locally)
-  const visibilityManager = $derived(visibilityManagerOverride ?? getAnimationVisibilityManager());
+  const visibilityManager = $derived(
+    visibilityManagerOverride ?? getAnimationVisibilityManager()
+  );
   $effect.pre(() => {
     // Read through visibilityManager derived (which already tracks visibilityManagerOverride)
     // to avoid capturing the destructured prop directly
-    const override = visibilityManager !== getAnimationVisibilityManager() ? visibilityManager : null;
+    const override =
+      visibilityManager !== getAnimationVisibilityManager()
+        ? visibilityManager
+        : null;
     if (override) {
       engineInstance.setVisibilityManager(override);
     }
@@ -237,7 +257,7 @@ captureEffectDiagnostics to the context menu.
     if (!viewerVisibilityCtx) return;
     engineInstance.setMotionVisibility(
       viewerVisibilityCtx.blueMotion,
-      viewerVisibilityCtx.redMotion,
+      viewerVisibilityCtx.redMotion
     );
   });
 
@@ -277,7 +297,7 @@ captureEffectDiagnostics to the context menu.
       if (name && err) {
         console.warn(
           `[CanvasSurface] ${name} effect was auto-disabled after repeated failures. ` +
-          `Toggle the effect off and on to retry. Error: ${err.message}`
+            `Toggle the effect off and on to retry. Error: ${err.message}`
         );
         effectErrorSignal.clear();
       }
@@ -287,12 +307,24 @@ captureEffectDiagnostics to the context menu.
   // Derived state from engine
   const isInitialized = $derived(engineInstance.animatorState.isInitialized);
   const isPreRendering = $derived(engineInstance.animatorState.isPreRendering);
-  const preRenderProgress = $derived(engineInstance.animatorState.preRenderProgress);
-  const preRenderedFramesReady = $derived(engineInstance.animatorState.preRenderedFramesReady);
-  const displayedLetter = $derived(engineInstance.animatorState.displayedLetter);
-  const displayedTurnsTuple = $derived(engineInstance.animatorState.displayedTurnsTuple);
-  const displayedStepNumber = $derived(engineInstance.animatorState.displayedStepNumber);
-  const displayedMusicalPosition = $derived(engineInstance.animatorState.displayedMusicalPosition);
+  const preRenderProgress = $derived(
+    engineInstance.animatorState.preRenderProgress
+  );
+  const preRenderedFramesReady = $derived(
+    engineInstance.animatorState.preRenderedFramesReady
+  );
+  const displayedLetter = $derived(
+    engineInstance.animatorState.displayedLetter
+  );
+  const displayedTurnsTuple = $derived(
+    engineInstance.animatorState.displayedTurnsTuple
+  );
+  const displayedStepNumber = $derived(
+    engineInstance.animatorState.displayedStepNumber
+  );
+  const displayedMusicalPosition = $derived(
+    engineInstance.animatorState.displayedMusicalPosition
+  );
 
   // Initialize engine when container element appears.
   // The hero canvas stays mounted always - no teardown during disassemble.
@@ -331,7 +363,10 @@ captureEffectDiagnostics to the context menu.
           // init itself means NO canvas gets created at all — an empty stage.
           // Swallowing it silently once hid a DataCloneError for a full
           // evening; always leave a trace.
-          console.error("[CanvasSurface] engine initialize() failed — canvas never created:", err);
+          console.error(
+            "[CanvasSurface] engine initialize() failed — canvas never created:",
+            err
+          );
         });
     });
 
@@ -342,7 +377,7 @@ captureEffectDiagnostics to the context menu.
     if (import.meta.env.DEV) {
       disposeDiagnostics = installAnimatorDiagnostics(
         engineInstance,
-        () => containerElement,
+        () => containerElement
       );
     }
 
@@ -462,14 +497,15 @@ captureEffectDiagnostics to the context menu.
       stepNumbersVisible={effectiveBeatNumbersVisible}
       {positionGlyphVisible}
       darkMode={darkModeEnabled}
-      isAtStartPosition={beatIndicators && !hideStepNumbers && currentStep < 1 && sequenceData !== null}
-      isAtEndPosition={
-        beatIndicators &&
+      isAtStartPosition={beatIndicators &&
+        !hideStepNumbers &&
+        currentStep < 1 &&
+        sequenceData !== null}
+      isAtEndPosition={beatIndicators &&
         !hideStepNumbers &&
         sequenceData !== null &&
         !effectiveIsSeamlesslyLoopable &&
-        currentStep >= (sequenceData.steps?.length ?? 0) + 0.99
-      }
+        currentStep >= (sequenceData.steps?.length ?? 0) + 0.99}
     />
 
     <!-- Always mounted: PathLinesOverlay self-gates on showBlue/showRed and owns
@@ -526,7 +562,6 @@ captureEffectDiagnostics to the context menu.
     height: 100%;
     object-fit: contain;
   }
-
 
   @media (prefers-reduced-motion: reduce) {
     .canvas-wrapper,

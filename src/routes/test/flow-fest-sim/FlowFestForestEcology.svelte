@@ -4,6 +4,7 @@
   import { untrack } from "svelte";
   import {
     Group,
+    type InstancedMesh,
     type Mesh,
     type MeshStandardMaterial,
     type Object3D,
@@ -12,6 +13,7 @@
     createForestRuntimeGrassField,
     createForestRuntimeTreeInstances,
     disposeForestRuntimeEcology,
+    selectForestRuntimeGrassDensity,
   } from "$lib/shared/3d/environments/scenes/forest/forest-runtime-ecology";
   import {
     createInstanceFrustumCuller,
@@ -20,12 +22,20 @@
   } from "$lib/shared/3d/rendering/instance-frustum-culling";
   import ForestClearingWind from "$lib/shared/3d/environments/scenes/forest/ForestClearingWind.svelte";
   import {
+    buildFlowFestCanopyShellGeometry,
+    FLOW_FEST_CANOPY_SHELL_TIERS,
     FLOW_FEST_FOREST_GRASS_ASSET,
+    FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS,
     FLOW_FEST_FOREST_GROUND_LIFE_ASSETS,
     FLOW_FEST_FOREST_DISTANCE_FALLBACK_FAMILY,
     FLOW_FEST_FOREST_DISTANCE_LOD,
     FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS,
     FLOW_FEST_FOREST_TREE_ASSETS,
+    flattenFlowFestDistanceTierMaterial,
+    isFlowFestForestFoliageMaterial,
+    summarizeFlowFestForestEcologyAssets,
+    type FlowFestForestEcologyAssetEntry,
+    type FlowFestForestEcologyAssetReport,
     type FlowFestForestEcologyLayout,
     type FlowFestForestDistanceTreeFamilyId,
     type FlowFestForestTreeFamilyId,
@@ -35,6 +45,8 @@
     layout: FlowFestForestEcologyLayout;
     foliageTint: string;
     barkTint: string;
+    grassTint: string;
+    onAssetReport?: (report: FlowFestForestEcologyAssetReport) => void;
     onReady?: (details: {
       treeInstances: number;
       grassInstances: number;
@@ -56,6 +68,8 @@
     layout,
     foliageTint,
     barkTint,
+    grassTint,
+    onAssetReport,
     onReady,
     onCullingSample,
     onGrassCullingSample,
@@ -142,6 +156,14 @@
     loaderOptions
   );
   const grassPrototypes = useGltf(FLOW_FEST_FOREST_GRASS_ASSET, loaderOptions);
+  const grassMidPrototypes = useGltf(
+    FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS.mid,
+    loaderOptions
+  );
+  const grassFarPrototypes = useGltf(
+    FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS.far,
+    loaderOptions
+  );
   const dampSedge = useGltf(
     FLOW_FEST_FOREST_GROUND_LIFE_ASSETS["damp-sedge-tussock"],
     loaderOptions
@@ -151,11 +173,145 @@
     loaderOptions
   );
 
+  interface EcologyAssetSource {
+    subscribe: (run: (value: unknown) => void) => () => void;
+    error: {
+      subscribe: (run: (value: Error | undefined) => void) => () => void;
+    };
+  }
+
+  const ecologyAssetSources: ReadonlyArray<{
+    key: string;
+    url: string;
+    source: EcologyAssetSource;
+  }> = [
+    ["near:island-tree-01", FLOW_FEST_FOREST_TREE_ASSETS["island-tree-01"], islandTree01],
+    ["near:island-tree-02", FLOW_FEST_FOREST_TREE_ASSETS["island-tree-02"], islandTree02],
+    ["near:island-tree-03", FLOW_FEST_FOREST_TREE_ASSETS["island-tree-03"], islandTree03],
+    ["near:tree-small-02", FLOW_FEST_FOREST_TREE_ASSETS["tree-small-02"], treeSmall02],
+    [
+      "near:plantcatalog-aesculus-carnea",
+      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-aesculus-carnea"],
+      plantCatalogAesculusCarnea,
+    ],
+    [
+      "near:plantcatalog-oak-urban",
+      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-oak-urban"],
+      plantCatalogOakUrban,
+    ],
+    [
+      "near:plantcatalog-oak-colonised",
+      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-oak-colonised"],
+      plantCatalogOakColonised,
+    ],
+    [
+      "near:plantcatalog-willow",
+      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-willow"],
+      plantCatalogWillow,
+    ],
+    [
+      "near:plantcatalog-buckeye-31",
+      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-buckeye-31"],
+      plantCatalogBuckeye31,
+    ],
+    [
+      "near:plantcatalog-buckeye-79",
+      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-buckeye-79"],
+      plantCatalogBuckeye79,
+    ],
+    [
+      "near:plantcatalog-habitat-snag",
+      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-habitat-snag"],
+      plantCatalogHabitatSnag,
+    ],
+    ["mid:island-tree-01", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["island-tree-01"], islandTree01Mid],
+    ["mid:island-tree-02", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["island-tree-02"], islandTree02Mid],
+    ["mid:island-tree-03", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["island-tree-03"], islandTree03Mid],
+    ["mid:tree-small-02", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["tree-small-02"], treeSmall02Mid],
+    ["far:island-tree-01", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["island-tree-01"], islandTree01Far],
+    ["far:island-tree-02", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["island-tree-02"], islandTree02Far],
+    ["far:island-tree-03", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["island-tree-03"], islandTree03Far],
+    ["far:tree-small-02", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["tree-small-02"], treeSmall02Far],
+    ["grass:near", FLOW_FEST_FOREST_GRASS_ASSET, grassPrototypes],
+    ["grass:mid", FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS.mid, grassMidPrototypes],
+    ["grass:far", FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS.far, grassFarPrototypes],
+    [
+      "ground-life:damp-sedge-tussock",
+      FLOW_FEST_FOREST_GROUND_LIFE_ASSETS["damp-sedge-tussock"],
+      dampSedge,
+    ],
+    [
+      "ground-life:woodland-hazel-shrub",
+      FLOW_FEST_FOREST_GROUND_LIFE_ASSETS["woodland-hazel-shrub"],
+      hazelShrub,
+    ],
+  ].map(([key, url, source]) => ({
+    key: key as string,
+    url: url as string,
+    source: source as unknown as EcologyAssetSource,
+  }));
+
+  const assetLedger = new Map<string, FlowFestForestEcologyAssetEntry>(
+    ecologyAssetSources.map(({ key, url }) => [
+      key,
+      { key, url, state: "pending" as const },
+    ])
+  );
+  let assetLedgerRevision = $state(0);
+
+  $effect(() => {
+    const unsubscribers: Array<() => void> = [];
+    for (const { key, url, source } of ecologyAssetSources) {
+      unsubscribers.push(
+        source.subscribe((value) => {
+          const entry = assetLedger.get(key);
+          if (!entry || !value || entry.state === "ready") return;
+          entry.state = "ready";
+          entry.message = null;
+          assetLedgerRevision += 1;
+        })
+      );
+      unsubscribers.push(
+        source.error.subscribe((error) => {
+          const entry = assetLedger.get(key);
+          if (!entry || !error || entry.state === "failed") return;
+          entry.state = "failed";
+          entry.message = error.message || String(error);
+          console.error(
+            `[flow-fest-sim] Forest ecology asset failed to load: ${key} (${url})`,
+            error
+          );
+          assetLedgerRevision += 1;
+        })
+      );
+    }
+    return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
+  });
+
+  const assetReport = $derived.by(() => {
+    void assetLedgerRevision;
+    return summarizeFlowFestForestEcologyAssets(
+      ecologyAssetSources.map(({ key, url }) => {
+        const entry = assetLedger.get(key);
+        return {
+          key,
+          url,
+          state: entry?.state ?? "pending",
+          message: entry?.message ?? null,
+        };
+      })
+    );
+  });
+
+  $effect(() => {
+    onAssetReport?.(assetReport);
+  });
+
   let treeRoots = $state<Group[]>([]);
-  let grassRoot = $state<Group | null>(null);
+  let grassRoots = $state<Group[]>([]);
   let groundLifeRoot = $state<Group | null>(null);
   let treeCullers: InstanceFrustumCuller[] = [];
-  let grassCuller: InstanceFrustumCuller | null = null;
+  let grassCullers: InstanceFrustumCuller[] = [];
   let lastCullingSignature = "";
   let lastGrassCullingSignature = "";
 
@@ -266,9 +422,8 @@
     return sources;
   });
 
-  const grassSources = $derived.by(() => {
+  function extractGrassSources(scene: Object3D | undefined) {
     const sources = new Map<"summer-sward" | "woodland-grass", Mesh>();
-    const scene = $grassPrototypes?.scene;
     if (!scene) return sources;
     scene.traverse((object) => {
       const mesh = object as Mesh;
@@ -280,7 +435,15 @@
       }
     });
     return sources;
-  });
+  }
+
+  const grassSources = $derived(extractGrassSources($grassPrototypes?.scene));
+  const midGrassSources = $derived(
+    extractGrassSources($grassMidPrototypes?.scene)
+  );
+  const farGrassSources = $derived(
+    extractGrassSources($grassFarPrototypes?.scene)
+  );
 
   function buildDistanceTierRoot(
     tier: "mid" | "far",
@@ -297,14 +460,82 @@
           FLOW_FEST_FOREST_DISTANCE_FALLBACK_FAMILY[placement.familyId] ===
           familyId
       );
-      root.add(
-        createForestRuntimeTreeInstances(geometrySource, placements, familyId, {
-          materialSource,
-          distanceTier: tier,
-        })
+      const tierInstances = createForestRuntimeTreeInstances(
+        geometrySource,
+        placements,
+        familyId,
+        { materialSource, distanceTier: tier }
       );
+      substituteDistanceTierCanopy(tierInstances, familyId, tier);
+      flattenUntexturedDistanceMaterials(tierInstances);
+      root.add(tierInstances);
     }
     return root;
+  }
+
+  /**
+   * Swap every decimated canopy in a distance tier for a solid crown shell.
+   * The simplified leaf atlas that ships in `distance-lod/*.glb` has no
+   * coverage left to grade, so the tier is rebuilt as mass. Runs before the
+   * material flatten, and the shell carries no UVs, so the flatten still
+   * strips the borrowed atlas and the moment tint owns the colour.
+   */
+  function substituteDistanceTierCanopy(
+    root: Object3D,
+    familyId: FlowFestForestDistanceTreeFamilyId,
+    tier: "mid" | "far"
+  ): number {
+    let replaced = 0;
+    root.traverse((object) => {
+      const mesh = object as InstancedMesh;
+      if (!mesh.isMesh || !mesh.geometry) return;
+      const materials = Array.isArray(mesh.material)
+        ? mesh.material
+        : [mesh.material];
+      const isFoliage = materials.some((candidate) =>
+        isFlowFestForestFoliageMaterial(candidate as MeshStandardMaterial)
+      );
+      if (!isFoliage) return;
+      if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+      const bounds = mesh.geometry.boundingBox;
+      if (!bounds) return;
+      // The source geometry belongs to the loaded GLB and is shared with every
+      // other consumer of that asset, so it is replaced, never disposed.
+      mesh.geometry = buildFlowFestCanopyShellGeometry(
+        bounds,
+        `${familyId}-${tier}-${mesh.name}`,
+        FLOW_FEST_CANOPY_SHELL_TIERS[tier]
+      );
+      mesh.userData.ownsGeometry = true;
+      mesh.computeBoundingSphere();
+      replaced += 1;
+    });
+    return replaced;
+  }
+
+  /**
+   * Distance-tier geometry ships without UVs while the near-tier materials it
+   * borrows are textured and alpha-cut. Sampling those maps with no UVs reads
+   * one transparent texel and discards the whole canopy, so strip the atlas
+   * and the cutout and let the tint own the mass. Meshes that do carry UVs are
+   * left alone, so a future textured LOD keeps its maps.
+   */
+  function flattenUntexturedDistanceMaterials(root: Object3D): void {
+    root.traverse((object) => {
+      const mesh = object as Mesh;
+      if (!mesh.isMesh || !mesh.geometry) return;
+      if (mesh.geometry.getAttribute("uv")) return;
+      const materials = Array.isArray(mesh.material)
+        ? mesh.material
+        : [mesh.material];
+      for (const candidate of materials) {
+        flattenFlowFestDistanceTierMaterial(
+          candidate as unknown as Parameters<
+            typeof flattenFlowFestDistanceTierMaterial
+          >[0]
+        );
+      }
+    });
   }
 
   $effect(() => {
@@ -312,13 +543,17 @@
     const activeMidTreeSources = midTreeSources;
     const activeFarTreeSources = farTreeSources;
     const activeGrassSources = grassSources;
+    const activeMidGrassSources = midGrassSources;
+    const activeFarGrassSources = farGrassSources;
     if (
       sources.size !== Object.keys(FLOW_FEST_FOREST_TREE_ASSETS).length ||
       activeMidTreeSources.size !==
         Object.keys(FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid).length ||
       activeFarTreeSources.size !==
         Object.keys(FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far).length ||
-      activeGrassSources.size !== 2
+      activeGrassSources.size !== 2 ||
+      activeMidGrassSources.size !== 2 ||
+      activeFarGrassSources.size !== 2
     )
       return;
     const nextNearTrees = new Group();
@@ -345,11 +580,28 @@
     );
     const nextTreeRoots = [nextNearTrees, nextMidTrees, nextFarTrees];
     nextTreeRoots.forEach((root) => (root.visible = false));
-    const nextGrass = createForestRuntimeGrassField(
-      layout.grass,
-      activeGrassSources
-    );
-    nextGrass.visible = false;
+    const nextGrassRoots = [
+      createForestRuntimeGrassField(layout.grass, activeGrassSources, {
+        distanceTier: "near",
+      }),
+      createForestRuntimeGrassField(
+        selectForestRuntimeGrassDensity(
+          layout.grass,
+          FLOW_FEST_FOREST_DISTANCE_LOD.grassMidDensity
+        ),
+        activeMidGrassSources,
+        { distanceTier: "mid" }
+      ),
+      createForestRuntimeGrassField(
+        selectForestRuntimeGrassDensity(
+          layout.grass,
+          FLOW_FEST_FOREST_DISTANCE_LOD.grassFarDensity
+        ),
+        activeFarGrassSources,
+        { distanceTier: "far" }
+      ),
+    ];
+    nextGrassRoots.forEach((root) => (root.visible = false));
     const sharedCullingOptions = {
       minRenderedVerticesPerBatch: 0,
       boundsPadding: 1.25,
@@ -373,34 +625,53 @@
         minimumDistanceMeters: FLOW_FEST_FOREST_DISTANCE_LOD.midMaximumMeters,
       }),
     ];
-    const nextGrassCuller = createInstanceFrustumCuller(nextGrass, {
+    const grassCullingOptions = {
       ...sharedCullingOptions,
       boundsPadding: 0.35,
-      maximumDistanceMeters: FLOW_FEST_FOREST_DISTANCE_LOD.grassMaximumMeters,
-    });
+    };
+    const nextGrassCullers = [
+      createInstanceFrustumCuller(nextGrassRoots[0]!, {
+        ...grassCullingOptions,
+        maximumDistanceMeters:
+          FLOW_FEST_FOREST_DISTANCE_LOD.grassNearMaximumMeters,
+      }),
+      createInstanceFrustumCuller(nextGrassRoots[1]!, {
+        ...grassCullingOptions,
+        minimumDistanceMeters:
+          FLOW_FEST_FOREST_DISTANCE_LOD.grassNearMaximumMeters,
+        maximumDistanceMeters:
+          FLOW_FEST_FOREST_DISTANCE_LOD.grassMidMaximumMeters,
+      }),
+      createInstanceFrustumCuller(nextGrassRoots[2]!, {
+        ...grassCullingOptions,
+        minimumDistanceMeters:
+          FLOW_FEST_FOREST_DISTANCE_LOD.grassMidMaximumMeters,
+        maximumDistanceMeters: FLOW_FEST_FOREST_DISTANCE_LOD.grassMaximumMeters,
+      }),
+    ];
     const previousTreeRoots = untrack(() => treeRoots);
     const previousTreeCullers = treeCullers;
-    const previousGrassCuller = grassCuller;
-    const previousGrass = untrack(() => grassRoot);
+    const previousGrassCullers = grassCullers;
+    const previousGrassRoots = untrack(() => grassRoots);
     previousTreeCullers.forEach((culler) => culler.restore());
-    previousGrassCuller?.restore();
+    previousGrassCullers.forEach((culler) => culler.restore());
     treeCullers = nextTreeCullers;
-    grassCuller = nextGrassCuller;
+    grassCullers = nextGrassCullers;
     lastCullingSignature = "";
     lastGrassCullingSignature = "";
     treeRoots = nextTreeRoots;
-    grassRoot = nextGrass;
+    grassRoots = nextGrassRoots;
     previousTreeRoots.forEach(disposeForestRuntimeEcology);
-    if (previousGrass) disposeForestRuntimeEcology(previousGrass);
+    previousGrassRoots.forEach(disposeForestRuntimeEcology);
     return () => {
       if (treeRoots[0] === nextNearTrees) treeRoots = [];
-      if (grassRoot === nextGrass) grassRoot = null;
+      if (grassRoots[0] === nextGrassRoots[0]) grassRoots = [];
       if (treeCullers[0] === nextTreeCullers[0]) treeCullers = [];
-      if (grassCuller === nextGrassCuller) grassCuller = null;
+      if (grassCullers[0] === nextGrassCullers[0]) grassCullers = [];
       nextTreeCullers.forEach((culler) => culler.restore());
-      nextGrassCuller.restore();
+      nextGrassCullers.forEach((culler) => culler.restore());
       nextTreeRoots.forEach(disposeForestRuntimeEcology);
-      disposeForestRuntimeEcology(nextGrass);
+      nextGrassRoots.forEach(disposeForestRuntimeEcology);
     };
   });
 
@@ -419,16 +690,34 @@
         for (const candidate of materials) {
           const material = candidate as MeshStandardMaterial;
           if (!material.isMeshStandardMaterial) continue;
-          const name = material.name.toLowerCase();
-          const isFoliage =
-            name.includes("leaf") ||
-            name.includes("twig") ||
-            name.includes("foliage") ||
-            name.includes("sedge") ||
-            name.includes("hazel");
+          const isFoliage = isFlowFestForestFoliageMaterial(material);
           material.color.set(isFoliage ? foliageTint : barkTint);
           const adjustment = grade?.[isFoliage ? "foliage" : "bark"];
           if (adjustment) material.color.offsetHSL(...adjustment);
+        }
+      });
+    }
+  });
+
+  /**
+   * The grass field carries its own per-tuft instance colours, authored as a
+   * summer palette. three.js multiplies the material colour into those, so the
+   * moment's grass tint grades 21,730 tufts without disturbing a single
+   * placement. Without it, 2:13 AM renders noon-green turf everywhere the
+   * headlight or the bonfire reaches.
+   */
+  $effect(() => {
+    for (const root of grassRoots) {
+      root?.traverse((object) => {
+        const mesh = object as Mesh;
+        if (!mesh.isMesh) return;
+        const materials = Array.isArray(mesh.material)
+          ? mesh.material
+          : [mesh.material];
+        for (const candidate of materials) {
+          const material = candidate as MeshStandardMaterial;
+          if (!material.isMeshStandardMaterial) continue;
+          material.color.set(grassTint);
         }
       });
     }
@@ -464,7 +753,8 @@
   });
 
   $effect(() => {
-    if (treeRoots.length !== 3 || !grassRoot || !groundLifeRoot) return;
+    if (treeRoots.length !== 3 || grassRoots.length !== 3 || !groundLifeRoot)
+      return;
     const tierMetrics = treeRoots.map((root) => {
       let drawBatches = 0;
       let renderedTriangles = 0;
@@ -508,6 +798,7 @@
         const stats = culler.stats;
         total.sourceBatches += stats.sourceBatches;
         total.culledBatches += stats.culledBatches;
+        total.visibleBatches += stats.visibleBatches;
         total.instances += stats.instances;
         total.estimatedVerticesCovered += stats.estimatedVerticesCovered;
         total.visibleInstances += stats.visibleInstances;
@@ -521,6 +812,7 @@
       {
         sourceBatches: 0,
         culledBatches: 0,
+        visibleBatches: 0,
         instances: 0,
         estimatedVerticesCovered: 0,
         visibleInstances: 0,
@@ -535,11 +827,13 @@
 
   useTask(() => {
     const activeCamera = camera.current;
-    if (treeCullers.length !== 3 || !grassCuller || !activeCamera) return;
+    if (treeCullers.length !== 3 || grassCullers.length !== 3 || !activeCamera)
+      return;
     treeCullers.forEach((culler) => culler.update(activeCamera));
-    const grassStats = grassCuller.update(activeCamera);
+    grassCullers.forEach((culler) => culler.update(activeCamera));
+    const grassStats = aggregateCullingStats(grassCullers);
     treeRoots.forEach((root) => (root.visible = true));
-    if (grassRoot) grassRoot.visible = true;
+    grassRoots.forEach((root) => (root.visible = true));
     const stats = aggregateCullingStats(treeCullers);
     const signature = `${stats.visibleInstances}:${stats.estimatedSubmittedVertices}:${stats.updates}`;
     if (signature === lastCullingSignature) return;
@@ -555,10 +849,10 @@
 {#each treeRoots as treeRoot (treeRoot.uuid)}
   <T is={treeRoot} />
 {/each}
-{#if grassRoot}
+{#each grassRoots as grassRoot (grassRoot.uuid)}
   <T is={grassRoot} />
   <ForestClearingWind scene={grassRoot} />
-{/if}
+{/each}
 {#if groundLifeRoot}
   <T is={groundLifeRoot} />
 {/if}

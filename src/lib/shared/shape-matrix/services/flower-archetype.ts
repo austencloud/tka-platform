@@ -27,7 +27,7 @@ export interface FlowerArchetypeMatrix {
  */
 export function resolveFlowerArchetype(
   matrices: FlowerArchetypeMatrix[],
-  style: FlowerStyle,
+  style: FlowerStyle
 ): SequenceData {
   const id = style === "pro" ? "iso" : "antispin";
   const matrix = matrices.find((m) => m.style === id);

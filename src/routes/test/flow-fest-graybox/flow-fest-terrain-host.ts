@@ -62,6 +62,7 @@ export interface FlowFestChunkSeamTraversal {
 }
 
 const CHUNK_SEGMENTS = 32;
+const RENDER_CHUNK_SEGMENTS = 192;
 
 export function flowFestColliderWindowKey(
   x: number,
@@ -219,7 +220,15 @@ export function buildFlowFestTerrainHost(
     segmentColumns: terrain.heightmap.width - 1,
     segmentRows: terrain.heightmap.height - 1,
   };
-  const renderWindows = [boundedWindow];
+  const renderWindows =
+    mode === "bounded-static"
+      ? [boundedWindow]
+      : buildGridWindows(
+          terrain.heightmap.width,
+          terrain.heightmap.height,
+          RENDER_CHUNK_SEGMENTS,
+          "render"
+        );
   const farSampleStep =
     mode === "chunked"
       ? Math.max(1, Math.floor(options.farSampleStep ?? 1))
@@ -236,7 +245,12 @@ export function buildFlowFestTerrainHost(
   const colliderWindows =
     mode === "bounded-static"
       ? renderWindows
-      : buildChunkWindows(terrain.heightmap.width, terrain.heightmap.height);
+      : buildGridWindows(
+          terrain.heightmap.width,
+          terrain.heightmap.height,
+          CHUNK_SEGMENTS,
+          "collider"
+        );
 
   for (const window of renderWindows) {
     const built = detailWindow
@@ -262,7 +276,7 @@ export function buildFlowFestTerrainHost(
     mesh.name =
       mode === "bounded-static"
         ? "FFS_Terrain_Bounded"
-        : "FFS_Terrain_ChunkedRenderBatch";
+        : `FFS_Terrain_ChunkedRender_${window.startColumn / RENDER_CHUNK_SEGMENTS}_${window.startRow / RENDER_CHUNK_SEGMENTS}`;
     mesh.receiveShadow = true;
     root.add(mesh);
 
@@ -347,26 +361,31 @@ export function buildFlowFestTerrainHost(
   };
 }
 
-function buildChunkWindows(width: number, height: number): GridWindow[] {
+function buildGridWindows(
+  width: number,
+  height: number,
+  segmentSize: number,
+  role: "render" | "collider"
+): GridWindow[] {
   const segmentWidth = width - 1;
   const segmentHeight = height - 1;
   if (
-    segmentWidth % CHUNK_SEGMENTS !== 0 ||
-    segmentHeight % CHUNK_SEGMENTS !== 0
+    role === "collider" &&
+    (segmentWidth % segmentSize !== 0 || segmentHeight % segmentSize !== 0)
   ) {
     throw new Error(
-      `Flow Fest chunk host requires ${CHUNK_SEGMENTS}m-aligned terrain; received ${width}x${height}`
+      `Flow Fest ${role} grid requires ${segmentSize}m-aligned terrain; received ${width}x${height}`
     );
   }
 
   const windows: GridWindow[] = [];
-  for (let row = 0; row < segmentHeight; row += CHUNK_SEGMENTS) {
-    for (let column = 0; column < segmentWidth; column += CHUNK_SEGMENTS) {
+  for (let row = 0; row < segmentHeight; row += segmentSize) {
+    for (let column = 0; column < segmentWidth; column += segmentSize) {
       windows.push({
         startColumn: column,
         startRow: row,
-        segmentColumns: CHUNK_SEGMENTS,
-        segmentRows: CHUNK_SEGMENTS,
+        segmentColumns: Math.min(segmentSize, segmentWidth - column),
+        segmentRows: Math.min(segmentSize, segmentHeight - row),
       });
     }
   }

@@ -82,7 +82,7 @@ export function patchEmberGroundDetailMaterial(
     strength,
     {
       storageKey: STORAGE_KEY,
-      cacheKey: "ember-ground-detail-r11-layered-volcanic-v1",
+      cacheKey: "ember-ground-detail-r12-detiled-volcanic-v1",
       preserveColor: options.preserveColor,
       normalResponse: options.normalResponse ?? 0.3,
       roughnessFloor: options.roughnessFloor ?? 0.68,
@@ -96,6 +96,7 @@ export function patchEmberGroundDetailMaterial(
       macroDetailStrength: 0.62,
       slopeFamilyStrength: 0.65,
       slopeStart: 0.18,
+      bladeSignal: 0,
       maskOrigin: new Vector2(-190, -145),
       maskSize: new Vector2(380, 335),
       worldAxisSign: new Vector2(1, 1),
@@ -112,6 +113,36 @@ export function patchEmberGroundDetailMaterial(
         scale: 1.55,
         albedoStrength: 0.22,
         normalStrength: 0.72,
+        // 2.63 against 1.55 is irrational enough that the two lattices never
+        // re-align inside the 380m basin, and 0.94rad keeps the scan's own
+        // directional grain from stacking with itself.
+        breakup: {
+          scale: 2.63,
+          rotation: 0.94,
+          blendScale: 19,
+        },
+      },
+      // Warp displacement (3.2m) exceeds the 1.55m micro-surface tile, so no
+      // region of the basin repeats its neighbour's phase.
+      deTiling: {
+        warpScale: 26,
+        warpStrength: 3.2,
+        latticeScale: 34,
+        latticeMixLow: 0.12,
+        latticeMixHigh: 0.72,
+      },
+      distanceGrading: {
+        start: 16,
+        end: 90,
+        detailAlbedo: 0.55,
+        detailNormal: 0.1,
+        roughnessFloor: 0.93,
+        grazingRoughnessFloor: 0.86,
+        grazingStart: 0.2,
+      },
+      specularAntiAliasing: {
+        variance: 0.25,
+        threshold: 0.18,
       },
     }
   );

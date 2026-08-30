@@ -20,6 +20,7 @@
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import SceneChromeButton from "./controls/SceneChromeButton.svelte";
+  import { warmSelectedSceneAssets } from "../scene-boot/scene-prefetch";
 
   // Canonical effects config - single source of truth for both 2D canvas
   // and 3D viewer effect parameters. One-time migration from the old VM
@@ -145,6 +146,10 @@
   // The canvas is the product on this route. Controls and notation are useful
   // once it is visible, but neither should hold the first scene frame hostage.
   onMount(() => {
+    // Shared decoders and the selected environment's models, warmed on idle so
+    // a scene switch inside this surface reads them from cache.
+    warmSelectedSceneAssets();
+
     let active = true;
     void import("./controls/SceneControlWorkspace.svelte").then(
       ({ default: component }) => {

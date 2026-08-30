@@ -28,6 +28,9 @@ const HOSTS: Record<string, string[]> = {
   "/sequence route host": [
     "src/routes/sequence/[id]/SequenceViewerPage.svelte",
   ],
+  "/from/spiroanim route host": [
+    "src/routes/from/spiroanim/[cellKey]/+page.svelte",
+  ],
 };
 
 /**
@@ -73,6 +76,9 @@ const drawerSource = read(
 );
 const sequenceRouteSource = read(
   "src/routes/sequence/[id]/SequenceViewerPage.svelte"
+);
+const spiroanimBridgeRouteSource = read(
+  "src/routes/from/spiroanim/[cellKey]/+page.svelte"
 );
 const cardHeaderSource = read(
   "src/lib/shared/sequence-viewer/components/CardHeader.svelte"
@@ -318,7 +324,11 @@ describe("SequenceViewerShell host contract", () => {
     expect(scanSource).toContain("isFirstScanRouteVisit");
     expect(scanSource).toContain("recordCardScan");
 
-    for (const directLinkSource of [drawerSource, sequenceRouteSource]) {
+    for (const directLinkSource of [
+      drawerSource,
+      sequenceRouteSource,
+      spiroanimBridgeRouteSource,
+    ]) {
       expect(directLinkSource).not.toContain("isFirstScanRouteVisit");
       expect(directLinkSource).not.toContain("recordCardScan");
       expect(directLinkSource).not.toContain("incrementScanCount");

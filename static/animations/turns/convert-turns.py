@@ -5,16 +5,15 @@ import bpy
 import os
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
+source_dir = os.path.normpath(os.path.join(script_dir, "..", "locomotion-pack"))
 
 conversions = {
-    "turn-left-90.fbx": "turn-left-90.glb",
-    "turn-right-90.fbx": "turn-right-90.glb",
-    "turn-left-180.fbx": "turn-left-180.glb",
-    "turn-right-180.fbx": "turn-right-180.glb",
+    "left turn 90.fbx": "turn-left-90.glb",
+    "right turn 90.fbx": "turn-right-90.glb",
 }
 
 for fbx_name, glb_name in conversions.items():
-    fbx_path = os.path.join(script_dir, fbx_name)
+    fbx_path = os.path.join(source_dir, fbx_name)
     glb_path = os.path.join(script_dir, glb_name)
 
     if not os.path.exists(fbx_path):

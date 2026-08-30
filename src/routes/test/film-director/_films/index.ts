@@ -6,6 +6,7 @@ import { chanceSuiteFilm } from "./chance-suite";
 import { starOfFiveFilm } from "./star-of-five";
 import { breakTheStarFilm } from "./break-the-star";
 import { figuresFilm } from "./figures";
+import { emberFilm } from "./ember";
 
 /**
  * The frame the marquee shows for a library film, and the cue that produced it.
@@ -117,6 +118,21 @@ export const FILM_LIBRARY: readonly FilmLibraryEntry[] = [
       // shrink to specks. The celestial films already on the marquee all read
       // as a lit stage with a row of people on it; this one does not.
       offsetSeconds: 6,
+    },
+  },
+  {
+    key: "ember",
+    label: "Ember",
+    film: emberFilm,
+    poster: {
+      src: "/films/posters/ember.webp",
+      sceneId: "first-sparks",
+      // Eight seconds in, the low orbit has settled: the apprentice is
+      // mid-phrase in sparkles with both grids up, and the master has
+      // finished his retreat and stands turned toward her. The fire finale
+      // plays on the celestial stage, which the marquee already shows three
+      // of; the ember practice room is this film's own light.
+      offsetSeconds: 8,
     },
   },
 ];

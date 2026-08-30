@@ -127,6 +127,33 @@ describe("Flow Fest Gate 2 terrain hosts", () => {
     host.dispose();
   });
 
+  it("tiles the visual terrain into independently frustum-cullable 192 metre meshes", () => {
+    const terrain = makeTerrain(257, 257);
+    const host = buildFlowFestTerrainHost(terrain, "chunked", null, {
+      fullDetailBounds: { minX: 64, maxX: 192, minZ: 64, maxZ: 192 },
+      farSampleStep: 2,
+    });
+    const renderMeshes = host.root.children as Mesh[];
+
+    expect(host.metrics.renderMeshes).toBe(4);
+    expect(host.metrics.colliderMeshes).toBe(64);
+    expect(renderMeshes).toHaveLength(4);
+    for (const mesh of renderMeshes) {
+      expect(mesh.frustumCulled).toBe(true);
+      expect(mesh.geometry.boundingBox).not.toBeNull();
+      const bounds = mesh.geometry.boundingBox!;
+      expect(bounds.max.x - bounds.min.x).toBeLessThanOrEqual(192);
+      expect(bounds.max.z - bounds.min.z).toBeLessThanOrEqual(192);
+    }
+    expect(renderMeshes.map((mesh) => mesh.name)).toEqual([
+      "FFS_Terrain_ChunkedRender_0_0",
+      "FFS_Terrain_ChunkedRender_1_0",
+      "FFS_Terrain_ChunkedRender_0_1",
+      "FFS_Terrain_ChunkedRender_1_1",
+    ]);
+    host.dispose();
+  });
+
   it("samples the meter grid in the declared +X east, +Z south frame", () => {
     const terrain = makeTerrain(33, 33);
     expect(sampleFlowFestTerrainWorldY(terrain, 4, 8)).toBeCloseTo(4, 6);

@@ -1,19 +1,35 @@
 import { TURN_VALUES } from "$lib/features/choreo-card/domain/turn-pattern-parser";
+import type { TurnValue } from "$lib/shared/create/services/level-turn-values";
+import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export type FlowerStyle = "pro" | "anti";
-export type FlowerOri = "in" | "out";
+export type ShapePathStyle = FlowerStyle | "float";
+export type RotatingFlowerOri = "in" | "out";
+export type FloatFlowerOri = RotatingFlowerOri | "clock" | "counter";
+export type FlowerOri = FloatFlowerOri;
 /** Anchor of the downbeat: diamond = cardinal, box = 45°-rotated interradial. */
 export type FlowerGrid = "diamond" | "box";
 
-export interface Flower {
+export interface RotatingFlower {
   readonly style: FlowerStyle;
   readonly turns: number;
-  readonly ori: FlowerOri;
+  readonly ori: RotatingFlowerOri;
   readonly grid: FlowerGrid;
   readonly petals: number;
 }
 
-const ORIS: FlowerOri[] = ["in", "out"];
+export interface FloatFlower {
+  readonly style: "float";
+  readonly turns: "fl";
+  readonly ori: FloatFlowerOri;
+  readonly grid: "diamond";
+  readonly petals: 0;
+}
+
+export type Flower = RotatingFlower | FloatFlower;
+
+const ROTATING_ORIS: RotatingFlowerOri[] = ["in", "out"];
+const FLOAT_ORIS: FloatFlowerOri[] = ["in", "out", "clock", "counter"];
 const STYLES: FlowerStyle[] = ["pro", "anti"];
 const GRIDS: FlowerGrid[] = ["diamond", "box"];
 
@@ -27,14 +43,54 @@ export function gridIsRedundant(f: Pick<Flower, "petals" | "grid">): boolean {
   return f.grid === "box" && f.petals % 8 === 0;
 }
 
-/** Petals: prospin = 2·turns, antispin = 2·turns + 2. */
-export function flowerPetals(f: Pick<Flower, "style" | "turns">): number {
-  return f.style === "pro" ? 2 * f.turns : 2 * f.turns + 2;
+function reducedSpinRatio(turns: number): {
+  numerator: number;
+  denominator: 1 | 2;
+} {
+  const doubledNumerator = Math.round((2 * turns + 1) * 2);
+  return doubledNumerator % 2 === 0
+    ? { numerator: doubledNumerator / 2, denominator: 1 }
+    : { numerator: doubledNumerator, denominator: 2 };
+}
+
+/** Closed flower petals are the reduced ratio's numerator ∓ denominator. */
+export function flowerPetals(
+  f: Pick<RotatingFlower, "style" | "turns">
+): number {
+  const ratio = reducedSpinRatio(f.turns);
+  return f.style === "pro"
+    ? ratio.numerator - ratio.denominator
+    : ratio.numerator + ratio.denominator;
+}
+
+/**
+ * Resolve the public in/out phase selector to the prop's actual start
+ * orientation. A denominator-two flower needs two hand-path cycles to close;
+ * IN and OUT therefore start on opposite halves of the same completed locus.
+ * CLOCK supplies the complementary 90° phase for the second visible variant.
+ */
+export function flowerStartOrientation(
+  f: Pick<Flower, "turns" | "ori">
+): Orientation {
+  if (f.turns === "fl") {
+    const orientationByName: Record<FloatFlowerOri, Orientation> = {
+      in: Orientation.IN,
+      out: Orientation.OUT,
+      clock: Orientation.CLOCK,
+      counter: Orientation.COUNTER,
+    };
+    return orientationByName[f.ori];
+  }
+  if (f.turns !== "fl" && reducedSpinRatio(f.turns).denominator === 2) {
+    return f.ori === "in" ? Orientation.IN : Orientation.CLOCK;
+  }
+  return f.ori === "in" ? Orientation.IN : Orientation.OUT;
 }
 
 /** Deck-compatible turn token: integers bare, halves as X.5 (matches formatTurn). */
-function fmtTurn(v: number): string {
-  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+function fmtTurn(v: TurnValue): string {
+  if (v === "fl") return v;
+  return Number.isInteger(v) ? String(v) : String(v);
 }
 
 /** Uniform per-hand turn pattern string, e.g. "0.5|0.5". */
@@ -43,22 +99,37 @@ export function flowerTurnPattern(f: Pick<Flower, "turns">): string {
   return `${t}|${t}`;
 }
 
-export function flowerKey(f: Pick<Flower, "style" | "turns" | "ori" | "grid">): string {
+export function flowerKey(
+  f: Pick<Flower, "style" | "turns" | "ori" | "grid">
+): string {
   return `${f.style}-${fmtTurn(f.turns)}-${f.ori}-${f.grid}`;
 }
 
 /**
  * VTG spin ratio for a turn count: (2·turns + 1):1. The numerator is the same
  * for prospin and antispin at a given turn — the style sets the petal count
- * (prospin = P−1, antispin = P+1) — so the ratio labels the axis and the
+ * (prospin = P−Q, antispin = P+Q) — so the ratio labels the axis and the
  * blue/red style is read from the axis itself. E.g. 0.5t → "2:1" (antispin =
- * 3-petal triquetra). Turns are multiples of 0.5, so 2·turns is always integer.
+ * 3-petal triquetra). Level 4 quarter turns reduce to an odd-over-two ratio.
  */
 export function ratioLabel(turns: number): string {
-  return `${2 * turns + 1}:1`;
+  const ratio = reducedSpinRatio(turns);
+  return `${ratio.numerator}:${ratio.denominator}`;
+}
+
+/**
+ * Verified VTG display for a two-axis hybrid. VTG primary sources establish
+ * each prop:hand ratio, but not the community-looking `3::1` contraction.
+ * Keeping both ratios explicit makes the axes and the convention unambiguous.
+ */
+export function hybridRatioLabel(blueTurns: number, redTurns: number): string {
+  return blueTurns === redTurns
+    ? ratioLabel(blueTurns)
+    : `Blue ${ratioLabel(blueTurns)} × Red ${ratioLabel(redTurns)}`;
 }
 
 export function flowerLabel(f: Flower): string {
+  if (f.style === "float") return `float ${f.ori} diamond`;
   return `${ratioLabel(f.turns)} ${f.ori} ${f.grid} · ${f.petals}p`;
 }
 
@@ -70,21 +141,49 @@ export function flowerLabel(f: Flower): string {
  * simple→complex per style, which left a discontinuity seam mid-grid.
  * Tie-break: pro before anti, in before out, diamond before its 45° box twin.
  */
-export function buildFlowerAxis(): Flower[] {
-  const out: Flower[] = [];
-  for (const turns of TURN_VALUES)
+export function buildFlowerAxis(
+  turnValues: readonly number[] = TURN_VALUES
+): RotatingFlower[] {
+  const out: RotatingFlower[] = [];
+  for (const turns of turnValues)
     for (const style of STYLES)
-      for (const ori of ORIS)
+      for (const ori of ROTATING_ORIS)
         for (const grid of GRIDS)
-          out.push({ style, turns, ori, grid, petals: flowerPetals({ style, turns }) });
+          out.push({
+            style,
+            turns,
+            ori,
+            grid,
+            petals: flowerPetals({ style, turns }),
+          });
   const styleRank = (s: FlowerStyle) => (s === "pro" ? 0 : 1);
-  const oriRank = (o: FlowerOri) => (o === "in" ? 0 : 1);
+  const oriRank = (o: RotatingFlowerOri) => (o === "in" ? 0 : 1);
   const gridRank = (g: FlowerGrid) => (g === "diamond" ? 0 : 1);
   return out.sort(
     (a, b) =>
       a.turns - b.turns ||
       styleRank(a.style) - styleRank(b.style) ||
       oriRank(a.ori) - oriRank(b.ori) ||
-      gridRank(a.grid) - gridRank(b.grid),
+      gridRank(a.grid) - gridRank(b.grid)
   );
+}
+
+/** Float has no pro/anti direction, but all four absolute starts are distinct. */
+export function buildFloatAxis(): FloatFlower[] {
+  return FLOAT_ORIS.map((ori) => ({
+    style: "float",
+    turns: "fl",
+    ori,
+    grid: "diamond",
+    petals: 0,
+  }));
+}
+
+export function buildShapeMatrixAxis(): Flower[] {
+  return [
+    ...buildFlowerAxis([
+      0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3,
+    ]),
+    ...buildFloatAxis(),
+  ];
 }

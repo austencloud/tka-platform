@@ -73,7 +73,7 @@
      material. It adds no point light, shadow pass, or draw call. -->
 <AutumnLanternFlicker scene={environmentScene} />
 
-<!-- Leaves + spores + fireflies; fireflies cluster on the pond center -->
+<!-- Leaves + spores + fireflies; the pond remains one authored habitat anchor. -->
 <AutumnParticles {quality} {groundY} {pondCenter} />
 
 <!-- Drifting will-o-wisps. Emits pulse targets (live position + core material);

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { T } from "@threlte/core";
-  import { useDraco, useKtx2, useMeshopt } from "@threlte/extras";
   import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
   import {
     Mesh,
@@ -9,14 +8,14 @@
     type Material,
   } from "three";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
+  import {
+    attachGltfDecoders,
+    attachKtx2Decoder,
+  } from "../../scene-boot/gltf-decoders";
 
-  // Draco/meshopt/KTX2 decoders are shared instances cached by the threlte hooks
-  // (useKtx2 also wires renderer.detectSupport). All three are attached so a GLB
-  // may use any combination of compressions transparently to the caller.
   const gltfLoader = new GLTFLoader();
-  gltfLoader.setDRACOLoader(useDraco("/draco/"));
-  gltfLoader.setMeshoptDecoder(useMeshopt());
-  gltfLoader.setKTX2Loader(useKtx2("/basis/"));
+  attachGltfDecoders(gltfLoader);
+  attachKtx2Decoder(gltfLoader);
 
   interface Props {
     /** Path to the optimized GLB (served from static/, e.g. /models/ocean/stage.glb). */

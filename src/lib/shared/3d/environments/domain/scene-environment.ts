@@ -110,6 +110,13 @@ export const SCENE_ENVIRONMENTS = [
 
 export const DEFAULT_SCENE_ENVIRONMENT_ID = SceneEnvironmentId.COSMIC;
 
+/**
+ * Where the viewer remembers the environment the user last chose. It lives here
+ * rather than inside the viewer's state module so asset warming can read that
+ * choice without pulling the whole viewer into the eager bundle.
+ */
+export const VIEWER_3D_ENVIRONMENT_STORAGE_KEY = "tka-viewer3d-environment";
+
 const environmentById = new Map<SceneEnvironmentId, SceneEnvironmentDefinition>(
   SCENE_ENVIRONMENTS.map((environment) => [environment.id, environment])
 );

@@ -1,0 +1,132 @@
+{
+  "version": 1,
+  "clipFamily": "grapevine",
+  "authoring": {
+    "sourceFrameRate": 30,
+    "frameRate": 120,
+    "frameCount": 253,
+    "stepsPerLoop": 4,
+    "phaseSourceFrames": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "crossingRoles": [
+      "back crossover",
+      "front crossover"
+    ],
+    "minimumCrossDepthMeters": 0.12,
+    "minimumFootClearanceMeters": 0.12,
+    "minimumLegClearanceMeters": 0.04,
+    "targetPelvisSwayMeters": 0.09,
+    "minimumOverSupportFraction": 0.15,
+    "runtimeOwner": "@austencloud/scene-3d LocomotionAnimator",
+    "contactCorrectionOwner": "@austencloud/scene-3d FootPlanter",
+    "method": "offline Blender 120Hz visual constraint bake with collision-safe knee search"
+  },
+  "clips": {
+    "grapevine-left": {
+      "asset": {
+        "file": "grapevine-left.glb",
+        "sha256": "7e343fbc6428c3688a455608e04a36181896a21f8ca9302f4a9888496aeba3f6"
+      },
+      "source": {
+        "file": "left strafe walking.fbx",
+        "sha256": "22353a4b9f4d5ebb20cacf2166f82b9349a77a5d20b799035865b65504f059e4",
+        "provider": "Adobe Mixamo",
+        "motionId": null,
+        "motionIdStatus": "not preserved in the original 2026-04-04 import",
+        "license": "https://helpx.adobe.com/creative-cloud/faq/mixamo-faq.html"
+      },
+      "crossingSide": "right",
+      "cycleTravelMeters": 1.789224,
+      "authoredDepthMinimum": -0.183075,
+      "authoredDepthMaximum": 0.183075,
+      "measured": {
+        "depthMinimum": -0.183075,
+        "depthMaximum": 0.168063,
+        "minimumFootClearance": 0.136532,
+        "minimumLegClearance": 0.045145,
+        "pelvisSwayAmplitude": 0.092724,
+        "overSupportFraction": 0.184834,
+        "heightRanges": {
+          "left": [
+            0.082269,
+            0.250389
+          ],
+          "right": [
+            0.083821,
+            0.262047
+          ]
+        },
+        "maximumLegLengthError": 1.0189e-05
+      }
+    },
+    "grapevine-right": {
+      "asset": {
+        "file": "grapevine-right.glb",
+        "sha256": "42b9ff5ee19dff8588c728bda527708373444b467f01ffbf0809823c61b2155a"
+      },
+      "source": {
+        "file": "right strafe walking.fbx",
+        "sha256": "913d30b7adfcb2646b13d11c9a075e681934a54a4eea1b219c957ce676a6919c",
+        "provider": "Adobe Mixamo",
+        "motionId": null,
+        "motionIdStatus": "not preserved in the original 2026-04-04 import",
+        "license": "https://helpx.adobe.com/creative-cloud/faq/mixamo-faq.html"
+      },
+      "crossingSide": "left",
+      "cycleTravelMeters": -1.789224,
+      "authoredDepthMinimum": -0.187343,
+      "authoredDepthMaximum": 0.187343,
+      "measured": {
+        "depthMinimum": -0.187343,
+        "depthMaximum": 0.178828,
+        "minimumFootClearance": 0.139352,
+        "minimumLegClearance": 0.044724,
+        "pelvisSwayAmplitude": 0.095466,
+        "overSupportFraction": 0.181818,
+        "heightRanges": {
+          "left": [
+            0.082884,
+            0.259924
+          ],
+          "right": [
+            0.08596,
+            0.251596
+          ]
+        },
+        "maximumLegLengthError": 9.915e-06
+      }
+    }
+  }
+}

@@ -15,7 +15,7 @@
   the colour language is legible before you select anything; selection adds the
   level's own tint, border and glow.
 -->
-<script lang="ts">
+<script lang="ts" generics="T extends number = LevelNumber">
   import {
     DIFFICULTY_LEVELS,
     DEFAULT_DIFFICULTY_STYLE,
@@ -26,10 +26,14 @@
   } from "$lib/shared/domain/curriculum/level-metadata";
 
   interface Props {
-    value: LevelNumber;
-    onchange: (level: LevelNumber) => void;
+    value: T;
+    onchange: (level: T) => void;
+    levels?: readonly T[];
+    describe?: (level: T) => { name: string; blurb: string };
     /** Numerals only — for bars too tight to carry the level name. */
     compact?: boolean;
+    /** Let a compact instrument use each level's gradient as the whole control. */
+    appearance?: "badge" | "filled";
     ariaLabel?: string;
     disabled?: boolean;
   }
@@ -37,15 +41,23 @@
   const {
     value,
     onchange,
+    levels = [1, 2, 3] as unknown as readonly T[],
+    describe,
     compact = false,
+    appearance = "badge",
     ariaLabel = "Difficulty level",
     disabled = false,
   }: Props = $props();
 
-  const LEVELS: readonly LevelNumber[] = [1, 2, 3];
-
-  function styleFor(level: LevelNumber) {
+  function styleFor(level: T) {
     return DIFFICULTY_LEVELS[level] ?? DEFAULT_DIFFICULTY_STYLE;
+  }
+
+  function descriptionFor(level: T): { name: string; blurb: string } {
+    const supplied = describe?.(level);
+    if (supplied) return supplied;
+    const canonical = LEVEL_METADATA[level as LevelNumber];
+    return canonical ?? { name: `Level ${level}`, blurb: "" };
   }
 
   /**
@@ -53,7 +65,7 @@
    * pale end of the card gradient, bright enough to tint a border or a glow
    * where the dark end would just read as grey.
    */
-  function accentFor(level: LevelNumber): string {
+  function accentFor(level: T): string {
     const stops = styleFor(level).stops;
     let best = stops[0]!;
     for (const stop of stops) {
@@ -64,9 +76,15 @@
   }
 </script>
 
-<div class="level-selector" class:compact role="group" aria-label={ariaLabel}>
-  {#each LEVELS as n (n)}
-    {@const meta = LEVEL_METADATA[n]}
+<div
+  class="level-selector"
+  class:compact
+  class:filled={appearance === "filled"}
+  role="group"
+  aria-label={ariaLabel}
+>
+  {#each levels as n (n)}
+    {@const meta = descriptionFor(n)}
     <button
       type="button"
       class="lvl"
@@ -183,6 +201,50 @@
 
   .lvl.selected .name {
     color: white;
+  }
+
+  /* Dense instruments can carry the canonical level identity on the whole
+     button. The default badge treatment remains unchanged for Construct and
+     Generate; Shape Matrix opts into this stronger toolbar treatment. */
+  .level-selector.filled .lvl {
+    background: var(--lvl-bg);
+    border-color: color-mix(in srgb, var(--lvl-accent) 48%, black);
+    color: var(--lvl-ink);
+    filter: saturate(0.72) brightness(0.62);
+    opacity: 0.82;
+  }
+
+  .level-selector.filled .lvl:hover:not(.selected) {
+    background: var(--lvl-bg);
+    filter: saturate(0.88) brightness(0.78);
+  }
+
+  .level-selector.filled .lvl.selected {
+    background: var(--lvl-bg);
+    border-color: color-mix(in srgb, white 68%, var(--lvl-accent));
+    filter: none;
+    opacity: 1;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.38),
+      inset 0 0 0 1px color-mix(in srgb, var(--lvl-ink) 42%, transparent),
+      0 5px 18px -7px var(--lvl-accent);
+  }
+
+  .level-selector.filled .numeral {
+    width: auto;
+    height: auto;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    color: var(--lvl-ink);
+    opacity: 0.9;
+    text-shadow: 0 1px 1px rgb(0 0 0 / 0.3);
+  }
+
+  .level-selector.filled .lvl.selected .numeral {
+    transform: none;
+    opacity: 1;
+    box-shadow: none;
   }
 
   .lvl:active {

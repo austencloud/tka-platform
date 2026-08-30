@@ -2,7 +2,9 @@
   // Module-scoped GLTFLoader - shared across all instances so models survive
   // realm navigation/remount without re-fetching from the network.
   import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+  import { attachGltfDecoders } from "../../scene-boot/gltf-decoders";
   export const gltfLoader = new GLTFLoader();
+  attachGltfDecoders(gltfLoader);
 </script>
 
 <script lang="ts">
@@ -96,6 +98,13 @@
     type GameLoopState,
   } from "../services/world-game-loop";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
+  import { attachKtx2Decoder } from "../../scene-boot/gltf-decoders";
+
+  // The module-scoped loader gets its geometry decoders at import time, but the
+  // texture decoder has to ask a live renderer what the GPU supports — so it is
+  // attached here, where this component's canvas context exists. Idempotent: the
+  // hook hands back one shared loader no matter how often a realm remounts.
+  attachKtx2Decoder(gltfLoader);
 
   // Feature flag for terrain texturing system
   // Set to true to enable PBR terrain textures (grass, rock, dirt, sand)

@@ -54,13 +54,11 @@
   });
 
   $effect(() => {
-    if (!scene.current) return;
-    scene.current.fog = new FogExp2(config.fog.color, config.fog.density);
-    scene.current.background = new Color(config.sky.topColor);
+    scene.fog = new FogExp2(config.fog.color, config.fog.density);
+    scene.background = new Color(config.sky.topColor);
     return () => {
-      if (!scene.current) return;
-      scene.current.fog = null;
-      scene.current.background = null;
+      scene.fog = null;
+      scene.background = null;
     };
   });
 </script>

@@ -36,10 +36,10 @@
   REMOUNT — read before reaching for this on heavy content: `{#key}` REMOUNTS
   children on every change. Cheap for icons/labels/light panels; wasteful (and
   state-losing: scroll, focus, in-progress work) for canvases, large pictograph
-  renders, or stateful heavy panels. Those route through the dual-source
-  CellRenderer (`src/lib/shared/sequence-viewer/components/CellRenderer.svelte` +
-  `crossfader-state.svelte.ts`) so nothing remounts — solved, perf-tuned,
-  dark-mode aware. The remount cost (not the sizing) is the carve-out line.
+  renders, or stateful heavy panels. Those route through
+  `DualSourceCrossfade.svelte`, which keeps two host-prepared sources mounted.
+  CellRenderer retains its specialized image/bitmap dual-source path. The
+  remount cost (not the sizing) is the carve-out line.
 
   Boundary + rationale: docs/architecture/crossfade-primitive.md
   Routing rule: .claude/rules/crossfade-primitive.md

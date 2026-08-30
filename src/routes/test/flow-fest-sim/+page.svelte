@@ -22,10 +22,11 @@
     FLOW_FEST_FIRE_JAM_CONTRACT,
     observeFlowFestFireJam,
   } from "$lib/features/flow-fest-sim/domain/flow-fest-fire-jam";
+  import type { FlowFestSiteAudioLayout } from "$lib/features/flow-fest-sim/domain/flow-fest-site-audio";
   import {
-    computeFlowFestSiteAudioMix,
-    type FlowFestSiteAudioLayout,
-  } from "$lib/features/flow-fest-sim/domain/flow-fest-site-audio";
+    buildFlowFestAudioFieldSources,
+    type FlowFestAudioSource,
+  } from "$lib/features/flow-fest-sim/domain/flow-fest-audio-field";
   import {
     auditFlowFestIntegratedJourney,
     createFlowFestIntegratedJourney,
@@ -151,6 +152,28 @@
     z: FLOW_FEST_LOWER_CHECK_IN.z,
   });
   let listenerYaw = $state(0);
+  // The audio tick reads its own non-reactive mirror of the listener. Reading
+  // `position` inside an effect would re-run the whole audio path at render
+  // rate; the field only needs a 20 Hz control tick, and everything smoother
+  // than that belongs on AudioParam ramps.
+  const audioListener = {
+    x: FLOW_FEST_LOWER_CHECK_IN.x,
+    y: 13.7,
+    z: FLOW_FEST_LOWER_CHECK_IN.z,
+    yawRadians: 0,
+  };
+  const audioFrame = {
+    listener: audioListener,
+    fireJamState: "not-started" as FlowFestProgressState["fireJamState"],
+    moment: "afternoon" as string,
+    masterVolume: 0,
+    crowdOccupancy: 0,
+    nearFire: 0,
+  };
+  let audioFieldSources: FlowFestAudioSource[] = [];
+  let audioConfiguredKey = "";
+  let audioProofRevision = -1;
+  let audioProofPublishedAt = 0;
   let resetToken = $state(0);
   let cameraToken = $state(0);
   let cameraId = $state<string | null>(null);
@@ -178,6 +201,7 @@
   let integratedJourney = $state<FlowFestIntegratedJourneyState | null>(null);
   let gate6GnssAudit = $state<FlowFestGnssRoundTripAudit | null>(null);
   let gate5Performance = $state<{
+    captureOrdinal: number;
     samples: number;
     p95FrameMilliseconds: number;
     p99FrameMilliseconds: number;
@@ -409,9 +433,10 @@
   async function toggleSound(): Promise<void> {
     if (!fireJamAudio.unlocked) {
       sceneAudioState.muted = false;
-      await fireJamSoundscape.unlock();
-      sceneAudioState.audioUnlocked = true;
-      fireJamAudio = fireJamSoundscape.snapshot();
+      const unlocked = await fireJamSoundscape.unlock();
+      sceneAudioState.audioUnlocked = unlocked;
+      pumpSiteAudio();
+      publishAudioProof(true);
       return;
     }
     sceneAudioState.toggleMute();
@@ -485,6 +510,9 @@
     z: number;
   }): void {
     position = nextPosition;
+    audioListener.x = nextPosition.x;
+    audioListener.y = nextPosition.y + 1.7;
+    audioListener.z = nextPosition.z;
     if (
       stageAwaitingArrival &&
       stagePosition &&
@@ -522,12 +550,7 @@
       case "night-free-roam":
         if (progress.fireJamState === "not-started") {
           if (!fireJamObservation?.canJoin) return;
-          void fireJamSoundscape.unlock().then(() => {
-            sceneAudioState.audioUnlocked = true;
-            fireJamSoundscape.triggerJoinCue();
-            fireJamAudio = fireJamSoundscape.snapshot();
-          });
-          dispatch({ type: "join-fire-jam" });
+          void joinFireJamWithAudio();
         } else if (progress.fireJamState === "active") {
           dispatch({ type: "complete-fire-jam" });
         } else {
@@ -539,6 +562,22 @@
         resetToken += 1;
         break;
     }
+  }
+
+  /**
+   * The jam does not start until the audio gesture has been resolved one way
+   * or the other. A browser that refuses the unlock leaves the soundscape in
+   * its re-armable awaiting-gesture state and the world reports honestly that
+   * audio is not running, rather than raising an unhandled rejection behind an
+   * already-advanced fire jam.
+   */
+  async function joinFireJamWithAudio(): Promise<void> {
+    const unlocked = await fireJamSoundscape.unlock();
+    sceneAudioState.audioUnlocked = unlocked;
+    if (unlocked) fireJamSoundscape.triggerJoinCue();
+    pumpSiteAudio();
+    publishAudioProof(true);
+    dispatch({ type: "join-fire-jam" });
   }
 
   function retry(): void {
@@ -589,15 +628,17 @@
     const performance = gate2?.performance;
     if (
       typeof performance?.samples !== "number" ||
+      typeof performance.captureOrdinal !== "number" ||
       typeof performance.p95FrameMilliseconds !== "number" ||
       typeof performance.p99FrameMilliseconds !== "number" ||
       typeof performance.drawCalls !== "number" ||
       typeof performance.renderedTriangles !== "number" ||
-      gate5Performance?.samples === performance.samples
+      gate5Performance?.captureOrdinal === performance.captureOrdinal
     ) {
       return;
     }
     gate5Performance = {
+      captureOrdinal: performance.captureOrdinal,
       samples: performance.samples,
       p95FrameMilliseconds: performance.p95FrameMilliseconds,
       p99FrameMilliseconds: performance.p99FrameMilliseconds,
@@ -622,8 +663,10 @@
     gate5Capture = !gate6Review && search.get("capture") === "1";
     gate6Capture = gate6Review && search.get("capture") === "1";
     const performanceTimer = window.setInterval(refreshGate5Performance, 500);
+    const audioTimer = window.setInterval(pumpSiteAudio, 50);
     return () => {
       window.clearInterval(performanceTimer);
+      window.clearInterval(audioTimer);
       mobility.destroy();
       fieldPositioning.destroy();
       fireJamSoundscape.dispose();
@@ -704,40 +747,74 @@
     );
   });
 
+  // Source positions come from registered plan features, so the field is
+  // reconfigured when the plan, the branch, or the measured ground changes —
+  // never on the audio tick.
   $effect(() => {
-    if (!progress || !siteAudioLayout || !festivalCommunity) return;
-    const mix = computeFlowFestSiteAudioMix(
-      siteAudioLayout,
-      position,
-      progress.fireJamState,
-      sceneAudioState.effectiveVolume
-    );
-    fireJamSoundscape.setMix(mix);
-    fireJamSoundscape.setSpatialFrame({
-      listener: {
-        x: position.x,
-        y: position.y + 1.7,
-        z: position.z,
-        yawRadians: listenerYaw,
+    const layout = siteAudioLayout;
+    const community = festivalCommunity;
+    const activeContract = contract;
+    const branch = progress?.branch ?? selectedBranch;
+    if (!layout || !community || !activeContract) return;
+    const sampleGroundY = terrainReady?.sampleGroundY ?? null;
+    const key = [
+      branch,
+      activeContract.coordinateContentFingerprint.canonicalPayloadSha256,
+      community.fireCenter.x.toFixed(3),
+      community.ledCircleCenter.x.toFixed(3),
+      sampleGroundY ? "measured" : "flat",
+    ].join("|");
+    if (key === audioConfiguredKey) return;
+    audioConfiguredKey = key;
+    const plan = createFlowFestCampPlan(activeContract, branch);
+    audioFieldSources = buildFlowFestAudioFieldSources({
+      plan,
+      festival: {
+        fireCenter: community.fireCenter,
+        ledCircleCenter: community.ledCircleCenter,
+        ingressBearingRadians: community.ingressBearingRadians,
+        spectatorCount: community.spectatorCount,
+        performerCount: community.performerCount,
       },
-      fire: {
-        x: festivalCommunity.fireCenter.x,
-        y: festivalCommunity.fireCenter.y + 1.2,
-        z: festivalCommunity.fireCenter.z,
-      },
-      led: {
-        x: festivalCommunity.ledCircleCenter.x,
-        y: festivalCommunity.ledCircleCenter.y + 1.5,
-        z: festivalCommunity.ledCircleCenter.z,
-      },
-      crowd: {
-        x: festivalCommunity.fireCenter.x - 5,
-        y: festivalCommunity.fireCenter.y + 1.55,
-        z: festivalCommunity.fireCenter.z + 8,
-      },
+      sampleGroundY: sampleGroundY ?? undefined,
     });
-    fireJamAudio = fireJamSoundscape.snapshot();
+    fireJamSoundscape.configure({
+      layout,
+      sources: audioFieldSources,
+      sampleGroundY,
+    });
+    publishAudioProof(true);
   });
+
+  function publishAudioProof(force: boolean): void {
+    const revision = fireJamSoundscape.proofRevision();
+    const now = browser ? performance.now() : 0;
+    if (
+      !force &&
+      revision === audioProofRevision &&
+      now - audioProofPublishedAt < 500
+    ) {
+      return;
+    }
+    audioProofRevision = revision;
+    audioProofPublishedAt = now;
+    fireJamAudio = fireJamSoundscape.snapshot();
+  }
+
+  function pumpSiteAudio(): void {
+    const layout = siteAudioLayout;
+    const community = festivalCommunity;
+    if (!progress || !layout || !community) return;
+    audioListener.yawRadians = listenerYaw;
+    audioFrame.fireJamState = progress.fireJamState;
+    audioFrame.moment = progress.moment;
+    audioFrame.masterVolume = sceneAudioState.effectiveVolume;
+    audioFrame.crowdOccupancy =
+      community.spectatorCount + community.performerCount;
+    audioFrame.nearFire = fireJamObservation?.proximity ?? 0;
+    fireJamSoundscape.update(audioFrame);
+    publishAudioProof(false);
+  }
 
   $effect(() => {
     if (!gate5Review || !ready || !progress || !contract || !integratedJourney)
@@ -1072,7 +1149,19 @@
   data-audio-source-starts={fireJamAudio.sourceStartCount}
   data-audio-spatial-frames={fireJamAudio.spatialFrameCount}
   data-audio-spatial-sources={fireJamAudio.spatializedSources}
+  data-audio-unlock-state={fireJamAudio.unlockState}
+  data-audio-unlock-failures={fireJamAudio.unlockFailureCount}
+  data-audio-field-sources={fireJamAudio.field.sources.length}
+  data-audio-field-hero={fireJamAudio.field.heroCount}
+  data-audio-field-mid={fireJamAudio.field.midCount}
+  data-audio-field-bed={fireJamAudio.field.bedCount}
+  data-audio-field-hrtf-panners={fireJamAudio.field.hrtfPannerCount}
+  data-audio-field-occluded={fireJamAudio.field.occludedSourceCount}
+  data-audio-field-occlusion={fireJamAudio.field.occlusionEnabled}
+  data-audio-walla-onsets={fireJamAudio.field.walla.onsetsPerSecond.toFixed(2)}
+  data-audio-walla-grains={fireJamAudio.field.walla.grainsScheduled}
   data-performance-samples={gate5Performance?.samples ?? 0}
+  data-performance-capture-ordinal={gate5Performance?.captureOrdinal ?? 0}
   data-performance-p95-ms={gate5Performance?.p95FrameMilliseconds ?? 0}
   data-performance-p99-ms={gate5Performance?.p99FrameMilliseconds ?? 0}
   data-performance-draw-calls={gate5Performance?.drawCalls ?? 0}
@@ -1082,6 +1171,7 @@
   data-adaptive-quality-fps={adaptiveQuality.fps}
   data-tree-culling-source-batches={forestCulling?.sourceBatches ?? 0}
   data-tree-culling-batches={forestCulling?.culledBatches ?? 0}
+  data-tree-visible-batches={forestCulling?.visibleBatches ?? 0}
   data-tree-culling-batch-instances={forestCulling?.instances ?? 0}
   data-tree-visible-batch-instances={forestCulling?.visibleInstances ?? 0}
   data-tree-culling-covered-vertices={forestCulling?.estimatedVerticesCovered ??
@@ -1092,6 +1182,7 @@
   data-tree-culling-updates={forestCulling?.updates ?? 0}
   data-tree-culling-skipped-updates={forestCulling?.skippedUpdates ?? 0}
   data-grass-culling-batch-instances={forestGrassCulling?.instances ?? 0}
+  data-grass-visible-batches={forestGrassCulling?.visibleBatches ?? 0}
   data-grass-visible-batch-instances={forestGrassCulling?.visibleInstances ?? 0}
   data-grass-submitted-vertices={forestGrassCulling?.estimatedSubmittedVertices ??
     0}
@@ -1138,6 +1229,7 @@
           enableJump={true}
           enableCrouch={true}
           showReviewOverlay={false}
+          ambientLighting="none"
           collisionMode="visible-production"
           {productionCollision}
           productionCampEstablished={campEstablished}
@@ -1151,7 +1243,10 @@
             error = null;
           }}
           onPositionChange={handlePlayerPosition}
-          onViewRotationChange={(yaw) => (listenerYaw = yaw)}
+          onViewRotationChange={(yaw) => {
+            listenerYaw = yaw;
+            audioListener.yawRadians = yaw;
+          }}
           onElectricUnicycleChange={(update) => mobility.applyRuntime(update)}
           onError={(message) => (error = message)}
         />

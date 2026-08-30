@@ -22,6 +22,7 @@ export interface InstanceFrustumCullingOptions {
 export interface InstanceFrustumCullingStats {
   sourceBatches: number;
   culledBatches: number;
+  visibleBatches: number;
   instances: number;
   estimatedVerticesCovered: number;
   visibleInstances: number;
@@ -134,6 +135,7 @@ export function createInstanceFrustumCuller(
   const stats: InstanceFrustumCullingStats = {
     sourceBatches,
     culledBatches: batches.length,
+    visibleBatches: batches.filter((batch) => batch.matrices.length > 0).length,
     instances: batches.reduce(
       (total, batch) => total + batch.matrices.length,
       0
@@ -202,6 +204,7 @@ export function createInstanceFrustumCuller(
     hasViewProjection = true;
     frustum.setFromProjectionMatrix(viewProjection);
     let visibleInstances = 0;
+    let visibleBatches = 0;
     let submittedVertices = 0;
     let distanceRejectedInstances = 0;
     let frustumRejectedInstances = 0;
@@ -231,6 +234,7 @@ export function createInstanceFrustumCuller(
         }
       });
       visibleInstances += visible.length;
+      if (visible.length > 0) visibleBatches += 1;
       submittedVertices += visible.length * batch.verticesPerInstance;
       if (sameIndices(visible, batch.visibleIndices)) continue;
       visible.forEach((sourceIndex, targetIndex) => {
@@ -245,6 +249,7 @@ export function createInstanceFrustumCuller(
       batch.visibleIndices = visible.slice();
     }
     stats.visibleInstances = visibleInstances;
+    stats.visibleBatches = visibleBatches;
     stats.estimatedSubmittedVertices = submittedVertices;
     stats.distanceRejectedInstances = distanceRejectedInstances;
     stats.frustumRejectedInstances = frustumRejectedInstances;

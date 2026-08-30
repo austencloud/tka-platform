@@ -6,7 +6,6 @@
   import {
     Color,
     FogExp2,
-    type Camera,
     type Mesh,
     type Object3D,
     type Scene,
@@ -62,10 +61,9 @@
   const fireflies = $derived(activeConfig.fireflies);
   const moonLight = $derived(activeConfig.moonLight);
   const groundY = $derived(userProportionsState.groundY);
-  const { scene, renderer, camera } = useThrelte() as unknown as {
+  const { scene, renderer } = useThrelte() as unknown as {
     scene: Scene;
     renderer: WebGLRenderer;
-    camera: { current: Camera };
   };
   const adaptiveQuality = tryGetAdaptiveQualityContext();
   const sceneFeatures = getSceneFeatureContext();
@@ -312,15 +310,13 @@
     };
   });
 
-  // The loading curtain lifts only after the compressed GLB is mounted and its
-  // shaders have compiled. Cancellation prevents a departed scene from
-  // reporting a late ready signal into the next environment.
+  // The environment counts as ready once its compressed GLB is actually mounted
+  // — SceneShaderWarmup then compiles the whole scene's shaders behind the
+  // curtain. Cancellation prevents a departed scene from reporting a late ready
+  // signal into the next environment.
   $effect(() => {
     const glb = $environmentGlb;
     const loadError = $environmentError;
-    const currentRenderer = renderer;
-    const currentCamera = camera.current;
-    const currentScene = scene;
 
     if (loadError) {
       reportEnvironmentFailure(loadError, "GLB load failed");
@@ -335,33 +331,17 @@
     }
 
     sceneFeatures?.reportProgress("environment", 0.9);
-    if (!currentRenderer || !currentCamera || !currentScene) return;
 
     let cancelled = false;
 
-    async function compileEnvironment() {
+    async function reportEnvironmentMounted() {
       await tick();
-      if (cancelled) return;
-
-      try {
-        if (typeof currentRenderer.compileAsync === "function") {
-          await currentRenderer.compileAsync(currentScene, currentCamera);
-        } else {
-          currentRenderer.compile(currentScene, currentCamera);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          reportEnvironmentFailure(error, "Shader compile failed");
-        }
-        return;
-      }
-
       if (cancelled) return;
       sceneFeatures?.reportProgress("environment", 1);
       sceneFeatures?.reportReady("environment");
     }
 
-    void compileEnvironment();
+    void reportEnvironmentMounted();
 
     return () => {
       cancelled = true;

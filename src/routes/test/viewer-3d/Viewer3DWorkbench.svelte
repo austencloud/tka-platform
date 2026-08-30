@@ -39,14 +39,16 @@
       : BackgroundType.BLOSSOM;
   }
 
-  function requestedCamera(): CameraStateSnapshot | undefined {
-    if (typeof window === "undefined") return undefined;
+  function requestedCamera(): CameraStateSnapshot | null {
+    if (typeof window === "undefined") return null;
     const pose = readCameraUrlPose(
       new URLSearchParams(window.location.search),
       48
     );
     if (!pose) {
-      if (requestedScene() !== BackgroundType.EMBER) return undefined;
+      // A seeded workbench must not inherit the user's camera from a different
+      // environment. null lets the shared opening-camera policy frame it.
+      if (requestedScene() !== BackgroundType.EMBER) return null;
       return {
         position: { x: 0, y: 3.4, z: -9.8 },
         target: { x: 0, y: 1.4, z: 5.2 },

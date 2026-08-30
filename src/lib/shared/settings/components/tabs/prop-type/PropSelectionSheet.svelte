@@ -27,6 +27,7 @@
     onSelect,
     showTabs = false,
     activeTab = $bindable<"blue" | "red">("blue"),
+    onOpenChange,
     showCatDogToggle = false,
     catDogEnabled = false,
     onCatDogToggle,
@@ -41,6 +42,8 @@
     showTabs?: boolean;
     /** Active tab when showTabs is true */
     activeTab?: "blue" | "red";
+    /** Reports drawer dismissal when the owner does not use two-way binding. */
+    onOpenChange?: (open: boolean) => void;
     /** Show a cat/dog mode toggle in the drawer header */
     showCatDogToggle?: boolean;
     /** Current cat/dog mode state (read by toggle) */
@@ -76,6 +79,12 @@
 
   const placement = $derived(isSideBySide ? "right" : "bottom");
 
+  function setOpen(open: boolean) {
+    if (isOpen === open) return;
+    isOpen = open;
+    onOpenChange?.(open);
+  }
+
   function handlePropSelect(propType: PropType) {
     const hapticService = getHapticFeedback();
     hapticService?.trigger("selection");
@@ -94,7 +103,7 @@
   function handleClose() {
     const hapticService = getHapticFeedback();
     hapticService?.trigger("selection");
-    isOpen = false;
+    setOpen(false);
   }
 </script>
 
@@ -108,7 +117,7 @@
   ariaLabel={title}
   class="prop-selection-drawer"
   onOpenChange={(open) => {
-    if (!open) isOpen = false;
+    if (!open) setOpen(false);
   }}
 >
   <div class="sheet-content">

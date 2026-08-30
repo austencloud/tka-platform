@@ -21,9 +21,28 @@ describe("turnValuesForLevel", () => {
     expect(turnValuesForLevel(3)).toEqual(["fl", 0, 0.5, 1, 1.5, 2, 2.5, 3]);
   });
 
-  it("clamps out-of-range levels into 1-3", () => {
+  it("gives Level 4 every quarter turn and retains floats", () => {
+    expect(turnValuesForLevel(4)).toEqual([
+      "fl",
+      0,
+      0.25,
+      0.5,
+      0.75,
+      1,
+      1.25,
+      1.5,
+      1.75,
+      2,
+      2.25,
+      2.5,
+      2.75,
+      3,
+    ]);
+  });
+
+  it("clamps out-of-range levels into 1-4", () => {
     expect(turnValuesForLevel(0)).toEqual(turnValuesForLevel(1));
-    expect(turnValuesForLevel(7)).toEqual(turnValuesForLevel(3));
+    expect(turnValuesForLevel(7)).toEqual(turnValuesForLevel(4));
   });
 });
 
@@ -32,6 +51,9 @@ describe("maxTurnIntensitiesForLevel", () => {
     expect(maxTurnIntensitiesForLevel(1)).toEqual([]);
     expect(maxTurnIntensitiesForLevel(2)).toEqual([1, 2, 3]);
     expect(maxTurnIntensitiesForLevel(3)).toEqual([0.5, 1, 1.5, 2, 2.5, 3]);
+    expect(maxTurnIntensitiesForLevel(4)).toEqual([
+      0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3,
+    ]);
   });
 
   it("clamps a saved ceiling when the level changes", () => {
@@ -75,6 +97,7 @@ describe("levelForTurnValue", () => {
     expect(levelForTurnValue(0)).toBe(1);
     expect(levelForTurnValue(2)).toBe(2);
     expect(levelForTurnValue(1.5)).toBe(3);
+    expect(levelForTurnValue(1.25)).toBe(4);
     expect(levelForTurnValue("fl")).toBe(3);
   });
 

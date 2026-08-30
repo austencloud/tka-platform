@@ -102,7 +102,7 @@
   let productionSliceProgress = $state(0);
   let productionSliceAsset = $state<Object3D | null>(null);
 
-  const { scene, renderer, camera } = useThrelte();
+  const { scene } = useThrelte();
   const adaptiveQuality = tryGetAdaptiveQualityContext();
   const shadowsEnabled = $derived(
     adaptiveQuality?.config.enableShadows ?? true
@@ -187,24 +187,20 @@
   let fogInstance: FogExp2 | null = null;
   let fogBackground: Color | null = null;
   $effect(() => {
-    if (!scene.current) return;
     const fog = activeConfig.fog;
     if (!fogInstance) {
       fogInstance = new FogExp2(fog.color, fog.density);
       fogBackground = new Color(fog.color);
-      scene.current.fog = fogInstance;
-      scene.current.background = fogBackground;
+      scene.fog = fogInstance;
+      scene.background = fogBackground;
     } else {
       fogInstance.color.set(fog.color);
       fogBackground?.set(fog.color);
       fogInstance.density = fog.density;
     }
     return () => {
-      if (scene.current) {
-        if (scene.current.fog === fogInstance) scene.current.fog = null;
-        if (scene.current.background === fogBackground)
-          scene.current.background = null;
-      }
+      if (scene.fog === fogInstance) scene.fog = null;
+      if (scene.background === fogBackground) scene.background = null;
       fogInstance = null;
       fogBackground = null;
     };
@@ -213,6 +209,14 @@
   function handleProductionSliceProgress(fraction: number): void {
     productionSliceProgress = fraction;
   }
+
+  // The fissure decals are flat planes baked at y 0.509 and 0.512, while the
+  // shelf surface that later gained its height detail spans y 0.454 to 0.554.
+  // Each plane is therefore buried under roughly half the surface and surfaces
+  // only along the contour where the two graze, which renders as the thin
+  // kinked bright slivers near the stage rather than as fissures. Re-cutting
+  // them belongs to the asset; until then they contribute only the artifact.
+  const BURIED_FISSURE_DECAL_ROLES = new Set(["cooled-fissure", "live-fissure"]);
 
   function handleProductionSliceReady(asset: Object3D): void {
     productionSliceAsset = asset;
@@ -227,6 +231,12 @@
       if (!mesh.isMesh || !mesh.material) return;
 
       const role = child.userData.tka_role as string | undefined;
+
+      if (role && BURIED_FISSURE_DECAL_ROLES.has(role)) {
+        child.visible = false;
+        return;
+      }
+
       mesh.receiveShadow = true;
       mesh.castShadow =
         shadowsEnabled &&
@@ -283,9 +293,6 @@
     const total = glbs.length + 1;
     sceneFeatures.reportProgress("environment", loaded / total);
     if (loaded === total) {
-      if (renderer.current && camera.current && scene.current) {
-        renderer.current.compile(scene.current, camera.current);
-      }
       sceneFeatures.reportReady("environment");
     }
   });
@@ -301,11 +308,13 @@
   });
 </script>
 
-<!-- Smoky volcanic sky -->
+<!-- Smoky volcanic sky, lifted along the caldera bearing so the ridgeline
+     reads as a silhouette instead of dissolving into a black upper frame. -->
 <SkyGradient
   topColor={activeConfig.sky.topColor}
   midColor={activeConfig.sky.midColor}
   bottomColor={activeConfig.sky.bottomColor}
+  horizonGlow={activeConfig.sky.horizonGlow}
 />
 
 <!-- Lava cracks overlay on ground -->

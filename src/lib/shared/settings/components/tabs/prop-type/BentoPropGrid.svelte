@@ -59,6 +59,8 @@
     variant = "panel",
     flat = false,
     chirality,
+    allowedProps,
+    accessMode = "standard",
   } = $props<{
     selectedPropType: PropType;
     color?: "blue" | "red" | (string & {});
@@ -80,10 +82,22 @@
      * never shared between hands the way prop type is.
      */
     chirality?: PropChiralitySeam;
+    /** Optional host-owned capability filter. The canonical registry still
+     *  owns labels, ordering, active-state, and access rules. */
+    allowedProps?: readonly PropType[];
+    /** Educational instruments may select ordinary play-earned props directly
+     *  and include Poi. Premium cosmetics retain their subscription gate. */
+    accessMode?: "standard" | "educational";
   }>();
 
+  const allowedPropSet = $derived(
+    allowedProps ? new Set<PropType>(allowedProps) : null
+  );
+
   function canShowProp(prop: PropType): boolean {
-    if (prop === PropType.POI) return poiPickerEnabled;
+    if (allowedPropSet && !allowedPropSet.has(prop)) return false;
+    if (prop === PropType.POI)
+      return accessMode === "educational" || poiPickerEnabled;
     if (isPremiumCosmeticProp(prop)) return premiumPickerEnabled;
     return isPropActive(prop);
   }
@@ -153,6 +167,12 @@
    */
   function handleTileClick(prop: PropType) {
     const premium = isPremiumCosmeticProp(prop);
+    if (accessMode === "educational" && !premium) {
+      lockedTipFor = null;
+      premiumNudgeFor = null;
+      onSelect(prop);
+      return;
+    }
     const route = routePropTileClick({
       isPremiumCosmetic: premium,
       premiumAllowed: premium && checkPremiumCosmeticAccess().allowed,

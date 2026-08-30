@@ -24,7 +24,9 @@ const seq = (word: string, blue: string, red: string): SequenceData =>
   ({
     id: `l1-tnd-${word}`,
     word,
-    steps: [{ motions: { blue: { motionType: blue }, red: { motionType: red } } }],
+    steps: [
+      { motions: { blue: { motionType: blue }, red: { motionType: red } } },
+    ],
   }) as unknown as SequenceData;
 
 // A representative slice of the 22-word base catalog with real style pairs.

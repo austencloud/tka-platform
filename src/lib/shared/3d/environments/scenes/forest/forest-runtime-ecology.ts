@@ -11,6 +11,7 @@ import {
   type Material,
   type Mesh,
 } from "three";
+import { childSeed, makeRng } from "$lib/shared/foundation/utils/seeded-rng";
 
 export interface ForestRuntimeTreePlacement {
   x: number;
@@ -34,6 +35,10 @@ export interface ForestRuntimeGrassPlacement {
 
 export interface ForestRuntimeTreeInstanceOptions {
   materialSource?: Object3D;
+  distanceTier?: "near" | "mid" | "far";
+}
+
+export interface ForestRuntimeGrassInstanceOptions {
   distanceTier?: "near" | "mid" | "far";
 }
 
@@ -110,10 +115,12 @@ export function createForestRuntimeTreeInstances(
 /** Create the same tiered, rooted-wind-ready grass contract used by Forest. */
 export function createForestRuntimeGrassField(
   placements: ForestRuntimeGrassPlacement[],
-  sources: ReadonlyMap<ForestRuntimeGrassPlacement["species"], Mesh>
+  sources: ReadonlyMap<ForestRuntimeGrassPlacement["species"], Mesh>,
+  options: ForestRuntimeGrassInstanceOptions = {}
 ): Group {
   const root = new Group();
-  root.name = "Forest_RuntimeGroundEcosystem";
+  const distanceTier = options.distanceTier ?? "near";
+  root.name = `Forest_RuntimeGroundEcosystem_${distanceTier}`;
   for (const tier of ["base", "medium", "high"] as const) {
     for (const species of ["summer-sward", "woodland-grass"] as const) {
       const selected = placements.filter(
@@ -151,6 +158,7 @@ export function createForestRuntimeGrassField(
       mesh.userData.tka_ground_stratum = tier === "base" ? "carpet" : "meadow";
       mesh.userData.tka_wind_response = tier === "high" ? 1.15 : 1;
       mesh.userData.forestRuntimeEcology = true;
+      mesh.userData.forestDistanceTier = distanceTier;
       mesh.userData.ownedMaterials = true;
       const object = new Object3D();
       selected.forEach((placement, index) => {
@@ -174,6 +182,26 @@ export function createForestRuntimeGrassField(
     }
   }
   return root;
+}
+
+/**
+ * Keep a stable spatial subset for distance grass tiers.
+ *
+ * Position-keyed selection avoids grid stripes and stays bit-identical when a
+ * route carve adds or removes an unrelated tuft elsewhere in the campground.
+ */
+export function selectForestRuntimeGrassDensity(
+  placements: readonly ForestRuntimeGrassPlacement[],
+  density: number,
+  seed = "forest-runtime-grass-distance-density"
+): ForestRuntimeGrassPlacement[] {
+  const clampedDensity = Math.min(1, Math.max(0, density));
+  if (clampedDensity === 1) return [...placements];
+  if (clampedDensity === 0) return [];
+  return placements.filter((placement) => {
+    const positionKey = `${placement.x.toFixed(3)}:${placement.z.toFixed(3)}:${placement.species}`;
+    return makeRng(childSeed(seed, positionKey))() < clampedDensity;
+  });
 }
 
 export function disposeForestRuntimeEcology(root: Object3D): void {

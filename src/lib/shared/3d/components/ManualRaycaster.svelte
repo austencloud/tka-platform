@@ -59,13 +59,13 @@
 
   function findIntersection(event: PointerEvent): Intersection | null {
     const cam = camera.current;
-    if (!cam || !scene.current) return null;
+    if (!cam) return null;
 
     getCanvasCoords(event);
     raycaster.setFromCamera(pointer, cam);
 
     // Only raycast against meshes (not lights, cameras, etc.)
-    const intersects = raycaster.intersectObjects(scene.current.children, true);
+    const intersects = raycaster.intersectObjects(scene.children, true);
 
     // Find first mesh intersection
     for (const intersection of intersects) {
@@ -142,7 +142,7 @@
   }
 
   function bindEvents() {
-    canvasElement = renderer?.current?.domElement ?? null;
+    canvasElement = renderer.domElement;
     if (!canvasElement) return false;
     canvasElement.addEventListener("pointerdown", handlePointerDown);
     canvasElement.addEventListener("pointerup", handlePointerUp);

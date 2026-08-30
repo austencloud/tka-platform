@@ -6,9 +6,10 @@
 
 ## Decision
 
-There is exactly one sanctioned way to crossfade content:
-`src/lib/shared/components/Crossfade.svelte`. Every _true crossfade_ of cheap
-content uses it. Heavy/stateful content uses the dual-source no-remount path.
+There are two sanctioned crossfade primitives. Every _true crossfade_ of cheap
+content uses `src/lib/shared/components/Crossfade.svelte`. Heavy/stateful
+content uses `src/lib/shared/components/DualSourceCrossfade.svelte`, the
+dual-source no-remount path.
 Single enter/exit fades stay plain `transition:fade`. The boundary between these
 three is recorded here so future work doesn't re-litigate it.
 
@@ -46,8 +47,11 @@ are NOT crossfades. Wrapping one in `<Crossfade>` means inventing a meaningless
   → `<Crossfade>`.
 - **Heavy/stateful content** (canvas, large pictograph render, a panel holding
   scroll position / focus / in-progress export): remount drops that state and
-  costs a paint. → dual-source path (`CellRenderer` + `crossfader-state`), which
-  keeps both sources mounted and animates opacity. Never `{#key}`.
+  costs a paint. → `<DualSourceCrossfade>`, which keeps two host-prepared
+  sources mounted and animates opacity only after the replacement is ready.
+  Never `{#key}` the visible source. Hosts retire the outgoing source from the
+  primitive's `onsettled` event, not from a timer, so teardown follows the
+  compositor's real endpoint even when a frame arrives late.
 
 ### Sizing is a primitive option, not a boundary
 
@@ -83,7 +87,8 @@ delayed-in stagger) is preserved via the `delay` prop.
 
 ## Deliberate carve-outs (NOT migrated)
 
-- `CellRenderer` + `crossfader-state` — the heavy-content dual-source path.
+- `CellRenderer` + `crossfader-state` — specialized bitmap/URL dual-source
+  path; it retains its focused image lifecycle and dark-mode coordination.
 - `FuseTab`, `CreationWorkspaceArea` — heavy non-keyed view/workspace swaps;
   `{#key}` remount too costly.
 - `ButtonPanel` center-zone — absolutely centered against the whole panel (a

@@ -55,12 +55,17 @@ describe("Flow Fest registered ground surface", () => {
     expect(loop?.evidence).toBe("public-orthophoto");
     expect(loop?.points).toEqual(FLOW_FEST_LOWER_CAMPGROUND_LOOP);
     expect(loop?.points[0]).toEqual(loop?.points.at(-1));
-    expect(loopLength(loop?.points ?? [])).toBeGreaterThan(270);
-    expect(flowFestNaipPixelToWorld({ x: 1647, y: 820 })).toEqual({
-      x: 311.5,
-      z: -102,
+    expect(loopLength(loop?.points ?? [])).toBeGreaterThan(340);
+    expect(loopLength(loop?.points ?? [])).toBeLessThan(360);
+    expect(flowFestNaipPixelToWorld({ x: 1666.3, y: 806.4 })).toEqual({
+      x: 321.1,
+      z: -108.8,
     });
-    expect(FLOW_FEST_LOWER_CAMPGROUND_LOOP_NAIP_PIXELS).toHaveLength(21);
+    expect(FLOW_FEST_LOWER_CAMPGROUND_LOOP_NAIP_PIXELS).toHaveLength(36);
+    expect(FLOW_FEST_LOWER_CAMPGROUND_LOOP_NAIP_PIXELS[15]).toEqual({
+      x: 1528,
+      y: 663.8,
+    });
   });
 
   it("registers Forest ground families to the same world frame as roads", () => {

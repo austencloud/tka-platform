@@ -1,3 +1,7 @@
+import {
+  FLOW_FEST_AUDIO_FIELD_CONTRACT,
+  flowFestAudioDistanceLowpassHz,
+} from "./flow-fest-audio-field";
 import type {
   FlowFestFireJamLayout,
   FlowFestFireJamState,
@@ -86,5 +90,40 @@ export function computeFlowFestSiteAudioMix(
     ...channels,
     master: clamp01(masterVolume),
     dominantLayer,
+  };
+}
+
+/**
+ * Per-bed brightness. The bed buses are not panned, so distance can only be
+ * read through level and tone: a fire circle across the field has to arrive as
+ * a bass-heavy murmur, not a quiet copy of the close-up sound. The woodland bed
+ * is the air around the listener and never closes.
+ */
+export interface FlowFestSiteAudioBedFilters {
+  arrivalHz: number;
+  woodlandHz: number;
+  campHz: number;
+  fireHz: number;
+  ledHz: number;
+  crowdHz: number;
+}
+
+export function computeFlowFestSiteAudioBedFilters(
+  layout: FlowFestSiteAudioLayout,
+  player: { x: number; z: number }
+): FlowFestSiteAudioBedFilters {
+  const at = (target: { x: number; z: number }): number =>
+    flowFestAudioDistanceLowpassHz(
+      Math.hypot(player.x - target.x, player.z - target.z)
+    );
+  const fireHz = at(layout.fireCenter);
+  const ledHz = at(layout.ledCircleCenter);
+  return {
+    arrivalHz: at(layout.gateCenter),
+    woodlandHz: FLOW_FEST_AUDIO_FIELD_CONTRACT.openLowpassHz,
+    campHz: at(layout.campCenter),
+    fireHz,
+    ledHz,
+    crowdHz: Math.max(fireHz, ledHz),
   };
 }

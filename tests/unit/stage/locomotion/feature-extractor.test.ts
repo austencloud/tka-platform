@@ -7,6 +7,8 @@ function stationarySampler(_clipId: string, _time: number): PoseSample {
   return {
     leftFoot: [-0.1, 0, 0],
     rightFoot: [0.1, 0, 0],
+    leftThigh: [-0.08, 0.8, 0],
+    rightThigh: [0.08, 0.8, 0],
     hips: [0, 1, 0],
     facing: 0,
     rootXZ: [0, 0],
@@ -24,6 +26,10 @@ describe("buildMotionDatabase", () => {
     expect(db.features.length).toBe(db.frames.length * FEATURE_STRIDE);
     expect(db.columnWeights.length).toBe(FEATURE_STRIDE);
     expect(db.frames.length).toBeGreaterThan(0);
+    expect(db.frames[0]?.quality).toEqual({
+      legOrderMargin: 0.2,
+      footSeparation: 0.2,
+    });
   });
 
   it("yields ~zero velocities and ~zero trajectory deltas for a stationary clip", () => {
