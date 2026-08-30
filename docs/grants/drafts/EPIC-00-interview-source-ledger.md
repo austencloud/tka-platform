@@ -71,6 +71,28 @@ duplicating the sensor electronics. A second or third system should be
 justified by partner interaction, simultaneous feedback, or capture throughput,
 not by avatar count.
 
+### The Kinetic Archive in Austen's words
+
+**Austen, August 30, 2026:**
+
+> Kinetic Archive is game set in a fictional universe where the kinetic
+> alphabet is baked into the fabric of reality from the dawn of time. by
+> exploring a museum crafted by a mysterious bureaucratic organization, you
+> gradually learn the concepts of the kinetic alphabet while traversing from
+> prehistoric times through the present day, encountering historical figures
+> that have been secret practitioners of Flow Arts portrayed by my friends and
+> members of the forest community. it's part walkable simulation part proof of
+> concept for flow arts existing in 3D video games and part educational
+> experience with a heavy layer of reality bending history modifying science
+> fiction and AS plot which tells the story of the downfall of this bureaucratic
+> organization
+
+Preserve this as the primary source for the Epic elevator pitch. "Forest
+community" appears to mean "flow arts community," and "AS plot" appears to mean
+"a plot." Confirm those readings before using either phrase in approved prose.
+The source comparison and proposed angle are recorded in
+`EPIC-02-elevator-pitch-source-map.md`.
+
 ## Verified equipment facts
 
 - Rokoko lists the Creator Bundle at a temporary sale price of $2,495 through

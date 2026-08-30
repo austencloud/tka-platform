@@ -109,3 +109,19 @@ controls submission. No agent presses Submit.
 This recommendation is not approved portal text. Austen must first confirm that
 Epic is being asked to fund the Unreal migration and a playable museum-game
 milestone rather than a standalone Composer integration.
+
+## Approved portal state
+
+Austen approved the recommended game and Unreal-migration framing on August 30,
+2026. The live form now shows:
+
+- Project Name: The Kinetic Archive
+- Project Type: Games
+- Project Type Subcategory: Other
+- Phase: Pre-Production
+
+The portal's custom radio controls did not retain automated changes during live
+verification. Before submission, manually verify:
+
+- Currently in Unreal Engine or UEFN: No
+- Community contribution: My project gives back to the 3D community
