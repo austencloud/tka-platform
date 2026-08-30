@@ -8,6 +8,6 @@
     fill="#9AA4B2" stroke="#202126" stroke-width="1.3"/>
   <circle cx="264.17" cy="75" r="30.69"
     fill="#BDBDBD" stroke="#202126" stroke-width="1.67"/>
-  <rect x="5" y="60.12" width="37.2" height="29.76" rx="14.88"
+  <path d="M8.29 75C8.29 59.93 13.13 56.4 22.06 56.4C31.73 56.4 38.98 63.84 38.98 75C38.98 86.16 31.73 93.6 22.06 93.6C13.13 93.6 8.29 90.07 8.29 75Z"
     fill="#7B8798" stroke="#202126" stroke-width="1.49"/>
 </svg>

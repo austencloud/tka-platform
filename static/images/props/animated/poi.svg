@@ -24,10 +24,13 @@
     <circle data-poi-part="head" cx="275.17" cy="19" r="16.5"
       fill="#BDBDBD" stroke="#202126" stroke-width=".9"/>
 
-    <!-- knob: a plain rubber bead threaded on the cord and closed in the palm.
-         Centred on the handpoint, and half the head across, which is the
-         knob-to-head ratio of the real hardware. -->
-    <rect data-poi-part="knob" x="135.83" y="11" width="20" height="16" rx="8"
+    <!-- knob: the moulded rubber bead. The cord runs through its SHORT axis, so
+         side-on the bead is squat along the tether (16.5) and wide across it
+         (20) - not a capsule lying along the cord. The outboard face that seats
+         in the palm is the flat one; the end the cord leaves by is the rounder
+         dome. Centred on the handpoint. -->
+    <path data-poi-part="knob"
+      d="M137.6 19C137.6 10.9 140.2 9 145 9C150.2 9 154.1 13 154.1 19C154.1 25 150.2 29 145 29C140.2 29 137.6 27.1 137.6 19Z"
       fill="#7B8798" stroke="#202126" stroke-width=".8"/>
   </g>
 </svg>
