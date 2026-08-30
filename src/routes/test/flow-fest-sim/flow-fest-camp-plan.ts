@@ -824,29 +824,64 @@ export function createFlowFestCampPlan(
   };
 }
 
+interface FlowFestSearchableLandmark {
+  candidate: FlowFestCampPlanLandmark;
+  priority: number;
+}
+
+// Per-plan shaping (excluding non-searchable kinds, precomputing sort
+// priority) depends only on the plan's static topology, not on the player's
+// position. `identifyFlowFestPlanLocation` runs on every player-position
+// update, so this cache keeps that shaping off the movement frame path: it
+// is built once per plan object and reused for every position the same plan
+// is queried with. A WeakMap key means a plan that's no longer referenced
+// (branch change, contract reload) is dropped for free.
+const searchableLandmarksByPlan = new WeakMap<
+  FlowFestCampPlan,
+  FlowFestSearchableLandmark[]
+>();
+
+function searchableFlowFestLandmarks(
+  plan: FlowFestCampPlan
+): FlowFestSearchableLandmark[] {
+  const cached = searchableLandmarksByPlan.get(plan);
+  if (cached) return cached;
+  const shaped = plan.landmarks
+    .filter((candidate) => candidate.kind !== "crop-field")
+    .map((candidate) => ({
+      candidate,
+      priority: landmarkPriority(candidate.kind),
+    }));
+  searchableLandmarksByPlan.set(plan, shaped);
+  return shaped;
+}
+
 export function identifyFlowFestPlanLocation(
   plan: FlowFestCampPlan,
   position: { x: number; z: number }
 ): FlowFestCampPlanLocation {
-  const landmark = plan.landmarks
-    .map((candidate) => ({
-      candidate,
-      distance: Math.hypot(
-        position.x - candidate.position.x,
-        position.z - candidate.position.z
-      ),
-    }))
-    .filter(({ candidate, distance }) =>
-      candidate.kind === "crop-field"
-        ? false
-        : distance <= candidate.approachRadiusMeters
-    )
-    .sort(
-      (first, second) =>
-        first.distance - second.distance ||
-        landmarkPriority(second.candidate.kind) -
-          landmarkPriority(first.candidate.kind)
-    )[0];
+  let landmark: {
+    candidate: FlowFestCampPlanLandmark;
+    distance: number;
+    priority: number;
+  } | null = null;
+  for (const { candidate, priority } of searchableFlowFestLandmarks(plan)) {
+    const distance = Math.hypot(
+      position.x - candidate.position.x,
+      position.z - candidate.position.z
+    );
+    if (distance > candidate.approachRadiusMeters) continue;
+    // Matches the tie-break of the equivalent stable sort this replaced:
+    // nearer wins; on an exact distance tie, higher priority wins; on a full
+    // tie, keep the earlier match (the loop simply never overwrites it).
+    if (
+      !landmark ||
+      distance < landmark.distance ||
+      (distance === landmark.distance && priority > landmark.priority)
+    ) {
+      landmark = { candidate, distance, priority };
+    }
+  }
   if (landmark) {
     return {
       id: landmark.candidate.id,

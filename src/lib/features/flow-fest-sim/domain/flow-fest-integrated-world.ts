@@ -6,6 +6,13 @@ import type {
 
 export const FLOW_FEST_INTEGRATED_JOURNEY_VERSION = 1 as const;
 
+// The live runtime history and the restore contract must agree on this bound.
+// Restoration already rejects a persisted history longer than this; the live
+// observer caps to the same number so a long legitimate journey gets trimmed
+// (oldest entries first) instead of surviving in memory only to be discarded
+// wholesale on the next load.
+export const FLOW_FEST_MAX_AREA_HISTORY_ENTRIES = 64;
+
 export type FlowFestIntegratedAreaId =
   | "lower-gate"
   | "selected-camp"
@@ -122,7 +129,11 @@ export function observeFlowFestIntegratedArea(
     ...state,
     currentArea: area,
     areaHistory:
-      lastArea === area ? state.areaHistory : state.areaHistory.concat(area),
+      lastArea === area
+        ? state.areaHistory
+        : state.areaHistory
+            .concat(area)
+            .slice(-FLOW_FEST_MAX_AREA_HISTORY_ENTRIES),
   };
 }
 
@@ -185,12 +196,18 @@ export function restoreFlowFestIntegratedJourney(
     (!LANDMARK_AREAS.has(candidate.currentArea as FlowFestIntegratedAreaId) &&
       candidate.currentArea !== "transit") ||
     !Array.isArray(candidate.areaHistory) ||
-    candidate.areaHistory.length > 64 ||
+    candidate.areaHistory.length > FLOW_FEST_MAX_AREA_HISTORY_ENTRIES ||
     !candidate.areaHistory.every(
       (area) =>
         typeof area === "string" &&
         LANDMARK_AREAS.has(area as FlowFestIntegratedAreaId)
-    )
+    ) ||
+    // A landmark currentArea must be the most recent history entry.
+    // observeFlowFestIntegratedArea() no-ops when the observed area already
+    // equals currentArea, so an inconsistent pair here would silently stop
+    // recording that area and corrupt every audit computed from areaHistory.
+    (candidate.currentArea !== "transit" &&
+      candidate.areaHistory.at(-1) !== candidate.currentArea)
   ) {
     return null;
   }
@@ -199,7 +216,13 @@ export function restoreFlowFestIntegratedJourney(
       return null;
     }
   }
-  return candidate as FlowFestIntegratedJourneyState;
+  // Normalize a missing branch property to null explicitly: the contract
+  // only permits branch-or-null, and a blind cast would let `undefined`
+  // (from a persisted snapshot that omitted the field) through unchanged.
+  return {
+    ...candidate,
+    branch: candidate.branch ?? null,
+  } as FlowFestIntegratedJourneyState;
 }
 
 function requiredZone(
