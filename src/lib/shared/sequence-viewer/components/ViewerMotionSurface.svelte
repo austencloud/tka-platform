@@ -451,11 +451,11 @@
         class="canvas-layer canvas-2d-layer"
         style="opacity:1;pointer-events:auto;"
       >
-        <!-- Focused 2D keeps the full transport. In the phone's split view the
-             card already owns seeking and the canvas owns play/pause, so the
-             duplicate transport disappears and its height returns to the stage.
-             Practice keeps the transport because its read-ahead lane is not a
-             card navigator. -->
+        <!-- Focused 2D and Tunnel keep the same full transport. In the phone's
+             split view the card already owns seeking and the canvas owns
+             play/pause, so the duplicate transport disappears and its height
+             returns to the stage. Practice keeps the transport because its
+             read-ahead lane is not a card navigator. -->
         <AnimatorCanvas
           sequenceData={playback.animationState.sequenceData}
           currentStep={playback.currentStep}
@@ -489,13 +489,12 @@
           focused={side === "left" && layout.focusedPane === "animation"}
           suppress2DOverlays={false}
           fillContainer
-          hideProgressBar={tunnelVisualActive ||
-            (side === "left"
-              ? suppressProgress ||
-                (!practiceActive &&
-                  layout.isMobile &&
-                  layout.focusedPane === null)
-              : true)}
+          hideProgressBar={side === "left"
+            ? suppressProgress ||
+              (!practiceActive &&
+                layout.isMobile &&
+                layout.focusedPane === null)
+            : true}
           hideHeader
           hideTkaGlyph={tunnelVisualActive}
           hideStepNumbers={tunnelVisualActive}
