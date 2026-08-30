@@ -758,6 +758,8 @@
             isMoving={performer.isMoving}
             moveSpeed={performer.moveSpeed}
             moveDirection={performer.moveDirection}
+            gaitTimingSample={performer.gaitTimingSample}
+            terminalStepPlan={performer.terminalStepPlan}
             onAvatarSwapped={(avatarId) => {
               onAvatarSwapped(avatarId);
               markPerformerAvatarReady(performer.id, avatarId);

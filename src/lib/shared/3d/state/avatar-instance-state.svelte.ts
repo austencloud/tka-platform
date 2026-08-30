@@ -7,9 +7,18 @@
 
 import type { MotionConfig3D } from "../domain/models/motion-data-3d";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { Plane, propFinishState, type PropBuild } from "@austencloud/scene-3d";
+import {
+  Plane,
+  propFinishState,
+  type PropBuild,
+  type ScheduledGaitTimingSample,
+  type TerminalStepPlan,
+} from "@austencloud/scene-3d";
 import { PlaneMode } from "@austencloud/scene-3d";
-import { PLANE_MODE_CONFIGS, type PlaneModeConfig } from "@austencloud/scene-3d";
+import {
+  PLANE_MODE_CONFIGS,
+  type PlaneModeConfig,
+} from "@austencloud/scene-3d";
 import { createPlaybackState } from "./playback-state.svelte";
 import { calculatePropState } from "../services/prop-state-interpolator";
 import {
@@ -54,9 +63,14 @@ const FIGURE_Z = 0;
  *
  * Any other combination falls back to CUSTOM (per-hand independent).
  */
-export function derivePlaneModeFromHands(bluePlane: Plane, redPlane: Plane): PlaneMode {
-  if (bluePlane === Plane.WALL && redPlane === Plane.WALL) return PlaneMode.WALL;
-  if (bluePlane === Plane.WHEEL && redPlane === Plane.WHEEL) return PlaneMode.DUAL_WHEEL;
+export function derivePlaneModeFromHands(
+  bluePlane: Plane,
+  redPlane: Plane
+): PlaneMode {
+  if (bluePlane === Plane.WALL && redPlane === Plane.WALL)
+    return PlaneMode.WALL;
+  if (bluePlane === Plane.WHEEL && redPlane === Plane.WHEEL)
+    return PlaneMode.DUAL_WHEEL;
   return PlaneMode.CUSTOM;
 }
 
@@ -180,7 +194,9 @@ export function createAvatarInstanceState(
     ...propFinishState.build,
     ...(_settings.propBuild ?? {}),
   });
-  const effectiveEffortId = $derived(_settings.effortId ?? getDefaults().effortId);
+  const effectiveEffortId = $derived(
+    _settings.effortId ?? getDefaults().effortId
+  );
   // The per-performer effect OVERRIDE only. `null` means "inherit the global
   // default" - the inherited value (config.tipEffectMap wildcard) is resolved
   // by the consumer (Viewer3DScene / EffectsSettingsPanel), which has the
@@ -211,11 +227,14 @@ export function createAvatarInstanceState(
   // Ground speed in m/s. The locomotion animator scales the walk clip's
   // playback rate by this, which is what keeps the feet from skating.
   let moveSpeed = $state(0);
+  let gaitTimingSample = $state<ScheduledGaitTimingSample | null>(null);
+  let terminalStepPlan = $state<TerminalStepPlan | null>(null);
 
   // Current facing angle in radians (0 = facing +Z).
   // Initialize from persisted plane mode so dual-wheel starts at π/2.
   const _initialPlaneMode = loadPersistedPlaneMode();
-  const _initialFacing = _initialPlaneMode === PlaneMode.DUAL_WHEEL ? Math.PI / 2 : 0;
+  const _initialFacing =
+    _initialPlaneMode === PlaneMode.DUAL_WHEEL ? Math.PI / 2 : 0;
   let facingAngle = $state(_initialFacing);
 
   // Target facing angle for smooth rotation
@@ -244,7 +263,9 @@ export function createAvatarInstanceState(
       if (v === PlaneMode.DUAL_WHEEL) return PlaneMode.DUAL_WHEEL;
       if (v === PlaneMode.WALL) return PlaneMode.WALL;
       if (v === PlaneMode.CUSTOM) return PlaneMode.CUSTOM;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return null;
   }
 
@@ -253,7 +274,9 @@ export function createAvatarInstanceState(
     try {
       const v = localStorage.getItem(ROT_VARIANT_KEY);
       if (v !== null) return Math.max(0, Math.min(2, parseInt(v, 10) || 0));
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return 1;
   }
 
@@ -263,8 +286,12 @@ export function createAvatarInstanceState(
 
   // Effective plane getters (cascade resolution: null → inherit from defaults)
   const effectivePlaneMode = $derived(planeMode ?? getDefaults().planeMode);
-  const effectiveBluePlane = $derived(customBluePlane ?? getDefaults().customBluePlane);
-  const effectiveRedPlane = $derived(customRedPlane ?? getDefaults().customRedPlane);
+  const effectiveBluePlane = $derived(
+    customBluePlane ?? getDefaults().customBluePlane
+  );
+  const effectiveRedPlane = $derived(
+    customRedPlane ?? getDefaults().customRedPlane
+  );
 
   // Override detection (all categories)
   const hasOverride = $derived<OverrideState>({
@@ -276,12 +303,18 @@ export function createAvatarInstanceState(
   });
 
   const hasAnyOverride = $derived(
-    hasOverride.prop || hasOverride.propBuild || hasOverride.effects || hasOverride.effort || hasOverride.planes
+    hasOverride.prop ||
+      hasOverride.propBuild ||
+      hasOverride.effects ||
+      hasOverride.effort ||
+      hasOverride.planes
   );
 
   // Per-beat plane overrides. Key = beat index, value = { blue?, red? }
   // Beats without an entry use Plane.WALL (the default).
-  let beatPlaneOverrides = $state<Map<number, { blue?: Plane; red?: Plane }>>(new Map());
+  let beatPlaneOverrides = $state<Map<number, { blue?: Plane; red?: Plane }>>(
+    new Map()
+  );
 
   // Whether we're editing planes per-beat (true) or whole-sequence (false)
   let beatEditMode = $state(false);
@@ -396,7 +429,7 @@ export function createAvatarInstanceState(
     const { stepIndex, localProgress } = interpolatePhrase(
       phrase,
       currentStep,
-      totalMotionSteps,
+      totalMotionSteps
     );
 
     const targetStep = stepConfigs[stepIndex + 1] ?? stepConfigs[stepIndex];
@@ -440,9 +473,7 @@ export function createAvatarInstanceState(
       Plane.WALL,
       modeConfig
     );
-    stepConfigs = startConfig
-      ? [startConfig, ...motionConfigs]
-      : motionConfigs;
+    stepConfigs = startConfig ? [startConfig, ...motionConfigs] : motionConfigs;
 
     // DIAG: Dump raw start position and configs
     if (sequence.startPosition) {
@@ -505,7 +536,11 @@ export function createAvatarInstanceState(
   function setPlaneMode(mode: PlaneMode) {
     planeMode = mode;
     if (persistToStorage) {
-      try { localStorage.setItem(PLANE_MODE_KEY, mode); } catch { /* ignore */ }
+      try {
+        localStorage.setItem(PLANE_MODE_KEY, mode);
+      } catch {
+        /* ignore */
+      }
     }
 
     // Sync custom plane trackers to the preset's planes when switching away from CUSTOM
@@ -541,15 +576,23 @@ export function createAvatarInstanceState(
       customRedPlane ?? getDefaults().customRedPlane
     );
     if (persistToStorage) {
-      try { localStorage.setItem(PLANE_MODE_KEY, planeMode); } catch { /* ignore */ }
+      try {
+        localStorage.setItem(PLANE_MODE_KEY, planeMode);
+      } catch {
+        /* ignore */
+      }
     }
 
     reconvertWithConfig(getEffectiveModeConfig(planeMode));
     const afterSnapshot = capturePerformerSnapshot();
-    sceneUndo.pushSelfRestoringEntry("set-hand-plane", `${hand} hand: ${plane}`, {
-      undo: () => restorePerformerSnapshot(beforeSnapshot),
-      redo: () => restorePerformerSnapshot(afterSnapshot),
-    });
+    sceneUndo.pushSelfRestoringEntry(
+      "set-hand-plane",
+      `${hand} hand: ${plane}`,
+      {
+        undo: () => restorePerformerSnapshot(beforeSnapshot),
+        redo: () => restorePerformerSnapshot(afterSnapshot),
+      }
+    );
   }
 
   /**
@@ -560,13 +603,19 @@ export function createAvatarInstanceState(
    * from the sequence-wide setting, so they can never map to a preset mode
    * regardless of what the global hand assignment would derive.
    */
-  function setStepHandPlane(stepNumber: number, hand: "blue" | "red", plane: Plane) {
+  function setStepHandPlane(
+    stepNumber: number,
+    hand: "blue" | "red",
+    plane: Plane
+  ) {
     const beforeSnapshot = capturePerformerSnapshot();
     const current = beatPlaneOverrides.get(stepNumber) ?? {};
     const updated = { ...current, [hand]: plane };
 
-    if ((!updated.blue || updated.blue === Plane.WALL) &&
-        (!updated.red || updated.red === Plane.WALL)) {
+    if (
+      (!updated.blue || updated.blue === Plane.WALL) &&
+      (!updated.red || updated.red === Plane.WALL)
+    ) {
       beatPlaneOverrides.delete(stepNumber);
     } else {
       beatPlaneOverrides.set(stepNumber, updated);
@@ -580,10 +629,14 @@ export function createAvatarInstanceState(
 
     applyBeatPlaneOverrides();
     const afterSnapshot = capturePerformerSnapshot();
-    sceneUndo.pushSelfRestoringEntry("set-beat-plane-override", `Step ${stepNumber} ${hand}: ${plane}`, {
-      undo: () => restorePerformerSnapshot(beforeSnapshot),
-      redo: () => restorePerformerSnapshot(afterSnapshot),
-    });
+    sceneUndo.pushSelfRestoringEntry(
+      "set-beat-plane-override",
+      `Step ${stepNumber} ${hand}: ${plane}`,
+      {
+        undo: () => restorePerformerSnapshot(beforeSnapshot),
+        redo: () => restorePerformerSnapshot(afterSnapshot),
+      }
+    );
   }
 
   /**
@@ -620,7 +673,9 @@ export function createAvatarInstanceState(
       Plane.WALL,
       modeConfig
     );
-    const allConfigs = startConfig ? [startConfig, ...motionConfigs] : motionConfigs;
+    const allConfigs = startConfig
+      ? [startConfig, ...motionConfigs]
+      : motionConfigs;
 
     // Patch per-beat overrides into individual configs
     for (const [beatIdx, override] of beatPlaneOverrides) {
@@ -673,9 +728,14 @@ export function createAvatarInstanceState(
    * Returns the label of the new variant so the UI can show it.
    */
   function cycleRotationVariant(): string {
-    rotationVariantIndex = (rotationVariantIndex + 1) % ROTATION_VARIANTS.length;
+    rotationVariantIndex =
+      (rotationVariantIndex + 1) % ROTATION_VARIANTS.length;
     if (persistToStorage) {
-      try { localStorage.setItem(ROT_VARIANT_KEY, String(rotationVariantIndex)); } catch { /* ignore */ }
+      try {
+        localStorage.setItem(ROT_VARIANT_KEY, String(rotationVariantIndex));
+      } catch {
+        /* ignore */
+      }
     }
     const modeConfig = getEffectiveModeConfig(effectivePlaneMode);
     reconvertWithConfig(modeConfig);
@@ -695,9 +755,7 @@ export function createAvatarInstanceState(
       Plane.WALL,
       modeConfig
     );
-    stepConfigs = startConfig
-      ? [startConfig, ...motionConfigs]
-      : motionConfigs;
+    stepConfigs = startConfig ? [startConfig, ...motionConfigs] : motionConfigs;
 
     updateVisibilityFromStep(stepConfigs[currentStepIndex] ?? stepConfigs[0]);
   }
@@ -762,10 +820,14 @@ export function createAvatarInstanceState(
     direction: { x: number; z: number };
     speed: number;
     moving: boolean;
+    gaitTimingSample?: ScheduledGaitTimingSample | null;
+    terminalStepPlan?: TerminalStepPlan | null;
   }) {
     moveInput = travel.direction;
     moveSpeed = travel.speed;
     isMoving = travel.moving;
+    gaitTimingSample = travel.gaitTimingSample ?? null;
+    terminalStepPlan = travel.terminalStepPlan ?? null;
   }
 
   /**
@@ -869,8 +931,12 @@ export function createAvatarInstanceState(
     _settings = { ..._settings, effortId };
     const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntry("change-effort", `Effort: ${effortId}`, {
-      undo: () => { _settings = before; },
-      redo: () => { _settings = after; },
+      undo: () => {
+        _settings = before;
+      },
+      redo: () => {
+        _settings = after;
+      },
     });
   }
 
@@ -903,8 +969,12 @@ export function createAvatarInstanceState(
     };
     const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntry("change-prop", `Prop: ${prop}`, {
-      undo: () => { _settings = before; },
-      redo: () => { _settings = after; },
+      undo: () => {
+        _settings = before;
+      },
+      redo: () => {
+        _settings = after;
+      },
     });
   }
 
@@ -946,8 +1016,12 @@ export function createAvatarInstanceState(
       ? `Effect: ${effect ?? "inherit"} (build equipped)`
       : `Effect: ${effect ?? "inherit"}`;
     sceneUndo.pushSelfRestoringEntry("toggle-effect", label, {
-      undo: () => { _settings = before; },
-      redo: () => { _settings = after; },
+      undo: () => {
+        _settings = before;
+      },
+      redo: () => {
+        _settings = after;
+      },
     });
   }
 
@@ -955,10 +1029,19 @@ export function createAvatarInstanceState(
     const before = $state.snapshot(_settings);
     _settings = { ..._settings, staffLengthCm: cm };
     const after = $state.snapshot(_settings);
-    sceneUndo.pushSelfRestoringEntryCoalescing("change-staff-length", "Staff length", {
-      undo: () => { _settings = before; },
-      redo: () => { _settings = after; },
-    }, "staff-length");
+    sceneUndo.pushSelfRestoringEntryCoalescing(
+      "change-staff-length",
+      "Staff length",
+      {
+        undo: () => {
+          _settings = before;
+        },
+        redo: () => {
+          _settings = after;
+        },
+      },
+      "staff-length"
+    );
   }
 
   function setPropBuild(propBuild: Partial<PropBuild>): void {
@@ -966,8 +1049,12 @@ export function createAvatarInstanceState(
     _settings = { ..._settings, propBuild };
     const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntry("change-prop-build", "Prop build", {
-      undo: () => { _settings = before; },
-      redo: () => { _settings = after; },
+      undo: () => {
+        _settings = before;
+      },
+      redo: () => {
+        _settings = after;
+      },
     });
   }
 
@@ -980,8 +1067,12 @@ export function createAvatarInstanceState(
     _settings = { ..._settings, prop: null };
     const after = $state.snapshot(_settings);
     sceneUndo.pushSelfRestoringEntry("change-prop", "Reset prop to default", {
-      undo: () => { _settings = before; },
-      redo: () => { _settings = after; },
+      undo: () => {
+        _settings = before;
+      },
+      redo: () => {
+        _settings = after;
+      },
     });
   }
 
@@ -989,30 +1080,54 @@ export function createAvatarInstanceState(
     const before = $state.snapshot(_settings);
     _settings = { ..._settings, propBuild: null };
     const after = $state.snapshot(_settings);
-    sceneUndo.pushSelfRestoringEntry("change-prop-build", "Reset prop build to default", {
-      undo: () => { _settings = before; },
-      redo: () => { _settings = after; },
-    });
+    sceneUndo.pushSelfRestoringEntry(
+      "change-prop-build",
+      "Reset prop build to default",
+      {
+        undo: () => {
+          _settings = before;
+        },
+        redo: () => {
+          _settings = after;
+        },
+      }
+    );
   }
 
   function resetEffort(): void {
     const before = $state.snapshot(_settings);
     _settings = { ..._settings, effortId: null };
     const after = $state.snapshot(_settings);
-    sceneUndo.pushSelfRestoringEntry("change-effort", "Reset effort to default", {
-      undo: () => { _settings = before; },
-      redo: () => { _settings = after; },
-    });
+    sceneUndo.pushSelfRestoringEntry(
+      "change-effort",
+      "Reset effort to default",
+      {
+        undo: () => {
+          _settings = before;
+        },
+        redo: () => {
+          _settings = after;
+        },
+      }
+    );
   }
 
   function resetEffects(): void {
     const before = $state.snapshot(_settings);
     _settings = { ..._settings, effect: null };
     const after = $state.snapshot(_settings);
-    sceneUndo.pushSelfRestoringEntry("toggle-effect", "Reset effects to default", {
-      undo: () => { _settings = before; },
-      redo: () => { _settings = after; },
-    });
+    sceneUndo.pushSelfRestoringEntry(
+      "toggle-effect",
+      "Reset effects to default",
+      {
+        undo: () => {
+          _settings = before;
+        },
+        redo: () => {
+          _settings = after;
+        },
+      }
+    );
   }
 
   function resetPlanes(): void {
@@ -1022,15 +1137,25 @@ export function createAvatarInstanceState(
     customRedPlane = null;
     reconvertWithConfig(getEffectiveModeConfig(effectivePlaneMode));
     const afterSnap = capturePerformerSnapshot();
-    sceneUndo.pushSelfRestoringEntry("set-hand-plane", "Reset planes to default", {
-      undo: () => restorePerformerSnapshot(beforeSnap),
-      redo: () => restorePerformerSnapshot(afterSnap),
-    });
+    sceneUndo.pushSelfRestoringEntry(
+      "set-hand-plane",
+      "Reset planes to default",
+      {
+        undo: () => restorePerformerSnapshot(beforeSnap),
+        redo: () => restorePerformerSnapshot(afterSnap),
+      }
+    );
   }
 
   function resetAllOverrides(): void {
     const beforeSnap = capturePerformerSnapshot();
-    _settings = { prop: null, propBuild: null, effortId: null, effect: null, staffLengthCm: _settings.staffLengthCm };
+    _settings = {
+      prop: null,
+      propBuild: null,
+      effortId: null,
+      effect: null,
+      staffLengthCm: _settings.staffLengthCm,
+    };
     planeMode = null;
     customBluePlane = null;
     customRedPlane = null;
@@ -1101,6 +1226,12 @@ export function createAvatarInstanceState(
     get moveSpeed() {
       return moveSpeed;
     },
+    get gaitTimingSample() {
+      return gaitTimingSample;
+    },
+    get terminalStepPlan() {
+      return terminalStepPlan;
+    },
 
     // Locomotion methods
     setTravel,
@@ -1135,23 +1266,45 @@ export function createAvatarInstanceState(
     get planeMode() {
       return effectivePlaneMode;
     },
-    get rawPlaneMode() { return planeMode; },
+    get rawPlaneMode() {
+      return planeMode;
+    },
     setPlaneMode,
     setHandPlane,
     setStepHandPlane,
     clearBeatPlaneOverrides,
     clearStepPlaneOverrides,
     getStepPlanes,
-    get customBluePlane() { return effectiveBluePlane; },
-    get customRedPlane() { return effectiveRedPlane; },
-    get rawBluePlane() { return customBluePlane; },
-    get rawRedPlane() { return customRedPlane; },
-    get currentStepBluePlane() { return currentStepPlanes.blue; },
-    get currentStepRedPlane() { return currentStepPlanes.red; },
-    get beatPlaneOverrides() { return beatPlaneOverrides; },
-    get hasStepOverrides() { return beatPlaneOverrides.size > 0; },
-    get beatEditMode() { return beatEditMode; },
-    setStepEditMode(enabled: boolean) { beatEditMode = enabled; },
+    get customBluePlane() {
+      return effectiveBluePlane;
+    },
+    get customRedPlane() {
+      return effectiveRedPlane;
+    },
+    get rawBluePlane() {
+      return customBluePlane;
+    },
+    get rawRedPlane() {
+      return customRedPlane;
+    },
+    get currentStepBluePlane() {
+      return currentStepPlanes.blue;
+    },
+    get currentStepRedPlane() {
+      return currentStepPlanes.red;
+    },
+    get beatPlaneOverrides() {
+      return beatPlaneOverrides;
+    },
+    get hasStepOverrides() {
+      return beatPlaneOverrides.size > 0;
+    },
+    get beatEditMode() {
+      return beatEditMode;
+    },
+    setStepEditMode(enabled: boolean) {
+      beatEditMode = enabled;
+    },
     cycleRotationVariant,
     get rotationVariantLabel() {
       return ROTATION_LABELS[rotationVariantIndex];
@@ -1237,7 +1390,9 @@ export function createAvatarInstanceState(
     goToStep,
 
     // Performer settings
-    get settings() { return _settings; },
+    get settings() {
+      return _settings;
+    },
     setEffort,
     setProp,
     setEffect,
@@ -1245,18 +1400,36 @@ export function createAvatarInstanceState(
     setPropBuild,
 
     // Effective values (resolved cascade: null → inherit from viewer defaults)
-    get effectiveProp() { return effectiveProp; },
-    get effectivePropBuild() { return effectivePropBuild; },
-    get effectiveEffortId() { return effectiveEffortId; },
+    get effectiveProp() {
+      return effectiveProp;
+    },
+    get effectivePropBuild() {
+      return effectivePropBuild;
+    },
+    get effectiveEffortId() {
+      return effectiveEffortId;
+    },
     /** Per-performer effect override; null = inherit the global default. */
-    get rawEffect() { return rawEffect; },
-    get effectivePlaneMode() { return effectivePlaneMode; },
-    get effectiveBluePlane() { return effectiveBluePlane; },
-    get effectiveRedPlane() { return effectiveRedPlane; },
+    get rawEffect() {
+      return rawEffect;
+    },
+    get effectivePlaneMode() {
+      return effectivePlaneMode;
+    },
+    get effectiveBluePlane() {
+      return effectiveBluePlane;
+    },
+    get effectiveRedPlane() {
+      return effectiveRedPlane;
+    },
 
     // Override detection
-    get hasOverride() { return hasOverride; },
-    get hasAnyOverride() { return hasAnyOverride; },
+    get hasOverride() {
+      return hasOverride;
+    },
+    get hasAnyOverride() {
+      return hasAnyOverride;
+    },
 
     // Reset methods (clear overrides → inherit from defaults)
     resetProp,

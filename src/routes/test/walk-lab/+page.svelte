@@ -47,22 +47,23 @@
     walkPattern,
   } from "$lib/shared/3d/diagnostics/gait/walk-patterns";
   import { createDestinationWalkPlan } from "$lib/shared/3d/locomotion/destination-walk-plan";
+  import {
+    MAX_EXACT_STEPS,
+    MIN_EXACT_STEPS,
+    exactStepRange as supportedExactStepRange,
+  } from "$lib/shared/3d/locomotion/straight-travel-constraints";
   import WalkDriver from "./WalkDriver.svelte";
   import type { ManualInput, WalkState } from "./walk-command";
 
   const MANUAL = "manual";
   const EXACT_MARK = "exact-mark";
-  const MIN_EXACT_STEP_LENGTH = 0.55;
-  const MAX_EXACT_STEP_LENGTH = 0.85;
-  const MAX_EXACT_STEPS = 16;
-
   function exactStepRange(distance: number): { min: number; max: number } {
-    const min = Math.max(3, Math.ceil(distance / MAX_EXACT_STEP_LENGTH));
-    const max = Math.max(
-      min,
-      Math.min(MAX_EXACT_STEPS, Math.floor(distance / MIN_EXACT_STEP_LENGTH))
+    return (
+      supportedExactStepRange(distance) ?? {
+        min: MIN_EXACT_STEPS,
+        max: MAX_EXACT_STEPS,
+      }
     );
-    return { min, max };
   }
 
   function clampExactSteps(distance: number, steps: number): number {

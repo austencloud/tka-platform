@@ -381,6 +381,36 @@ describe("stage choreography state", () => {
     state.destroy();
   });
 
+  it("authors and undoes one performer's Floor timing without moving the set", () => {
+    const state = createStageChoreographyState();
+    const performer = state.choreography.performers[0]!;
+    const destination = state.choreography.formations[1]!;
+    const originalSetBeat = destination.atBeat;
+
+    state.beginDrag();
+    state.updatePerformerTravelTiming(destination.id, performer.id, 20, 30);
+    state.setPerformerTravelStepCount(destination.id, performer.id, 8);
+
+    expect(
+      state.choreography.formations[1]!.spots[performer.id]!.travel
+    ).toEqual({
+      departureBeat: 20,
+      arrivalBeat: 30,
+      stepCount: 8,
+    });
+    expect(destination.atBeat).toBe(originalSetBeat);
+
+    state.undo();
+    expect(
+      state.choreography.formations[1]!.spots[performer.id]!.travel
+    ).toEqual({ departureBeat: 20, arrivalBeat: 30 });
+    state.undo();
+    expect(
+      state.choreography.formations[1]!.spots[performer.id]!.travel
+    ).toBeUndefined();
+    state.destroy();
+  });
+
   it("does not remove or retime the opening formation", () => {
     const state = createStageChoreographyState();
     const opening = state.choreography.formations[0]!;

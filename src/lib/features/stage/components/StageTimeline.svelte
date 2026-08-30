@@ -85,6 +85,21 @@
     draftTransitionBeats: number;
   };
 
+  type FloorTravelHandle = "move" | "departure" | "arrival";
+
+  type FloorTravelDrag = {
+    segmentId: string;
+    formationId: string;
+    performerId: string;
+    mode: FloorTravelHandle;
+    pointerStartX: number;
+    initialStartBeat: number;
+    initialEndBeat: number;
+    minimumStartBeat: number;
+    maximumEndBeat: number;
+    historyStarted: boolean;
+  };
+
   let {
     editMode,
     mode = "editor",
@@ -126,6 +141,7 @@
   let didDrag = false;
   let formationDrag = $state<FormationDrag | null>(null);
   let didFormationDrag = false;
+  let floorTravelDrag = $state<FloorTravelDrag | null>(null);
   const effectivePixelsPerBeat = $derived(
     Math.max(
       MIN_PIXELS_PER_BEAT,
@@ -143,6 +159,19 @@
       );
     }
     return projected;
+  });
+
+  const selectedFloorTravel = $derived.by(() => {
+    if (!editMode.selectedPerformerId || !editMode.selectedFormationId) {
+      return null;
+    }
+    return (
+      floorTravelByPerformer
+        .get(editMode.selectedPerformerId)
+        ?.find(
+          (segment) => segment.formationId === editMode.selectedFormationId
+        ) ?? null
+    );
   });
 
   const floorSpeedByPerformer = $derived.by(() => {
@@ -213,7 +242,11 @@
   }
 
   function seekFromPointer(event: PointerEvent): void {
-    if ((event.target as Element).closest(".sequence-clip, .formation-block"))
+    if (
+      (event.target as Element).closest(
+        ".sequence-clip, .formation-block, .floor-travel-control"
+      )
+    )
       return;
     const lane = event.currentTarget as HTMLElement;
     const rect = lane.getBoundingClientRect();
@@ -413,6 +446,168 @@
     formationDrag = null;
   }
 
+  function selectFloorTravel(segment: StageFloorTravelSegment): void {
+    editMode.selectSpot(segment.formationId, segment.performerId);
+  }
+
+  function beginFloorTravelDrag(
+    event: PointerEvent,
+    segment: StageFloorTravelSegment,
+    mode: FloorTravelHandle
+  ): void {
+    if (event.button !== 0 || segment.distanceMeters < 0.01) return;
+    event.preventDefault();
+    event.stopPropagation();
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    selectFloorTravel(segment);
+    floorTravelDrag = {
+      segmentId: segment.id,
+      formationId: segment.formationId,
+      performerId: segment.performerId,
+      mode,
+      pointerStartX: event.clientX,
+      initialStartBeat: segment.startBeat,
+      initialEndBeat: segment.endBeat,
+      minimumStartBeat: segment.minimumStartBeat,
+      maximumEndBeat: segment.maximumEndBeat,
+      historyStarted: false,
+    };
+  }
+
+  function updateFloorTravelDrag(event: PointerEvent): void {
+    if (!floorTravelDrag) return;
+    const pixelsMoved = event.clientX - floorTravelDrag.pointerStartX;
+    if (Math.abs(pixelsMoved) <= 3) return;
+    if (!floorTravelDrag.historyStarted) {
+      stageState.beginDrag();
+      floorTravelDrag.historyStarted = true;
+    }
+
+    const beatDelta =
+      Math.round((pixelsMoved / effectivePixelsPerBeat) * 4) / 4;
+    const duration =
+      floorTravelDrag.initialEndBeat - floorTravelDrag.initialStartBeat;
+    let departureBeat = floorTravelDrag.initialStartBeat;
+    let arrivalBeat = floorTravelDrag.initialEndBeat;
+
+    if (floorTravelDrag.mode === "move") {
+      departureBeat = Math.min(
+        floorTravelDrag.maximumEndBeat - duration,
+        Math.max(
+          floorTravelDrag.minimumStartBeat,
+          floorTravelDrag.initialStartBeat + beatDelta
+        )
+      );
+      arrivalBeat = departureBeat + duration;
+    } else if (floorTravelDrag.mode === "departure") {
+      departureBeat = Math.min(
+        arrivalBeat - 0.25,
+        Math.max(
+          floorTravelDrag.minimumStartBeat,
+          floorTravelDrag.initialStartBeat + beatDelta
+        )
+      );
+    } else {
+      arrivalBeat = Math.max(
+        departureBeat + 0.25,
+        Math.min(
+          floorTravelDrag.maximumEndBeat,
+          floorTravelDrag.initialEndBeat + beatDelta
+        )
+      );
+    }
+
+    stageState.updatePerformerTravelTiming(
+      floorTravelDrag.formationId,
+      floorTravelDrag.performerId,
+      departureBeat,
+      arrivalBeat
+    );
+  }
+
+  function commitFloorTravelDrag(): void {
+    floorTravelDrag = null;
+  }
+
+  function handleFloorTravelKeydown(
+    event: KeyboardEvent,
+    segment: StageFloorTravelSegment,
+    mode: FloorTravelHandle
+  ): void {
+    const smaller = event.shiftKey ? 1 : 0.25;
+    const delta =
+      event.key === "ArrowRight" || event.key === "ArrowUp"
+        ? smaller
+        : event.key === "ArrowLeft" || event.key === "ArrowDown"
+          ? -smaller
+          : event.key === "PageUp"
+            ? 4
+            : event.key === "PageDown"
+              ? -4
+              : null;
+    const isBoundary = event.key === "Home" || event.key === "End";
+    if (delta === null && !isBoundary) return;
+    event.preventDefault();
+    event.stopPropagation();
+    selectFloorTravel(segment);
+
+    const duration = segment.endBeat - segment.startBeat;
+    let departureBeat = segment.startBeat;
+    let arrivalBeat = segment.endBeat;
+    if (mode === "move") {
+      departureBeat =
+        event.key === "Home"
+          ? segment.minimumStartBeat
+          : event.key === "End"
+            ? segment.maximumEndBeat - duration
+            : Math.min(
+                segment.maximumEndBeat - duration,
+                Math.max(segment.minimumStartBeat, segment.startBeat + delta!)
+              );
+      arrivalBeat = departureBeat + duration;
+    } else if (mode === "departure") {
+      departureBeat =
+        event.key === "Home"
+          ? segment.minimumStartBeat
+          : event.key === "End"
+            ? segment.endBeat - 0.25
+            : Math.min(
+                segment.endBeat - 0.25,
+                Math.max(segment.minimumStartBeat, segment.startBeat + delta!)
+              );
+    } else {
+      arrivalBeat =
+        event.key === "Home"
+          ? segment.startBeat + 0.25
+          : event.key === "End"
+            ? segment.maximumEndBeat
+            : Math.max(
+                segment.startBeat + 0.25,
+                Math.min(segment.maximumEndBeat, segment.endBeat + delta!)
+              );
+    }
+    stageState.beginDrag();
+    stageState.updatePerformerTravelTiming(
+      segment.formationId,
+      segment.performerId,
+      departureBeat,
+      arrivalBeat
+    );
+  }
+
+  function adjustSelectedStepCount(delta: number): void {
+    const segment = selectedFloorTravel;
+    const range = segment?.supportedStepRange;
+    if (!segment || !range) return;
+    const current =
+      segment.requestedStepCount ?? segment.resolvedStepCount ?? range.min;
+    stageState.setPerformerTravelStepCount(
+      segment.formationId,
+      segment.performerId,
+      Math.min(range.max, Math.max(range.min, current + delta))
+    );
+  }
+
   function handleFormationKeydown(
     event: KeyboardEvent,
     formation: Formation,
@@ -471,14 +666,17 @@
   onpointermove={(event) => {
     updateClipDrag(event);
     updateFormationDrag(event);
+    updateFloorTravelDrag(event);
   }}
   onpointerup={() => {
     commitClipDrag();
     commitFormationDrag();
+    commitFloorTravelDrag();
   }}
   onpointercancel={() => {
     commitClipDrag();
     commitFormationDrag();
+    commitFloorTravelDrag();
   }}
 />
 
@@ -568,6 +766,97 @@
       </button>
     </div>
   </header>
+
+  {#if mode === "editor" && timelineLens === "floor" && selectedFloorTravel}
+    {@const selectedPerformer = choreography.performers.find(
+      (performer) => performer.id === selectedFloorTravel?.performerId
+    )}
+    <div
+      class="floor-travel-editor"
+      transition:growFade={{ duration: DURATION.emphasis, axis: "y" }}
+      aria-label="Travel timing for performer {selectedPerformer?.label ??
+        ''} into {selectedFloorTravel.label}"
+    >
+      <div class="travel-editor-summary">
+        <span
+          class="travel-editor-performer"
+          style:--performer-color={selectedPerformer?.color}
+          >{selectedPerformer?.label}</span
+        >
+        <span>
+          <strong>Into {selectedFloorTravel.label}</strong>
+          <span class="travel-editor-help">
+            Drag the bar to move the trip. Drag either end to change departure
+            or arrival.
+          </span>
+        </span>
+      </div>
+
+      <dl class="travel-timing-readout">
+        <div>
+          <dt>Leave</dt>
+          <dd>{selectedFloorTravel.startBeat}</dd>
+        </div>
+        <div>
+          <dt>Arrive</dt>
+          <dd>{selectedFloorTravel.endBeat}</dd>
+        </div>
+      </dl>
+
+      <div class="step-editor">
+        <span class="step-label">Steps</span>
+        <button
+          type="button"
+          class:auto-active={selectedFloorTravel.requestedStepCount === null}
+          aria-pressed={selectedFloorTravel.requestedStepCount === null}
+          onclick={() =>
+            stageState.setPerformerTravelStepCount(
+              selectedFloorTravel!.formationId,
+              selectedFloorTravel!.performerId,
+              null
+            )}>Auto</button
+        >
+        <button
+          type="button"
+          aria-label="Use one fewer step"
+          disabled={!selectedFloorTravel.supportedStepRange ||
+            (selectedFloorTravel.requestedStepCount ??
+              selectedFloorTravel.resolvedStepCount ??
+              0) <= selectedFloorTravel.supportedStepRange.min}
+          onclick={() => adjustSelectedStepCount(-1)}
+          ><i class="fas fa-minus" aria-hidden="true"></i></button
+        >
+        <output aria-live="polite">
+          {selectedFloorTravel.requestedStepCount ??
+            selectedFloorTravel.resolvedStepCount ??
+            "—"}
+        </output>
+        <button
+          type="button"
+          aria-label="Use one more step"
+          disabled={!selectedFloorTravel.supportedStepRange ||
+            (selectedFloorTravel.requestedStepCount ??
+              selectedFloorTravel.resolvedStepCount ??
+              0) >= selectedFloorTravel.supportedStepRange.max}
+          onclick={() => adjustSelectedStepCount(1)}
+          ><i class="fas fa-plus" aria-hidden="true"></i></button
+        >
+        <span
+          class="step-status"
+          class:unsupported={!selectedFloorTravel.exact}
+        >
+          {#if selectedFloorTravel.distanceMeters < 0.01}
+            No travel
+          {:else if selectedFloorTravel.supportedStepRange}
+            Supported: {selectedFloorTravel.supportedStepRange
+              .min}–{selectedFloorTravel.supportedStepRange.max}
+          {:else}
+            Adjust the timing to make an exact walk possible
+          {/if}
+        </span>
+      </div>
+    </div>
+  {/if}
 
   {#if mode === "editor"}
     <div
@@ -945,6 +1234,15 @@
                 segments={floorTravelByPerformer.get(performer.id) ?? []}
                 currentBeat={stageState.currentBeat}
                 pixelsPerBeat={effectivePixelsPerBeat}
+                selectedSegmentId={selectedFloorTravel?.performerId ===
+                performer.id
+                  ? selectedFloorTravel.id
+                  : null}
+                draggingSegmentId={floorTravelDrag?.segmentId ?? null}
+                interactive={timelineLens === "floor"}
+                onSelect={selectFloorTravel}
+                onPointerStart={beginFloorTravelDrag}
+                onKeyAdjust={handleFloorTravelKeydown}
               />
             </div>
 
@@ -1128,6 +1426,144 @@
     z-index: 30;
     min-width: 15rem;
     background: color-mix(in srgb, var(--theme-panel-bg, #12121c) 96%, white);
+  }
+
+  .floor-travel-editor {
+    display: grid;
+    min-height: 4.25rem;
+    flex: 0 0 auto;
+    grid-template-columns: minmax(15rem, 1fr) auto minmax(25rem, auto);
+    align-items: center;
+    gap: 1rem;
+    padding: 0.55rem 0.75rem;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 7%,
+      var(--theme-panel-bg, #10111a)
+    );
+  }
+
+  .travel-editor-summary {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.65rem;
+    font-size: 1rem;
+  }
+
+  .travel-editor-summary > span:last-child {
+    display: grid;
+    min-width: 0;
+    gap: 0.15rem;
+  }
+
+  .travel-editor-performer {
+    display: grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 2px solid var(--performer-color);
+    border-radius: 999px;
+    color: var(--performer-color);
+    font-weight: 800;
+  }
+
+  .travel-editor-help {
+    overflow: hidden;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
+    font-size: 0.9375rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .travel-timing-readout {
+    display: flex;
+    margin: 0;
+    gap: 0.45rem;
+  }
+
+  .travel-timing-readout div {
+    display: grid;
+    min-width: 4.5rem;
+    place-items: center;
+    padding: 0.25rem 0.55rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 0.65rem;
+    background: rgba(0, 0, 0, 0.18);
+  }
+
+  .travel-timing-readout dt,
+  .step-label {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .travel-timing-readout dd {
+    margin: 0;
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+  }
+
+  .step-editor {
+    display: flex;
+    min-width: max-content;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem;
+  }
+
+  .step-editor button {
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.35rem 0.65rem;
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
+    border-radius: 0.65rem;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    color: var(--theme-text, white);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 750;
+    transition:
+      border-color var(--duration-fast) ease,
+      background-color var(--duration-fast) ease,
+      opacity var(--duration-fast) ease;
+  }
+
+  .step-editor button:hover:not(:disabled),
+  .step-editor button:focus-visible,
+  .step-editor button.auto-active {
+    border-color: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 18%, transparent);
+  }
+
+  .step-editor button:disabled {
+    cursor: not-allowed;
+    opacity: 0.38;
+  }
+
+  .step-editor output {
+    min-width: 2rem;
+    text-align: center;
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 850;
+  }
+
+  .step-status {
+    max-width: 11rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
+    font-size: 0.875rem;
+    line-height: 1.25;
+  }
+
+  .step-status.unsupported {
+    color: var(--theme-warning, #f6c85f);
   }
 
   .timeline-scroll {
@@ -1795,6 +2231,15 @@
     .timeline-grid {
       grid-template-columns: 6rem minmax(var(--timeline-width), 1fr);
     }
+
+    .floor-travel-editor {
+      grid-template-columns: minmax(13rem, 1fr) auto auto;
+    }
+
+    .travel-editor-help,
+    .step-status {
+      display: none;
+    }
   }
 
   @media (max-width: 560px) {
@@ -1819,6 +2264,16 @@
     }
 
     .timeline-disclosure span {
+      display: none;
+    }
+
+    .floor-travel-editor {
+      min-height: 3.75rem;
+      grid-template-columns: auto auto;
+      gap: 0.65rem;
+    }
+
+    .travel-timing-readout {
       display: none;
     }
   }

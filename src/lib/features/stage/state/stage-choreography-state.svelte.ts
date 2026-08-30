@@ -73,6 +73,17 @@ export interface StageChoreographyState extends UnifiedPlaybackContext {
   removeFormation(formationId: string): void;
   moveFormation(formationId: string, atBeat: number): void;
   setFormationTransitionBeats(formationId: string, beats: number): void;
+  updatePerformerTravelTiming(
+    formationId: string,
+    performerId: string,
+    departureBeat: number,
+    arrivalBeat: number
+  ): void;
+  setPerformerTravelStepCount(
+    formationId: string,
+    performerId: string,
+    stepCount: number | null
+  ): void;
   setFormationLabel(formationId: string, label: string): void;
   updateSpotPosition(
     formationId: string,
@@ -615,6 +626,15 @@ export function createStageChoreographyState(
       return;
     }
     pushUndo();
+    const beatDelta = snappedBeat - formation.atBeat;
+    for (const spot of Object.values(formation.spots)) {
+      if (!spot.travel) continue;
+      spot.travel = {
+        ...spot.travel,
+        departureBeat: spot.travel.departureBeat + beatDelta,
+        arrivalBeat: spot.travel.arrivalBeat + beatDelta,
+      };
+    }
     formation.atBeat = snappedBeat;
     normalizeFormationTrack();
   }
@@ -624,6 +644,51 @@ export function createStageChoreographyState(
     if (!formation) return;
     pushUndo();
     formation.transitionBeats = beats;
+    normalizeFormationTrack();
+  }
+
+  function updatePerformerTravelTiming(
+    formationId: string,
+    performerId: string,
+    departureBeat: number,
+    arrivalBeat: number
+  ) {
+    const spot = findFormation(formationId)?.spots[performerId];
+    if (!spot) return;
+    // Pointer drags call this continuously. beginDrag() owns the one history
+    // entry, matching the formation overlay's position-drag contract.
+    spot.travel = {
+      departureBeat,
+      arrivalBeat,
+      ...(spot.travel?.stepCount !== undefined && {
+        stepCount: spot.travel.stepCount,
+      }),
+    };
+    normalizeFormationTrack();
+  }
+
+  function setPerformerTravelStepCount(
+    formationId: string,
+    performerId: string,
+    stepCount: number | null
+  ) {
+    const formation = findFormation(formationId);
+    const spot = formation?.spots[performerId];
+    if (!formation || !spot) return;
+    const previousIndex =
+      choreography.formations.findIndex(
+        (candidate) => candidate.id === formationId
+      ) - 1;
+    const inheritedDeparture = Math.max(
+      choreography.formations[previousIndex]?.atBeat ?? 0,
+      formation.atBeat - formation.transitionBeats
+    );
+    pushUndo();
+    spot.travel = {
+      departureBeat: spot.travel?.departureBeat ?? inheritedDeparture,
+      arrivalBeat: spot.travel?.arrivalBeat ?? formation.atBeat,
+      ...(stepCount !== null && { stepCount }),
+    };
     normalizeFormationTrack();
   }
 
@@ -962,6 +1027,8 @@ export function createStageChoreographyState(
     removeFormation,
     moveFormation,
     setFormationTransitionBeats,
+    updatePerformerTravelTiming,
+    setPerformerTravelStepCount,
     setFormationLabel,
     updateSpotPosition,
     updateSpotWalkStyle,
