@@ -38,6 +38,7 @@
   } from "../environments/domain/stage-coordinate-frame";
   import { getSceneEnvironmentRendererKey } from "../environments/domain/scene-environment";
   import {
+    createStageBoundsStabilizer,
     getAddedPerformerStageGrowth,
     getCanonicalPerformerStageBounds,
     getPerformerStageBounds,
@@ -541,20 +542,29 @@
   // standing this frame. Measuring live positions made the floor grow as a
   // formation opened out and shrink as it closed, so the stage appeared to
   // breathe under performers who were only walking across it.
+  //
+  // The stabilizer keeps the SAME object when the values did not change. This
+  // derived shares invalidation granularity with per-frame playback props, so
+  // it re-runs every frame during playback; without identity stability each
+  // run handed every scene a "new" stage and Threlte rebuilt ~29 stage
+  // BoxGeometries per frame, leaking GL buffers until playback crawled.
+  const stabilizeStageBounds = createStageBoundsStabilizer();
   const stageDimensions = $derived(
-    stageExtent
-      ? getStageBoundsForExtent(stageExtent)
-      : stageBoundsPositions
-        ? getPerformerStageBounds(stageBoundsPositions, {
-            performerClearance: getPerformerStageClearance(
-              userProportionsState.avatarScale
-            ),
-          })
-        : getCanonicalPerformerStageBounds(performerCount, {
-            performerClearance: getPerformerStageClearance(
-              userProportionsState.avatarScale
-            ),
-          })
+    stabilizeStageBounds(
+      stageExtent
+        ? getStageBoundsForExtent(stageExtent)
+        : stageBoundsPositions
+          ? getPerformerStageBounds(stageBoundsPositions, {
+              performerClearance: getPerformerStageClearance(
+                userProportionsState.avatarScale
+              ),
+            })
+          : getCanonicalPerformerStageBounds(performerCount, {
+              performerClearance: getPerformerStageClearance(
+                userProportionsState.avatarScale
+              ),
+            })
+    )
   );
 
   const stageZOffset = $derived(stageDimensions.zOffset);

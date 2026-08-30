@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createStageBoundsStabilizer,
   getAddedPerformerStageGrowth,
   getCanonicalPerformerStageBounds,
   getCanonicalStagePositions,
@@ -83,5 +84,33 @@ describe("stage bounds", () => {
     expect(bounds.depth).toBe(8);
     // A circular deck still has to carry a performer standing in a corner.
     expect(bounds.radius).toBeCloseTo(Math.hypot(5, 4), 6);
+  });
+});
+
+describe("stage bounds stabilizer", () => {
+  // The reported bug: during playback, per-frame prop invalidation re-ran the
+  // viewer's stage-bounds derived every frame. The values never changed, but
+  // each run returned a fresh object, so every consumer downstream — including
+  // Threlte geometry args — saw a "new" stage and rebuilt ~29 BoxGeometries
+  // per frame, leaking ~1,700 GL buffers a second and dragging playback to
+  // ~18fps. The stabilizer hands back the previous object when nothing
+  // actually changed, restoring identity-level equality for the whole chain.
+  it("returns the same reference for equal-valued fresh bounds", () => {
+    const stabilize = createStageBoundsStabilizer();
+    const first = stabilize(getCanonicalPerformerStageBounds(2));
+    const second = stabilize(getCanonicalPerformerStageBounds(2));
+
+    expect(second).toBe(first);
+  });
+
+  it("passes through a genuinely changed deck", () => {
+    const stabilize = createStageBoundsStabilizer();
+    const duo = stabilize(getCanonicalPerformerStageBounds(2));
+    const trio = stabilize(getCanonicalPerformerStageBounds(3));
+
+    expect(trio).not.toBe(duo);
+    expect(trio.width).toBeGreaterThan(duo.width);
+    // And the new deck becomes the stable reference in turn.
+    expect(stabilize(getCanonicalPerformerStageBounds(3))).toBe(trio);
   });
 });

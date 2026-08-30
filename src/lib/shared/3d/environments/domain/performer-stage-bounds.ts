@@ -20,6 +20,36 @@ export interface PerformerStageBounds {
   zOffset: number;
 }
 
+/**
+ * Preserve object identity across equal-valued recomputations.
+ *
+ * The viewer derives its stage bounds from props that share invalidation
+ * granularity with per-frame playback state, so the derived re-runs every
+ * frame during playback. The values are stable, but a fresh object per run
+ * defeats Svelte's equality cutoff, and everything downstream — including
+ * Threlte geometry args, which rebuild their three.js object on every args
+ * change — churns once per frame. Returning the previous object when nothing
+ * changed restores the identity-level firewall for the whole chain.
+ */
+export function createStageBoundsStabilizer(): (
+  next: PerformerStageBounds
+) => PerformerStageBounds {
+  let last: PerformerStageBounds | null = null;
+  return (next) => {
+    if (
+      last &&
+      last.width === next.width &&
+      last.depth === next.depth &&
+      last.radius === next.radius &&
+      last.zOffset === next.zOffset
+    ) {
+      return last;
+    }
+    last = next;
+    return next;
+  };
+}
+
 /** A stage a host authors itself, in metres, centered on the scene origin. */
 export interface StageExtent {
   width: number;
