@@ -9,6 +9,20 @@ import {
   applyWaitingSwUpdateBeforeStart,
   createSwUpdateManager,
 } from "$lib/shared/offline/services/sw-update-manager";
+import {
+  installViteReloadTracers,
+  printReloadBreadcrumb,
+  recordReloadReason,
+} from "$lib/shared/dev/reload-breadcrumb";
+
+// Dev: explain the previous automatic reload (if any) before the boot noise
+// starts, and arm the tracers for Vite's own full-reload/ws-disconnect reloads.
+// Every automatic reload path in dev records a reason first; this is the print.
+if (browser && dev) {
+  printReloadBreadcrumb();
+  installViteReloadTracers();
+}
+
 if (typeof window !== "undefined" && "Capacitor" in window) {
   import("@capgo/capacitor-updater")
     .then(({ CapacitorUpdater }) => {
@@ -97,6 +111,10 @@ if (browser && dev && "serviceWorker" in navigator) {
         // refetched from the network. Same trick as forceFreshReload().
         if (!sessionStorage.getItem(SW_ESCAPE_KEY)) {
           sessionStorage.setItem(SW_ESCAPE_KEY, "1");
+          recordReloadReason(
+            "stale service worker escape",
+            "a production SW controlled this dev page; reloading uncontrolled so HMR works"
+          );
           const url = new URL(window.location.href);
           url.searchParams.set("fresh", String(Date.now()));
           window.location.replace(url.toString());
@@ -150,6 +168,11 @@ if (browser && dev) {
     );
     pendingReload = setTimeout(() => {
       sessionStorage.setItem(HMR_RELOAD_KEY, "1");
+      recordReloadReason(
+        "HMR apply crashed",
+        String((reason as Error)?.message ?? reason).slice(0, 200) ||
+          "a module was saved mid-write and failed to hot-apply"
+      );
       location.reload();
     }, SETTLE_MS);
   };
