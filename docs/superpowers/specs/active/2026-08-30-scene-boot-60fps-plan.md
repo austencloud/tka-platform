@@ -14,7 +14,12 @@ Worktree: `E:/worktrees/tka-platform/scene-boot-60fps` — ALL work happens here
       smoothness after the reveal it exists to precede
 - [x] Phase 4 — boot-window background hold in Viewer3DCanvas
 - [x] Phase 5 — prefetch track (manifest + warmer + LazyMount prefetch wiring)
-- [ ] Phase 6 — procedural-engine loader wiring
+- [x] Phase 6 — procedural-engine loader wiring, through a new shared
+      `scene-boot/gltf-decoders.ts`. The trio could not be attached verbatim:
+      `useKtx2` calls `useThrelte()` internally, and none of the three sites is
+      a component init (one is a `<script module>` block, two are plain class
+      constructors), so the owner splits geometry decoders (safe anywhere) from
+      the texture decoder (component-init only)
 - [ ] Phase 7 — unit tests + contract test + `npm run check` green
 
 ## Phase 1 — `src/lib/shared/3d/scene-boot/`
