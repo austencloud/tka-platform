@@ -8,6 +8,7 @@
 import type { MotionConfig3D } from "../domain/models/motion-data-3d";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
+  AVATAR_DEFINITIONS,
   Plane,
   propFinishState,
   type PropBuild,
@@ -794,7 +795,20 @@ export function createAvatarInstanceState(
    * Set avatar model
    */
   function setAvatarModel(modelId: AvatarId) {
+    if (avatarModelId === modelId) return;
+    const before = avatarModelId;
     avatarModelId = modelId;
+    const name =
+      AVATAR_DEFINITIONS.find((definition) => definition.id === modelId)
+        ?.name ?? modelId;
+    sceneUndo.pushSelfRestoringEntry("change-avatar", `Avatar: ${name}`, {
+      undo: () => {
+        avatarModelId = before;
+      },
+      redo: () => {
+        avatarModelId = modelId;
+      },
+    });
   }
 
   /**
