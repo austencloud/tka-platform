@@ -11,7 +11,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 // propInterpolator / sequenceConverter are now module-level functions; no type imports needed
-import type { CameraStateSnapshot } from "@austencloud/scene-3d";
+import type { AvatarId, CameraStateSnapshot } from "@austencloud/scene-3d";
 import { getSceneUndoManager } from "../undo/get-scene-undo-manager";
 import type {
   DefaultsDomainSnapshot,
@@ -33,7 +33,7 @@ import {
   createPerformerManager,
   type PerformerManager,
 } from "./performer-manager.svelte";
-import { DEFAULT_AVATAR_ID } from "@austencloud/scene-3d";
+import { AVATAR_DEFINITIONS, DEFAULT_AVATAR_ID } from "@austencloud/scene-3d";
 import { STAGE } from "@austencloud/scene-3d";
 import type { FormationPreset } from "@austencloud/scene-3d";
 import {
@@ -490,6 +490,12 @@ function buildViewer3DState(
   options: Viewer3DStateOptions = {}
 ) {
   const sceneUndo = getSceneUndoManager();
+  // The manager is imperative. This revision carries its subscription events
+  // into Svelte so shortcut availability changes in the same frame as history.
+  let undoRevision = $state(0);
+  const unsubscribeFromUndo = sceneUndo.subscribe(() => {
+    undoRevision++;
+  });
   const _webgl2Available = isWebGL2Available();
   /** A seeded field wins over storage; `undefined` means "not seeded". */
   const seeded = <T>(value: T | undefined, fromStorage: () => T): T =>
@@ -942,6 +948,39 @@ function buildViewer3DState(
         redo: () => restoreViewerSnapshot(afterSnap),
       }
     );
+  }
+
+  function setAvatarModelScoped(modelId: AvatarId): boolean {
+    const changes = scopedPerformers()
+      .filter((performer) => performer.avatarModelId !== modelId)
+      .map((performer) => ({
+        performer,
+        previousModelId: performer.avatarModelId,
+      }));
+    if (changes.length === 0) return false;
+
+    if (changes.length === 1) {
+      changes[0]!.performer.setAvatarModel(modelId);
+      return true;
+    }
+
+    sceneUndo.withoutUndo(() => {
+      for (const { performer } of changes) performer.setAvatarModel(modelId);
+    });
+    const name =
+      AVATAR_DEFINITIONS.find((definition) => definition.id === modelId)
+        ?.name ?? modelId;
+    sceneUndo.pushSelfRestoringEntry("change-avatar", `Avatar: ${name}`, {
+      undo: () => {
+        for (const { performer, previousModelId } of changes) {
+          performer.setAvatarModel(previousModelId);
+        }
+      },
+      redo: () => {
+        for (const { performer } of changes) performer.setAvatarModel(modelId);
+      },
+    });
+    return true;
   }
 
   /**
@@ -1680,6 +1719,7 @@ function buildViewer3DState(
    */
   function dispose() {
     _disposed = true;
+    unsubscribeFromUndo();
     performerManager.destroy();
   }
 
@@ -1806,12 +1846,15 @@ function buildViewer3DState(
       return propSizeLinked;
     },
     togglePropSizeLink,
+    setAvatarModelScoped,
     setHandPlaneScoped,
     loadSequenceScoped,
     get canUndo() {
+      undoRevision;
       return sceneUndo.canUndo;
     },
     get canRedo() {
+      undoRevision;
       return sceneUndo.canRedo;
     },
     get activeFormation() {
