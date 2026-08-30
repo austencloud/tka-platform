@@ -11,6 +11,7 @@
    * and render faint ink on the white editorial column.
    */
   import GuidePictograph from "./GuidePictograph.svelte";
+  import GuideGridExplorer from "./GuideGridExplorer.svelte";
   import GuideStepStrip from "./GuideStepStrip.svelte";
   import SequenceShowcase from "./SequenceShowcase.svelte";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
@@ -30,10 +31,12 @@
     content,
     darkMode = false,
     tagline = "",
+    layout = "default",
   }: {
     content: GuideBlock[];
     darkMode?: boolean;
     tagline?: string;
+    layout?: "default" | "grid-reference";
   } = $props();
 
   // Theme handed to each pictograph: "dark" renders on the dark editorial theme
@@ -211,9 +214,12 @@
       : mode === "box"
         ? "Box grid: four points on the diagonals"
         : "8-point grid: diamond and box combined";
+
+  const areaClass = (block: GuideBlock) =>
+    block.flowArea ? `flow-area-${block.flowArea}` : "";
 </script>
 
-<div class="flow-frame">
+<div class="flow-frame" class:grid-reference={layout === "grid-reference"}>
   {#each renderItems as item, i (i)}
     {#if item.type === "showcase"}
       <!-- A word sequence's showcase: square live animation beside the section's
@@ -270,12 +276,12 @@
           <h3 class="flow-h3">{block.text}</h3>
         {/if}
       {:else if block.kind === "prose"}
-        <p class="flow-p">{@html flowProse(block.html)}</p>
+        <p class="flow-p {areaClass(block)}">{@html flowProse(block.html)}</p>
       {:else if block.kind === "glyphImage"}
         <img class="flow-glyph" src={block.src} alt={block.alt} />
       {:else if block.kind === "pictograph"}
         {@const rp = r(block.render)}
-        <figure class="flow-figure">
+        <figure class="flow-figure {areaClass(block)}">
           <div class="pic-card">
             <GuidePictograph
               data={block.data}
@@ -354,6 +360,14 @@
           </svg>
           {#if block.caption}<figcaption>{block.caption}</figcaption>{/if}
         </figure>
+      {:else if block.kind === "gridExplorer"}
+        <div class={areaClass(block)}>
+          <GuideGridExplorer
+            modes={block.modes}
+            initialMode={block.initialMode}
+            {darkMode}
+          />
+        </div>
       {:else if block.kind === "printOnly"}
         {#each block.flow as fb, m (m)}
           {#if fb.kind === "prose"}<p class="flow-p">
@@ -609,6 +623,108 @@
   }
   .grid-fig :global(.grid-container) {
     opacity: 1;
+  }
+
+  /* The Grid is the guide's one diagram-led reference page. Its authored prose
+     stays in reading order in the DOM, while named areas recover the print
+     sheet's deliberate left / figure / right relationship on roomy screens. */
+  .flow-frame.grid-reference {
+    max-width: 76rem;
+    padding-top: 0.75rem;
+    display: grid;
+    grid-template-columns:
+      minmax(15rem, 0.9fr)
+      minmax(17rem, 0.8fr)
+      minmax(15rem, 0.9fr);
+    grid-template-areas:
+      "overview hands points"
+      "combination combination combination"
+      "explorer explorer explorer"
+      "closing closing closing";
+    column-gap: clamp(1.5rem, 3cqw, 3.5rem);
+    row-gap: 0.75rem;
+    align-items: center;
+  }
+
+  .grid-reference .flow-area-grid-overview {
+    grid-area: overview;
+  }
+  .grid-reference .flow-area-grid-hands {
+    grid-area: hands;
+  }
+  .grid-reference .flow-area-grid-points {
+    grid-area: points;
+  }
+  .grid-reference .flow-area-grid-combination {
+    grid-area: combination;
+  }
+  .grid-reference .flow-area-grid-explorer {
+    grid-area: explorer;
+  }
+  .grid-reference .flow-area-grid-closing {
+    grid-area: closing;
+  }
+
+  .grid-reference .flow-area-grid-overview,
+  .grid-reference .flow-area-grid-points {
+    max-width: 21rem;
+    margin: 0;
+    text-align: left;
+    text-wrap: pretty;
+  }
+
+  .grid-reference .flow-area-grid-hands {
+    width: min(100%, 18rem);
+    margin-block: 0;
+  }
+
+  .grid-reference .flow-area-grid-combination {
+    margin: 0.25rem auto 0;
+  }
+
+  .grid-reference .flow-area-grid-closing {
+    margin: -0.1rem auto 0;
+  }
+
+  @container (max-width: 60rem) {
+    .flow-frame.grid-reference {
+      max-width: 48rem;
+      grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.85fr);
+      grid-template-areas:
+        "overview hands"
+        "points hands"
+        "combination combination"
+        "explorer explorer"
+        "closing closing";
+      column-gap: 2rem;
+    }
+
+    .grid-reference .flow-area-grid-overview,
+    .grid-reference .flow-area-grid-points {
+      max-width: 28rem;
+    }
+  }
+
+  @container (max-width: 42rem) {
+    .flow-frame.grid-reference {
+      padding-inline: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .grid-reference .flow-area-grid-overview,
+    .grid-reference .flow-area-grid-points {
+      max-width: 34rem;
+      margin-inline: auto;
+      text-align: center;
+      text-wrap: balance;
+    }
+
+    .grid-reference .flow-area-grid-hands {
+      width: min(100%, 17rem);
+      margin-block: 0.25rem;
+    }
   }
 
   /* Wide/4K ramp: FlowFrame's own reading measures stay narrow-centred (prose is
