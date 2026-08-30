@@ -5,7 +5,7 @@ diff --git a/dist/index.d.ts.map b/dist/index.d.ts.map
 deleted file mode 100644
 index d554c5bba49036758f9b3c997d025556395cf72b..0000000000000000000000000000000000000000
 diff --git a/dist/lib/components/Avatar3D.svelte b/dist/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e34e327bb 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..2ebf32a45c38628f805bea94d2deead9d7982784 100644
 --- a/dist/lib/components/Avatar3D.svelte
 +++ b/dist/lib/components/Avatar3D.svelte
 @@ -16,29 +16,40 @@
@@ -15,7 +15,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 -  import { T, useTask } from "@threlte/core";
 +  import { T, useTask, useThrelte } from "@threlte/core";
    import { Vector3, Quaternion, Euler } from "three";
-+  import type { Camera, Scene, WebGLRenderer } from "three";
++  import type { Camera, Material, Object3D, Scene, WebGLRenderer } from "three";
    import type { IAvatarSkeletonBuilder } from "../services/contracts/IAvatarSkeletonBuilder";
    import type { IIKSolver } from "../services/contracts/IIKSolver";
 -  import type { IAvatarAnimator } from "../services/contracts/IAvatarAnimator";
@@ -354,7 +354,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
    let currentLoadedAvatarId = $state<string | null>(null);
    let isLoading = $state(false);
    let hasShownFallbackToast = $state(false);
-@@ -302,14 +525,46 @@
+@@ -302,14 +525,68 @@
    // feetOffset adjusts so feet touch the ground (it's negative)
    const baseGroupY = $derived(
      position.y !== undefined && position.y !== 0
@@ -368,20 +368,42 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
    // from cm to m in LocomotionAnimator) handles the body drop directly.
    const groupY = $derived(baseGroupY);
 
-+  function applyModelOpacity(
-+    root: import("three").Object3D,
-+    value: number
-+  ): void {
-+    const transparent = value < 1;
++  interface AuthoredMaterialAppearance {
++    transparent: boolean;
++    opacity: number;
++    depthWrite: boolean;
++  }
++
++  const authoredMaterialAppearances = new WeakMap<
++    Material,
++    AuthoredMaterialAppearance
++  >();
++
++  function applyModelOpacity(root: Object3D, value: number): void {
++    const fadeOpacity = Math.max(0, Math.min(1, value));
++    const isFading = fadeOpacity < 1;
 +    root.traverse((child: any) => {
 +      if (!child.isMesh || !child.material) return;
 +      const materials = Array.isArray(child.material)
 +        ? child.material
 +        : [child.material];
-+      for (const material of materials) {
++      for (const material of materials as Material[]) {
++        let authored = authoredMaterialAppearances.get(material);
++        if (!authored) {
++          authored = {
++            transparent: material.transparent,
++            opacity: material.opacity,
++            depthWrite: material.depthWrite,
++          };
++          authoredMaterialAppearances.set(material, authored);
++        }
++
++        const transparent = isFading || authored.transparent;
++        const renderStateChanged = material.transparent !== transparent;
 +        material.transparent = transparent;
-+        material.opacity = value;
-+        material.depthWrite = !transparent;
++        material.opacity = authored.opacity * fadeOpacity;
++        material.depthWrite = isFading ? false : authored.depthWrite;
++        if (renderStateChanged) material.needsUpdate = true;
 +      }
 +    });
 +  }
@@ -403,7 +425,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
    // Load a GLTF model for a specific avatar
    // Uses hot-swap pattern: keeps old avatar visible until new one is ready
    async function loadAvatar(targetAvatarId: string) {
-@@ -319,12 +574,22 @@
+@@ -319,12 +596,22 @@
      if (currentLoadedAvatarId === targetAvatarId) return;
 
      const url = getAvatarModelPath(targetAvatarId);
@@ -427,7 +449,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 
        // Scale model to match user's height
        // setHeight() calculates proper scale and stores feet offset
-@@ -333,19 +598,43 @@
+@@ -333,19 +620,43 @@
        // Get the feet offset for positioning (negative value)
        feetOffset = skeletonService.getFeetOffset();
 
@@ -480,7 +502,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
        currentLoadedAvatarId = targetAvatarId;
        modelLoaded = true;
        useProceduralFallback = false;
-@@ -363,8 +652,14 @@
+@@ -363,8 +674,14 @@
        const rightUpLeg = skState.bones.get("RightUpLeg");
        if (leftUpLeg && rightUpLeg) {
          const stanceAngle = (8 * Math.PI) / 180; // 8° outward each side
@@ -497,7 +519,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
          leftUpLeg.quaternion.multiply(leftTilt);
          rightUpLeg.quaternion.multiply(rightTilt);
          leftUpLeg.updateMatrixWorld(true);
-@@ -388,17 +683,21 @@
+@@ -388,17 +705,21 @@
        // use IK only and don't need idle/walk animations.
        if (enableLocomotion && locomotionAnimator && cachedRoot) {
          // Configure before initialize so clips are prepared correctly
@@ -524,7 +546,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
            const hipsBone = locomotionAnimator.getHipsBone();
            if (hipsBone) {
              rootMotionExtractor.initialize(hipsBone);
-@@ -418,9 +717,15 @@
+@@ -418,9 +739,15 @@
              backward: `${animBase}walk-backward${rmSuffix}.glb`,
              strafeLeft: `${animBase}strafe-left${rmSuffix}.glb`,
              strafeRight: `${animBase}strafe-right${rmSuffix}.glb`,
@@ -543,7 +565,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
              crouch: "/animations/crouch-idle.glb",
            })
            .catch((err) => {
-@@ -444,18 +749,35 @@
+@@ -444,18 +771,35 @@
          const turnsBase = "/animations/turns/";
          const probeUrl = `${turnsBase}turn-left-90.glb`;
          const rootForTurns = cachedRoot;
@@ -588,7 +610,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
                ])
                .then(() => {
                  // Register turn clip contact curves so FootPlanter can query them
-@@ -476,7 +798,13 @@
+@@ -476,7 +820,13 @@
        // ikSolver, which is still used by arm IK elsewhere in this file).
        // Gated on enableFootPlanting - off by default so the museum FPS player
        // (which wants responsive code-driven movement) isn't affected.
@@ -603,7 +625,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
          footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
        }
 
-@@ -502,6 +830,16 @@
+@@ -502,6 +852,16 @@
        }
      } finally {
        isLoading = false;
@@ -620,7 +642,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
      }
    }
 
-@@ -587,7 +925,7 @@
+@@ -587,7 +947,7 @@
 
      // Disable spine twist in dual-wheel mode - wide lateral IK targets
      // twist the torso and shift the feet on the ground.
@@ -629,7 +651,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
        (animationService as any).setSpineTwistEnabled(!disableSpineTwist);
      }
 
-@@ -596,16 +934,19 @@
+@@ -596,16 +956,19 @@
      if (enableLocomotion && locomotionAnimator) {
        if (stateMachine) {
          // State machine decides what state we're in based on physics signals
@@ -659,7 +681,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 
          // Feed state to LocomotionAnimator for clip selection
          locomotionAnimator.setActiveState?.(stateOutput.state);
-@@ -627,6 +968,8 @@
+@@ -627,6 +990,8 @@
          });
        }
        locomotionAnimator.update(delta);
@@ -668,7 +690,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 
        // Turn clip overlay - when a turn is active, overwrite lower-body
        // and spine bones with the turn clip's authored pose at the current
-@@ -642,7 +985,9 @@
+@@ -642,7 +1007,9 @@
 
          // Apply bone rotations - overwrite animation pose for lower body
          for (const [boneName, quat] of sample.boneRotations) {
@@ -679,7 +701,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
            if (bone) {
              bone.quaternion.copy(quat);
            }
-@@ -681,7 +1026,11 @@
+@@ -681,7 +1048,11 @@
        // displacement needs the same conversion.
        if (rootMotionExtractor?.isReady() && onRootMotion) {
          const localDelta = rootMotionExtractor.extract();
@@ -692,7 +714,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
            // Convert Mixamo centimeters to scene units.
            // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
            // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
-@@ -708,28 +1057,78 @@
+@@ -708,28 +1079,78 @@
        // clips without authored curves. Gated on enableFootPlanting so the
        // museum FPS player stays fully code-driven.
        if (enableFootPlanting && footPlanter?.isReady()) {
@@ -775,7 +797,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
      }
 
      if (redPropAnchorRef && redPropState) {
-@@ -737,6 +1136,10 @@
+@@ -737,6 +1158,10 @@
        redPropAnchorRef.getWorldPosition(redIKTarget);
      } else if (redPropState) {
        redIKTarget.copy(redPropState.worldPosition);
@@ -786,7 +808,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
      }
 
      const blueWorldProp = bluePropState
-@@ -746,15 +1149,74 @@
+@@ -746,15 +1171,74 @@
        ? { ...redPropState, worldPosition: redIKTarget }
        : null;
 
@@ -861,7 +883,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
      // 2b. Collision detection - run after IK so bones are at final positions
      if (collisionDetector.enabled && skeletonService) {
        const state = skeletonService.getState();
-@@ -867,20 +1329,15 @@
+@@ -867,20 +1351,15 @@
    // transparent with depth-write off so the fade blends correctly.
    $effect(() => {
      if (!cachedRoot) return;
@@ -878,7 +900,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
 -    });
 +    applyModelOpacity(cachedRoot, opacity);
    });
- 
+
    onDestroy(() => {
 +    if (modelSwapFinalizeFrame !== undefined) {
 +      cancelAnimationFrame(modelSwapFinalizeFrame);
@@ -888,9 +910,9 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
      // Dispose locomotion animator, state machine, and foot planter
      if (locomotionAnimator) {
        locomotionAnimator.dispose();
-@@ -913,13 +1370,19 @@
+@@ -913,13 +1392,19 @@
  </script>
- 
+
  {#if visible}
 -  <!-- Loading indicator while avatar model loads -->
 -  {#if isLoading}
@@ -915,7 +937,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..a0f53cfc0a2ae8ec387376f917b1680e
      <T.Group
        name={`PERFORMER_${id}`}
        position={[position.x, position.y ?? 0, position.z]}
-@@ -950,6 +1413,7 @@
+@@ -950,6 +1435,7 @@
        preventing visual glitches during avatar swap.
      -->
      <T.Group
@@ -953,7 +975,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
 +++ b/dist/lib/components/PerformerRig.svelte
 @@ -16,11 +16,12 @@
     */
- 
+
    import { T } from "@threlte/core";
 -  import { untrack } from "svelte";
 +  import { onMount, untrack } from "svelte";
@@ -974,7 +996,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
    import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
 +  import { schedulePerformerMount } from "../services/shared-gltf-cache";
 +  import { nextAvatarInstrumentationSequence } from "../debug/avatar-load-instrumentation";
- 
+
    // Constant sets to avoid allocating new Set objects on every reactive update.
    const WHEEL_ONLY = new Set([Plane.WHEEL]);
 @@ -79,6 +83,7 @@
@@ -982,7 +1004,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
      staffHalfLength?: number;
      propLength?: number;
 +    propBuild?: PropBuild;
- 
+
      // Vertical offset (museum platforms, stages)
      groundOffset?: number;
 @@ -90,6 +95,11 @@
@@ -994,7 +1016,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
 +     *  they hold a facing, which the walk clip can only render if the
 +     *  direction arrives separately from the heading. */
 +    moveDirection?: { x: number; z: number };
- 
+
      /** When true, facingAngle is driven by root motion yawDelta from
       *  the animation clip (accumulated each frame). When false (default),
 @@ -100,6 +110,8 @@
@@ -1076,17 +1098,17 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
      gridSlot,
 @@ -174,7 +208,8 @@
    }: Props = $props();
- 
+
    const staffHalfLength = $derived(
 -    staffHalfLengthProp ?? (propLength ? propLength / 2 : userProportionsState.staffLength / 2)
 +    staffHalfLengthProp ??
 +      (propLength ? propLength / 2 : userProportionsState.staffLength / 2)
    );
- 
+
    // Animation-driven yaw accumulator. When animationDrivenYaw is true, the
 @@ -185,8 +220,12 @@
    let accumulatedYaw = $state(untrack(() => facingAngle));
- 
+
    // Resolve prop states: use overrides (for dual-wheel swap) or avatarState defaults
 -  const bluePropState = $derived(bluePropStateOverride ?? avatarState.bluePropState);
 -  const redPropState = $derived(redPropStateOverride ?? avatarState.redPropState);
@@ -1096,24 +1118,24 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
 +  const redPropState = $derived(
 +    redPropStateOverride ?? avatarState.redPropState
 +  );
- 
+
    // Derive mode config and grid offset from the current plane mode
    const modeConfig = $derived(PLANE_MODE_CONFIGS[planeMode]);
 @@ -247,7 +286,9 @@
- 
+
    // When a turn is active, enable animation-driven yaw so the rig
    // rotates from the turn clip's root motion rather than snapping.
 -  const effectiveAnimDrivenYaw = $derived(animationDrivenYaw || turnRequest !== null);
 +  const effectiveAnimDrivenYaw = $derived(
 +    animationDrivenYaw || turnRequest !== null
 +  );
- 
+
    // Turn completion snap: when turnRequest goes null after being active,
    // snap avatarState to the post-turn heading so the sync effect below
 @@ -291,9 +332,55 @@
    let bluePropAnchorRef = $state<Group | undefined>(undefined);
    let redPropAnchorRef = $state<Group | undefined>(undefined);
- 
+
 +  // Contact-lock correction groups nested inside each PropAnchor. Avatar3D
 +  // writes their local position each frame with the clamped anchor->palm
 +  // residual, so the RENDERED prop stays glued to the hand while the IK
@@ -1164,7 +1186,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
 +    };
 +  });
  </script>
- 
+
  <!-- Root: position in world space, apply facing rotation -->
 @@ -305,25 +392,32 @@
  >
@@ -1207,13 +1229,13 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
        beatProgress={avatarState.progress}
 @@ -339,15 +433,12 @@
    {/if}
- 
+
    <!-- Grid (consumer-provided via gridSlot) -->
 -  {#if showGrid && gridSlot}
 +  {#if showGrid && gridSlot && gridMounted}
      {@render gridSlot()}
    {/if}
- 
+
    <!-- Blue HandAnchor + PropAnchor -->
 -  <T.Group
 -    position.x={blueHandPos.x}
@@ -1249,7 +1271,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
        </T.Group>
      {/if}
    </T.Group>
- 
+
    <!-- Red HandAnchor + PropAnchor -->
 -  <T.Group
 -    position.x={redHandPos.x}
@@ -1285,7 +1307,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..046fa6c08572a7b521f973c709db3bb8
        </T.Group>
      {/if}
    </T.Group>
- 
+
    <!-- Effects (consumer-provided via effectsSlot) -->
 -  {#if showEffects && effectsSlot}
 +  {#if showEffects && effectsSlot && effectsMounted}
@@ -1407,7 +1429,7 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..46e3afcb2276b2d9f15a8a5e2f9e1dc5
 +    getStaffGeometrySet(effectiveLength, effectiveThickness)
 +  );
 +  const materials = $derived(getStaffMaterialSet(color));
- 
+
    // Rotation only - position is handled by the parent PerformerRig scene graph.
    // Facing rotation is inherited from the PerformerRig parent group.
 @@ -80,73 +159,59 @@
@@ -1429,7 +1451,7 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..46e3afcb2276b2d9f15a8a5e2f9e1dc5
 +      material={materials.main}
 +      dispose={false}
 +    />
- 
+
      <!-- T-bar at thumb end - PERPENDICULAR crossbar like in 2D SVG -->
      <!-- With positive quaternion (X-negated coords), +Y end points toward center for IN -->
      <T.Group position={[0, halfLength, 0]}>
@@ -1481,7 +1503,7 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..46e3afcb2276b2d9f15a8a5e2f9e1dc5
 +        dispose={false}
 +      />
      </T.Group>
- 
+
      <!-- Rounded cap at pinky end -->
 -    <T.Mesh position={[0, -halfLength, 0]}>
 -      <T.SphereGeometry args={[effectiveThickness, 16, 16]} />
@@ -1497,7 +1519,7 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..46e3afcb2276b2d9f15a8a5e2f9e1dc5
 +      position={[0, -halfLength, 0]}
 +      dispose={false}
 +    />
- 
+
      <!-- Center grip ring (white, at the hand point) -->
 -    <T.Mesh>
 -      <T.TorusGeometry
@@ -1511,7 +1533,7 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..46e3afcb2276b2d9f15a8a5e2f9e1dc5
 +      dispose={false}
 +    />
    </T.Group>
- 
+
    <!-- Trail indicator (small sphere at prop position for path visualization) -->
 -  <T.Mesh layers={staffLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -1609,7 +1631,7 @@ index 8b02d7960387431387d12a655ba4dddbeaf575a1..b43b1deb5a863256cafd1f03e4254148
 -    LAYER_PLAYER_BODY,
 -  } from "../../layers/layer-constants";
 +  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
- 
+
    let {
      propState,
 @@ -18,89 +69,51 @@
@@ -1619,9 +1641,9 @@ index 8b02d7960387431387d12a655ba4dddbeaf575a1..b43b1deb5a863256cafd1f03e4254148
 -  }: Prop3DProps = $props();
 +    variant = "buugeng",
 +  }: Prop3DProps & { variant?: GengVariant } = $props();
- 
+
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
- 
+
 -  const BUUGENG_LENGTH_RATIO = 0.9;
 -
 +  /**
@@ -1636,7 +1658,7 @@ index 8b02d7960387431387d12a655ba4dddbeaf575a1..b43b1deb5a863256cafd1f03e4254148
    const baseRadius = $derived(
      (thickness ?? userProportionsState.dimensions.staffRadius) * scale
    );
- 
+
 -  const palette = $derived(PROP_COLORS[color]);
 -  const rotation = $derived(computePropRotation(propState));
 -
@@ -1648,7 +1670,7 @@ index 8b02d7960387431387d12a655ba4dddbeaf575a1..b43b1deb5a863256cafd1f03e4254148
 +   * still shows mostly face rather than rim.
 +   */
 +  const plateDepth = $derived(baseRadius * 1.4);
- 
+
 -  // Smooth S-curve: one full sine period sampled at 24 points.
 -  // Bottom arc bows left (-X), upper arc bows right (+X).
 -  // Amplitude ~25% of length gives proportions matching real buugeng.
@@ -1659,7 +1681,7 @@ index 8b02d7960387431387d12a655ba4dddbeaf575a1..b43b1deb5a863256cafd1f03e4254148
 -    const points: Vector3[] = [];
 +  const plate = $derived(getGengPlate(effectiveLength, plateDepth, variant));
 +  const materials = $derived(getPlateMaterials(color));
- 
+
 -    for (let i = 0; i <= N; i++) {
 -      const t = i / N;
 -      const y = effectiveLength * (t - 0.5);
@@ -1679,7 +1701,7 @@ index 8b02d7960387431387d12a655ba4dddbeaf575a1..b43b1deb5a863256cafd1f03e4254148
 -  const gripTubeRadius = $derived(baseRadius * 0.15);
 +  const rotation = $derived(computePropRotation(propState));
  </script>
- 
+
  {#if visible}
    <T.Group {rotation} layers={propLayer}>
 -    <T.Mesh>
@@ -1719,7 +1741,7 @@ index 8b02d7960387431387d12a655ba4dddbeaf575a1..b43b1deb5a863256cafd1f03e4254148
 +      dispose={false}
 +    />
    </T.Group>
- 
+
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
 -    <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
@@ -1838,7 +1860,7 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..761c1a03d04dcbf468df1d35954f69f4
 +   * shoulder band is a material band on the turned surface, not a separate piece
 +   * of geometry sitting proud of it.
     */
- 
+
    import { T } from "@threlte/core";
 -  import { Vector2, LatheGeometry, CatmullRomCurve3, Vector3 } from "three";
    import type { Prop3DProps } from "./Prop3DProps";
@@ -1850,7 +1872,7 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..761c1a03d04dcbf468df1d35954f69f4
 -    LAYER_PLAYER_BODY,
 -  } from "../../layers/layer-constants";
 +  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
- 
+
    let {
      propState,
      color,
@@ -1860,9 +1882,9 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..761c1a03d04dcbf468df1d35954f69f4
      isActivePlayer = false,
      scale = 1,
    }: Prop3DProps = $props();
- 
+
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
- 
+
 -  const CLUB_LENGTH_RATIO = 0.65;
 -
 -  const effectiveLength = $derived(
@@ -1873,7 +1895,7 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..761c1a03d04dcbf468df1d35954f69f4
 -  );
 +  const parts = $derived(getClubParts(scale));
 +  const materials = $derived(getClubMaterials(color));
- 
+
 -  const palette = $derived(PROP_COLORS[color]);
    const rotation = $derived(computePropRotation(propState));
 -
@@ -1948,7 +1970,7 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..761c1a03d04dcbf468df1d35954f69f4
 -    return geom;
 -  });
  </script>
- 
+
  {#if visible}
    <T.Group {rotation} layers={propLayer}>
 -    <!-- Club body: single smooth lathe mesh -->
@@ -1972,7 +1994,7 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..761c1a03d04dcbf468df1d35954f69f4
 -    </T.Mesh>
 +    {/each}
    </T.Group>
- 
+
 -  <!-- Trail indicator sphere at the grip point -->
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -2048,7 +2070,7 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..87ebb8fb8243dbea8fc32479bb320409
 +   * Extrusion emits two material groups: group 0 is the pair of faces, group 1
 +   * is the rim, which is how the plate gets a darker turned edge.
     */
- 
+
    import { T } from "@threlte/core";
    import type { Prop3DProps } from "./Prop3DProps";
 -  import { PROP_COLORS } from "./Prop3DProps";
@@ -2059,13 +2081,13 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..87ebb8fb8243dbea8fc32479bb320409
 -    LAYER_PLAYER_BODY,
 -  } from "../../layers/layer-constants";
 +  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
- 
+
    let {
      propState,
 @@ -33,121 +61,50 @@
- 
+
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
- 
+
 +  /**
 +   * The doublestar draws longer than a staff in the pictograph — 300 units of
 +   * span against the staff's 252.8 — and the 3D prop keeps that relationship
@@ -2082,7 +2104,7 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..87ebb8fb8243dbea8fc32479bb320409
    const baseRadius = $derived(
      (thickness ?? userProportionsState.dimensions.staffRadius) * scale
    );
- 
+
 -  const palette = $derived(PROP_COLORS[color]);
 -
 -  const rotation = $derived(computePropRotation(propState));
@@ -2104,13 +2126,13 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..87ebb8fb8243dbea8fc32479bb320409
 +   * face rather than rim.
 +   */
 +  const plateDepth = $derived(baseRadius * 1.7);
- 
+
 -  // Grip ring at center
 -  const gripOuterRadius = $derived(baseRadius * 1.3);
 -  const gripTubeRadius = $derived(baseRadius * 0.15);
 +  const plate = $derived(getDoublestarPlate(effectiveLength, plateDepth));
 +  const materials = $derived(getPlateMaterials(color));
- 
+
 -  // Star point cones: 4 per ring, pointing outward at 0°, 90°, 180°, 270°
 -  const pointHeight = $derived(ringRadius * 0.15);
 -  const pointBaseRadius = $derived(ringTubeRadius * 1.5);
@@ -2118,7 +2140,7 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..87ebb8fb8243dbea8fc32479bb320409
 -  const POINT_ANGLES = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
 +  const rotation = $derived(computePropRotation(propState));
  </script>
- 
+
  {#if visible}
    <T.Group {rotation} layers={propLayer}>
 -    <!-- Upper star ring at +30% along Y -->
@@ -2202,7 +2224,7 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..87ebb8fb8243dbea8fc32479bb320409
 +      dispose={false}
 +    />
    </T.Group>
- 
+
 -  <!-- Trail indicator sphere -->
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -2288,7 +2310,7 @@ index 12a776e2dc4cc4cf8f484afde470d094690a6dc0..e99e626aef531d417e49111acc3fed41
 +   * Extrusion emits two material groups: group 0 is the pair of faces, group 1
 +   * is the rim, which is how the plate gets a darker turned edge.
     */
- 
+
    import { T } from "@threlte/core";
    import type { Prop3DProps } from "./Prop3DProps";
 -  import { PROP_COLORS } from "./Prop3DProps";
@@ -2299,13 +2321,13 @@ index 12a776e2dc4cc4cf8f484afde470d094690a6dc0..e99e626aef531d417e49111acc3fed41
 -    LAYER_PLAYER_BODY,
 -  } from "../../layers/layer-constants";
 +  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
- 
+
    let {
      propState,
 @@ -38,57 +80,34 @@
      (thickness ?? userProportionsState.dimensions.staffRadius) * scale
    );
- 
+
 -  const palette = $derived(PROP_COLORS[color]);
 -
 -  const rotation = $derived(computePropRotation(propState));
@@ -2323,18 +2345,18 @@ index 12a776e2dc4cc4cf8f484afde470d094690a6dc0..e99e626aef531d417e49111acc3fed41
 +   * ring still shows mostly face rather than rim.
 +   */
 +  const plateDepth = $derived(baseRadius * 1.4);
- 
+
 -  // Tilt angle: upper ring tilts forward, lower tilts back (~15°)
 -  const ringTilt = 15 * (Math.PI / 180);
 +  const plate = $derived(getEightringsPlate(effectiveLength, plateDepth));
 +  const materials = $derived(getPlateMaterials(color));
- 
+
 -  // Grip ring at center overlap point (smaller, white)
 -  const gripOuterRadius = $derived(baseRadius * 1.3);
 -  const gripTubeRadius = $derived(baseRadius * 0.15);
 +  const rotation = $derived(computePropRotation(propState));
  </script>
- 
+
  {#if visible}
    <T.Group {rotation} layers={propLayer}>
 -    <!-- Upper ring (thumb end, +Y) - tilted forward for figure-8 crossing -->
@@ -2368,7 +2390,7 @@ index 12a776e2dc4cc4cf8f484afde470d094690a6dc0..e99e626aef531d417e49111acc3fed41
 +      dispose={false}
 +    />
    </T.Group>
- 
+
 -  <!-- Trail indicator sphere -->
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -2434,7 +2456,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
 +   * plate. Blender supplies two optional real-world builds: a five-wick fire
 +   * fan and a Doodle-style practice fan, plus their reversible wick cover.
     */
- 
+
    import { T } from "@threlte/core";
 -  import { DoubleSide } from "three";
 +  import { useGltf } from "@threlte/extras";
@@ -2457,7 +2479,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
 +    black: "#11141a",
 +    white: "#f0f1f4",
 +  } as const;
- 
+
    let {
      propState,
 @@ -33,156 +56,115 @@
@@ -2466,7 +2488,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
      scale = 1,
 +    build: buildOverride,
    }: Prop3DProps = $props();
- 
+
 -  const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
 -
 -  // Fan blade radius is ~50% of staff length
@@ -2481,7 +2503,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
 -  // 5 spine ribs evenly distributed across the blade arc
 -  const SPINE_COUNT = 5;
 +  const build = $derived(buildOverride ?? propFinishState.build);
- 
+
 -  const staffLength = $derived(
 +  const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
 +  const gltf = useGltf(untrack(() => MODEL_URL));
@@ -2577,7 +2599,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
 +    const loaded = $gltf;
 +    fanScene = loaded ? prepareFanScene(loaded.scene) : null;
    });
- 
+
 -  // Rim torus rotation: the TorusGeometry arc starts at angle 0 on the XY plane.
 -  // We need to rotate it so the arc aligns with our blade arc.
 -  // The torus arc center angle = BLADE_THETA_START
@@ -2610,7 +2632,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
 +    });
 +  });
  </script>
- 
+
 -{#if visible}
 +{#if visible && build.fanBuild === "pictograph"}
 +  <T.Group {rotation} layers={propLayer}>
@@ -2699,7 +2721,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
 +    </T.Group>
    </T.Group>
 +{/if}
- 
+
 -  <!-- Trail indicator sphere -->
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -2726,7 +2748,7 @@ index 9ed038d07d35b4d5d340c578e100415154ac1178..2048adf7ec318ffb9501f56a7e507503
 @@ -68,17 +68,29 @@
    // Rotation only - position is handled by the parent PerformerRig scene graph
    const rotation = $derived(computePropRotation(props.propState));
- 
+
 -  // Combined scale: model's authored scale × big variant multiplier × user proportions ratio
 +  // resolvePropModel() already folds the entry's own scale into the number it
 +  // returns, which is what Prop3D hands us as extraScale. Multiplying by
@@ -2746,7 +2768,7 @@ index 9ed038d07d35b4d5d340c578e100415154ac1178..2048adf7ec318ffb9501f56a7e507503
 +   */
 +  const flipRotationX = $derived(props.modelEntry.flipLongAxis ? Math.PI : 0);
  </script>
- 
+
  {#if (props.visible ?? true) && coloredScene}
    <T.Group {rotation} layers={propLayer}>
      <T.Group
@@ -2828,7 +2850,7 @@ index 9ffc2413236b11d28d99f53884e6a696741e3333..753bdde1f61dddf9c478523845318907
 +   * — the ring is one uniform tube from end to end, which is also what the glyph
 +   * draws. The same fake grip ring came off the club for the same reason.
     */
- 
+
    import { T } from "@threlte/core";
    import type { Prop3DProps } from "./Prop3DProps";
 -  import { PROP_COLORS } from "./Prop3DProps";
@@ -2848,7 +2870,7 @@ index 9ffc2413236b11d28d99f53884e6a696741e3333..753bdde1f61dddf9c478523845318907
      isActivePlayer = false,
      scale = 1,
    }: Prop3DProps = $props();
- 
+
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
 -  const palette = $derived(PROP_COLORS[color]);
 -
@@ -2858,7 +2880,7 @@ index 9ffc2413236b11d28d99f53884e6a696741e3333..753bdde1f61dddf9c478523845318907
 -      ? thickness / 2
 -      : userProportionsState.dimensions.staffRadius
 -  );
- 
+
 -  // Ring radius: ~35% of staff length
 -  const ringRadius = $derived(effectiveLength * 0.35 * scale);
 -
@@ -2870,10 +2892,10 @@ index 9ffc2413236b11d28d99f53884e6a696741e3333..753bdde1f61dddf9c478523845318907
 -  const gripTubeRadius = $derived(staffRadius * 0.15 * scale);
 +  const geometry = $derived(getHoopGeometry(scale));
 +  const materials = $derived(getHoopMaterials(color));
- 
+
    const rotation = $derived(computePropRotation(propState));
  </script>
- 
+
  {#if visible}
    <T.Group {rotation} layers={propLayer}>
 -    <!-- Main hoop ring: center offset upward by ringRadius so the
@@ -2901,7 +2923,7 @@ index 9ffc2413236b11d28d99f53884e6a696741e3333..753bdde1f61dddf9c478523845318907
 +      dispose={false}
 +    />
    </T.Group>
- 
+
 -  <!-- Trail indicator sphere at prop position -->
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -2938,7 +2960,7 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..430d531bb26bd6616f2084155bfb60c8
 +  import { propFinishState } from "../../state/prop-finish-state.svelte";
 +  import type { PropBuild } from "../../state/prop-finish-state.svelte";
    import GltfProp3D from "./GltfProp3D.svelte";
- 
+
    // Procedural fallback geometry components
 @@ -25,6 +27,7 @@
    import Sword3D from "./Sword3D.svelte";
@@ -2954,7 +2976,7 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..430d531bb26bd6616f2084155bfb60c8
      length?: number;
 +    build?: PropBuild;
    }
- 
+
    let {
 @@ -48,8 +52,11 @@
      visible = true,
@@ -2962,12 +2984,12 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..430d531bb26bd6616f2084155bfb60c8
      length,
 +    build: buildOverride,
    }: Props = $props();
- 
+
 +  const build = $derived(buildOverride ?? propFinishState.build);
 +
    // "Big" variants use a 1.4x scale on the base prop.
    const BIG_SCALE = 1.4;
- 
+
 @@ -61,14 +68,18 @@
  {#if visible}
    <!-- Tier 1: GLTF model (when available in registry) -->
@@ -2992,19 +3014,19 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..430d531bb26bd6616f2084155bfb60c8
 +        extraScale={gltfResolution.scale}
 +      />
 +    {/key}
- 
+
    <!-- Tier 2: Procedural fallback geometry -->
    {:else if propType === PropType.STAFF || propType === PropType.SIMPLESTAFF || propType === PropType.STAFF2}
 @@ -82,14 +93,22 @@
      <Club3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
- 
+
    {:else if propType === PropType.FAN}
 -    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} />
 +    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} {build} />
    {:else if propType === PropType.BIGFAN}
 -    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
 +    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} {build} />
- 
+
    {:else if propType === PropType.TRIAD}
 -    <Triad3D {propState} {color} {visible} {isActivePlayer} {length} />
 +    <Triad3D {propState} {color} {visible} {isActivePlayer} {length} variant={build.finish} />
@@ -3019,16 +3041,16 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..430d531bb26bd6616f2084155bfb60c8
 +      scale={BIG_SCALE}
 +      variant={build.finish}
 +    />
- 
+
    {:else if propType === PropType.MINIHOOP}
      <Hoop3D {propState} {color} {visible} {isActivePlayer} {length} />
 @@ -102,10 +121,19 @@
      <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
- 
+
    {:else if propType === PropType.TRIGENG}
 -    <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} />
 +    <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} variant="trigeng" />
- 
+
 -  {:else if propType === PropType.TRIQUETRA || propType === PropType.TRIQUETRA2}
 +  {:else if propType === PropType.TRIQUETRA}
      <Triquetra3D {propState} {color} {visible} {isActivePlayer} {length} />
@@ -3041,12 +3063,12 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..430d531bb26bd6616f2084155bfb60c8
 +      {length}
 +      variant="triquetra2"
 +    />
- 
+
    {:else if propType === PropType.SWORD}
      <Sword3D {propState} {color} {visible} {isActivePlayer} {length} />
 @@ -140,7 +168,15 @@
      <Ball3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
- 
+
    {:else if propType === PropType.QUIAD}
 -    <Triad3D {propState} {color} {visible} {isActivePlayer} {length} />
 +    <Triad3D
@@ -3058,7 +3080,7 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..430d531bb26bd6616f2084155bfb60c8
 +      frame={QUIAD_PROP}
 +      variant={build.finish}
 +    />
- 
+
    {:else if propType === PropType.TORCH}
      <Torch3D {propState} {color} {visible} {isActivePlayer} {length} />
 diff --git a/dist/lib/components/props/Prop3D.svelte.d.ts b/dist/lib/components/props/Prop3D.svelte.d.ts
@@ -3163,7 +3185,7 @@ index dd84811c1cc9986fb72430bd3e94e3233da61684..9c5934551096a8124821406d3ea0e3a0
 +   * There is no live flame here. That is the `fire` effect's job, and putting a
 +   * second one on the mesh would fight it.
     */
- 
+
    import { T } from "@threlte/core";
    import type { Prop3DProps } from "./Prop3DProps";
 -  import { PROP_COLORS } from "./Prop3DProps";
@@ -3174,7 +3196,7 @@ index dd84811c1cc9986fb72430bd3e94e3233da61684..9c5934551096a8124821406d3ea0e3a0
 -    LAYER_PLAYER_BODY,
 -  } from "../../layers/layer-constants";
 +  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
- 
+
    let {
      propState,
      color,
@@ -3184,10 +3206,10 @@ index dd84811c1cc9986fb72430bd3e94e3233da61684..9c5934551096a8124821406d3ea0e3a0
      isActivePlayer = false,
      scale = 1,
    }: Prop3DProps = $props();
- 
+
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
 -  const palette = $derived(PROP_COLORS[color]);
- 
+
 -  const staffRadius = $derived(
 -    thickness
 -      ? thickness / 2
@@ -3224,15 +3246,15 @@ index dd84811c1cc9986fb72430bd3e94e3233da61684..9c5934551096a8124821406d3ea0e3a0
 -  // Grip ring at origin
 -  const gripRingMajorRadius = $derived(shaftRadius * 1.3);
 -  const gripRingTubeRadius = $derived(staffRadius * 0.3);
- 
+
 -  // Handle cap sphere radius
 -  const capRadius = $derived(staffRadius * 2.2);
 +  const parts = $derived(getTorchParts(effectiveLength));
 +  const materials = $derived(getTorchMaterials(color));
- 
+
    const rotation = $derived(computePropRotation(propState));
  </script>
- 
+
  {#if visible}
 -  <T.Group {rotation} layers={propLayer} scale={scale}>
 -    <!-- Handle cap: small sphere pommel below the grip -->
@@ -3298,7 +3320,7 @@ index dd84811c1cc9986fb72430bd3e94e3233da61684..9c5934551096a8124821406d3ea0e3a0
 -    </T.Mesh>
 +    {/each}
    </T.Group>
- 
+
 -  <!-- Trail indicator sphere -->
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -3442,7 +3464,7 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..b3f79749eee31ad401d6191162af556e
 +   * The hand goes through the ring at the hub, which is the origin — the same
 +   * point the pictograph puts the hand on.
     */
- 
+
    import { T } from "@threlte/core";
    import type { Prop3DProps } from "./Prop3DProps";
 -  import { PROP_COLORS } from "./Prop3DProps";
@@ -3453,7 +3475,7 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..b3f79749eee31ad401d6191162af556e
 -    LAYER_PLAYER_BODY,
 -  } from "../../layers/layer-constants";
 +  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
- 
+
    let {
      propState,
      color,
@@ -3469,9 +3491,9 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..b3f79749eee31ad401d6191162af556e
 +    variant?: FrameVariant;
 +    frame?: WickFrameProp;
 +  } = $props();
- 
+
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
- 
+
 -  // Each arm is ~45% of staff length
 -  const ARM_LENGTH_RATIO = 0.45;
 -
@@ -3483,13 +3505,13 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..b3f79749eee31ad401d6191162af556e
 +  const effectiveLength = $derived(
 +    (length ?? userProportionsState.staffLength) * scale
    );
- 
+
 -  const palette = $derived(PROP_COLORS[color]);
 +  const parts = $derived(
 +    getTriadParts(frame.armLength * effectiveLength, variant)
 +  );
 +  const materials = $derived(getFrameMaterials(color, variant));
- 
+
    const rotation = $derived(computePropRotation(propState));
 -
 -  // Arm thickness is 2x the base staff radius
@@ -3546,7 +3568,7 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..b3f79749eee31ad401d6191162af556e
 -    return result;
 -  });
  </script>
- 
+
  {#if visible}
    <T.Group {rotation} layers={propLayer}>
 -    <!-- Center hub sphere -->
@@ -3621,7 +3643,7 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..b3f79749eee31ad401d6191162af556e
 +    <!-- Finger ring, lying in the prop's plane so the finger goes through it -->
 +    <T.Mesh geometry={parts.ring} material={materials.ring} dispose={false} />
    </T.Group>
- 
+
 -  <!-- Trail indicator sphere -->
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -3711,7 +3733,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..c05aecf863070202be34f6db930c6879
 +   * Extrusion emits two material groups: group 0 is the pair of faces, group 1
 +   * is the rim, which is how the plate gets a darker turned edge.
     */
- 
+
    import { T } from "@threlte/core";
    import type { Prop3DProps } from "./Prop3DProps";
 -  import { PROP_COLORS } from "./Prop3DProps";
@@ -3722,7 +3744,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..c05aecf863070202be34f6db930c6879
 -    LAYER_PLAYER_BODY,
 -  } from "../../layers/layer-constants";
 +  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
- 
+
    let {
      propState,
 @@ -27,7 +73,8 @@
@@ -3732,13 +3754,13 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..c05aecf863070202be34f6db930c6879
 -  }: Prop3DProps = $props();
 +    variant = "triquetra",
 +  }: Prop3DProps & { variant?: TriquetraVariant } = $props();
- 
+
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
- 
+
 @@ -38,68 +85,34 @@
      (thickness ?? userProportionsState.dimensions.staffRadius) * scale
    );
- 
+
 -  const palette = $derived(PROP_COLORS[color]);
 -
 -  const rotation = $derived(computePropRotation(propState));
@@ -3759,12 +3781,12 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..c05aecf863070202be34f6db930c6879
 +   * tilted ribbon still shows mostly face rather than rim.
 +   */
 +  const plateDepth = $derived(baseRadius * 1.4);
- 
+
 -  // Offset each lobe center outward by 60% of lobeRadius at 120° intervals in XY plane
 -  const lobeOffset = $derived(lobeRadius * 0.6);
 +  const plate = $derived(getTriquetraPlate(effectiveLength, plateDepth, variant));
 +  const materials = $derived(getPlateMaterials(color));
- 
+
 -  // Three lobes at 120° intervals - positions and rotations computed for XY-plane trefoil
 -  const LOBE_CONFIGS = [
 -    { angle: 0 },
@@ -3773,7 +3795,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..c05aecf863070202be34f6db930c6879
 -  ];
 +  const rotation = $derived(computePropRotation(propState));
  </script>
- 
+
  {#if visible}
    <T.Group {rotation} layers={propLayer}>
 -    <!-- Three interlocked partial torus arcs in XY plane -->
@@ -3812,7 +3834,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..c05aecf863070202be34f6db930c6879
 +      dispose={false}
 +    />
    </T.Group>
- 
+
 -  <!-- Trail indicator sphere -->
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -11463,17 +11485,17 @@ diff --git a/dist/lib/state/user-proportions-state.svelte.d.ts.map b/dist/lib/st
 deleted file mode 100644
 index a8fd5a41c1434bf568841daf28c8443ba1515e65..0000000000000000000000000000000000000000
 diff --git a/src/lib/components/Avatar3D.svelte b/src/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd06072de1f 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0feaf6beb75cd69f14815ffc5d76e4810298c9cd 100644
 --- a/src/lib/components/Avatar3D.svelte
 +++ b/src/lib/components/Avatar3D.svelte
 @@ -16,29 +16,43 @@
     */
- 
+
    import { onMount, onDestroy, untrack } from "svelte";
 -  import { T, useTask } from "@threlte/core";
 +  import { T, useTask, useThrelte } from "@threlte/core";
    import { Vector3, Quaternion, Euler } from "three";
-+  import type { Camera, Scene, WebGLRenderer } from "three";
++  import type { Camera, Material, Object3D, Scene, WebGLRenderer } from "three";
    import type { IAvatarSkeletonBuilder } from "../services/contracts/IAvatarSkeletonBuilder";
    import type { IIKSolver } from "../services/contracts/IIKSolver";
 -  import type { IAvatarAnimator } from "../services/contracts/IAvatarAnimator";
@@ -11501,12 +11523,12 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 +    nextAvatarInstrumentationSequence,
 +    recordAvatarLoadSpan,
 +  } from "../debug/avatar-load-instrumentation";
- 
+
    import { userProportionsState } from "../state/user-proportions-state.svelte";
    import IKFigure3D from "./IKFigure3D.svelte";
 -  import AvatarLoadingIndicator from "./AvatarLoadingIndicator.svelte";
    const toast = { warning(_msg: string) {} };
- 
+
 -  import type { ILocomotionAnimator } from "../services/contracts/ILocomotionAnimator";
 +  import type {
 +    ILocomotionAnimator,
@@ -11534,7 +11556,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 @@ -74,6 +92,17 @@
    const blueVisible = $derived(viewerVisibility?.blueMotion ?? true);
    const redVisible = $derived(viewerVisibility?.redMotion ?? true);
- 
+
 +  const { renderer, scene, camera } = useThrelte() as unknown as {
 +    renderer: WebGLRenderer;
 +    scene: Scene;
@@ -11687,12 +11709,12 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
    const FACE_FORWARD_OFFSET = 0.08; // 8 cm forward from head bone
 -  const FACE_UP_OFFSET = 0.05;      // 5 cm up from head bone
 +  const FACE_UP_OFFSET = 0.05; // 5 cm up from head bone
- 
+
    /**
     * Base rotation from the staff's local-Y axis to the "horizontal" axis
 @@ -277,10 +375,185 @@
    }
- 
+
    const _unitY = new Vector3(0, 1, 0);
 +  const _turnBaseEuler = new Euler();
 +  const _turnAuthoredEuler = new Euler();
@@ -11869,7 +11891,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 +    }
 +    correctionRef.position.copy(_corrLocal);
 +  }
- 
+
    let servicesReady = $state(false);
    let modelLoaded = $state(false);
 -  let useProceduralFallback = $state(true);
@@ -11877,7 +11899,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
    let currentLoadedAvatarId = $state<string | null>(null);
    let isLoading = $state(false);
    let hasShownFallbackToast = $state(false);
-@@ -302,14 +575,46 @@
+@@ -302,14 +575,68 @@
    // feetOffset adjusts so feet touch the ground (it's negative)
    const baseGroupY = $derived(
      position.y !== undefined && position.y !== 0
@@ -11886,25 +11908,47 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 +      ? position.y - feetOffset // Use provided Y (terrain mode)
 +      : defaultGroundY - feetOffset // Use stage groundY (stage mode)
    );
- 
+
    // No mesh offset needed - the crouch animation's Hips position track (scaled
    // from cm to m in LocomotionAnimator) handles the body drop directly.
    const groupY = $derived(baseGroupY);
- 
-+  function applyModelOpacity(
-+    root: import("three").Object3D,
-+    value: number
-+  ): void {
-+    const transparent = value < 1;
+
++  interface AuthoredMaterialAppearance {
++    transparent: boolean;
++    opacity: number;
++    depthWrite: boolean;
++  }
++
++  const authoredMaterialAppearances = new WeakMap<
++    Material,
++    AuthoredMaterialAppearance
++  >();
++
++  function applyModelOpacity(root: Object3D, value: number): void {
++    const fadeOpacity = Math.max(0, Math.min(1, value));
++    const isFading = fadeOpacity < 1;
 +    root.traverse((child: any) => {
 +      if (!child.isMesh || !child.material) return;
 +      const materials = Array.isArray(child.material)
 +        ? child.material
 +        : [child.material];
-+      for (const material of materials) {
++      for (const material of materials as Material[]) {
++        let authored = authoredMaterialAppearances.get(material);
++        if (!authored) {
++          authored = {
++            transparent: material.transparent,
++            opacity: material.opacity,
++            depthWrite: material.depthWrite,
++          };
++          authoredMaterialAppearances.set(material, authored);
++        }
++
++        const transparent = isFading || authored.transparent;
++        const renderStateChanged = material.transparent !== transparent;
 +        material.transparent = transparent;
-+        material.opacity = value;
-+        material.depthWrite = !transparent;
++        material.opacity = authored.opacity * fadeOpacity;
++        material.depthWrite = isFading ? false : authored.depthWrite;
++        if (renderStateChanged) material.needsUpdate = true;
 +      }
 +    });
 +  }
@@ -11926,17 +11970,17 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
    // Load a GLTF model for a specific avatar
    // Uses hot-swap pattern: keeps old avatar visible until new one is ready
    async function loadAvatar(targetAvatarId: string) {
-@@ -319,12 +624,23 @@
+@@ -319,12 +646,23 @@
      if (currentLoadedAvatarId === targetAvatarId) return;
- 
+
      const url = getAvatarModelPath(targetAvatarId);
 +    const loadLabel = `${targetAvatarId}@${nextAvatarInstrumentationSequence()}`;
 +    const loadStart = performance.now();
 +    let rendererPreparedForSpan = false;
 +    let hadPreparedRootForSpan = false;
- 
+
      isLoading = true;
- 
+
      try {
        // Load new model (skeleton service handles internal swap)
 -      await skeletonService.loadModel(url);
@@ -11948,13 +11992,13 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 +        skeletonService!.loadModel(url, preparedRoot ?? undefined);
 +      if (preparedRoot) await loadModel();
 +      else await schedulePerformerInitialization(loadModel, loadLabel);
- 
+
        // Scale model to match user's height
        // setHeight() calculates proper scale and stores feet offset
-@@ -333,19 +649,43 @@
+@@ -333,19 +671,43 @@
        // Get the feet offset for positioning (negative value)
        feetOffset = skeletonService.getFeetOffset();
- 
+
 -      // Update cached root AFTER everything is ready
 -      // This ensures Threlte only sees the swap when the new model is complete
 -      cachedRoot = skeletonService.getRoot();
@@ -11964,7 +12008,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 +        nextRoot.traverse((child: any) => {
 +          if (child.isMesh) child.castShadow = true;
 +        });
- 
+
 -      // Enable shadow casting on all meshes in the avatar
 -      if (cachedRoot) {
 -        cachedRoot.traverse((child: any) => {
@@ -11994,7 +12038,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 +          );
 +        }
        }
- 
+
 +      // Update cached root AFTER everything is ready. This ensures Threlte
 +      // only sees the swap when the model and both fade shader variants are
 +      // complete.
@@ -12004,7 +12048,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
        currentLoadedAvatarId = targetAvatarId;
        modelLoaded = true;
        useProceduralFallback = false;
-@@ -363,8 +703,14 @@
+@@ -363,8 +725,14 @@
        const rightUpLeg = skState.bones.get("RightUpLeg");
        if (leftUpLeg && rightUpLeg) {
          const stanceAngle = (8 * Math.PI) / 180; // 8° outward each side
@@ -12021,7 +12065,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
          leftUpLeg.quaternion.multiply(leftTilt);
          rightUpLeg.quaternion.multiply(rightTilt);
          leftUpLeg.updateMatrixWorld(true);
-@@ -388,17 +734,21 @@
+@@ -388,17 +756,21 @@
        // use IK only and don't need idle/walk animations.
        if (enableLocomotion && locomotionAnimator && cachedRoot) {
          // Configure before initialize so clips are prepared correctly
@@ -12037,7 +12081,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 -          ...(enableFootPlanting && { stripLegBones: true }),
          });
          locomotionAnimator.initialize(cachedRoot);
- 
+
          // Initialize root motion extractor with the Hips bone
 -        if (enableRootMotion && rootMotionExtractor && locomotionAnimator.getHipsBone) {
 +        if (
@@ -12048,7 +12092,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
            const hipsBone = locomotionAnimator.getHipsBone();
            if (hipsBone) {
              rootMotionExtractor.initialize(hipsBone);
-@@ -416,12 +766,39 @@
+@@ -416,12 +788,39 @@
              idle: `${animBase}idle${rmSuffix}.glb`,
              forward: `${animBase}walk-forward${rmSuffix}.glb`,
              backward: `${animBase}walk-backward${rmSuffix}.glb`,
@@ -12091,7 +12135,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
            })
            .catch((err) => {
              console.warn(
-@@ -444,18 +821,39 @@
+@@ -444,18 +843,39 @@
          const turnsBase = "/animations/turns/";
          const probeUrl = `${turnsBase}turn-left-90.glb`;
          const rootForTurns = cachedRoot;
@@ -12140,7 +12184,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
                ])
                .then(() => {
                  // Register turn clip contact curves so FootPlanter can query them
-@@ -476,7 +874,13 @@
+@@ -476,7 +896,13 @@
        // ikSolver, which is still used by arm IK elsewhere in this file).
        // Gated on enableFootPlanting - off by default so the museum FPS player
        // (which wants responsive code-driven movement) isn't affected.
@@ -12154,8 +12198,8 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 +      ) {
          footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
        }
- 
-@@ -502,6 +906,16 @@
+
+@@ -502,6 +928,16 @@
        }
      } finally {
        isLoading = false;
@@ -12171,11 +12215,11 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 +      );
      }
    }
- 
-@@ -560,6 +974,15 @@
+
+@@ -560,6 +996,15 @@
      }
    });
- 
+
 +  $effect(() => {
 +    void locomotionResetKey;
 +    if (!servicesReady) return;
@@ -12188,15 +12232,15 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
    // React to height changes - update avatar scale
    $effect(() => {
      if (!skeletonService || !modelLoaded || useProceduralFallback) return;
-@@ -587,25 +1010,30 @@
- 
+@@ -587,25 +1032,30 @@
+
      // Disable spine twist in dual-wheel mode - wide lateral IK targets
      // twist the torso and shift the feet on the ground.
 -    if ('setSpineTwistEnabled' in animationService) {
 +    if ("setSpineTwistEnabled" in animationService) {
        (animationService as any).setSpineTwistEnabled(!disableSpineTwist);
      }
- 
+
      // 1. Full-body animation (idle/walk/jump/fall/land with arm swing, hip sway)
      // Only runs for locomotion-enabled avatars (player), not exhibit performers
      if (enableLocomotion && locomotionAnimator) {
@@ -12227,10 +12271,10 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 +          },
 +          delta
 +        );
- 
+
          // Feed state to LocomotionAnimator for clip selection
          locomotionAnimator.setActiveState?.(stateOutput.state);
-@@ -614,6 +1042,7 @@
+@@ -614,6 +1064,7 @@
            speed: stateOutput.animationSpeed,
            facingAngle: stateOutput.facingAngle,
            moveDirection: stateOutput.moveDirection,
@@ -12238,7 +12282,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
          });
          // Track state for FootPlanter (airborne states skip foot planting)
          currentLocomotionState = stateOutput.state;
-@@ -624,9 +1053,19 @@
+@@ -624,9 +1075,19 @@
            speed: moveSpeed,
            facingAngle,
            moveDirection,
@@ -12255,10 +12299,10 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 +      if (terminalOwnsContact) {
 +        currentLocomotionState = LocomotionState.WALKING;
 +      }
- 
+
        // Turn clip overlay - when a turn is active, overwrite lower-body
        // and spine bones with the turn clip's authored pose at the current
-@@ -639,20 +1078,52 @@
+@@ -639,20 +1100,52 @@
        if (turnRequestProp && turnAnimator?.isReady() && skeletonService) {
          const sample = turnAnimator.sample(turnRequestProp);
          const bones = skeletonService.getState().bones;
@@ -12269,7 +12313,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 +        if (sample.clipName || !turnRequestProp.requireAuthored) {
 +          onTurnYawSample?.(sample.yawDelta);
 +        }
- 
+
 -        // Apply bone rotations - overwrite animation pose for lower body
 -        for (const [boneName, quat] of sample.boneRotations) {
 -          const bone = bones.get(boneName as import("../services/contracts/IAvatarSkeletonBuilder").BoneName);
@@ -12283,7 +12327,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 +            z: (sample.hipsPosition?.y ?? 0) * cmToScene * poseWeight,
 +          });
          }
- 
+
 -        // Apply Hips position for root motion yaw extraction
 -        if (sample.hipsPosition) {
 -          const hipsBone = bones.get("Hips");
@@ -12321,8 +12365,8 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 +            }
            }
          }
- 
-@@ -681,7 +1152,11 @@
+
+@@ -681,7 +1174,11 @@
        // displacement needs the same conversion.
        if (rootMotionExtractor?.isReady() && onRootMotion) {
          const localDelta = rootMotionExtractor.extract();
@@ -12335,7 +12379,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
            // Convert Mixamo centimeters to scene units.
            // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
            // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
-@@ -708,28 +1183,97 @@
+@@ -708,28 +1205,97 @@
        // clips without authored curves. Gated on enableFootPlanting so the
        // museum FPS player stays fully code-driven.
        if (enableFootPlanting && footPlanter?.isReady()) {
@@ -12414,7 +12458,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
        }
 -
      }
- 
+
      // 2. IK post-process (blends per-arm based on prop presence)
      // IK targets: read world positions from PropAnchor groups in PerformerRig.
      // If refs aren't available (standalone Avatar3D), fall back to prop state positions.
@@ -12422,7 +12466,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 -    const redIKTarget = new Vector3();
 +    const blueIKTarget = _blueIKTarget;
 +    const redIKTarget = _redIKTarget;
- 
+
      if (bluePropAnchorRef && bluePropState) {
        bluePropAnchorRef.updateWorldMatrix(true, false);
        bluePropAnchorRef.getWorldPosition(blueIKTarget);
@@ -12436,9 +12480,9 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 +        blueIKTarget.applyMatrix4(gridFrameRef.matrixWorld);
 +      }
      }
- 
+
      if (redPropAnchorRef && redPropState) {
-@@ -737,6 +1281,10 @@
+@@ -737,6 +1303,10 @@
        redPropAnchorRef.getWorldPosition(redIKTarget);
      } else if (redPropState) {
        redIKTarget.copy(redPropState.worldPosition);
@@ -12447,12 +12491,12 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 +        redIKTarget.applyMatrix4(gridFrameRef.matrixWorld);
 +      }
      }
- 
+
      const blueWorldProp = bluePropState
-@@ -746,15 +1294,74 @@
+@@ -746,15 +1316,74 @@
        ? { ...redPropState, worldPosition: redIKTarget }
        : null;
- 
+
 +    // World staff orientations for the wrist orientation goal.
 +    _propOrientations.blue =
 +      blueVisible && bluePropState
@@ -12502,7 +12546,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 +          : _noHeadThreats
 +    );
      animationService.update(delta);
- 
+
 +    // 2a. Last-mile contact lock: after the solve, snap the rendered prop
 +    // to the hand by the clamped residual. Runs even when the arm can't
 +    // fully reach - that is exactly when it matters.
@@ -12524,7 +12568,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
      // 2b. Collision detection - run after IK so bones are at final positions
      if (collisionDetector.enabled && skeletonService) {
        const state = skeletonService.getState();
-@@ -867,20 +1474,15 @@
+@@ -867,20 +1496,15 @@
    // transparent with depth-write off so the fade blends correctly.
    $effect(() => {
      if (!cachedRoot) return;
@@ -12541,7 +12585,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
 -    });
 +    applyModelOpacity(cachedRoot, opacity);
    });
- 
+
    onDestroy(() => {
 +    if (modelSwapFinalizeFrame !== undefined) {
 +      cancelAnimationFrame(modelSwapFinalizeFrame);
@@ -12551,9 +12595,9 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
      // Dispose locomotion animator, state machine, and foot planter
      if (locomotionAnimator) {
        locomotionAnimator.dispose();
-@@ -913,13 +1515,19 @@
+@@ -913,13 +1537,19 @@
  </script>
- 
+
  {#if visible}
 -  <!-- Loading indicator while avatar model loads -->
 -  {#if isLoading}
@@ -12578,7 +12622,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..36cb634b56bb30e17a5d8924050e8cd0
      <T.Group
        name={`PERFORMER_${id}`}
        position={[position.x, position.y ?? 0, position.z]}
-@@ -950,6 +1558,7 @@
+@@ -950,6 +1580,7 @@
        preventing visual glitches during avatar swap.
      -->
      <T.Group
@@ -12592,7 +12636,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
 +++ b/src/lib/components/PerformerRig.svelte
 @@ -16,11 +16,12 @@
     */
- 
+
    import { T } from "@threlte/core";
 -  import { untrack } from "svelte";
 +  import { onMount, untrack } from "svelte";
@@ -12618,7 +12662,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
    import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
 +  import { schedulePerformerMount } from "../services/shared-gltf-cache";
 +  import { nextAvatarInstrumentationSequence } from "../debug/avatar-load-instrumentation";
- 
+
    // Constant sets to avoid allocating new Set objects on every reactive update.
    const WHEEL_ONLY = new Set([Plane.WHEEL]);
 @@ -79,6 +88,7 @@
@@ -12626,7 +12670,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
      staffHalfLength?: number;
      propLength?: number;
 +    propBuild?: PropBuild;
- 
+
      // Vertical offset (museum platforms, stages)
      groundOffset?: number;
 @@ -90,6 +100,13 @@
@@ -12640,7 +12684,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
 +    moveDirection?: { x: number; z: number };
 +    /** Authored lateral vocabulary selected for pure left/right travel. */
 +    lateralGait?: LateralGait;
- 
+
      /** When true, facingAngle is driven by root motion yawDelta from
       *  the animation clip (accumulated each frame). When false (default),
 @@ -100,6 +117,14 @@
@@ -12732,13 +12776,13 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
      gridSlot,
 @@ -174,19 +225,24 @@
    }: Props = $props();
- 
+
    const staffHalfLength = $derived(
 -    staffHalfLengthProp ?? (propLength ? propLength / 2 : userProportionsState.staffLength / 2)
 +    staffHalfLengthProp ??
 +      (propLength ? propLength / 2 : userProportionsState.staffLength / 2)
    );
- 
+
 -  // Animation-driven yaw accumulator. When animationDrivenYaw is true, the
 -  // rig's rotation is advanced by yawDelta from Avatar3D's onRootMotion
 -  // callback each frame (the turn clip drives the rotation). When the flag
@@ -12750,7 +12794,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
    let accumulatedYaw = $state(untrack(() => facingAngle));
 +  let turnRootX = $state(0);
 +  let turnRootZ = $state(0);
- 
+
    // Resolve prop states: use overrides (for dual-wheel swap) or avatarState defaults
 -  const bluePropState = $derived(bluePropStateOverride ?? avatarState.bluePropState);
 -  const redPropState = $derived(redPropStateOverride ?? avatarState.redPropState);
@@ -12760,11 +12804,11 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
 +  const redPropState = $derived(
 +    redPropStateOverride ?? avatarState.redPropState
 +  );
- 
+
    // Derive mode config and grid offset from the current plane mode
    const modeConfig = $derived(PLANE_MODE_CONFIGS[planeMode]);
 @@ -247,7 +303,23 @@
- 
+
    // When a turn is active, enable animation-driven yaw so the rig
    // rotates from the turn clip's root motion rather than snapping.
 -  const effectiveAnimDrivenYaw = $derived(animationDrivenYaw || turnRequest !== null);
@@ -12785,7 +12829,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
 +    turnRootX = offset.x * cos + offset.z * sin;
 +    turnRootZ = -offset.x * sin + offset.z * cos;
 +  }
- 
+
    // Turn completion snap: when turnRequest goes null after being active,
    // snap avatarState to the post-turn heading so the sync effect below
 @@ -259,6 +331,8 @@
@@ -12796,11 +12840,11 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
 +      turnRootZ = 0;
      }
    });
- 
+
 @@ -291,45 +365,106 @@
    let bluePropAnchorRef = $state<Group | undefined>(undefined);
    let redPropAnchorRef = $state<Group | undefined>(undefined);
- 
+
 +  // Contact-lock correction groups nested inside each PropAnchor. Avatar3D
 +  // writes their local position each frame with the clamped anchor->palm
 +  // residual, so the RENDERED prop stays glued to the hand while the IK
@@ -12851,7 +12895,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
 +    };
 +  });
  </script>
- 
+
  <!-- Root: position in world space, apply facing rotation -->
  <T.Group
 -  position.x={position.x}
@@ -12915,13 +12959,13 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
              }
 @@ -339,15 +474,12 @@
    {/if}
- 
+
    <!-- Grid (consumer-provided via gridSlot) -->
 -  {#if showGrid && gridSlot}
 +  {#if showGrid && gridSlot && gridMounted}
      {@render gridSlot()}
    {/if}
- 
+
    <!-- Blue HandAnchor + PropAnchor -->
 -  <T.Group
 -    position.x={blueHandPos.x}
@@ -12957,7 +13001,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
        </T.Group>
      {/if}
    </T.Group>
- 
+
    <!-- Red HandAnchor + PropAnchor -->
 -  <T.Group
 -    position.x={redHandPos.x}
@@ -12993,7 +13037,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..9240fe1f2e7ee00fcd1bfdc2469d8fcf
        </T.Group>
      {/if}
    </T.Group>
- 
+
    <!-- Effects (consumer-provided via effectsSlot) -->
 -  {#if showEffects && effectsSlot}
 +  {#if showEffects && effectsSlot && effectsMounted}
@@ -13109,7 +13153,7 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..46e3afcb2276b2d9f15a8a5e2f9e1dc5
 +    getStaffGeometrySet(effectiveLength, effectiveThickness)
 +  );
 +  const materials = $derived(getStaffMaterialSet(color));
- 
+
    // Rotation only - position is handled by the parent PerformerRig scene graph.
    // Facing rotation is inherited from the PerformerRig parent group.
 @@ -80,73 +159,59 @@
@@ -13131,7 +13175,7 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..46e3afcb2276b2d9f15a8a5e2f9e1dc5
 +      material={materials.main}
 +      dispose={false}
 +    />
- 
+
      <!-- T-bar at thumb end - PERPENDICULAR crossbar like in 2D SVG -->
      <!-- With positive quaternion (X-negated coords), +Y end points toward center for IN -->
      <T.Group position={[0, halfLength, 0]}>
@@ -13183,7 +13227,7 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..46e3afcb2276b2d9f15a8a5e2f9e1dc5
 +        dispose={false}
 +      />
      </T.Group>
- 
+
      <!-- Rounded cap at pinky end -->
 -    <T.Mesh position={[0, -halfLength, 0]}>
 -      <T.SphereGeometry args={[effectiveThickness, 16, 16]} />
@@ -13199,7 +13243,7 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..46e3afcb2276b2d9f15a8a5e2f9e1dc5
 +      position={[0, -halfLength, 0]}
 +      dispose={false}
 +    />
- 
+
      <!-- Center grip ring (white, at the hand point) -->
 -    <T.Mesh>
 -      <T.TorusGeometry
@@ -13213,7 +13257,7 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..46e3afcb2276b2d9f15a8a5e2f9e1dc5
 +      dispose={false}
 +    />
    </T.Group>
- 
+
    <!-- Trail indicator (small sphere at prop position for path visualization) -->
 -  <T.Mesh layers={staffLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -13299,7 +13343,7 @@ index 8b02d7960387431387d12a655ba4dddbeaf575a1..b43b1deb5a863256cafd1f03e4254148
 -    LAYER_PLAYER_BODY,
 -  } from "../../layers/layer-constants";
 +  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
- 
+
    let {
      propState,
 @@ -18,89 +69,51 @@
@@ -13309,9 +13353,9 @@ index 8b02d7960387431387d12a655ba4dddbeaf575a1..b43b1deb5a863256cafd1f03e4254148
 -  }: Prop3DProps = $props();
 +    variant = "buugeng",
 +  }: Prop3DProps & { variant?: GengVariant } = $props();
- 
+
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
- 
+
 -  const BUUGENG_LENGTH_RATIO = 0.9;
 -
 +  /**
@@ -13326,7 +13370,7 @@ index 8b02d7960387431387d12a655ba4dddbeaf575a1..b43b1deb5a863256cafd1f03e4254148
    const baseRadius = $derived(
      (thickness ?? userProportionsState.dimensions.staffRadius) * scale
    );
- 
+
 -  const palette = $derived(PROP_COLORS[color]);
 -  const rotation = $derived(computePropRotation(propState));
 -
@@ -13338,7 +13382,7 @@ index 8b02d7960387431387d12a655ba4dddbeaf575a1..b43b1deb5a863256cafd1f03e4254148
 +   * still shows mostly face rather than rim.
 +   */
 +  const plateDepth = $derived(baseRadius * 1.4);
- 
+
 -  // Smooth S-curve: one full sine period sampled at 24 points.
 -  // Bottom arc bows left (-X), upper arc bows right (+X).
 -  // Amplitude ~25% of length gives proportions matching real buugeng.
@@ -13349,7 +13393,7 @@ index 8b02d7960387431387d12a655ba4dddbeaf575a1..b43b1deb5a863256cafd1f03e4254148
 -    const points: Vector3[] = [];
 +  const plate = $derived(getGengPlate(effectiveLength, plateDepth, variant));
 +  const materials = $derived(getPlateMaterials(color));
- 
+
 -    for (let i = 0; i <= N; i++) {
 -      const t = i / N;
 -      const y = effectiveLength * (t - 0.5);
@@ -13369,7 +13413,7 @@ index 8b02d7960387431387d12a655ba4dddbeaf575a1..b43b1deb5a863256cafd1f03e4254148
 -  const gripTubeRadius = $derived(baseRadius * 0.15);
 +  const rotation = $derived(computePropRotation(propState));
  </script>
- 
+
  {#if visible}
    <T.Group {rotation} layers={propLayer}>
 -    <T.Mesh>
@@ -13409,7 +13453,7 @@ index 8b02d7960387431387d12a655ba4dddbeaf575a1..b43b1deb5a863256cafd1f03e4254148
 +      dispose={false}
 +    />
    </T.Group>
- 
+
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
 -    <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
@@ -13516,7 +13560,7 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..761c1a03d04dcbf468df1d35954f69f4
 +   * shoulder band is a material band on the turned surface, not a separate piece
 +   * of geometry sitting proud of it.
     */
- 
+
    import { T } from "@threlte/core";
 -  import { Vector2, LatheGeometry, CatmullRomCurve3, Vector3 } from "three";
    import type { Prop3DProps } from "./Prop3DProps";
@@ -13528,7 +13572,7 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..761c1a03d04dcbf468df1d35954f69f4
 -    LAYER_PLAYER_BODY,
 -  } from "../../layers/layer-constants";
 +  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
- 
+
    let {
      propState,
      color,
@@ -13538,9 +13582,9 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..761c1a03d04dcbf468df1d35954f69f4
      isActivePlayer = false,
      scale = 1,
    }: Prop3DProps = $props();
- 
+
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
- 
+
 -  const CLUB_LENGTH_RATIO = 0.65;
 -
 -  const effectiveLength = $derived(
@@ -13551,7 +13595,7 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..761c1a03d04dcbf468df1d35954f69f4
 -  );
 +  const parts = $derived(getClubParts(scale));
 +  const materials = $derived(getClubMaterials(color));
- 
+
 -  const palette = $derived(PROP_COLORS[color]);
    const rotation = $derived(computePropRotation(propState));
 -
@@ -13626,7 +13670,7 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..761c1a03d04dcbf468df1d35954f69f4
 -    return geom;
 -  });
  </script>
- 
+
  {#if visible}
    <T.Group {rotation} layers={propLayer}>
 -    <!-- Club body: single smooth lathe mesh -->
@@ -13650,7 +13694,7 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..761c1a03d04dcbf468df1d35954f69f4
 -    </T.Mesh>
 +    {/each}
    </T.Group>
- 
+
 -  <!-- Trail indicator sphere at the grip point -->
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -13720,7 +13764,7 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..87ebb8fb8243dbea8fc32479bb320409
 +   * Extrusion emits two material groups: group 0 is the pair of faces, group 1
 +   * is the rim, which is how the plate gets a darker turned edge.
     */
- 
+
    import { T } from "@threlte/core";
    import type { Prop3DProps } from "./Prop3DProps";
 -  import { PROP_COLORS } from "./Prop3DProps";
@@ -13731,13 +13775,13 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..87ebb8fb8243dbea8fc32479bb320409
 -    LAYER_PLAYER_BODY,
 -  } from "../../layers/layer-constants";
 +  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
- 
+
    let {
      propState,
 @@ -33,121 +61,50 @@
- 
+
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
- 
+
 +  /**
 +   * The doublestar draws longer than a staff in the pictograph — 300 units of
 +   * span against the staff's 252.8 — and the 3D prop keeps that relationship
@@ -13754,7 +13798,7 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..87ebb8fb8243dbea8fc32479bb320409
    const baseRadius = $derived(
      (thickness ?? userProportionsState.dimensions.staffRadius) * scale
    );
- 
+
 -  const palette = $derived(PROP_COLORS[color]);
 -
 -  const rotation = $derived(computePropRotation(propState));
@@ -13776,13 +13820,13 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..87ebb8fb8243dbea8fc32479bb320409
 +   * face rather than rim.
 +   */
 +  const plateDepth = $derived(baseRadius * 1.7);
- 
+
 -  // Grip ring at center
 -  const gripOuterRadius = $derived(baseRadius * 1.3);
 -  const gripTubeRadius = $derived(baseRadius * 0.15);
 +  const plate = $derived(getDoublestarPlate(effectiveLength, plateDepth));
 +  const materials = $derived(getPlateMaterials(color));
- 
+
 -  // Star point cones: 4 per ring, pointing outward at 0°, 90°, 180°, 270°
 -  const pointHeight = $derived(ringRadius * 0.15);
 -  const pointBaseRadius = $derived(ringTubeRadius * 1.5);
@@ -13790,7 +13834,7 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..87ebb8fb8243dbea8fc32479bb320409
 -  const POINT_ANGLES = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
 +  const rotation = $derived(computePropRotation(propState));
  </script>
- 
+
  {#if visible}
    <T.Group {rotation} layers={propLayer}>
 -    <!-- Upper star ring at +30% along Y -->
@@ -13874,7 +13918,7 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..87ebb8fb8243dbea8fc32479bb320409
 +      dispose={false}
 +    />
    </T.Group>
- 
+
 -  <!-- Trail indicator sphere -->
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -13954,7 +13998,7 @@ index 12a776e2dc4cc4cf8f484afde470d094690a6dc0..e99e626aef531d417e49111acc3fed41
 +   * Extrusion emits two material groups: group 0 is the pair of faces, group 1
 +   * is the rim, which is how the plate gets a darker turned edge.
     */
- 
+
    import { T } from "@threlte/core";
    import type { Prop3DProps } from "./Prop3DProps";
 -  import { PROP_COLORS } from "./Prop3DProps";
@@ -13965,13 +14009,13 @@ index 12a776e2dc4cc4cf8f484afde470d094690a6dc0..e99e626aef531d417e49111acc3fed41
 -    LAYER_PLAYER_BODY,
 -  } from "../../layers/layer-constants";
 +  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
- 
+
    let {
      propState,
 @@ -38,57 +80,34 @@
      (thickness ?? userProportionsState.dimensions.staffRadius) * scale
    );
- 
+
 -  const palette = $derived(PROP_COLORS[color]);
 -
 -  const rotation = $derived(computePropRotation(propState));
@@ -13989,18 +14033,18 @@ index 12a776e2dc4cc4cf8f484afde470d094690a6dc0..e99e626aef531d417e49111acc3fed41
 +   * ring still shows mostly face rather than rim.
 +   */
 +  const plateDepth = $derived(baseRadius * 1.4);
- 
+
 -  // Tilt angle: upper ring tilts forward, lower tilts back (~15°)
 -  const ringTilt = 15 * (Math.PI / 180);
 +  const plate = $derived(getEightringsPlate(effectiveLength, plateDepth));
 +  const materials = $derived(getPlateMaterials(color));
- 
+
 -  // Grip ring at center overlap point (smaller, white)
 -  const gripOuterRadius = $derived(baseRadius * 1.3);
 -  const gripTubeRadius = $derived(baseRadius * 0.15);
 +  const rotation = $derived(computePropRotation(propState));
  </script>
- 
+
  {#if visible}
    <T.Group {rotation} layers={propLayer}>
 -    <!-- Upper ring (thumb end, +Y) - tilted forward for figure-8 crossing -->
@@ -14034,7 +14078,7 @@ index 12a776e2dc4cc4cf8f484afde470d094690a6dc0..e99e626aef531d417e49111acc3fed41
 +      dispose={false}
 +    />
    </T.Group>
- 
+
 -  <!-- Trail indicator sphere -->
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -14094,7 +14138,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
 +   * plate. Blender supplies two optional real-world builds: a five-wick fire
 +   * fan and a Doodle-style practice fan, plus their reversible wick cover.
     */
- 
+
    import { T } from "@threlte/core";
 -  import { DoubleSide } from "three";
 +  import { useGltf } from "@threlte/extras";
@@ -14117,7 +14161,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
 +    black: "#11141a",
 +    white: "#f0f1f4",
 +  } as const;
- 
+
    let {
      propState,
 @@ -33,156 +56,115 @@
@@ -14126,7 +14170,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
      scale = 1,
 +    build: buildOverride,
    }: Prop3DProps = $props();
- 
+
 -  const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
 -
 -  // Fan blade radius is ~50% of staff length
@@ -14141,7 +14185,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
 -  // 5 spine ribs evenly distributed across the blade arc
 -  const SPINE_COUNT = 5;
 +  const build = $derived(buildOverride ?? propFinishState.build);
- 
+
 -  const staffLength = $derived(
 +  const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
 +  const gltf = useGltf(untrack(() => MODEL_URL));
@@ -14237,7 +14281,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
 +    const loaded = $gltf;
 +    fanScene = loaded ? prepareFanScene(loaded.scene) : null;
    });
- 
+
 -  // Rim torus rotation: the TorusGeometry arc starts at angle 0 on the XY plane.
 -  // We need to rotate it so the arc aligns with our blade arc.
 -  // The torus arc center angle = BLADE_THETA_START
@@ -14270,7 +14314,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
 +    });
 +  });
  </script>
- 
+
 -{#if visible}
 +{#if visible && build.fanBuild === "pictograph"}
 +  <T.Group {rotation} layers={propLayer}>
@@ -14359,7 +14403,7 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..ba0b55e259212b6af920a4dd5c845288
 +    </T.Group>
    </T.Group>
 +{/if}
- 
+
 -  <!-- Trail indicator sphere -->
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -14380,7 +14424,7 @@ index 9ed038d07d35b4d5d340c578e100415154ac1178..2048adf7ec318ffb9501f56a7e507503
 @@ -68,17 +68,29 @@
    // Rotation only - position is handled by the parent PerformerRig scene graph
    const rotation = $derived(computePropRotation(props.propState));
- 
+
 -  // Combined scale: model's authored scale × big variant multiplier × user proportions ratio
 +  // resolvePropModel() already folds the entry's own scale into the number it
 +  // returns, which is what Prop3D hands us as extraScale. Multiplying by
@@ -14400,7 +14444,7 @@ index 9ed038d07d35b4d5d340c578e100415154ac1178..2048adf7ec318ffb9501f56a7e507503
 +   */
 +  const flipRotationX = $derived(props.modelEntry.flipLongAxis ? Math.PI : 0);
  </script>
- 
+
  {#if (props.visible ?? true) && coloredScene}
    <T.Group {rotation} layers={propLayer}>
      <T.Group
@@ -14470,7 +14514,7 @@ index 9ffc2413236b11d28d99f53884e6a696741e3333..753bdde1f61dddf9c478523845318907
 +   * — the ring is one uniform tube from end to end, which is also what the glyph
 +   * draws. The same fake grip ring came off the club for the same reason.
     */
- 
+
    import { T } from "@threlte/core";
    import type { Prop3DProps } from "./Prop3DProps";
 -  import { PROP_COLORS } from "./Prop3DProps";
@@ -14490,7 +14534,7 @@ index 9ffc2413236b11d28d99f53884e6a696741e3333..753bdde1f61dddf9c478523845318907
      isActivePlayer = false,
      scale = 1,
    }: Prop3DProps = $props();
- 
+
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
 -  const palette = $derived(PROP_COLORS[color]);
 -
@@ -14500,7 +14544,7 @@ index 9ffc2413236b11d28d99f53884e6a696741e3333..753bdde1f61dddf9c478523845318907
 -      ? thickness / 2
 -      : userProportionsState.dimensions.staffRadius
 -  );
- 
+
 -  // Ring radius: ~35% of staff length
 -  const ringRadius = $derived(effectiveLength * 0.35 * scale);
 -
@@ -14512,10 +14556,10 @@ index 9ffc2413236b11d28d99f53884e6a696741e3333..753bdde1f61dddf9c478523845318907
 -  const gripTubeRadius = $derived(staffRadius * 0.15 * scale);
 +  const geometry = $derived(getHoopGeometry(scale));
 +  const materials = $derived(getHoopMaterials(color));
- 
+
    const rotation = $derived(computePropRotation(propState));
  </script>
- 
+
  {#if visible}
    <T.Group {rotation} layers={propLayer}>
 -    <!-- Main hoop ring: center offset upward by ringRadius so the
@@ -14543,7 +14587,7 @@ index 9ffc2413236b11d28d99f53884e6a696741e3333..753bdde1f61dddf9c478523845318907
 +      dispose={false}
 +    />
    </T.Group>
- 
+
 -  <!-- Trail indicator sphere at prop position -->
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -14568,7 +14612,7 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..430d531bb26bd6616f2084155bfb60c8
 +  import { propFinishState } from "../../state/prop-finish-state.svelte";
 +  import type { PropBuild } from "../../state/prop-finish-state.svelte";
    import GltfProp3D from "./GltfProp3D.svelte";
- 
+
    // Procedural fallback geometry components
 @@ -25,6 +27,7 @@
    import Sword3D from "./Sword3D.svelte";
@@ -14584,7 +14628,7 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..430d531bb26bd6616f2084155bfb60c8
      length?: number;
 +    build?: PropBuild;
    }
- 
+
    let {
 @@ -48,8 +52,11 @@
      visible = true,
@@ -14592,12 +14636,12 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..430d531bb26bd6616f2084155bfb60c8
      length,
 +    build: buildOverride,
    }: Props = $props();
- 
+
 +  const build = $derived(buildOverride ?? propFinishState.build);
 +
    // "Big" variants use a 1.4x scale on the base prop.
    const BIG_SCALE = 1.4;
- 
+
 @@ -61,14 +68,18 @@
  {#if visible}
    <!-- Tier 1: GLTF model (when available in registry) -->
@@ -14622,19 +14666,19 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..430d531bb26bd6616f2084155bfb60c8
 +        extraScale={gltfResolution.scale}
 +      />
 +    {/key}
- 
+
    <!-- Tier 2: Procedural fallback geometry -->
    {:else if propType === PropType.STAFF || propType === PropType.SIMPLESTAFF || propType === PropType.STAFF2}
 @@ -82,14 +93,22 @@
      <Club3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
- 
+
    {:else if propType === PropType.FAN}
 -    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} />
 +    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} {build} />
    {:else if propType === PropType.BIGFAN}
 -    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
 +    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} {build} />
- 
+
    {:else if propType === PropType.TRIAD}
 -    <Triad3D {propState} {color} {visible} {isActivePlayer} {length} />
 +    <Triad3D {propState} {color} {visible} {isActivePlayer} {length} variant={build.finish} />
@@ -14649,16 +14693,16 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..430d531bb26bd6616f2084155bfb60c8
 +      scale={BIG_SCALE}
 +      variant={build.finish}
 +    />
- 
+
    {:else if propType === PropType.MINIHOOP}
      <Hoop3D {propState} {color} {visible} {isActivePlayer} {length} />
 @@ -102,10 +121,19 @@
      <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
- 
+
    {:else if propType === PropType.TRIGENG}
 -    <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} />
 +    <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} variant="trigeng" />
- 
+
 -  {:else if propType === PropType.TRIQUETRA || propType === PropType.TRIQUETRA2}
 +  {:else if propType === PropType.TRIQUETRA}
      <Triquetra3D {propState} {color} {visible} {isActivePlayer} {length} />
@@ -14671,12 +14715,12 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..430d531bb26bd6616f2084155bfb60c8
 +      {length}
 +      variant="triquetra2"
 +    />
- 
+
    {:else if propType === PropType.SWORD}
      <Sword3D {propState} {color} {visible} {isActivePlayer} {length} />
 @@ -140,7 +168,15 @@
      <Ball3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
- 
+
    {:else if propType === PropType.QUIAD}
 -    <Triad3D {propState} {color} {visible} {isActivePlayer} {length} />
 +    <Triad3D
@@ -14688,7 +14732,7 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..430d531bb26bd6616f2084155bfb60c8
 +      frame={QUIAD_PROP}
 +      variant={build.finish}
 +    />
- 
+
    {:else if propType === PropType.TORCH}
      <Torch3D {propState} {color} {visible} {isActivePlayer} {length} />
 diff --git a/src/lib/components/props/Prop3DProps.ts b/src/lib/components/props/Prop3DProps.ts
@@ -14697,10 +14741,10 @@ index a31ce7d182d1d2b7f4be226346abc023e5ed7254..1ebc15149950e4e71bfbb689b8893284
 +++ b/src/lib/components/props/Prop3DProps.ts
 @@ -7,6 +7,7 @@
   */
- 
+
  import type { PropState3D } from "../../domain/models/PropState3D";
 +import type { PropBuild } from "../../state/prop-finish-state.svelte";
- 
+
  export interface Prop3DProps {
    /** Prop state with position and rotation */
 @@ -29,6 +30,8 @@ export interface Prop3DProps {
@@ -14710,7 +14754,7 @@ index a31ce7d182d1d2b7f4be226346abc023e5ed7254..1ebc15149950e4e71bfbb689b8893284
 +  /** Physical build held by this performer. Defaults to the scene build. */
 +  build?: PropBuild;
  }
- 
+
  /** Standard color palettes matching the 2D prop colors */
 diff --git a/src/lib/components/props/Torch3D.svelte b/src/lib/components/props/Torch3D.svelte
 index dd84811c1cc9986fb72430bd3e94e3233da61684..9c5934551096a8124821406d3ea0e3a008bdee91 100644
@@ -14796,7 +14840,7 @@ index dd84811c1cc9986fb72430bd3e94e3233da61684..9c5934551096a8124821406d3ea0e3a0
 +   * There is no live flame here. That is the `fire` effect's job, and putting a
 +   * second one on the mesh would fight it.
     */
- 
+
    import { T } from "@threlte/core";
    import type { Prop3DProps } from "./Prop3DProps";
 -  import { PROP_COLORS } from "./Prop3DProps";
@@ -14807,7 +14851,7 @@ index dd84811c1cc9986fb72430bd3e94e3233da61684..9c5934551096a8124821406d3ea0e3a0
 -    LAYER_PLAYER_BODY,
 -  } from "../../layers/layer-constants";
 +  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
- 
+
    let {
      propState,
      color,
@@ -14817,10 +14861,10 @@ index dd84811c1cc9986fb72430bd3e94e3233da61684..9c5934551096a8124821406d3ea0e3a0
      isActivePlayer = false,
      scale = 1,
    }: Prop3DProps = $props();
- 
+
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
 -  const palette = $derived(PROP_COLORS[color]);
- 
+
 -  const staffRadius = $derived(
 -    thickness
 -      ? thickness / 2
@@ -14857,15 +14901,15 @@ index dd84811c1cc9986fb72430bd3e94e3233da61684..9c5934551096a8124821406d3ea0e3a0
 -  // Grip ring at origin
 -  const gripRingMajorRadius = $derived(shaftRadius * 1.3);
 -  const gripRingTubeRadius = $derived(staffRadius * 0.3);
- 
+
 -  // Handle cap sphere radius
 -  const capRadius = $derived(staffRadius * 2.2);
 +  const parts = $derived(getTorchParts(effectiveLength));
 +  const materials = $derived(getTorchMaterials(color));
- 
+
    const rotation = $derived(computePropRotation(propState));
  </script>
- 
+
  {#if visible}
 -  <T.Group {rotation} layers={propLayer} scale={scale}>
 -    <!-- Handle cap: small sphere pommel below the grip -->
@@ -14931,7 +14975,7 @@ index dd84811c1cc9986fb72430bd3e94e3233da61684..9c5934551096a8124821406d3ea0e3a0
 -    </T.Mesh>
 +    {/each}
    </T.Group>
- 
+
 -  <!-- Trail indicator sphere -->
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -15069,7 +15113,7 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..b3f79749eee31ad401d6191162af556e
 +   * The hand goes through the ring at the hub, which is the origin — the same
 +   * point the pictograph puts the hand on.
     */
- 
+
    import { T } from "@threlte/core";
    import type { Prop3DProps } from "./Prop3DProps";
 -  import { PROP_COLORS } from "./Prop3DProps";
@@ -15080,7 +15124,7 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..b3f79749eee31ad401d6191162af556e
 -    LAYER_PLAYER_BODY,
 -  } from "../../layers/layer-constants";
 +  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
- 
+
    let {
      propState,
      color,
@@ -15096,9 +15140,9 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..b3f79749eee31ad401d6191162af556e
 +    variant?: FrameVariant;
 +    frame?: WickFrameProp;
 +  } = $props();
- 
+
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
- 
+
 -  // Each arm is ~45% of staff length
 -  const ARM_LENGTH_RATIO = 0.45;
 -
@@ -15110,13 +15154,13 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..b3f79749eee31ad401d6191162af556e
 +  const effectiveLength = $derived(
 +    (length ?? userProportionsState.staffLength) * scale
    );
- 
+
 -  const palette = $derived(PROP_COLORS[color]);
 +  const parts = $derived(
 +    getTriadParts(frame.armLength * effectiveLength, variant)
 +  );
 +  const materials = $derived(getFrameMaterials(color, variant));
- 
+
    const rotation = $derived(computePropRotation(propState));
 -
 -  // Arm thickness is 2x the base staff radius
@@ -15173,7 +15217,7 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..b3f79749eee31ad401d6191162af556e
 -    return result;
 -  });
  </script>
- 
+
  {#if visible}
    <T.Group {rotation} layers={propLayer}>
 -    <!-- Center hub sphere -->
@@ -15248,7 +15292,7 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..b3f79749eee31ad401d6191162af556e
 +    <!-- Finger ring, lying in the prop's plane so the finger goes through it -->
 +    <T.Mesh geometry={parts.ring} material={materials.ring} dispose={false} />
    </T.Group>
- 
+
 -  <!-- Trail indicator sphere -->
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -15332,7 +15376,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..c05aecf863070202be34f6db930c6879
 +   * Extrusion emits two material groups: group 0 is the pair of faces, group 1
 +   * is the rim, which is how the plate gets a darker turned edge.
     */
- 
+
    import { T } from "@threlte/core";
    import type { Prop3DProps } from "./Prop3DProps";
 -  import { PROP_COLORS } from "./Prop3DProps";
@@ -15343,7 +15387,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..c05aecf863070202be34f6db930c6879
 -    LAYER_PLAYER_BODY,
 -  } from "../../layers/layer-constants";
 +  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
- 
+
    let {
      propState,
 @@ -27,7 +73,8 @@
@@ -15353,13 +15397,13 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..c05aecf863070202be34f6db930c6879
 -  }: Prop3DProps = $props();
 +    variant = "triquetra",
 +  }: Prop3DProps & { variant?: TriquetraVariant } = $props();
- 
+
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
- 
+
 @@ -38,68 +85,34 @@
      (thickness ?? userProportionsState.dimensions.staffRadius) * scale
    );
- 
+
 -  const palette = $derived(PROP_COLORS[color]);
 -
 -  const rotation = $derived(computePropRotation(propState));
@@ -15380,12 +15424,12 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..c05aecf863070202be34f6db930c6879
 +   * tilted ribbon still shows mostly face rather than rim.
 +   */
 +  const plateDepth = $derived(baseRadius * 1.4);
- 
+
 -  // Offset each lobe center outward by 60% of lobeRadius at 120° intervals in XY plane
 -  const lobeOffset = $derived(lobeRadius * 0.6);
 +  const plate = $derived(getTriquetraPlate(effectiveLength, plateDepth, variant));
 +  const materials = $derived(getPlateMaterials(color));
- 
+
 -  // Three lobes at 120° intervals - positions and rotations computed for XY-plane trefoil
 -  const LOBE_CONFIGS = [
 -    { angle: 0 },
@@ -15394,7 +15438,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..c05aecf863070202be34f6db930c6879
 -  ];
 +  const rotation = $derived(computePropRotation(propState));
  </script>
- 
+
  {#if visible}
    <T.Group {rotation} layers={propLayer}>
 -    <!-- Three interlocked partial torus arcs in XY plane -->
@@ -15433,7 +15477,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..c05aecf863070202be34f6db930c6879
 +      dispose={false}
 +    />
    </T.Group>
- 
+
 -  <!-- Trail indicator sphere -->
 -  <T.Mesh layers={propLayer}>
 -    <T.SphereGeometry args={[0.015, 8, 8]} />
@@ -16914,7 +16958,7 @@ index 6d8e91ce13c491ba06883641fbabc36adb2beeb0..d4e3f130bcf51597c60f8e19a7b66eee
 + * props mark recolorable materials by including "Recolor" in the material
 + * name. Legacy models without a marker continue to recolor every material.
   */
- 
+
  import { Color, type Object3D, type Mesh, MeshStandardMaterial } from "three";
 @@ -22,22 +23,57 @@ export function recolorPropModel(
    propColor: "blue" | "red"
@@ -16922,7 +16966,7 @@ index 6d8e91ce13c491ba06883641fbabc36adb2beeb0..d4e3f130bcf51597c60f8e19a7b66eee
    const target = new Color(PROP_COLORS[propColor].main);
 +  let hasExplicitRecolorMaterial = false;
 +  let usesExactPalette = false;
- 
+
    scene.traverse((child) => {
 +    if (child.userData?.tka_recolor_mode === "palette-main") {
 +      usesExactPalette = true;
@@ -16942,7 +16986,7 @@ index 6d8e91ce13c491ba06883641fbabc36adb2beeb0..d4e3f130bcf51597c60f8e19a7b66eee
 +      hasExplicitRecolorMaterial = true;
 +    }
 +  });
- 
+
 -    // Handle both single material and material arrays
 +  scene.traverse((child) => {
 +    const mesh = child as Mesh;
@@ -16952,7 +16996,7 @@ index 6d8e91ce13c491ba06883641fbabc36adb2beeb0..d4e3f130bcf51597c60f8e19a7b66eee
      const materials = Array.isArray(mesh.material)
        ? mesh.material
        : [mesh.material];
- 
+
 -    for (const mat of materials) {
 -      if (!(mat instanceof MeshStandardMaterial)) continue;
 +    const recoloredMaterials = materials.map((mat) => {
@@ -16960,10 +17004,10 @@ index 6d8e91ce13c491ba06883641fbabc36adb2beeb0..d4e3f130bcf51597c60f8e19a7b66eee
 +      if (hasExplicitRecolorMaterial && !mat.name.includes("Recolor")) {
 +        return mat;
 +      }
- 
+
        // Clone the material so we don't mutate the cached original
        const cloned = mat.clone();
- 
+
 +      // Some authored models belong to the same visual family as the
 +      // procedural plate props. Their geometry and finish come from the GLB,
 +      // but their identity colour must be the exact shared palette value.
@@ -17000,7 +17044,7 @@ index 6d8e91ce13c491ba06883641fbabc36adb2beeb0..d4e3f130bcf51597c60f8e19a7b66eee
 +          cloned.emissiveIntensity = propColor === "red" ? 0.18 : 0.08;
 +        }
        }
- 
+
 -      mesh.material = cloned;
 -    }
 +      return cloned;
@@ -17030,12 +17074,12 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..a79703a0e472bc442440c2d2de4b6f0e
 +   */
 +  flipLongAxis?: boolean;
  }
- 
+
  /** R2 CDN base URL - same CDN used by forest/camping models */
 @@ -39,6 +49,44 @@ function modelUrl(filename: string): string {
      : `${LOCAL_PATH}/${filename}`;
  }
- 
+
 +/**
 + * chicken.glb is one authored bird serving two prop types at two sizes with two
 + * different grips, so each type gets its own entry instead of riding
@@ -17194,7 +17238,7 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..a79703a0e472bc442440c2d2de4b6f0e
 +    gripOffsetY: 0,
 +  },
  };
- 
+
 +/** Smaller prop families that reuse an authored base model. */
 +export const SHARED_MODEL_VARIANT_MAP: Partial<
 +  Record<PropType, { base: PropType; scale: number }>
@@ -17222,7 +17266,7 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..a79703a0e472bc442440c2d2de4b6f0e
 @@ -93,6 +256,16 @@ export function resolvePropModel(
    const direct = getPropModel(propType);
    if (direct) return { entry: direct, scale: direct.scale };
- 
+
 +  const sharedVariant = SHARED_MODEL_VARIANT_MAP[propType];
 +  if (sharedVariant) {
 +    const baseEntry = getPropModel(sharedVariant.base);
@@ -17988,7 +18032,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..4437edbbf78536edafaa571e41bf19ed
 --- a/src/lib/index.ts
 +++ b/src/lib/index.ts
 @@ -71,6 +71,16 @@ export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shoul
- 
+
  // State
  export { userProportionsState } from "./state/user-proportions-state.svelte";
 +export {
@@ -18001,7 +18045,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..4437edbbf78536edafaa571e41bf19ed
 +	type FanCover,
 +} from "./state/prop-finish-state.svelte";
 +export type { PropBuild } from "./state/prop-finish-state.svelte";
- 
+
  // Context
  export { setViewer3DContext, getViewer3DContext, tryGetViewer3DContext } from "./context/viewer-3d-context";
 @@ -81,7 +91,14 @@ export type { ViewerVisibilityState } from "./context/viewer-visibility-context"
@@ -18046,7 +18090,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..4437edbbf78536edafaa571e41bf19ed
  export { FingerAnimator } from "./services/implementations/FingerAnimator";
  export { ClavicleRaiser } from "./services/implementations/ClavicleRaiser";
 @@ -151,3 +177,7 @@ export { PROP_COLORS, METAL_COLORS } from "./components/props/Prop3DProps";
- 
+
  // Data
  export { STAFF_GRIP_POSES } from "./data/grip-poses/staff-grip-poses";
 +
@@ -18408,7 +18452,7 @@ index 42a46ac294719f16470ed72c27286e50c55a35f2..1532696bfab29c5fca4775305320cd70
 @@ -82,6 +82,19 @@ export interface PositionOffset {
    z: number;
  }
- 
+
 +/**
 + * World-space orientation of each rendered prop, passed alongside
 + * setPropsAndBlend so the animator can drive the wrist toward the staff
@@ -18441,7 +18485,7 @@ index 42a46ac294719f16470ed72c27286e50c55a35f2..1532696bfab29c5fca4775305320cd70
 +    offset?: PositionOffset,
 +    orientations?: PropOrientations
    ): void;
- 
+
 +  /**
 +   * Stance yaw input track (radians, positive = chest toward the body's
 +   * +lateral side). Distributed across the spine so the feet never move -
@@ -18485,7 +18529,7 @@ index 666a20b6ddead4b33f695ce341c854f937eaabb6..e0b23efe86d24cb2ffedebf41579906d
 -  | "RightFoot";
 +  | "RightFoot"
 +  | "RightToeBase";
- 
+
  /**
   * Bone chain for IK solving
 @@ -84,7 +86,7 @@ export interface IAvatarSkeletonBuilder {
@@ -18494,13 +18538,13 @@ index 666a20b6ddead4b33f695ce341c854f937eaabb6..e0b23efe86d24cb2ffedebf41579906d
     */
 -  loadModel(url: string): Promise<void>;
 +  loadModel(url: string, preparedRoot?: Object3D): Promise<void>;
- 
+
    /**
     * Get the current skeleton state
 @@ -154,6 +156,13 @@ export interface IAvatarSkeletonBuilder {
     */
    getGroundOffset(): number;
- 
+
 +  /**
 +   * Release the previous avatar instance after its replacement is ready.
 +   * Keeping the previous materials alive through renderer preparation lets
@@ -18597,7 +18641,7 @@ index 90ba82c982d73882ebf0ab4456ac422b1468ab37..02271f92174f542c620e89397fbe7662
 +   *  along. Omit when not travelling; stride warping is then skipped. */
 +  travelDirection?: { x: number; z: number };
  }
- 
+
  /**
 @@ -57,6 +77,22 @@ export interface FootPlanterConfig {
     *  Accounts for the distance between the ankle joint and the sole.
@@ -18620,12 +18664,12 @@ index 90ba82c982d73882ebf0ab4456ac422b1468ab37..02271f92174f542c620e89397fbe7662
 +   *  its support. 0 disables it. Default: 0.35 */
 +  horizontalRebalance?: number;
  }
- 
+
  export interface IFootPlanter {
 @@ -81,6 +117,11 @@ export interface IFootPlanter {
     */
    configure(config: FootPlanterConfig): void;
- 
+
 +  /**
 +   * Clear world-space anchors and cached poses after the owning rig teleports.
 +   */
@@ -18653,11 +18697,11 @@ index df13878005926639ee48b400e7eb19647b92b020..d68905bd3ebda71325e9a332f633a38c
   *
   * The solver is stateless: same input always returns same result.
   */
- 
+
 -import { Vector3 } from "three";
 +import { Vector3, type Object3D } from "three";
  import type { BoneChain } from "./IAvatarSkeletonBuilder";
- 
+
  export interface LegIKInput {
 @@ -25,22 +27,75 @@ export interface LegIKInput {
    chain: BoneChain;
@@ -18740,7 +18784,7 @@ index df13878005926639ee48b400e7eb19647b92b020..d68905bd3ebda71325e9a332f633a38c
 +   */
 +  reliable: boolean;
  }
- 
+
  export interface ILegIKSolver {
 @@ -50,5 +105,5 @@ export interface ILegIKSolver {
     *
@@ -18756,7 +18800,7 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..fc1fc4f75c294ebb0861e825214bb99b
 @@ -11,6 +11,9 @@
  import type { Object3D, AnimationClip, Bone } from "three";
  import type { LocomotionState } from "./IAnimationStateMachine";
- 
+
 +/** Authored lateral vocabulary. A crossover is not a retargeted sidestep. */
 +export type LateralGait = "sidestep" | "grapevine";
 +
@@ -18854,7 +18898,7 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..fc1fc4f75c294ebb0861e825214bb99b
 +  /** Timing plan allowed to drive this terminal transition, when scheduled. */
 +  timingPlanId?: string;
  }
- 
+
  /**
 @@ -34,6 +123,9 @@ export interface AnimationUrls {
    backward: string;
@@ -18873,7 +18917,7 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..fc1fc4f75c294ebb0861e825214bb99b
 +  /** Authored left/right two-step walk-to-idle transitions. */
 +  terminalStops?: Partial<Record<TerminalFoot, TerminalStopAssetUrls>>;
  }
- 
+
  /**
 @@ -53,10 +147,11 @@ export interface LocomotionConfig {
    /** Blend time when transitioning between states (seconds, default: 0.3) */
@@ -18894,7 +18938,7 @@ index 3ad8e04464bd5aa48ee1277b5ad81ee0bfad19aa..fc1fc4f75c294ebb0861e825214bb99b
 @@ -124,6 +219,59 @@ export interface ILocomotionAnimator {
     */
    getHipsBone?(): Bone | null;
- 
+
 +  /**
 +   * How much longer or shorter each step is than the clip authored it.
 +   * Multiplied into the foot's along-travel offset from the pelvis when a
@@ -18956,9 +19000,9 @@ index 2627f729e9f27d0eafff53491ea15d219472ac24..486597269ab9d8e29cadfb88c69b67e8
 --- a/src/lib/services/contracts/ISpineTwister.ts
 +++ b/src/lib/services/contracts/ISpineTwister.ts
 @@ -15,6 +15,20 @@
- 
+
  import type { Vector3, Quaternion } from "three";
- 
+
 +/**
 + * The body's horizontal reference frame in world space. Both vectors are
 + * unit-length and horizontal. `lateral` is measured from the mapped shoulder
@@ -19028,7 +19072,7 @@ index f906b396cdb9f1a924c617f9a44c5978f9cfd46b..d78c415dce9399f16b6c8654b88ba70a
 +   *  absent. A missing clip must not masquerade as a valid footless turn. */
 +  requireAuthored?: boolean;
  }
- 
+
  /**
 @@ -40,7 +49,8 @@ export interface TurnSample {
     *  Keys are canonical bone names without prefix (e.g. "Hips", "LeftUpLeg").
@@ -19047,7 +19091,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..75241c08cc7e62f2b06fc5b579aac0a9
 @@ -5,7 +5,8 @@
   * Bridges TKA prop states to skeleton IK targets.
   */
- 
+
 -import { Vector3, Quaternion } from "three";
 +import { Vector3, Quaternion, Matrix4 } from "three";
 +import type { Bone } from "three";
@@ -19120,13 +19164,13 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..75241c08cc7e62f2b06fc5b579aac0a9
 +const HEAD_DODGE_FULL_DISTANCE = 0.14;
 +const HEAD_DODGE_ATTACK_TAU = 0.06;
 +const HEAD_DODGE_RELEASE_TAU = 0.25;
- 
+
  export class AvatarAnimator implements IAvatarAnimator {
    private currentPose: BodyPose;
 @@ -85,6 +138,84 @@ export class AvatarAnimator implements IAvatarAnimator {
     */
    private externalSpinePitchRad = 0;
- 
+
 +  // --- Wrist orientation goal + palm socket (grip geometry) ---
 +  // Hand-local grip geometry calibrated once from the finger chains: the
 +  // Index1->Pinky1 knuckle line is the axis a staff shaft crosses the palm
@@ -19237,7 +19281,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..75241c08cc7e62f2b06fc5b579aac0a9
 @@ -227,6 +361,44 @@ export class AvatarAnimator implements IAvatarAnimator {
      this.targetPose.timestamp = Date.now();
    }
- 
+
 +  setStanceYaw(radians: number): void {
 +    this.stanceYawTargetRad = Math.max(
 +      -MAX_STANCE_YAW,
@@ -19281,25 +19325,25 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..75241c08cc7e62f2b06fc5b579aac0a9
      this.targetPose.timestamp = Date.now();
 @@ -259,7 +431,7 @@ export class AvatarAnimator implements IAvatarAnimator {
      const finalPose = this.computeFinalPose();
- 
+
      // Solve IK for arms
 -    this.applyIKToSkeleton(finalPose);
 +    this.applyIKToSkeleton(finalPose, deltaTime);
    }
- 
+
    private blendToTarget(_deltaTime: number): void {
 @@ -378,13 +550,22 @@ export class AvatarAnimator implements IAvatarAnimator {
      return result;
    }
- 
+
 -  private applyIKToSkeleton(pose: BodyPose): void {
 +  private applyIKToSkeleton(pose: BodyPose, deltaTime: number): void {
      const state = this.skeleton.getState();
      if (!state.isLoaded) return;
- 
+
      const leftChain = this.skeleton.getLeftArmChain();
      const rightChain = this.skeleton.getRightArmChain();
- 
+
 +    // Reach deficits accumulate here during the arm solves, then fold
 +    // into the smoothed spine-lean state at the end of the frame.
 +    this._frameLeanVec.set(0, 0, 0);
@@ -19315,7 +19359,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..75241c08cc7e62f2b06fc5b579aac0a9
 @@ -392,6 +573,51 @@ export class AvatarAnimator implements IAvatarAnimator {
        hipsBone.getWorldPosition(bodyCenter);
      }
- 
+
 +    // Build an anatomical body frame. Rig yaw lives OUTSIDE the avatar
 +    // (PerformerRig rotates the wrapper group), and model exporters disagree
 +    // about whether +X is anatomical left or right. The mapped shoulder line
@@ -19372,12 +19416,12 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..75241c08cc7e62f2b06fc5b579aac0a9
 +        this.availableSpineBones,
 +        this._bodyFrame
        );
- 
+
        // Apply twist to each bone individually for a natural spinal curve.
 @@ -511,12 +738,103 @@ export class AvatarAnimator implements IAvatarAnimator {
        }
      }
- 
+
 +    // Stance yaw + reach lean: sustained torso adjustments composed after
 +    // twist/pitch and before arm IK, so the arms solve against the
 +    // adjusted torso. Stance yaw is the planner-shaped facing input
@@ -19472,7 +19516,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..75241c08cc7e62f2b06fc5b579aac0a9
 +        this._bodyFrame
 +      );
 +    }
- 
+
      if (leftChain && leftHand) {
        if (this.leftArmIK.weight > 0.001) {
 -        const leftTarget = leftHand.targetPosition;
@@ -19491,7 +19535,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..75241c08cc7e62f2b06fc5b579aac0a9
 @@ -540,6 +858,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
- 
+
 +        // Palm socket: aim the IK effector so the PALM lands on the grip
 +        // point, not the wrist joint (which sits a few cm proximal).
 +        const leftTarget = this.computeSocketTarget(
@@ -19524,24 +19568,24 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..75241c08cc7e62f2b06fc5b579aac0a9
            this.leftPoleVector.normalize();
            target.poleHint = this.leftPoleVector.clone();
          }
- 
+
 +        // Reach escalation: if the target is beyond the chain, extend the
 +        // clavicle toward it and record the deficit for the spine lean.
 +        this.applyReachEscalation("left", leftChain, target, state);
 +
          // Solve IK (overwrites bone quaternions)
          this.ikSolver.solveAndApply(leftChain, target);
- 
+
 @@ -572,13 +908,14 @@ export class AvatarAnimator implements IAvatarAnimator {
          leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
- 
+
 +        // Wrist orientation: align the knuckle line with the staff axis
 +        this.applyWristOrientation("left", leftChain, leftHand, w);
        }
        // else: weight ~0, skip IK entirely - animation drives the arm
      }
- 
+
      if (rightChain && rightHand) {
        if (this.rightArmIK.weight > 0.001) {
 -        const rightTarget = rightHand.targetPosition;
@@ -19560,7 +19604,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..75241c08cc7e62f2b06fc5b579aac0a9
 @@ -602,6 +939,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
- 
+
 +        // Palm socket: aim the IK effector so the PALM lands on the grip
 +        // point, not the wrist joint (which sits a few cm proximal).
 +        const rightTarget = this.computeSocketTarget(
@@ -19593,24 +19637,24 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..75241c08cc7e62f2b06fc5b579aac0a9
            this.rightPoleVector.normalize();
            target.poleHint = this.rightPoleVector.clone();
          }
- 
+
 +        // Reach escalation: if the target is beyond the chain, extend the
 +        // clavicle toward it and record the deficit for the spine lean.
 +        this.applyReachEscalation("right", rightChain, target, state);
 +
          // Solve IK (overwrites bone quaternions)
          this.ikSolver.solveAndApply(rightChain, target);
- 
+
 @@ -634,13 +989,359 @@ export class AvatarAnimator implements IAvatarAnimator {
          rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
- 
+
 +        // Wrist orientation: align the knuckle line with the staff axis
 +        this.applyWristOrientation("right", rightChain, rightHand, w);
        }
        // else: weight ~0, skip IK entirely - animation drives the arm
      }
- 
+
 +    // Fold this frame's accumulated reach deficits into the smoothed lean
 +    // state that NEXT frame's extras block applies. One frame of latency,
 +    // but the exponential smoothing makes the loop converge instead of
@@ -19629,7 +19673,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..75241c08cc7e62f2b06fc5b579aac0a9
 +
      this.skeleton.updateMatrices();
    }
- 
+
 +  private applyHeadDodge(
 +    state: SkeletonState,
 +    deltaTime: number,
@@ -19958,13 +20002,13 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..75241c08cc7e62f2b06fc5b579aac0a9
 +    eff.quaternion.slerp(wristState, ikWeight);
 +  }
 +
- 
+
    addLayer(layer: AnimationLayer): void {
      this.layers.set(layer.id, layer);
 @@ -689,6 +1390,20 @@ export class AvatarAnimator implements IAvatarAnimator {
      this.externalSpinePitchRad = radians;
    }
- 
+
 +  setHeadDodgeEnabled(enabled: boolean): void {
 +    this.headDodgeEnabled = enabled;
 +  }
@@ -19989,7 +20033,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
 @@ -5,9 +5,8 @@
   * Provides access to bones for IK solving and animation.
   */
- 
+
 -import type { Object3D, Bone, SkinnedMesh, Skeleton} from "three";
 +import type { Object3D, Bone, SkinnedMesh, Skeleton } from "three";
  import { Vector3, Box3 } from "three";
@@ -20011,7 +20055,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
 +  avatarAssetLabel,
 +  recordAvatarLoadSpan,
 +} from "../../debug/avatar-load-instrumentation";
- 
+
  /**
   * Mapping of standard bone names to common variations
 @@ -54,6 +63,7 @@ const BONE_NAME_ALIASES: Record<BoneName, string[]> = {
@@ -20028,23 +20072,23 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
    RightFoot: ["RightFoot", "r_foot", "foot.R", "foot_r"],
 +  RightToeBase: ["RightToeBase", "RightToe", "RightToes", "r_toe", "toe.R", "ball_r"],
  };
- 
+
  /**
 @@ -101,9 +112,9 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      fingerChains: null,
    };
- 
+
 -  private loader = new GLTFLoader();
    private originalHeight: number = 0;
    private skeleton: Skeleton | null = null;
 +  private replacedRoots: Object3D[] = [];
- 
+
    /** Offset from model origin to feet (negative value - feet are below origin) */
    private feetOffset: number = 0;
 @@ -111,24 +122,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
    /** Original bounding box min Y (in unscaled model space) - computed once at load time */
    private originalMinY: number = 0;
- 
+
 -  async loadModel(url: string): Promise<void> {
 -    return new Promise((resolve, reject) => {
 -      this.loader.load(
@@ -20084,7 +20128,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
 +      throw error;
 +    }
    }
- 
+
 -  private processGLTF(gltf: GLTF): void {
 +  private processGLTF(
 +    root: Object3D,
@@ -20095,7 +20139,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
      const oldRoot = this.state.root;
 @@ -139,7 +162,7 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      let newSkeleton: Skeleton | null = null;
- 
+
      // Find all skinned meshes and bones in the new model
 -    gltf.scene.traverse((child) => {
 +    root.traverse((child) => {
@@ -20103,7 +20147,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
          const skinnedMesh = child as SkinnedMesh;
          newMeshes.push(skinnedMesh);
 @@ -160,12 +183,17 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
- 
+
      // Compute original bounding box of new model (before any transforms)
      // This is done ONCE at load time, before the model is added to the scene
 -    const box = new Box3().setFromObject(gltf.scene);
@@ -20117,7 +20161,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
 +      this.originalHeight = box.max.y - box.min.y;
 +      this.originalMinY = box.min.y;
 +    }
- 
+
      // Now atomically swap everything at once
 -    this.state.root = gltf.scene;
 +    this.state.root = root;
@@ -20130,9 +20174,9 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
      this.buildLegChains();
 -    this.state.fingerChains = this.buildFingerChains(gltf.scene);
 +    this.state.fingerChains = this.buildFingerChains(root);
- 
+
      this.state.isLoaded = true;
- 
+
 -    // Dispose old model resources after swap is complete
 -    if (oldRoot) {
 -      queueMicrotask(() => {
@@ -20156,12 +20200,12 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
 +    // before the renderer can reuse them for the replacement.
 +    if (oldRoot) this.replacedRoots.push(oldRoot);
    }
- 
+
    /**
 @@ -203,6 +217,17 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
    private mapBoneToMap(bone: Bone, bonesMap: Map<BoneName, Bone>): void {
      const boneName = bone.name.toLowerCase();
- 
+
 +    // A rig that already uses TKA's names must keep each spine level exactly
 +    // where it authored it. Vendor aliases such as `spine1` and `spine2` are
 +    // also used for zero-based rigs, so checking those first silently shifted
@@ -20178,7 +20222,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
          if (boneName === alias.toLowerCase()) {
 @@ -225,80 +250,33 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
    }
- 
+
    private mapBone(bone: Bone): void {
 -    const boneName = bone.name.toLowerCase();
 -
@@ -20204,7 +20248,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
 -    }
 +    this.mapBoneToMap(bone, this.state.bones);
    }
- 
+
    private buildArmChains(): void {
 -    // Left arm
 -    const leftShoulder = this.state.bones.get("LeftArm");
@@ -20241,7 +20285,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
 +      "RightHand"
 +    );
 +  }
- 
+
 -    // Right arm
 -    const rightShoulder = this.state.bones.get("RightArm");
 -    const rightElbow = this.state.bones.get("RightForeArm");
@@ -20278,7 +20322,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
 +    if (!rootBone || !middleBone || !effectorBone) return null;
 +    return buildTwoBoneChain(rootBone, middleBone, effectorBone);
    }
- 
+
    /**
 @@ -306,51 +284,12 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
     * Same pattern as arm chains - two-bone IK with rest directions.
@@ -20336,7 +20380,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
 +      "RightFoot"
 +    );
    }
- 
+
    /**
 @@ -417,34 +356,6 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
     * Compute the rest direction of a bone (direction to child in bind pose)
@@ -20376,7 +20420,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
 @@ -535,22 +446,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      return 0;
    }
- 
+
 -  dispose(): void {
 -    if (this.state.root) {
 -      this.state.root.traverse((child) => {
@@ -20422,7 +20466,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..b95ccdc9ae59cad60867c779dfbccee0
 +  dispose(): void {
 +    this.finalizeModelSwap();
 +    if (this.state.root) this.disposeInstanceResources(this.state.root);
- 
+
      this.state = {
        isLoaded: false,
 diff --git a/src/lib/services/implementations/ClipBasedTurnAnimator.ts b/src/lib/services/implementations/ClipBasedTurnAnimator.ts
@@ -20431,7 +20475,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..a2cde2dada0e28f612e0a683532b902b
 +++ b/src/lib/services/implementations/ClipBasedTurnAnimator.ts
 @@ -19,10 +19,14 @@
   */
- 
+
  import { Quaternion, Euler, Vector3 } from "three";
 -import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
  import type { Object3D, AnimationClip, QuaternionKeyframeTrack } from "three";
@@ -20443,7 +20487,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..a2cde2dada0e28f612e0a683532b902b
 +} from "../contracts/ITurnAnimator";
  import type { ContactCurveData } from "../contracts/IContactCurveCache";
 +import { loadSharedAnimation } from "../shared-gltf-cache";
- 
+
  // ---------------------------------------------------------------------------
  // Constants
 @@ -81,6 +85,9 @@ export interface BakedTurnClip {
@@ -20464,7 +20508,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..a2cde2dada0e28f612e0a683532b902b
 +   *  not agree. The lower body and root tracks still own the turn. */
 +  includeSpine?: boolean;
  }
- 
+
  // ---------------------------------------------------------------------------
 @@ -148,7 +158,12 @@ function bakeClip(
    modelPrefix: string,
@@ -20481,7 +20525,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..a2cde2dada0e28f612e0a683532b902b
    const clipPrefix = detectClipPrefix(clip);
    const frameCount = Math.max(2, Math.ceil(clip.duration * BAKE_FPS) + 1);
 @@ -157,7 +172,11 @@ function bakeClip(
- 
+
    // Build empty frame arrays for each wanted bone
    for (const bone of TURN_BONE_NAMES) {
 -    boneFrames.set(bone, Array.from({ length: frameCount }, () => new Quaternion()));
@@ -20494,14 +20538,14 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..a2cde2dada0e28f612e0a683532b902b
    for (let i = 0; i < frameCount; i++) {
      hipsPositions.push(new Vector3());
 @@ -169,10 +188,12 @@ function bakeClip(
- 
+
      const rawBoneName = track.name.slice(0, dotIdx);
      const property = track.name.slice(dotIdx + 1);
 -    const coreName = clipPrefix ? rawBoneName.slice(clipPrefix.length) : rawBoneName;
 +    const coreName = clipPrefix
 +      ? rawBoneName.slice(clipPrefix.length)
 +      : rawBoneName;
- 
+
 -    if (property === "quaternion" && TURN_BONE_NAMES.has(coreName)) {
 -      const frames = boneFrames.get(coreName)!;
 +    const frames = boneFrames.get(coreName);
@@ -20525,7 +20569,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..a2cde2dada0e28f612e0a683532b902b
 @@ -245,18 +266,187 @@ function bakeClip(
      return [...arr, ...Array<number>(len - arr.length).fill(last)];
    };
- 
+
 +  const hipsFrames = boneFrames.get("Hips") ?? [];
 +  const derivedYawFrames: number[] = [];
 +  if (hipsFrames.length > 0) {
@@ -20566,7 +20610,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..a2cde2dada0e28f612e0a683532b902b
      contactRight: padArray(contactRight, frameCount),
    };
  }
- 
+
 +function findTargetBone(
 +  modelRoot: Object3D,
 +  modelPrefix: string,
@@ -20715,7 +20759,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..a2cde2dada0e28f612e0a683532b902b
 @@ -287,6 +477,15 @@ function sampleContactAtPhase(curve: number[], phase: number): number {
    return curve[i0]! * (1 - t) + curve[i1]! * t;
  }
- 
+
 +function sampleNumberAtPhase(curve: number[], phase: number): number {
 +  if (curve.length === 0) return 0;
 +  const floatIdx = phase * (curve.length - 1);
@@ -20734,7 +20778,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..a2cde2dada0e28f612e0a683532b902b
      const modelPrefix = detectModelPrefix(modelRoot);
 -    const loader = new GLTFLoader();
 +    const bakedClips = await loadSharedBakedTurnClips(modelPrefix, manifest);
- 
+
 -    const bakedClips = await Promise.all(
 -      manifest.map(async (entry) => {
 -        const gltf = await new Promise<import("three/examples/jsm/loaders/GLTFLoader.js").GLTF>(
@@ -20768,11 +20812,11 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..a2cde2dada0e28f612e0a683532b902b
 -
 -    this.initializeFromData(bakedClips);
    }
- 
+
    // -------------------------------------------------------------------------
 @@ -362,9 +538,12 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
      const clip = this.findClip(totalAngle);
- 
+
      if (!clip) {
 -      // Linear fallback - no bone data available
 +      // Legacy consumers may still opt into yaw-only correction. Locomotion
@@ -20788,7 +20832,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..a2cde2dada0e28f612e0a683532b902b
 @@ -381,12 +560,21 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
        boneRotations.set(boneName, out);
      }
- 
+
 -    // yawDelta from the Hips Z euler at phase vs phase 0
 +    // Root yaw stays in the source clip's coordinate frame. The retargeted
 +    // Hips basis can map its vertical axis onto a different local Euler
@@ -20797,7 +20841,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..a2cde2dada0e28f612e0a683532b902b
      const hipsFrames = clip.boneFrames.get("Hips");
      let yawDelta = totalAngle * clampedPhase; // Sensible fallback
      let hipsPosition: Vector3 | null = null;
- 
+
 -    if (hipsFrames) {
 +    const terminalAuthoredYaw = clip.yawFrames?.at(-1) ?? 0;
 +    if (clip.yawFrames && Math.abs(terminalAuthoredYaw) > 1e-5) {
@@ -20816,7 +20860,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..a2cde2dada0e28f612e0a683532b902b
 -      );
 +      ).sub(clip.hipsPositions[0]!);
      }
- 
+
 -    const leftFootContact = sampleContactAtPhase(clip.contactLeft, clampedPhase);
 -    const rightFootContact = sampleContactAtPhase(clip.contactRight, clampedPhase);
 +    const leftFootContact = sampleContactAtPhase(
@@ -20827,7 +20871,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..a2cde2dada0e28f612e0a683532b902b
 +      clip.contactRight,
 +      clampedPhase
 +    );
- 
+
      return {
        yawDelta,
 @@ -471,7 +665,11 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
@@ -21845,7 +21889,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
   * identical, just applied to leg chains with a forward pole hint (knees
   * bend forward, not backward like elbows).
   */
- 
+
 -import { Vector3 } from "three";
 +import { Quaternion, Vector3, type Object3D } from "three";
  import type {
@@ -21890,9 +21934,9 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +function ease(t: number): number {
 +  return t * t * (3 - 2 * t);
 +}
- 
+
  // ── Defaults ──
- 
+
 @@ -41,8 +76,52 @@ const DEFAULT_CONFIG: Required<FootPlanterConfig> = {
    // Measured from typical Mixamo humanoid: ankle joint sits ~7cm above ground.
    // Too small = feet clip into floor. Too large = feet hover.
@@ -21903,7 +21947,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +  lateralRebalance: 0.9,
 +  maxLateralSway: 0.05,
  };
- 
+
 +/**
 + * Width of the soft ceiling on how far a leg may reach for its plant.
 + *
@@ -22056,7 +22100,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +    valid: false,
 +  };
  }
- 
+
  function createFootState(): FootState {
 @@ -65,8 +243,19 @@ function createFootState(): FootState {
      prevWorldPos: new Vector3(),
@@ -22078,11 +22122,11 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +    solveWeight: 0,
    };
  }
- 
+
 @@ -79,8 +268,13 @@ export class FootPlanter implements IFootPlanter {
    private leftFoot: FootState = createFootState();
    private rightFoot: FootState = createFootState();
- 
+
 +  private readonly leftPose = createLegPose();
 +  private readonly rightPose = createLegPose();
 +
@@ -22090,7 +22134,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
    private rightLegChain: BoneChain | null = null;
 +  private leftToe: Object3D | null = null;
 +  private rightToe: Object3D | null = null;
- 
+
    // Per-leg hinge axes derived from bind-pose rest directions at init time.
    // These never change during playback - the knee is a hinge, not a ball joint.
 @@ -91,12 +285,34 @@ export class FootPlanter implements IFootPlanter {
@@ -22109,10 +22153,10 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +  private readonly tempPrevLock = new Vector3();
 +  private readonly tempPelvisScale = new Vector3();
 +  private readonly tempPelvisDelta = new Vector3();
- 
+
    private initialized = false;
    private firstFrame = true;
- 
+
 +  /** Last frame's pelvis correction, taken back before the next measurement. */
 +  private readonly appliedPelvisOffset = new Vector3();
 +  /** Where the pelvis was left last frame, to tell our offset from the mixer's. */
@@ -22145,7 +22189,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +    this.leftToe = skeleton.getBone("LeftToeBase") ?? null;
 +    this.rightToe = skeleton.getBone("RightToeBase") ?? null;
      this.initialized = !!(this.leftLegChain && this.rightLegChain);
- 
+
      if (!this.initialized) {
 @@ -118,12 +343,18 @@ export class FootPlanter implements IFootPlanter {
      const calibrator = new KneeHingeAxisCalibrator();
@@ -22175,13 +22219,13 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +    this.releasePelvisCorrection();
 +    this.restoreAnimatedPose(this.leftLegChain, this.leftPose);
 +    this.restoreAnimatedPose(this.rightLegChain, this.rightPose);
- 
+
      // Skip foot planting during airborne states - let the animation play freely
      if (
 @@ -143,19 +377,16 @@ export class FootPlanter implements IFootPlanter {
        return;
      }
- 
+
 -    // Skip foot planting during idle when no turn clip is active.
 -    // The idle animation already places feet correctly on the ground.
 -    // Running IK over the idle pose replaces the mixer's knee rotations
@@ -22202,20 +22246,20 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +      this.settleIntoIdle(delta, input);
        return;
      }
- 
+
 @@ -189,20 +420,43 @@ export class FootPlanter implements IFootPlanter {
      this.rightFoot.prevWorldPos.copy(rightFootPos);
- 
+
      // 3. Detect contact phase and manage lock targets
 -    this.updateContactPhase(this.leftFoot, leftFootPos, input, this.leftLegChain, true);
 -    this.updateContactPhase(this.rightFoot, rightFootPos, input, this.rightLegChain, false);
 +    this.updateContactPhase(this.leftFoot, input, this.leftToe, true);
 +    this.updateContactPhase(this.rightFoot, input, this.rightToe, false);
- 
+
      // 4. Blend IK weights (smooth ramp in/out)
      this.updateIKWeight(this.leftFoot, delta);
      this.updateIKWeight(this.rightFoot, delta);
- 
+
 -    // 5. Adjust pelvis height so planted feet reach the ground
 -    this.adjustPelvisHeight(input.groundY);
 +    // 5. Place each ankle relative to its plant, before the pelvis moves - the
@@ -22232,14 +22276,14 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +      this.rightToe,
 +      input
 +    );
- 
+
 -    // 6. Solve and apply leg IK for each foot
 -    this.applyFootIK(this.leftLegChain, this.leftFoot, input.groundY, this.leftKneeHingeAxis);
 -    this.applyFootIK(this.rightLegChain, this.rightFoot, input.groundY, this.rightKneeHingeAxis);
 +    // 6. Move the pelvis: down so planted feet reach the floor, across so the
 +    //    body stays over its support.
 +    this.adjustPelvis(input.groundY, delta);
- 
+
 +    // 7. Solve and apply leg IK for each foot
 +    this.updateFacing(input);
 +    this.applyFootIK(this.leftLegChain, this.leftFoot, this.leftKneeHingeAxis);
@@ -22252,12 +22296,12 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +    this.rememberAppliedPose(this.leftLegChain, this.leftPose);
 +    this.rememberAppliedPose(this.rightLegChain, this.rightPose);
    }
- 
+
    configure(config: FootPlanterConfig): void {
 @@ -213,16 +467,39 @@ export class FootPlanter implements IFootPlanter {
      return this.initialized;
    }
- 
+
 +  reset(): void {
 +    this.releasePelvisCorrection();
 +    if (this.leftLegChain) {
@@ -22295,7 +22339,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 -    this.leftFoot = createFootState();
 -    this.rightFoot = createFootState();
    }
- 
+
    // ── Velocity tracking ──
 @@ -231,7 +508,11 @@ export class FootPlanter implements IFootPlanter {
     * Compute smoothed velocity from position delta.
@@ -22311,7 +22355,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
      const dy = currentPos.y - foot.prevWorldPos.y;
      const dz = currentPos.z - foot.prevWorldPos.z;
 @@ -239,7 +520,8 @@ export class FootPlanter implements IFootPlanter {
- 
+
      // Exponential smoothing - 0.3 gives quick response while filtering spikes
      const smoothFactor = 0.3;
 -    foot.smoothedVelocity += (rawVelocity - foot.smoothedVelocity) * smoothFactor;
@@ -22322,7 +22366,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
    }
 @@ -247,22 +529,127 @@ export class FootPlanter implements IFootPlanter {
    // ── Contact phase detection ──
- 
+
    /**
 -   * Determine if a foot is in contact phase (should be locked to ground).
 -   * When foot velocity drops below threshold, lock it at its current XZ
@@ -22610,7 +22654,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +      foot.carryPhase = 0;
        return;
      }
- 
+
 -    // Velocity fallback (existing behavior - preserved exactly)
 -    const threshold = this.config.contactVelocityThreshold;
 -
@@ -22778,9 +22822,9 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +      .multiplyScalar(allowed / length)
 +      .add(this.tempHipJoint);
    }
- 
+
    // ── IK weight management ──
- 
+
    /**
 -   * Smoothly ramp IK weight toward target (1 when locked, 0 when free).
 -   * Uses exponential lerp for framerate-independent blending.
@@ -22800,7 +22844,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +    const step = rampTime > 0 ? delta / rampTime : 1;
 +    foot.carryPhase -= delta / PLANT_HANDOVER_TIME;
 +    if (foot.carryPhase < 0) foot.carryPhase = 0;
- 
+
 -    if (rampTime <= 0) {
 -      foot.ikWeight = targetWeight;
 -    } else {
@@ -22817,7 +22861,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +    const t = foot.blendPhase;
 +    foot.ikWeight = t * t * (3 - 2 * t);
    }
- 
+
    /**
 @@ -351,61 +965,232 @@ export class FootPlanter implements IFootPlanter {
     */
@@ -22873,9 +22917,9 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +    this.rememberAppliedPose(this.leftLegChain!, this.leftPose);
 +    this.rememberAppliedPose(this.rightLegChain!, this.rightPose);
    }
- 
+
    // ── Pelvis height adjustment ──
- 
+
    /**
 -   * Lower the Hips bone so the lowest planted foot can reach the ground
 -   * without over-extending the leg chain.
@@ -22899,12 +22943,12 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 -
      const hipsBone = this.skeleton.getBone("Hips");
      if (!hipsBone) return;
- 
+
 -    // Only adjust if at least one foot is significantly locked
 +    const dt = Math.max(delta, 1 / 240);
      const maxWeight = Math.max(this.leftFoot.ikWeight, this.rightFoot.ikWeight);
 -    if (maxWeight < 0.01) return;
- 
+
 -    // Compute how far each foot needs to move down to reach ground
 -    let leftDrop = 0;
 -    let rightDrop = 0;
@@ -22917,7 +22961,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +      dropTarget =
 +        Math.min(Math.max(demand, 0), this.config.maxPelvisAdjust) * maxWeight;
 +    }
- 
+
 -    if (this.leftFoot.ikWeight > 0.01 && this.leftLegChain) {
 -      this.leftLegChain.effector.getWorldPosition(this.tempFootWorld);
 -      const footY = this.tempFootWorld.y;
@@ -22934,7 +22978,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +      this.pelvisDrop = 0;
 +      this.pelvisDropVelocity = 0;
      }
- 
+
 -    if (this.rightFoot.ikWeight > 0.01 && this.rightLegChain) {
 -      this.rightLegChain.effector.getWorldPosition(this.tempFootWorld);
 -      const footY = this.tempFootWorld.y;
@@ -22962,7 +23006,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +      shiftX = Math.min(Math.max(shiftX, -reach), reach);
 +      shiftZ = Math.min(Math.max(shiftZ, -reach), reach);
      }
- 
+
 -    // Use the larger drop (the foot that's furthest from ground)
 -    const drop = Math.max(leftDrop, rightDrop);
 -    if (drop <= 0) return; // Feet are already at or below ground
@@ -22980,7 +23024,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +      PELVIS_SMOOTH_TIME,
 +      dt
 +    );
- 
+
 -    // Clamp to prevent extreme corrections
 -    const clampedDrop = Math.min(drop, this.config.maxPelvisAdjust);
 +    if (
@@ -22990,7 +23034,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +    ) {
 +      return;
 +    }
- 
+
 -    // Scale by max IK weight so the adjustment fades with the IK blend
 -    const adjustedDrop = clampedDrop * maxWeight;
 +    this.applyPelvisCorrection(
@@ -23000,7 +23044,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +      this.pelvisShiftZ
 +    );
 +  }
- 
+
 -    // Apply: lower Hips in local space (Y is up for Mixamo skeletons)
 -    hipsBone.position.y -= adjustedDrop;
 -    hipsBone.updateMatrixWorld(true);
@@ -23084,7 +23128,7 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +      legChain.totalLength * MAX_LEG_USE
 +    );
    }
- 
+
    // ── Foot IK solve ──
 @@ -414,32 +1199,90 @@ export class FootPlanter implements IFootPlanter {
     * Solve two-bone IK for one leg using the hinge-constrained leg solver.
@@ -23148,13 +23192,13 @@ index a47113296e4edce51a40e2a1c3498c4f13969e4f..75b65bd21745741e9d43dd70475b525e
 +      weight: foot.solveWeight,
 +      bendSign: foot.kneeBendSign ?? undefined,
      };
- 
+
 -    this.legIKSolver.solve(input);
 +    const solved = this.legIKSolver.solve(ikInput);
 +    if (foot.kneeBendSign === null && solved.reliable) {
 +      foot.kneeBendSign = solved.bendSign;
 +    }
- 
+
      // ILegIKSolver does its own weight blending, so no slerp here.
      // Update matrices from hip down so foot world position reflects the solve.
      chain.root.updateMatrixWorld(true);
@@ -23195,7 +23239,7 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..605270cc1d1b04401b253e61778aaa16
 +++ b/src/lib/services/implementations/HingeConstrainedLegIKSolver.ts
 @@ -1,7 +1,11 @@
  // src/lib/shared/3d/services/implementations/HingeConstrainedLegIKSolver.ts
- 
+
 -import { Vector3, Quaternion, Matrix4 } from "three";
 -import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
 +import { Vector3, Quaternion, Matrix4, type Object3D } from "three";
@@ -23204,7 +23248,7 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..605270cc1d1b04401b253e61778aaa16
 +  LegIKInput,
 +  LegIKResult,
 +} from "../contracts/ILegIKSolver";
- 
+
  /**
   * HingeConstrainedLegIKSolver
 @@ -21,8 +25,29 @@ import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
@@ -23290,25 +23334,25 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..605270cc1d1b04401b253e61778aaa16
 +    );
 +    this.tempKneeOffset.applyQuaternion(this.tempAimRot);
 +  }
- 
+
 -  solve(input: LegIKInput): void {
 +  solve(input: LegIKInput): LegIKResult {
      const { chain, footTarget, kneeHingeAxis, weight } = input;
 -    if (weight <= 0) return;
 +    if (weight <= 0) return { bendSign: input.bendSign ?? 1, reliable: false };
- 
+
      const hip = chain.root;
      const knee = chain.middle;
 @@ -59,16 +115,22 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
- 
+
      this.tempOrigHipQuat.copy(hip.quaternion);
      this.tempOrigKneeQuat.copy(knee.quaternion);
 -    this.tempOrigFootQuat.copy(foot.quaternion);
 +    foot.getWorldQuaternion(this.tempOrigFootWorldQuat);
- 
+
      hip.getWorldPosition(this.tempHipWorld);
      const hipWorld = this.tempHipWorld;
- 
+
 -    // Clamp distance to a reachable range. The 1.01 / 0.99 epsilons keep
 -    // acos away from ±1 where its derivative blows up.
 +    // Clamp distance to a reachable range. The epsilons keep acos away from
@@ -23324,12 +23368,12 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..605270cc1d1b04401b253e61778aaa16
 -    const maxReach = (L1 + L2) * 0.99;
 +    const maxReach = (L1 + L2) * 0.999;
      const D = Math.max(minReach, Math.min(rawD, maxReach));
- 
+
      // Law of cosines: angle at the knee between UpLeg and Leg vectors.
 @@ -76,7 +138,11 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
      const interiorKnee = Math.acos(Math.max(-1, Math.min(1, cosInterior)));
      const bendAngle = Math.PI - interiorKnee;
- 
+
 -    this.tempBendQuat.setFromAxisAngle(kneeHingeAxis, bendAngle);
 +    const givenSign = input.bendSign;
 +    this.tempBendQuat.setFromAxisAngle(
@@ -23337,12 +23381,12 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..605270cc1d1b04401b253e61778aaa16
 +      bendAngle * (givenSign ?? 1),
 +    );
      knee.quaternion.copy(this.tempBendQuat);
- 
+
      hip.updateMatrixWorld(true);
 @@ -87,47 +153,50 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
      // direction.
      foot.getWorldPosition(this.tempCurrentFootWorld);
- 
+
 -    // Pole direction check - ensure the knee will end up bent toward
 -    // poleDirection after the aim step. Without this, hinge axis sign
 -    // differences between left/right legs (from the cross-product
@@ -23409,7 +23453,7 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..605270cc1d1b04401b253e61778aaa16
        foot.getWorldPosition(this.tempCurrentFootWorld);
 +      this.aimFromCurrentPose(knee, hipWorld);
      }
- 
+
 -    this.tempCurrentFootDir
 -      .subVectors(this.tempCurrentFootWorld, hipWorld)
 -      .normalize();
@@ -23426,7 +23470,7 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..605270cc1d1b04401b253e61778aaa16
 @@ -146,47 +215,12 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
      knee.updateMatrixWorld(true);
      foot.updateMatrixWorld(true);
- 
+
 -    // Foot rotation alignment: set the foot's world rotation such that
 -    // the foot's local +Y axis points along groundNormal and the foot's
 -    // local +Z axis points along footForward (with Gram-Schmidt to
@@ -23474,7 +23518,7 @@ index 732eb4430c365103d55b3453f8cd8f6fe097ecbb..605270cc1d1b04401b253e61778aaa16
 +    // inherited motion first, then apply only the requested toe correction.
 +    this.setFootWorldQuaternion(foot, this.tempOrigFootWorldQuat);
 +    this.orientAnkle(input, foot);
- 
+
      if (weight < 1) {
        // Weight blending: slerp from original rotation toward the solved
 @@ -194,23 +228,114 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
@@ -23607,7 +23651,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +++ b/src/lib/services/implementations/LocomotionAnimator.ts
 @@ -13,17 +13,151 @@
   */
- 
+
  import type { AnimationAction, Object3D, Bone } from "three";
 -import { AnimationMixer, AnimationClip, LoopRepeat, LoopOnce } from "three";
 -import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -23751,13 +23795,13 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +  }
 +  return assertTerminalStopMotion(await response.json());
 +}
- 
+
 -type DirectionKey = "forward" | "backward" | "strafeLeft" | "strafeRight";
 +const preparedClipCache = new WeakMap<
 +  AnimationClip,
 +  Map<string, AnimationClip>
 +>();
- 
+
  /**
   * Known Mixamo bone prefixes. Animation files may use a different
 @@ -70,21 +204,29 @@ function detectClipPrefix(clip: AnimationClip): string {
@@ -23782,7 +23826,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +  "RightFoot",
 +  "RightToeBase",
  ]);
- 
+
  function remapClipToSkeleton(
    clip: AnimationClip,
    modelPrefix: string,
@@ -23795,19 +23839,19 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
    const clipPrefix = detectClipPrefix(clip);
 
 @@ -95,7 +237,9 @@ function remapClipToSkeleton(
- 
+
        const boneName = track.name.slice(0, dotIdx);
        const property = track.name.slice(dotIdx + 1);
 -      const coreName = clipPrefix ? boneName.slice(clipPrefix.length) : boneName;
 +      const coreName = clipPrefix
 +        ? boneName.slice(clipPrefix.length)
 +        : boneName;
- 
+
        // Skip bones that don't exist on our models
        if (coreName.endsWith("_End")) return false;
 @@ -110,7 +254,12 @@ function remapClipToSkeleton(
        if (coreName === "Hips" && property === "quaternion") return false;
- 
+
        // Keep Hips position track when needed for root motion or crouch pose.
 -      if (coreName === "Hips" && property === "position" && hipsMode !== "strip") return true;
 +      if (
@@ -23816,7 +23860,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +        hipsMode !== "strip"
 +      )
 +        return true;
- 
+
        // Keep all other quaternion tracks - bone rotations are the animation.
        // Filter out position/scale tracks (position teleports, scale vanishes).
 @@ -122,7 +271,9 @@ function remapClipToSkeleton(
@@ -23827,9 +23871,9 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +      const coreName = clipPrefix
 +        ? boneName.slice(clipPrefix.length)
 +        : boneName;
- 
+
        const cloned = track.clone();
- 
+
 @@ -136,7 +287,11 @@ function remapClipToSkeleton(
        // first keyframe's Z preserves the natural vertical bob (hips go up
        // and down ~2-3cm per step) while removing the absolute offset that
@@ -23846,7 +23890,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 @@ -144,13 +299,70 @@ function remapClipToSkeleton(
          }
        }
- 
+
 +      // Bob mode: keep the pelvis rising over each supporting foot.
 +      //
 +      // A walk raises and lowers its pelvis about eight centimetres per step,
@@ -23918,7 +23962,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 @@ -167,10 +379,377 @@ function remapClipToSkeleton(
    return new AnimationClip(clip.name, clip.duration, tracks);
  }
- 
+
 +/**
 + * What one walk clip does to the ground, measured on the rig that will play it.
 + *
@@ -24292,7 +24336,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
    private root: Object3D | null = null;
 -  private loader = new GLTFLoader();
    private modelPrefix = "mixamorig";
- 
+
    // Actions - created from raw clips, no processing
 @@ -180,24 +759,56 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      backward: null,
@@ -24309,14 +24353,14 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +    stopLeft: null,
 +    stopRight: null,
 +  };
- 
+
    // Raw clips (stored between loadAnimations and initialize)
    private pendingClips: Map<string, AnimationClip> = new Map();
 +  private terminalMotions: Record<TerminalKey, TerminalStopMotion | null> = {
 +    stopLeft: null,
 +    stopRight: null,
 +  };
- 
+
    // State
    private activeState: LocomotionState | null = null;
    private currentActiveState: LocomotionState | null = null;
@@ -24344,7 +24388,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +  private terminalContactRight = -1;
    private initialized = false;
    private clipsLoaded = false;
- 
+
    private config: Required<LocomotionConfig> = {
      baseSpeed: 1,
 -    blendTime: 0.15,
@@ -24353,7 +24397,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
      enableRootMotion: false,
      stripLegBones: false,
 @@ -205,46 +816,205 @@ export class LocomotionAnimator implements ILocomotionAnimator {
- 
+
    // Blend weights (smoothed each frame)
    private currentIdleWeight = 1;
 +  private currentIdleVelocity = 0;
@@ -24397,7 +24441,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +    grapevineLeft: null,
 +    grapevineRight: null,
    };
- 
+
 +  /**
 +   * One phase drives all four walk clips. They have different durations, so
 +   * left alone they drift apart and the blended left foot plants at four
@@ -24429,7 +24473,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
      this.mixer = new AnimationMixer(root);
      this.modelPrefix = this.detectModelPrefix(root);
      this.initialized = true;
- 
+
 +    // Read before anything animates: the clips carry the pelvis's motion but
 +    // not its height, and every avatar has its own.
 +    this.hipsBone = this.getHipsBone();
@@ -24440,7 +24484,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
        this.createActions();
      }
    }
- 
+
 +  /**
 +   * The proportions that decide what a baked clip looks like, to the millimetre.
 +   *
@@ -24563,7 +24607,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +      this.targetDirWeights[key] = 0;
 +    }
    }
- 
+
    async loadAnimations(urls: AnimationUrls): Promise<void> {
 @@ -255,21 +1025,33 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        { key: "strafeLeft", url: urls.strafeLeft },
@@ -24577,7 +24621,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
      if (urls.fall) entries.push({ key: "fall", url: urls.fall });
      if (urls.land) entries.push({ key: "land", url: urls.land });
      if (urls.crouch) entries.push({ key: "crouch", url: urls.crouch });
- 
+
 +    const terminalMotionLoads: Array<{
 +      key: TerminalKey;
 +      load: Promise<TerminalStopMotion>;
@@ -24610,7 +24654,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 @@ -280,6 +1062,23 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        }
      }
- 
+
 +    const motionResults = await Promise.allSettled(
 +      terminalMotionLoads.map(async ({ key, load }) => ({
 +        key,
@@ -24645,7 +24689,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +    const needsCyclicContactRetarget = DIRECTION_KEYS.includes(
 +      key as DirectionKey
 +    );
- 
+
      // Crouch uses "pose" mode - keeps Hips position track but scales cm→m
      // (Mixamo FBX→GLB values are in centimeters, skeleton is in meters).
      // This lets the Hips bone drop to the correct crouched height.
@@ -24655,7 +24699,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +    if (isLocomotionClip)
 +      hipsMode = this.config.enableRootMotion ? "rootMotion" : "bob";
      if (key === "crouch") hipsMode = "pose";
- 
+
      // Strip leg bones from idle clip for exhibit performers so feet
      // stay perfectly planted during sequence playback.
      const stripLegs = this.config.stripLegBones && key === "idle";
@@ -24712,12 +24756,12 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +    variants.set(cacheKey, prepared);
 +    return prepared;
    }
- 
+
    /**
 @@ -327,6 +1178,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    private createActions(): void {
      if (!this.mixer) return;
- 
+
 +    // Three remembers each bone's value the first time an action binds it, and
 +    // fills any weight the running clips do not supply with that remembered
 +    // value. The pelvis track is a delta - update() zeroes the bone, lets the
@@ -24729,12 +24773,12 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +    const hips = this.hipsBone;
 +    const hipsBeforeBind = hips ? hips.position.clone() : null;
 +    if (hips) hips.position.set(0, 0, 0);
- 
+
      // Idle - starts at weight 1
      const idleClip = this.prepareClip("idle");
 @@ -338,7 +1200,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      }
- 
+
      // Walk directions - start at weight 0
 -    for (const key of ["forward", "backward", "strafeLeft", "strafeRight"] as DirectionKey[]) {
 +    for (const key of DIRECTION_KEYS) {
@@ -24760,7 +24804,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +        }
        }
      }
- 
+
 @@ -386,6 +1261,20 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        this.setWeight(this.crouchAction, 0);
        this.crouchAction.play();
@@ -24780,11 +24824,11 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +
 +    if (hips && hipsBeforeBind) hips.position.copy(hipsBeforeBind);
    }
- 
+
    /**
 @@ -398,19 +1287,77 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    }
- 
+
    setLocomotion(input: LocomotionInput): void {
 +    this.commandedMoving = input.isMoving;
      if (input.isMoving) {
@@ -24867,7 +24911,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 @@ -422,19 +1369,116 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      const blendSpeed = 1 / Math.max(0.01, this.config.blendTime);
      const blendFactor = 1 - Math.exp(-blendSpeed * delta);
- 
+
 -    if (this.activeState !== null) {
 -      this.applyStateWeights(blendFactor);
 +    if (this.hasGait()) {
@@ -24900,7 +24944,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 -      this.applyLegacyWeights(blendFactor);
 +      this.applyLegacyWeights(delta);
      }
- 
+
 -    this.mixer.update(delta);
 +    // Zeroed first so the two cases agree: a clip carrying the pelvis track
 +    // writes the bob and this adds the rig's height under it, and a clip
@@ -24915,11 +24959,11 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +      this.mixer.update(delta);
 +    }
    }
- 
+
    isReady(): boolean {
      return this.initialized && this.clipsLoaded;
    }
- 
+
 +  reset(): void {
 +    this.activeState = null;
 +    this.currentActiveState = null;
@@ -24987,7 +25031,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
    }
 @@ -447,40 +1491,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    }
- 
+
    dispose(): void {
 -    if (this.mixer) {
 -      this.mixer.stopAllAction();
@@ -25015,9 +25059,9 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 -      this.targetDirWeights[key] = 0;
 -    }
    }
- 
+
    // --- Private helpers ---
- 
+
 -  private loadGltf(url: string): Promise<import("three/examples/jsm/loaders/GLTFLoader.js").GLTF> {
 -    return new Promise((resolve, reject) => {
 -      this.loader.load(url, resolve, undefined, reject);
@@ -25038,10 +25082,10 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 -      this.targetDirWeights.strafeRight = 0;
        return;
      }
- 
+
      const total = fw + sl + sr;
      const n = total > 0 ? 1 / total : 0;
- 
+
 +    for (const key of DIRECTION_KEYS) this.targetDirWeights[key] = 0;
      this.targetDirWeights.forward = fw * n;
 -    this.targetDirWeights.backward = 0;
@@ -25054,12 +25098,12 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +    this.targetDirWeights[leftKey] = sl * n;
 +    this.targetDirWeights[rightKey] = sr * n;
    }
- 
+
    private updatePlaybackSpeed(speed: number): void {
 @@ -521,15 +1542,530 @@ export class LocomotionAnimator implements ILocomotionAnimator {
        return;
      }
- 
+
 -    const timeScale =
 -      this.config.baseSpeed *
 -      Math.max(0.3, speed / this.config.animationWalkSpeed);
@@ -25590,7 +25634,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +
 +  private applyStateWeights(delta: number, blendFactor: number): void {
      const state = this.activeState!;
- 
+
      // Phase-based jump: each state has its own clip.
 @@ -545,22 +2081,35 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // "hunched walk" without needing a dedicated crouch-walk animation clip.
@@ -25599,12 +25643,12 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 -    const hasMovement = Object.values(this.targetDirWeights).some(w => w > 0);
 +    const hasMovement = Object.values(this.targetDirWeights).some((w) => w > 0);
      const crouchWalking = isCrouching && hasMovement;
- 
+
 -    const wantWalk = state === LocomotionState.WALKING ? 1 : crouchWalking ? 0.4 : 0;
 +    const wantWalk =
 +      state === LocomotionState.WALKING ? 1 : crouchWalking ? 0.4 : 0;
      const wantCrouch = isCrouching ? (crouchWalking ? 0.6 : 1) : 0;
- 
+
      // Idle
 -    this.currentIdleWeight += (wantIdle - this.currentIdleWeight) * blendFactor;
 +    [this.currentIdleWeight, this.currentIdleVelocity] = springWeight(
@@ -25615,7 +25659,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +      delta
 +    );
      this.idleAction?.setEffectiveWeight(this.currentIdleWeight);
- 
+
      // Walk directions (scaled by wantWalk - also drives crouch-walk blend)
      for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
        const dirTarget = this.targetDirWeights[key] * wantWalk;
@@ -25632,7 +25676,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +      this.dirWeightVelocities[key] = velocity;
        this.walkActions[key]?.setEffectiveWeight(newWeight);
      }
- 
+
 @@ -573,12 +2122,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // On state entry: snap weights for instant transitions on one-shot clips.
      if (state !== this.currentActiveState) {
@@ -25655,7 +25699,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 @@ -601,16 +2155,27 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      }
    }
- 
+
 -  private applyLegacyWeights(blendFactor: number): void {
 -    this.currentIdleWeight +=
 -      (this.targetIdleWeight - this.currentIdleWeight) * blendFactor;
@@ -25668,7 +25712,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..dbea0b7be10d45c4b359e4dba0b9065a
 +      delta
 +    );
      this.idleAction?.setEffectiveWeight(this.currentIdleWeight);
- 
+
      for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
        const target = this.targetDirWeights[key];
 -      const current = this.currentDirWeights[key];
@@ -25694,7 +25738,7 @@ index 4040db93ea9b7f2b6418120c045c9639cb321b33..cca0f04c288b8d878691c675ec365da7
    private restY = 0;
    private restZ = 0;
 +  private restYaw = 0;
- 
+
    initialize(hipsBone: Bone): void {
      this.hipsBone = hipsBone;
 @@ -48,7 +49,8 @@ export class RootMotionExtractor implements IRootMotionExtractor {
@@ -25705,7 +25749,7 @@ index 4040db93ea9b7f2b6418120c045c9639cb321b33..cca0f04c288b8d878691c675ec365da7
 +    this.restYaw = hipsBone.rotation.z;
 +    this.prevYaw = this.restYaw;
    }
- 
+
    extract(): RootMotionDelta {
 @@ -99,10 +101,13 @@ export class RootMotionExtractor implements IRootMotionExtractor {
      // Restore Hips XY to rest position (zero out root motion displacement).
@@ -25720,7 +25764,7 @@ index 4040db93ea9b7f2b6418120c045c9639cb321b33..cca0f04c288b8d878691c675ec365da7
      this.hipsBone.position.x = this.restX;
      this.hipsBone.position.y = this.restY;
 +    this.hipsBone.rotation.z = this.restYaw;
- 
+
      return delta;
    }
 diff --git a/src/lib/services/implementations/SpineTwister.ts b/src/lib/services/implementations/SpineTwister.ts
@@ -25743,7 +25787,7 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..6106a21ee445534768e8fff7992facbb
   * is missing bones (common: Spine2/upper_chest), the missing bone's
 @@ -28,7 +30,11 @@
   */
- 
+
  import { Vector3, Quaternion, Euler } from "three";
 -import type { ISpineTwister, SpineTwistResult } from "../contracts/ISpineTwister";
 +import type {
@@ -25751,23 +25795,23 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..6106a21ee445534768e8fff7992facbb
 +  SpineTwistResult,
 +  BodyFrame,
 +} from "../contracts/ISpineTwister";
- 
+
  /** Maximum total upper-body yaw (turning left/right) in radians (~60 degrees). */
  const MAX_YAW = (60 * Math.PI) / 180;
 @@ -41,6 +47,9 @@ const SINGLE_HAND_MAX_YAW = (40 * Math.PI) / 180;
  /** Maximum lateral tilt (leaning sideways) in radians (~25 degrees). */
  const MAX_TILT = (25 * Math.PI) / 180;
- 
+
 +/** Maximum forward shoulder carry for a fully crossed two-hand pose. */
 +const MAX_FORWARD_PITCH = (10 * Math.PI) / 180;
 +
  /** Half shoulder width for normalizing lateral offset */
  const SHOULDER_HALF_WIDTH = 0.2;
- 
+
 @@ -66,6 +75,20 @@ const HIP_COUNTER_FRACTION = -0.20;
   */
  const TILT_HEIGHT_THRESHOLD = 0.25;
- 
+
 +/** How strongly a behind-the-body hand drives yaw. 1.0 would treat a hand
 + *  one full dead-zone-adjusted meter behind the plane as a max-yaw signal;
 + *  0.8 keeps the blading present but subordinate to lateral crossing. */
@@ -25787,7 +25831,7 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..6106a21ee445534768e8fff7992facbb
   * Weighted toward the upper back where shoulders attach.
 @@ -79,27 +102,58 @@ const IDEAL_WEIGHTS: Record<string, number> = {
  };
- 
+
  export class SpineTwister implements ISpineTwister {
 +  /** Scratch vector for lateral/depth offset math (avoids per-call allocation). */
 +  private readonly _offset = new Vector3();
@@ -25822,7 +25866,7 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..6106a21ee445534768e8fff7992facbb
      }
      return this.identityResult();
    }
- 
+
 +  /** Signed lateral offset of a target from body center, in the body's own frame. */
 +  private lateralOf(
 +    target: Vector3,
@@ -25859,9 +25903,9 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..6106a21ee445534768e8fff7992facbb
 -    const rightX = rightHandTarget.x - bodyCenter.x;
 +    const leftX = this.lateralOf(leftHandTarget, bodyCenter, bodyFrame);
 +    const rightX = this.lateralOf(rightHandTarget, bodyCenter, bodyFrame);
- 
+
      // --- YAW (Y-axis): torso turns toward crossing direction ---
- 
+
 @@ -123,12 +178,29 @@ export class SpineTwister implements ISpineTwister {
      // Cross-body tension: how much each hand crosses its natural side
      // Left hand's natural side is -X, so crossing = positive X.
@@ -25895,13 +25939,13 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..6106a21ee445534768e8fff7992facbb
 +    // two-hand cross has no arbitrary left/right winner, so it stays centered
 +    // and uses forward pitch below to carry both shoulders toward the props.
 +    const yawSignal = lateralBias + directionalCross + depthYawSignal;
- 
+
      // Normalize to [-1, 1] range
      const normalizedYaw = Math.max(-1, Math.min(1,
 @@ -155,6 +227,11 @@ export class SpineTwister implements ISpineTwister {
        (leftCross + rightCross) / SHOULDER_HALF_WIDTH
      ));
- 
+
 +    // Pull the upper body toward crossed targets before arm IK runs. This is
 +    // the local equivalent of a full-body IK chain pre-pull: the shoulders
 +    // contribute to the reach rather than leaving the two arm bones alone.
@@ -25912,7 +25956,7 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..6106a21ee445534768e8fff7992facbb
      const totalTilt = tiltSignal * MAX_TILT;
 @@ -163,11 +240,11 @@ export class SpineTwister implements ISpineTwister {
      const weights = this.redistributeWeights(availableBones);
- 
+
      return {
 -      spine1: this.makeSpineRotation(totalYaw * (weights.spine1 ?? 0), totalTilt * (weights.spine1 ?? 0)),
 -      spine2: this.makeSpineRotation(totalYaw * (weights.spine2 ?? 0), totalTilt * (weights.spine2 ?? 0)),
@@ -25926,7 +25970,7 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..6106a21ee445534768e8fff7992facbb
 +      hips: this.makeSpineRotation(totalYaw * HIP_COUNTER_FRACTION, totalTilt * HIP_COUNTER_FRACTION * 0.5, 0),
      };
    }
- 
+
 @@ -181,10 +258,22 @@ export class SpineTwister implements ISpineTwister {
    private computeSingleHandGaze(
      handTarget: Vector3,
@@ -25951,7 +25995,7 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..6106a21ee445534768e8fff7992facbb
 +      Math.min(1, yawSignal / SINGLE_HAND_REACH)
 +    );
      const totalYaw = normalizedYaw * SINGLE_HAND_MAX_YAW;
- 
+
      const weights = this.redistributeWeights(availableBones);
 @@ -258,11 +347,19 @@ export class SpineTwister implements ISpineTwister {
     * Create a quaternion combining Y-axis yaw and Z-axis lateral tilt.

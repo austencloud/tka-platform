@@ -66,6 +66,8 @@ export interface Fire3DParams extends FireIntent {
   shadowCasting: boolean;
   /** 0-1. Bloom post-process contribution. */
   bloomContribution: number;
+  /** Peak local point-light intensity in candela before motion flicker. */
+  lightIntensity: number;
   /**
    * HDR core emissive multiplier fed to the particle material's uEmissiveHot
    * uniform. This is what crosses the scene bloom threshold — the lever that

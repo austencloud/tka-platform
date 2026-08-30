@@ -161,6 +161,7 @@ export class FireRenderer3D {
   private emitRate: number;
   private curlStrength = CURL_STRENGTH;
   private emissiveHot = 0.53;
+  private lightIntensity = 0.302;
   // Intensity also scales particle SIZE so the slider visibly changes the
   // flame's VOLUME (small contained flame ↔ big fire), distinct from
   // brightness which only changes the per-particle glow.
@@ -192,7 +193,10 @@ export class FireRenderer3D {
   private prevTipPos: Vector3[] = [];
   private prevTipValid: boolean[] = [];
 
-  constructor(qualityTier: QualityTier = QualityTier.HIGH, options?: FireRendererOptions) {
+  constructor(
+    qualityTier: QualityTier = QualityTier.HIGH,
+    options?: FireRendererOptions
+  ) {
     this.qualityTier = qualityTier;
     this.preset = options?.preset ?? "classic";
     this.poolSize = POOL_SIZE[qualityTier];
@@ -202,10 +206,19 @@ export class FireRenderer3D {
     this.particles = new Array(this.poolSize);
     for (let i = 0; i < this.poolSize; i++) {
       this.particles[i] = {
-        x: 0, y: 0, z: 0,
-        vx: 0, vy: 0, vz: 0,
-        age: 0, maxLife: 1, size: 0, seed: 0,
-        pr: 1, pg: 1, pb: 1,
+        x: 0,
+        y: 0,
+        z: 0,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        age: 0,
+        maxLife: 1,
+        size: 0,
+        seed: 0,
+        pr: 1,
+        pg: 1,
+        pb: 1,
         active: false,
       };
     }
@@ -231,12 +244,30 @@ export class FireRenderer3D {
     // Unit quad; the vertex shader billboards + stretches it per instance.
     const geometry = new PlaneGeometry(1, 1);
     // DYNAMIC_DRAW (35048): we rewrite these arrays every frame.
-    geometry.setAttribute("aCenter", new InstancedBufferAttribute(this.centers, 3).setUsage(35048));
-    geometry.setAttribute("aVel", new InstancedBufferAttribute(this.vels, 3).setUsage(35048));
-    geometry.setAttribute("aLife", new InstancedBufferAttribute(this.lives, 1).setUsage(35048));
-    geometry.setAttribute("aSeed", new InstancedBufferAttribute(this.seeds, 1).setUsage(35048));
-    geometry.setAttribute("aSize", new InstancedBufferAttribute(this.instSizes, 1).setUsage(35048));
-    geometry.setAttribute("aPropColor", new InstancedBufferAttribute(this.propColors, 3).setUsage(35048));
+    geometry.setAttribute(
+      "aCenter",
+      new InstancedBufferAttribute(this.centers, 3).setUsage(35048)
+    );
+    geometry.setAttribute(
+      "aVel",
+      new InstancedBufferAttribute(this.vels, 3).setUsage(35048)
+    );
+    geometry.setAttribute(
+      "aLife",
+      new InstancedBufferAttribute(this.lives, 1).setUsage(35048)
+    );
+    geometry.setAttribute(
+      "aSeed",
+      new InstancedBufferAttribute(this.seeds, 1).setUsage(35048)
+    );
+    geometry.setAttribute(
+      "aSize",
+      new InstancedBufferAttribute(this.instSizes, 1).setUsage(35048)
+    );
+    geometry.setAttribute(
+      "aPropColor",
+      new InstancedBufferAttribute(this.propColors, 3).setUsage(35048)
+    );
 
     this.material = createFireParticleMaterial({
       colors: getFireColors(this.preset),
@@ -294,7 +325,11 @@ export class FireRenderer3D {
       p.vz *= dragFactor;
 
       // Curl-noise swirl in the XY plane (divergence-free => no clumping).
-      const swirl = this.curl.sample(p.x * CURL_SCALE, p.y * CURL_SCALE, this.time);
+      const swirl = this.curl.sample(
+        p.x * CURL_SCALE,
+        p.y * CURL_SCALE,
+        this.time
+      );
       p.vx += swirl.vx * this.curlStrength * safeDt;
       p.vy += swirl.vy * this.curlStrength * safeDt;
 
@@ -319,12 +354,14 @@ export class FireRenderer3D {
     }
 
     const geo = this.mesh.geometry;
-    (geo.getAttribute("aCenter") as InstancedBufferAttribute).needsUpdate = true;
+    (geo.getAttribute("aCenter") as InstancedBufferAttribute).needsUpdate =
+      true;
     (geo.getAttribute("aVel") as InstancedBufferAttribute).needsUpdate = true;
     (geo.getAttribute("aLife") as InstancedBufferAttribute).needsUpdate = true;
     (geo.getAttribute("aSeed") as InstancedBufferAttribute).needsUpdate = true;
     (geo.getAttribute("aSize") as InstancedBufferAttribute).needsUpdate = true;
-    (geo.getAttribute("aPropColor") as InstancedBufferAttribute).needsUpdate = true;
+    (geo.getAttribute("aPropColor") as InstancedBufferAttribute).needsUpdate =
+      true;
     this.mesh.count = visibleCount;
 
     if (this.lightEnabled) {
@@ -332,16 +369,20 @@ export class FireRenderer3D {
         const light = this.lights[i]!;
         if (i < tips.length) {
           const tip = tips[i]!;
-          light.position.set(tip.position.x, tip.position.y + 0.25, tip.position.z);
-          const jerkBoost = Math.min((tip.jerk ?? 0) / 60, 1) * 1.2;
-          let intensity = 1.5 + Math.min(tip.speed * 0.3, 1.5) + jerkBoost;
+          light.position.set(
+            tip.position.x,
+            tip.position.y + 0.25,
+            tip.position.z
+          );
+          const jerkBoost = Math.min((tip.jerk ?? 0) / 60, 1) * 0.12;
+          let motionScale = 0.75 + Math.min(tip.speed * 0.08, 0.18) + jerkBoost;
           if (this.qualityTier === QualityTier.HIGH) {
-            intensity +=
+            motionScale +=
               Math.sin(this.time * 8.3 + i * 2.1) * 0.18 +
-              Math.sin(this.time * 13.7 + i * 5.3) * 0.12 +
-              Math.sin(this.time * 23.1 + i * 1.7) * 0.06;
+              Math.sin(this.time * 13.7 + i * 5.3) * 0.06 +
+              Math.sin(this.time * 23.1 + i * 1.7) * 0.03;
           }
-          light.intensity = Math.max(intensity, 0.5);
+          light.intensity = Math.max(this.lightIntensity * motionScale, 0.04);
           light.visible = true;
         } else {
           light.visible = false;
@@ -380,17 +421,22 @@ export class FireRenderer3D {
       particle.y = py + (Math.random() - 0.5) * CORE_JITTER;
       particle.z = pz + (Math.random() - 0.5) * CORE_JITTER;
 
-      particle.vx = tip.velocityX * VELOCITY_INHERIT + (Math.random() - 0.5) * SPREAD;
+      particle.vx =
+        tip.velocityX * VELOCITY_INHERIT + (Math.random() - 0.5) * SPREAD;
       particle.vy =
-        tip.velocityY * VELOCITY_INHERIT + BUOYANCY_SEED + (Math.random() - 0.5) * SPREAD;
-      particle.vz = tip.velocityZ * VELOCITY_INHERIT + (Math.random() - 0.5) * SPREAD;
+        tip.velocityY * VELOCITY_INHERIT +
+        BUOYANCY_SEED +
+        (Math.random() - 0.5) * SPREAD;
+      particle.vz =
+        tip.velocityZ * VELOCITY_INHERIT + (Math.random() - 0.5) * SPREAD;
 
       // Bias toward short-lived hot core particles; a tail rides longer into smoke.
       const r = Math.random();
       particle.maxLife = LIFE_MIN + r * r * (LIFE_MAX - LIFE_MIN);
       particle.age = 0;
       // sizeScale (from intensity) sets the flame VOLUME; brightness is separate.
-      particle.size = (SIZE_MIN + Math.random() * (SIZE_MAX - SIZE_MIN)) * this.sizeScale;
+      particle.size =
+        (SIZE_MIN + Math.random() * (SIZE_MAX - SIZE_MIN)) * this.sizeScale;
       particle.seed = Math.random();
       const pc = tip.propColor;
       particle.pr = pc ? pc.r : 1;
@@ -430,10 +476,12 @@ export class FireRenderer3D {
    *                color in the shader (0 = pure fire, 1 = strongly prop-colored).
    */
   updateConfig(params: Fire3DParams): void {
-    this.emitRate = EMIT_RATE[this.qualityTier] * (0.4 + params.intensity * 1.0);
+    this.emitRate =
+      EMIT_RATE[this.qualityTier] * (0.4 + params.intensity * 1.0);
     this.sizeScale = 0.55 + params.intensity * 0.9;
     this.curlStrength = CURL_STRENGTH * (0.4 + params.turbulence * 1.6);
     this.emissiveHot = params.emissiveHot;
+    this.lightIntensity = params.lightIntensity;
     if (this.material) {
       setFireEmissive(this.material, this.emissiveHot);
       setFireColorBlend(this.material, params.colorBlend);

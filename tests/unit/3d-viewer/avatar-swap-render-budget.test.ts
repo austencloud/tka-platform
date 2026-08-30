@@ -97,6 +97,25 @@ describe("avatar swap render budget", () => {
     expect(rootCommit).toBeGreaterThan(fadeWarmup);
   });
 
+  it("restores authored transparent materials after the swap fade", () => {
+    expect(avatarSource).toContain(
+      "const authoredMaterialAppearances = new WeakMap"
+    );
+    expect(avatarSource).toContain("transparent: material.transparent");
+    expect(avatarSource).toContain("opacity: material.opacity");
+    expect(avatarSource).toContain("depthWrite: material.depthWrite");
+    expect(avatarSource).toContain(
+      "const transparent = isFading || authored.transparent"
+    );
+    expect(avatarSource).toContain(
+      "material.opacity = authored.opacity * fadeOpacity"
+    );
+    expect(avatarSource).toContain(
+      "material.depthWrite = isFading ? false : authored.depthWrite"
+    );
+    expect(avatarSource).not.toContain("material.depthWrite = !transparent");
+  });
+
   it("keeps outgoing materials alive through renderer preparation", () => {
     const deferDisposal = skeletonSource.indexOf(
       "this.replacedRoots.push(oldRoot)"
