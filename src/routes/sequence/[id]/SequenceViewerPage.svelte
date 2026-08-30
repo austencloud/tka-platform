@@ -133,7 +133,14 @@
   const urlBlueProp = $derived(page.url.searchParams.get("bp"));
   const urlRedProp = $derived(page.url.searchParams.get("rp"));
 
-  // URL view mode param (from QR codes with browse view mode)
+  // URL view mode param (from QR codes with browse view mode).
+  // NOT the viewer mode. `vm` here is the printed-card BROWSE view mode
+  // (`short-code-manager.ts` writes `vm=hsb`), decoded below into hand-path and
+  // per-prop visibility. The viewer's own URL-state session reads the same
+  // param name for `ViewerMode`; the two vocabularies are disjoint, and the
+  // session refuses to seed from, overwrite, or remove a `vm` that parses as
+  // one of these browse codes (see SequenceViewerOrchestrator). Do not "unify"
+  // them — this plumbing is not redundant.
   const urlViewModeParam = $derived(page.url.searchParams.get("vm"));
   const decodedBrowseViewMode = $derived(
     urlViewModeParam ? decodeViewMode(urlViewModeParam) : null

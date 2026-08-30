@@ -24,8 +24,25 @@
   } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import {
+    createEffectsConfigState,
+    loadPersistedEffectsConfig,
+  } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { createViewerUrlSession } from "../services/viewer-url-session";
+  import {
+    captureFxSlice,
+    seedFromFxSlice,
+    type FxSlicePayload,
+  } from "../services/viewer-url-slices/fx-slice";
+  import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
+  import { decodeViewMode } from "$lib/shared/browse/domain/browse-view-mode";
+  import {
+    isValidViewerMode,
+    loadSplitConfig,
+    loadViewerMode,
+    type SplitConfig,
+  } from "../services/viewer-state-persistence";
   import type { EffectType } from "$lib/shared/effects/domain/effects-config";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
@@ -153,6 +170,74 @@
     children,
   }: Props = $props();
 
+  // ── URL state session ────────────────────────────────────────────────────
+  // One session per viewer mount. It decodes the inbound link into per-slice
+  // seeds, collects live captures from the stores below, and writes the merged
+  // snapshot back to the address bar (debounced), so a link always describes
+  // what is actually on screen. Slices whose seed differs from the visitor's
+  // own saved state mount view-only (`persist:false`) — looking at someone
+  // else's link never rewrites the visitor's disk.
+  //
+  // `vm` collision: `short-code-manager.ts` prints `vm=hsb` (a BROWSE view
+  // mode: props/hands, solo/combined, blue/red) onto physical QR cards, and
+  // `SequenceViewerPage` decodes it with `decodeViewMode`. That param name is
+  // locked by physical artifacts, so a `vm` that parses as one of those codes
+  // is not ours: it is never seeded from, never overwritten, and never removed.
+  // The cost is that a viewer opened from a printed card cannot also record its
+  // viewer mode in the URL — see the report note on renaming the codec's
+  // headline param if both are ever needed at once.
+  function foreignBrowseViewMode(params: URLSearchParams): string | null {
+    const raw = params.get("vm");
+    if (!raw || isValidViewerMode(raw)) return null;
+    return decodeViewMode(raw) ? raw : null;
+  }
+
+  const urlSessionParams = new URLSearchParams(
+    browser ? window.location.search : ""
+  );
+  const foreignViewModeParam = foreignBrowseViewMode(urlSessionParams);
+  if (foreignViewModeParam) urlSessionParams.delete("vm");
+
+  const urlSession = createViewerUrlSession(urlSessionParams, {
+    writeParams: (patch) =>
+      mutateCurrentUrl((url) => {
+        for (const name of patch.remove) {
+          if (name === "vm" && foreignViewModeParam) continue;
+          url.searchParams.delete(name);
+        }
+        for (const [name, value] of Object.entries(patch.set)) {
+          if (name === "vm" && foreignViewModeParam) continue;
+          url.searchParams.set(name, value);
+        }
+      }),
+  });
+
+  interface VwSlicePayload {
+    mode?: string;
+    split?: { leftPane: string; rightPane: string };
+  }
+
+  /**
+   * The `vw` payload shape, default-elided. Both sides of the own-link
+   * comparison go through this so a seed built from the visitor's own state is
+   * byte-identical to what their capture would produce.
+   */
+  function viewSlice(
+    mode: string,
+    split: { leftPane: string; rightPane: string }
+  ): VwSlicePayload | null {
+    const atDefaultMode = mode === "split";
+    const atDefaultSplit =
+      split.leftPane === "animation" && split.rightPane === "card";
+    if (atDefaultMode && atDefaultSplit) return null;
+    return {
+      ...(atDefaultMode ? {} : { mode }),
+      ...(atDefaultSplit
+        ? {}
+        : { split: { leftPane: split.leftPane, rightPane: split.rightPane } }),
+    };
+  }
+
   const modalAnimationState = createAnimationPanelState();
   modalAnimationState.setPlaybackMode(initialPlaybackMode);
 
@@ -215,11 +300,34 @@
     playback.setOnUrlParamChange(onUrlParamChange);
   });
 
-  const viewerState = createViewerState();
+  const vwSeed = urlSession.getSeed("vw") as VwSlicePayload | null;
+  // Own-link rule: a link that matches what this visitor's own disk would load
+  // is not an override, so their viewer keeps persisting normally.
+  const vwIsOverride = urlSession.isOverride(
+    "vw",
+    viewSlice(
+      loadViewerMode({ persist: false }),
+      loadSplitConfig({ persist: false })
+    )
+  );
+  const viewerState = createViewerState({
+    initialMode: vwSeed?.mode as ViewerMode | undefined,
+    initialSplit: vwSeed?.split as SplitConfig | undefined,
+    persist: !vwIsOverride,
+  });
+  // Precedence: an explicit open option beats the URL, which beats localStorage.
+  // A programmatic open (`openSequenceOverlay({ initialViewerMode })`, the scan
+  // funnel's card-first boot) is a deliberate app action, so it lands last.
   if (initialViewerMode) {
     viewerState.setViewerMode(initialViewerMode);
     viewerState.setExportContext(null);
   }
+  // The capture reads the EFFECTIVE (viewport-coerced) mode and split, so a
+  // link records the surface the sender was actually looking at — a 3D pane
+  // coerced to 2D on a small screen shares as 2D.
+  urlSession.registerSlice("vw", () =>
+    viewSlice(viewerState.viewerMode, viewerState.splitConfig)
+  );
   // playOnOpen means "open already moving" - it does NOT choose a surface.
   // It used to call enterExport("animation-export", "animation"), which both
   // forced 2D and PERSISTED it, so one open from Create or from a scanned
@@ -385,8 +493,28 @@
   const viewerVisibility = propVisibility.viewerVisibility;
   setViewerVisibilityContext(viewerVisibility);
 
-  const effectsConfigState = createEffectsConfigState();
+  // A link's effects seed a view-only store when it differs from what this
+  // visitor's own saved config would boot with. The comparison happens in slice
+  // space (both sides through `captureFxSlice`) so an own-link round trip is
+  // recognised and keeps persisting. This one instance is the context every
+  // viewer surface reads — ViewerSplitPane, EffectsSettingsPanel and
+  // EffectOrchestrator3D all inherit it, so nothing downstream can construct a
+  // persist:true store while a link override is live.
+  const fxSeedPayload = urlSession.getSeed("fx") as FxSlicePayload | null;
+  const persistedEffectsConfig = loadPersistedEffectsConfig();
+  const persistedFxSlice = persistedEffectsConfig
+    ? captureFxSlice(
+        createEffectsConfigState(persistedEffectsConfig, { persist: false })
+      )
+    : null;
+  const effectsConfigState =
+    fxSeedPayload && urlSession.isOverride("fx", persistedFxSlice)
+      ? createEffectsConfigState(seedFromFxSlice(fxSeedPayload), {
+          persist: false,
+        })
+      : createEffectsConfigState();
   setEffectsConfigContext(effectsConfigState);
+  urlSession.registerSlice("fx", () => captureFxSlice(effectsConfigState));
   // Activate a requested effect on mount (QR scan page asks for "trails").
   // setActiveEffect keeps tipEffectMap in sync so the renderer doesn't filter tips.
   if (initialActiveEffect)
@@ -487,7 +615,16 @@
     if (!deferInteractiveStartup) interactive.ensureInteractiveServices();
   });
 
+  // Live sync. `captureNow()` reads every registered slice's reactive state, so
+  // this effect re-runs whenever any of them changes; the session owns the
+  // debounce, and `mutateCurrentUrl` no-ops when nothing actually moved.
+  $effect(() => {
+    void urlSession.captureNow();
+    urlSession.scheduleUrlWrite();
+  });
+
   onDestroy(() => {
+    urlSession.dispose();
     interactive.clearAutoplayTimer();
     playback.stopPracticeIfActive();
     keydownCleanup?.();

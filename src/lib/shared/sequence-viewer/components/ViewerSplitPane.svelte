@@ -74,8 +74,13 @@
     onTunnelSaved,
   }: ViewerSplitPaneProps = $props();
 
-  // Both canvas renderers share one effects state. The orchestrator normally
-  // provides it; standalone shell consumers receive the same local fallback.
+  // Both canvas renderers share one effects state, inherited from the
+  // orchestrator — which is what makes a URL-seeded view-only (persist:false)
+  // effects store reach every surface instead of being shadowed here. All three
+  // shell hosts (drawer, /sequence route, /from/spiroanim) mount inside
+  // SequenceViewerOrchestrator, so the local fallback below is unreachable
+  // while a URL session is live. Never construct an effects store in this
+  // subtree without going through the context, or link state leaks to disk.
   const inheritedEffectsConfig = getEffectsConfigContext();
   const effectsConfigState =
     inheritedEffectsConfig ?? createEffectsConfigState();
