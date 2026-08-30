@@ -48,6 +48,7 @@ import { applyPendingTurnsToOption } from "$lib/shared/create/services/apply-tur
 import { propagateOrientationsForColor } from "$lib/shared/create/services/orientation-propagation";
 import { convertToStep } from "$lib/features/create/generate/shared/services/step-converter";
 import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
 
 /** One step as SpiroAnim transcribed it. */
@@ -248,7 +249,10 @@ export async function resolveCell(
   if (!rows || rows.length === 0) return null;
 
   const built = createSequenceData({
-    name: entry.word,
+    // `word` stays the full expanded string the hydrator derives; `name` is the
+    // display/save field, so it carries the smallest form of a repeating word
+    // (every cell in this catalogue repeats by construction).
+    name: simplifyRepeatedWord(entry.word),
     steps: buildSteps(entry, rows),
     gridMode: rows[0]!.gridMode,
     metadata: {
