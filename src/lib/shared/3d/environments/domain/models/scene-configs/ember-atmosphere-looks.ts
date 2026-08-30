@@ -81,14 +81,19 @@ export interface EmberAtmosphereLookPreset {
   label: string;
   sky: SkyGradientConfig;
   fog: FogConfig;
-  lavaRivers: Pick<
-    LavaRiversConfig,
-    | "baseColor"
-    | "hotColor"
-    | "crustColor"
-    | "flowSpeed"
-    | "warpIntensity"
-    | "crustCoverage"
+  lavaRivers: Required<
+    Pick<
+      LavaRiversConfig,
+      | "baseColor"
+      | "hotColor"
+      | "crustColor"
+      | "leveeColor"
+      | "flowSpeed"
+      | "warpIntensity"
+      | "crustCoverage"
+      | "edgeCooling"
+      | "bankRadiance"
+    >
   >;
   volcanicHaze: VolcanicHazeConfig;
   embers: FallingParticlesConfig;
@@ -117,9 +122,12 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
     baseColor: "#e33a05",
     hotColor: "#ffd05b",
     crustColor: "#070303",
+    leveeColor: "#231512",
     flowSpeed: 0.06,
     warpIntensity: 0.68,
     crustCoverage: 0.46,
+    edgeCooling: 0.34,
+    bankRadiance: 0.5,
   },
   volcanicHaze: {
     enabled: true,
@@ -328,7 +336,10 @@ const FURNACE_STORM: EmberAtmosphereLookPreset = {
     ...BLACKGLASS_INFERNO.lavaRivers,
     baseColor: "#e74306",
     hotColor: "#ffd057",
+    leveeColor: "#2b1710",
     crustCoverage: 0.58,
+    edgeCooling: 0.29,
+    bankRadiance: 0.62,
   },
   volcanicHaze: {
     ...BLACKGLASS_INFERNO.volcanicHaze,
@@ -419,7 +430,10 @@ const SULFUR_CALDERA: EmberAtmosphereLookPreset = {
     baseColor: "#bd3704",
     hotColor: "#ffd65a",
     crustColor: "#0b0904",
+    leveeColor: "#2a2314",
     crustCoverage: 0.7,
+    edgeCooling: 0.42,
+    bankRadiance: 0.34,
   },
   volcanicHaze: {
     ...BLACKGLASS_INFERNO.volcanicHaze,
