@@ -1217,6 +1217,8 @@
         barrierCells: barrier?.occupiedCellCount ?? 0,
         spawnGroundY,
         eyeHeightMeters: EYE_HEIGHT,
+        sampleGroundY: (x: number, z: number) =>
+          sampleFlowFestTerrainWorldY(loadedTerrain, x, z),
       };
       (globalThis as Record<string, unknown>).__flowFestGate2 = {
         status: "ready",
