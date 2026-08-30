@@ -146,5 +146,6 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   stage: false, // Stage choreography - multi-performer formation locomotion (unreleased)
   mandala: false, // Mandala creation, collection, meditation, export (unreleased)
   lab: false, // Experimental features lab (admin-only) - consolidates skewlab, poi-lab, background-builder, landing-preview, ml-training
+  toys: false, // Toys - user-facing interactive toys (first toy: Shape Matrix; unreleased)
   shop: true, // Shop - plain link-out to /shop (Choreo Cards store)
 };

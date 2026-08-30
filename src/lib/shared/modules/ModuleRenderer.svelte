@@ -204,6 +204,8 @@
     "landing-preview": () => import("../../features/lab/LabModule.svelte"),
     // Stage module - multi-performer formation locomotion
     stage: () => import("../../features/stage/StageModule.svelte"),
+    // Toys module - user-facing interactive toys (first toy: Shape Matrix)
+    toys: () => import("../../features/toys/ToysModule.svelte"),
     // REMOVED: Standalone 3D modules (now accessible via Realm destinations)
     // gallery3d → Removed, use Realm → Gallery destination
     // infinite-worlds → Removed, use Realm → Worlds destination

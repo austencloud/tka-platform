@@ -26,6 +26,7 @@ import {
   VIDEO_TABS,
   SOCIAL_TABS,
   STAGE_TABS,
+  TOYS_TABS,
 } from "./tab-definitions";
 
 /**
@@ -205,6 +206,17 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Practice with real-time scoring",
     isMain: true,
     sections: TRAIN_TABS,
+  },
+  {
+    id: "toys",
+    labelKey: "module_toys",
+    descKey: "module_desc_toys",
+    label: "Toys",
+    icon: '<i class="fas fa-shapes" style="color: #2dd4bf;" aria-hidden="true"></i>',
+    color: "#2dd4bf", // Teal - playful exploration
+    description: "Interactive toys for exploring flow arts ideas",
+    isMain: true,
+    sections: TOYS_TABS,
   },
   {
     id: "shop",
