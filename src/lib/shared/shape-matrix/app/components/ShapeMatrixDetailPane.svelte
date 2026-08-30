@@ -21,7 +21,8 @@
     class={driver === "hands" ? "fas fa-hands" : "fas fa-wand-magic-sparkles"}
     aria-hidden="true"
   ></i>
-  <span>{driver === "hands" ? "Hand path" : "Prop motion"}</span>
+  <span class="driver-full">{driver === "hands" ? "Hand path" : "Prop motion"}</span>
+  <span class="driver-short">{driver === "hands" ? "Hands" : "Props"}</span>
 {/snippet}
 
 <aside class="detail-pane" aria-label="Shape realization">
@@ -115,6 +116,10 @@
     min-height: 3.5rem;
     padding: 0.35rem 0.75rem;
     border-bottom: 1px solid var(--theme-stroke, rgb(255 255 255 / 0.1));
+    /* The heading measures itself: the split-view divider can make this pane
+       narrower than any app-level band, and the driver labels must swap to
+       their short forms before they would wrap to two lines. */
+    container: shape-matrix-detail-heading / inline-size;
   }
 
   .heading-title {
@@ -140,6 +145,25 @@
     font-weight: 600;
     letter-spacing: 0.015em;
     white-space: nowrap;
+  }
+
+  .driver-full,
+  .driver-short {
+    white-space: nowrap;
+  }
+
+  .driver-short {
+    display: none;
+  }
+
+  @container shape-matrix-detail-heading (max-width: 34rem) {
+    .driver-full {
+      display: none;
+    }
+
+    .driver-short {
+      display: inline;
+    }
   }
 
   .eyebrow {
@@ -226,10 +250,6 @@
     .pane-heading {
       min-height: 3.4rem;
       padding-block: 0.3rem;
-    }
-
-    .driver-control {
-      width: min(16rem, 58%);
     }
 
     .drill-stage {

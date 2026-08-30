@@ -22,6 +22,8 @@ interface Particle {
   /** Per-particle twinkle rate (rad/s). Varied so the field scintillates
    *  incoherently instead of every glint pulsing on the same beat. */
   twinkleFreq: number;
+  /** Emitter this particle was thrown from. Drives the parked-tip ceiling. */
+  tip: string;
 }
 
 /** Hard ceiling on particle count for perf safety. The live cap is rate-scaled. */
@@ -78,6 +80,31 @@ const DRAG_PER_SEC = 2.6;
  * keeps the heavy presets (Starfall, Confetti) falling at their previous rate.
  */
 const GRAVITY_PX_PER_UNIT = 420;
+
+/**
+ * Tip speed (px/s at reference scale) at or below which an emitter counts as
+ * parked, and the speed at which it earns the full pool share. Between the two
+ * the allowance ramps, so a slow prop doesn't pop between densities.
+ */
+const IDLE_TIP_SPEED = 8;
+const MOVING_TIP_SPEED = 150;
+/**
+ * Live particles a parked emitter may hold. Sparks come off a prop that is
+ * being swung; a motionless tip must not keep filling the shared pool. Without
+ * this ceiling the stationary pre-roll before playback starts (~1s in the
+ * sequence viewer) saturates the pool with particles born at the start pose,
+ * and they hang there as one clump for a full lifetime after the props swing
+ * away — starving the real spray at the tips until the clump finally dies.
+ * A parked tip keeps a small shimmer, so a paused prop still shows the effect.
+ */
+const IDLE_TIP_PARTICLES = 12;
+/**
+ * Ceiling on inferred tip speed (px/s at reference scale). Mirrors
+ * FireTipTracker's MAX_SPEED: past this the displacement is a teleport — a
+ * canvas resize, a sequence swap, a dropped-frame catch-up — not a swing, and
+ * inheriting it would launch the frame's whole spawn off the prop as one clump.
+ */
+const MAX_TIP_SPEED = 5000;
 
 /** Rainbow mode: degrees of hue drift per second. */
 const RAINBOW_DRIFT_DEG_PER_SEC = 45;
@@ -137,6 +164,9 @@ export class Sparkles2DRenderer {
   private particles: Particle[] = [];
   private lastTipPos = new Map<string, { x: number; y: number }>();
   private spriteCache = new Map<string, Offscreen>();
+  /** Live particle count per emitter, rebuilt each frame during the cull pass
+   *  and read by the next frame's spawn to enforce the parked-tip ceiling. */
+  private liveByTip = new Map<string, number>();
   private spritesUnavailable = false;
   /** Frame-accumulated seconds. Drives rainbow drift; never wall-clock. */
   private clock = 0;
@@ -172,7 +202,7 @@ export class Sparkles2DRenderer {
       const id = emitterId(e.propIndex, e.tipIndex);
       seen.add(id);
       const last = this.lastTipPos.get(id);
-      this.spawnFromTip(params, e, last, dt, perTipCap, scale);
+      this.spawnFromTip(params, id, e, last, dt, perTipCap, scale);
       if (last) { last.x = e.x; last.y = e.y; } else { this.lastTipPos.set(id, { x: e.x, y: e.y }); }
     }
     // Prune per-tip state for emitters absent this frame (a layer toggled off
@@ -183,6 +213,7 @@ export class Sparkles2DRenderer {
     const gravityPx = params.gravity * GRAVITY_PX_PER_UNIT * scale;
     // Exponential decay, evaluated once per frame rather than per particle.
     const damp = Math.exp(-DRAG_PER_SEC * dt);
+    this.liveByTip.clear();
     let writeIdx = 0;
     for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i]!;
@@ -197,6 +228,7 @@ export class Sparkles2DRenderer {
       p.rotation += p.spinSpeed * dt;
       if (i !== writeIdx) this.particles[writeIdx] = p;
       writeIdx++;
+      this.liveByTip.set(p.tip, (this.liveByTip.get(p.tip) ?? 0) + 1);
     }
     this.particles.length = writeIdx;
 
@@ -320,12 +352,33 @@ export class Sparkles2DRenderer {
 
   private spawnFromTip(
     params: Sparkles2DParams,
+    id: string,
     tip: { x: number; y: number },
     last: { x: number; y: number } | undefined,
     dt: number,
     perTipCap: number,
     scale: number,
   ): void {
+    // Tip kinematics for this frame. One measurement, three consumers: the
+    // parked-tip ceiling below, the ejection cone, and inherited momentum.
+    // Speed past MAX_TIP_SPEED is a teleport, not a swing — clamp it rather
+    // than throwing the frame's whole spawn off the prop.
+    let vxTip = 0;
+    let vyTip = 0;
+    let tipSpeed = 0;
+    if (last && dt > 0) {
+      vxTip = (tip.x - last.x) / dt;
+      vyTip = (tip.y - last.y) / dt;
+      tipSpeed = Math.sqrt(vxTip * vxTip + vyTip * vyTip);
+      const maxSpeed = MAX_TIP_SPEED * scale;
+      if (tipSpeed > maxSpeed) {
+        const k = maxSpeed / tipSpeed;
+        vxTip *= k;
+        vyTip *= k;
+        tipSpeed = maxSpeed;
+      }
+    }
+
     // Base count: rate × SPAWN_DENSITY spawns/s, normalized via dt × 60 so a 60fps
     // tick spawns at the documented rate regardless of actual frame timing.
     const baseCount = Math.floor(params.rate * SPAWN_DENSITY * dt * 60);
@@ -351,6 +404,23 @@ export class Sparkles2DRenderer {
 
     // Clamp to this tip's fair share of the pool so other tips can spawn too.
     spawnCount = Math.max(0, Math.min(spawnCount, perTipCap));
+
+    // Parked-tip ceiling: how many live particles this emitter is allowed to
+    // hold at its current speed. A moving tip is limited only by its pool
+    // share; a motionless one keeps a shimmer and nothing more. See
+    // IDLE_TIP_PARTICLES for why the pool must not fill from a parked tip.
+    const refSpeed = scale > 0 ? tipSpeed / scale : tipSpeed;
+    const motion = Math.max(
+      0,
+      Math.min(
+        1,
+        (refSpeed - IDLE_TIP_SPEED) / (MOVING_TIP_SPEED - IDLE_TIP_SPEED),
+      ),
+    );
+    const ceiling =
+      IDLE_TIP_PARTICLES + (MAX_PARTICLES - IDLE_TIP_PARTICLES) * motion;
+    const liveHere = this.liveByTip.get(id) ?? 0;
+    spawnCount = Math.min(spawnCount, Math.floor(ceiling) - liveHere);
     if (spawnCount <= 0) return;
 
     // Ejection frame. Sparks leave a swung prop tangentially - they keep going
@@ -362,17 +432,12 @@ export class Sparkles2DRenderer {
     let cone = CONE_AT_REST;
     let inheritX = 0;
     let inheritY = 0;
-    if (last && dt > 0) {
-      const vxTip = (tip.x - last.x) / dt;
-      const vyTip = (tip.y - last.y) / dt;
-      const speed = Math.sqrt(vxTip * vxTip + vyTip * vyTip);
-      if (speed > 1e-3) {
-        travelAngle = Math.atan2(vyTip, vxTip);
-        const t = Math.min(1, speed / (REF_TIP_SPEED * scale));
-        cone = CONE_AT_REST + (CONE_AT_SPEED - CONE_AT_REST) * t;
-        inheritX = vxTip * VELOCITY_INHERIT;
-        inheritY = vyTip * VELOCITY_INHERIT;
-      }
+    if (tipSpeed > 1e-3) {
+      travelAngle = Math.atan2(vyTip, vxTip);
+      const t = Math.min(1, tipSpeed / (REF_TIP_SPEED * scale));
+      cone = CONE_AT_REST + (CONE_AT_SPEED - CONE_AT_REST) * t;
+      inheritX = vxTip * VELOCITY_INHERIT;
+      inheritY = vyTip * VELOCITY_INHERIT;
     }
 
     for (let i = 0; i < spawnCount; i++) {
@@ -418,6 +483,7 @@ export class Sparkles2DRenderer {
         spinSpeed: (Math.random() - 0.5) * 1.6,
         twinklePhase: Math.random() * Math.PI * 2,
         twinkleFreq: 14 + Math.random() * 14,
+        tip: id,
       });
     }
   }
@@ -447,6 +513,7 @@ export class Sparkles2DRenderer {
   dispose(): void {
     this.particles = [];
     this.lastTipPos.clear();
+    this.liveByTip.clear();
     this.spriteCache.clear();
     this.spritesUnavailable = false;
     this.clock = 0;
