@@ -18,6 +18,12 @@
     type FlowFestElectricUnicycleTerrainAttitude,
     type FlowFestStandardGamepadSample,
   } from "$lib/features/flow-fest-sim/domain/flow-fest-electric-unicycle";
+  import {
+    FLOW_FEST_EUC_CONTACT_THRESHOLDS,
+    FLOW_FEST_EUC_PEDAL_SEPARATION_METERS,
+    FLOW_FEST_EUC_PEDAL_SURFACE_HEIGHT_METERS,
+    type FlowFestEucMountedPoseDiagnostic,
+  } from "$lib/features/flow-fest-sim/domain/flow-fest-euc-mounted-pose";
   import { FlowFestElectricUnicycleDrive } from "$lib/features/flow-fest-sim/services/flow-fest-electric-unicycle-drive";
   import {
     mobilityDynamicsFromSnapshot,
@@ -193,6 +199,14 @@
       roughnessMeters: 0,
     });
   let electricUnicycleParkedBody: PhysicsBodyComponent | null = null;
+  let electricUnicycleLongitudinalAcceleration = $state(0);
+  /**
+   * Last mounted-pose report. Held outside `$state` on purpose: it lands every
+   * frame, and the runtime-proof surface samples it at its own throttle rather
+   * than re-rendering the scene sixty times a second for a diagnostic.
+   */
+  let electricUnicycleMountedPose: FlowFestEucMountedPoseDiagnostic | null =
+    null;
   let electricUnicycleGamepadConnected = $state(false);
   let electricUnicycleCollisionLimited = $state(false);
   let electricUnicycleTraversalDiagnostics = $state<{
@@ -832,8 +846,17 @@
         visible: update.mounted,
         owner: "@austencloud/scene-3d/Avatar3D",
         modelId: FLOW_FEST_EUC_CONFIG.riderAvatarId,
-        footHeightMeters: FLOW_FEST_EUC_CONFIG.riderPedalHeightMeters,
+        // The rider no longer hangs off a single root offset. Its feet are
+        // placed on the pedal anchors by the mounted-pose rig, so the honest
+        // report is the pedal surface plus the measured contact error below.
+        pedalSurfaceHeightMeters: FLOW_FEST_EUC_PEDAL_SURFACE_HEIGHT_METERS,
+        stanceWidthMeters: FLOW_FEST_EUC_PEDAL_SEPARATION_METERS,
+        contactPose: "flow-fest-euc-mounted-pose-rig",
       },
+      longitudinalAccelerationMetersPerSecondSquared:
+        electricUnicycleLongitudinalAcceleration,
+      mountedPose: update.mounted ? electricUnicycleMountedPose : null,
+      mountedPoseThresholds: FLOW_FEST_EUC_CONTACT_THRESHOLDS,
       config: FLOW_FEST_EUC_CONFIG,
     };
     props.onElectricUnicycleChange?.(update);
@@ -858,8 +881,16 @@
     }
     electricUnicycleInput = frame.input;
     electricUnicycleCollisionLimited = frame.collisionLimited;
+    electricUnicycleLongitudinalAcceleration =
+      frame.longitudinalAccelerationMetersPerSecondSquared;
     electricUnicycleTraversalDiagnostics = frame.traversal;
     emitElectricUnicycleUpdate();
+  }
+
+  function handleMountedPoseDiagnostic(
+    diagnostic: FlowFestEucMountedPoseDiagnostic
+  ): void {
+    electricUnicycleMountedPose = diagnostic;
   }
 
   function applyElectricUnicycleTraversalEnvelope(mounted: boolean): void {
@@ -1575,6 +1606,8 @@
     terrainAttitude={electricUnicycleTerrainAttitude}
     mounted={electricUnicycleMounted}
     lightsOn={props.electricUnicycleLightsOn ?? false}
+    longitudinalAccelerationMetersPerSecondSquared={electricUnicycleLongitudinalAcceleration}
+    onMountedPoseDiagnostic={handleMountedPoseDiagnostic}
   />
 {/if}
 

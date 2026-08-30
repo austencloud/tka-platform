@@ -18,6 +18,15 @@ export interface FlowFestElectricUnicycleDriveFrame {
   input: FlowFestElectricUnicycleInput;
   collisionLimited: boolean;
   traversal: FlowFestElectricUnicycleTraversalDiagnostics | null;
+  /**
+   * Longitudinal acceleration from the last simulation substep, m/s².
+   *
+   * The dynamics compute it every substep and the displacement consumed it,
+   * but nothing downstream could see it. The mounted rider pose needs it: how
+   * hard the wheel is pulling or braking is what decides whether the rider
+   * stands neutral, presses forward, or sits back.
+   */
+  longitudinalAccelerationMetersPerSecondSquared: number;
 }
 
 export interface FlowFestElectricUnicycleTraversalDiagnostics {
@@ -39,6 +48,7 @@ export class FlowFestElectricUnicycleDrive implements PhysicsProvider {
   private gamepad: FlowFestStandardGamepadSample | null = null;
   private dynamics: FlowFestElectricUnicycleDynamics;
   private pendingPlanarMovement = { x: 0, z: 0 };
+  private longitudinalAcceleration = 0;
   private lastTraversal: FlowFestElectricUnicycleTraversalDiagnostics | null =
     null;
   private lastInput: FlowFestElectricUnicycleInput = {
@@ -101,6 +111,7 @@ export class FlowFestElectricUnicycleDrive implements PhysicsProvider {
   ): void {
     this.clearPendingMovement();
     this.dynamics = createFlowFestElectricUnicycleDynamics(dynamics);
+    this.longitudinalAcceleration = 0;
     this.mounted = mounted;
     this.emitFrame(false);
   }
@@ -150,6 +161,8 @@ export class FlowFestElectricUnicycleDrive implements PhysicsProvider {
         substepSeconds
       );
       this.dynamics = step.state;
+      this.longitudinalAcceleration =
+        step.longitudinalAccelerationMetersPerSecondSquared;
       this.pendingPlanarMovement.x += step.displacement.x;
       this.pendingPlanarMovement.z += step.displacement.z;
       remainingSeconds -= substepSeconds;
@@ -258,6 +271,8 @@ export class FlowFestElectricUnicycleDrive implements PhysicsProvider {
       dynamics: { ...this.dynamics },
       input: { ...this.lastInput },
       collisionLimited,
+      longitudinalAccelerationMetersPerSecondSquared:
+        this.longitudinalAcceleration,
       traversal: this.lastTraversal
         ? {
             grounded: this.lastTraversal.grounded,
