@@ -214,6 +214,14 @@
     productionSliceProgress = fraction;
   }
 
+  // The fissure decals are flat planes baked at y 0.509 and 0.512, while the
+  // shelf surface that later gained its height detail spans y 0.454 to 0.554.
+  // Each plane is therefore buried under roughly half the surface and surfaces
+  // only along the contour where the two graze, which renders as the thin
+  // kinked bright slivers near the stage rather than as fissures. Re-cutting
+  // them belongs to the asset; until then they contribute only the artifact.
+  const BURIED_FISSURE_DECAL_ROLES = new Set(["cooled-fissure", "live-fissure"]);
+
   function handleProductionSliceReady(asset: Object3D): void {
     productionSliceAsset = asset;
     const treatments = activeConfig.atmosphere.materials;
@@ -227,6 +235,12 @@
       if (!mesh.isMesh || !mesh.material) return;
 
       const role = child.userData.tka_role as string | undefined;
+
+      if (role && BURIED_FISSURE_DECAL_ROLES.has(role)) {
+        child.visible = false;
+        return;
+      }
+
       mesh.receiveShadow = true;
       mesh.castShadow =
         shadowsEnabled &&
@@ -301,11 +315,13 @@
   });
 </script>
 
-<!-- Smoky volcanic sky -->
+<!-- Smoky volcanic sky, lifted along the caldera bearing so the ridgeline
+     reads as a silhouette instead of dissolving into a black upper frame. -->
 <SkyGradient
   topColor={activeConfig.sky.topColor}
   midColor={activeConfig.sky.midColor}
   bottomColor={activeConfig.sky.bottomColor}
+  horizonGlow={activeConfig.sky.horizonGlow}
 />
 
 <!-- Lava cracks overlay on ground -->
