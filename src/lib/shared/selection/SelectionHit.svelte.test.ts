@@ -27,8 +27,25 @@ describe("SelectionHit", () => {
       label: "Select the CAKE sequence",
       onselect,
     });
-    await page.getByRole("button", { name: "Select the CAKE sequence" }).click();
+    await page
+      .getByRole("button", { name: "Select the CAKE sequence" })
+      .click();
     expect(onselect).toHaveBeenCalledWith("seq-1");
+  });
+
+  it("renders navigation destinations as links", async () => {
+    render(Harness, {
+      withScope: true,
+      groupId: "G-0",
+      isGroupStart: true,
+      label: "Explore G variations",
+      href: "/glossary?board=atlas&letter=G#cat-letter",
+    });
+    const link = page.getByRole("link", { name: "Explore G variations" });
+    await expect
+      .element(link)
+      .toHaveAttribute("href", "/glossary?board=atlas&letter=G#cat-letter");
+    await expect.element(link).not.toHaveAttribute("aria-pressed");
   });
 
   it("marks non-start units pointer-only (not a tab stop, aria-hidden)", async () => {
