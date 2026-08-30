@@ -1,11 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 150">
   <!-- Picker tile: same anatomy and proportions as the prop art
        (static/images/props/pictograph/poi.svg), scaled to fill the tile. -->
-  <rect x="42.8" y="68.9" width="225.2" height="12.2" rx="6.1" fill="#2E3192"/>
-  <rect x="48" y="70.5" width="212" height="3.2" rx="1.6" fill="#FFFFFF" opacity=".2"/>
-  <circle cx="235.25" cy="75" r="8.6" fill="#2E3192" stroke="#202126" stroke-width="1.5"/>
-  <circle cx="268" cy="75" r="28.05" fill="#2E3192" stroke="#202126" stroke-width="1.7"/>
-  <circle cx="258.65" cy="65.6" r="8.2" fill="#FFFFFF" opacity=".34"/>
-  <path fill="#2E3192" fill-rule="evenodd" stroke="#202126" stroke-width="1.5"
-    d="M7.3 75a18.7 18.7 0 1 0 37.4 0a18.7 18.7 0 1 0-37.4 0ZM15.5 75a10.5 10.5 0 1 0 21 0a10.5 10.5 0 1 0-21 0Z"/>
+  <rect x="49.58" y="69.15" width="216.59" height="11.7" rx="5.85" fill="#2E3192"/>
+  <rect x="54.37" y="70.68" width="201.6" height="3.06" rx="1.53" fill="#FFFFFF" opacity=".2"/>
+  <circle cx="234.68" cy="75" r="8.28" fill="#2E3192" stroke="#202126" stroke-width="1.44"/>
+  <circle cx="266.18" cy="75" r="27" fill="#2E3192" stroke="#202126" stroke-width="1.62"/>
+  <circle cx="257.05" cy="66" r="7.92" fill="#FFFFFF" opacity=".34"/>
+  <path fill="#2E3192" stroke="#202126" stroke-width="1.44"
+    d="M35.34 58.31C41.7 61.7 48.07 65.82 52.57 67.8A7.2 7.2 0 0 1 52.57 82.2C48.07 84.18 41.7 88.3 35.34 91.69A18.9 18.9 0 1 1 35.34 58.31Z"/>
+  <circle cx="20.12" cy="68.65" r="5.54" fill="#FFFFFF" opacity=".34"/>
 </svg>

@@ -1,11 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288.67 38">
-  <!-- Poi. Anatomy matches Poi3D.svelte: finger loop at the grip, long tether,
-       swivel, weighted head. The grip is the viewBox center (144.335,19) and the
-       head CENTER sits 129.335 out from it - the club's reach - so poi produces
-       the same mandala and trail radius as every other regular prop. The head is
-       30 units across, ~10.7cm at the staff's 90cm = 252.8-unit scale, which is a
-       real poi head; the tether is 4x that, which is what makes the prop read as
-       poi rather than as a ball on a stick. -->
+  <!-- Poi: knob handle, tether, swivel, weighted head. The grip is the viewBox
+       centre (144.335,19) and the head CENTRE sits 129.335 out from it - the
+       club's reach - so poi produces the same mandala and trail radius as every
+       other regular prop. The head is 30 units across, ~10.7cm at the staff's
+       90cm = 252.8-unit scale, which is a real poi head; the tether is 4x that,
+       which is what makes the prop read as poi rather than as a ball on a stick. -->
   <g data-poi-art="regular">
     <!-- Mirror reserve (invisible): keeps the geometric bbox symmetric about the
          grip, matching the unilateral-prop convention. -->
@@ -23,8 +22,13 @@
     <circle data-poi-part="head" cx="273.67" cy="19" r="15" fill="#2E3192" stroke="#202126" stroke-width=".9"/>
     <circle data-poi-detail="head-highlight" cx="268.6" cy="14" r="4.4" fill="#FFFFFF" opacity=".34"/>
 
-    <!-- finger loop (grip) centered on the handpoint. -->
-    <path data-poi-part="handle" fill="#2E3192" fill-rule="evenodd" stroke="#202126" stroke-width=".8"
-      d="M134.335 19a10 10 0 1 0 20 0a10 10 0 1 0-20 0ZM138.735 19a5.6 5.6 0 1 0 11.2 0a5.6 5.6 0 1 0-11.2 0Z"/>
+    <!-- knob handle: the bulb sits in the palm and the neck tapers to where the
+         tether threads through, which is the shape a real poi knob has (Home of
+         Poi Pro Knob, UltraPoi UltraKnob). It is 21 units across to the head's
+         30 - the same knob-to-head ratio as the real hardware - and its bulb is
+         centred just inside the handpoint so the mass reads as held, not hung. -->
+    <path data-poi-part="handle" fill="#2E3192" stroke="#202126" stroke-width=".8"
+      d="M145.43 9.73C148.96 11.61 152.5 13.9 155 15A4 4 0 0 1 155 23C152.5 24.1 148.96 26.39 145.43 28.27A10.5 10.5 0 1 1 145.43 9.73Z"/>
+    <circle data-poi-detail="handle-highlight" cx="136.97" cy="15.47" r="3.08" fill="#FFFFFF" opacity=".34"/>
   </g>
 </svg>
