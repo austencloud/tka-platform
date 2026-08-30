@@ -714,6 +714,7 @@
     }
     .grid-overview > .flow-p:nth-child(4),
     .grid-overview > .flow-p:nth-child(8) {
+      width: 100%;
       max-width: none;
       margin-inline: auto;
       text-align: center;

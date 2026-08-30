@@ -287,6 +287,9 @@
   }
   .topic-title {
     min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
   }
   /* The page title in the guide's signature calligraphic script (the same
      --guide-script the printed sheet uses for its title), so the crawl/flow
@@ -295,6 +298,7 @@
      so it reads on both the warm-white and dark columns. */
   .topic-hero h1 {
     margin: 0;
+    padding: 0;
     font-family: var(--guide-script, "Cormorant Garamond", Georgia, serif);
     font-weight: var(--guide-script-weight, 700);
     font-size: clamp(3rem, 6cqw, 4.4rem);
@@ -435,6 +439,9 @@
     }
     .topic-hero h1 {
       font-size: clamp(2.8rem, 15cqw, 3.6rem);
+    }
+    .topic-title {
+      display: block;
     }
     .interactive-lesson-link {
       justify-self: center;
