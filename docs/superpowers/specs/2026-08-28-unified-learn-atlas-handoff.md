@@ -70,6 +70,17 @@ is [`active/2026-08-28-unified-learn-atlas-design.md`](active/2026-08-28-unified
   to preserve every concept name, and a compact reference card for places such
   as 1.4 that do not have an honest visual preview. It no longer stretches
   controls or empty detail surfaces across the available width.
+- Level 1.6 Orientations is connected in `c211be2814` as a reference-only place.
+  It links to the existing Staff Positions Guide section with explicit partial
+  coverage, while leaving lessons, practice, exploration, and Composer handoffs
+  empty until those capabilities have truthful focused owners. The legacy Staff
+  lesson is not presented as the 1.6 lesson because it also teaches prospin,
+  antispin, and a quiz.
+- Focused verification for `c211be2814` passed 13/13 registry and experience
+  tests. Live `?place=1.6` checks covered 375x667, 960x412, 820x1180,
+  1440x900, 1920x1080, 2560x1440, and 3840x2160. Every viewport kept a 16px
+  root and zero page-width overflow; the route exposed the partial Guide action
+  without stretched or clipped controls, and the console reported no errors.
 - Verification for `8cd3cfa4b1` is green after rebasing onto the then-current
   `main`: `svelte-check` reported 0 errors and 0 warnings, and the focused
   concept-place suites passed 11/11 tests. Live checks covered 375x667,
@@ -88,8 +99,8 @@ is [`active/2026-08-28-unified-learn-atlas-design.md`](active/2026-08-28-unified
 
 ## In flight
 
-- No implementation is in flight. The verified landing polish commit
-  `8cd3cfa4b1` was fast-forwarded into `main` on 2026-08-28.
+- No implementation is in flight. The verified 1.6 reference-only connection
+  `c211be2814` was fast-forwarded into `main` on 2026-08-30.
 - The task-owned 5188 preview was stopped and its Chrome DevTools tab was
   closed after the final rebase check.
 
@@ -97,9 +108,10 @@ is [`active/2026-08-28-unified-learn-atlas-design.md`](active/2026-08-28-unified
 
 1. Have Austen physically test the landing route and the existing 1.1, 1.2,
    1.3, 1.4, and 1.5 lessons before changing any status to `CONFIRMED`.
-2. Connect 1.6, 1.7, and 1.8 one at a time through the same registry and route
+2. Connect 1.7 and 1.8 one at a time through the same registry and route
    contract. Each needs a real lesson/reference owner or an honest map-only
-   state.
+   state. Keep 1.6 reference-only until a focused orientation lesson is built
+   and approved.
 3. Add higher-level Atlas navigation only when the official knowledge graph and
    available resources can support a useful destination without pretending the
    material is taught.
