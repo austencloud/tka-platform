@@ -67,10 +67,12 @@
   .bands {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 1rem;
 
     --abox-gap: 0.4rem;
     --codex-flow-justify: center;
+    --settings-codex-row-caption-gap: 0.75rem;
+    --codex-flow-row-gap: var(--settings-codex-row-caption-gap);
 
     /* Five rows of cells at desktop: Type 1 uses one row for A-L and one for
        M-V, Types 2 and 3 are one each, and the short types share one.
@@ -90,6 +92,14 @@
     min-width: 0;
   }
 
+  /* A wrapped row begins with its position transition, not with another
+     pictograph. Give that caption a deliberate break from the rule above it so
+     it reads as the next row's header. Type 1 uses two flows to preserve its
+     position lands, so it needs the same break between those flows. */
+  .band > :global(.flow + .flow) {
+    margin-top: var(--settings-codex-row-caption-gap);
+  }
+
   .minor-row {
     display: flex;
     flex-wrap: wrap;
@@ -106,9 +116,7 @@
     .board-atlas {
       --settings-codex-atlas-wide: min(88vw, 3400px);
       width: var(--settings-codex-atlas-wide);
-      margin-inline: calc(
-        (100% - var(--settings-codex-atlas-wide)) / 2
-      );
+      margin-inline: calc((100% - var(--settings-codex-atlas-wide)) / 2);
     }
   }
 
