@@ -931,6 +931,19 @@
     width: 100%;
     height: auto;
   }
+  /* The shared Tunnel pane is a transparent companion over AnimatorCanvas. Its
+     art body deliberately ignores input so canvas gestures still reach the
+     persistent animator, but the mobile settings dock is a real control surface
+     and must opt back in. Keep it one compact transport row above the animator's
+     playback bar so the two interactive rows never paint on top of each other. */
+  .art-pane.shared-tunnel-canvas.dock-mode .art-settings-host {
+    --settings-viewer-transport-offset: calc(
+      var(--min-touch-target, 44px) + 17px
+    );
+
+    margin-block-end: var(--settings-viewer-transport-offset);
+    pointer-events: auto;
+  }
   .art-body {
     position: relative;
     flex: 1 1 auto;
