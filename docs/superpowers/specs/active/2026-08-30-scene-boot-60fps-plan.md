@@ -20,7 +20,8 @@ Worktree: `E:/worktrees/tka-platform/scene-boot-60fps` — ALL work happens here
       a component init (one is a `<script module>` block, two are plain class
       constructors), so the owner splits geometry decoders (safe anywhere) from
       the texture decoder (component-init only)
-- [ ] Phase 7 — unit tests + contract test + `npm run check` green
+- [x] Phase 7 — unit tests + contract test + `npm run check` green
+      (18 new assertions; `svelte-check found 0 errors and 0 warnings`)
 
 ## Phase 1 — `src/lib/shared/3d/scene-boot/`
 
