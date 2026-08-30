@@ -121,6 +121,20 @@ const BASE_TIPS = toEmitters({
   redPosB: { x: 220, y: 100 },
 });
 
+/**
+ * A wide stationary emitter set. A parked tip is capped at a shimmer (see
+ * IDLE_TIP_PARTICLES), so measuring at-rest ejection statistics needs many
+ * tips rather than many frames from one.
+ */
+const MANY_PARKED_TIPS: EmitterTip[] = Array.from({ length: 20 }, (_, i) => ({
+  x: 50 + i * 20,
+  y: 50,
+  propIndex: i,
+  tipIndex: 0,
+  end: "A" as const,
+  color: "#fbbf24",
+}));
+
 /** Two base props + one tunnel layer (propIndex 2/3) to prove layer coverage. */
 const WITH_LAYER: EmitterTip[] = [
   ...BASE_TIPS,
@@ -140,19 +154,64 @@ describe("Sparkles2DRenderer simulation", () => {
     const r = new Sparkles2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({ rate: 1.0, lifetime: 5.0, mode: "stream" });
-    const tips = toEmitters({
-      bluePosA: { x: 0, y: 0 },
-      bluePosB: { x: 10, y: 0 },
-      redPosA: { x: 100, y: 0 },
-      redPosB: { x: 110, y: 0 },
-    });
-    for (let i = 0; i < 300; i++) r.render(ctx, params, tips, 1 / 60);
+    // Swinging tips: only a moving emitter is allowed to fill the pool, so a
+    // stationary fixture can no longer reach the cap this test bounds.
+    for (let i = 0; i < 300; i++) {
+      const x = 200 + 150 * Math.cos(i / 6);
+      const y = 200 + 150 * Math.sin(i / 6);
+      const tips = toEmitters({
+        bluePosA: { x, y },
+        bluePosB: { x: x + 10, y },
+        redPosA: { x: 400 - x, y },
+        redPosB: { x: 410 - x, y },
+      });
+      r.render(ctx, params, tips, 1 / 60);
+    }
     expect((r as any).particles.length).toBeLessThanOrEqual(1500);
     // 300 frames against a capped pool is ~3.6M spied draw calls, and vi.fn()
     // retains every argument list, so this sits near the 5s default and tips
     // over on a loaded runner. The renderer is not the cost, the recording is;
     // the frame count is the point of the test, so raise the bound instead.
   }, 30_000);
+
+  it("a parked tip cannot fill the pool, and spray resumes as soon as it moves", () => {
+    // The startup clump. The sequence viewer holds every prop at the start pose
+    // for about a second before playback begins; stream mode used to keep
+    // spawning at full rate into that frozen pose. The pool saturated with
+    // particles born at the start pose, the props then swung away and left them
+    // behind as one blob, and the real spray stayed starved until the blob aged
+    // out - "a few rotations" later.
+    const r = new Sparkles2DRenderer();
+    const ctx = makeCtx();
+    const params = makeParams({ rate: 1.0, lifetime: 5.0, mode: "stream" });
+    // 66 frames ~ the 1.1s stationary pre-roll measured in the viewer.
+    for (let i = 0; i < 66; i++) r.render(ctx, params, WITH_LAYER, 1 / 60);
+    const parked = (r as any).particles.length;
+    expect(parked).toBeGreaterThan(0); // a parked prop still shimmers
+    expect(parked).toBeLessThanOrEqual(WITH_LAYER.length * 12);
+
+    // Playback starts. The throttle lifts on the first moving frame.
+    const moved = WITH_LAYER.map((t) => ({ ...t, x: t.x + 20, y: t.y + 20 }));
+    r.render(ctx, params, moved, 1 / 60);
+    expect((r as any).particles.length).toBeGreaterThan(parked);
+  });
+
+  it("clamps inferred tip speed so a teleport does not launch a clump off the prop", () => {
+    // A canvas resize, sequence swap, or dropped-frame catch-up moves a tip
+    // hundreds of prop-lengths in one frame. That displacement is not a swing,
+    // and inheriting it would fling the whole frame's spawn off screen.
+    const r = new Sparkles2DRenderer();
+    const ctx = makeCtx();
+    const params = makeParams({ rate: 1.0, lifetime: 5.0, mode: "stream", gravity: 0 });
+    r.render(ctx, params, toEmitters({ bluePosA: { x: 0, y: 0 } }), 1 / 60);
+    r.render(ctx, params, toEmitters({ bluePosA: { x: 5000, y: 0 } }), 1 / 60);
+    const fastest = Math.max(
+      ...(r as any).particles.map((p: any) => Math.hypot(p.vx, p.vy)),
+    );
+    // Unclamped this frame implies 300,000 px/s; MAX_TIP_SPEED caps the
+    // inherited component at 5000 * 0.55.
+    expect(fastest).toBeLessThan(3500);
+  });
 
   it("spawns from tunnel layer emitters (propIndex >= 2)", () => {
     const rBase = new Sparkles2DRenderer();
@@ -284,8 +343,9 @@ describe("Sparkles2DRenderer draw", () => {
     // Solid mode jitters color per particle; quantized keys must collapse those
     // into a small bucket set instead of a sprite per particle.
     const params = makeParams({ colorMode: "solid", rate: 1.0, mode: "stream", lifetime: 5.0 });
-    const tips = toEmitters({ bluePosA: { x: 10, y: 10 } });
-    for (let i = 0; i < 10; i++) r.render(makeCtx(), params, tips, 1 / 60);
+    // Four parked tips: each is capped at a shimmer, so one tip no longer
+    // yields enough particles to prove sprites are shared between them.
+    for (let i = 0; i < 10; i++) r.render(makeCtx(), params, BASE_TIPS, 1 / 60);
     const particles = (r as any).particles.length;
     const sprites = (r as any).spriteCache.size;
     expect(particles).toBeGreaterThan(20);
@@ -349,8 +409,7 @@ describe("Sparkles2DRenderer ejection", () => {
     const r = new Sparkles2DRenderer();
     const params = makeParams({ rate: 1.0, mode: "stream", lifetime: 5.0, spread: 4, gravity: 0 });
     const ctx = makeCtx();
-    const tips = toEmitters({ bluePosA: { x: 50, y: 50 } });
-    for (let i = 0; i < 12; i++) r.render(ctx, params, tips, 1 / 60);
+    for (let i = 0; i < 12; i++) r.render(ctx, params, MANY_PARKED_TIPS, 1 / 60);
     const h = meanHeading(r);
     expect(h.n).toBeGreaterThan(20);
     // No lateral preference: with a full-circle cone the x components cancel.
