@@ -1,3 +1,5 @@
+import { BufferGeometry, IcosahedronGeometry } from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { childSeed, makeRng } from "$lib/shared/foundation/utils/seeded-rng";
 import { FLOW_FEST_MASTER_SEED } from "$lib/features/flow-fest-sim/domain/flow-fest-simulation-contract";
 import type { ImportedTerrainDataV2 } from "$lib/shared/3d/procedural-engine/generation/real-terrain-zone";
@@ -121,6 +123,295 @@ export const FLOW_FEST_PLANTFACTORY_TREE_FAMILIES = [
   "plantcatalog-habitat-snag",
 ] as const satisfies readonly FlowFestForestTreeFamilyId[];
 export const FLOW_FEST_PLANTFACTORY_ACCENT_COUNT = 34;
+
+/**
+ * Material-name tokens that mark a tree or ground-life material as living
+ * foliage rather than wood. Both spellings of leaf are required: every
+ * Flow Fest island-tree family ships its canopy as `<family>_leaves`, which
+ * does not contain the substring `leaf`.
+ */
+export const FLOW_FEST_FOREST_FOLIAGE_MATERIAL_TOKENS = [
+  "leaf",
+  "leaves",
+  "foliage",
+  "twig",
+  "frond",
+  "needle",
+  "canopy",
+  "blossom",
+  "petal",
+  "sedge",
+  "hazel",
+] as const;
+
+/**
+ * A tree material is foliage when its name says so, or when it is an
+ * alpha-cutout card. Every foliage material in the shipped Flow Fest tree
+ * families is authored as glTF `alphaMode: "MASK"`, which three.js loads as a
+ * positive `alphaTest`; wood, bark, and branch materials are opaque.
+ */
+export function isFlowFestForestFoliageMaterial(material: {
+  name?: string | null;
+  alphaTest?: number;
+}): boolean {
+  const name = (material.name ?? "").toLowerCase();
+  if (
+    FLOW_FEST_FOREST_FOLIAGE_MATERIAL_TOKENS.some((token) =>
+      name.includes(token)
+    )
+  ) {
+    return true;
+  }
+  return (material.alphaTest ?? 0) > 0;
+}
+
+export interface FlowFestDistanceTierMaterialLike {
+  name?: string | null;
+  alphaTest?: number;
+  transparent?: boolean;
+  depthWrite?: boolean;
+  map?: unknown;
+  alphaMap?: unknown;
+  roughness?: number;
+  needsUpdate?: boolean;
+}
+
+/**
+ * The mid and far tree tiers ship geometry only: `distance-lod/*.glb` carry no
+ * images and no `TEXCOORD_0`, so they borrow the near tier's materials. Those
+ * materials are textured, and the canopy material is an alpha-cutout leaf
+ * atlas. Sampling a texture with no UVs reads texel (0, 0) for every fragment,
+ * which in a leaf atlas is fully transparent — `alphaTest` then discards the
+ * entire canopy and every tree past the near radius renders as bare branches.
+ *
+ * A distance-tier material therefore drops its atlas and its cutout and renders
+ * as a solid mass in the moment's foliage or bark tint, which is what a tree
+ * reads as beyond the near radius anyway. Returns true when the material
+ * carried a texture or a cutout that had to go.
+ */
+export function flattenFlowFestDistanceTierMaterial(
+  material: FlowFestDistanceTierMaterialLike
+): boolean {
+  const carriedUvDependentShading =
+    material.map != null ||
+    material.alphaMap != null ||
+    (material.alphaTest ?? 0) > 0;
+  material.map = null;
+  material.alphaMap = null;
+  material.alphaTest = 0;
+  material.transparent = false;
+  material.depthWrite = true;
+  material.roughness = isFlowFestForestFoliageMaterial(material) ? 0.95 : 1;
+  material.needsUpdate = true;
+  return carriedUvDependentShading;
+}
+
+export interface FlowFestCanopyShellBounds {
+  min: { x: number; y: number; z: number };
+  max: { x: number; y: number; z: number };
+}
+
+export interface FlowFestCanopyShellOptions {
+  /** Number of merged lobes. More lobes read as a clumpier crown. */
+  lobes: number;
+  /** Icosahedron subdivision. 0 is 20 faces per lobe, 1 is 80. */
+  detail: number;
+}
+
+export const FLOW_FEST_CANOPY_SHELL_TIERS: Record<
+  "mid" | "far",
+  FlowFestCanopyShellOptions
+> = {
+  mid: { lobes: 5, detail: 1 },
+  far: { lobes: 3, detail: 0 },
+};
+
+/**
+ * Flattening the distance material stops the canopy being discarded, but it
+ * cannot put leaves back: the shipped `distance-lod/*.glb` simplification
+ * decimates a leaf atlas — thousands of disconnected two-triangle cards — down
+ * to a scatter of stray quads. Mid keeps roughly a fifth of the near tier's
+ * canopy triangles and none of its coverage, so a graded material paints a
+ * handful of specks and every tree past 55 m still reads bare.
+ *
+ * A distance canopy is a mass, not foliage. This builds that mass: a few
+ * merged, direction-perturbed ellipsoid lobes filling the leaf bounding box,
+ * with smooth ellipsoid normals so it shades as a soft crown instead of a
+ * faceted rock. It is both the correct read and far cheaper than the decimated
+ * cards it replaces (about 320 triangles at mid, 60 at far).
+ */
+export function buildFlowFestCanopyShellGeometry(
+  bounds: FlowFestCanopyShellBounds,
+  seedLabel: string,
+  options: FlowFestCanopyShellOptions
+): BufferGeometry {
+  const rng = makeRng(
+    childSeed(FLOW_FEST_MASTER_SEED, `canopy-shell-${seedLabel}`)
+  );
+  const lobeCount = Math.max(1, Math.round(options.lobes));
+  const lobes: BufferGeometry[] = [];
+
+  // Lobes are laid out in a unit cube and fitted to the real bounds at the end,
+  // so the crown can never overshoot the leaf envelope it replaces no matter
+  // how the seed lands.
+  for (let index = 0; index < lobeCount; index += 1) {
+    const lobe = new IcosahedronGeometry(1, Math.max(0, options.detail));
+    // Lobe 0 is the core; the rest ring around it so the silhouette breaks up.
+    const isCore = index === 0;
+    const angle =
+      ((index - 1) / Math.max(1, lobeCount - 1)) * Math.PI * 2 +
+      (rng() - 0.5) * 0.8;
+    const spread = isCore ? 0 : 0.2 + rng() * 0.1;
+    const radii = {
+      x: isCore ? 0.44 : 0.28 + rng() * 0.1,
+      y: isCore ? 0.42 : 0.26 + rng() * 0.12,
+      z: isCore ? 0.44 : 0.28 + rng() * 0.1,
+    };
+    const offset = {
+      x: Math.cos(angle) * spread,
+      y: isCore ? 0.02 : (rng() - 0.5) * 0.34,
+      z: Math.sin(angle) * spread,
+    };
+    const phase = rng() * Math.PI * 2;
+    const positions = lobe.attributes.position;
+    const normals = lobe.attributes.normal;
+
+    for (let vertex = 0; vertex < positions.count; vertex += 1) {
+      const ux = positions.getX(vertex);
+      const uy = positions.getY(vertex);
+      const uz = positions.getZ(vertex);
+      // Perturb by direction, never per vertex: the geometry is non-indexed, so
+      // the three copies of a shared corner must displace identically or the
+      // shell tears open.
+      const wobble =
+        1 +
+        0.21 * Math.sin(3 * Math.atan2(uz, ux) + phase) +
+        0.13 * Math.cos(4 * uy + phase * 0.7) +
+        0.08 * Math.sin(5 * Math.atan2(uy, ux) + phase * 1.9);
+      positions.setXYZ(
+        vertex,
+        offset.x + ux * radii.x * wobble,
+        offset.y + uy * radii.y * wobble,
+        offset.z + uz * radii.z * wobble
+      );
+      // Ellipsoid normal: gradient of x²/a² + y²/b² + z²/c², i.e. (u/a, v/b, w/c).
+      const nx = ux / radii.x;
+      const ny = uy / radii.y;
+      const nz = uz / radii.z;
+      const length = Math.hypot(nx, ny, nz) || 1;
+      normals.setXYZ(vertex, nx / length, ny / length, nz / length);
+    }
+    positions.needsUpdate = true;
+    normals.needsUpdate = true;
+    // The borrowed near-tier canopy material is an alpha-cutout atlas. A shell
+    // that kept UVs would be skipped by the distance-material flatten and get
+    // discarded exactly like the geometry it replaces.
+    lobe.deleteAttribute("uv");
+    lobes.push(lobe);
+  }
+
+  const merged = mergeGeometries(lobes, false);
+  for (const lobe of lobes) lobe.dispose();
+  if (!merged) {
+    throw new Error(`Flow Fest canopy shell failed to merge for ${seedLabel}`);
+  }
+  fitGeometryToBounds(merged, bounds, FLOW_FEST_CANOPY_SHELL_INSET);
+  merged.computeBoundingSphere();
+  merged.computeBoundingBox();
+  return merged;
+}
+
+/** Fraction of the leaf envelope the crown occupies; the rest lets branch tips through. */
+const FLOW_FEST_CANOPY_SHELL_INSET = 0.96;
+
+function fitGeometryToBounds(
+  geometry: BufferGeometry,
+  bounds: FlowFestCanopyShellBounds,
+  inset: number
+): void {
+  geometry.computeBoundingBox();
+  const box = geometry.boundingBox;
+  if (!box) return;
+  const positions = geometry.attributes.position;
+  const normals = geometry.attributes.normal;
+  const axes = ["x", "y", "z"] as const;
+  const scale = { x: 1, y: 1, z: 1 };
+  const shift = { x: 0, y: 0, z: 0 };
+
+  for (const axis of axes) {
+    const sourceSpan = Math.max(1e-6, box.max[axis] - box.min[axis]);
+    const targetSpan = (bounds.max[axis] - bounds.min[axis]) * inset;
+    scale[axis] = targetSpan / sourceSpan;
+    const sourceCenter = (box.min[axis] + box.max[axis]) / 2;
+    const targetCenter = (bounds.min[axis] + bounds.max[axis]) / 2;
+    shift[axis] = targetCenter - sourceCenter * scale[axis];
+  }
+
+  for (let vertex = 0; vertex < positions.count; vertex += 1) {
+    positions.setXYZ(
+      vertex,
+      positions.getX(vertex) * scale.x + shift.x,
+      positions.getY(vertex) * scale.y + shift.y,
+      positions.getZ(vertex) * scale.z + shift.z
+    );
+    // Normals transform by the inverse-transpose, which for a diagonal scale is
+    // a per-axis reciprocal. Skipping this flattens the shading on tall crowns.
+    const nx = normals.getX(vertex) / scale.x;
+    const ny = normals.getY(vertex) / scale.y;
+    const nz = normals.getZ(vertex) / scale.z;
+    const length = Math.hypot(nx, ny, nz) || 1;
+    normals.setXYZ(vertex, nx / length, ny / length, nz / length);
+  }
+  positions.needsUpdate = true;
+  normals.needsUpdate = true;
+}
+
+export type FlowFestForestEcologyAssetState = "pending" | "ready" | "failed";
+
+export interface FlowFestForestEcologyAssetEntry {
+  key: string;
+  url: string;
+  state: FlowFestForestEcologyAssetState;
+  message?: string | null;
+}
+
+export interface FlowFestForestEcologyAssetReport {
+  status: "loading" | "ready" | "failed";
+  expected: number;
+  ready: number;
+  pending: string[];
+  failed: Array<{ key: string; url: string; message: string }>;
+}
+
+/**
+ * Collapses the per-asset ledger into one honest status. A failed asset stays
+ * failed even while siblings are still loading, so an absent forest can never
+ * present itself as a scene that is merely slow.
+ */
+export function summarizeFlowFestForestEcologyAssets(
+  entries: readonly FlowFestForestEcologyAssetEntry[]
+): FlowFestForestEcologyAssetReport {
+  const failed = entries
+    .filter((entry) => entry.state === "failed")
+    .map((entry) => ({
+      key: entry.key,
+      url: entry.url,
+      message: entry.message ?? "Asset failed to load",
+    }));
+  const pending = entries
+    .filter((entry) => entry.state === "pending")
+    .map((entry) => entry.key);
+  const ready = entries.filter((entry) => entry.state === "ready").length;
+  return {
+    status:
+      failed.length > 0 ? "failed" : pending.length > 0 ? "loading" : "ready",
+    expected: entries.length,
+    ready,
+    pending,
+    failed,
+  };
+}
+
 export type FlowFestForestGrassTier = "base" | "medium" | "high";
 export type FlowFestForestGrassSpecies = "summer-sward" | "woodland-grass";
 export type FlowFestForestGroundLifeSpecies =
