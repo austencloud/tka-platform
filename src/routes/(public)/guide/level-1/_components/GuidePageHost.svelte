@@ -339,7 +339,7 @@
     border-radius: 999px;
     background: color-mix(in oklab, #647ff1 12%, transparent);
     color: color-mix(in oklab, var(--ink, #1a1a1a) 78%, #647ff1);
-    font-size: 0.85rem;
+    font-size: var(--font-size-min, 0.875rem);
     font-weight: 700;
     text-decoration: none;
     transition:
