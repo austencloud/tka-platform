@@ -879,6 +879,13 @@ git commit -m "feat(viewer): URL session wiring — view + effects slices seed a
 
 ---
 
+**Orchestrator decision after Task 5 (binding for Tasks 6+):** the viewer-mode
+headline param is **`pane`**, not `vm` — printed QR cards own `vm` as the browse
+view-mode code and cannot be re-parameterized (commit `486af01fc4` renamed the
+codec + tests and deleted the orchestrator's value-sniffing guard; the session
+never reads or writes `vm`). Anywhere a task snippet below says `vm` in a URL
+param or patch fixture, write `pane`.
+
 ### Task 6: Share/Copy carry the snapshot (captureNow, not the address bar)
 
 **Files:**
@@ -901,10 +908,10 @@ describe("share URL carries viewer state", () => {
       darkMode: false,
       fallbackUrl: "https://example.com/sequence/EHWE",
       buildUrl: () => "https://example.com/sequence/EHWE",
-      getStateParams: () => ({ set: { vm: "card", fx: "sparkles" }, remove: [] }),
+      getStateParams: () => ({ set: { pane: "card", fx: "sparkles" }, remove: [] }),
     });
     const url = new URL(details.url);
-    expect(url.searchParams.get("vm")).toBe("card");
+    expect(url.searchParams.get("pane")).toBe("card");
     expect(url.searchParams.get("fx")).toBe("sparkles");
   });
 });
