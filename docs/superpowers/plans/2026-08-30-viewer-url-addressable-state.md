@@ -480,7 +480,7 @@ git commit -m "feat(viewer): ViewerUrlSession — seeds, own-link rule, capture,
 
 Two small extensions of the owner (never a parallel serializer):
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { describe, it, expect } from "vitest";
@@ -513,12 +513,12 @@ describe("effects config snapshot", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run --config tests/config/vitest.config.ts src/lib/shared/effects/state/effects-config-state.snapshot.test.ts`
 Expected: FAIL — `snapshot is not a function` / export missing.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In the factory, add next to the existing methods (uses the same clone-fallback idiom as the undo capture at ~line 345):
 
@@ -548,12 +548,12 @@ export function loadPersistedEffectsConfig(): EffectsConfig | null {
 
 (If `loadStoredConfig` already normalizes internally, match whatever the persist:true constructor path actually does — the exported value must equal a persist:true instance's boot state. Read the constructor and mirror it exactly.)
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run --config tests/config/vitest.config.ts src/lib/shared/effects/state/effects-config-state.snapshot.test.ts`
 Expected: PASS (3 tests). Also run the store's existing tests if any exist — zero regressions.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(effects): snapshot() and loadPersistedEffectsConfig for URL state layer" -- src/lib/shared/effects/state/effects-config-state.svelte.ts src/lib/shared/effects/state/effects-config-state.snapshot.test.ts
@@ -966,7 +966,7 @@ Every Phase B task follows the same five steps: **(1) Discovery** — read the b
 
 - [x] Task 1 — codec
 - [x] Task 2 — session
-- [ ] Task 3 — effects snapshot/export
+- [x] Task 3 — effects snapshot/export
 - [ ] Task 4 — fx slice
 - [ ] Task 5 — view seam + wiring
 - [ ] Task 6 — share captureNow
