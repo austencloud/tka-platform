@@ -57,6 +57,8 @@
   - [ ] Lock the project identity, category, phase, Unreal status, and
         open-source claim
   - [x] Project elevator pitch (draft: EPIC-03-elevator-pitch.md) — 223 chars
+  - [x] Community contribution response
+        (draft: EPIC-05-community-contribution.md) — 448 chars
   - [ ] Complete an interview and source map for every prose response
   - [ ] Approve each response angle before drafting
   - [ ] Run AI-bust and voice comparison on every draft

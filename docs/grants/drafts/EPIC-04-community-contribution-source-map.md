@@ -99,5 +99,6 @@ Official license reference:
 
 ## Gate status
 
-Awaiting Austen's approval of the hybrid sharing boundary. No portal response
-has been drafted.
+The hybrid sharing boundary and exact portal response were approved by Austen
+on August 30, 2026. The final response is recorded in
+`EPIC-05-community-contribution.md`.
