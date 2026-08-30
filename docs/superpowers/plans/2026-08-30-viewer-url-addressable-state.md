@@ -894,7 +894,31 @@ param or patch fixture, write `pane`.
 - Modify: `src/lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte` (pass a `getStateParams` dependency)
 - Test: `src/lib/shared/sequence-viewer/services/viewer-orchestrator-model.share-state.test.ts`
 
-- [ ] **Step 1: Failing test**
+**Verification blocker (environment, not scoped to this task):** the shared
+`node_modules` every worktree symlinks to (`E:/tka-platform/node_modules`) has
+a broken pnpm store — `@acemir/cssom@0.9.31` is resolved in `pnpm-lock.yaml`
+but absent from `node_modules/.pnpm`, which breaks jsdom's require chain,
+which is the global `environment: "jsdom"` for every vitest file in this repo
+(`tests/config/vitest.config.ts`). `node_modules/.bin` is also empty, so
+`npx vitest`/`pnpm exec vitest` fail outright ("'vitest' is not recognized").
+Invoking vitest's `vitest.mjs` entry directly via `node` (bypassing `.bin`)
+reproduces the same `MODULE_NOT_FOUND` for `@acemir/cssom` on EVERY test
+file, including `viewer-url-state-codec.test.ts` (Task 1, previously
+passing) — confirmed twice, stable, not transient. This is a machine-wide
+regression that happened after Tasks 1–5 landed (their tests are marked
+passing in this plan), not something introduced by Task 6/7's changes. Fixing
+it requires `pnpm install` in the primary checkout, which is out of scope
+here (worktree-only mandate) — flagged separately as a background task.
+**Consequence:** Step 2's "run test to verify it fails" below DID execute
+successfully with real output (captured before the environment broke
+mid-session); Step 3's "verify it passes" + the module's other tests could
+NOT be executed. The implementation was verified by careful static/manual
+review instead (types match, both `buildUrl` and fallback paths converge on
+one `url` variable the patch is applied to, `getStateParams` threads through
+`ViewerShareInputs` → `buildViewerShareDetails` → the orchestrator's
+`urlSession.captureNowAsParams()`).
+
+- [x] **Step 1: Failing test**
 
 ```ts
 import { describe, it, expect } from "vitest";
@@ -917,7 +941,7 @@ describe("share URL carries viewer state", () => {
 });
 ```
 
-- [ ] **Step 2: Verify fail, implement**
+- [x] **Step 2: Verify fail, implement**
 
 `buildViewerShareDetails` gains optional `getStateParams?: () => ViewerUrlParamPatch`. After the existing `url = input.buildUrl(...)` (and also on the fallback path), apply the patch:
 
@@ -937,9 +961,9 @@ if (input.getStateParams) {
 
 `createViewerShareActions` inputs gain `getStateParams` and pass it through; the orchestrator supplies `() => urlSession.captureNowAsParams()`. This is the synchronous path — no debounce dependence; "the moment I copied" is literal.
 
-- [ ] **Step 3: Verify test passes, run the module's other tests** (`viewer-modes.test.ts` etc. still green).
+- [~] **Step 3: Verify test passes, run the module's other tests** (`viewer-modes.test.ts` etc. still green). NOT executed — vitest is non-functional repo-wide right now (see blocker note above). Implementation reviewed manually instead.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git commit -m "feat(viewer): share/copy links carry a synchronous full-state snapshot" -- src/lib/shared/sequence-viewer/services/viewer-share-actions.ts src/lib/shared/sequence-viewer/services/viewer-orchestrator-model.ts src/lib/shared/sequence-viewer/services/viewer-orchestrator-model.share-state.test.ts src/lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte
@@ -953,7 +977,7 @@ git commit -m "feat(viewer): share/copy links carry a synchronous full-state sna
 - Modify: `src/lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte.ts:177`
 - Test: extend `viewer-url-state-codec.test.ts` is wrong home — add assertion to any existing overlay-state test file (`Grep: sequence-viewer-overlay-state.test`); if none exists, this is covered by Task 8's integration check instead — do NOT build a new browser-test harness just for this line.
 
-- [ ] **Step 1: Implement**
+- [x] **Step 1: Implement**
 
 ```ts
 import { VIEWER_STATE_PARAM_NAMES } from "../services/viewer-url-state-codec";
@@ -963,7 +987,13 @@ removeCurrentUrlParams(["v", ...VIEWER_STATE_PARAM_NAMES], {
 });
 ```
 
-- [ ] **Step 2: Commit**
+No `sequence-viewer-overlay-state.test.ts` exists (grepped — none found), so
+per this task's own instruction no new browser-test harness was built; Task
+8's integration check covers it. Same vitest environment blocker as Task 6
+applies here too (see note above Task 6) — moot in this task's case since
+there was no existing test file to run regardless.
+
+- [x] **Step 2: Commit**
 
 ```bash
 git commit -m "fix(viewer): closing the drawer strips all viewer-state URL params" -- src/lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte.ts
@@ -1021,8 +1051,8 @@ Every Phase B task follows the same five steps: **(1) Discovery** — read the b
 - [x] Task 3 — effects snapshot/export
 - [x] Task 4 — fx slice
 - [x] Task 5 — view seam + wiring
-- [ ] Task 6 — share captureNow
-- [ ] Task 7 — close cleanup
+- [x] Task 6 — share captureNow (implemented + manually reviewed; vitest non-functional repo-wide, see note above Task 6)
+- [x] Task 7 — close cleanup
 - [ ] Task 8 — Phase A gate (orchestrator)
 - [ ] Task 9 — an slice
 - [ ] Task 10 — ex slice
