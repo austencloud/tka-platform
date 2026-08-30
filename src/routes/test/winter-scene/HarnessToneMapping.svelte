@@ -5,8 +5,7 @@
   const { renderer } = useThrelte();
 
   $effect(() => {
-    const gl = renderer.current;
-    if (!gl) return;
+    const gl = renderer;
     const previousMapping = gl.toneMapping;
     const previousExposure = gl.toneMappingExposure;
     gl.toneMapping = AgXToneMapping;
