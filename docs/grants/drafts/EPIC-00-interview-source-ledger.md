@@ -1,0 +1,122 @@
+# Epic MegaGrants Interview and Source Ledger
+
+This file preserves Austen's words and verified supporting facts before any
+application prose is drafted. It follows `docs/grants/AUTHORSHIP-GATES.md`.
+
+## Interview evidence
+
+### Funding outcome
+
+**Austen, August 30, 2026:**
+
+> Honestly if I could get four Rococo suits that'd be pretty fucking sick
+> because then I could actually get motion capture data for other things
+
+The product name is spelled Rokoko. Keep Austen's wording as interview evidence;
+do not silently turn "other things" into a grant claim. The interview must name
+those uses and connect them to the project before drafting.
+
+### Four-performer structure and capture purpose
+
+**Austen, August 30, 2026:**
+
+> I was imagining four performers being the logical cap with a 4 point grid in
+> the Kinetic alphabet creating tunnels that have four people
+
+> I do want movement on the floor to just be as naturalistic as possible and I
+> want to record new discoveries in digitized space
+
+Austen does not yet have four confirmed performers. He identified possible
+partner-prop collaborators and one nearby collaborator for repeat evening
+sessions, but their availability and suit sizes are unknown. Do not name or
+promise collaborators in an application until they agree to participate.
+
+The speech transcript appears to have rendered "poi" as "boy" twice. Confirm
+that interpretation before using the passage.
+
+### Multi-take formation capture
+
+**Austen, August 30, 2026:**
+
+> Technically the 4 person tunnel does not have to be built like that because
+> you could even have one suit that you take 4 takes of as long as they're on
+> the same VPN and reconstruct that exact tunnel experience probably so and
+> that's the case for a lot of choreography synchronized choreography just
+> needs to be doing the same thing on the same beat I don't see myself
+> currently having a need for more than 3 Yeah we can always take multiple
+> takes and kind of slice them on top of each other
+
+"VPN" appears to be a speech transcription of "BPM." Confirm that reading
+before quoting it in an application.
+
+This supersedes the assumption that a four-person finished formation requires
+four complete capture systems. Austen is comfortable building synchronized
+formations from separately recorded lanes, and he does not currently identify
+a need for more than three simultaneous performers. Do not inflate the
+equipment request to four suits merely because the resulting scene contains
+four avatars.
+
+Matching BPM is necessary but not sufficient for convincing reconstruction.
+Each pass also needs the same count-in or timecode, a repeatable calibration,
+a fixed world origin and facing, marked floor positions, and a consistent
+root-motion policy. Foot contacts and clip boundaries should be annotated so
+the passes can be aligned without foot sliding. Reference bodies or stand-ins
+are still needed when performers must react to, avoid, touch, or transfer
+weight with one another.
+
+For a tunnel that is spatially coordinated but does not depend on physical
+contact, one electronic system can record four distinct passes. Additional
+textile sizes would let different bodies contribute separate passes without
+duplicating the sensor electronics. A second or third system should be
+justified by partner interaction, simultaneous feedback, or capture throughput,
+not by avatar count.
+
+## Verified equipment facts
+
+- Rokoko lists the Creator Bundle at a temporary sale price of $2,495 through
+  September 25, 2026. It includes one Smartsuit Pro II and first-generation
+  Smartgloves. The listed regular bundle price is $4,090.
+- Four bundles would cost $9,980 at the listed sale price or $16,360 at the
+  listed regular price, before tax, shipping, replacement batteries, networking,
+  computers, storage, or cleanup labor.
+- Rokoko lists the Smartsuit Pro II by itself at $2,295. Four suits without
+  gloves would total $9,180 before tax and supporting equipment.
+- Rokoko Studio currently lists three simultaneous mocap actors across its
+  standard plans. Rokoko's support material warns that multi-actor clips do not
+  work properly above three actors and that Wi-Fi lag risk rises above three.
+- A fourth suit may still serve as a spare, another size, a separate capture
+  unit, or equipment for non-simultaneous sessions. It should not be presented
+  as a supported four-person synchronized capture setup.
+- Rokoko sizes its textiles using torso length, shoulder width, chest, waist,
+  hip, and inseam measurements. Straps permit a slight reduction and stretch
+  panels permit some additional room, but the system is not one-size-fits-all.
+- Rokoko sells additional textile-only shells. The electronics can be moved to
+  another textile when actors require different sizes. This may cover uncertain
+  casting more efficiently than buying complete electronic systems in every
+  size.
+- Rokoko recommends that the embedded sensors sit parallel to the corresponding
+  body segments and that the straps be tightened. Poor fit can move the sensors
+  away from the intended body segments and reduce the value of the capture.
+- A Smartsuit records the performer, not the independent path of a tethered poi.
+  Smartgloves and Coil Pro can improve absolute hand placement and two-handed
+  prop interaction, but exact poi-head trajectories require a separate prop
+  tracking method or an optical capture system.
+
+## Sources
+
+- https://www.rokoko.com/mocap/rokoko-creator-bundle
+- https://www.rokoko.com/pricing
+- https://support.rokoko.com/hc/en-us/articles/21598651434641-Coil-Pro-FAQs
+- https://support.rokoko.com/hc/en-us/articles/7235924355217-Rokoko-Studio-2-2-0
+- https://support.rokoko.com/hc/en-us/articles/14610265265297-Sizing-Chart-Smartsuit-Pro-II
+- https://support.rokoko.com/hc/en-us/articles/4410409192849-How-to-get-started-with-your-Smartsuit-Pro-II
+- https://www.rokoko.com/products/coil-pro
+
+## Unresolved interview questions
+
+- Does "same VPN" mean "same BPM" in Austen's latest interview answer?
+- Which body sizes must the first confirmed cast cover?
+- Which movement discoveries beyond the four-person tunnel should enter the
+  first capture library?
+- What motion library or playable milestone would be captured first?
+- Which request belongs in Epic MegaGrants, and which belongs in CAF?

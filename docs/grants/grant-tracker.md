@@ -46,24 +46,37 @@
 - **Notes:** Partners include Anthropic, Snap, Hyundai, MIT Media Lab, NASA JPL. Two-year grant (24 months). 3-5 projects selected. Prior tech experience not required. Program explicitly emphasizes process over finished work — "safe-to-fail rapid prototyping." Prefers projects producing "models, prototypes, data, code, or other material that can be shared broadly." Public demonstration strongly preferred. Via Submittable.
 
 ## [EPIC] Epic MegaGrants
-- **Status:** not-started
+- **Status:** drafting
 - **Deadline:** 2026-09-04
 - **Amount:** $5,000 to $150,000
 - **URL:** https://www.unrealengine.com/en-US/megagrants
 - **Framing:** UE5 narrative walking sim, solo developer, museum game
 - **Sections:**
-  - [ ] TBD — review application when window opens June 29
-- **Notes:** No IP transfer. No forced milestones. Solo devs welcome. Average grant $5K-$75K. Need UE5 prototype or concept materials by June.
+  - [ ] Add Name and Email Address to the Epic account profile, then capture
+        the current portal prompts and limits
+  - [ ] Complete an interview and source map for every prose response
+  - [ ] Approve each response angle before drafting
+  - [ ] Run AI-bust and voice comparison on every draft
+  - [ ] Assemble project media and supporting links
+  - [ ] Austen review and submission
+- **Notes:** Official 2026 Cycle 2 deadline is September 4 at 11:59 PM ET. Solo developers are eligible. The application portal is currently blocked because the signed-in Epic account reports that Name and Email Address are missing. The motion-capture request should begin with one complete system plus useful textile sizes and capture infrastructure. Separately recorded, time-aligned passes can reconstruct a four-avatar formation; a second or third complete system must be justified by partner interaction or capture throughput. Every prose response follows `docs/grants/AUTHORSHIP-GATES.md`.
 
 ## [ILCAF] Illinois Creative Accelerator Fund
-- **Status:** not-started
-- **Deadline:** 2026-10-15
+- **Status:** drafting
+- **Deadline:** 2026-10-14
 - **Amount:** $10,000
 - **URL:** https://arts.illinois.gov/granting-opportunities/grants-programs/creative-accelerator-fund.html
 - **Framing:** strengthening creative workforce, individual artist, Illinois-based
 - **Sections:**
-  - [ ] TBD — opens September 2026
-- **Notes:** Unrestricted $10K award. Straightforward state-level grant.
+  - [ ] Confirm applicant eligibility and residency documents
+  - [ ] Application narrative: art practice, Illinois community, and benefit
+  - [ ] Work Sample 1 created during 2024-2026
+  - [ ] Work Sample 1 description with completion date
+  - [ ] Work Sample 2 created during 2023 or earlier
+  - [ ] Work Sample 2 description with completion date
+  - [ ] Run AI-bust and voice comparison on every prose response
+  - [ ] Austen review and submission
+- **Notes:** Opens September 2, 2026. Deadline is October 14 at 11:59 PM CT. $10,000 taxable award. Selection order is randomized by region. Frame the application around performance, choreography, media art, and community-based art; software development is explicitly ineligible. Every prose response follows `docs/grants/AUTHORSHIP-GATES.md`.
 
 ## [ILAIF] Illinois Artist Fellowship
 - **Status:** not-started
@@ -91,6 +104,6 @@
 - [ ] Send follow-up email to existing grant contact about scope change
 - [ ] Start Creative Capital application (due April 2)
 - [ ] Start LACMA application (due April 22)
-- [ ] Prepare Epic MegaGrants materials by June
-- [ ] Apply Illinois Creative Accelerator in September
+- [ ] Complete Epic MegaGrants application by September 4
+- [ ] Complete Illinois Creative Accelerator application by October 14
 - [ ] Mark calendar for Chicago IAP January 2027
