@@ -64,6 +64,7 @@ describe("spiroanim bridge cell keys", () => {
       );
       expect(parsed!.shape).toBe(entry.shape);
       expect(parsed!.isAnti).toBe(entry.isAnti === true);
+      expect(parsed!.orientation).toBeNull();
       expect(parsed!.speedRatio).toBe(
         entry.concept === "8stp" ? "1:1" : (entry.speedRatio ?? "1:1")
       );
@@ -119,6 +120,43 @@ describe("spiroanim bridge cell keys", () => {
 
   it("ignores unknown trailing fields", () => {
     expect(parseCellKey("vtg.1-1.1x1.diamond.base.future-field")).not.toBeNull();
+  });
+
+  it("parses the orientation token on vtg/qtr keys", () => {
+    for (const orientation of [-90, -45, 0, 45, 90, 180]) {
+      const key = `vtg.1-1.1x1.diamond.base.o${orientation}`;
+      expect(parseCellKey(key)?.orientation, key).toBe(orientation);
+    }
+    expect(parseCellKey("qtr.3-4.1x3.diamond.base.o-90")?.orientation).toBe(-90);
+    // A key without the token carries no orientation — the resolver supplies
+    // SpiroAnim's default view, not the transcription baseline.
+    expect(parseCellKey("vtg.1-1.1x1.diamond.base")?.orientation).toBeNull();
+    // The `o` prefix identifies the token; its position among trailing fields
+    // does not matter.
+    expect(
+      parseCellKey("vtg.1-1.1x1.diamond.base.future-field.o90")?.orientation
+    ).toBe(90);
+  });
+
+  it("rejects an orientation token with a wrong coordinate", () => {
+    for (const bad of [
+      "vtg.1-1.1x1.diamond.base.o30",
+      "vtg.1-1.1x1.diamond.base.o-180",
+      "vtg.1-1.1x1.diamond.base.o360",
+      "vtg.1-1.1x1.diamond.base.o90.o180",
+    ]) {
+      expect(parseCellKey(bad), bad).toBeNull();
+    }
+  });
+
+  it("treats an orientation token on 8stp as a foreign field", () => {
+    // 8stp has no orientation axis; the token is ignored like any unknown
+    // trailing field, matching what already-deployed builds do with it.
+    const parsed = parseCellKey("8stp.1-aa.1x1.diamond.base.o90");
+    expect(parsed).not.toBeNull();
+    expect(parsed!.orientation).toBeNull();
+    // Even an off-axis value is a foreign field there, not a wrong coordinate.
+    expect(parseCellKey("8stp.1-aa.1x1.diamond.base.o30")).not.toBeNull();
   });
 
   it("formats 8stp without a speed-ratio axis", () => {
