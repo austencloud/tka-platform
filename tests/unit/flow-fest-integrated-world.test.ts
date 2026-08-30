@@ -4,10 +4,12 @@ import { describe, expect, it } from "vitest";
 import {
   auditFlowFestIntegratedJourney,
   createFlowFestIntegratedJourney,
+  FLOW_FEST_MAX_AREA_HISTORY_ENTRIES,
   identifyFlowFestIntegratedArea,
   observeFlowFestIntegratedArea,
   restoreFlowFestIntegratedJourney,
   setFlowFestIntegratedJourneyBranch,
+  type FlowFestIntegratedAreaId,
 } from "$lib/features/flow-fest-sim/domain/flow-fest-integrated-world";
 import { computeFlowFestSiteAudioMix } from "$lib/features/flow-fest-sim/domain/flow-fest-site-audio";
 import {
@@ -100,6 +102,56 @@ describe("Flow Fest Gate 5 integrated world", () => {
         FINGERPRINT
       )
     ).toBeNull();
+  });
+
+  it("caps the live area history to match the restore contract, keeping the most recent entries", () => {
+    const cycle: Exclude<FlowFestIntegratedAreaId, "transit">[] = [
+      "lower-gate",
+      "selected-camp",
+      "west-parking",
+      "festival",
+    ];
+    let state = createFlowFestIntegratedJourney(FINGERPRINT, "lower-tent");
+    const totalObservations = FLOW_FEST_MAX_AREA_HISTORY_ENTRIES + 36;
+    for (let index = 0; index < totalObservations; index += 1) {
+      state = observeFlowFestIntegratedArea(state, cycle[index % cycle.length]!);
+    }
+
+    expect(state.areaHistory).toHaveLength(FLOW_FEST_MAX_AREA_HISTORY_ENTRIES);
+    const expectedCurrent = cycle[(totalObservations - 1) % cycle.length]!;
+    expect(state.currentArea).toBe(expectedCurrent);
+    expect(state.areaHistory.at(-1)).toBe(expectedCurrent);
+    // The runtime cap and the restore contract's cap must agree, or a
+    // legitimately long journey gets trimmed live only to be discarded
+    // wholesale on the next load.
+    expect(restoreFlowFestIntegratedJourney(state, FINGERPRINT)).toEqual(state);
+  });
+
+  it("rejects a restored snapshot whose landmark currentArea is not the most recent history entry", () => {
+    let state = createFlowFestIntegratedJourney(FINGERPRINT, "lower-tent");
+    state = observeFlowFestIntegratedArea(state, "lower-gate");
+    state = observeFlowFestIntegratedArea(state, "selected-camp");
+
+    const inconsistent = { ...state, currentArea: "festival" as const };
+    expect(
+      restoreFlowFestIntegratedJourney(inconsistent, FINGERPRINT)
+    ).toBeNull();
+  });
+
+  it("normalizes a restored snapshot's missing branch to null instead of leaving it undefined", () => {
+    let state = createFlowFestIntegratedJourney(FINGERPRINT);
+    state = observeFlowFestIntegratedArea(state, "lower-gate");
+    const { branch: _branch, ...withoutBranch } = state;
+
+    const restored = restoreFlowFestIntegratedJourney(
+      withoutBranch,
+      FINGERPRINT
+    );
+    expect(restored).not.toBeNull();
+    expect(restored?.branch).toBeNull();
+    expect(
+      Object.prototype.hasOwnProperty.call(restored, "branch")
+    ).toBe(true);
   });
 
   it("crossfades one site mix from arrival to camp to the fire circle", () => {

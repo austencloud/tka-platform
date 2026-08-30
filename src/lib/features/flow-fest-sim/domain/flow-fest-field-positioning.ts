@@ -1,6 +1,10 @@
 export const FLOW_FEST_FIELD_POSITIONING_VERSION = 1 as const;
 export const FLOW_FEST_GNSS_MAX_ACCURACY_METERS = 18;
 export const FLOW_FEST_GNSS_STALE_AFTER_MILLISECONDS = 6_000;
+// Phone/device clocks can drift a couple of seconds without anything being
+// wrong. Beyond that tolerance a future-dated fix is a bad device timestamp,
+// not a real position lock, so it must not be clamped into looking fresh.
+export const FLOW_FEST_GNSS_CLOCK_SKEW_TOLERANCE_MILLISECONDS = 2_000;
 
 export interface FlowFestFieldReference {
   projectedCrsCode: 26916;
@@ -90,10 +94,18 @@ export function evaluateFlowFestGnssFix(
 ): FlowFestGnssEvaluation {
   validateFix(fix);
   const world = flowFestWgs84ToWorld(reference, fix);
-  const ageMilliseconds = Math.max(
-    0,
-    nowMilliseconds - fix.timestampMilliseconds
-  );
+  const rawAgeMilliseconds = nowMilliseconds - fix.timestampMilliseconds;
+  if (rawAgeMilliseconds < -FLOW_FEST_GNSS_CLOCK_SKEW_TOLERANCE_MILLISECONDS) {
+    return {
+      quality: "degraded-stale",
+      accepted: false,
+      ageMilliseconds: 0,
+      world,
+      reason:
+        "The position fix has a future timestamp beyond the allowed clock skew",
+    };
+  }
+  const ageMilliseconds = Math.max(0, rawAgeMilliseconds);
   if (ageMilliseconds > FLOW_FEST_GNSS_STALE_AFTER_MILLISECONDS) {
     return {
       quality: "degraded-stale",
@@ -145,7 +157,13 @@ export function createFlowFestGnssReplayTrack(
       "Flow Fest GNSS replay timing and accuracy must be positive"
     );
   }
-  return dedupeWorldPoints(points).map((point, index) => ({
+  const dedupedPoints = dedupeWorldPoints(points);
+  if (dedupedPoints.length < 2) {
+    throw new Error(
+      "Flow Fest GNSS replay needs at least two distinct world points"
+    );
+  }
+  return dedupedPoints.map((point, index) => ({
     ...flowFestWorldToWgs84(reference, point),
     accuracyMeters,
     elapsedMilliseconds: index * intervalMilliseconds,
