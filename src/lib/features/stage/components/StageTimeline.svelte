@@ -1044,6 +1044,7 @@
               <div
                 class="formation-block"
                 data-keyboard-shortcuts-ignore
+                data-stage-formation-id={formation.id}
                 class:selected
                 class:dragging={formationDrag?.formationId === formation.id}
                 style="left: {beat * effectivePixelsPerBeat}px"
@@ -1146,6 +1147,7 @@
             <button
               type="button"
               class="performer-select"
+              data-stage-performer-id={performer.id}
               onclick={(event) =>
                 editMode.selectPerformer(performer.id, event.shiftKey)}
               aria-pressed={editMode.multiSelectedPerformerIds.has(

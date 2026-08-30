@@ -82,6 +82,19 @@ describe("One Stage ownership", () => {
     expect(stage).toContain("<StageTimeline");
   });
 
+  it("restores keyboard focus to the nearest surviving selected object", () => {
+    const stage = read(STAGE);
+    const timeline = read(
+      "src/lib/features/stage/components/StageTimeline.svelte"
+    );
+
+    expect(stage).toContain("focusStageTarget");
+    expect(stage).toContain('"data-stage-performer-id"');
+    expect(stage).toContain('"data-stage-formation-id"');
+    expect(timeline).toContain("data-stage-performer-id={performer.id}");
+    expect(timeline).toContain("data-stage-formation-id={formation.id}");
+  });
+
   it("keeps saved-scene handoffs out of the first-run starter", () => {
     const stage = read(STAGE);
 

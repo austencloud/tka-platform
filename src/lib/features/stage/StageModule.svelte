@@ -497,6 +497,15 @@
     if (added) editMode.selectFormation(added.id);
   }
 
+  function focusStageTarget(attribute: string, id: string): void {
+    void tick().then(() => {
+      const target = Array.from(
+        document.querySelectorAll<HTMLElement>(`[${attribute}]`)
+      ).find((element) => element.getAttribute(attribute) === id);
+      target?.focus({ preventScroll: true });
+    });
+  }
+
   function deleteStageSelection(
     selection: StageSelection = editMode.selection
   ): void {
@@ -524,8 +533,10 @@
           choreography.performers.length - 1
         );
         const nextPerformer = choreography.performers[nextIndex];
-        if (nextPerformer) editMode.selectPerformer(nextPerformer.id);
-        else editMode.clearSelection();
+        if (nextPerformer) {
+          editMode.selectPerformer(nextPerformer.id);
+          focusStageTarget("data-stage-performer-id", nextPerformer.id);
+        } else editMode.clearSelection();
 
         toast.success(
           removedLabels.length === 1
@@ -544,8 +555,14 @@
         }
         const name =
           choreography.formations[index]?.label ?? `Set ${index + 1}`;
+        const nextFormation =
+          choreography.formations[index + 1] ??
+          choreography.formations[index - 1];
         stageState.removeFormation(command.formationId);
-        editMode.clearSelection();
+        if (nextFormation) {
+          editMode.selectFormation(nextFormation.id);
+          focusStageTarget("data-stage-formation-id", nextFormation.id);
+        } else editMode.clearSelection();
         toast.success(`${name} removed. Ctrl+Z to undo.`);
         return;
       }
@@ -560,6 +577,7 @@
         const name = stageState.clipLabel(clip);
         stageState.removeSequenceClip(command.clipId);
         editMode.selectPerformer(command.performerId);
+        focusStageTarget("data-stage-performer-id", command.performerId);
         toast.success(
           `${name} removed from performer ${performer.label}. Ctrl+Z to undo.`
         );
