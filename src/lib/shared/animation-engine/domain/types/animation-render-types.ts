@@ -9,6 +9,7 @@ export interface AdditionalLayerRenderData {
   redTrailPoints: TrailPoint[];
   hasBlue: boolean;
   hasRed: boolean;
+  opacity: number;
   blueColor: string;
   redColor: string;
   /** Per-performer prop type (Performer Set); drives the hand-never-rotates rule

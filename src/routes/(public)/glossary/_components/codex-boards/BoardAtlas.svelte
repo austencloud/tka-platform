@@ -22,7 +22,11 @@
 <div class="board-atlas">
   <div class="bands">
     {#each MAJOR_TYPE_BANDS as band (band.type.n)}
-      <section class="band" aria-label={band.type.word.replace(/:\s*$/, "")}>
+      <section
+        class="band"
+        class:paired-letters={band.type.n === 2 || band.type.n === 3}
+        aria-label={band.type.word.replace(/:\s*$/, "")}
+      >
         <CodexBandHead type={band.type} />
         <CodexFlow boxes={band.boxes} {onSelect} />
       </section>
@@ -100,6 +104,23 @@
     }
   }
 
+  /* A split desktop pane can be nearly square even when it is still wide
+     enough for the full Atlas. Twelve columns make width bind first there,
+     leaving a short board floating above the footer. Nine columns spend that
+     available height on the pictographs and keep each type grouped. */
+  @media (max-aspect-ratio: 4 / 3) {
+    @container (min-width: 70rem) {
+      .bands {
+        --abox-gap: 0.5rem;
+        --band-rows: 6;
+        --codex-picto-size: min(
+          calc((100cqi - 8rem) / 9),
+          calc((100dvh - var(--codex-atlas-chrome, 28.5rem)) / var(--band-rows))
+        );
+      }
+    }
+  }
+
   /* Below desktop the board scrolls, so the height term comes off entirely and
      the divisor is the only thing that changes. Twelve across on a phone is a
      row of 25px thumbnails. */
@@ -114,6 +135,15 @@
     }
     .minor-row {
       gap: 0.75rem 1.5rem;
+    }
+  }
+  /* Types 2 and 3 are four two-letter transition groups. At the six-column
+     tier, generic packing strands the final Greek pair. Two groups per row
+     keeps the Latin letters together, then the Greek letters together. */
+  @container (min-width: 30rem) and (max-width: 47.999rem) {
+    .band.paired-letters {
+      width: calc(4 * var(--codex-picto-size) + var(--abox-gap));
+      align-self: center;
     }
   }
   @container (max-width: 29.999rem) {

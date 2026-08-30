@@ -1151,6 +1151,14 @@
     margin-bottom: 0.75rem;
   }
 
+  /* The full SiteFooter carries a 4.5rem handoff above itself. Let the Codex
+     claim the rest of the first viewport so that handoff begins at the fold:
+     the footer is either fully below the page content or deliberately reached
+     by scrolling, never stranded as a partial footer under a compressed board. */
+  .codex-view .editorial {
+    min-height: calc(100dvh - 4.5rem);
+  }
+
   .codex-search-result {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;

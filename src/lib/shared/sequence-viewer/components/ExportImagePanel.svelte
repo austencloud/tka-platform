@@ -18,7 +18,12 @@
   import { onDestroy } from "svelte";
   import { fade } from "svelte/transition";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
-  import { DURATION } from "$lib/shared/transitions/transitions";
+  import {
+    DURATION,
+    SLIDE,
+    STAGGER,
+  } from "$lib/shared/transitions/transitions";
+  import { flyFade, motionDuration } from "$lib/shared/transitions/motion";
   import type { ExportOptionsStateManager } from "$lib/shared/animation-panel/state/export-options-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
@@ -622,7 +627,13 @@
   <div
     class="export-panel"
     class:inline={layout === "inline"}
-    transition:fade={{ duration: 200 }}
+    in:flyFade={{
+      duration: DURATION.normal,
+      delay: motionDuration(STAGGER.relaxed),
+      x: SLIDE.sm,
+      y: 0,
+    }}
+    out:flyFade={{ duration: DURATION.fast, x: SLIDE.sm, y: 0 }}
     role="region"
     aria-label="Card settings"
   >
@@ -927,7 +938,6 @@
 {/if}
 
 <style>
-
   /* Mobile dock tray density (mirrors AnimationPanel .dock-dense).
      Tight vertical rhythm on purpose — every px the tray gives up goes to the
      card/media hero above it. Touch targets stay at 44px (the chips); only
@@ -1289,7 +1299,6 @@
   .chip i {
     font-size: 12px;
   }
-
 
   @media (prefers-reduced-motion: reduce) {
     .chip {

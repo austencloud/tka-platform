@@ -551,7 +551,6 @@ h6 {
   --z-priority: 900;
   --z-debug: 1000;
 
-
   /* Z-Index Hierarchy (legacy — migrate to --z-* scale) */
   --sheet-z-modal: 1200;
   --sheet-z-overlay: 1100;
@@ -627,7 +626,9 @@ h6 {
   --sheet-close-bg: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
   --sheet-close-bg-hover: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.16));
   --sheet-close-size-default: var(--min-touch-target);
-  --sheet-close-size-small: var(--min-touch-target); /* iOS/Android minimum touch target */
+  --sheet-close-size-small: var(
+    --min-touch-target
+  ); /* iOS/Android minimum touch target */
 
   /* Unified Drag Handle Styles */
   --sheet-handle-width: var(--min-touch-target);
@@ -729,8 +730,8 @@ h6 {
   --dm-motion-neutral: #231f20;
 
   /* Motion colors (blue/red hands) - optimized for background contrast */
-  --dm-motion-blue: #3D44B8;
-  --dm-motion-red: #DC2626;
+  --dm-motion-blue: #3d44b8;
+  --dm-motion-red: #dc2626;
 
   /* Prop-selection washes. Keeping the host surface visible makes Blue, Red,
      and Both read as related states instead of three blocks of solid paint. */
@@ -762,6 +763,20 @@ h6 {
   --dm-transition: 150ms ease-out;
 }
 
+/* The operating-system preference remains the default. This explicit root
+   override lets first-party settings and visual acceptance surfaces exercise
+   the exact same reduced-motion path without replacing individual motion
+   primitives or inventing local zero-duration variants. */
+:root[data-motion-preference="reduce"] *,
+:root[data-motion-preference="reduce"] *::before,
+:root[data-motion-preference="reduce"] *::after {
+  scroll-behavior: auto !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-delay: 0ms !important;
+  transition-duration: 0.01ms !important;
+}
+
 /* Ordinary app, marketing, legal, and settings surfaces keep the standard
    16px root at every viewport width. Wide canvases recompose through their
    shell and component queries; browser zoom remains the user's scale control.
@@ -784,8 +799,8 @@ h6 {
   --dm-motion-neutral: #ffffff;
 
   /* Motion colors - brighter variants for dark backgrounds */
-  --dm-motion-blue: #3575E2;
-  --dm-motion-red: #ED1C24;
+  --dm-motion-blue: #3575e2;
+  --dm-motion-red: #ed1c24;
 
   /* No stroke needed in dark mode - white text is already visible */
   --dm-beat-stroke: transparent;
@@ -1249,7 +1264,6 @@ body.blossom {
 ::view-transition-group(sidebar) {
   animation: none;
 }
-
 
 /* Slide LEFT - Going to a module on the right */
 .module-slide-left::view-transition-old(root) {
