@@ -33,6 +33,19 @@
     type FlowFestProductionDressing,
   } from "./flow-fest-production-geometry";
   import FlowFestFestivalCommunity from "./FlowFestFestivalCommunity.svelte";
+  import FlowFestPopulation from "./FlowFestPopulation.svelte";
+  import {
+    createFlowFestPopulationSite,
+    flowFestTerrainGroundY,
+  } from "./flow-fest-population-site";
+  import {
+    composeFlowFestFireJamLayout,
+    flowFestClockLabel,
+    flowFestFireJamAttendance,
+    type FlowFestPopulationFrame,
+    type FlowFestPopulationSite,
+  } from "$lib/features/flow-fest-sim/domain/flow-fest-population";
+  import type { FlowFestPerformerSequenceProof } from "./flow-fest-performer-sequences";
   import FlowFestForestEcology from "./FlowFestForestEcology.svelte";
   import FlowFestGroundSurface from "./FlowFestGroundSurface.svelte";
   import FlowFestHeroFire from "./FlowFestHeroFire.svelte";
@@ -72,6 +85,8 @@
   let heroFirePosition = $state({ x: 89, z: -113.5 });
   let nightHeartPosition = $state({ x: 120, z: -103 });
   let readyCommunityAvatarIds = $state<string[]>([]);
+  let populationSite = $state<FlowFestPopulationSite | null>(null);
+  let fireJamAttendance = $state({ spectators: 0, performers: 0 });
   let builtBranch: FlowFestBranchId | null = null;
   let buildEpoch = 0;
   let destroyed = false;
@@ -88,6 +103,17 @@
       props.progressPhase === "festival-night" ||
       props.progressPhase === "night-free-roam" ||
       props.progressPhase === "night-return"
+  );
+
+  // The authored fire-circle layout is the capacity. The population layer says
+  // who actually walked in, and the circle is composed down to that.
+  const festivalCommunity = $derived(
+    dressing
+      ? composeFlowFestFireJamLayout(
+          dressing.festivalCommunity,
+          fireJamAttendance
+        )
+      : null
   );
 
   const atmosphere = $derived(getFlowFestVisualProfile(props.moment));
@@ -190,6 +216,16 @@
     animatedLedRings = nextAnimatedLedRings;
     contract = loadedContract;
     builtBranch = branch;
+    const population = createFlowFestPopulationSite({
+      contract: loadedContract,
+      plan: next.campPlan,
+      branch,
+      fireCenter: next.festivalCommunity.fireCenter,
+      ledCircleCenter: next.festivalCommunity.ledCircleCenter,
+      groundY: flowFestTerrainGroundY(terrain),
+    });
+    populationSite = population.site;
+    fireJamAttendance = { spectators: 0, performers: 0 };
     heroFirePosition = {
       x: next.festivalCommunity.fireCenter.x,
       z: next.festivalCommunity.fireCenter.z,
@@ -245,6 +281,23 @@
         responseIntensity: props.fireJamEnergy ?? 0,
         spatialAudit: next.festivalCommunityAudit,
       },
+      population: {
+        ...population.report,
+        corridorPolicy:
+          "registered person legs plus camp-plan foot connectors; open-field drift only inside measured-open zone envelopes",
+        clockLabel: flowFestClockLabel(0),
+        dayPhase: null as string | null,
+        agentsSimulated: 0,
+        agentsRendered: 0,
+        fireJamAttendees: 0,
+        travelling: 0,
+        interrupted: 0,
+        unroutable: 0,
+      },
+      performerSequences: {
+        source: "boot-placeholders",
+        note: "Generated LOOPs replace these once the generator answers.",
+      } as Record<string, unknown>,
       forestEcology: {
         ...next.forestEcology.audit,
         treeAssetsReady: 0,
@@ -277,6 +330,40 @@
       frame.activeFirePerformerIds;
     proof.festivalCommunity.movingSpectators = frame.movingSpectatorCount;
     proof.festivalCommunity.talkingSpectators = frame.talkingSpectatorCount;
+  }
+
+  function recordPopulationFrame(frame: FlowFestPopulationFrame): void {
+    const attendance = flowFestFireJamAttendance(frame);
+    if (
+      attendance.spectators !== fireJamAttendance.spectators ||
+      attendance.performers !== fireJamAttendance.performers
+    ) {
+      fireJamAttendance = attendance;
+    }
+    const proof = (globalThis as Record<string, unknown>)
+      .__flowFestProduction as
+      | { population?: Record<string, unknown> }
+      | undefined;
+    if (!proof?.population) return;
+    proof.population.clockLabel = flowFestClockLabel(frame.minuteOfDay);
+    proof.population.dayPhase = frame.dayPhase;
+    proof.population.agentsSimulated = frame.agents.length;
+    proof.population.agentsRendered = frame.agents.filter(
+      (agent) => !agent.atFireJam
+    ).length;
+    proof.population.fireJamAttendees = frame.fireJamAttendeeCount;
+    proof.population.travelling = frame.travellingCount;
+    proof.population.interrupted = frame.interruptedCount;
+    proof.population.unroutable = frame.unroutableCount;
+  }
+
+  function recordPerformerSequences(
+    details: FlowFestPerformerSequenceProof
+  ): void {
+    const proof = (globalThis as Record<string, unknown>)
+      .__flowFestProduction as Record<string, unknown> | undefined;
+    if (!proof) return;
+    proof.performerSequences = { ...details };
   }
 
   function markCommunityAvatarReady(id: string): void {
@@ -541,12 +628,21 @@
   />
 {/if}
 
-{#if dressing && festivalActive}
+{#if populationSite}
+  <FlowFestPopulation
+    site={populationSite}
+    moment={props.moment}
+    onFrame={recordPopulationFrame}
+  />
+{/if}
+
+{#if festivalCommunity && festivalActive}
   <FlowFestFestivalCommunity
-    community={dressing.festivalCommunity}
+    community={festivalCommunity}
     energy={props.fireJamEnergy}
     onAvatarReady={markCommunityAvatarReady}
     onSimulationFrame={recordLivingCommunityFrame}
+    onSequencePool={recordPerformerSequences}
   />
 {/if}
 

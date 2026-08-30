@@ -68,6 +68,12 @@ import { pointInsideFlowFestEntranceFixtureClearance } from "./flow-fest-entranc
 
 export interface FlowFestProductionDressing {
   root: Group;
+  /**
+   * The plan this dressing was built from. Exposed so downstream layers (the
+   * population routing graph) consume the same registered geometry instead of
+   * re-deriving coordinates of their own.
+   */
+  campPlan: FlowFestCampPlan;
   forestEcology: FlowFestForestEcologyLayout;
   groundSurface: FlowFestGroundFamilyMask;
   festivalCommunity: FlowFestFestivalCommunityLayout;
@@ -217,6 +223,7 @@ export function buildFlowFestProductionDressing(
 
   return {
     root,
+    campPlan,
     forestEcology,
     groundSurface: buildFlowFestGroundFamilyMask(
       campPlan,
