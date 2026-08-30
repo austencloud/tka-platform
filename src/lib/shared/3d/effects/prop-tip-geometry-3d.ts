@@ -91,6 +91,7 @@ const SINGLE_ENDED_REACH_3D: Partial<
   Record<PropType, (staffLength: number) => number>
 > = {
   [PropType.CLUB]: () => CLUB_REACH_M,
+  [PropType.CLASSIC_CLUB]: () => CLUB_REACH_M,
   [PropType.UKULELE]: () => UKULELE_REACH_M,
 
   [PropType.TORCH]: (staffLength) => staffLength * TORCH_REACH_RATIO,

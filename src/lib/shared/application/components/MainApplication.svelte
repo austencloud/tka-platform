@@ -323,7 +323,6 @@
       updateSetting("bluePropType", propType);
       updateSetting("redPropType", propType);
     }
-    propDrawerState.close();
   }
 
   function handleCatDogToggle() {
@@ -749,7 +748,6 @@
           onCatDogToggle={handleCatDogToggle}
           showTabs={catDogMode}
           bind:activeTab={propDrawerActiveTab}
-          autoClose={!catDogMode}
           chirality={createGlobalChiralitySeam(
             catDogMode ? propDrawerActiveTab : undefined
           )}

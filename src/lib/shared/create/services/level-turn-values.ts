@@ -7,27 +7,29 @@
  * instead of two copies that drift.
  *
  * Level 1 = base motions, no turns. Level 2 = whole turns. Level 3 = half turns
- * plus floats. (Ground truth: `LoopParameterProvider.allocateTurns`.)
+ * plus floats. Level 4 adds quarter turns while retaining floats.
  */
 
 export type TurnValue = number | "fl";
 
-export const TURN_LEVELS = [1, 2, 3] as const;
+export const TURN_LEVELS = [1, 2, 3, 4] as const;
 export type TurnLevel = (typeof TURN_LEVELS)[number];
 
 const LEVEL_TURN_VALUES: Record<TurnLevel, readonly TurnValue[]> = {
   1: [0],
   2: [0, 1, 2, 3],
   3: ["fl", 0, 0.5, 1, 1.5, 2, 2.5, 3],
+  4: ["fl", 0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3],
 };
 
 const LEVEL_MAX_TURN_INTENSITIES: Record<TurnLevel, readonly number[]> = {
   1: [],
   2: [1, 2, 3],
   3: [0.5, 1, 1.5, 2, 2.5, 3],
+  4: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3],
 };
 
-/** Turn values legal at `level`. Out-of-range levels clamp into 1-3. */
+/** Turn values legal at `level`. Out-of-range levels clamp into 1-4. */
 export function turnValuesForLevel(level: number): readonly TurnValue[] {
   return LEVEL_TURN_VALUES[asTurnLevel(level)];
 }
@@ -57,9 +59,10 @@ export function clampMaxTurnIntensity(value: number, level: number): number {
 }
 
 export function asTurnLevel(level: number): TurnLevel {
-  if (level >= 3) return 3;
+  if (level >= 4) return 4;
   if (level <= 1) return 1;
-  return 2;
+  if (level < 3) return 2;
+  return 3;
 }
 
 /**
@@ -69,7 +72,8 @@ export function asTurnLevel(level: number): TurnLevel {
 export function levelForTurnValue(value: TurnValue): TurnLevel {
   if (value === "fl") return 3;
   if (value === 0) return 1;
-  return Number.isInteger(value) ? 2 : 3;
+  if (Number.isInteger(value)) return 2;
+  return Number.isInteger(value * 2) ? 3 : 4;
 }
 
 /** The lowest level that permits BOTH hands' current turns. */

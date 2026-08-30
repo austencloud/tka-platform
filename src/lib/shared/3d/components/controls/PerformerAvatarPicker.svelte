@@ -58,11 +58,13 @@
 <div class="avatar-picker">
   <div class="avatar-grid" role="radiogroup" aria-label={groupLabel}>
     {#each AVATAR_DEFINITIONS as definition, index (definition.id)}
+      {@const thumbnailUrl = avatarThumbnailUrl(definition.id)}
       <button
         class="avatar-card"
         class:selected={selectedAvatarId === definition.id}
         class:preparing={pendingAvatarId === definition.id}
         class:has-thumb={loadedThumbs.has(definition.id)}
+        class:personal={definition.availability === "local-evaluation"}
         type="button"
         role="radio"
         aria-checked={selectedAvatarId === definition.id}
@@ -91,17 +93,22 @@
           class:hidden={loadedThumbs.has(definition.id)}
           aria-hidden="true"
         ></i>
-        <img
-          class="avatar-thumb"
-          class:loaded={loadedThumbs.has(definition.id)}
-          src={avatarThumbnailUrl(definition.id)}
-          alt=""
-          loading="lazy"
-          onload={() =>
-            (loadedThumbs = new Set(loadedThumbs).add(definition.id))}
-        />
+        {#if thumbnailUrl}
+          <img
+            class="avatar-thumb"
+            class:loaded={loadedThumbs.has(definition.id)}
+            src={thumbnailUrl}
+            alt=""
+            loading="lazy"
+            onload={() =>
+              (loadedThumbs = new Set(loadedThumbs).add(definition.id))}
+          />
+        {/if}
         {#if appliedAvatarId === definition.id}
           <span class="avatar-current-badge" aria-hidden="true">Current</span>
+        {/if}
+        {#if definition.availability === "local-evaluation"}
+          <span class="avatar-personal-badge" aria-hidden="true">Yours</span>
         {/if}
         <span class="avatar-card-name">{definition.name}</span>
       </button>
@@ -147,6 +154,22 @@
     padding: 0;
     justify-content: flex-end;
   }
+  .avatar-card.personal {
+    grid-column: 2 / span 2;
+    border-color: color-mix(
+      in srgb,
+      var(--performer-color) 35%,
+      var(--theme-stroke)
+    );
+    background: color-mix(
+      in srgb,
+      var(--performer-color) 12%,
+      var(--theme-card-bg)
+    );
+  }
+  .avatar-card.personal .avatar-fallback-icon {
+    font-size: 28px;
+  }
   .avatar-fallback-icon {
     font-size: 19px;
   }
@@ -182,6 +205,19 @@
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.03em;
+    line-height: 1.2;
+  }
+  .avatar-personal-badge {
+    position: absolute;
+    z-index: 2;
+    top: 4px;
+    right: 4px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: var(--surface-inset-deep);
+    color: var(--theme-text-dim);
+    font-size: 12px;
+    font-weight: 700;
     line-height: 1.2;
   }
   .avatar-card-name {
@@ -247,6 +283,9 @@
   @container (min-width: 580px) {
     .avatar-grid {
       grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+    .avatar-card.personal {
+      grid-column: auto / span 2;
     }
   }
   @media (prefers-reduced-motion: reduce) {

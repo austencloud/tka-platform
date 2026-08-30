@@ -86,6 +86,7 @@
     practiceMirrorEnabled = false,
     tunnelComposition = null,
     tunnelSaveTarget = null,
+    onTunnelSaved,
   }: ViewerSplitPaneProps = $props();
 
   // The tunnel's controls, renderer, and export path all steer this one
@@ -391,6 +392,7 @@
       {onArtAction}
       {tunnelComposition}
       {tunnelSaveTarget}
+      {onTunnelSaved}
     />
     <PracticeCountInOverlay count={practiceCountdown} />
   </div>
@@ -473,6 +475,7 @@
         {onArtAction}
         {tunnelComposition}
         {tunnelSaveTarget}
+        {onTunnelSaved}
       />
       {#if practiceActive}
         <ViewerPracticeLane

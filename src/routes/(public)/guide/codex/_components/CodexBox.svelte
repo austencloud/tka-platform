@@ -15,6 +15,7 @@
     propType,
     visibility,
     getData,
+    getCellHref,
     onCellSelect,
   }: {
     box: CodexBoxDef;
@@ -40,6 +41,7 @@
     propType?: PropType;
     visibility?: GuideCodexVisibility;
     getData?: (id: string) => PictographData | null | undefined;
+    getCellHref?: (id: string) => string | undefined;
     onCellSelect?: (id: string) => void;
   } = $props();
 </script>
@@ -50,8 +52,14 @@
        unlabeled box must not sit higher than its labeled row-mate. Full-width
        boxes only render it when there's something to show. -->
   {#if side || reserveHead || box.header || box.mode}
-    <div class="box-head" class:corner-left={side === "left"} class:corner-right={side === "right"}>
-      {#if box.header}<span class="box-transition"><CodexTransitionGlyph text={box.header} /></span>{/if}
+    <div
+      class="box-head"
+      class:corner-left={side === "left"}
+      class:corner-right={side === "right"}
+    >
+      {#if box.header}<span class="box-transition"
+          ><CodexTransitionGlyph text={box.header} /></span
+        >{/if}
       {#if box.mode}<span class="box-mode">{box.mode}</span>{/if}
     </div>
   {/if}
@@ -69,6 +77,7 @@
         showReversals={visibility?.showReversals}
         showNonRadialPoints={visibility?.showNonRadialPoints}
         dataOverride={getData?.(cell.id)}
+        href={getCellHref?.(cell.id)}
         onSelect={onCellSelect}
       />
     {/each}

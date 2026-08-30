@@ -21,6 +21,7 @@ export class SvgPreloader {
     "staff",
     "simple_staff",
     "club",
+    "classic_club",
     "fan",
     "triad",
     "minihoop",

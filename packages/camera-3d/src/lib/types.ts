@@ -40,6 +40,18 @@ export interface Vector3 {
   z: number;
 }
 
+/**
+ * Finds the first obstruction between the player and a third-person camera.
+ *
+ * Large worlds can answer this through their physics broadphase instead of
+ * making the visible environment pay a triangle raycast every frame.
+ */
+export type CameraCollisionProbe = (
+  origin: Readonly<Vector3>,
+  direction: Readonly<Vector3>,
+  maxDistance: number
+) => number | null;
+
 export interface Rotation {
   yaw: number;
   pitch: number;

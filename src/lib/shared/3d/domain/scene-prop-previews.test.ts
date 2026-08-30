@@ -68,6 +68,26 @@ describe("prop studio build previews", () => {
     expect(builds.find((option) => option.id === "fire")?.image).toContain(
       "fan-fire-covered"
     );
+    expect(builds.find((option) => option.id === "fire")?.designCredit).toEqual(
+      {
+        originator: "Doodle",
+        sourceUrl: "https://forgedfans.com/products/doodlegrip-fire-fans",
+      }
+    );
+    expect(builds.find((option) => option.id === "lotus")?.image).toBe(
+      "/images/props/build-previews/fan-lotus-bare-complete.webp"
+    );
+    expect(
+      builds.find((option) => option.id === "lotus")?.designCredit
+    ).toEqual({
+      originator: "Home of Poi",
+      sourceUrl:
+        "https://www.homeofpoi.com/en/shop/listItems/Medium-Lotus-Fire-Fans",
+    });
+    expect(builds.find((option) => option.id === "day")?.designCredit).toEqual({
+      originator: "Doodle",
+      sourceUrl: "https://flowtoys.com/products/doodlegrip-practice-fans",
+    });
 
     const frames = fanFramePreviewOptions("bare");
     expect(frames.map((option) => option.image)).toEqual([
@@ -89,6 +109,7 @@ describe("prop studio build previews", () => {
       "fan-pictograph-front.webp",
       "fan-fire-bare-complete.webp",
       "fan-fire-covered-complete.webp",
+      "fan-lotus-bare-complete.webp",
       "fan-day-black-bare-complete.webp",
       "fan-day-black-covered-complete.webp",
       "fan-day-white-bare-complete.webp",

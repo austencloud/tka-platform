@@ -67,12 +67,25 @@ export interface StageChoreographyState extends UnifiedPlaybackContext {
   onBpmChange(bpm: number): void;
   getPerformer(id: string): Performer | undefined;
   setPerformerCount(count: number): void;
+  removePerformers(performerIds: readonly string[]): boolean;
   /** Seed the existing Stage document from the guided Studio entry point. */
   applyStudioStarter(starter: StudioStarter): void;
   addFormation(atBeat: number, presetId?: FormationPresetId): Formation | null;
   removeFormation(formationId: string): void;
   moveFormation(formationId: string, atBeat: number): void;
   setFormationTransitionBeats(formationId: string, beats: number): void;
+  updatePerformerTravelTiming(
+    formationId: string,
+    performerId: string,
+    departureBeat: number,
+    arrivalBeat: number
+  ): void;
+  setPerformerTravelStepCount(
+    formationId: string,
+    performerId: string,
+    stepCount: number | null
+  ): void;
+  resetPerformerTravelTiming(formationId: string, performerId: string): boolean;
   setFormationLabel(formationId: string, label: string): void;
   updateSpotPosition(
     formationId: string,
@@ -474,6 +487,29 @@ export function createStageChoreographyState(
     normalizeFormationTrack();
   }
 
+  function removePerformers(performerIds: readonly string[]): boolean {
+    const requestedIds = new Set(performerIds);
+    const removedCount = choreography.performers.filter((performer) =>
+      requestedIds.has(performer.id)
+    ).length;
+    if (removedCount === 0 || removedCount >= choreography.performers.length) {
+      return false;
+    }
+
+    pushUndo();
+    choreography.performers = choreography.performers
+      .filter((performer) => !requestedIds.has(performer.id))
+      .map((performer, index) => ({
+        ...performer,
+        index,
+        // These letters identify timeline rows, not durable performer names.
+        // Closing the gap keeps a later Add from creating a duplicate label.
+        label: PERFORMER_LABELS[index] ?? `P${index}`,
+      }));
+    normalizeFormationTrack();
+    return true;
+  }
+
   function applyStudioStarter(starter: StudioStarter) {
     pushUndo();
 
@@ -564,6 +600,8 @@ export function createStageChoreographyState(
       spots[performer.id] = {
         x: position.x,
         z: position.z,
+        facingAngle:
+          "facingAngle" in position ? position.facingAngle : undefined,
         walkStyle: "direct",
         easing: "linear",
       };
@@ -613,6 +651,15 @@ export function createStageChoreographyState(
       return;
     }
     pushUndo();
+    const beatDelta = snappedBeat - formation.atBeat;
+    for (const spot of Object.values(formation.spots)) {
+      if (!spot.travel) continue;
+      spot.travel = {
+        ...spot.travel,
+        departureBeat: spot.travel.departureBeat + beatDelta,
+        arrivalBeat: spot.travel.arrivalBeat + beatDelta,
+      };
+    }
     formation.atBeat = snappedBeat;
     normalizeFormationTrack();
   }
@@ -623,6 +670,64 @@ export function createStageChoreographyState(
     pushUndo();
     formation.transitionBeats = beats;
     normalizeFormationTrack();
+  }
+
+  function updatePerformerTravelTiming(
+    formationId: string,
+    performerId: string,
+    departureBeat: number,
+    arrivalBeat: number
+  ) {
+    const spot = findFormation(formationId)?.spots[performerId];
+    if (!spot) return;
+    // Pointer drags call this continuously. beginDrag() owns the one history
+    // entry, matching the formation overlay's position-drag contract.
+    spot.travel = {
+      departureBeat,
+      arrivalBeat,
+      ...(spot.travel?.stepCount !== undefined && {
+        stepCount: spot.travel.stepCount,
+      }),
+    };
+    normalizeFormationTrack();
+  }
+
+  function setPerformerTravelStepCount(
+    formationId: string,
+    performerId: string,
+    stepCount: number | null
+  ) {
+    const formation = findFormation(formationId);
+    const spot = formation?.spots[performerId];
+    if (!formation || !spot) return;
+    const previousIndex =
+      choreography.formations.findIndex(
+        (candidate) => candidate.id === formationId
+      ) - 1;
+    const inheritedDeparture = Math.max(
+      choreography.formations[previousIndex]?.atBeat ?? 0,
+      formation.atBeat - formation.transitionBeats
+    );
+    pushUndo();
+    spot.travel = {
+      departureBeat: spot.travel?.departureBeat ?? inheritedDeparture,
+      arrivalBeat: spot.travel?.arrivalBeat ?? formation.atBeat,
+      ...(stepCount !== null && { stepCount }),
+    };
+    normalizeFormationTrack();
+  }
+
+  function resetPerformerTravelTiming(
+    formationId: string,
+    performerId: string
+  ): boolean {
+    const spot = findFormation(formationId)?.spots[performerId];
+    if (!spot?.travel) return false;
+
+    pushUndo();
+    spot.travel = undefined;
+    normalizeFormationTrack();
+    return true;
   }
 
   function setFormationLabel(formationId: string, label: string) {
@@ -705,7 +810,14 @@ export function createStageChoreographyState(
       const position = positions[index];
       const spot = formation.spots[performer.id];
       if (!position || !spot) return;
-      formation.spots[performer.id] = { ...spot, ...position };
+      formation.spots[performer.id] = {
+        ...spot,
+        ...position,
+        // Choosing a front-facing preset after a relationship preset must
+        // clear the old authored turn instead of carrying it into the new
+        // shape where it no longer means anything.
+        facingAngle: position.facingAngle,
+      };
     });
     formation.presetId = preset;
     normalizeFormationTrack();
@@ -948,11 +1060,15 @@ export function createStageChoreographyState(
     onBpmChange: setBpm,
     getPerformer,
     setPerformerCount,
+    removePerformers,
     applyStudioStarter,
     addFormation,
     removeFormation,
     moveFormation,
     setFormationTransitionBeats,
+    updatePerformerTravelTiming,
+    setPerformerTravelStepCount,
+    resetPerformerTravelTiming,
     setFormationLabel,
     updateSpotPosition,
     updateSpotWalkStyle,

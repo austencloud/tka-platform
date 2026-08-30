@@ -20,6 +20,7 @@ import type {
   TunnelComposition,
   TunnelSaveTarget,
 } from "../tunnel/tunnel-composition";
+import type { TunnelSavedCallback } from "../tunnel/tunnel-snapshot";
 
 export type ViewerPaneSide = "left" | "right";
 
@@ -103,6 +104,7 @@ export interface ViewerSplitPaneProps {
   practiceMirrorEnabled?: boolean;
   tunnelComposition?: TunnelComposition | null;
   tunnelSaveTarget?: TunnelSaveTarget | null;
+  onTunnelSaved?: TunnelSavedCallback;
 }
 
 export interface ViewerMotionSurfaceProps {
@@ -168,4 +170,5 @@ export interface ViewerCompanionSurfaceProps {
   onArtAction?: ViewerActionSink;
   tunnelComposition?: TunnelComposition | null;
   tunnelSaveTarget?: TunnelSaveTarget | null;
+  onTunnelSaved?: TunnelSavedCallback;
 }

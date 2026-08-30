@@ -369,9 +369,10 @@ const BIGTORCH_TIP_POINTS: PropTipConfig = {
 };
 
 const POI_TIP_POINTS: PropTipConfig = {
-  // Same overall reach as the club (grip to far tip = ~129.3); trail follows
-  // the ball center at 99 (see static/images/props/*/poi.svg).
-  points: [{ dx: 99, dy: 0 }],
+  // The light/wick lives in the head, so the head CENTRE is the tracked point —
+  // and it sits at the club's 129.335 reach, so a poi mandala and a club mandala
+  // come out the same size (see static/images/props/*/poi.svg).
+  points: [{ dx: 129.335, dy: 0 }],
 };
 
 const EMPTY_TIP_POINTS: PropTipConfig = {
@@ -404,6 +405,7 @@ export const PROP_TIP_POINTS: Record<string, PropTipConfig> = {
 
   // Club family
   club: CLUB_TIP_POINTS,
+  classic_club: CLUB_TIP_POINTS,
   bigclub: BIGCLUB_TIP_POINTS,
 
   // Fan family

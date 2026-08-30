@@ -21,10 +21,19 @@ const TURNS_BY_SIZE: Record<MatrixSize, readonly number[]> = {
  * cumulative counts exactly (small 16, medium 64, large 144).
  */
 function axisFilterForSize(size: MatrixSize): AxisFilter {
-  return { style: "all", turns: new Set(TURNS_BY_SIZE[size]), ori: "all", grid: "diamond" };
+  return {
+    style: "all",
+    turns: new Set(TURNS_BY_SIZE[size]),
+    ori: "all",
+    grid: "diamond",
+  };
 }
 
 /** Full matrix filter set for a size preset — same axis filter on both hands. */
 export function matrixFiltersForSize(size: MatrixSize): MatrixFilters {
-  return { blue: axisFilterForSize(size), red: axisFilterForSize(size), collapse: false };
+  return {
+    blue: axisFilterForSize(size),
+    red: axisFilterForSize(size),
+    collapse: false,
+  };
 }

@@ -9,30 +9,46 @@ import type { GridMode } from "../types.js";
 
 const VIEWBOX_SIZE = 950;
 
-
 const BIG_UNILATERAL_PROPS = [
-  "bighoop", "bigfan", "bigtriad", "bigtorch", "bigcontactball",
+  "bighoop",
+  "bigfan",
+  "bigtriad",
+  "bigtorch",
+  "bigcontactball",
 ] as const;
 
 const SMALL_UNILATERAL_PROPS = [
-  "fan", "club", "minihoop", "triad", "ukulele",
-  "triquetra", "triquetra2", "chicken", "torch", "contactball", "poi",
+  "fan",
+  "club",
+  "classic_club",
+  "minihoop",
+  "triad",
+  "ukulele",
+  "triquetra",
+  "triquetra2",
+  "chicken",
+  "torch",
+  "contactball",
+  "poi",
 ] as const;
 
-const BUUGENG_FAMILY = [
-  "buugeng", "bigbuugeng", "trigeng",
-] as const;
+const BUUGENG_FAMILY = ["buugeng", "bigbuugeng", "trigeng"] as const;
 
 const STRICT_PLACED = [
-  "bighoop", "doublestar", "bigbuugeng", "bigdoublestar", "triquetra",
+  "bighoop",
+  "doublestar",
+  "bigbuugeng",
+  "bigdoublestar",
+  "triquetra",
 ] as const;
-
 
 export function isUnilateralProp(propType: string): boolean {
   const t = propType.toLowerCase();
   if (t === "hand") return false;
-  return (BIG_UNILATERAL_PROPS as readonly string[]).includes(t)
-      || (SMALL_UNILATERAL_PROPS as readonly string[]).includes(t);
+  return (
+    (BIG_UNILATERAL_PROPS as readonly string[]).includes(t) ||
+    (SMALL_UNILATERAL_PROPS as readonly string[]).includes(t)
+  );
 }
 
 export function isBuugengFamilyProp(propType: string): boolean {
@@ -53,16 +69,19 @@ export function pictographRequiresStrictHandpoints(
 /**
  * Box mode applies diagonal compensation (÷√2).
  */
-export function getBetaOffsetSize(propType: string, gridMode?: GridMode): number {
+export function getBetaOffsetSize(
+  propType: string,
+  gridMode?: GridMode
+): number {
   const t = propType.toLowerCase();
   let base: number;
 
-  if (t === "club" || t === "eightrings") {
-    base = VIEWBOX_SIZE / 60;       // 15.83px
+  if (t === "club" || t === "classic_club" || t === "eightrings") {
+    base = VIEWBOX_SIZE / 60; // 15.83px
   } else if (t === "doublestar") {
-    base = VIEWBOX_SIZE / 50;       // 19px
+    base = VIEWBOX_SIZE / 50; // 19px
   } else {
-    base = VIEWBOX_SIZE / 45;       // 21.11px
+    base = VIEWBOX_SIZE / 45; // 21.11px
   }
 
   return gridMode === "box" ? base / Math.sqrt(2) : base;

@@ -1,25 +1,26 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import {
-  TND_BASE_CATALOG_ID,
-  buildTnDSeedClasses,
-  getTnDFamilyOptions,
-} from "$lib/features/choreo-card/services/deck-composer";
-import { loadCatalogSequences } from "$lib/features/choreo-card/services/catalog-loader";
 import { applyVariationDescriptor } from "$lib/features/choreo-card/services/deck-variation";
 import type { CardVariation } from "$lib/features/choreo-card/domain/models/DeckRelease";
 import { loadDiamondEdges } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
-import { classifyRotationStyle, type RotationStyle } from "../domain/classify-rotation-style";
+import type { RotationStyle } from "$lib/shared/shape-matrix/domain/rotation-style";
+import {
+  classifyRotationStyleMembers,
+  loadRotationStyleBases,
+  representativeRotationStyleMember,
+  ROTATION_STYLE_ORDER,
+  type RotationGridMode,
+  type StartOrientationPair,
+} from "$lib/shared/shape-matrix/services/rotation-style-archetypes";
 import { allTurnPatterns } from "../domain/tnd-turn-patterns";
 import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRenderer";
 import { TND_BY_FAMILY } from "$lib/features/choreo-card/domain/tnd-element";
-import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 /** Diamond vs box grid — drives which TnD family each seed lands in. */
-export type LabGridMode = "diamond" | "box";
+export type LabGridMode = RotationGridMode;
 
 /** Explicit per-hand start orientation for the mandala (undefined hand = default). */
-export type StartOriPair = { blue?: Orientation; red?: Orientation };
+export type StartOriPair = StartOrientationPair;
 
 export interface StyleVariation {
   word: string; // e.g. "DJDJ"
@@ -45,7 +46,7 @@ const STYLE_META: Record<RotationStyle, { label: string; accent: string }> = {
   hybrid: { label: "Hybrid", accent: "#b763cd" },
 };
 
-const STYLE_ORDER: RotationStyle[] = ["iso", "antispin", "hybrid"];
+const STYLE_ORDER = ROTATION_STYLE_ORDER;
 
 function word(seedId: string): string {
   return (seedId.split("-").pop() ?? seedId).toUpperCase();
@@ -53,16 +54,13 @@ function word(seedId: string): string {
 
 /** Family id (e.g. "quarter-opp") → 2-char VTG mode code (e.g. "QO"). */
 function modeTagOf(familyId: string): string {
-  const timing = familyId.startsWith("split") ? "S" : familyId.startsWith("tog") ? "T" : "Q";
+  const timing = familyId.startsWith("split")
+    ? "S"
+    : familyId.startsWith("tog")
+      ? "T"
+      : "Q";
   const direction = familyId.endsWith("opp") ? "O" : "S";
   return timing + direction;
-}
-
-// Module-level cache: base seeds load once; the picker reuses them per pick.
-let basesPromise: Promise<SequenceData[]> | null = null;
-function loadBases(): Promise<SequenceData[]> {
-  if (!basesPromise) basesPromise = loadCatalogSequences(TND_BASE_CATALOG_ID);
-  return basesPromise;
 }
 
 /**
@@ -76,28 +74,13 @@ function loadBases(): Promise<SequenceData[]> {
  */
 export async function resolveRotationStyleMatrices(
   grid: LabGridMode = "diamond",
-  startOri?: StartOriPair,
+  startOri?: StartOriPair
 ): Promise<RotationStyleMatrix[]> {
-  const bases = await loadBases();
+  const bases = await loadRotationStyleBases();
   const edges = await loadDiamondEdges();
   const patterns = allTurnPatterns();
 
-  // Canonical seed → its family for this grid (mirror halves already pruned).
-  const seedClasses = buildTnDSeedClasses(bases);
-  const familyBySeed = new Map<string, string>();
-  for (const fam of getTnDFamilyOptions(seedClasses, [grid])) {
-    for (const e of fam.entries) familyBySeed.set(e.sequenceId, fam.familyId);
-  }
-
-  const baseById = new Map(bases.map((b) => [b.id, b]));
-  const byStyle = new Map<RotationStyle, { seq: SequenceData; familyId: string }[]>();
-  for (const [seedId, familyId] of familyBySeed) {
-    const seq = baseById.get(seedId);
-    if (!seq) continue;
-    const style = classifyRotationStyle(seq);
-    if (!byStyle.has(style)) byStyle.set(style, []);
-    byStyle.get(style)!.push({ seq, familyId });
-  }
+  const byStyle = classifyRotationStyleMembers(bases, grid);
 
   const out: RotationStyleMatrix[] = [];
   for (const style of STYLE_ORDER) {
@@ -108,12 +91,7 @@ export async function resolveRotationStyleMatrices(
     // chosen deterministically rather than by catalog order. Every member shares
     // this prop-spin rosette; they differ only in how the two hands phase
     // together (VTG mode = timing/direction), which is what the picker drills into.
-    const rep = [...members].sort((a, b) => {
-      const da = new Set(word(a.seq.id).split("")).size;
-      const db = new Set(word(b.seq.id).split("")).size;
-      if (da !== db) return da - db;
-      return word(a.seq.id).localeCompare(word(b.seq.id));
-    })[0]!.seq;
+    const rep = representativeRotationStyleMember(members);
 
     const byTurn = new Map<string, SequenceData>();
     for (const tp of patterns) {
@@ -127,8 +105,8 @@ export async function resolveRotationStyleMatrices(
             gridMode: grid,
             startOriPair: startOri,
           } satisfies CardVariation,
-          edges,
-        ).sequence,
+          edges
+        ).sequence
       );
     }
 
@@ -138,7 +116,12 @@ export async function resolveRotationStyleMatrices(
       const w = word(seq.id);
       if (seen.has(w)) continue;
       seen.add(w);
-      variations.push({ word: w, modeTag: modeTagOf(familyId), familyId, seedId: seq.id });
+      variations.push({
+        word: w,
+        modeTag: modeTagOf(familyId),
+        familyId,
+        seedId: seq.id,
+      });
     }
 
     out.push({ style, ...STYLE_META[style], byTurn, variations });
@@ -151,9 +134,9 @@ export async function resolveVariationSequence(
   seedId: string,
   turnPattern: string,
   grid: LabGridMode = "diamond",
-  startOri?: StartOriPair,
+  startOri?: StartOriPair
 ): Promise<SequenceData | null> {
-  const bases = await loadBases();
+  const bases = await loadRotationStyleBases();
   const base = bases.find((s) => s.id === seedId);
   if (!base) return null;
   const edges = await loadDiamondEdges();
@@ -165,7 +148,7 @@ export async function resolveVariationSequence(
       gridMode: grid,
       startOriPair: startOri,
     } satisfies CardVariation,
-    edges,
+    edges
   ).sequence;
 }
 
@@ -178,7 +161,7 @@ export async function resolveVariationSequence(
 export async function bakeVariationFront(
   seq: SequenceData,
   familyId: string,
-  propType?: PropType,
+  propType?: PropType
 ): Promise<string> {
   const tndElement = TND_BY_FAMILY[familyId];
   const canvas = await getPrintCardRenderer().renderFront(seq, {
@@ -192,7 +175,10 @@ export async function bakeVariationFront(
 }
 
 /** Bake the card BACK (level + LOOP face) — pairs with the front for review. */
-export async function bakeVariationBack(seq: SequenceData, propType?: PropType): Promise<string> {
+export async function bakeVariationBack(
+  seq: SequenceData,
+  propType?: PropType
+): Promise<string> {
   const canvas = await getPrintCardRenderer().renderBack(seq, {
     includeStartPosition: true,
     bluePropType: propType,

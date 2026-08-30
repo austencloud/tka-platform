@@ -1,12 +1,9 @@
 /**
  * Static contract test for the SequenceViewerShell host pattern.
  *
- * The /q scan page and the in-app drawer render the SAME shell component so the
- * two surfaces cannot drift (see .claude/rules/sequence-viewer-shell.md and
- * docs/architecture/sequence-viewer-shell.md). This test locks the host
- * contract at the source level: hosts stay thin, chrome lives only in the
- * shell, and the historical drift bugs (hand-rolled chrome, theme-var
- * shadowing, forked breakpoints) cannot silently return.
+ * The in-app drawer and /sequence route render the SAME shell component so the
+ * two viewer destinations cannot drift. /q is a scan-only ingress and must not
+ * become a third viewer again. This test locks both contracts at source level.
  *
  * If this test fails, fix the host — do not loosen the assertions.
  */
@@ -24,19 +21,15 @@ const repoRoot = path.resolve(
 const SHELL_PATH =
   "src/lib/shared/sequence-viewer/components/SequenceViewerShell.svelte";
 
-// A host may span multiple files (the /q route splits into a thin SSR-head
-// +page.svelte + the QScanPage component that renders the shell — 9ed559a6b3);
-// the contract applies to the host's combined source.
 const HOSTS: Record<string, string[]> = {
   "drawer host": [
     "src/lib/shared/sequence-viewer/components/SequenceViewerDrawerHost.svelte",
   ],
-  "/q scan host": [
-    "src/routes/q/[code]/+page.svelte",
-    "src/routes/q/[code]/QScanPage.svelte",
-  ],
   "/sequence route host": [
     "src/routes/sequence/[id]/SequenceViewerPage.svelte",
+  ],
+  "/from/spiroanim route host": [
+    "src/routes/from/spiroanim/[cellKey]/+page.svelte",
   ],
 };
 
@@ -83,6 +76,9 @@ const drawerSource = read(
 );
 const sequenceRouteSource = read(
   "src/routes/sequence/[id]/SequenceViewerPage.svelte"
+);
+const spiroanimBridgeRouteSource = read(
+  "src/routes/from/spiroanim/[cellKey]/+page.svelte"
 );
 const cardHeaderSource = read(
   "src/lib/shared/sequence-viewer/components/CardHeader.svelte"
@@ -144,14 +140,16 @@ describe("SequenceViewerShell host contract", () => {
     expect(shellSource).toContain("<ViewerHeader");
     expect(viewerHeaderSource).toContain("authState.isFullAccount");
     expect(viewerHeaderSource).toContain("RobustAvatar");
-    expect(scanSource).toMatch(/onAccountSignIn=\{ctx\.openSignInPrompt\}/);
+    expect(sequenceRouteSource).toContain("ctx.openSignInPrompt");
   });
 
-  it("registers the library repository before the reset-layout scan viewer mounts", () => {
-    expect(scanSource).toContain(
+  it("registers the library repository before the standalone viewer mounts", () => {
+    expect(sequenceRouteSource).toContain(
       'from "$lib/shared/composition-root/register-library-repository"'
     );
-    expect(scanSource).toContain("if (browser) registerLibraryRepository();");
+    expect(sequenceRouteSource).toContain(
+      "if (browser) registerLibraryRepository();"
+    );
   });
 
   it("names the app Flow Arts Composer in viewer launch actions", () => {
@@ -260,17 +258,22 @@ describe("SequenceViewerShell host contract", () => {
     );
   });
 
-  it("fits glyph titles at both scan entry and card-header boundaries", () => {
-    expect(scanSource.match(/fitToParent/g)).toHaveLength(2);
+  it("fits glyph titles at the card-header boundary", () => {
     expect(cardHeaderSource).toMatch(
       /<TKAWordGlyph[\s\S]*?fitToParent[\s\S]*?\/>/
     );
   });
 
   it.each(hostEntries)("%s renders SequenceViewerShell", (_name, source) => {
-    // Static import (drawer) or lazy import (/q renders it as <ShellComponent>).
     expect(source).toContain("SequenceViewerShell.svelte");
-    expect(source).toMatch(/<(?:SequenceViewerShell|ShellComponent)\b/);
+    expect(source).toContain("<SequenceViewerShell");
+  });
+
+  it("keeps /q as an attribution ingress instead of a viewer host", () => {
+    expect(scanSource).toContain("buildScanSequenceDestination");
+    expect(scanSource).toContain("replaceState: true");
+    expect(scanSource).not.toContain("SequenceViewerShell.svelte");
+    expect(scanSource).not.toContain("SequenceViewerOrchestrator.svelte");
   });
 
   it.each(hostEntries)(
@@ -321,7 +324,11 @@ describe("SequenceViewerShell host contract", () => {
     expect(scanSource).toContain("isFirstScanRouteVisit");
     expect(scanSource).toContain("recordCardScan");
 
-    for (const directLinkSource of [drawerSource, sequenceRouteSource]) {
+    for (const directLinkSource of [
+      drawerSource,
+      sequenceRouteSource,
+      spiroanimBridgeRouteSource,
+    ]) {
       expect(directLinkSource).not.toContain("isFirstScanRouteVisit");
       expect(directLinkSource).not.toContain("recordCardScan");
       expect(directLinkSource).not.toContain("incrementScanCount");

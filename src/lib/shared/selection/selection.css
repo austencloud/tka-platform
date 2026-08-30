@@ -44,14 +44,15 @@
   transform: translateY(-1px);
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.18),
-    0 0 0 1.5px color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
+    0 0 0 1.5px
+      color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
 }
 
 /* Selected — pops toward you: scale + neutral elevation shadow + crisp accent ring. */
 .tka-seq-cell.is-selected {
   z-index: 10;
   border-radius: 8px;
-  transform: scale(1.03);
+  transform: var(--selection-selected-transform, scale(1.03));
   box-shadow:
     0 0 0 2px var(--theme-accent, #6366f1),
     0 6px 18px rgba(0, 0, 0, 0.22);

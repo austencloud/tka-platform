@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  FLOW_FEST_GNSS_CLOCK_SKEW_TOLERANCE_MILLISECONDS,
   FLOW_FEST_GNSS_MAX_ACCURACY_METERS,
   auditFlowFestGnssRoundTrip,
   createFlowFestGnssReplayTrack,
@@ -115,5 +116,57 @@ describe("Flow Fest field positioning", () => {
         30_000
       )
     ).toMatchObject({ quality: "outside-site", accepted: false });
+  });
+
+  it("treats a fix with a future timestamp beyond the clock-skew tolerance as stale, not perfectly fresh", () => {
+    const site = flowFestWorldToWgs84(REFERENCE, { x: 100, z: -115 });
+    const now = 10_000;
+    const evaluation = evaluateFlowFestGnssFix(
+      REFERENCE,
+      {
+        ...site,
+        accuracyMeters: 4,
+        timestampMilliseconds:
+          now + FLOW_FEST_GNSS_CLOCK_SKEW_TOLERANCE_MILLISECONDS + 1,
+        headingDegrees: null,
+        speedMetersPerSecond: null,
+      },
+      now
+    );
+    expect(evaluation).toMatchObject({
+      quality: "degraded-stale",
+      accepted: false,
+    });
+  });
+
+  it("still accepts a fix within the small clock-skew tolerance", () => {
+    const site = flowFestWorldToWgs84(REFERENCE, { x: 100, z: -115 });
+    const now = 10_000;
+    const evaluation = evaluateFlowFestGnssFix(
+      REFERENCE,
+      {
+        ...site,
+        accuracyMeters: 4,
+        timestampMilliseconds:
+          now + FLOW_FEST_GNSS_CLOCK_SKEW_TOLERANCE_MILLISECONDS - 1,
+        headingDegrees: null,
+        speedMetersPerSecond: null,
+      },
+      now
+    );
+    expect(evaluation).toMatchObject({
+      quality: "nominal",
+      accepted: true,
+      ageMilliseconds: 0,
+    });
+  });
+
+  it("rejects a replay whose points collapse to fewer than two distinct samples after dedup", () => {
+    expect(() =>
+      createFlowFestGnssReplayTrack(REFERENCE, [
+        { x: 340, z: -20 },
+        { x: 340, z: -20 },
+      ])
+    ).toThrow(/at least two distinct/);
   });
 });

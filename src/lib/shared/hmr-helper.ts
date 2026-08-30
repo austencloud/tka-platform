@@ -3,6 +3,7 @@
  * Particularly important for Svelte 5 runes state management
  */
 import { forceFreshReload } from "$lib/shared/foundation/services/force-fresh";
+import { recordReloadReason } from "$lib/shared/dev/reload-breadcrumb";
 
 // Track if we've already scheduled a reload to prevent multiple reloads
 let reloadScheduled = false;
@@ -67,6 +68,7 @@ function scheduleReload(reason: string) {
   reloadScheduled = true;
   console.warn(`[HMR] Scheduling page reload: ${reason}`);
   setTimeout(() => {
+    recordReloadReason("HMR recovery reload", reason);
     window.location.reload();
   }, 100);
 }
@@ -586,6 +588,10 @@ export function recoverFromModuleChunkFailure(moduleName: string): void {
   if (!claimModuleChunkRecovery(moduleName)) return;
   reloadScheduled = true;
   console.warn(`[HMR] Module chunk "${moduleName}" failed after retries — fresh reload`);
+  recordReloadReason(
+    "module chunk failed to load",
+    `"${moduleName}" — usually a file saved mid-write; recovering with a cache-busted reload`
+  );
   // Use a fresh, cache-busted navigation rather than location.reload(): a plain
   // reload often HANGS here because in-flight /data/*.json fetches stall while
   // the dev server re-settles after the mid-write save — which is exactly why a

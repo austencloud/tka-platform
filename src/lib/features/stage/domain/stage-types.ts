@@ -54,6 +54,21 @@ export interface FormationSpot {
   facingAngle?: number;
   walkStyle: WalkStyle;
   easing: EasingType;
+  /**
+   * Performer-specific travel into this destination.
+   *
+   * Older documents omit this and inherit the formation's global transition
+   * window. Keeping the intent on the destination spot means timing follows
+   * the same performer and set that already own position, facing, and pacing.
+   */
+  travel?: StageTravelTiming;
+}
+
+export interface StageTravelTiming {
+  departureBeat: number;
+  arrivalBeat: number;
+  /** Omitted means Stage chooses a supported count for the available window. */
+  stepCount?: number;
 }
 
 export type WalkStyle = "crab" | "direct";

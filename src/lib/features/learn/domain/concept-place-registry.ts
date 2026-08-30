@@ -112,6 +112,25 @@ export const CONCEPT_RESOURCE_BINDINGS: Readonly<
     ],
     applications: [],
   },
+  "1.4": {
+    lessonIds: [
+      {
+        lessonId: "rotation-direction",
+        label: "Rotation Direction lesson",
+        coverage: "focused",
+      },
+    ],
+    guideRefs: [
+      {
+        slug: "staff-motions",
+        label: "Staff Motions",
+        coverage: "partial",
+      },
+    ],
+    exploration: null,
+    practice: [],
+    applications: [],
+  },
   "1.5": {
     lessonIds: [
       {
@@ -141,6 +160,19 @@ export const CONCEPT_RESOURCE_BINDINGS: Readonly<
       },
     ],
     applications: [{ href: "/create", label: "Open Composer" }],
+  },
+  "1.6": {
+    lessonIds: [],
+    guideRefs: [
+      {
+        slug: "staff-positions",
+        label: "Staff Positions",
+        coverage: "partial",
+      },
+    ],
+    exploration: null,
+    practice: [],
+    applications: [],
   },
 };
 

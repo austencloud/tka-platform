@@ -24,6 +24,7 @@
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import type { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
+  import type { QualityTier } from "$lib/shared/animation-engine/domain/types/quality-types";
 
   // Per-instance playback stack imports (avoid shared singleton)
   import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
@@ -100,6 +101,7 @@
   let {
     sequence,
     autoPlay = true,
+    autoPlayDelay = 300,
     showControls = true,
     bluePropType = null,
     redPropType = null,
@@ -131,11 +133,18 @@
     resumeWhenPlaybackAllowed = false,
     onTogglePlaybackRef = undefined,
     onReady = undefined,
+    onCanvasInitialized = undefined,
     onLoadError = undefined,
     visibilityManagerOverride = undefined,
+    initialQualityTier = undefined,
+    initialStep = null,
   }: {
     sequence: SequenceData;
     autoPlay?: boolean;
+    /** Delay before autoplay begins after a sequence is ready. Most embeds keep
+     *  the settled 300ms default; prewarmed dual-source stages pass 0 because
+     *  the incoming canvas remains hidden until motion is observed. */
+    autoPlayDelay?: number;
     showControls?: boolean;
     bluePropType?: string | null;
     redPropType?: string | null;
@@ -277,6 +286,10 @@
     onTogglePlaybackRef?: (toggleFn: () => void) => void;
     /** Fires after the sequence and its playback services are ready. */
     onReady?: () => void;
+    /** Fires after AnimatorCanvas has initialized and painted its first frame.
+     *  Heavy dual-source hosts wait for this before revealing a prewarmed
+     *  replacement; `onReady` only means the sequence data is loaded. */
+    onCanvasInitialized?: () => void;
     /** Reports an engine/data load failure to a host that keeps a poster above
      *  the player until readiness is confirmed. */
     onLoadError?: (message: string) => void;
@@ -286,6 +299,10 @@
      *  visitor's in-app settings nor mutates them. Forwarded to AnimatorCanvas
      *  so the engine-side reads scope the same way. */
     visibilityManagerOverride?: AnimationVisibilityStateManager;
+    /** Optional adaptive-quality ceiling for performance-sensitive embeds. */
+    initialQualityTier?: QualityTier;
+    /** Fractional playback position applied immediately after each load. */
+    initialStep?: number | null;
   } = $props();
 
   const minimal = $derived(chrome === "minimal");
@@ -542,7 +559,7 @@
           pc.togglePlayback();
         }
       });
-    }, 300);
+    }, autoPlayDelay);
     return () => clearTimeout(autoplayTimer);
   });
 
@@ -569,6 +586,8 @@
   async function loadAnimation() {
     if (!playbackController || !sequence) return;
 
+    const loadStartedAt = import.meta.env.DEV ? performance.now() : 0;
+    const loadIdentity = getSequenceLoadId(sequence) ?? "unknown";
     loading = true;
     error = null;
 
@@ -609,6 +628,10 @@
         bpm = externalBpm;
       }
 
+      if (initialStep !== null) {
+        playbackController.seekToStep(initialStep);
+      }
+
       hasLoadedOnce = true;
       onReady?.();
     } catch (err) {
@@ -617,6 +640,12 @@
       onLoadError?.(error);
     } finally {
       loading = false;
+      if (import.meta.env.DEV) {
+        performance.measure(`inline-animation:load:${loadIdentity}`, {
+          start: loadStartedAt,
+          end: performance.now(),
+        });
+      }
     }
   }
 
@@ -750,10 +779,12 @@
         hideHeader={fill && !showWordHeader}
         hideProgressBar={fill && !scrubbable}
         {cornerToggle}
+        onInitialized={onCanvasInitialized}
         onProgressBarSeek={scrubbable ? handleSeek : null}
         onProgressBarScrubStart={scrubbable ? handleScrubStart : null}
         onProgressBarScrubEnd={scrubbable ? handleScrubEnd : null}
         {beatIndicators}
+        {initialQualityTier}
       />
     </div>
 

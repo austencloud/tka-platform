@@ -1,9 +1,9 @@
 <!--
-  BentoPropGrid.svelte - Flat prop selection grid
+  BentoPropGrid.svelte - Family-first prop selection grid
 
-  Every prop renders as its own button under a picker section header
-  (Standard / Big / Novelty / Premium). No variant popover, no count badges —
-  the sections come from PROP_PICKER_SECTIONS.
+  Base props render under the picker section headers. Families with several
+  builds open a style chooser, so Club owns Club / Classic Club / Torch rather
+  than scattering those choices across unrelated sections.
 
   Variants:
   - "panel" (default): has border/background for standalone use (e.g. Settings tab)
@@ -16,9 +16,15 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     PROP_PICKER_SECTIONS,
+    getAllVariations,
+    getBasePropType,
+    getFamilyTileDisplayProp,
+    getPropTypeDisplayInfo,
     isPropActive,
     isPremiumCosmeticProp,
   } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import { Popover } from "bits-ui";
+  import { flyFade, growFade } from "$lib/shared/transitions/motion";
   import PropTypeButton from "./PropTypeButton.svelte";
   import PropChiralityRow from "./PropChiralityRow.svelte";
   import type { PropChiralitySeam } from "./prop-chirality-seam";
@@ -53,6 +59,8 @@
     variant = "panel",
     flat = false,
     chirality,
+    allowedProps,
+    accessMode = "standard",
   } = $props<{
     selectedPropType: PropType;
     color?: "blue" | "red" | (string & {});
@@ -74,22 +82,75 @@
      * never shared between hands the way prop type is.
      */
     chirality?: PropChiralitySeam;
+    /** Optional host-owned capability filter. The canonical registry still
+     *  owns labels, ordering, active-state, and access rules. */
+    allowedProps?: readonly PropType[];
+    /** Educational instruments may select ordinary play-earned props directly
+     *  and include Poi. Premium cosmetics retain their subscription gate. */
+    accessMode?: "standard" | "educational";
   }>();
 
-  // Active props grouped into the flat picker sections. Each prop renders as
-  // its own button — no variant drill-down.
-  const sections = $derived(
-    PROP_PICKER_SECTIONS.map((s) => ({
-      label: s.label,
-      props: s.props.filter((p) => {
-        if (p === PropType.POI) return poiPickerEnabled;
-        if (isPremiumCosmeticProp(p)) return premiumPickerEnabled;
-        return isPropActive(p);
-      }),
-    })).filter((s) => s.props.length > 0)
+  const allowedPropSet = $derived(
+    allowedProps ? new Set<PropType>(allowedProps) : null
   );
 
-  const allProps = $derived(sections.flatMap((s) => s.props));
+  function canShowProp(prop: PropType): boolean {
+    if (allowedPropSet && !allowedPropSet.has(prop)) return false;
+    if (prop === PropType.POI)
+      return accessMode === "educational" || poiPickerEnabled;
+    if (isPremiumCosmeticProp(prop)) return premiumPickerEnabled;
+    return isPropActive(prop);
+  }
+
+  const selectableProps = $derived(
+    PROP_PICKER_SECTIONS.flatMap((section) => section.props).filter((prop) =>
+      canShowProp(prop)
+    )
+  );
+  const selectablePropSet = $derived(new Set(selectableProps));
+
+  // Preserve the curated base-prop ordering while letting each base own its
+  // variants. A family stays in the section where its base was authored, so a
+  // Big Chicken entry cannot move the Chicken family out of Novelty. The
+  // chooser then gets only variants that the curated picker actually allows,
+  // so internal-only Staff builds stay internal.
+  const sections = $derived.by(() => {
+    const seen = new Set<PropType>();
+    return PROP_PICKER_SECTIONS.map((section) => {
+      const bases: PropType[] = [];
+      for (const prop of section.props) {
+        if (!canShowProp(prop)) continue;
+        const base = isPremiumCosmeticProp(prop) ? prop : getBasePropType(prop);
+        if (prop !== base) continue;
+        if (seen.has(base)) continue;
+        seen.add(base);
+        bases.push(base);
+      }
+      return { label: section.label, bases };
+    }).filter((section) => section.bases.length > 0);
+  });
+
+  const allBases = $derived(sections.flatMap((section) => section.bases));
+  const selectedBase = $derived(getBasePropType(selectedPropType));
+
+  function familyChoices(base: PropType): PropType[] {
+    return getAllVariations(base).filter((prop) => selectablePropSet.has(prop));
+  }
+
+  function familyCount(base: PropType): number | undefined {
+    const count = familyChoices(base).length;
+    return count > 1 ? count : undefined;
+  }
+
+  function familyDisplayProp(base: PropType): PropType {
+    return getFamilyTileDisplayProp(base, selectedPropType);
+  }
+
+  let openFamily = $state<PropType | null>(null);
+
+  function toggleFamily(base: PropType): void {
+    openFamily = openFamily === base ? null : base;
+  }
 
   // Track which locked prop (if any) is showing its inline earn tip.
   let lockedTipFor = $state<PropType | null>(null);
@@ -106,6 +167,12 @@
    */
   function handleTileClick(prop: PropType) {
     const premium = isPremiumCosmeticProp(prop);
+    if (accessMode === "educational" && !premium) {
+      lockedTipFor = null;
+      premiumNudgeFor = null;
+      onSelect(prop);
+      return;
+    }
     const route = routePropTileClick({
       isPremiumCosmetic: premium,
       premiumAllowed: premium && checkPremiumCosmeticAccess().allowed,
@@ -115,6 +182,7 @@
     if (route === "select") {
       lockedTipFor = null;
       premiumNudgeFor = null;
+      openFamily = null;
       onSelect(prop);
       return;
     }
@@ -134,6 +202,7 @@
   class="prop-grid-root"
   class:panel={variant === "panel"}
   class:inline={variant === "inline"}
+  class:flat
 >
   {#if variant === "panel"}
     <header class="grid-header">
@@ -178,11 +247,91 @@
     </div>
   {/snippet}
 
+  {#snippet familyTile(base: PropType)}
+    {@const choices = familyChoices(base)}
+    {#if choices.length <= 1}
+      {@render tile(choices[0] ?? base)}
+    {:else if flat}
+      <PropTypeButton
+        propType={familyDisplayProp(base)}
+        selected={selectedBase === base}
+        badge={familyCount(base)}
+        actionLabel={`Choose ${getPropTypeDisplayInfo(base).label} style`}
+        buttonProps={{ "aria-expanded": openFamily === base }}
+        onSelect={() => toggleFamily(base)}
+        {color}
+      />
+      {#if openFamily === base}
+        <section
+          class="variant-popover flat-variant-drawer"
+          aria-label={`${getPropTypeDisplayInfo(base).label} styles`}
+          transition:flyFade={{ y: 6 }}
+        >
+          <span class="variant-popover-label">
+            {getPropTypeDisplayInfo(base).label} styles
+          </span>
+          <div class="variant-popover-buttons">
+            {#each choices as prop (prop)}
+              {@render tile(prop)}
+            {/each}
+          </div>
+        </section>
+      {/if}
+    {:else}
+      <Popover.Root
+        open={openFamily === base}
+        onOpenChange={(open) => (openFamily = open ? base : null)}
+      >
+        <Popover.Trigger>
+          {#snippet child({ props })}
+            <PropTypeButton
+              propType={familyDisplayProp(base)}
+              selected={selectedBase === base}
+              badge={familyCount(base)}
+              actionLabel={`Choose ${getPropTypeDisplayInfo(base).label} style`}
+              buttonProps={props}
+              {color}
+            />
+          {/snippet}
+        </Popover.Trigger>
+        <Popover.Content
+          side="bottom"
+          sideOffset={8}
+          avoidCollisions={true}
+          collisionPadding={12}
+          forceMount
+        >
+          {#snippet child({ open, wrapperProps, props })}
+            <div {...wrapperProps}>
+              {#if open}
+                <section
+                  {...props}
+                  class="variant-popover"
+                  aria-label={`${getPropTypeDisplayInfo(base).label} styles`}
+                  transition:flyFade={{ y: 6 }}
+                >
+                  <span class="variant-popover-label">
+                    {getPropTypeDisplayInfo(base).label} styles
+                  </span>
+                  <div class="variant-popover-buttons">
+                    {#each choices as prop (prop)}
+                      {@render tile(prop)}
+                    {/each}
+                  </div>
+                </section>
+              {/if}
+            </div>
+          {/snippet}
+        </Popover.Content>
+      </Popover.Root>
+    {/if}
+  {/snippet}
+
   <div class="grid-scroll themed-scrollbar">
     {#if flat}
       <div class="flat-grid">
-        {#each allProps as prop (prop)}
-          {@render tile(prop)}
+        {#each allBases as base (base)}
+          {@render familyTile(base)}
         {/each}
       </div>
     {:else}
@@ -190,8 +339,8 @@
         {#each sections as section, i}
           <div class="section-label" class:first={i === 0}>{section.label}</div>
           <div class="section-buttons">
-            {#each section.props as prop (prop)}
-              {@render tile(prop)}
+            {#each section.bases as base (base)}
+              {@render familyTile(base)}
             {/each}
           </div>
         {/each}
@@ -200,11 +349,13 @@
   </div>
 
   {#if chirality && isBuugengFamilyProp(selectedPropType)}
-    <PropChiralityRow
-      propType={selectedPropType}
-      hands={chirality.hands}
-      onChange={chirality.onChange}
-    />
+    <div class="chirality-dock" transition:growFade={{ axis: "y" }}>
+      <PropChiralityRow
+        propType={selectedPropType}
+        hands={chirality.hands}
+        onChange={chirality.onChange}
+      />
+    </div>
   {/if}
 
   {#if premiumNudgeFor}
@@ -265,14 +416,14 @@
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 12px;
+    padding: 14px 18px 20px;
     scrollbar-width: thin;
   }
 
   .grid-content {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
   }
 
   /* Flat mode: one dense grid, no sections — maximize visible prop count. */
@@ -284,62 +435,133 @@
   }
   .flat-grid :global(.prop-button) {
     width: 100%;
+    padding: 6px 3px 5px;
+    gap: 3px;
+    border-radius: 10px;
+    aspect-ratio: 1 / 1.15;
+  }
+  .flat-grid :global(.prop-label) {
+    font-size: var(--font-size-compact, 12px);
+  }
+  .flat-grid :global(.prop-image-container .prop-composition-preview) {
+    width: 75%;
+    max-height: 75%;
   }
 
   .section-label {
-    font-size: 10px;
-    font-weight: 600;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
     color: var(--theme-text-dim);
     text-transform: uppercase;
-    letter-spacing: 0.4px;
-    opacity: 0.5;
-    padding: 8px 4px 2px;
-    text-align: center;
+    letter-spacing: 0.06em;
+    padding: 16px 2px 8px;
+    text-align: left;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .section-label.first {
     border-top: none;
-    padding-top: 0;
+    padding-top: 2px;
   }
 
   .section-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 10px;
     justify-content: center;
-    padding: 0 4px;
+    padding: 0 2px;
   }
 
   .section-buttons :global(.prop-button) {
-    width: 79px;
+    width: clamp(98px, 28cqw, 124px);
     flex-shrink: 0;
   }
 
-  /* Paid labels include the product family name. At the narrowest picker
-     container, give those two tiles enough room to keep the full label. */
-  @container prop-grid (max-width: 399px) {
-    .section-buttons .tile-wrapper.premium :global(.prop-button) {
-      width: 95px;
+  .variant-popover {
+    z-index: 60;
+    container-type: inline-size;
+    display: flex;
+    width: min(420px, calc(100vw - 24px));
+    max-height: min(440px, calc(100vh - 24px));
+    box-sizing: border-box;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    overflow-y: auto;
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
+    border-radius: 14px;
+    /* Theme cards are translucent over the animated app background. This
+       chooser needs an opaque floor so the prop grid beneath cannot compete
+       with its five style choices; the theme card still supplies the tint. */
+    background-color: #0c0e16;
+    background-image: linear-gradient(
+      var(--theme-card-bg, transparent),
+      var(--theme-card-bg, transparent)
+    );
+    box-shadow: 0 16px 52px var(--theme-shadow, rgba(0, 0, 0, 0.62));
+  }
+
+  .variant-popover-label {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .variant-popover-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+    gap: 8px;
+  }
+
+  .variant-popover-buttons .tile-wrapper :global(.prop-button) {
+    width: 100%;
+  }
+
+  @container (max-width: 359px) {
+    .variant-popover-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .variant-popover-buttons .tile-wrapper {
+      flex: 0 1 calc((100% - 16px) / 3);
+      min-width: 0;
     }
   }
 
-  /* Container queries for larger containers */
-  @container prop-grid (min-width: 400px) {
-    .section-buttons :global(.prop-button) {
-      width: 90px;
-    }
+  .flat-variant-drawer {
+    z-index: auto;
+    grid-column: 1 / -1;
+    width: 100%;
+    max-height: none;
+    box-shadow: 0 8px 24px var(--theme-shadow, rgba(0, 0, 0, 0.42));
+  }
+
+  .chirality-dock {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  /* The flat picker is the compact/mobile drawer. Chirality is part of
+     choosing Buugeng, so surface it before the prop catalogue instead of
+     making the user scroll through every prop to find the A/B controls. */
+  .prop-grid-root.flat .chirality-dock {
+    order: -1;
   }
 
   @container prop-grid (min-width: 550px) {
     .section-buttons :global(.prop-button) {
-      width: 100px;
+      width: clamp(104px, 17cqw, 118px);
     }
   }
 
   @container prop-grid (min-width: 700px) {
     .section-buttons :global(.prop-button) {
-      width: 95px;
+      width: clamp(102px, 13cqw, 112px);
     }
   }
 

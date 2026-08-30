@@ -6,7 +6,14 @@ import type { FlowerStyle } from "../domain/flower-signature";
 export type VtgMode = "SS" | "TS" | "QS" | "SO" | "TO" | "QO";
 
 /** Canonical display order: same-direction trio, then opposite-direction trio. */
-export const MODE_ORDER: readonly VtgMode[] = ["SS", "TS", "QS", "SO", "TO", "QO"];
+export const MODE_ORDER: readonly VtgMode[] = [
+  "SS",
+  "TS",
+  "QS",
+  "SO",
+  "TO",
+  "QO",
+];
 
 export const MODE_LABEL: Record<VtgMode, string> = {
   SS: "Split · Same",
@@ -15,6 +22,16 @@ export const MODE_LABEL: Record<VtgMode, string> = {
   SO: "Split · Opp",
   TO: "Together · Opp",
   QO: "Quarter · Opp",
+};
+
+/** Diamond-grid VTG mode → canonical TnD family. */
+export const MODE_FAMILY_ID: Record<VtgMode, string> = {
+  SS: "split-same",
+  TS: "tog-same",
+  QS: "quarter-same",
+  SO: "split-opp",
+  TO: "tog-opp",
+  QO: "quarter-opp",
 };
 
 export interface Realization {
@@ -45,11 +62,12 @@ function modeOf(timing: string, direction: string): VtgMode {
 export function filterRealizations(
   edges: CsvEdge[],
   blueStyle: FlowerStyle,
-  redStyle: FlowerStyle,
+  redStyle: FlowerStyle
 ): Realization[] {
   const byMode = new Map<VtgMode, Realization>();
   for (const e of edges) {
-    if (e.blueMotionType !== blueStyle || e.redMotionType !== redStyle) continue;
+    if (e.blueMotionType !== blueStyle || e.redMotionType !== redStyle)
+      continue;
     const mode = modeOf(e.timing, e.direction);
     if (byMode.has(mode)) continue;
     byMode.set(mode, {
@@ -67,7 +85,7 @@ export function filterRealizations(
 /** Runtime convenience: load the diamond edges then filter. */
 export async function loadRealizations(
   blueStyle: FlowerStyle,
-  redStyle: FlowerStyle,
+  redStyle: FlowerStyle
 ): Promise<Realization[]> {
   return filterRealizations(await loadDiamondEdges(), blueStyle, redStyle);
 }

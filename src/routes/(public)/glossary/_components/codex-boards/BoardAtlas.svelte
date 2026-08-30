@@ -32,7 +32,10 @@
          reads as three bands sharing a line, not as one mixed band. -->
     <div class="minor-row">
       {#each MINOR_TYPE_BANDS as band (band.type.n)}
-        <section class="band minor" aria-label={band.type.word.replace(/:\s*$/, "")}>
+        <section
+          class="band minor"
+          aria-label={band.type.word.replace(/:\s*$/, "")}
+        >
           <CodexBandHead type={band.type} />
           <CodexFlow boxes={band.boxes} {onSelect} />
         </section>
@@ -83,18 +86,34 @@
   /* A true 4K canvas (2350px of band and up, which no 1080p or 1440p screen
      reaches) is also 2160px tall. Twelve across leaves the bottom third empty,
      so drop to nine - Type 1's boxes are three cells wide, so nine is the next
-     packing down - which puts Type 1 on three rows and the board on six, and
-     spends the height on much larger cells. Container queries in px on purpose:
-     the root ramp changes what a rem is between these screens, which is exactly
-     what this tier must not follow. */
+     packing down - which puts Type 1 on three rows and the board on six. The
+     width reserve includes the two wide gaps between Types 4, 5 and 6; without
+     it, Type 6 wraps onto a seventh row and falls below the screen. */
   @container (min-width: 2350px) {
     .bands {
       --abox-gap: 0.5rem;
       --band-rows: 6;
       --codex-picto-size: min(
-        calc((100cqi - 2rem) / 9),
+        calc((100cqi - 8rem) / 9),
         calc((100dvh - var(--codex-atlas-chrome, 28.5rem)) / var(--band-rows))
       );
+    }
+  }
+
+  /* A split desktop pane can be nearly square even when it is still wide
+     enough for the full Atlas. Twelve columns make width bind first there,
+     leaving a short board floating above the footer. Nine columns spend that
+     available height on the pictographs and keep each type grouped. */
+  @media (max-aspect-ratio: 4 / 3) {
+    @container (min-width: 70rem) {
+      .bands {
+        --abox-gap: 0.5rem;
+        --band-rows: 6;
+        --codex-picto-size: min(
+          calc((100cqi - 8rem) / 9),
+          calc((100dvh - var(--codex-atlas-chrome, 28.5rem)) / var(--band-rows))
+        );
+      }
     }
   }
 

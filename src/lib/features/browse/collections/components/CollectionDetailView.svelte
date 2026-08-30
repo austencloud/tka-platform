@@ -928,8 +928,11 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 <style>
   .collection-detail {
     display: flex;
+    flex: 1;
     flex-direction: column;
+    width: 100%;
     height: 100%;
+    min-width: 0;
     min-height: 0;
     container-type: inline-size;
     container-name: gallery;

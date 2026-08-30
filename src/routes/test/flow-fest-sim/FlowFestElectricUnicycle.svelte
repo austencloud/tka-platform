@@ -1,11 +1,16 @@
 <script lang="ts">
   import { T } from "@threlte/core";
-  import { Avatar3D } from "@austencloud/scene-3d";
+  import type { Object3D } from "three";
   import {
-    FLOW_FEST_EUC_CONFIG,
     type FlowFestElectricUnicycleDynamics,
     type FlowFestElectricUnicycleTerrainAttitude,
   } from "$lib/features/flow-fest-sim/domain/flow-fest-electric-unicycle";
+  import {
+    flowFestEucPedalAnchorLocal,
+    flowFestEucSuspensionOffsetMeters,
+    type FlowFestEucMountedPoseDiagnostic,
+  } from "$lib/features/flow-fest-sim/domain/flow-fest-euc-mounted-pose";
+  import FlowFestEucMountedRider from "./FlowFestEucMountedRider.svelte";
 
   interface Props {
     position: { x: number; y: number; z: number };
@@ -13,6 +18,11 @@
     terrainAttitude?: FlowFestElectricUnicycleTerrainAttitude;
     mounted: boolean;
     lightsOn?: boolean;
+    /** Longitudinal acceleration from the last simulation step, m/s². */
+    longitudinalAccelerationMetersPerSecondSquared?: number;
+    onMountedPoseDiagnostic?: (
+      diagnostic: FlowFestEucMountedPoseDiagnostic
+    ) => void;
   }
 
   const props: Props = $props();
@@ -28,14 +38,27 @@
     }
   );
   const suspensionOffset = $derived(
-    -terrainAttitude.roughnessMeters * 0.48 +
-      Math.sin(props.dynamics.wheelRotationRadians * 0.43) *
-        terrainAttitude.roughnessMeters *
-        0.32
+    flowFestEucSuspensionOffsetMeters(
+      terrainAttitude.roughnessMeters,
+      props.dynamics.wheelRotationRadians
+    )
   );
+
+  // The rider stands on these, not on a root offset. They are children of the
+  // rider-lean group, so they already carry heading, terrain pitch and roll,
+  // suspension travel, and visual lean - the pose applies that attitude once
+  // by reading them, and never again.
+  const leftPedalLocal = flowFestEucPedalAnchorLocal("left");
+  const rightPedalLocal = flowFestEucPedalAnchorLocal("right");
+
+  let vehicleRootRef: Object3D | undefined = $state();
+  let riderFrameRef: Object3D | undefined = $state();
+  let leftPedalAnchorRef: Object3D | undefined = $state();
+  let rightPedalAnchorRef: Object3D | undefined = $state();
 </script>
 
 <T.Group
+  bind:ref={vehicleRootRef}
   name="FFS_ElectricUnicycle"
   position={[props.position.x, props.position.y, props.position.z]}
   rotation={[
@@ -45,6 +68,7 @@
   ]}
 >
   <T.Group
+    bind:ref={riderFrameRef}
     name="FFS_EUC_RiderLean"
     position={[0, suspensionOffset, 0]}
     rotation={[props.dynamics.pitchRadians, 0, props.dynamics.leanRadians]}
@@ -185,6 +209,23 @@
       {/each}
     {/each}
 
+    <!--
+      Contact anchors on the grip-strip surface, one per pedal. Their +Y is the
+      sole normal and their +Z the foot's forward basis, both inherited from
+      the rider-lean frame, so a foot placed on one is already correct for the
+      terrain the wheel is standing on.
+    -->
+    <T.Group
+      bind:ref={leftPedalAnchorRef}
+      name="FFS_EUC_PedalAnchor_Left"
+      position={[leftPedalLocal.x, leftPedalLocal.y, leftPedalLocal.z]}
+    />
+    <T.Group
+      bind:ref={rightPedalAnchorRef}
+      name="FFS_EUC_PedalAnchor_Right"
+      position={[rightPedalLocal.x, rightPedalLocal.y, rightPedalLocal.z]}
+    />
+
     <T.Mesh position={[0, 0.48, 0.197]}>
       <T.BoxGeometry args={[0.12, 0.26, 0.024]} />
       <T.MeshStandardMaterial
@@ -220,33 +261,15 @@
     {/if}
 
     {#if props.mounted}
-      <T.Group name="FFS_EUC_MountedRider">
-        <Avatar3D
-          id="flow-fest-player"
-          avatarId={FLOW_FEST_EUC_CONFIG.riderAvatarId}
-          bluePropState={null}
-          redPropState={null}
-          visible={true}
-          isActive={false}
-          position={{
-            x: 0,
-            y: FLOW_FEST_EUC_CONFIG.riderPedalHeightMeters,
-            z: FLOW_FEST_EUC_CONFIG.riderOffsetZMeters,
-          }}
-          facingAngle={0}
-          isMoving={false}
-          moveSpeed={Math.min(
-            1,
-            Math.abs(props.dynamics.speedMetersPerSecond) /
-              FLOW_FEST_EUC_CONFIG.cruiseSpeedMetersPerSecond
-          )}
-          moveDirection={{ x: 0, z: 1 }}
-          enableLocomotion={true}
-          enableRootMotion={false}
-          isGrounded={true}
-          spinePitchOffset={Math.max(0, -props.dynamics.pitchRadians * 0.7)}
-        />
-      </T.Group>
+      <FlowFestEucMountedRider
+        dynamics={props.dynamics}
+        longitudinalAccelerationMetersPerSecondSquared={props.longitudinalAccelerationMetersPerSecondSquared}
+        vehicleRoot={vehicleRootRef}
+        riderFrame={riderFrameRef}
+        leftPedalAnchor={leftPedalAnchorRef}
+        rightPedalAnchor={rightPedalAnchorRef}
+        onDiagnostic={props.onMountedPoseDiagnostic}
+      />
     {/if}
   </T.Group>
 

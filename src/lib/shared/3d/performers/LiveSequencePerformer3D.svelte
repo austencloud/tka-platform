@@ -97,6 +97,7 @@
   groundOffset={rigGroundOffset}
   enableLocomotion={true}
   enableFootPlanting={true}
+  headDodge={true}
   showEffects={true}
   {tipEffectMap}
   isPlaying={performerState.isPlaying}

@@ -81,14 +81,19 @@ export interface EmberAtmosphereLookPreset {
   label: string;
   sky: SkyGradientConfig;
   fog: FogConfig;
-  lavaRivers: Pick<
-    LavaRiversConfig,
-    | "baseColor"
-    | "hotColor"
-    | "crustColor"
-    | "flowSpeed"
-    | "warpIntensity"
-    | "crustCoverage"
+  lavaRivers: Required<
+    Pick<
+      LavaRiversConfig,
+      | "baseColor"
+      | "hotColor"
+      | "crustColor"
+      | "leveeColor"
+      | "flowSpeed"
+      | "warpIntensity"
+      | "crustCoverage"
+      | "edgeCooling"
+      | "bankRadiance"
+    >
   >;
   volcanicHaze: VolcanicHazeConfig;
   embers: FallingParticlesConfig;
@@ -104,56 +109,76 @@ export interface EmberAtmosphereLookPreset {
   rig: EmberAtmosphereRigConfig;
 }
 
+/**
+ * Bearing of the active caldera, matching `rig.calderaLight`. The sky glow and
+ * the haze underglow both key off it so the lit half of the sky and the lit
+ * terrain agree.
+ */
+const CALDERA_BEARING: [number, number, number] = [-25, 0, 145];
+
 const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
   id: "blackglass-inferno",
   label: "Blackglass Inferno",
   sky: {
-    topColor: "#030305",
-    midColor: "#0b0506",
-    bottomColor: "#4d1008",
+    topColor: "#05070e",
+    midColor: "#221419",
+    bottomColor: "#7d2a10",
+    horizonGlow: {
+      color: "#c8451a",
+      direction: CALDERA_BEARING,
+      height: 0.16,
+      spread: 0.42,
+      intensity: 0.34,
+    },
   },
-  fog: { color: "#160807", density: 0.0082 },
+  fog: { color: "#1c0f0c", density: 0.0049 },
   lavaRivers: {
-    baseColor: "#c92a04",
-    hotColor: "#ffb12b",
+    baseColor: "#e33a05",
+    hotColor: "#ffd05b",
     crustColor: "#070303",
-    flowSpeed: 0.052,
-    warpIntensity: 0.62,
-    crustCoverage: 0.66,
+    leveeColor: "#231512",
+    flowSpeed: 0.06,
+    warpIntensity: 0.68,
+    crustCoverage: 0.46,
+    edgeCooling: 0.34,
+    bankRadiance: 0.5,
   },
   volcanicHaze: {
     enabled: true,
-    color1: "#b33a15",
-    color2: "#110405",
-    opacity: 0.28,
-    scale: 3.1,
-    animationSpeed: 0.022,
+    color1: "#7b2b16",
+    color2: "#090b0f",
+    opacity: 0.4,
+    scale: 2.7,
+    animationSpeed: 0.035,
     lightningInterval: 7.5,
-    lightningIntensity: 0.16,
+    lightningIntensity: 0.5,
     innerGlowColor: "#ff5a12",
     radius: 260,
+    underglowDirection: CALDERA_BEARING,
+    underglowColor: "#d8501a",
+    underglowStrength: 0.38,
   },
   embers: {
     type: "embers",
-    count: 64,
-    area: { width: 28, height: 8, depth: 34 },
-    speed: 0.15,
+    count: 126,
+    area: { width: 28, height: 11, depth: 34 },
+    speed: 0.17,
     colors: ["#ff3a08", "#ff6a0a", "#ff9c20", "#ffd070"],
-    sizeRange: [0.008, 0.024],
+    sizeRange: [0.014, 0.05],
     spin: false,
   },
   ash: {
     type: "dust",
-    count: 82,
-    area: { width: 34, height: 11, depth: 42 },
+    count: 118,
+    area: { width: 34, height: 13, depth: 42 },
     speed: 0.038,
     colors: ["#66514a", "#3d3434", "#796059", "#2c292d"],
-    sizeRange: [0.014, 0.055],
+    sizeRange: [0.018, 0.07],
     spin: false,
   },
   smoke: {
     type: "smoke",
-    count: 24,
+    count: 34,
     area: { width: 34, height: 10, depth: 38 },
     speed: 0.018,
     colors: ["#160b0b", "#23100d", "#0b080b", "#32120d"],
@@ -161,24 +186,24 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
     spin: false,
   },
   hemisphereLight: {
-    skyColor: "#6e6769",
-    groundColor: "#5b1509",
-    intensity: 1.04,
+    skyColor: "#8799a2",
+    groundColor: "#2f0d08",
+    intensity: 1.32,
   },
   skyLight: {
     enabled: true,
     color: "#ffd2b0",
-    intensity: 1.62,
+    intensity: 2.05,
     position: [-18, 24, -10],
   },
   rig: {
     id: "blackglass-inferno",
     label: "Blackglass Inferno",
     directionals: [
-      { position: [18, 15, 18], color: "#ffc18c", intensity: 0.46 },
-      { position: [-20, 10, 12], color: "#6f8c9b", intensity: 0.72 },
-      { position: [0, 24, -6], color: "#ffeadb", intensity: 0.3 },
-      { position: [-34, 20, 90], color: "#c33a18", intensity: 0.55 },
+      { position: [18, 15, 18], color: "#ffc18c", intensity: 0.72 },
+      { position: [-20, 10, 12], color: "#7fa9bd", intensity: 1.22 },
+      { position: [0, 24, -6], color: "#ffeadb", intensity: 0.38 },
+      { position: [-34, 20, 90], color: "#c84620", intensity: 0.68 },
     ],
     points: [
       {
@@ -188,18 +213,22 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
         distance: 34,
         decay: 2,
       },
+      // Ground irradiance falls as height/dist^3, so a light close to a flat
+      // plain paints a hard disc: at 1.1m over 12m these two dropped 196:1 and
+      // 14:1 across six metres. The river lights its own banks now, so these
+      // sit high enough to wash the plain instead of spotlighting it.
       {
-        position: [5, 2.8, 11],
+        position: [5, 4, 11],
         color: "#ff8a20",
-        intensity: 28,
-        distance: 20,
+        intensity: 22,
+        distance: 26,
         decay: 2,
       },
       {
-        position: [-5, 1.1, -1],
+        position: [-5, 3.2, -1],
         color: "#ff4210",
-        intensity: 26,
-        distance: 12,
+        intensity: 16,
+        distance: 30,
         decay: 2,
       },
       {
@@ -209,38 +238,54 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
         distance: 46,
         decay: 2,
       },
+      {
+        position: [2, 5, -108],
+        color: "#ff4610",
+        intensity: 86,
+        distance: 44,
+        decay: 2,
+      },
     ],
     calderaLight: {
       position: [-25, 18, 145],
       color: "#ff3d0b",
-      intensity: 168,
+      intensity: 210,
       distance: 58,
       decay: 2,
     },
     heatFields: [
       { position: { x: 14, z: 2 }, radius: 3.4, height: 5.2, intensity: 0.035 },
-      { position: { x: 8, z: 40 }, radius: 4.8, height: 8, intensity: 0.028 },
-      { position: { x: -25, z: 145 }, radius: 9, height: 15, intensity: 0.024 },
+      { position: { x: 8, z: 40 }, radius: 4.8, height: 8, intensity: 0.038 },
+      {
+        position: { x: -12, z: -72 },
+        radius: 5.4,
+        height: 7.5,
+        intensity: 0.024,
+      },
+      { position: { x: -25, z: 145 }, radius: 9, height: 15, intensity: 0.06 },
     ],
+    // Plumes render additively against a near-black sky, so their colour is
+    // what makes them read at all. Ash lit from beneath is a warm mid grey,
+    // not the near-black these carried when they were invisible.
     plumes: [
       {
         position: [-25, 44, 145],
         count: 64,
         area: { width: 18, height: 34, depth: 16 },
         speed: 0.034,
-        colors: ["#2c1a18", "#3c2420", "#171417", "#553029"],
+        colors: ["#5a3a30", "#6d4a3c", "#3a2c2c", "#8a5236"],
         sizeRange: [1.2, 3.1],
-        opacity: 0.12,
+        opacity: 0.3,
         motionScale: 0.7,
       },
       {
-        position: [27, 15, 60],
+        position: [34, 15, -74],
         count: 24,
         area: { width: 8, height: 18, depth: 8 },
         speed: 0.026,
-        colors: ["#211719", "#3b2320", "#151216"],
+        colors: ["#453230", "#5a3c33", "#2b2429"],
         sizeRange: [0.65, 1.55],
-        opacity: 0.075,
+        opacity: 0.2,
         motionScale: 0.6,
       },
       {
@@ -248,34 +293,44 @@ const BLACKGLASS_INFERNO: EmberAtmosphereLookPreset = {
         count: 18,
         area: { width: 6, height: 12, depth: 6 },
         speed: 0.022,
-        colors: ["#271817", "#3d201a", "#171215"],
+        colors: ["#4a3130", "#5f382c", "#2a2228"],
         sizeRange: [0.45, 1.1],
-        opacity: 0.07,
+        opacity: 0.19,
         motionScale: 0.56,
+      },
+      {
+        position: [2, 12, -108],
+        count: 32,
+        area: { width: 10, height: 22, depth: 9 },
+        speed: 0.028,
+        colors: ["#42302f", "#573b33", "#242229", "#6f4030"],
+        sizeRange: [0.8, 1.9],
+        opacity: 0.22,
+        motionScale: 0.64,
       },
     ],
     materials: {
       world: {
-        tint: "#24100d",
-        tintBlend: 0.08,
+        tint: "#03070a",
+        tintBlend: 0.52,
         emissive: "#3a0903",
         emissiveBlend: 0.08,
         emissiveIntensity: 0.16,
-        roughnessScale: 1.2,
-        metalnessAdd: -0.05,
+        roughnessScale: 1.34,
+        metalnessAdd: -0.35,
       },
       playableSurface: {
-        tint: "#120708",
-        tintBlend: 0.06,
+        tint: "#070b0d",
+        tintBlend: 0.34,
         emissive: "#681704",
         emissiveBlend: 0.025,
         emissiveIntensity: 0.05,
         roughnessScale: 1.8,
-        metalnessAdd: -0.25,
+        metalnessAdd: -0.4,
       },
       meshyGeology: {
-        tint: "#180a08",
-        tintBlend: 0.09,
+        tint: "#151a1c",
+        tintBlend: 0.08,
         emissive: "#4a0d03",
         emissiveBlend: 0.06,
         emissiveIntensity: 0.14,
@@ -299,27 +354,45 @@ const FURNACE_STORM: EmberAtmosphereLookPreset = {
   ...BLACKGLASS_INFERNO,
   id: "furnace-storm",
   label: "Furnace Storm",
-  sky: { topColor: "#120707", midColor: "#46140a", bottomColor: "#b23a10" },
+  sky: {
+    topColor: "#1a0a09",
+    midColor: "#54180c",
+    bottomColor: "#b23a10",
+    horizonGlow: {
+      color: "#e0561d",
+      direction: CALDERA_BEARING,
+      height: 0.3,
+      spread: 0.72,
+      intensity: 0.62,
+    },
+  },
   fog: { color: "#32130d", density: 0.0115 },
   lavaRivers: {
     ...BLACKGLASS_INFERNO.lavaRivers,
     baseColor: "#e74306",
     hotColor: "#ffd057",
+    leveeColor: "#2b1710",
     crustCoverage: 0.58,
+    edgeCooling: 0.29,
+    bankRadiance: 0.62,
   },
   volcanicHaze: {
     ...BLACKGLASS_INFERNO.volcanicHaze,
     color1: "#b93b13",
     color2: "#260807",
-    opacity: 0.18,
+    opacity: 0.46,
     scale: 2.8,
-    animationSpeed: 0.032,
+    animationSpeed: 0.05,
     lightningInterval: 4.6,
-    lightningIntensity: 0.3,
+    lightningIntensity: 0.8,
+    underglowColor: "#f0631f",
+    underglowStrength: 0.5,
   },
+  // Furnace already ran the densest air of the three looks, so it gains its
+  // liveliness from the shared larger mote sizes rather than from more of them.
   embers: {
     ...BLACKGLASS_INFERNO.embers,
-    count: 150,
+    count: 164,
     speed: 0.22,
   },
   ash: {
@@ -358,6 +431,10 @@ const FURNACE_STORM: EmberAtmosphereLookPreset = {
       intensity: light.intensity * 1.25,
       color: "#ff6720",
     })),
+    plumes: BLACKGLASS_INFERNO.rig.plumes.map((plume) => ({
+      ...plume,
+      count: Math.max(12, Math.floor(plume.count * 0.72)),
+    })),
     calderaLight: {
       ...BLACKGLASS_INFERNO.rig.calderaLight,
       intensity: 215,
@@ -385,38 +462,54 @@ const SULFUR_CALDERA: EmberAtmosphereLookPreset = {
   ...BLACKGLASS_INFERNO,
   id: "sulfur-caldera",
   label: "Sulfur Caldera",
-  sky: { topColor: "#080b08", midColor: "#27301a", bottomColor: "#7f5a13" },
+  sky: {
+    topColor: "#0b0f0b",
+    midColor: "#333a1f",
+    bottomColor: "#7f5a13",
+    horizonGlow: {
+      color: "#c99a2a",
+      direction: CALDERA_BEARING,
+      height: 0.22,
+      spread: 0.55,
+      intensity: 0.42,
+    },
+  },
   fog: { color: "#293019", density: 0.0105 },
   lavaRivers: {
     ...BLACKGLASS_INFERNO.lavaRivers,
     baseColor: "#bd3704",
     hotColor: "#ffd65a",
     crustColor: "#0b0904",
+    leveeColor: "#2a2314",
     crustCoverage: 0.7,
+    edgeCooling: 0.42,
+    bankRadiance: 0.34,
   },
   volcanicHaze: {
     ...BLACKGLASS_INFERNO.volcanicHaze,
     color1: "#767023",
     color2: "#12150c",
-    opacity: 0.135,
+    opacity: 0.3,
     scale: 1.85,
-    animationSpeed: 0.018,
-    lightningIntensity: 0.08,
+    animationSpeed: 0.028,
+    lightningIntensity: 0.26,
     innerGlowColor: "#e8b83d",
+    underglowColor: "#d8a537",
+    underglowStrength: 0.3,
   },
   embers: {
     ...BLACKGLASS_INFERNO.embers,
-    count: 78,
+    count: 128,
     colors: ["#ff6a0a", "#ffa21b", "#ffd84e", "#fff09a"],
   },
   ash: {
     ...BLACKGLASS_INFERNO.ash,
-    count: 112,
+    count: 122,
     colors: ["#77735b", "#505241", "#91855b", "#363a31"],
   },
   smoke: {
     ...BLACKGLASS_INFERNO.smoke,
-    count: 30,
+    count: 34,
     colors: ["#22251b", "#3a3c25", "#151812", "#4b4524"],
   },
   hemisphereLight: {

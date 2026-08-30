@@ -4,6 +4,19 @@ export interface MotionFrame {
   clipId: string;
   /** Seconds into the clip. */
   time: number;
+  /** Offline pose-quality facts used as hard candidate gates. They do not
+   *  belong in the weighted similarity vector: a nearly perfect trajectory
+   *  match is still unusable if the legs pass through each other. */
+  quality?: MotionFrameQuality;
+}
+
+export interface MotionFrameQuality {
+  /** Signed lateral foot margin in root-local units. Positive means the feet
+   *  preserve the same left/right ordering as the thighs; negative means a
+   *  leg-crossing pose. */
+  legOrderMargin: number;
+  /** Absolute lateral separation between the feet, in root-local units. */
+  footSeparation: number;
 }
 
 /**
@@ -16,6 +29,10 @@ export interface PoseSample {
   leftFoot: [number, number, number];
   /** Right foot position relative to hips. */
   rightFoot: [number, number, number];
+  /** Thigh positions relative to hips. Optional for legacy/test samplers;
+   *  production samplers provide them so leg-crash candidates can be gated. */
+  leftThigh?: [number, number, number];
+  rightThigh?: [number, number, number];
   /** Hip world position (x,y,z) — used for hip velocity via finite difference. */
   hips: [number, number, number];
   /** Root facing in radians at this frame (clip-driven yaw). */

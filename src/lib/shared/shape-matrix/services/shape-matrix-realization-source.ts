@@ -22,13 +22,15 @@ export function identifyShapeMatrixRealization(
   base: SequenceData,
   realized: SequenceData,
   pair: { blue: Flower; red: Flower },
-  mode: VtgMode
+  mode: VtgMode,
+  propMode: VtgMode | null = null
 ): ShapeMatrixRealizationSource {
   const provenance: ShapeMatrixTunnelSourceProvenance = {
     kind: "shape-matrix-realization",
     version: 1,
     baseSequenceId: base.id,
     mode,
+    ...(propMode ? { propMode } : {}),
     blueFlower: { ...pair.blue },
     redFlower: { ...pair.red },
   };
@@ -37,6 +39,7 @@ export function identifyShapeMatrixRealization(
       "shape-matrix",
       encodeURIComponent(base.id),
       mode,
+      ...(propMode ? [`props-${propMode}`] : []),
       flowerKey(pair.blue),
       flowerKey(pair.red),
     ].join(":"),

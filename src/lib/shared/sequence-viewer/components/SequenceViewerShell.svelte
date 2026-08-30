@@ -5,18 +5,15 @@
   content rail / bottom bar, split pane body, export sidebars/docks, practice
   workstation, delete dialog. Extracted verbatim from SequenceViewerDrawerHost
   so every host renders the IDENTICAL viewer — the app drawer (inside Drawer)
-  and the /q scan page (full-bleed route) both mount this one component.
+  and the /sequence standalone route both mount this one component.
 
   Host deltas are props, not forks:
-  - onClose: drawer dismiss vs scan navigate-to-app
-  - onRemix: scan overrides with its guest-friendly composer handoff
-  - openAppHref: scan adds an "Open Flow Arts Composer" item to the title menu
-  - onAccountSignIn: scan adds its sign-in/avatar account entry
-  - exportOverrides: scan routes Download through its gated page pipeline
-  - startInSplit: scan force-resets persisted viewer mode to the split first
-    impression
-  - startInCardThenSplit: scan presents the live card first, then promotes the
-    same shell to Side-by-Side after the card's painted frame
+  - onClose: drawer dismissal vs standalone Back navigation
+  - openAppHref: standalone hosts add an app-launch item to the title menu
+  - onAccountSignIn: scan-origin viewers add their account entry
+  - exportOverrides: scan-origin viewers gate Download through account signup
+  - startInCardThenSplit: scan-origin viewers present the card first, then
+    promote the same shell to Side-by-Side after the card's painted frame
 
   Do NOT rebuild scan-specific header/body variants — extend this shell.
 -->
@@ -63,6 +60,7 @@
     buildThumbnailUrl,
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+  import { createGlobalChiralitySeam } from "$lib/shared/settings/components/tabs/prop-type/prop-chirality-seam";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { sendToStickerLab } from "$lib/shared/sequence-viewer/services/send-to-sticker-lab";
   import { getSequenceMotionProfile } from "$lib/shared/foundation/services/sequence-motion-profile";
@@ -92,20 +90,20 @@
   import { createViewerInspectorHostState } from "../state/viewer-inspector-host-state.svelte";
   import { setViewerInspectorHostContext } from "../context/viewer-inspector-host-context";
 
-  /** Host-owned export pipeline (the scan page's gated share-sheet flow).
+  /** Host-owned export pipeline (such as the scan-origin account gate).
       Absent → the orchestrator's own ctx.handleExport pipeline (the app). */
   interface Props {
     ctx: OrchestratorContext;
     sequence: SequenceData;
     isMobile: boolean;
     onClose: () => void;
-    /** Override the header/menu Remix action (scan: composer handoff + ?sheet=auth). */
+    /** Override the header/menu Remix action when a host needs custom routing. */
     onRemix?: () => void;
     /** Adds an "Open Flow Arts Composer" item to the title menu (scan funnel exit). */
     openAppHref?: string;
     /** Adds the standalone host's sign-in/avatar entry to the shared header. */
     onAccountSignIn?: () => void;
-    /** One-shot reset to the split view on mount (scan first impression). */
+    /** One-shot reset to the split view on mount. */
     startInSplit?: boolean;
     /** Present card mode first, then promote after its first stable paint. */
     startInCardThenSplit?: boolean;
@@ -118,7 +116,7 @@
      * nowhere to go.
      *
      * The shop hero puts a phone on its front door and iframes the literal
-     * `/q/<code>?demo=1`. Once that screen accepts a pointer (HeroPhone's
+     * `/q/<code>?demo=1`, which hands off to `/sequence`. Once that screen accepts a pointer (HeroPhone's
      * live gate), every control in the header is reachable — including the
      * ones whose whole job is to LEAVE the scan. Close navigated the frame to
      * /browse/gallery, so the phone on a shop page ended up showing the browse
@@ -151,6 +149,7 @@
     navigation?: { label: string };
     tunnelComposition?: TunnelComposition | null;
     tunnelSaveTarget?: TunnelSaveTarget | null;
+    onTunnelSaved?: import("../tunnel/tunnel-snapshot").TunnelSavedCallback;
     /** Route-owned context placed between the canonical header and viewer body. */
     contextContent?: Snippet;
     /** The full-page sequence route keeps its immersive transport overlay. */
@@ -178,6 +177,7 @@
     shareOnOpen = false,
     tunnelComposition = null,
     tunnelSaveTarget = null,
+    onTunnelSaved,
   }: Props = $props();
 
   let viewerWorkspaceElement = $state<HTMLElement | null>(null);
@@ -629,6 +629,7 @@
                     sequence={ctx.effectiveSequence}
                     {tunnelComposition}
                     {tunnelSaveTarget}
+                    {onTunnelSaved}
                     renderMode={ctx.renderMode}
                     isExporting={interactions.videoBusy}
                     bpm={ctx.bpmLocal}
@@ -838,6 +839,7 @@
                         renderMode={ctx.renderMode}
                         playbackMode={ctx.playbackMode}
                         selectedPropType={ctx.bluePropType}
+                        propChirality={createGlobalChiralitySeam()}
                         sequence={ctx.effectiveSequence}
                         showInlineExportProgress={false}
                         showTempoControls={false}

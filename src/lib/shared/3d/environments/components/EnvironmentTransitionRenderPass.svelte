@@ -12,7 +12,7 @@
   useTask(
     () => {
       const camera = context.camera.current;
-      const scene = context.scene.current ?? context.scene;
+      const scene = context.scene;
       if (!camera || !scene) return;
 
       compositor.render(

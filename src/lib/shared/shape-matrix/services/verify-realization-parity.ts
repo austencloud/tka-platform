@@ -4,7 +4,13 @@ import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictogra
 import type { CsvEdge } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
 import type { SVGPathData } from "$lib/shared/mandala/domain/mandala-types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { flowerTurnPattern, type Flower } from "../domain/flower-signature";
+import type { TipPoint } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
+import {
+  flowerStartOrientation,
+  flowerTurnPattern,
+  type Flower,
+} from "../domain/flower-signature";
+import { closeSequenceOrientationCycle } from "$lib/shared/create/services/sequence-orientation-cycle";
 
 /**
  * Geometric parity check between a cell's overlay mandala and a mode's
@@ -23,17 +29,26 @@ interface Pt {
   y: number;
 }
 
-/** Candidate start orientations: 0°/180° (in/out) + ∓90° (clock/counter) cover
- *  the cardinal-anchor rotations a diamond realization can be off by. */
-const ORI_CANDIDATES: Orientation[] = [
+const CARDINAL_ORIENTATIONS: readonly Orientation[] = [
   Orientation.IN,
-  Orientation.OUT,
   Orientation.CLOCK,
+  Orientation.OUT,
   Orientation.COUNTER,
 ];
 
-/** Two loci within this many mandala-space px are the same shape+rotation. */
-export const MATCH_EPS = 2.0;
+const LEVEL_FOUR_ORIENTATIONS: readonly Orientation[] = [
+  Orientation.IN,
+  Orientation.CLOCK_IN,
+  Orientation.CLOCK,
+  Orientation.CLOCK_OUT,
+  Orientation.OUT,
+  Orientation.COUNTER_OUT,
+  Orientation.COUNTER,
+  Orientation.COUNTER_IN,
+];
+
+/** Serialized control-point tolerance used by the live phase solver. */
+export const MATCH_EPS = 8.0;
 
 /**
  * On-curve tip points of a mandala path set. `pointsToSVGPath` emits
@@ -45,7 +60,9 @@ export function pathPoints(paths: SVGPathData[]): Pt[] {
   for (const p of paths) {
     // tolerate exponent form (e.g. 6.12e-15) so a non-toFixed producer can't
     // split one coordinate into two tokens and shift the whole parse.
-    const nums = (p.d.match(/-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?/g) ?? []).map(Number);
+    const nums = (p.d.match(/-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?/g) ?? []).map(
+      Number
+    );
     if (nums.length < 2) continue;
     pts.push({ x: nums[0]!, y: nums[1]! });
     for (let i = 2; i + 6 <= nums.length; i += 6) {
@@ -63,14 +80,26 @@ export function pathPoints(paths: SVGPathData[]): Pt[] {
  * to catch. Returns Infinity for empty or unequal-length loops.
  */
 export function loopDistance(a: Pt[], b: Pt[]): number {
-  if (!a.length || !b.length || a.length !== b.length) return Infinity;
-  const n = a.length;
+  if (!a.length || !b.length) return Infinity;
+  const aClosed =
+    Math.hypot(a[0]!.x - a.at(-1)!.x, a[0]!.y - a.at(-1)!.y) <= MATCH_EPS;
+  const bClosed =
+    Math.hypot(b[0]!.x - b.at(-1)!.x, b[0]!.y - b.at(-1)!.y) <= MATCH_EPS;
+  if (!aClosed || !bClosed) return Infinity;
+
+  // The path serializer repeats the first point at the end. Removing that
+  // duplicate restores a true cyclic sample set, so a different starting
+  // phase or traversal direction can still compare point-for-point.
+  const aLoop = a.slice(0, -1);
+  const bLoop = b.slice(0, -1);
+  if (aLoop.length !== bLoop.length) return Infinity;
+  const n = aLoop.length;
   let best = Infinity;
-  for (const bv of [b, [...b].reverse()]) {
+  for (const bv of [bLoop, [...bLoop].reverse()]) {
     for (let s = 0; s < n; s++) {
       let mx = 0;
       for (let i = 0; i < n && mx < best; i++) {
-        const p = a[i]!;
+        const p = aLoop[i]!;
         const q = bv[(i + s) % n]!;
         const d = Math.hypot(p.x - q.x, p.y - q.y);
         if (d > mx) mx = d;
@@ -87,6 +116,25 @@ function gridModeOf(pair: { blue: Flower; red: Flower }): "diamond" | "box" {
   return pair.blue.grid === pair.red.grid ? pair.blue.grid : "diamond";
 }
 
+function usesQuarterTurns(flower: Flower): boolean {
+  if (flower.turns === "fl") return false;
+  const quarterSteps = Math.round(flower.turns * 4);
+  return quarterSteps % 2 !== 0;
+}
+
+/** Quarter-turn flowers can begin anywhere on the Level 4 orientation wheel.
+ *  Earlier bands stay on cardinal starts, matching the orientations those
+ *  levels actually teach and preventing an exact-looking result from quietly
+ *  introducing Level 4 state. */
+export function flowerPhaseOrientations(pair: {
+  blue: Flower;
+  red: Flower;
+}): readonly Orientation[] {
+  return usesQuarterTurns(pair.blue) || usesQuarterTurns(pair.red)
+    ? LEVEL_FOUR_ORIENTATIONS
+    : CARDINAL_ORIENTATIONS;
+}
+
 /** Build a realization at a candidate orientation pair and compute its loci. */
 function realize(
   base: SequenceData,
@@ -94,7 +142,7 @@ function realize(
   blueOri: Orientation,
   redOri: Orientation,
   edges: CsvEdge[],
-  clubTipDx: number,
+  tipPoint: TipPoint | number
 ): { sequence: SequenceData; blue: SVGPathData[]; red: SVGPathData[] } {
   const blueTurn = flowerTurnPattern(pair.blue).split("|")[0];
   const redTurn = flowerTurnPattern(pair.red).split("|")[0];
@@ -106,16 +154,17 @@ function realize(
       gridMode: gridModeOf(pair),
       startOriPair: { blue: blueOri, red: redOri },
     },
-    edges,
+    edges
   );
+  const closedSequence = closeSequenceOrientationCycle(sequence);
   const paths = calculateMandalaGeometry(
-    sequence.steps,
+    closedSequence.steps,
     undefined,
     undefined,
     { tipEnds: 1, pathShape: "arc" },
-    { dx: clubTipDx, dy: 0 },
+    typeof tipPoint === "number" ? { dx: tipPoint, dy: 0 } : tipPoint
   );
-  return { sequence, blue: paths.blue, red: paths.red };
+  return { sequence: closedSequence, blue: paths.blue, red: paths.red };
 }
 
 export interface ParityResult {
@@ -129,6 +178,97 @@ export interface ParityResult {
   matched: boolean;
   /** The corrected realization sequence (use this for the card + animation). */
   sequence: SequenceData;
+}
+
+export interface ExactParityResult extends ParityResult {
+  matched: true;
+  /** Distance around the Level 4 wheel from the cell's displayed phase. */
+  phaseDistance: number;
+}
+
+function orientationDistance(from: Orientation, to: Orientation): number {
+  const fromIndex = LEVEL_FOUR_ORIENTATIONS.indexOf(from);
+  const toIndex = LEVEL_FOUR_ORIENTATIONS.indexOf(to);
+  if (fromIndex < 0 || toIndex < 0) return LEVEL_FOUR_ORIENTATIONS.length;
+  const raw = Math.abs(fromIndex - toIndex);
+  return Math.min(raw, LEVEL_FOUR_ORIENTATIONS.length - raw);
+}
+
+/**
+ * Return every start-orientation pair that reproduces both clicked flowers.
+ * Each hand's locus is independent, so the expensive geometry search is eight
+ * blue builds plus eight red builds rather than all 64 pairs. Only the small
+ * exact cross-product is rebuilt into complete two-hand sequences.
+ */
+export function findExactParityCandidates(
+  base: SequenceData,
+  pair: { blue: Flower; red: Flower },
+  overlayBlue: SVGPathData[],
+  overlayRed: SVGPathData[],
+  edges: CsvEdge[],
+  tipPoint: TipPoint | number
+): ExactParityResult[] {
+  const ob = pathPoints(overlayBlue);
+  const or = pathPoints(overlayRed);
+  const defaultBlue = flowerStartOrientation(pair.blue);
+  const defaultRed = flowerStartOrientation(pair.red);
+  const orientations = flowerPhaseOrientations(pair);
+  const blueMatches: Array<{ orientation: Orientation; distance: number }> = [];
+  const redMatches: Array<{ orientation: Orientation; distance: number }> = [];
+
+  for (const orientation of orientations) {
+    const distance = loopDistance(
+      ob,
+      pathPoints(
+        realize(base, pair, orientation, defaultRed, edges, tipPoint).blue
+      )
+    );
+    if (distance <= MATCH_EPS) {
+      blueMatches.push({ orientation, distance });
+    }
+  }
+
+  for (const orientation of orientations) {
+    const distance = loopDistance(
+      or,
+      pathPoints(
+        realize(base, pair, defaultBlue, orientation, edges, tipPoint).red
+      )
+    );
+    if (distance <= MATCH_EPS) {
+      redMatches.push({ orientation, distance });
+    }
+  }
+
+  const exact: ExactParityResult[] = [];
+  for (const blue of blueMatches) {
+    for (const red of redMatches) {
+      exact.push({
+        blueOri: blue.orientation,
+        redOri: red.orientation,
+        blueDist: blue.distance,
+        redDist: red.distance,
+        matched: true,
+        phaseDistance:
+          orientationDistance(defaultBlue, blue.orientation) +
+          orientationDistance(defaultRed, red.orientation),
+        sequence: realize(
+          base,
+          pair,
+          blue.orientation,
+          red.orientation,
+          edges,
+          tipPoint
+        ).sequence,
+      });
+    }
+  }
+
+  return exact.sort(
+    (left, right) =>
+      left.phaseDistance - right.phaseDistance ||
+      left.blueDist + left.redDist - (right.blueDist + right.redDist)
+  );
 }
 
 /**
@@ -145,17 +285,20 @@ export function verifyAndCorrect(
   overlayBlue: SVGPathData[],
   overlayRed: SVGPathData[],
   edges: CsvEdge[],
-  clubTipDx: number,
+  tipPoint: TipPoint | number
 ): ParityResult {
   const ob = pathPoints(overlayBlue);
   const or = pathPoints(overlayRed);
-  const defBlue = pair.blue.ori as Orientation;
-  const defRed = pair.red.ori as Orientation;
+  const defBlue = flowerStartOrientation(pair.blue);
+  const defRed = flowerStartOrientation(pair.red);
 
   let bestBlue = defBlue;
   let blueDist = Infinity;
-  for (const o of ORI_CANDIDATES) {
-    const d = loopDistance(ob, pathPoints(realize(base, pair, o, defRed, edges, clubTipDx).blue));
+  for (const o of flowerPhaseOrientations(pair)) {
+    const d = loopDistance(
+      ob,
+      pathPoints(realize(base, pair, o, defRed, edges, tipPoint).blue)
+    );
     if (d < blueDist) {
       blueDist = d;
       bestBlue = o;
@@ -164,15 +307,18 @@ export function verifyAndCorrect(
 
   let bestRed = defRed;
   let redDist = Infinity;
-  for (const o of ORI_CANDIDATES) {
-    const d = loopDistance(or, pathPoints(realize(base, pair, bestBlue, o, edges, clubTipDx).red));
+  for (const o of flowerPhaseOrientations(pair)) {
+    const d = loopDistance(
+      or,
+      pathPoints(realize(base, pair, bestBlue, o, edges, tipPoint).red)
+    );
     if (d < redDist) {
       redDist = d;
       bestRed = o;
     }
   }
 
-  const final = realize(base, pair, bestBlue, bestRed, edges, clubTipDx);
+  const final = realize(base, pair, bestBlue, bestRed, edges, tipPoint);
   return {
     blueOri: bestBlue,
     redOri: bestRed,

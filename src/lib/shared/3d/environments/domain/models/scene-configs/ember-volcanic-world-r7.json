@@ -1,30 +1,32 @@
 {
-  "revision": "ember-geological-world-gate4-r8",
+  "revision": "ember-living-caldera-gate4-r10",
   "authorityTrackerItem": "s3cxnp6hOLBVQR5dDF42",
   "derivedFromTrackerItem": "ZSnkB98pb0wz6PO17XKp",
   "lavaRiver": {
-    "width": 5.2,
+    "topology": "single-distant-vent-source",
+    "width": 6.4,
+    "sourceTaperFraction": 0.055,
     "flowSpeed": 0.075,
     "warpIntensity": 0.72,
     "crustCoverage": 0.72,
     "pointsRuntimeXZHeight": [
-      [-20.0, 156.0, 15.2],
+      [-25.0, 145.0, 15.2],
       [-25.0, 132.0, 12.7],
       [-20.0, 108.0, 10.6],
       [-17.0, 82.0, 8.7],
       [-12.0, 67.0, 6.5],
-      [-4.0, 52.0, 4.4],
-      [8.0, 40.0, 2.9],
-      [11.0, 29.0, 1.9],
-      [10.0, 19.0, 1.1],
-      [12.0, 11.0, 0.55],
-      [14.0, 2.0, 0.25],
-      [12.0, -8.0, 0.1],
-      [8.0, -24.0, -0.02],
-      [-1.0, -43.0, -0.12],
-      [-14.0, -64.0, -0.18],
-      [-10.0, -91.0, -0.24],
-      [2.0, -122.0, -0.32]
+      [-10.0, 52.0, 4.4],
+      [-9.0, 40.0, 2.9],
+      [-10.0, 29.0, 1.9],
+      [-11.0, 19.0, 1.1],
+      [-12.0, 11.0, 0.55],
+      [-13.0, 2.0, 0.25],
+      [-13.5, -8.0, 0.1],
+      [-14.0, -24.0, -0.02],
+      [-13.0, -43.0, -0.12],
+      [-10.0, -64.0, -0.18],
+      [-5.0, -91.0, -0.24],
+      [1.0, -122.0, -0.32]
     ]
   },
   "terrain": {
@@ -35,7 +37,8 @@
     "nearMaterialEndsAtDistance": 66.0,
     "middleMaterialEndsAtDistance": 126.0,
     "actionFloorRadius": 10.8,
-    "direction": "breached-caldera-terraces",
+    "actionTerrainBaseHeight": 0.49,
+    "direction": "living-caldera",
     "seed": 6301
   },
   "distantVent": {

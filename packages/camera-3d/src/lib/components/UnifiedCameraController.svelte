@@ -9,6 +9,7 @@
     resolveAllowedCameraMode,
     type PhysicsProvider,
     type AvatarState,
+    type CameraCollisionProbe,
   } from "../types";
   import {
     createCameraPreferences,
@@ -31,6 +32,8 @@
     destinationId: string;
     avatarState: AvatarState;
     physicsProvider?: PhysicsProvider | null;
+    /** Use a scene's physics broadphase instead of raycasting visual meshes. */
+    cameraCollisionProbe?: CameraCollisionProbe;
     enabled?: boolean;
     onModeChange?: (mode: CameraMode) => void;
     moveSpeed?: number;
@@ -833,19 +836,39 @@
         const distToCamera = rayOrigin.distanceTo(desiredCamPos);
         cameraRaycaster.set(rayOrigin, rayDirection);
         cameraRaycaster.far = distToCamera;
-        const intersects = cameraRaycaster.intersectObjects(
-          getCameraColliders(sceneToCast),
-          false
-        );
-        for (const intersection of intersects) {
-          if (!intersection.object.userData?.cameraCollider) continue;
-          if (!intersection.object.visible) continue;
-          const safeDistance = Math.max(
-            intersection.distance - CAMERA_COLLISION_OFFSET,
-            MIN_CAMERA_DISTANCE
+        const probedDistance = props.cameraCollisionProbe
+          ? props.cameraCollisionProbe(rayOrigin, rayDirection, distToCamera)
+          : null;
+        if (props.cameraCollisionProbe) {
+          if (
+            probedDistance !== null &&
+            Number.isFinite(probedDistance) &&
+            probedDistance >= 0 &&
+            probedDistance <= distToCamera
+          ) {
+            targetDistance = Math.min(
+              targetDistance,
+              Math.max(
+                probedDistance - CAMERA_COLLISION_OFFSET,
+                MIN_CAMERA_DISTANCE
+              )
+            );
+          }
+        } else {
+          const intersects = cameraRaycaster.intersectObjects(
+            getCameraColliders(sceneToCast),
+            false
           );
-          targetDistance = Math.min(targetDistance, safeDistance);
-          break;
+          for (const intersection of intersects) {
+            if (!intersection.object.userData?.cameraCollider) continue;
+            if (!intersection.object.visible) continue;
+            const safeDistance = Math.max(
+              intersection.distance - CAMERA_COLLISION_OFFSET,
+              MIN_CAMERA_DISTANCE
+            );
+            targetDistance = Math.min(targetDistance, safeDistance);
+            break;
+          }
         }
       }
 

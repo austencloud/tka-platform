@@ -6,6 +6,8 @@
  * a type from its instance script, and both halves of the page need these.
  */
 
+import type { TerminalStepPlan, TurnRequest } from "@austencloud/scene-3d";
+
 /** Held keys, resolved into the character's own frame. */
 export interface ManualInput {
   /** +1 ahead, -1 behind. */
@@ -37,4 +39,18 @@ export interface WalkState {
   completedSteps?: number;
   /** Straight-line distance still owed to the requested mark, in metres. */
   endpointError?: number;
+  /** Declared-vs-observed musical footfall timing for an exact move. */
+  timing?: {
+    planId: string;
+    scoreTimeSeconds: number;
+    observedFootfalls: number;
+    nextPlantBeat: number | null;
+    latestErrorMilliseconds: number | null;
+    maxErrorMilliseconds: number;
+    settled: boolean;
+  };
+  /** Turn clip request for a stationary authored pivot. */
+  turnRequest?: TurnRequest | null;
+  /** Captured two-step arrival plan for a time-scripted path. */
+  terminalStepPlan?: TerminalStepPlan | null;
 }

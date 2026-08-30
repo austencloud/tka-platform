@@ -1,6 +1,12 @@
 <script lang="ts">
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION, STAGGER } from "$lib/shared/transitions/transitions";
   import type { ShapeMatrixData } from "../services/shape-matrix-flowers";
-  import { flowerKey, flowerLabel, type Flower } from "../domain/flower-signature";
+  import {
+    flowerKey,
+    flowerLabel,
+    type Flower,
+  } from "../domain/flower-signature";
   import { renderCell, renderHeader } from "../services/shape-matrix-render";
 
   type CellVerdict = "legal" | "illegal" | "unsure";
@@ -14,6 +20,8 @@
     /** Upper bound on a cell's edge; the actual size shrinks to fit the viewport. */
     maxCellPx?: number;
     onselect: (pair: { blue: Flower; red: Flower }) => void;
+    /** Optional externally-owned selection for restored/shared app state. */
+    selectedPair?: { blue: Flower; red: Flower } | null;
     /** Alternative cell/header painter (e.g. the poi trail painter). Defaults to the club-style painter. */
     painter?: {
       cell: typeof renderCell;
@@ -24,7 +32,17 @@
     /** Cells to de-emphasize (e.g. already-judged cells in a curation focus view). */
     dimFor?: (blue: Flower, red: Flower) => boolean;
   }
-  let { data, rowAxis, colAxis, maxCellPx = 100, onselect, painter, overlayFor, dimFor }: Props = $props();
+  let {
+    data,
+    rowAxis,
+    colAxis,
+    maxCellPx = 100,
+    onselect,
+    selectedPair,
+    painter,
+    overlayFor,
+    dimFor,
+  }: Props = $props();
   const paintCell = painter?.cell ?? renderCell;
   const paintHeader = painter?.header ?? renderHeader;
 
@@ -48,14 +66,24 @@
   const RENDER_PX = 128;
 
   const headerSrc = (f: Flower, hand: "blue" | "red") =>
-    paintHeader((hand === "blue" ? data.blue : data.red).get(flowerKey(f))!, hand, RENDER_PX, data.clubTipDx);
+    paintHeader(
+      (hand === "blue" ? data.blue : data.red).get(flowerKey(f))!,
+      hand,
+      RENDER_PX,
+      data.clubTipDx
+    );
 
   const cellCache = new Map<string, string>();
   function cellSrc(b: Flower, r: Flower): string {
-    const k = `${flowerKey(b)}__${flowerKey(r)}`;
+    const k = `${data.propType}__${flowerKey(b)}__${flowerKey(r)}`;
     let url = cellCache.get(k);
     if (!url) {
-      url = paintCell(data.blue.get(flowerKey(b))!, data.red.get(flowerKey(r))!, RENDER_PX, data.clubTipDx);
+      url = paintCell(
+        data.blue.get(flowerKey(b))!,
+        data.red.get(flowerKey(r))!,
+        RENDER_PX,
+        data.clubTipDx
+      );
       cellCache.set(k, url);
     }
     return url;
@@ -71,56 +99,99 @@
             io.unobserve(node);
           }
       },
-      { rootMargin: "240px" },
+      { rootMargin: "240px" }
     );
     io.observe(node);
     return { destroy: () => io.disconnect() };
   }
 
   let sel = $state<string | null>(null);
+  const selectedKey = $derived(
+    selectedPair === undefined
+      ? sel
+      : selectedPair
+        ? `${flowerKey(selectedPair.blue)}__${flowerKey(selectedPair.red)}`
+        : null
+  );
 </script>
 
-<div class="wrap" style="--cell:{cell}px" bind:clientWidth={wrapW} bind:clientHeight={wrapH}>
+<div
+  class="wrap"
+  style="--cell:{cell}px"
+  bind:clientWidth={wrapW}
+  bind:clientHeight={wrapH}
+>
   {#if rowAxis.length === 0 || colAxis.length === 0}
     <div class="empty">No flowers match the current filters.</div>
   {:else}
-    <table class="matrix" aria-label="Shape matrix: blue flower rows by red flower columns; activate a cell for its TKA realizations">
+    <table
+      class="matrix"
+      aria-label="Shape matrix: blue flower rows by red flower columns; activate a cell for its TKA realizations"
+    >
       <thead>
         <tr>
-          <th class="corner" scope="col" aria-label="blue rows by red columns"></th>
-          {#each colAxis as rf (flowerKey(rf))}
+          <th class="corner" scope="col" aria-label="blue rows by red columns"
+          ></th>
+          {#each colAxis as rf, colIndex (colIndex)}
+            {@const source = headerSrc(rf, "red")}
             <th class="colhead" scope="col" title={flowerLabel(rf)}>
-              <img src={headerSrc(rf, "red")} alt={`red ${flowerLabel(rf)}`} />
+              <Crossfade
+                key={source}
+                fill
+                duration={DURATION.emphasis}
+                delay={STAGGER.micro}
+              >
+                <img src={source} alt={`red ${flowerLabel(rf)}`} />
+              </Crossfade>
             </th>
           {/each}
         </tr>
       </thead>
       <tbody>
-        {#each rowAxis as bf (flowerKey(bf))}
+        {#each rowAxis as bf, rowIndex (rowIndex)}
+          {@const rowSource = headerSrc(bf, "blue")}
           <tr>
             <th class="rowhead" scope="row" title={flowerLabel(bf)}>
-              <img src={headerSrc(bf, "blue")} alt={`blue ${flowerLabel(bf)}`} />
+              <Crossfade
+                key={rowSource}
+                fill
+                duration={DURATION.emphasis}
+                delay={STAGGER.micro}
+              >
+                <img src={rowSource} alt={`blue ${flowerLabel(bf)}`} />
+              </Crossfade>
             </th>
-            {#each colAxis as rf (flowerKey(rf))}
+            {#each colAxis as rf, colIndex (colIndex)}
               {@const key = `${flowerKey(bf)}__${flowerKey(rf)}`}
+              {@const slotKey = `${rowIndex}:${colIndex}`}
               {@const verdict = overlayFor?.(bf, rf) ?? null}
               <td class="cell-td">
                 <button
                   type="button"
                   class="cell"
-                  class:sel={sel === key}
+                  class:sel={selectedKey === key}
                   class:v-legal={verdict === "legal"}
                   class:v-illegal={verdict === "illegal"}
                   class:v-unsure={verdict === "unsure"}
                   class:dim={dimFor?.(bf, rf) ?? false}
-                  use:watch={key}
+                  use:watch={slotKey}
                   aria-label={`blue ${flowerLabel(bf)} over red ${flowerLabel(rf)}`}
                   onclick={() => {
                     sel = key;
                     onselect({ blue: bf, red: rf });
                   }}
                 >
-                  {#if observed.has(key)}<img src={cellSrc(bf, rf)} alt="" />{/if}
+                  {#if observed.has(slotKey)}
+                    {@const source = cellSrc(bf, rf)}
+                    <Crossfade
+                      key={source}
+                      fill
+                      duration={DURATION.emphasis}
+                      delay={STAGGER.micro}
+                    >
+                      <img src={source} alt="" />
+                    </Crossfade>
+                  {/if}
                 </button>
               </td>
             {/each}
@@ -135,7 +206,7 @@
   .wrap {
     overflow: auto;
     height: 100%;
-    background: #0a0f14;
+    background: var(--theme-panel-bg, #0a0f14);
     display: grid;
     place-content: safe center;
   }
@@ -149,6 +220,7 @@
   table.matrix {
     border-collapse: separate;
     border-spacing: 0;
+    width: max-content;
     margin: auto;
   }
   th,
@@ -156,7 +228,9 @@
     padding: 0;
   }
 
-  /* Corner: a compact blue→red diagonal swatch that reads at any cell size. */
+  /* The table needs this cell to align its sticky row and column headers. It is
+     visually neutral because the colored flower headers already identify both
+     axes; another blue/red legend reads like a selectable matrix result. */
   .corner {
     position: sticky;
     top: 0;
@@ -164,12 +238,7 @@
     z-index: 5;
     width: var(--cell);
     height: var(--cell);
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, #22d3ee 32%, #111922) 0 49%,
-      rgba(255, 255, 255, 0.14) 49% 51%,
-      color-mix(in srgb, #fb8a8a 32%, #111922) 51% 100%
-    );
+    background: var(--theme-card-bg, #111922);
     border-right: 1px solid rgba(255, 255, 255, 0.1);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
@@ -180,8 +249,8 @@
     z-index: 4;
     width: var(--cell);
     height: var(--cell);
-    background: #111922;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, #111922);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
   .rowhead {
     position: sticky;
@@ -189,8 +258,8 @@
     z-index: 3;
     width: var(--cell);
     height: var(--cell);
-    background: #111922;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, #111922);
+    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
   .colhead img,
   .rowhead img {
@@ -205,28 +274,39 @@
     height: var(--cell);
   }
   .cell {
+    position: relative;
     width: var(--cell);
     height: var(--cell);
     aspect-ratio: 1;
     display: block;
     padding: 0;
     margin: 0;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
     background: transparent;
     cursor: pointer;
-    transition: background var(--duration-fast, 0.12s) ease;
+    transition: background var(--duration-fast, 150ms)
+      var(--transition-easing, ease);
   }
   .cell:hover {
     background: rgba(255, 255, 255, 0.06);
   }
   .cell.sel {
-    outline: 2px solid #fff;
-    outline-offset: -2px;
+    outline: none;
     z-index: 2;
-    position: relative;
+  }
+  .cell.sel::after {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    z-index: 2;
+    border: 1px solid var(--theme-accent, #f59e0b);
+    border-radius: 2px;
+    box-shadow: inset 0 0 0.8rem
+      color-mix(in srgb, var(--theme-accent, #f59e0b) 16%, transparent);
+    pointer-events: none;
   }
   .cell:focus-visible {
-    outline: 2px solid #fff;
+    outline: 2px solid var(--theme-text, #fff);
     outline-offset: -2px;
     z-index: 2;
     position: relative;

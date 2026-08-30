@@ -12,10 +12,15 @@ import { PropType as ScenePropType } from "@austencloud/scene-3d";
  * rather than rendering nothing. Every other prop passes through unchanged.
  */
 const SCENE_PROP_SUBSTITUTES: Partial<Record<PropType, ScenePropType>> = {
+  // Classic Club is a 2D artwork choice. In spatial views it uses the same
+  // measured physical club model as the regular material artwork.
+  [PropType.CLASSIC_CLUB]: ScenePropType.CLUB,
   [PropType.ENERGY_SABER]: ScenePropType.SWORD,
   [PropType.ENERGY_STAFF]: ScenePropType.STAFF,
 };
 
 export function toScenePropType(propType: PropType): ScenePropType {
-  return SCENE_PROP_SUBSTITUTES[propType] ?? (propType as unknown as ScenePropType);
+  return (
+    SCENE_PROP_SUBSTITUTES[propType] ?? (propType as unknown as ScenePropType)
+  );
 }

@@ -2,7 +2,11 @@
   import { onDestroy, onMount } from "svelte";
   import { T, useTask, useThrelte } from "@threlte/core";
   import { CameraMode, UnifiedCameraController } from "@austencloud/camera-3d";
-  import type { AvatarState, PhysicsProvider } from "@austencloud/camera-3d";
+  import type {
+    AvatarState,
+    CameraCollisionProbe,
+    PhysicsProvider,
+  } from "@austencloud/camera-3d";
   import type { FlowFestProductionCollisionSet } from "$lib/features/flow-fest-sim/domain/flow-fest-simulation-contract";
   import {
     FLOW_FEST_EUC_CONFIG,
@@ -14,6 +18,12 @@
     type FlowFestElectricUnicycleTerrainAttitude,
     type FlowFestStandardGamepadSample,
   } from "$lib/features/flow-fest-sim/domain/flow-fest-electric-unicycle";
+  import {
+    FLOW_FEST_EUC_CONTACT_THRESHOLDS,
+    FLOW_FEST_EUC_PEDAL_SEPARATION_METERS,
+    FLOW_FEST_EUC_PEDAL_SURFACE_HEIGHT_METERS,
+    type FlowFestEucMountedPoseDiagnostic,
+  } from "$lib/features/flow-fest-sim/domain/flow-fest-euc-mounted-pose";
   import { FlowFestElectricUnicycleDrive } from "$lib/features/flow-fest-sim/services/flow-fest-electric-unicycle-drive";
   import {
     mobilityDynamicsFromSnapshot,
@@ -33,6 +43,7 @@
     parseGeospatialTerrainManifest,
   } from "$lib/shared/3d/procedural-engine/generation/geospatial-terrain";
   import { buildFlowFestEntranceGradedTerrain } from "../flow-fest-sim/flow-fest-entrance-terrain";
+  import { FLOW_FEST_CAMP_PLAN_BOUNDS } from "../flow-fest-sim/flow-fest-camp-plan";
   import {
     createPhysicsWorldState,
     createRigidBody,
@@ -55,6 +66,7 @@
   import {
     buildFlowFestTerrainHost,
     buildFlowFestChunkSeamTraversal,
+    flowFestColliderWindowKey,
     sampleFlowFestTerrainWorldY,
     type FlowFestTerrainHost,
     type FlowFestTerrainHostMode,
@@ -93,6 +105,14 @@
     enableJump?: boolean;
     enableCrouch?: boolean;
     showReviewOverlay?: boolean;
+    /**
+     * The graybox walk owns a fixed daylight rig so it can be inspected on its
+     * own. A host that supplies a time-of-day rig — the production layer's
+     * visual profile — must pass "none". The graybox key light and hemisphere
+     * sum to 2.95 in three.js light units against the night profile's 0.37, so
+     * leaving them on renders 2:13 AM as an overcast noon.
+     */
+    ambientLighting?: "graybox-daylight" | "none";
     collisionMode?: "measured-topology" | "visible-production";
     productionCollision?: FlowFestProductionCollisionSet | null;
     productionCampEstablished?: boolean;
@@ -141,6 +161,22 @@
   let terrain: Awaited<ReturnType<typeof loadGeospatialTerrain>> | null = null;
   let initialized = $state(false);
   let disposed = false;
+  const probeThirdPersonCameraCollision: CameraCollisionProbe = (
+    origin,
+    direction,
+    maxDistance
+  ) => {
+    if (!physicsState?.world || !playerState) return null;
+    return (
+      castRay(
+        physicsState,
+        origin,
+        direction,
+        maxDistance,
+        playerState.collider
+      )?.distance ?? null
+    );
+  };
   let appliedResetToken = props.resetToken;
   let appliedCameraToken = props.cameraToken;
   let appliedStageToken = props.stageToken ?? 0;
@@ -171,6 +207,14 @@
       roughnessMeters: 0,
     });
   let electricUnicycleParkedBody: PhysicsBodyComponent | null = null;
+  let electricUnicycleLongitudinalAcceleration = $state(0);
+  /**
+   * Last mounted-pose report. Held outside `$state` on purpose: it lands every
+   * frame, and the runtime-proof surface samples it at its own throttle rather
+   * than re-rendering the scene sixty times a second for a diagnostic.
+   */
+  let electricUnicycleMountedPose: FlowFestEucMountedPoseDiagnostic | null =
+    null;
   let electricUnicycleGamepadConnected = $state(false);
   let electricUnicycleCollisionLimited = $state(false);
   let electricUnicycleTraversalDiagnostics = $state<{
@@ -188,8 +232,10 @@
   let loadStartedAt = 0;
   let frameTimes: number[] = [];
   let performanceWarmupFrames = 0;
+  let performanceCaptureOrdinal = 0;
   let missingColliderFrames = 0;
   const activeTerrainBodies = new Map<string, PhysicsBodyComponent>();
+  let activeTerrainColliderWindowKey: string | null = null;
   let productionCollisionBodies: PhysicsBodyComponent[] = [];
   let mountedProductionCollision: FlowFestProductionCollisionSet | null = null;
   let mountedCampEstablished = false;
@@ -347,6 +393,26 @@
   ): boolean {
     if (!physicsState?.world || !terrainHost) return false;
 
+    const nextWindowKey =
+      props.hostMode === "bounded-static"
+        ? "bounded-static"
+        : terrain
+          ? flowFestColliderWindowKey(
+              x,
+              z,
+              terrain.worldBounds,
+              CHUNK_SIZE_METERS
+            )
+          : null;
+    if (
+      pruneDistant &&
+      nextWindowKey !== null &&
+      nextWindowKey === activeTerrainColliderWindowKey
+    ) {
+      return true;
+    }
+    if (!pruneDistant) activeTerrainColliderWindowKey = null;
+
     const desired = new Set<string>();
     for (const collider of terrainHost.colliders) {
       const isNeeded =
@@ -386,6 +452,8 @@
         Math.abs(collider.centerX - x) <= collider.halfExtentX + 1e-6 &&
         Math.abs(collider.centerZ - z) <= collider.halfExtentZ + 1e-6
     );
+    activeTerrainColliderWindowKey =
+      pruneDistant && containingColliderIsActive ? nextWindowKey : null;
     updateActiveColliderProof();
     return containingColliderIsActive;
   }
@@ -786,8 +854,17 @@
         visible: update.mounted,
         owner: "@austencloud/scene-3d/Avatar3D",
         modelId: FLOW_FEST_EUC_CONFIG.riderAvatarId,
-        footHeightMeters: FLOW_FEST_EUC_CONFIG.riderPedalHeightMeters,
+        // The rider no longer hangs off a single root offset. Its feet are
+        // placed on the pedal anchors by the mounted-pose rig, so the honest
+        // report is the pedal surface plus the measured contact error below.
+        pedalSurfaceHeightMeters: FLOW_FEST_EUC_PEDAL_SURFACE_HEIGHT_METERS,
+        stanceWidthMeters: FLOW_FEST_EUC_PEDAL_SEPARATION_METERS,
+        contactPose: "flow-fest-euc-mounted-pose-rig",
       },
+      longitudinalAccelerationMetersPerSecondSquared:
+        electricUnicycleLongitudinalAcceleration,
+      mountedPose: update.mounted ? electricUnicycleMountedPose : null,
+      mountedPoseThresholds: FLOW_FEST_EUC_CONTACT_THRESHOLDS,
       config: FLOW_FEST_EUC_CONFIG,
     };
     props.onElectricUnicycleChange?.(update);
@@ -812,8 +889,16 @@
     }
     electricUnicycleInput = frame.input;
     electricUnicycleCollisionLimited = frame.collisionLimited;
+    electricUnicycleLongitudinalAcceleration =
+      frame.longitudinalAccelerationMetersPerSecondSquared;
     electricUnicycleTraversalDiagnostics = frame.traversal;
     emitElectricUnicycleUpdate();
+  }
+
+  function handleMountedPoseDiagnostic(
+    diagnostic: FlowFestEucMountedPoseDiagnostic
+  ): void {
+    electricUnicycleMountedPose = diagnostic;
   }
 
   function applyElectricUnicycleTraversalEnvelope(mounted: boolean): void {
@@ -1043,11 +1128,15 @@
       terrainHost = buildFlowFestTerrainHost(
         loadedTerrain,
         props.hostMode,
-        texture
+        texture,
+        props.hostMode === "chunked"
+          ? {
+              fullDetailBounds: FLOW_FEST_CAMP_PLAN_BOUNDS,
+              fullDetailPaddingMeters: 32,
+              farSampleStep: 2,
+            }
+          : undefined
       );
-      terrainHost.root.traverse((object) => {
-        if (object instanceof Mesh) object.userData.cameraCollider = true;
-      });
       overlay = buildFlowFestReviewOverlay(
         loadedContract,
         loadedTerrain,
@@ -1167,6 +1256,8 @@
         barrierCells: barrier?.occupiedCellCount ?? 0,
         spawnGroundY,
         eyeHeightMeters: EYE_HEIGHT,
+        sampleGroundY: (x: number, z: number) =>
+          sampleFlowFestTerrainWorldY(loadedTerrain, x, z),
       };
       (globalThis as Record<string, unknown>).__flowFestGate2 = {
         status: "ready",
@@ -1204,11 +1295,13 @@
         terrain: {
           sourceSamples: loadedTerrain.heightmap.heights.length,
           renderColliderIdentity: props.hostMode === "bounded-static",
-          renderColliderHeightParity: true,
+          renderColliderHeightParity: props.hostMode === "bounded-static",
+          fullDetailColliderHeightParity: true,
           renderStrategy:
             props.hostMode === "chunked"
-              ? "one full-resolution render batch with 32 m collision chunks"
+              ? "independently culled 192 m adaptive render tiles: 1 m campground detail, 2 m far field, and separate 32 m full-resolution collision chunks"
               : "one full-resolution visible/collider mesh",
+          cameraCollisionStrategy: "rapier-active-chunk-broadphase",
           candidateColliderMeshes: terrainHost.metrics.colliderMeshes,
           activeColliderMeshes: activeTerrainBodies.size,
           colliderBufferMeters:
@@ -1428,7 +1521,9 @@
         const proof = (globalThis as Record<string, unknown>)
           .__flowFestGate2 as Record<string, unknown> | undefined;
         if (proof) {
+          performanceCaptureOrdinal += 1;
           proof.performance = {
+            captureOrdinal: performanceCaptureOrdinal,
             samples: frameTimes.length,
             p50FrameMilliseconds: percentile(frameTimes, 0.5),
             p95FrameMilliseconds: percentile(frameTimes, 0.95),
@@ -1478,6 +1573,7 @@
     clearProductionCollisionBodies();
     if (physicsState) disposePhysicsWorld(physicsState);
     activeTerrainBodies.clear();
+    activeTerrainColliderWindowKey = null;
     terrainHost?.dispose();
     disposeOverlay(overlay);
     if (barrier) {
@@ -1492,14 +1588,16 @@
   });
 </script>
 
-<T.Color attach="background" args={["#b8c4b1"]} />
-<T.HemisphereLight color="#eef3e7" groundColor="#445044" intensity={1.25} />
-<T.DirectionalLight
-  position={[-180, 260, 120]}
-  color="#fff5dc"
-  intensity={1.7}
-  castShadow={false}
-/>
+{#if (props.ambientLighting ?? "graybox-daylight") === "graybox-daylight"}
+  <T.Color attach="background" args={["#b8c4b1"]} />
+  <T.HemisphereLight color="#eef3e7" groundColor="#445044" intensity={1.25} />
+  <T.DirectionalLight
+    position={[-180, 260, 120]}
+    color="#fff5dc"
+    intensity={1.7}
+    castShadow={false}
+  />
+{/if}
 
 {#if terrainHost}
   <T is={terrainHost.root} />
@@ -1518,6 +1616,8 @@
     terrainAttitude={electricUnicycleTerrainAttitude}
     mounted={electricUnicycleMounted}
     lightsOn={props.electricUnicycleLightsOn ?? false}
+    longitudinalAccelerationMetersPerSecondSquared={electricUnicycleLongitudinalAcceleration}
+    onMountedPoseDiagnostic={handleMountedPoseDiagnostic}
   />
 {/if}
 
@@ -1541,6 +1641,7 @@
       preferencesKey="flow-fest-gate2-camera"
       {avatarState}
       {physicsProvider}
+      cameraCollisionProbe={probeThirdPersonCameraCollision}
       enabled={true}
       initialYaw={playerYaw}
       {initialPitch}

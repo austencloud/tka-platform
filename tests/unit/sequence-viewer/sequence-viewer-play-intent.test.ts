@@ -66,6 +66,24 @@ describe("sequence viewer Play intent", () => {
     expect(overlay.playOnOpen).toBe(false);
   });
 
+  it("carries and clears the Tunnel save acknowledgement callback", () => {
+    const onTunnelSaved = vi.fn();
+    openSequenceOverlay(
+      { id: "tunnel-source", name: "Tunnel", word: "A", steps: [] } as never,
+      {
+        fromUrl: true,
+        skipHistoryPush: true,
+        onTunnelSaved,
+      }
+    );
+
+    expect(overlay.onTunnelSaved).toBe(onTunnelSaved);
+
+    closeSequenceOverlay();
+
+    expect(overlay.onTunnelSaved).toBeNull();
+  });
+
   it("starts a fresh viewer session when an open sequence is replaced", () => {
     openSequenceOverlay(
       { id: "first", name: "First", word: "A", steps: [] } as never,

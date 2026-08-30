@@ -15,7 +15,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import demoSequenceJson from "$lib/shared/landing/data/demo-sequence.json";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { VIEWER_FRONT_STAGE_FACING_ANGLE } from "$lib/shared/3d/domain/viewer-formation-facing";
+  import { EMBER_VIEWER_FRONT_STAGE_FACING_ANGLE } from "$lib/shared/3d/domain/viewer-formation-facing";
 
   const WORKBENCH_SCENES = new Set<string>([
     BackgroundType.FOREST,
@@ -39,14 +39,16 @@
       : BackgroundType.BLOSSOM;
   }
 
-  function requestedCamera(): CameraStateSnapshot | undefined {
-    if (typeof window === "undefined") return undefined;
+  function requestedCamera(): CameraStateSnapshot | null {
+    if (typeof window === "undefined") return null;
     const pose = readCameraUrlPose(
       new URLSearchParams(window.location.search),
       48
     );
     if (!pose) {
-      if (requestedScene() !== BackgroundType.EMBER) return undefined;
+      // A seeded workbench must not inherit the user's camera from a different
+      // environment. null lets the shared opening-camera policy frame it.
+      if (requestedScene() !== BackgroundType.EMBER) return null;
       return {
         position: { x: 0, y: 3.4, z: -9.8 },
         target: { x: 0, y: 1.4, z: 5.2 },
@@ -64,12 +66,12 @@
 
   function requestedPerformers() {
     if (requestedScene() !== BackgroundType.EMBER) return [];
-    // Seed the same audience-facing heading used by the live formation owner.
-    // Add/remove and formation changes must preserve this visible front.
+    // Ember deliberately looks down the opposite stage axis. The shared
+    // formation owner keeps that exception scoped to this environment.
     return [
       {
         position: { x: 0, z: 0 },
-        facingAngle: VIEWER_FRONT_STAGE_FACING_ANGLE,
+        facingAngle: EMBER_VIEWER_FRONT_STAGE_FACING_ANGLE,
         customBluePlane: Plane.WALL,
         customRedPlane: Plane.WALL,
       },

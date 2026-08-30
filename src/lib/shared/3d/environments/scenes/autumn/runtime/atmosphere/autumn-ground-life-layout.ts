@@ -1,10 +1,16 @@
 import { AUTUMN_POND_LAYOUT } from "../water/autumn-pond-layout";
 
 export interface AutumnFireflyCluster {
-  id: "pond" | "deadwood" | "champignon-arc";
+  id:
+    | "clearing-edge"
+    | "pond"
+    | "deadwood"
+    | "champignon-arc"
+    | "woodland-lane";
   position: [number, number];
   area: { width: number; height: number; depth: number };
   weight: number;
+  sizeScale: number;
 }
 
 export interface AutumnLeafEmitter {
@@ -25,22 +31,39 @@ export interface AutumnLeafEmitter {
 export const AUTUMN_FIREFLY_CLUSTERS: readonly AutumnFireflyCluster[] =
   Object.freeze([
     {
+      id: "clearing-edge",
+      position: [0, 7],
+      area: { width: 14, height: 2.8, depth: 3 },
+      weight: 0.34,
+      sizeScale: 0.75,
+    },
+    {
       id: "pond",
       position: [AUTUMN_POND_LAYOUT.centerX, AUTUMN_POND_LAYOUT.centerZ],
       area: { width: 7.5, height: 3.8, depth: 6 },
-      weight: 0.42,
+      weight: 0.22,
+      sizeScale: 0.85,
     },
     {
       id: "deadwood",
       position: [10.35, -6.75],
       area: { width: 4.2, height: 3.2, depth: 3.4 },
-      weight: 0.33,
+      weight: 0.18,
+      sizeScale: 1,
     },
     {
       id: "champignon-arc",
       position: [4, -12],
       area: { width: 5.5, height: 3, depth: 4.8 },
-      weight: 0.25,
+      weight: 0.16,
+      sizeScale: 1,
+    },
+    {
+      id: "woodland-lane",
+      position: [-4, -23],
+      area: { width: 10, height: 4.5, depth: 12 },
+      weight: 0.1,
+      sizeScale: 1.4,
     },
   ]);
 

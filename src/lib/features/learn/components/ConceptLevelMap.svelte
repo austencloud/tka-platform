@@ -1,5 +1,6 @@
 <script lang="ts">
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import LessonGridDisplay from "$lib/shared/pictograph/grid/components/LessonGridDisplay.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import {
     getConceptPlacesByLevel,
@@ -20,6 +21,9 @@
   } = $props();
 
   const places = getConceptPlacesByLevel(1);
+  const openingPlaces = places.slice(0, 4);
+  const parallelPlaces = places.slice(4, 6);
+  const closingPlaces = places.slice(6);
   const selectedPlace = $derived(
     places.find((place) => place.id === selectedId) ?? places[0]!
   );
@@ -36,6 +40,11 @@
       place.applications.length > 0
     );
   }
+
+  function resourceLabel(place: LearnConceptPlace): string {
+    if (place.lessonIds.length > 0) return "Lesson";
+    return hasMappedResources(place) ? "Reference" : "Map only";
+  }
 </script>
 
 <section class="level-map" aria-labelledby="level-map-title">
@@ -47,94 +56,149 @@
     <p>The map keeps your place. Lessons teach one concept at a time.</p>
   </header>
 
-  <ol class="concept-track" aria-label="TKA Level 1 concepts">
-    {#each places as place (place.id)}
-      <li>
-        <button
-          type="button"
-          class="place-button"
-          class:selected={place.id === selectedPlace.id}
-          aria-pressed={place.id === selectedPlace.id}
-          onclick={() => onSelect(place.id)}
-        >
-          <span class="place-id">{place.id}</span>
-          <span class="place-name">{place.concept.name}</span>
-          <span class="place-resource">
-            {place.lessonIds.length > 0
-              ? "Lesson"
-              : hasMappedResources(place)
-                ? "Reference"
-                : "Map only"}
-          </span>
-        </button>
+  <div class="atlas-body">
+    <ol class="concept-track" aria-label="TKA Level 1 concepts">
+      {#each openingPlaces as place (place.id)}
+        <li class="route-stop">
+          <button
+            type="button"
+            class="place-button"
+            class:selected={place.id === selectedPlace.id}
+            aria-pressed={place.id === selectedPlace.id}
+            onclick={() => onSelect(place.id)}
+          >
+            <span class="place-id">{place.id}</span>
+            <span class="place-copy">
+              <span class="place-name">{place.concept.name}</span>
+              <span class="place-resource">{resourceLabel(place)}</span>
+            </span>
+          </button>
+        </li>
+      {/each}
+
+      <li class="route-branch">
+        <ol aria-label="Parallel Level 1 concepts">
+          {#each parallelPlaces as place (place.id)}
+            <li class="route-stop branch-stop">
+              <button
+                type="button"
+                class="place-button"
+                class:selected={place.id === selectedPlace.id}
+                aria-pressed={place.id === selectedPlace.id}
+                onclick={() => onSelect(place.id)}
+              >
+                <span class="place-id">{place.id}</span>
+                <span class="place-copy">
+                  <span class="place-name">{place.concept.name}</span>
+                  <span class="place-resource">{resourceLabel(place)}</span>
+                </span>
+              </button>
+            </li>
+          {/each}
+        </ol>
       </li>
-    {/each}
-  </ol>
 
-  <div class="place-detail">
-    <Crossfade key={selectedPlace.id} duration={DURATION.normal} animateHeight>
-      <article aria-labelledby="selected-place-title">
-        <div class="place-heading">
-          <span class="selected-id">{selectedPlace.id}</span>
-          <div>
-            <h3 id="selected-place-title">{selectedPlace.concept.name}</h3>
-            <p>{selectedPlace.concept.description}</p>
+      {#each closingPlaces as place (place.id)}
+        <li class="route-stop">
+          <button
+            type="button"
+            class="place-button"
+            class:selected={place.id === selectedPlace.id}
+            aria-pressed={place.id === selectedPlace.id}
+            onclick={() => onSelect(place.id)}
+          >
+            <span class="place-id">{place.id}</span>
+            <span class="place-copy">
+              <span class="place-name">{place.concept.name}</span>
+              <span class="place-resource">{resourceLabel(place)}</span>
+            </span>
+          </button>
+        </li>
+      {/each}
+    </ol>
+
+    <div class="place-detail">
+      <Crossfade
+        key={selectedPlace.id}
+        duration={DURATION.normal}
+        animateHeight
+      >
+        <article aria-labelledby="selected-place-title">
+          <div class="place-heading">
+            <span class="selected-id">{selectedPlace.id}</span>
+            <div>
+              <h3 id="selected-place-title">{selectedPlace.concept.name}</h3>
+              <p>{selectedPlace.concept.description}</p>
+            </div>
           </div>
-        </div>
 
-        {#if hasMappedResources(selectedPlace)}
-          <div class="resource-actions">
-            {#each selectedPlace.lessonIds as lessonRef (lessonRef.lessonId)}
-              {@const lesson = lessonFor(lessonRef)}
-              {#if lesson}
-                <button
-                  type="button"
-                  class="resource-action primary"
-                  onclick={() => onLessonStart(lesson, selectedPlace.id)}
-                >
-                  <span>{lessonRef.label}</span>
-                  {#if lessonRef.coverage === "partial"}
-                    <small>Part of this concept</small>
-                  {/if}
-                </button>
-              {/if}
-            {/each}
+          {#if selectedPlace.id === "1.1"}
+            <div class="grid-preview" aria-label="Diamond and Box grids">
+              <figure>
+                <LessonGridDisplay type="diamond" size="medium" />
+                <figcaption>Diamond</figcaption>
+              </figure>
+              <figure>
+                <LessonGridDisplay type="box" size="medium" />
+                <figcaption>Box</figcaption>
+              </figure>
+            </div>
+          {/if}
 
-            {#if selectedPlace.exploration}
-              <a
-                class="resource-action secondary"
-                href={selectedPlace.exploration.href}
-              >
-                {selectedPlace.exploration.label}
-              </a>
-            {/if}
-
-            {#each selectedPlace.guideRefs as guide (guide.slug)}
-              <a
-                class="resource-action secondary"
-                href="/guide/level-1/{guide.slug}"
-              >
-                <span>Read {guide.label}</span>
-                {#if guide.coverage === "partial"}
-                  <small>Related section</small>
+          {#if hasMappedResources(selectedPlace)}
+            <div class="resource-actions">
+              {#each selectedPlace.lessonIds as lessonRef (lessonRef.lessonId)}
+                {@const lesson = lessonFor(lessonRef)}
+                {#if lesson}
+                  <button
+                    type="button"
+                    class="resource-action primary"
+                    onclick={() => onLessonStart(lesson, selectedPlace.id)}
+                  >
+                    <span>{lessonRef.label}</span>
+                    {#if lessonRef.coverage === "partial"}
+                      <small>Part of this concept</small>
+                    {/if}
+                  </button>
                 {/if}
-              </a>
-            {/each}
+              {/each}
 
-            {#each selectedPlace.applications as application (application.href)}
-              <a class="resource-action secondary" href={application.href}>
-                {application.label}
-              </a>
-            {/each}
-          </div>
-        {:else}
-          <p class="unmapped-note">
-            This concept is part of Level 1. Its learning resources are still
-            being connected.
-          </p>
-        {/if}
-      </article>
-    </Crossfade>
+              {#if selectedPlace.exploration}
+                <a
+                  class="resource-action secondary"
+                  href={selectedPlace.exploration.href}
+                >
+                  {selectedPlace.exploration.label}
+                </a>
+              {/if}
+
+              {#each selectedPlace.guideRefs as guide (guide.slug)}
+                <a
+                  class="resource-action secondary"
+                  href="/guide/level-1/{guide.slug}"
+                >
+                  <span>Read {guide.label}</span>
+                  {#if guide.coverage === "partial"}
+                    <small>Related section</small>
+                  {/if}
+                </a>
+              {/each}
+
+              {#each selectedPlace.applications as application (application.href)}
+                <a class="resource-action secondary" href={application.href}>
+                  {application.label}
+                </a>
+              {/each}
+            </div>
+          {:else}
+            <p class="unmapped-note">
+              This concept is part of Level 1. Its learning resources are still
+              being connected.
+            </p>
+          {/if}
+        </article>
+      </Crossfade>
+    </div>
   </div>
 </section>
 
@@ -143,11 +207,18 @@
     container-type: inline-size;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md, 1rem);
+    gap: clamp(1rem, 2.5cqw, 1.5rem);
     padding: clamp(1rem, 3cqw, 1.5rem);
     background: var(--theme-panel-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 16px;
+  }
+
+  .atlas-body {
+    display: grid;
+    grid-template-columns: clamp(20rem, 30cqw, 28rem) minmax(0, 1fr);
+    gap: clamp(1rem, 3cqw, 2rem);
+    align-items: start;
   }
 
   .map-header {
@@ -189,32 +260,90 @@
   }
 
   .concept-track {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.625rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
+  .concept-track::before {
+    position: absolute;
+    top: 1.25rem;
+    bottom: 1.25rem;
+    left: 1.25rem;
+    width: 2px;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 35%,
+      var(--theme-stroke)
+    );
+    content: "";
+  }
+
   .concept-track li {
     min-width: 0;
+    list-style: none;
+  }
+
+  .route-stop {
+    position: relative;
+    padding: 0.25rem 0;
+  }
+
+  .route-branch {
+    position: relative;
+    margin: 0.25rem 0;
+    padding-left: 2.5rem;
+  }
+
+  .route-branch::before,
+  .route-branch::after {
+    position: absolute;
+    left: 1.25rem;
+    width: 1.25rem;
+    border-left: 2px solid
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 35%, var(--theme-stroke));
+    content: "";
+  }
+
+  .route-branch::before {
+    top: 0;
+    height: 50%;
+    border-bottom: 2px solid
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 35%, var(--theme-stroke));
+    border-bottom-left-radius: 0.75rem;
+  }
+
+  .route-branch::after {
+    bottom: 0;
+    height: 50%;
+    border-top: 2px solid
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 35%, var(--theme-stroke));
+    border-top-left-radius: 0.75rem;
+  }
+
+  .route-branch ol {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
   }
 
   .place-button {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas:
-      "id name"
-      "id resource";
+    position: relative;
+    display: flex;
     align-items: center;
-    column-gap: 0.625rem;
+    gap: 0.75rem;
     width: 100%;
-    min-height: 68px;
-    padding: 0.75rem;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 12px;
+    min-height: 52px;
+    padding: 0.5rem 0.75rem 0.5rem 0.625rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
     color: var(--theme-text);
     font: inherit;
     text-align: left;
@@ -227,7 +356,7 @@
 
   .place-button:hover {
     background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong, var(--theme-stroke));
+    border-color: var(--theme-stroke);
   }
 
   .place-button.selected {
@@ -237,8 +366,8 @@
       var(--theme-card-bg)
     );
     border-color: var(--theme-accent, #8b5cf6);
-    box-shadow: 0 0 0 1px
-      color-mix(in srgb, var(--theme-accent, #8b5cf6) 40%, transparent);
+    box-shadow: 0 8px 28px
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 13%, transparent);
   }
 
   .place-button:focus-visible,
@@ -248,16 +377,38 @@
   }
 
   .place-id {
-    grid-area: id;
-    min-width: 2.25rem;
-    color: var(--theme-text-dim);
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    min-width: 2.5rem;
+    height: 2.5rem;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke-strong, var(--theme-stroke));
+    border-radius: 999px;
+    color: var(--theme-text);
     font-size: var(--font-size-compact, 0.75rem);
     font-weight: 750;
     font-variant-numeric: tabular-nums;
   }
 
+  .place-button.selected .place-id {
+    background: var(--theme-accent, #8b5cf6);
+    border-color: var(--theme-accent, #8b5cf6);
+    color: var(--theme-text-on-accent, #fff);
+  }
+
+  .place-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
   .place-name {
-    grid-area: name;
     min-width: 0;
     overflow: hidden;
     font-size: var(--font-size-min, 0.875rem);
@@ -268,18 +419,45 @@
   }
 
   .place-resource {
-    grid-area: resource;
     color: var(--theme-text-dim);
     font-size: var(--font-size-compact, 0.75rem);
     line-height: 1.2;
   }
 
   .place-detail {
+    align-self: start;
     min-width: 0;
-    padding: 1rem;
+    padding: clamp(1rem, 3cqw, 1.5rem);
     background: color-mix(in srgb, var(--theme-card-bg) 82%, transparent);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
+  }
+
+  .place-detail article {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .grid-preview {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 17.5rem));
+    justify-content: start;
+    gap: 0.75rem;
+    margin: 0;
+  }
+
+  .grid-preview figure {
+    min-width: 0;
+    margin: 0;
+  }
+
+  .grid-preview figcaption {
+    margin-top: 0.5rem;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 700;
+    text-align: center;
   }
 
   .place-heading {
@@ -321,10 +499,10 @@
   }
 
   .resource-actions {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 0.625rem;
-    margin-top: 1rem;
+    margin: 0;
   }
 
   .resource-action {
@@ -333,6 +511,9 @@
     align-items: flex-start;
     justify-content: center;
     gap: 0.2rem;
+    flex: 0 1 auto;
+    width: fit-content;
+    max-width: 22rem;
     min-height: var(--min-touch-target, 44px);
     padding: 0.7rem 0.875rem;
     border-radius: 10px;
@@ -350,9 +531,23 @@
   }
 
   .resource-action.primary {
-    background: var(--theme-accent, #7c3aed);
-    border: 1px solid var(--theme-accent, #7c3aed);
-    color: var(--theme-text-on-accent, #fff);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #7c3aed) 12%,
+      var(--theme-card-bg)
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #7c3aed) 62%, var(--theme-stroke));
+    color: var(--theme-text);
+  }
+
+  .resource-action.primary:hover {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #7c3aed) 19%,
+      var(--theme-card-bg)
+    );
+    border-color: var(--theme-accent, #7c3aed);
   }
 
   .resource-action.secondary {
@@ -373,18 +568,85 @@
   }
 
   .unmapped-note {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--theme-stroke);
+    margin: 0;
   }
 
-  @container (min-width: 42rem) {
-    .concept-track {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+  @container (min-width: 70rem) {
+    .place-detail:not(:has(.grid-preview)) {
+      max-width: 36rem;
+    }
+
+    .place-detail article {
+      grid-template-columns: minmax(13rem, 0.7fr) minmax(24rem, 1.3fr);
+      grid-template-areas:
+        "heading preview"
+        "heading actions";
+      column-gap: clamp(1.5rem, 3cqw, 3rem);
+      align-items: start;
+    }
+
+    .place-detail article:not(:has(.grid-preview)) {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "heading"
+        "actions";
+    }
+
+    .place-heading {
+      grid-area: heading;
+    }
+
+    .grid-preview {
+      grid-area: preview;
+    }
+
+    .resource-actions,
+    .unmapped-note {
+      grid-area: actions;
     }
   }
 
-  @container (max-width: 34rem) {
+  @container (max-width: 56rem) {
+    .atlas-body {
+      grid-template-columns: 1fr;
+    }
+
+    .concept-track {
+      flex-direction: row;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding: 0.25rem 0 0.75rem;
+      scroll-snap-type: x proximity;
+      scrollbar-width: thin;
+    }
+
+    .concept-track::before,
+    .route-branch::before,
+    .route-branch::after {
+      display: none;
+    }
+
+    .route-stop,
+    .route-branch {
+      flex: 0 0 auto;
+      padding: 0;
+    }
+
+    .route-branch {
+      margin: 0;
+    }
+
+    .route-branch ol {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .place-button {
+      width: auto;
+      min-width: 11.5rem;
+      scroll-snap-align: start;
+    }
+
     .map-header {
       align-items: flex-start;
       flex-direction: column;
@@ -395,18 +657,21 @@
       text-align: left;
     }
 
-    .resource-actions {
-      grid-template-columns: 1fr;
+    .resource-action {
+      flex: 1 1 14rem;
+      width: auto;
+      max-width: none;
     }
   }
 
-  @container (max-width: 24rem) {
-    .concept-track {
-      grid-template-columns: 1fr;
+  @container (max-width: 28rem) {
+    .grid-preview {
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
     }
 
-    .place-button {
-      min-height: 58px;
+    .grid-preview figure {
+      padding: 0.4rem;
     }
   }
 

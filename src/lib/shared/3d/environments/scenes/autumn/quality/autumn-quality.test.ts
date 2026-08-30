@@ -6,7 +6,18 @@ describe("getAutumnQualityConfig", () => {
     const high = getAutumnQualityConfig("high");
     const low = getAutumnQualityConfig("low");
     expect(low.leafCount).toBeLessThan(high.leafCount);
+    expect(low.fireflyCount).toBeLessThan(high.fireflyCount);
     expect(low.wispCount).toBeLessThan(high.wispCount);
+  });
+
+  it("keeps enough fireflies visible while most of the field is between flashes", () => {
+    for (const tier of ["low", "medium", "high"] as const) {
+      // The shared firefly pulse is intentionally dark for roughly 70% of a
+      // cycle. A smaller budget made the whole habitat disappear by chance.
+      expect(getAutumnQualityConfig(tier).fireflyCount).toBeGreaterThanOrEqual(
+        36
+      );
+    }
   });
 
   it("spends the shadow pass only where the GPU can afford it", () => {

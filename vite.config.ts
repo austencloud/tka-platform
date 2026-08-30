@@ -1043,9 +1043,15 @@ export default defineConfig(({ command, mode }) => ({
   ].filter(Boolean),
   resolve: {
     dedupe: ["three", "@threlte/core"],
-    alias: {
-      // Aliases handled by SvelteKit
-    },
+    alias: [
+      {
+        find: /^@austencloud\/scene-3d$/,
+        replacement: path.resolve(
+          dirname,
+          "node_modules/@austencloud/scene-3d/src/index.ts"
+        ),
+      },
+    ],
     // Conditions handled by SvelteKit plugin (client) and ssr.resolve.conditions (server)
   },
   // ============================================================================
@@ -1127,6 +1133,9 @@ export default defineConfig(({ command, mode }) => ({
       "@threlte/core",
       "@threlte/extras",
       "@threlte/rapier",
+      // scene-3d ships Svelte source plus extensionless ESM in dist. Keep it
+      // inside Vite's SSR graph so the `svelte` export condition wins.
+      "@austencloud/scene-3d",
       // ESM packages with extensionless imports — Node can't resolve them natively
       "@austencloud/media-tagging-core",
       "@austencloud/media-tagging-firebase",
@@ -1214,6 +1223,7 @@ export default defineConfig(({ command, mode }) => ({
       // Threlte: avoid on-demand re-optimization (prevents stale dep 504s)
       "@threlte/core",
       "@threlte/extras",
+      "@dimforge/rapier3d-compat",
       // WebGPU renderer: pre-bundle to avoid 504 "Outdated Optimize Dep" errors
       "three/webgpu",
 
@@ -1288,7 +1298,10 @@ export default defineConfig(({ command, mode }) => ({
       "Cross-Origin-Embedder-Policy": "unsafe-none",
     },
     fs: {
-      allow: [".", "../../", "../../../animator", "../../../desktop"],
+      // "../../../" keeps the primary checkout's node_modules reachable when the
+      // server runs from a worktree under E:/worktrees/<repo>/<name> whose
+      // node_modules is a junction into the primary checkout.
+      allow: [".", "../../", "../../../", "../../../animator", "../../../desktop"],
       strict: true, // 2026: Security best practice
     },
     hmr: {

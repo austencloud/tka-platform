@@ -21,6 +21,8 @@
   import EmberFountains from "./ember/EmberFountains.svelte";
   import VolcanicHaze from "./ember/VolcanicHaze.svelte";
   import HeatDistortion from "./ember/HeatDistortion.svelte";
+  import EmberGroundDetail from "./ember/EmberGroundDetail.svelte";
+  import EmberSurfaceEcology from "./ember/EmberSurfaceEcology.svelte";
   import {
     type EmberSceneConfig,
     createDefaultEmberConfig,
@@ -98,8 +100,9 @@
   const logSmall = useGltf("/models/camping/tree-log-small.glb");
   const campfire = useGltf("/models/camping/campfire-pit.glb");
   let productionSliceProgress = $state(0);
+  let productionSliceAsset = $state<Object3D | null>(null);
 
-  const { scene, renderer, camera } = useThrelte();
+  const { scene } = useThrelte();
   const adaptiveQuality = tryGetAdaptiveQualityContext();
   const shadowsEnabled = $derived(
     adaptiveQuality?.config.enableShadows ?? true
@@ -184,24 +187,20 @@
   let fogInstance: FogExp2 | null = null;
   let fogBackground: Color | null = null;
   $effect(() => {
-    if (!scene.current) return;
     const fog = activeConfig.fog;
     if (!fogInstance) {
       fogInstance = new FogExp2(fog.color, fog.density);
       fogBackground = new Color(fog.color);
-      scene.current.fog = fogInstance;
-      scene.current.background = fogBackground;
+      scene.fog = fogInstance;
+      scene.background = fogBackground;
     } else {
       fogInstance.color.set(fog.color);
       fogBackground?.set(fog.color);
       fogInstance.density = fog.density;
     }
     return () => {
-      if (scene.current) {
-        if (scene.current.fog === fogInstance) scene.current.fog = null;
-        if (scene.current.background === fogBackground)
-          scene.current.background = null;
-      }
+      if (scene.fog === fogInstance) scene.fog = null;
+      if (scene.background === fogBackground) scene.background = null;
       fogInstance = null;
       fogBackground = null;
     };
@@ -211,7 +210,16 @@
     productionSliceProgress = fraction;
   }
 
+  // The fissure decals are flat planes baked at y 0.509 and 0.512, while the
+  // shelf surface that later gained its height detail spans y 0.454 to 0.554.
+  // Each plane is therefore buried under roughly half the surface and surfaces
+  // only along the contour where the two graze, which renders as the thin
+  // kinked bright slivers near the stage rather than as fissures. Re-cutting
+  // them belongs to the asset; until then they contribute only the artifact.
+  const BURIED_FISSURE_DECAL_ROLES = new Set(["cooled-fissure", "live-fissure"]);
+
   function handleProductionSliceReady(asset: Object3D): void {
+    productionSliceAsset = asset;
     const treatments = activeConfig.atmosphere.materials;
     asset.traverse((child) => {
       const mesh = child as {
@@ -223,6 +231,12 @@
       if (!mesh.isMesh || !mesh.material) return;
 
       const role = child.userData.tka_role as string | undefined;
+
+      if (role && BURIED_FISSURE_DECAL_ROLES.has(role)) {
+        child.visible = false;
+        return;
+      }
+
       mesh.receiveShadow = true;
       mesh.castShadow =
         shadowsEnabled &&
@@ -237,13 +251,20 @@
       for (const material of materials) {
         if (!material.isMeshStandardMaterial) continue;
         const name = material.name;
-        const treatment = name.includes("Ground_Blackglass")
-          ? treatments.playableSurface
-          : name.includes("Meshy_Geology")
-            ? treatments.meshyGeology
-            : name.includes("Mineral") || name.includes("Ash_Deposit")
-              ? treatments.mineral
-              : treatments.world;
+        const treatment =
+          role === "playable-surface" ||
+          role === "playable-shelf" ||
+          role === "shelf-stratum" ||
+          role === "stage-crust-transition"
+            ? treatments.playableSurface
+            : role?.startsWith("meshy-")
+              ? treatments.meshyGeology
+              : name.includes("iron-contact") ||
+                  name.includes("windborne-ash") ||
+                  name.includes("Mineral") ||
+                  name.includes("Ash_Deposit")
+                ? treatments.mineral
+                : treatments.world;
         material.color.lerp(new Color(treatment.tint), treatment.tintBlend);
         material.emissive.lerp(
           new Color(treatment.emissive),
@@ -272,9 +293,6 @@
     const total = glbs.length + 1;
     sceneFeatures.reportProgress("environment", loaded / total);
     if (loaded === total) {
-      if (renderer.current && camera.current && scene.current) {
-        renderer.current.compile(scene.current, camera.current);
-      }
       sceneFeatures.reportReady("environment");
     }
   });
@@ -290,11 +308,13 @@
   });
 </script>
 
-<!-- Smoky volcanic sky -->
+<!-- Smoky volcanic sky, lifted along the caldera bearing so the ridgeline
+     reads as a silhouette instead of dissolving into a black upper frame. -->
 <SkyGradient
   topColor={activeConfig.sky.topColor}
   midColor={activeConfig.sky.midColor}
   bottomColor={activeConfig.sky.bottomColor}
+  horizonGlow={activeConfig.sky.horizonGlow}
 />
 
 <!-- Lava cracks overlay on ground -->
@@ -313,6 +333,12 @@
   onProgress={handleProductionSliceProgress}
   onReady={handleProductionSliceReady}
 />
+
+<EmberGroundDetail scene={productionSliceAsset} />
+
+<!-- Runtime geology breaks the playable shelf into physical clinker, rafted
+     plates, and heat-stained fragments without consuming the clear stage. -->
+<EmberSurfaceEcology stageRadius={activeConfig.platform.radius} />
 
 <!-- Heat distortion shimmer above lava -->
 {#if activeConfig.lavaPool.enabled}

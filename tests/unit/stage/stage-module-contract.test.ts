@@ -82,6 +82,19 @@ describe("One Stage ownership", () => {
     expect(stage).toContain("<StageTimeline");
   });
 
+  it("restores keyboard focus to the nearest surviving selected object", () => {
+    const stage = read(STAGE);
+    const timeline = read(
+      "src/lib/features/stage/components/StageTimeline.svelte"
+    );
+
+    expect(stage).toContain("focusStageTarget");
+    expect(stage).toContain('"data-stage-performer-id"');
+    expect(stage).toContain('"data-stage-formation-id"');
+    expect(timeline).toContain("data-stage-performer-id={performer.id}");
+    expect(timeline).toContain("data-stage-formation-id={formation.id}");
+  });
+
   it("keeps saved-scene handoffs out of the first-run starter", () => {
     const stage = read(STAGE);
 
@@ -110,7 +123,7 @@ describe("One Stage ownership", () => {
       'mode={timelineDisclosure === "editor" ? "editor" : "dock"}'
     );
     expect(starter).toContain("onVisibilityChange(!dismissed)");
-    expect(starter).toContain("Choreograph the performance");
+    expect(starter).toContain("Keep this example and choreograph it");
     expect(timeline).toContain('{#if mode === "editor"}');
     expect(stage).toContain("preferredSize:");
     expect(stage).toContain("--stage-timeline-content-size");
@@ -118,6 +131,21 @@ describe("One Stage ownership", () => {
       "grid-auto-rows: var(--stage-timeline-lane-size, 3.5rem)"
     );
     expect(timeline).not.toContain("grid-auto-rows: minmax(3.5rem, 1fr)");
+  });
+
+  it("uses an empty-stage view without creating a second project model", () => {
+    const stage = read(STAGE);
+    const starter = read(
+      "src/lib/features/stage/components/StageStarter.svelte"
+    );
+
+    expect(starter).toContain("Build from an empty stage");
+    expect(starter).toContain("onStartEmptyStage");
+    expect(stage).toContain("starterSceneBlank");
+    expect(stage).toContain("visiblePerformerCount={starterSceneBlank ? 0");
+    expect(stage).toContain("showSceneChrome={!starterSceneBlank}");
+    expect(stage).toContain("stageState.applyStudioStarter(starter)");
+    expect(stage).not.toContain("createStarterProject");
   });
 
   it("says nothing about phrases", () => {

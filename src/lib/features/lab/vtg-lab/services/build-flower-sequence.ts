@@ -1,8 +1,14 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { CsvEdge } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
 import { applyVariationDescriptor } from "$lib/features/choreo-card/services/deck-variation";
-import { prepareMandalaClubSequence } from "./prepare-mandala-club-sequence";
-import { flowerTurnPattern, type Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
+import { prepareMandalaPropSequence } from "./prepare-mandala-club-sequence";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import {
+  flowerStartOrientation,
+  flowerTurnPattern,
+  type Flower,
+} from "$lib/shared/shape-matrix/domain/flower-signature";
+import { closeSequenceOrientationCycle } from "$lib/shared/create/services/sequence-orientation-cycle";
 
 /**
  * archetype (two-hand pure-pro or pure-anti seed) + flower → a single-hand
@@ -14,6 +20,7 @@ export function buildFlowerSequence(
   flower: Flower,
   hand: "blue" | "red",
   edges: CsvEdge[],
+  propType: PropType = PropType.CLUB
 ): SequenceData {
   // Apply turns + start orientation to the FULL two-hand archetype first (the
   // proven rosetta order — applyVariationDescriptor's per-hand turn/closure logic
@@ -24,9 +31,16 @@ export function buildFlowerSequence(
       turnPattern: flowerTurnPattern(flower),
       turnLabel: flowerTurnPattern(flower),
       gridMode: flower.grid,
-      startOriPair: hand === "blue" ? { blue: flower.ori } : { red: flower.ori },
+      startOriPair:
+        hand === "blue"
+          ? { blue: flowerStartOrientation(flower) }
+          : { red: flowerStartOrientation(flower) },
     },
-    edges,
+    edges
   );
-  return prepareMandalaClubSequence(sequence, { show: hand, pathShape: "arc" });
+  return prepareMandalaPropSequence(closeSequenceOrientationCycle(sequence), {
+    show: hand,
+    pathShape: "arc",
+    propType,
+  });
 }

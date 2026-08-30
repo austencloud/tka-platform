@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEPLOY_DIRECTORY_FILE_ALLOWLISTS,
+  DEPLOY_RESTRICTED_FILES,
   getDisallowedDeployEntries,
 } from "../../scripts/deploy-asset-trim-policy.js";
 
@@ -26,5 +27,11 @@ describe("deploy asset trimming policy", () => {
       "ground-detail-modulation.png",
       "soil-albedo.jpg",
     ]);
+  });
+
+  it("keeps evaluation-only avatars out of deploy artifacts", () => {
+    expect(DEPLOY_RESTRICTED_FILES).toContain(
+      "models/avatars/bakeoff/personal-metaperson.glb"
+    );
   });
 });

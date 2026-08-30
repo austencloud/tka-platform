@@ -17,6 +17,7 @@ import { join } from "path";
 import { normalizeCloudflareRouteRules } from "./cloudflare-route-rules.js";
 import {
   DEPLOY_DIRECTORY_FILE_ALLOWLISTS,
+  DEPLOY_RESTRICTED_FILES,
   getDisallowedDeployEntries,
 } from "./deploy-asset-trim-policy.js";
 
@@ -76,6 +77,7 @@ const DIRS_TO_REMOVE = [
 // sourcePath inputs to the forest builder.
 const FILES_TO_REMOVE = [
   "element-icons-preview.html",
+  ...DEPLOY_RESTRICTED_FILES,
   // Optimized per-asset GLBs. The Autumn builder imports the *_raw* variants;
   // these optimized copies are only consumed by other builders, offline.
   "models/autumn/hero-tree-a.glb",

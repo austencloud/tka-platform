@@ -5,20 +5,16 @@
    * component. Replaces the doorway/scroller split (spec:
    * 2026-07-14-guide-crawlable-paginated-reader-design.md).
    *
-   * Renders the topic through the sheet⇄flow switcher: FLOW (mobile-first
-   * reflow column) is the default so the prerendered HTML Google sees is the
-   * crawlable, mobile-friendly view - Austen's verbatim prose + every
-   * pictograph's synchronous describePictograph aria-label. SHEET (the
-   * print-faithful 8.5×11 page, the book layout) is the desktop toggle,
-   * rendered from the SAME built _pages component /print and /book use - so the
-   * book product is reused, never re-authored, never risked.
+   * Reflowable topics render as crawlable, mobile-friendly editorial pages:
+   * Austen's verbatim prose + every pictograph's synchronous describePictograph
+   * aria-label. Topics that have not migrated to the shared content model fall
+   * back to the SAME print-faithful built page used by /print and /book.
    *
    * The companion (tap-a-strip-to-animate) reuses GuideReader's exact context
    * wiring, dynamic-imported + client-gated so its canvas player never touches
    * the prerender path. Topic-to-topic movement is real <a href> client nav
    * between sibling prerendered routes.
    */
-  import { browser } from "$app/environment";
   import { onMount } from "svelte";
   import { GUIDE_BODY_PAGES } from "../_data/guide-manifest";
   import { BUILT } from "../_data/built-pages";
@@ -27,16 +23,10 @@
   import FlowFrame from "./FlowFrame.svelte";
   import GuidePage from "./GuidePage.svelte";
   import GuideCompanionHost from "../../_components/GuideCompanionHost.svelte";
-  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { getConceptExperienceForGuideSlug } from "$lib/features/learn/domain/concept-experience-registry";
   import { buildConceptPath } from "$lib/features/learn/domain/concept-routes";
   import { setGuidePrintMode } from "../_data/guide-data-context";
   import { loadOverrides } from "../_data/guide-overrides.svelte";
-  import {
-    guideFramePrefs,
-    setGuideFrame,
-    type GuideFrame,
-  } from "../_data/guide-frame-prefs.svelte";
   import "../_styles/guide.css";
 
   let { slug }: { slug: string } = $props();
@@ -47,6 +37,7 @@
   const content = $derived(GUIDE_CONTENT[slug] ?? null);
   const Sheet = $derived(BUILT[slug]);
   const canFlow = $derived(hasReflowContent(slug));
+  const useFlow = $derived(canFlow);
   const interactiveLesson = $derived(getConceptExperienceForGuideSlug(slug));
 
   const prev = $derived(bodyIndex > 0 ? GUIDE_BODY_PAGES[bodyIndex - 1] : null);
@@ -56,31 +47,11 @@
       : null
   );
 
-  // Default FLOW so the prerendered (crawlable) HTML is the mobile-first reflow.
-  // Starts as local state - NOT guideFramePrefs, which defaults to "sheet" on
-  // the server and would make prerender emit the mobile-hostile 8.5in sheet.
-  // After mount (client only) the saved preference is adopted and kept in sync
-  // through setGuideFrame, so the Page/Reflow choice survives reloads and HMR
-  // and follows the reader's own preference owner. Pages with no reflow content
-  // render sheet-only.
-  let frame = $state<GuideFrame>(canFlow ? "flow" : "sheet");
-  function pickFrame(v: GuideFrame) {
-    frame = v;
-    setGuideFrame(v);
-  }
-  $effect(() => {
-    // If a page has no reflow content, force sheet (the toggle is hidden too).
-    if (!canFlow && frame === "flow") frame = "sheet";
-  });
-
   // Pictographs render eagerly (no IntersectionObserver - matches /print, and a
   // scaled/off-screen sheet needs it). getGuidePrintMode() → light ink-on-white.
   setGuidePrintMode();
 
-  // Sheet scale-to-fit-width (client-only; sheet is never the SSR default).
-  // Clamped at 1.9x - past that the print sheet's raster gets soft rather than
-  // crisp - not "no cap", so the 816px sheet doesn't float tiny at 4K but also
-  // doesn't get pushed past its native resolution.
+  // Sheet scale-to-fit for the few topics that do not have reflow content.
   let sheetWrap = $state<HTMLDivElement>();
   let scale = $state(1);
   // .sheet-scale sits centred in .sheet-wrap via `margin: 0 auto` at its OWN
@@ -101,11 +72,8 @@
   // SVG hydrates), so this never causes an SSR mismatch. Reactive to a theme toggle.
   let isDark = $state(false);
 
-  // Fit lives in an $effect keyed on the bind, NOT in onMount: on a flow-default
-  // page the sheet branch (and so sheetWrap) only mounts when the user toggles
-  // to "Page" - after onMount has already run. An onMount-only fit+observer
-  // never fires for it and the sheet stays stuck at scale 1 (masked pre-4K when
-  // 1 was also the cap; a visibly tiny sheet once upscaling exists).
+  // Fit lives in an $effect keyed on the bind so route changes between reflow
+  // and sheet-only topics cannot leave the sheet stuck at scale 1.
   $effect(() => {
     const el = sheetWrap;
     if (!el) return;
@@ -121,12 +89,17 @@
         el.clientWidth -
         parseFloat(cs.paddingLeft) -
         parseFloat(cs.paddingRight);
-      scale = Math.min(inner / 816, 1.9);
+      const widthScale = inner / 816;
+      scale = Math.min(widthScale, 1.9);
     };
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(el);
-    return () => ro.disconnect();
+    window.addEventListener("resize", fit, { passive: true });
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", fit);
+    };
   });
 
   // Per-topic scroll persistence. The topic pages scroll the WINDOW (the route
@@ -146,12 +119,6 @@
     }
   }
   onMount(() => {
-    // Adopt the saved Page/Reflow preference (client-only so prerender stays
-    // on the crawlable flow default).
-    if (canFlow && guideFramePrefs.frame !== frame) {
-      frame = guideFramePrefs.frame;
-    }
-
     let scrollRaf = 0;
     const onWinScroll = () => {
       if (scrollRaf) return;
@@ -218,54 +185,36 @@
 
 <GuideCompanionHost pageTitle={meta?.title ?? ""} levelLabel="Level 1">
   <main class="guide-page-route">
-    <header class="topic-hero">
-      <!-- The Page (sheet) view is a self-titling print reproduction - it paints its
-         OWN calligraphic title + intro line. Showing the hero title/tagline above
-         it repeats both. So the hero title is visually hidden in sheet mode (kept
-         in the a11y tree as the page h1) and the tagline is dropped; the reflow
-         view keeps them (FlowFrame drops the sheet's copies instead). -->
-      <h1 class:visually-hidden={frame === "sheet"}>{seo.h1}</h1>
-      {#if seo.tagline && frame === "flow"}<p class="hero-tagline">
-          {seo.tagline}
-        </p>{/if}
+    <header class="topic-hero" class:sheet-topic={!canFlow}>
+      <!-- Built sheet fallbacks paint their own title. Reflow pages use this
+           compact title band so the topic begins without a stack of controls. -->
+      <div class="topic-title">
+        <h1 class:visually-hidden={!canFlow}>{seo.h1}</h1>
+        {#if seo.tagline && canFlow}<p class="hero-tagline">
+            {seo.tagline}
+          </p>{/if}
+      </div>
       {#if interactiveLesson}
         <a
           class="interactive-lesson-link"
           href={buildConceptPath(interactiveLesson.conceptId)}
         >
           <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
-          Learn this interactively
+          <span>Learn this interactively</span>
         </a>
-      {/if}
-      {#if canFlow}
-        <!-- SegmentedControl lives under $lib/shared/3d and is on the CF-Worker SSR
-           stub list (25 MiB worker cap - reference_cf_worker_size_limit), so its
-           SSR stub is not a valid component and crashes prerender. The toggle is
-           interactive-only (no crawl value), so render it client-side; the
-           reserved-height wrapper keeps the flow content from shifting when it
-           hydrates in (no-layout-shift). -->
-        <div class="frame-toggle">
-          {#if browser}
-            <SegmentedControl
-              options={[
-                { value: "flow", label: "Reflow" },
-                { value: "sheet", label: "Page" },
-              ]}
-              value={frame}
-              onchange={pickFrame}
-              size="sm"
-              color="accent"
-            />
-          {/if}
-        </div>
       {/if}
     </header>
 
-    {#if frame === "flow" && content}
-      <FlowFrame {content} darkMode={isDark} tagline={seo.tagline ?? ""} />
+    {#if useFlow && content}
+      <FlowFrame
+        {content}
+        darkMode={isDark}
+        tagline={seo.tagline ?? ""}
+        layout={slug === "the-grid" ? "grid-reference" : "default"}
+      />
     {:else if Sheet}
-      <!-- Print-friendly layout: the SAME built _pages sheet the book uses, scaled
-         to fit width. Horizontal scroll guards narrow viewports. -->
+      <!-- Print-friendly fallback: the SAME built _pages sheet the book uses,
+           scaled to fit its available screen footprint. -->
       <div
         class="sheet-wrap"
         bind:this={sheetWrap}
@@ -327,10 +276,20 @@
     container-type: inline-size;
   }
   .topic-hero {
-    max-width: 44rem;
+    max-width: 76rem;
     margin: 0 auto;
-    padding: 1.5rem 1.5rem 0.5rem;
-    text-align: center;
+    padding: 1rem 1.5rem 0.75rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1.5rem;
+    text-align: left;
+  }
+  .topic-title {
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
   }
   /* The page title in the guide's signature calligraphic script (the same
      --guide-script the printed sheet uses for its title), so the crawl/flow
@@ -339,9 +298,10 @@
      so it reads on both the warm-white and dark columns. */
   .topic-hero h1 {
     margin: 0;
+    padding: 0;
     font-family: var(--guide-script, "Cormorant Garamond", Georgia, serif);
     font-weight: var(--guide-script-weight, 700);
-    font-size: clamp(3.2rem, 12vw, 5.25rem);
+    font-size: clamp(3rem, 6cqw, 4.4rem);
     line-height: 0.95;
     letter-spacing: 0;
     color: var(--ink, #1a1a1a);
@@ -360,19 +320,12 @@
     border: 0;
   }
   .hero-tagline {
-    margin: 0.35rem 0 1.25rem;
+    margin: 0.2rem 0 0;
     font-family: "Cormorant Garamond", Georgia, serif;
     font-size: clamp(1.15rem, 2.6vw, 1.4rem);
     font-style: italic;
     line-height: 1.4;
     color: var(--ink-dim, #555);
-  }
-  .frame-toggle {
-    display: flex;
-    justify-content: center;
-    /* Reserve the toggle's height so it doesn't shift the flow content when it
-       hydrates in client-side (it renders SSR-empty - see the browser gate). */
-    min-height: 50px;
   }
   .interactive-lesson-link {
     display: inline-flex;
@@ -380,13 +333,13 @@
     justify-content: center;
     gap: 0.5rem;
     min-height: 44px;
-    margin: 0.75rem auto 1rem;
+    margin: 0;
     padding: 0.65rem 1rem;
     border: 1px solid color-mix(in oklab, #647ff1 58%, transparent);
     border-radius: 999px;
     background: color-mix(in oklab, #647ff1 12%, transparent);
     color: color-mix(in oklab, var(--ink, #1a1a1a) 78%, #647ff1);
-    font-size: 0.85rem;
+    font-size: var(--font-size-min, 0.875rem);
     font-weight: 700;
     text-decoration: none;
     transition:
@@ -397,10 +350,6 @@
     border-color: #647ff1;
     background: color-mix(in oklab, #647ff1 20%, transparent);
   }
-  .frame-toggle :global(.segmented-control) {
-    max-width: 18rem;
-  }
-
   /* Print-friendly sheet: fit-to-width scale (up to 1.9x - see sheetShiftPx),
      its own footprint box so the scaled 816×1056 sheet doesn't leave a gap OR
      overlap the nav below (transform doesn't affect layout - .sheet-wrap's
@@ -427,8 +376,8 @@
 
   .topic-nav {
     max-width: 44rem;
-    margin: 2rem auto 0;
-    padding: 1.5rem 1.5rem 4rem;
+    margin: 1rem auto 0;
+    padding: 1rem 1.5rem 2rem;
     display: flex;
     align-items: stretch;
     justify-content: space-between;
@@ -479,6 +428,42 @@
   }
   .nav-spacer {
     flex: 1 1 0;
+  }
+
+  @container (max-width: 44rem) {
+    .topic-hero {
+      grid-template-columns: 1fr;
+      gap: 0.65rem;
+      padding: 1rem 1rem 0.5rem;
+      position: relative;
+      text-align: center;
+    }
+    .topic-hero h1 {
+      font-size: clamp(2.8rem, 15cqw, 3.6rem);
+    }
+    .topic-title {
+      display: block;
+      padding-inline: 2.75rem;
+    }
+    .interactive-lesson-link {
+      position: absolute;
+      inset-block-start: 1rem;
+      inset-inline-end: 1rem;
+      width: 44px;
+      padding: 0;
+      border-radius: 50%;
+    }
+    .interactive-lesson-link span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
   }
 
   @media (prefers-color-scheme: dark) {

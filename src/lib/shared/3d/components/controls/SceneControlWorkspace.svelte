@@ -215,7 +215,10 @@
          (Viewer3DScene's onPointerDown); this is the same act, reachable
          without hunting for a performer in the frame. -->
     <div class="performer-bar-anchor">
-      <PerformerSpine {onSettingChange} />
+      <PerformerSpine
+        {onSettingChange}
+        onScopeSelect={() => (activeTool = "performer")}
+      />
     </div>
 
     <SceneControlRail
@@ -248,7 +251,12 @@
 </div>
 
 {#if allowSaveScene}
-  <SaveSceneModal bind:open={saveSceneOpen} {bpm} {onSettingChange} {onAction} />
+  <SaveSceneModal
+    bind:open={saveSceneOpen}
+    {bpm}
+    {onSettingChange}
+    {onAction}
+  />
 {/if}
 
 <style>

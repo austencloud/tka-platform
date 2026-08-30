@@ -31,6 +31,7 @@
   import {
     captureTunnelSnapshot,
     type SnapshotDeps,
+    type TunnelSavedCallback,
   } from "../tunnel/tunnel-snapshot";
   import { capturePosterFromContainer } from "../tunnel/tunnel-poster";
   import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
@@ -101,6 +102,7 @@
     tunnelComposition = null,
     tunnelSaveTarget = null,
     onTunnelCanvasReadyChange,
+    onTunnelSaved,
   }: {
     sequence: SequenceData;
     playback: ViewerPlaybackState;
@@ -176,6 +178,7 @@
     tunnelComposition?: TunnelComposition | null;
     tunnelSaveTarget?: TunnelSaveTarget | null;
     onTunnelCanvasReadyChange?: (ready: boolean) => void;
+    onTunnelSaved?: TunnelSavedCallback;
   } = $props();
 
   // The sequence viewer supplies its shell-owned controller so the persistent
@@ -646,20 +649,19 @@
       derivedName ||
       `Tunnel #${tunnelCollectionState.count + 1}`;
     try {
+      const savedComposition = tunnelComposition
+        ? {
+            ...tunnelComposition,
+            formation: controller.config,
+            updatedAt: Date.now(),
+          }
+        : null;
       const tunnelData = {
         name,
         steps: [...seq.steps],
         snapshot,
         poster,
-        ...(tunnelComposition
-          ? {
-              composition: {
-                ...tunnelComposition,
-                formation: controller.config,
-                updatedAt: Date.now(),
-              },
-            }
-          : {}),
+        ...(savedComposition ? { composition: savedComposition } : {}),
         source: "viewer",
         // Lineage stamp: link back to the raw source sequence (spec:
         // 2026-07-12-art-in-library-design.md Unit 3).
@@ -672,6 +674,11 @@
       if (!savedTunnel) {
         throw new Error(`Tunnel ${tunnelSaveTarget?.id ?? ""} was not found.`);
       }
+      onTunnelSaved?.({
+        target: { id: savedTunnel.id, name: savedTunnel.name },
+        composition: savedComposition,
+        snapshot,
+      });
       tunnelSaveDedupeState = finishTunnelSaveAttempt(
         tunnelSaveDedupeState,
         fingerprint,

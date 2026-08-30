@@ -17,10 +17,14 @@
     Color,
     MathUtils,
     type Mesh,
+    Vector2,
     Vector3,
   } from "three";
   import type { MoonConfig } from "../domain/models/scene-configs";
-  import type { SkySunConfig } from "../domain/models/environment-models";
+  import type {
+    SkyHorizonGlowConfig,
+    SkySunConfig,
+  } from "../domain/models/environment-models";
 
   interface Props {
     /** Top color of gradient */
@@ -39,6 +43,8 @@
     moon?: MoonConfig | null;
     /** Optional solar disk composited by the same camera-centred sky owner. */
     sun?: SkySunConfig | null;
+    /** Optional directional glow banked along the horizon. */
+    horizonGlow?: SkyHorizonGlowConfig | null;
   }
 
   let {
@@ -50,7 +56,17 @@
     gradientEnd = 1,
     moon = null,
     sun = null,
+    horizonGlow = null,
   }: Props = $props();
+
+  /** Horizontal bearing the horizon glow is centred on. */
+  function resolveHorizonGlowBearing(
+    config: SkyHorizonGlowConfig | null
+  ): Vector2 {
+    const [x, , z] = config?.direction ?? [0, 0, -1];
+    const bearing = new Vector2(x, z);
+    return bearing.lengthSq() > 0 ? bearing.normalize() : new Vector2(0, -1);
+  }
 
   const geometry = untrack(() => new SphereGeometry(radius, 32, 32));
   const moonTexture = useTexture(moon?.texture ?? "/textures/moon.png");
@@ -120,6 +136,15 @@
           uSunOpacity: { value: sun?.opacity ?? 1.0 },
           uSunGlowScale: { value: sun?.glowScale ?? 6.0 },
           uSunGlowOpacity: { value: sun?.glowOpacity ?? 0.12 },
+          uHorizonGlowColor: {
+            value: new Color(horizonGlow?.color ?? "#000000"),
+          },
+          uHorizonGlowBearing: {
+            value: resolveHorizonGlowBearing(horizonGlow),
+          },
+          uHorizonGlowHeight: { value: horizonGlow?.height ?? 0.2 },
+          uHorizonGlowSpread: { value: horizonGlow?.spread ?? 0.5 },
+          uHorizonGlowIntensity: { value: horizonGlow?.intensity ?? 0 },
         },
         vertexShader: /* glsl */ `
         varying vec3 vSkyDirection;
@@ -153,6 +178,11 @@
         uniform float uSunOpacity;
         uniform float uSunGlowScale;
         uniform float uSunGlowOpacity;
+        uniform vec3 uHorizonGlowColor;
+        uniform vec2 uHorizonGlowBearing;
+        uniform float uHorizonGlowHeight;
+        uniform float uHorizonGlowSpread;
+        uniform float uHorizonGlowIntensity;
         varying vec3 vSkyDirection;
 
         void main() {
@@ -174,6 +204,31 @@
             }
           } else {
             color = mix(uBottomColor, uTopColor, h);
+          }
+
+          // A light source beyond the horizon lifts the sky in one bearing
+          // only, which is what silhouettes a ridgeline against it.
+          if (uHorizonGlowIntensity > 0.0) {
+            float elevation = skyDirection.y;
+            float vertical = exp(
+              -max(elevation, 0.0) / max(uHorizonGlowHeight, 0.0001)
+            );
+            vertical *= smoothstep(-0.22, 0.02, elevation);
+            vec2 flatDirection = vec2(skyDirection.x, skyDirection.z);
+            float flatLength = length(flatDirection);
+            float bearing = flatLength > 0.0001
+              ? dot(flatDirection / flatLength, uHorizonGlowBearing) * 0.5 + 0.5
+              : 0.5;
+            // pow() is undefined for a negative base; rounding can push the
+            // dot product a hair past -1.
+            float lateral = pow(
+              clamp(bearing, 0.0, 1.0),
+              mix(14.0, 1.0, clamp(uHorizonGlowSpread, 0.0, 1.0))
+            );
+            color += uHorizonGlowColor
+              * vertical
+              * lateral
+              * uHorizonGlowIntensity;
           }
 
           if (uSunEnabled > 0.5) {
@@ -295,6 +350,16 @@
     material.uniforms.uSunOpacity!.value = sun?.opacity ?? 1.0;
     material.uniforms.uSunGlowScale!.value = sun?.glowScale ?? 6.0;
     material.uniforms.uSunGlowOpacity!.value = sun?.glowOpacity ?? 0.12;
+    material.uniforms.uHorizonGlowColor!.value.set(
+      horizonGlow?.color ?? "#000000"
+    );
+    material.uniforms.uHorizonGlowBearing!.value.copy(
+      resolveHorizonGlowBearing(horizonGlow)
+    );
+    material.uniforms.uHorizonGlowHeight!.value = horizonGlow?.height ?? 0.2;
+    material.uniforms.uHorizonGlowSpread!.value = horizonGlow?.spread ?? 0.5;
+    material.uniforms.uHorizonGlowIntensity!.value =
+      horizonGlow?.intensity ?? 0;
   });
 
   let skyMesh = $state<Mesh>();

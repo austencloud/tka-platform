@@ -21,6 +21,9 @@
  * animator was told about, which is the whole basis of the stride it plays.
  */
 
+import type { TurnRequest } from "@austencloud/scene-3d";
+import type { PatternTerminalIntent } from "$lib/shared/3d/locomotion/pattern-terminal-step-plan";
+
 /** What the character is being asked to do this frame. */
 export interface WalkTick {
   /** Absolute facing in radians. 0 faces +Z. */
@@ -36,6 +39,12 @@ export interface WalkTick {
   direction: { x: number; z: number };
   /** What this moment is, named for the readout. */
   phase: string;
+  /** Authored in-place turn pose and root motion, when this tick is a pivot. */
+  turnRequest?: TurnRequest;
+  /** Remaining stage distance offered to the shared two-step stop planner. */
+  terminalIntent?: PatternTerminalIntent;
+  /** Do not advance this pause until the captured stop reaches its rest pose. */
+  waitForTerminalSettle?: boolean;
 }
 
 export interface WalkPattern {
@@ -60,8 +69,11 @@ const STILL = { x: 0, z: 0 };
 
 /** Metres out and back on the straight-line patterns. */
 const RUN = 4;
-/** Seconds an about-face takes. Slow enough to watch, fast enough to be one. */
-const TURN_TIME = 1.6;
+/** Authored clip time before the outgoing pose releases to locomotion. */
+const QUARTER_TURN_SECONDS = 1;
+const ABOUT_FACE_SECONDS = 50 / 30;
+const TURN_ENTRY_SECONDS = 0.3;
+const TURN_RELEASE_SECONDS = 0.3;
 /** A pause between legs, so each seam is approached from a settled stand. */
 const PAUSE = 0.8;
 
@@ -80,10 +92,10 @@ const go = (
   rate = 1
 ): WalkTick => ({ facing, isMoving: true, rate, direction, phase });
 
-/** Ease in and out, so a scripted turn is not itself a discontinuity. */
+/** Meet an authored pose with zero velocity and acceleration at both seams. */
 function smooth(u: number): number {
   const c = Math.min(1, Math.max(0, u));
-  return c * c * (3 - 2 * c);
+  return c * c * c * (c * (c * 6 - 15) + 10);
 }
 
 /**
@@ -112,17 +124,51 @@ function totalSeconds(legs: readonly Leg[]): number {
   return legs.reduce((sum, leg) => sum + leg.seconds, 0);
 }
 
-/** Sweep the facing from one heading to another across the leg. */
-function turnLeg(from: number, to: number, phase: string): Leg {
+/**
+ * Ask the shared turn owner for visible foot placements and authored root yaw.
+ *
+ * Facing still follows the request for path math and diagnostics, but the rig
+ * promotes the clip's yaw curve to the performer root. `requireAuthored`
+ * prevents a missing asset from quietly becoming the old footless spin.
+ */
+function turnLeg(from: number, to: number, phase: string, planId: string): Leg {
+  const turnAngle = to - from;
+  const clipSeconds =
+    Math.abs(turnAngle) > Math.PI * 0.75
+      ? ABOUT_FACE_SECONDS
+      : QUARTER_TURN_SECONDS;
   return {
-    seconds: TURN_TIME,
-    at: (u) =>
-      stand(from + (to - from) * smooth(u / TURN_TIME), phase),
+    seconds: clipSeconds + TURN_RELEASE_SECONDS,
+    at: (u) => {
+      const turnPhase = Math.min(1, u / clipSeconds);
+      const poseWeight =
+        u <= clipSeconds
+          ? smooth(u / TURN_ENTRY_SECONDS)
+          : 1 - smooth((u - clipSeconds) / TURN_RELEASE_SECONDS);
+      return {
+        ...stand(from + turnAngle * turnPhase, phase),
+        turnRequest: {
+          planId,
+          fromHeading: from,
+          toHeading: to,
+          phase: turnPhase,
+          poseWeight,
+          requireAuthored: true,
+        },
+      };
+    },
   };
 }
 
-function pauseLeg(facing: number, phase = "settling"): Leg {
-  return { seconds: PAUSE, at: () => stand(facing, phase) };
+function pauseLeg(
+  facing: number,
+  phase = "settling",
+  waitForTerminalSettle = false
+): Leg {
+  return {
+    seconds: PAUSE,
+    at: () => ({ ...stand(facing, phase), waitForTerminalSettle }),
+  };
 }
 
 function travelLeg(
@@ -130,11 +176,21 @@ function travelLeg(
   metres: number,
   facing: number,
   direction: { x: number; z: number },
-  phase: string
+  phase: string,
+  terminalPlanId?: string
 ): Leg {
   return {
     seconds: metres / Math.max(0.05, speed),
-    at: () => go(facing, direction, phase),
+    at: (local) => ({
+      ...go(facing, direction, phase),
+      ...(terminalPlanId && {
+        terminalIntent: {
+          id: terminalPlanId,
+          remainingDistance: Math.max(0, metres - speed * local),
+          targetFacing: facing,
+        },
+      }),
+    }),
   };
 }
 
@@ -171,7 +227,6 @@ export function stepOf(tick: WalkTick, speed: number, dt: number): WalkStep {
   };
 }
 
-
 /** Out, about-face, back. The plainest walk there is, plus its two ends. */
 const shuttle: WalkPattern = {
   id: "shuttle",
@@ -184,13 +239,20 @@ const shuttle: WalkPattern = {
 function shuttleLegs(speed: number): Leg[] {
   return [
     pauseLeg(0, "standing"),
-    travelLeg(speed, RUN, 0, AHEAD, "walking out"),
-    pauseLeg(0, "arriving"),
-    turnLeg(0, Math.PI, "about-face"),
+    travelLeg(speed, RUN, 0, AHEAD, "walking out", "shuttle:outbound-stop"),
+    pauseLeg(0, "arriving", true),
+    turnLeg(0, Math.PI, "about-face left", "shuttle:outbound-turn"),
     pauseLeg(Math.PI, "settling"),
-    travelLeg(speed, RUN, Math.PI, AHEAD, "walking back"),
-    pauseLeg(Math.PI, "arriving"),
-    turnLeg(Math.PI, TAU, "about-face"),
+    travelLeg(
+      speed,
+      RUN,
+      Math.PI,
+      AHEAD,
+      "walking back",
+      "shuttle:return-stop"
+    ),
+    pauseLeg(Math.PI, "arriving", true),
+    turnLeg(Math.PI, 0, "about-face right", "shuttle:return-turn"),
   ];
 }
 
@@ -227,6 +289,24 @@ function sidestepLegs(speed: number): Leg[] {
     travelLeg(speed, RUN * 0.75, 0, RIGHT, "stepping right"),
     pauseLeg(0, "arriving"),
     travelLeg(speed, RUN * 0.75, 0, LEFT, "stepping left"),
+  ];
+}
+
+/** Grapevine one way and the other, facing held downstage. */
+const grapevine: WalkPattern = {
+  id: "grapevine",
+  label: "Grapevine both ways",
+  hunts: "front/back crossover order, swing clearance, and the reversal seam",
+  period: (speed) => totalSeconds(grapevineLegs(speed)),
+  tick: (t, speed) => runLegs(grapevineLegs(speed), t),
+};
+
+function grapevineLegs(speed: number): Leg[] {
+  return [
+    pauseLeg(0, "standing"),
+    travelLeg(speed, RUN * 0.75, 0, RIGHT, "grapevine right"),
+    pauseLeg(0, "settling after right grapevine"),
+    travelLeg(speed, RUN * 0.75, 0, LEFT, "grapevine left"),
   ];
 }
 
@@ -345,7 +425,14 @@ function startStopLegs(speed: number): Leg[] {
     legs.push(pauseLeg(facing, "stopped"));
     legs.push(travelLeg(speed, 2, facing, AHEAD, "walking"));
     legs.push(pauseLeg(facing, "stopping"));
-    legs.push(turnLeg(facing, facing + Math.PI / 2, "turning the corner"));
+    legs.push(
+      turnLeg(
+        facing,
+        facing + Math.PI / 2,
+        "turning the corner",
+        `start-stop:corner-${corner + 1}`
+      )
+    );
   }
   return legs;
 }
@@ -400,18 +487,53 @@ const ramp: WalkPattern = {
   },
 };
 
-/** Standing, turning on the spot. */
+const PIVOT_SEGMENT_SECONDS = 3;
+const PIVOT_SETTLE_SECONDS = 0.8;
+const PIVOT_CLIP_SECONDS = 1;
+const PIVOT_RELEASE_SECONDS = 0.3;
+const PIVOT_ENTRY_SECONDS = 0.3;
+const PIVOT_HEADINGS = [0, Math.PI / 2, 0, -Math.PI / 2, 0] as const;
+
+/** Standing, turning on the spot with the authored quarter-turn clips. */
 const pivot: WalkPattern = {
   id: "pivot",
   label: "Turn on the spot",
-  hunts: "yaw with both feet planted and no clip asking them to move",
-  period: () => 12,
+  hunts: "authored left and right foot placements during quarter turns",
+  period: () => PIVOT_SEGMENT_SECONDS * (PIVOT_HEADINGS.length - 1),
   tick: (t) => {
-    const u = (t % 12) / 12;
-    // Two half-turns a lap, each with a settled stand either side of it.
-    const sweep = u < 0.5 ? smooth((u - 0.1) / 0.3) : smooth((u - 0.6) / 0.3);
-    const base = u < 0.5 ? 0 : Math.PI;
-    return stand(base + Math.PI * sweep, "pivoting");
+    const period = PIVOT_SEGMENT_SECONDS * (PIVOT_HEADINGS.length - 1);
+    const wrapped = ((t % period) + period) % period;
+    const segment = Math.min(
+      PIVOT_HEADINGS.length - 2,
+      Math.floor(wrapped / PIVOT_SEGMENT_SECONDS)
+    );
+    const local = wrapped - segment * PIVOT_SEGMENT_SECONDS;
+    const fromHeading = PIVOT_HEADINGS[segment]!;
+    const toHeading = PIVOT_HEADINGS[segment + 1]!;
+
+    if (local < PIVOT_SETTLE_SECONDS) {
+      return stand(fromHeading, "settled before turn");
+    }
+
+    const turnElapsed = local - PIVOT_SETTLE_SECONDS;
+    const phase = Math.min(1, turnElapsed / PIVOT_CLIP_SECONDS);
+    if (turnElapsed < PIVOT_CLIP_SECONDS + PIVOT_RELEASE_SECONDS - 1e-9) {
+      const direction = toHeading > fromHeading ? "left" : "right";
+      const poseWeight =
+        turnElapsed <= PIVOT_CLIP_SECONDS
+          ? smooth(turnElapsed / PIVOT_ENTRY_SECONDS)
+          : 1 -
+            smooth((turnElapsed - PIVOT_CLIP_SECONDS) / PIVOT_RELEASE_SECONDS);
+      return {
+        ...stand(
+          fromHeading + (toHeading - fromHeading) * phase,
+          `turning ${direction}`
+        ),
+        turnRequest: { fromHeading, toHeading, phase, poseWeight },
+      };
+    }
+
+    return stand(toHeading, "settled after turn");
   },
 };
 
@@ -419,6 +541,7 @@ export const WALK_PATTERNS: readonly WalkPattern[] = [
   shuttle,
   reverse,
   sidestep,
+  grapevine,
   circle,
   figureEight,
   zigzag,

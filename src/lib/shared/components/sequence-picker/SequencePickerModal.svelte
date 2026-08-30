@@ -13,7 +13,7 @@
   interface Props {
     open: boolean;
     onClose: () => void;
-    onSelect: (sequence: SequenceData) => void;
+    onSelect: (sequence: SequenceData, source: SequenceSource) => void;
     requiredBeatCount?: number | null;
     title?: string;
     showSourceToggle?: boolean;
@@ -72,7 +72,7 @@
     isSelectingSequence = true;
     try {
       const fullData = await hydrateSequenceData(sequence);
-      onSelect(fullData ?? sequence);
+      onSelect(fullData ?? sequence, engine.source);
       onClose();
     } finally {
       isSelectingSequence = false;

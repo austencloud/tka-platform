@@ -65,6 +65,7 @@ export function createSceneFeatureState(
   let progressMap = $state<Record<string, number>>({});
   let errorMap = $state<Record<string, string>>({});
   let retryRequestMap = $state<Record<string, number>>({});
+  let warmupProgress = $state(0);
 
   function getEnabledAsyncFeatures(): SceneFeature[] {
     return SCENE_FEATURES.filter(
@@ -122,6 +123,15 @@ export function createSceneFeatureState(
     progressMap = { ...progressMap, [key]: clamped };
   }
 
+  // Shader compile and the frame-smoothness gate run after every asset has
+  // downloaded, and used to be invisible: the bar sat at 100% for whole seconds
+  // while the scene was still being made ready. This is that stretch.
+  function reportWarmupProgress(fraction: number): void {
+    const clamped = Math.max(0, Math.min(1, fraction));
+    if (clamped <= warmupProgress) return;
+    warmupProgress = clamped;
+  }
+
   function reportReady(key: string): void {
     // Idempotent by necessity: reporters call this from an $effect that reruns
     // whenever their asset stores settle (see ForestScene's per-GLB progress
@@ -150,6 +160,8 @@ export function createSceneFeatureState(
   }
 
   function resetReady(key: string): void {
+    // A scene switch restarts the whole boot, warm-up included.
+    warmupProgress = 0;
     if (readySet.has(key)) {
       const next = new Set(readySet);
       next.delete(key);
@@ -193,6 +205,7 @@ export function createSceneFeatureState(
     getRetryRequest,
     toggle,
     reportProgress,
+    reportWarmupProgress,
     reportReady,
     reportFailed,
     resetReady,
@@ -269,6 +282,30 @@ export function createSceneFeatureState(
         }
       }
       return sum / asyncFeatures.length;
+    },
+    get warmupProgress(): number {
+      return warmupProgress;
+    },
+    /**
+     * What the loading curtain shows. Network fills the first three quarters,
+     * shader compile and the smoothness gate walk the rest, so the bar keeps
+     * moving right up to the reveal instead of sitting full.
+     */
+    get bootDisplayProgress(): number {
+      const asyncFeatures = getInitialRevealAsyncFeatures();
+      let assetProgress = 1;
+      if (asyncFeatures.length > 0) {
+        let sum = 0;
+        for (const feature of asyncFeatures) {
+          if (readySet.has(feature.key) || errorMap[feature.key] !== undefined) {
+            sum += 1;
+          } else {
+            sum += progressMap[feature.key] ?? 0;
+          }
+        }
+        assetProgress = sum / asyncFeatures.length;
+      }
+      return assetProgress * 0.75 + warmupProgress * 0.25;
     },
     reset,
   };

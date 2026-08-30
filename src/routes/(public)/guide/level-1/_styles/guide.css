@@ -718,22 +718,9 @@
 }
 
 /* ══════════════════════════════════════════
-   4K / large desktop: lockstep fluid scaling
-   (spec 2026-07-19-guide-4k-lockstep-design)
+   4K / large desktop: wider composition
    ══════════════════════════════════════════ */
 @media (min-width: 1680px) {
-  /* Root font ramps 16px→24px from 1680→3840px viewport. Every rem/ch/em
-     measure in the shell (sidebar, 90ch prose track, FlowFrame's 62rem frame,
-     cards, nav, footer type) grows by the SAME multiplier, so no element can
-     outgrow its neighbours - the disjointed-4K failure is impossible by
-     construction. Scoped via :has to standalone pages that mount the guide
-     shell: /book and /print never render .guide-layout, while the exact /guide
-     hub lives inside persistent .mkt-shell chrome and must retain the same root
-     metrics as the homepage during its shared-element morph. */
-  html:has(.guide-layout):not(:has(.mkt-shell)) {
-    font-size: clamp(16px, calc(16px + (100vw - 1680px) * 8 / 2160), 24px);
-  }
-
   /* Center the sidebar+content composition as ONE unit. The base layout pins
      the rail to the viewport edge (position: fixed) and floats content in the
      leftover width - at 4K that reads lopsided: a rail 2000px away from the

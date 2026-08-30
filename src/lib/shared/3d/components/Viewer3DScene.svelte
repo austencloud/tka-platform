@@ -19,7 +19,7 @@
   import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
   import { resolvePerformerProp } from "$lib/shared/3d/state/performer-prop-resolution";
   import { Raycaster, Vector2, AdditiveBlending } from "three";
-  import type { Group, Object3D, Scene } from "three";
+  import type { Group, Object3D } from "three";
   import { userProportionsState } from "@austencloud/scene-3d";
   import PerformerBadge3D from "./PerformerBadge3D.svelte";
   import { getPerformerColor } from "../constants/performer-colors";
@@ -38,6 +38,7 @@
   } from "../environments/domain/stage-coordinate-frame";
   import { getSceneEnvironmentRendererKey } from "../environments/domain/scene-environment";
   import {
+    createStageBoundsStabilizer,
     getAddedPerformerStageGrowth,
     getCanonicalPerformerStageBounds,
     getPerformerStageBounds,
@@ -360,7 +361,7 @@
    * matching the canvas the renderer is drawing into.
    */
   function setPointerFromEvent(e: PointerEvent): void {
-    const canvas = _raycasterCanvas ?? renderer?.current?.domElement;
+    const canvas = _raycasterCanvas ?? renderer.domElement;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -390,12 +391,10 @@
   function hitTestPerformers(e: PointerEvent): number | null {
     const activeCamera = camera.current;
     if (!activeCamera) return null;
-    const sceneRoot: Scene | null = scene.current ?? null;
-    if (!sceneRoot) return null;
 
     setPointerFromEvent(e);
     raycaster.setFromCamera(pointer, activeCamera);
-    const hits = raycaster.intersectObjects(sceneRoot.children, true);
+    const hits = raycaster.intersectObjects(scene.children, true);
 
     for (const hit of hits) {
       const idx = findPerformerIndexFromHit(hit.object);
@@ -406,8 +405,6 @@
 
   // Attach the pointerdown listener to the renderer's DOM canvas. Suppress
   // clicks during camera orbit so ending a drag doesn't steal the selection.
-  // Uses onMount/onDestroy (same pattern as ManualRaycaster) since
-  // renderer.current is available at mount time, not as a reactive binding.
   let _raycasterCanvas: HTMLCanvasElement | null = null;
 
   function onPointerDown(e: PointerEvent): void {
@@ -438,7 +435,7 @@
       );
     }
 
-    _raycasterCanvas = renderer?.current?.domElement ?? null;
+    _raycasterCanvas = renderer.domElement;
     if (_raycasterCanvas) {
       _raycasterCanvas.addEventListener("pointerdown", onPointerDown);
 
@@ -545,20 +542,29 @@
   // standing this frame. Measuring live positions made the floor grow as a
   // formation opened out and shrink as it closed, so the stage appeared to
   // breathe under performers who were only walking across it.
+  //
+  // The stabilizer keeps the SAME object when the values did not change. This
+  // derived shares invalidation granularity with per-frame playback props, so
+  // it re-runs every frame during playback; without identity stability each
+  // run handed every scene a "new" stage and Threlte rebuilt ~29 stage
+  // BoxGeometries per frame, leaking GL buffers until playback crawled.
+  const stabilizeStageBounds = createStageBoundsStabilizer();
   const stageDimensions = $derived(
-    stageExtent
-      ? getStageBoundsForExtent(stageExtent)
-      : stageBoundsPositions
-        ? getPerformerStageBounds(stageBoundsPositions, {
-            performerClearance: getPerformerStageClearance(
-              userProportionsState.avatarScale
-            ),
-          })
-        : getCanonicalPerformerStageBounds(performerCount, {
-            performerClearance: getPerformerStageClearance(
-              userProportionsState.avatarScale
-            ),
-          })
+    stabilizeStageBounds(
+      stageExtent
+        ? getStageBoundsForExtent(stageExtent)
+        : stageBoundsPositions
+          ? getPerformerStageBounds(stageBoundsPositions, {
+              performerClearance: getPerformerStageClearance(
+                userProportionsState.avatarScale
+              ),
+            })
+          : getCanonicalPerformerStageBounds(performerCount, {
+              performerClearance: getPerformerStageClearance(
+                userProportionsState.avatarScale
+              ),
+            })
+    )
   );
 
   const stageZOffset = $derived(stageDimensions.zOffset);
@@ -758,6 +764,8 @@
             isMoving={performer.isMoving}
             moveSpeed={performer.moveSpeed}
             moveDirection={performer.moveDirection}
+            gaitTimingSample={performer.gaitTimingSample}
+            terminalStepPlan={performer.terminalStepPlan}
             onAvatarSwapped={(avatarId) => {
               onAvatarSwapped(avatarId);
               markPerformerAvatarReady(performer.id, avatarId);

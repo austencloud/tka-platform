@@ -25,8 +25,8 @@ import {
   type TimedTransition,
 } from "../camera/transitions";
 import {
+  DEFAULT_VIEWER_FRONT_STAGE_FACING_ANGLE,
   resolveViewerFormationFacingAngle,
-  VIEWER_FRONT_STAGE_FACING_ANGLE,
 } from "../domain/viewer-formation-facing";
 // FormationManager type inferred from createFormationManager return
 
@@ -78,6 +78,12 @@ export interface PerformerManagerDeps {
    * rotation-variant localStorage keys.
    */
   persistent?: boolean;
+  /**
+   * The heading a same-direction cast uses in its current stage environment.
+   * Viewer3D supplies its live environment mapping; other hosts keep the
+   * original zero-heading behavior.
+   */
+  getFrontStageFacingAngle?: () => number;
 }
 
 /**
@@ -88,6 +94,9 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
   const maxPerformers = deps.maxPerformers ?? MAX_PERFORMERS;
   const getDefaults = deps.getDefaults;
   const persistent = deps.persistent;
+  const getFrontStageFacingAngle =
+    deps.getFrontStageFacingAngle ??
+    (() => DEFAULT_VIEWER_FRONT_STAGE_FACING_ANGLE);
 
   // Performer states (1-4 performers)
   let performerStates = $state<AvatarInstanceState[]>([]);
@@ -126,7 +135,7 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
       },
       getDefaults ? { getDefaults } : makeStandaloneDeps()
     );
-    performer.snapFacingAngle(VIEWER_FRONT_STAGE_FACING_ANGLE);
+    performer.snapFacingAngle(getFrontStageFacingAngle());
     return performer;
   }
 
@@ -146,7 +155,7 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
       getDefaults ? { getDefaults } : makeStandaloneDeps()
     );
 
-    initialPerformer.snapFacingAngle(VIEWER_FRONT_STAGE_FACING_ANGLE);
+    initialPerformer.snapFacingAngle(getFrontStageFacingAngle());
     performerStates = [initialPerformer];
     return initialPerformer;
   }
@@ -296,7 +305,8 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
             facingAngle: resolveViewerFormationFacingAngle(
               slot,
               formation,
-              target.facingAngle
+              target.facingAngle,
+              getFrontStageFacingAngle()
             ),
           };
         }
@@ -308,7 +318,8 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
         facingAngle: resolveViewerFormationFacingAngle(
           undefined,
           formation,
-          performer.facingAngle
+          performer.facingAngle,
+          getFrontStageFacingAngle()
         ),
       };
     });

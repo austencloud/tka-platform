@@ -16,8 +16,12 @@
   let data = $state<ShapeMatrixData | null>(null);
   let err = $state("");
 
-  const rowAxis = $derived(data ? applyFilter(data.axis, filters.blue, false) : []);
-  const colAxis = $derived(data ? applyFilter(data.axis, filters.red, false) : []);
+  const rowAxis = $derived(
+    data ? applyFilter(data.axis, filters.blue, false) : []
+  );
+  const colAxis = $derived(
+    data ? applyFilter(data.axis, filters.red, false) : []
+  );
 
   onMount(async () => {
     try {
@@ -39,7 +43,7 @@
     <p class="teaser-status">Building flowers…</p>
   {:else}
     <ShapeMatrixGrid
-      data={data}
+      {data}
       {rowAxis}
       {colAxis}
       maxCellPx={72}

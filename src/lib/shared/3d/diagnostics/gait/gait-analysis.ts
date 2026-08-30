@@ -150,6 +150,21 @@ export interface GaitReport {
   /** How far the worst one moved in a single frame, metres. */
   peakJoltStep: number;
 
+  /** Seconds the feet reversed the left/right ordering of the thighs. */
+  legCrossingSeconds: number;
+  /** Share of measured time spent in a self-crossing pose. */
+  legCrossingFraction: number;
+  /** Worst signed lateral clearance. Negative means the feet crossed. */
+  minimumLegOrderMargin: number;
+  /** Widest uncrossed ordering in the same recording. */
+  maximumLegOrderMargin: number;
+  /** Closest ankle-centre distance in 3D, metres. */
+  minimumFootSeparation: number;
+  /** Closest distance between either leg's thigh/shin centre lines, metres. */
+  minimumLegSegmentSeparation: number;
+  /** True when the recording contains both crossed and uncrossed placements. */
+  legOrderAlternates: boolean;
+
   /** Seconds the feet kept cycling while the root was not going anywhere. */
   inPlaceCyclingSeconds: number;
   inPlaceCyclingFraction: number;
@@ -179,6 +194,102 @@ export interface TravelSpan {
 
 function dist2(a: Vec3, b: Vec3): number {
   return Math.hypot(a.x - b.x, a.z - b.z);
+}
+
+function delta(a: Vec3, b: Vec3): Vec3 {
+  return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
+}
+
+function dot(a: Vec3, b: Vec3): number {
+  return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+/** Exact 3D distance between two finite bone-centre segments. */
+function segmentSeparation(a0: Vec3, a1: Vec3, b0: Vec3, b1: Vec3): number {
+  const u = delta(a1, a0);
+  const v = delta(b1, b0);
+  const w = delta(a0, b0);
+  const a = dot(u, u);
+  const b = dot(u, v);
+  const c = dot(v, v);
+  const d = dot(u, w);
+  const e = dot(v, w);
+  const denominator = a * c - b * b;
+  let sNumerator = denominator;
+  let sDenominator = denominator;
+  let tNumerator = denominator;
+  let tDenominator = denominator;
+
+  if (denominator < EPS) {
+    sNumerator = 0;
+    sDenominator = 1;
+    tNumerator = e;
+    tDenominator = c;
+  } else {
+    sNumerator = b * e - c * d;
+    tNumerator = a * e - b * d;
+    if (sNumerator < 0) {
+      sNumerator = 0;
+      tNumerator = e;
+      tDenominator = c;
+    } else if (sNumerator > sDenominator) {
+      sNumerator = sDenominator;
+      tNumerator = e + b;
+      tDenominator = c;
+    }
+  }
+
+  if (tNumerator < 0) {
+    tNumerator = 0;
+    if (-d < 0) {
+      sNumerator = 0;
+    } else if (-d > a) {
+      sNumerator = sDenominator;
+    } else {
+      sNumerator = -d;
+      sDenominator = a;
+    }
+  } else if (tNumerator > tDenominator) {
+    tNumerator = tDenominator;
+    if (-d + b < 0) {
+      sNumerator = 0;
+    } else if (-d + b > a) {
+      sNumerator = sDenominator;
+    } else {
+      sNumerator = -d + b;
+      sDenominator = a;
+    }
+  }
+
+  const s = Math.abs(sNumerator) < EPS ? 0 : sNumerator / sDenominator;
+  const t = Math.abs(tNumerator) < EPS ? 0 : tNumerator / tDenominator;
+  return Math.hypot(
+    w.x + s * u.x - t * v.x,
+    w.y + s * u.y - t * v.y,
+    w.z + s * u.z - t * v.z
+  );
+}
+
+/** Capsule-centre proxy used to distinguish a crossover from interpenetration. */
+export function legSegmentSeparation(frame: GaitFrame): number {
+  const leftSegments = [
+    [frame.left.hip, frame.left.knee],
+    [frame.left.knee, frame.left.ankle],
+  ] as const;
+  const rightSegments = [
+    [frame.right.hip, frame.right.knee],
+    [frame.right.knee, frame.right.ankle],
+  ] as const;
+  let minimum = Infinity;
+  for (const [leftStart, leftEnd] of leftSegments) {
+    for (const [rightStart, rightEnd] of rightSegments) {
+      minimum = Math.min(
+        minimum,
+        segmentSeparation(leftStart, leftEnd, rightStart, rightEnd)
+      );
+    }
+  }
+  return minimum;
 }
 
 /**
@@ -598,6 +709,25 @@ function rightOf(facing: number): [number, number] {
 }
 
 /**
+ * Lateral foot ordering compared with the avatar's own thighs.
+ *
+ * This is the runtime version of Unreal's Crashing Legs test: world axes and
+ * left/right naming conventions do not matter, because the thigh ordering is
+ * the reference. A negative result means the feet have swapped sides under
+ * the body, which is the pose that makes a sidestep pass through itself.
+ */
+export function legOrderMargin(frame: GaitFrame): number {
+  const [rx, rz] = rightOf(frame.facing);
+  const thighOrder =
+    (frame.right.hip.x - frame.left.hip.x) * rx +
+    (frame.right.hip.z - frame.left.hip.z) * rz;
+  const footOrder =
+    (frame.right.ankle.x - frame.left.ankle.x) * rx +
+    (frame.right.ankle.z - frame.left.ankle.z) * rz;
+  return footOrder * (thighOrder < 0 ? -1 : 1);
+}
+
+/**
  * Signed lateral offset of the pelvis from the foot carrying it.
  *
  * Positive is the character's right. Walking transfers the body over each foot
@@ -656,6 +786,13 @@ function emptyReport(frameCount: number): GaitReport {
     peakJolt: 0,
     peakJoltJoint: null,
     peakJoltStep: 0,
+    legCrossingSeconds: 0,
+    legCrossingFraction: 0,
+    minimumLegOrderMargin: 0,
+    maximumLegOrderMargin: 0,
+    minimumFootSeparation: 0,
+    minimumLegSegmentSeparation: 0,
+    legOrderAlternates: false,
     inPlaceCyclingSeconds: 0,
     inPlaceCyclingFraction: 0,
     weightShiftAmplitude: 0,
@@ -694,8 +831,10 @@ export function analyzeGait(
   let inPlace = 0;
   let overSupport = 0;
   let singleSupportFrames = 0;
-  const leftSway: number[] = [];
-  const rightSway: number[] = [];
+  let leftSupportFrames = 0;
+  let rightSupportFrames = 0;
+  const leftSideSupportSway: number[] = [];
+  const rightSideSupportSway: number[] = [];
   const sway: number[] = [];
 
   for (let i = 0; i < frames.length; i++) {
@@ -715,7 +854,20 @@ export function analyzeGait(
       singleSupportFrames += 1;
       const swayNow = pelvisSway(frame);
       sway.push(swayNow);
-      (support === "left" ? leftSway : rightSway).push(swayNow);
+      if (support === "left") leftSupportFrames += 1;
+      else rightSupportFrames += 1;
+
+      const supportAnkle = frame[support].ankle;
+      const [rx, rz] = rightOf(frame.facing);
+      const supportSide =
+        (supportAnkle.x - frame.root.x) * rx +
+        (supportAnkle.z - frame.root.z) * rz;
+      // A crossover deliberately puts an anatomical left foot on the body's
+      // right, or vice versa. Weight must follow the place on the floor that
+      // is carrying the body, not the foot's name. Ignore the one-centimetre
+      // centre band because it has no stable side to alternate with.
+      if (supportSide < -0.01) leftSideSupportSway.push(swayNow);
+      else if (supportSide > 0.01) rightSideSupportSway.push(swayNow);
 
       const off = lateralOffsetOverSupport(frame, support);
       if (off !== null && Math.abs(off) <= thresholds.overFootLateral) {
@@ -749,19 +901,46 @@ export function analyzeGait(
 
   const { twitches, jerkRms } = findTwitches(frames, thresholds);
   const jolt = findJolts(frames, thresholds);
+  let legCrossingSeconds = 0;
+  let minimumLegOrderMargin = Infinity;
+  let maximumLegOrderMargin = -Infinity;
+  let minimumFootSeparation = Infinity;
+  let minimumLegSegmentSeparation = Infinity;
+  for (const frame of frames) {
+    const margin = legOrderMargin(frame);
+    minimumLegOrderMargin = Math.min(minimumLegOrderMargin, margin);
+    maximumLegOrderMargin = Math.max(maximumLegOrderMargin, margin);
+    minimumFootSeparation = Math.min(
+      minimumFootSeparation,
+      Math.hypot(
+        frame.left.ankle.x - frame.right.ankle.x,
+        frame.left.ankle.y - frame.right.ankle.y,
+        frame.left.ankle.z - frame.right.ankle.z
+      )
+    );
+    minimumLegSegmentSeparation = Math.min(
+      minimumLegSegmentSeparation,
+      legSegmentSeparation(frame)
+    );
+    // A centimetre of numerical/skin-width overlap at a foot-to-foot closure
+    // is not one leg travelling through the other. Beyond that, it is.
+    if (margin < -0.01) legCrossingSeconds += Math.max(0, frame.dt);
+  }
 
-  // Balancing on a leg means bringing the body over it, so the pelvis must sit
-  // LEFT of the travel line while the left foot carries it and right of the
-  // line while the right foot does. A pelvis that leans one way regardless of
-  // which leg is under it is not transferring weight, and one that never
+  // Balancing on a leg means bringing the body toward its support point. That
+  // point normally shares the anatomical foot's side, but intentionally swaps
+  // sides in a crossover. A pelvis that leans one way regardless of where the
+  // support point is located is not transferring weight, and one that never
   // leaves the line is being slid along a rail with its legs cycling beneath.
   const weightShiftAmplitude =
     sway.length > 0 ? Math.max(...sway) - Math.min(...sway) : 0;
   const weightShiftAlternates =
-    leftSway.length > 0 &&
-    rightSway.length > 0 &&
-    mean(leftSway) < 0 &&
-    mean(rightSway) > 0 &&
+    leftSupportFrames > 0 &&
+    rightSupportFrames > 0 &&
+    leftSideSupportSway.length > 0 &&
+    rightSideSupportSway.length > 0 &&
+    mean(leftSideSupportSway) < 0 &&
+    mean(rightSideSupportSway) > 0 &&
     weightShiftAmplitude > 0.02;
 
   return {
@@ -790,6 +969,22 @@ export function analyzeGait(
     peakJolt: jolt.peak,
     peakJoltJoint: jolt.peakJoint,
     peakJoltStep: jolt.peakStep,
+    legCrossingSeconds,
+    legCrossingFraction: duration > 0 ? legCrossingSeconds / duration : 0,
+    minimumLegOrderMargin: Number.isFinite(minimumLegOrderMargin)
+      ? minimumLegOrderMargin
+      : 0,
+    maximumLegOrderMargin: Number.isFinite(maximumLegOrderMargin)
+      ? maximumLegOrderMargin
+      : 0,
+    minimumFootSeparation: Number.isFinite(minimumFootSeparation)
+      ? minimumFootSeparation
+      : 0,
+    minimumLegSegmentSeparation: Number.isFinite(minimumLegSegmentSeparation)
+      ? minimumLegSegmentSeparation
+      : 0,
+    legOrderAlternates:
+      minimumLegOrderMargin < -0.01 && maximumLegOrderMargin > 0.01,
     inPlaceCyclingSeconds: inPlace,
     inPlaceCyclingFraction: duration > 0 ? inPlace / duration : 0,
     weightShiftAmplitude,

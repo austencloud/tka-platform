@@ -25,19 +25,30 @@
 
   const sceneFeatures = getSceneFeatureContext();
 
-  const sceneProgress = $derived(sceneFeatures.initialRevealSettledProgress);
+  // Assets are only three quarters of a boot — shader compile and the
+  // smoothness gate are the rest, and they used to run with the bar sitting
+  // full. bootDisplayProgress covers both.
+  const sceneProgress = $derived(sceneFeatures.bootDisplayProgress);
   const progress = $derived(
     additionalRevealProgress === null
       ? sceneProgress
       : (sceneProgress + Math.max(0, Math.min(additionalRevealProgress, 1))) / 2
   );
+  // Downloaded is not the same as smooth. SceneShaderWarmup compiles the
+  // scene's shaders and waits for frames to arrive on time behind this curtain;
+  // lifting before it finishes is what put the stutter in plain view.
+  const warmupComplete = $derived(sceneFeatures.warmupProgress >= 1);
   const revealSettled = $derived(
-    sceneFeatures.allInitialRevealFeaturesSettled && additionalRevealReady
+    sceneFeatures.allInitialRevealFeaturesSettled &&
+      additionalRevealReady &&
+      warmupComplete
   );
   const statusText = $derived(
-    sceneFeatures.allInitialRevealFeaturesSettled
-      ? additionalRevealLabel
-      : "Setting the stage"
+    !sceneFeatures.allInitialRevealFeaturesSettled
+      ? "Setting the stage"
+      : !additionalRevealReady
+        ? additionalRevealLabel
+        : "Warming up"
   );
 
   // Track whether the initial load has completed. Once it has,

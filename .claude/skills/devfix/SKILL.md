@@ -30,12 +30,12 @@ curl -k -s -o /dev/null -w "%{http_code}" --max-time 5 https://localhost:5173/
 curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://dev.tkaflowarts.com/
 ```
 
-| local | tunnel | Meaning |
-|---|---|---|
-| 000 | 502 | Vite isn't serving — ask Austen to start/restart it |
-| 200 | 502 | Tunnel connected before Vite finished cold boot (the race `start-dev.ps1` now gates against), or cloudflared died — ask him to restart via the script |
-| 200 | 503 | Token-based tunnel run missing `--url` — locally-managed tunnels get **no ingress rules** with a token; every request 503s. The script passes `--url https://localhost:5173` (start-dev.ps1:101); a hand-started tunnel probably didn't |
-| 200 | 200 | Nothing wrong with the stack — the bug is elsewhere |
+| local | tunnel | Meaning                                                                                                                                                                                                                  |
+| ----- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 000   | 502    | Vite isn't serving — ask Austen to start/restart it                                                                                                                                                                      |
+| 200   | 502    | Tunnel connected before Vite finished cold boot (the race `start-dev.ps1` now gates against), or cloudflared died — ask him to restart from Agent Hub                                                                    |
+| 200   | 503    | Token-based tunnel run missing `--url` — locally-managed tunnels get **no ingress rules** with a token; every request 503s. `start-dev.ps1` passes `--url https://localhost:5173`; a hand-started tunnel probably didn't |
+| 200   | 200    | Nothing wrong with the stack — the bug is elsewhere                                                                                                                                                                      |
 
 ## Known failure modes
 
@@ -50,6 +50,15 @@ curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://dev.tkaflowarts.com
 - **allowedHosts:** Vite only answers for hosts in `vite.config.ts`
   `server.allowedHosts` (includes `dev.tkaflowarts.com`). A new hostname needs
   adding there.
+- **`Cannot find module` during initialization:** run
+  `pnpm run verify:workspace-install` as a read-only diagnosis. A package
+  directory can exist while its files are missing, and a normal `pnpm install`
+  may still report "Already up to date." The Agent Hub launcher now checks all
+  declared package manifests plus the boot-critical imports before Vite starts.
+  When the check fails it force-rebuilds from the frozen lockfile, rebuilds the
+  workspace packages, verifies again, and gives Vite one clean optimizer pass.
+  If that repair still fails, the launcher deliberately leaves Vite stopped and
+  prints the package that is still broken instead of caching the failure.
 - **Launcher / context menu:** `launchers/start-claude.bat` and
   `launchers/install-claude-context-menu.ps1` (registry `HKCU` key pointing at
   the Claude install — reinstalls move the path; rerun the installer script).

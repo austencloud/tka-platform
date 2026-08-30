@@ -32,6 +32,7 @@
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { warmDecoderRuntimes } from "$lib/shared/3d/scene-boot/scene-prefetch";
   import { buildScene3DSeed } from "../services/scene-3d-seed";
   import type { Collected3DScene } from "../domain/scene-3d-collection-types";
 
@@ -80,6 +81,10 @@
   let raf = 0;
 
   onMount(() => {
+    // This tile's own models are requested by the canvas below; only the shared
+    // compressed-texture and geometry decoders are worth warming ahead, since
+    // nothing can be decoded until they arrive.
+    warmDecoderRuntimes();
     viewer.enter3D(sequence);
     ready = true;
 

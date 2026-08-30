@@ -16,9 +16,23 @@
   interface Props {
     surface: FlowFestGroundFamilyMask;
     scene?: Object3D | null;
+    /** Moment-driven; see `terrainDetailColorStrength` in the visual system. */
+    detailColorStrength?: number;
+    /**
+     * The detail patch forces every ground material's colour to white while it
+     * is applied and restores the pre-patch colour on dispose, so re-patching
+     * silently discards the moment's terrain grade. The host uses this to
+     * re-run that grade on the next frame.
+     */
+    onPatched?: () => void;
   }
 
-  let { surface, scene = null }: Props = $props();
+  let {
+    surface,
+    scene = null,
+    detailColorStrength = 0.84,
+    onPatched,
+  }: Props = $props();
   const TARGET_OBJECT_PREFIXES = [
     "FFS_Terrain_",
     "FFS_PrivateDrive_",
@@ -36,12 +50,14 @@
       ...surface.audit,
       ...details,
     };
+    onPatched?.();
     const proof = (globalThis as Record<string, unknown>)
       .__flowFestProduction as
       { groundSurface?: Record<string, unknown> } | undefined;
     if (!proof?.groundSurface) return;
     proof.groundSurface.patchedMaterials = details.patchedMaterials;
     proof.groundSurface.patchedObjects = details.objectNames;
+    proof.groundSurface.detailColorStrength = detailColorStrength;
   }
 
   $effect(() => {
@@ -75,7 +91,7 @@
     strength={0.96}
     normalResponse={0.32}
     roughnessFloor={0.9}
-    absoluteColorStrength={0.84}
+    absoluteColorStrength={detailColorStrength}
     primaryScale={2.45}
     secondaryScale={6.8}
     familyMaskTexture={familyMask}

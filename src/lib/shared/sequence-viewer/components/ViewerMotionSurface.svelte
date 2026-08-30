@@ -11,6 +11,7 @@
   import { sceneNeedsContactViewer } from "$lib/shared/3d/domain/prop-motion-discipline";
   import VisualSequenceSaveContextMenuHost from "$lib/shared/library/components/VisualSequenceSaveContextMenuHost.svelte";
   import Viewer3DRailHint from "$lib/shared/3d/components/onboarding/Viewer3DRailHint.svelte";
+  import { warmSelectedSceneAssets } from "$lib/shared/3d/scene-boot/scene-prefetch";
   import {
     isViewer3DIntroReplayRequested,
     shouldShowViewer3DIntro,
@@ -93,6 +94,13 @@
 
   const loadViewer3DCanvas = () =>
     import("$lib/shared/3d/components/Viewer3DCanvas.svelte");
+
+  // 3D is one click away from here, and its models are the slowest thing in the
+  // app to arrive. Pull them into the browser cache while it is idle so the
+  // first open spends its curtain on compiling rather than downloading.
+  $effect(() => {
+    warmSelectedSceneAssets();
+  });
   let scene3DReady = $state(false);
   let animatorReady = $state(false);
   let animatorReadyFrame = 0;
@@ -354,6 +362,7 @@
         <LazyMount
           loader={loadViewer3DCanvas}
           active={is3DActive}
+          prefetch
           debugName="3D viewer canvas"
           placeholder={viewer3DLoading}
           error={viewer3DError}

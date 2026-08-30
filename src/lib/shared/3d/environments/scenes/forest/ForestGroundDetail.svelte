@@ -72,7 +72,7 @@
   let observedTargetCount = -1;
 
   function resolveSceneScope(): Object3D | null {
-    let resolved = scene ?? threlteScene.current;
+    let resolved = scene ?? threlteScene;
     if (!includeAncestorScene) return resolved;
     while (resolved?.parent) resolved = resolved.parent;
     return resolved;

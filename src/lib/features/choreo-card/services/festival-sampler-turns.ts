@@ -7,6 +7,7 @@ import {
 import { hydrate as hydrateCompositionalSequence } from "$lib/shared/foundation/services/sequence-hydrator";
 import { jsonCache } from "$lib/shared/pictograph/shared/services/simple-json-cache";
 import type { FestivalSamplerCardManifest } from "./festival-sampler-manifest";
+import { loadTndBaseWords } from "./tnd-base-word-snapshot";
 
 /**
  * These three corpora are FETCHED, never imported.
@@ -21,13 +22,10 @@ import type { FestivalSamplerCardManifest } from "./festival-sampler-manifest";
  * repeated `await`s below cost one network round trip per corpus per session.
  */
 const PUBLIC_SNAPSHOT_URL = "/data/snapshots/public-sequences.json";
-const TND_BASE_WORDS_URL = "/data/hero/tnd-base-words.json";
 const PACK_LOCAL_SEQUENCES_URL =
   "/data/choreo-card/festival-sampler-sequences.json";
 
-async function loadPublicDocuments(): Promise<
-  Array<Record<string, unknown>>
-> {
+async function loadPublicDocuments(): Promise<Array<Record<string, unknown>>> {
   const snapshot = await jsonCache.get<{
     documents?: Array<Record<string, unknown>>;
   }>(PUBLIC_SNAPSHOT_URL);
@@ -39,19 +37,16 @@ async function loadPublicDocuments(): Promise<
  * once per session and held alongside the cached JSON rather than rebuilt per
  * lookup — a 12k-entry Map rebuild per card is not free during a deck render.
  */
-let tndRecordsByName: Map<string, Record<string, unknown>> | null = null;
+let tndSequencesByName: Map<string, SequenceData> | null = null;
 
-async function loadTndRecords(): Promise<
-  Map<string, Record<string, unknown>>
-> {
-  if (tndRecordsByName) return tndRecordsByName;
+async function loadTndSequences(): Promise<Map<string, SequenceData>> {
+  if (tndSequencesByName) return tndSequencesByName;
 
-  const records =
-    await jsonCache.get<Array<Record<string, unknown>>>(TND_BASE_WORDS_URL);
-  tndRecordsByName = new Map(
-    records.map((record) => [record.name as string, record])
+  const sequences = await loadTndBaseWords();
+  tndSequencesByName = new Map(
+    sequences.map((sequence) => [sequence.name, sequence])
   );
-  return tndRecordsByName;
+  return tndSequencesByName;
 }
 
 async function loadPackLocalSequences(): Promise<
@@ -86,11 +81,11 @@ export async function loadFestivalSamplerBaseSequence(
   if (card.source === "publicSequences") return findPublicSequence(card);
 
   if (card.source === "catalog") {
-    const record = (await loadTndRecords()).get(card.name);
-    if (!record) {
+    const sequence = (await loadTndSequences()).get(card.name);
+    if (!sequence) {
       throw new Error(`Festival sampler TnD source is missing: ${card.name}`);
     }
-    return hydrateSequence(record);
+    return sequence;
   }
 
   const localSequenceRecords = await loadPackLocalSequences();

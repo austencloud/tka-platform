@@ -7,6 +7,12 @@ import {
 } from "./stage-performance-sampler";
 import type { StagePerformanceFrame } from "./stage-performance-sampler";
 import type { FormationSpot, StageChoreography } from "./stage-types";
+import {
+  compileStageTravel,
+  departureGaitStepFor,
+  resolveStageTravel,
+  sampleCompiledStageTravel,
+} from "./stage-travel-plan";
 
 const MOVEMENT_EPSILON = 0.0001;
 
@@ -55,7 +61,8 @@ function stationaryFrame(
   choreography: StageChoreography,
   performerId: string,
   formationIndex: number,
-  spot: FormationSpot
+  spot: FormationSpot,
+  timing?: Pick<StagePerformanceFrame, "gaitTimingSample" | "terminalStepPlan">
 ): StagePerformanceFrame {
   const stagePosition = { x: spot.x, z: spot.z };
   return {
@@ -69,6 +76,28 @@ function stationaryFrame(
     isMoving: false,
     activeMarkIndex: formationIndex,
     transitionProgress: 1,
+    ...timing,
+  };
+}
+
+function settledTimingFor(
+  choreography: StageChoreography,
+  performerId: string,
+  formationIndex: number,
+  beat: number
+): Pick<StagePerformanceFrame, "gaitTimingSample" | "terminalStepPlan"> {
+  if (formationIndex <= 0) return {};
+  const travel = compileStageTravel(
+    choreography,
+    performerId,
+    formationIndex,
+    departureGaitStepFor(choreography, performerId, formationIndex)
+  );
+  if (!travel) return {};
+  const sample = sampleCompiledStageTravel(travel, beat, choreography.bpm);
+  return {
+    gaitTimingSample: sample.gaitTimingSample,
+    terminalStepPlan: sample.terminalStepPlan,
   };
 }
 
@@ -103,22 +132,38 @@ export function sampleFormationPerformance(
     spotAtOrBefore(choreography, performerId, activeIndex) ?? firstSpot;
   const nextIndex = activeIndex + 1;
   const next = choreography.formations[nextIndex];
-  if (!next || beat < next.atBeat - next.transitionBeats) {
-    return stationaryFrame(choreography, performerId, activeIndex, activeSpot);
+  const travel = next
+    ? resolveStageTravel(choreography, performerId, nextIndex)
+    : null;
+  if (!next || !travel || beat < travel.departureBeat) {
+    return stationaryFrame(
+      choreography,
+      performerId,
+      activeIndex,
+      activeSpot,
+      settledTimingFor(choreography, performerId, activeIndex, beat)
+    );
   }
 
   const to = next.spots[performerId] ?? activeSpot;
+  const compiled = compileStageTravel(
+    choreography,
+    performerId,
+    nextIndex,
+    departureGaitStepFor(choreography, performerId, nextIndex)
+  );
   const rawProgress =
-    next.transitionBeats > 0
+    travel.durationBeats > 0
       ? Math.max(
           0,
-          Math.min(
-            1,
-            (beat - (next.atBeat - next.transitionBeats)) / next.transitionBeats
-          )
+          Math.min(1, (beat - travel.departureBeat) / travel.durationBeats)
         )
       : 1;
-  const transitionProgress = applyStageEasing(rawProgress, to.easing);
+  const exactSample = compiled
+    ? sampleCompiledStageTravel(compiled, beat, choreography.bpm)
+    : null;
+  const transitionProgress =
+    exactSample?.progress ?? applyStageEasing(rawProgress, to.easing);
   const stagePosition = {
     x: activeSpot.x + (to.x - activeSpot.x) * transitionProgress,
     z: activeSpot.z + (to.z - activeSpot.z) * transitionProgress,
@@ -134,24 +179,30 @@ export function sampleFormationPerformance(
       : { x: 0, z: 0 };
   const bodyFacing = segmentFacing(activeSpot, to, worldDx, worldDz);
   const durationSeconds =
-    next.transitionBeats > 0
-      ? (next.transitionBeats * 60) / choreography.bpm
+    travel.durationBeats > 0
+      ? (travel.durationBeats * 60) / choreography.bpm
       : 0;
   const averageSpeed = durationSeconds > 0 ? distance / durationSeconds : 0;
   const speedMetersPerSecond =
+    exactSample?.speed ??
     averageSpeed * easingDerivative(rawProgress, to.easing);
 
   return {
     performerId,
     stagePosition,
-    worldPosition: stageToWorld(stagePosition, choreography),
+    worldPosition:
+      exactSample?.position ?? stageToWorld(stagePosition, choreography),
     bodyFacing,
     travelDirection,
     moveDirection: worldToBodyDirection(travelDirection, bodyFacing),
     speedMetersPerSecond,
-    isMoving: speedMetersPerSecond > MOVEMENT_EPSILON,
+    isMoving: exactSample?.moving ?? speedMetersPerSecond > MOVEMENT_EPSILON,
     activeMarkIndex: nextIndex,
     transitionProgress,
+    ...(exactSample && {
+      gaitTimingSample: exactSample.gaitTimingSample,
+      terminalStepPlan: exactSample.terminalStepPlan,
+    }),
   };
 }
 

@@ -4,6 +4,8 @@ import {
   generatePropSvg,
   generateGridSvg,
 } from "$lib/shared/animation-engine/services/svg-generator";
+import { hashString } from "$lib/shared/foundation/services/content-hasher";
+import { getSvgImageCache } from "$lib/shared/render/services/svg-image-cache";
 
 /**
  * Canvas2D Image Loader
@@ -103,12 +105,12 @@ export class Canvas2DImageLoader {
 
       // Create new images BEFORE releasing old ones
       const [newBlueImage, newRedImage] = await Promise.all([
-        this.createImageFromSVG(
+        this.createPropImageFromSVG(
           bluePropData.svg,
           bluePropData.width,
           bluePropData.height
         ),
-        this.createImageFromSVG(
+        this.createPropImageFromSVG(
           redPropData.svg,
           redPropData.width,
           redPropData.height
@@ -159,12 +161,12 @@ export class Canvas2DImageLoader {
 
       // Create new images
       const [newBlueImage, newRedImage] = await Promise.all([
-        this.createImageFromSVG(
+        this.createPropImageFromSVG(
           bluePropData.svg,
           bluePropData.width,
           bluePropData.height
         ),
-        this.createImageFromSVG(
+        this.createPropImageFromSVG(
           redPropData.svg,
           redPropData.width,
           redPropData.height
@@ -240,12 +242,12 @@ export class Canvas2DImageLoader {
 
       // Create new images
       const [newBlueImage, newRedImage] = await Promise.all([
-        this.createImageFromSVG(
+        this.createPropImageFromSVG(
           bluePropData.svg,
           bluePropData.width,
           bluePropData.height
         ),
-        this.createImageFromSVG(
+        this.createPropImageFromSVG(
           redPropData.svg,
           redPropData.width,
           redPropData.height
@@ -318,7 +320,11 @@ export class Canvas2DImageLoader {
       const svgKey = `${gridMode}|${showNonRadialPoints}`;
       let gridSvg = GRID_SVG_CACHE.get(svgKey);
       if (gridSvg === undefined) {
-        gridSvg = await generateGridSvg(gridModeEnum, true, showNonRadialPoints);
+        gridSvg = await generateGridSvg(
+          gridModeEnum,
+          true,
+          showNonRadialPoints
+        );
         GRID_SVG_CACHE.set(svgKey, gridSvg);
       }
 
@@ -374,6 +380,31 @@ export class Canvas2DImageLoader {
       console.error("[Canvas2DImageLoader] Failed to load glyph image:", error);
       throw error;
     }
+  }
+
+  /**
+   * Decode a prop sprite once across every animation engine on the page.
+   *
+   * Shape changes replace the sequence but normally keep the same prop. The
+   * generic SVG cache owns decoded-image reuse and also coalesces concurrent
+   * loads, so the incoming and outgoing players never ask Chrome to decode the
+   * same data-URI image again during a crossfade.
+   */
+  private async createPropImageFromSVG(
+    svgString: string,
+    width: number,
+    height: number
+  ): Promise<HTMLImageElement> {
+    const cacheKey = `animation-prop:${width}x${height}:${hashString(svgString)}`;
+    const image = await getSvgImageCache().getImage(svgString, cacheKey);
+
+    // Canvas2DAnimationRenderer runs on the browser main thread, where the
+    // shared cache deliberately returns HTMLImageElement for reliable SVG
+    // decoding. Width and height match the prop SVG's intrinsic viewBox.
+    const propImage = image as HTMLImageElement;
+    propImage.width = width;
+    propImage.height = height;
+    return propImage;
   }
 
   /**

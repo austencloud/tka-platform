@@ -18,12 +18,28 @@ import type { VtgMode } from "$lib/shared/shape-matrix/services/shape-matrix-rea
  * every opposite-direction mode because "D" never matched the "DJDJ" key.
  */
 const WORD_MODE: Record<string, VtgMode> = {
-  AAAA: "SS", BBBB: "SS", CCCC: "SS",
-  GGGG: "TS", HHHH: "TS", IIII: "TS",
-  SSSS: "QS", TTTT: "QS", UUUU: "QS", VVVV: "QS",
-  JDJD: "SO", KEKE: "SO", LFLF: "SO",
-  DJDJ: "TO", EKEK: "TO", FLFL: "TO",
-  MPMP: "QO", NQNQ: "QO", OROR: "QO", PMPM: "QO", QNQN: "QO", RORO: "QO",
+  AAAA: "SS",
+  BBBB: "SS",
+  CCCC: "SS",
+  GGGG: "TS",
+  HHHH: "TS",
+  IIII: "TS",
+  SSSS: "QS",
+  TTTT: "QS",
+  UUUU: "QS",
+  VVVV: "QS",
+  JDJD: "SO",
+  KEKE: "SO",
+  LFLF: "SO",
+  DJDJ: "TO",
+  EKEK: "TO",
+  FLFL: "TO",
+  MPMP: "QO",
+  NQNQ: "QO",
+  OROR: "QO",
+  PMPM: "QO",
+  QNQN: "QO",
+  RORO: "QO",
 };
 
 /** Per-hand style pair of a base word's first step. null if unreadable. */
@@ -48,8 +64,14 @@ function stylePairOf(seq: SequenceData): { blue: string; red: string } | null {
  * order with the seeded twin COLOR-SWAPPED, so every hand keeps its own style.
  * Seeded words win: swaps only fill keys no real word claimed.
  */
-export function buildBaseIndex(seqs: SequenceData[]): Map<string, SequenceData> {
-  const keyed: { mode: VtgMode; pair: { blue: string; red: string }; seq: SequenceData }[] = [];
+export function buildBaseIndex(
+  seqs: SequenceData[]
+): Map<string, SequenceData> {
+  const keyed: {
+    mode: VtgMode;
+    pair: { blue: string; red: string };
+    seq: SequenceData;
+  }[] = [];
   for (const s of seqs) {
     const mode = WORD_MODE[(s.word ?? "").toUpperCase()];
     if (!mode) continue;
@@ -80,7 +102,7 @@ export function resolveBase(
   idx: Map<string, SequenceData>,
   mode: VtgMode,
   blueStyle: string,
-  redStyle: string,
+  redStyle: string
 ): SequenceData | null {
   return idx.get(`${mode}|${blueStyle}|${redStyle}`) ?? null;
 }

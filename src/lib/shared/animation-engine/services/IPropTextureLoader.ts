@@ -40,6 +40,7 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   // The regular club stops short of the grid center so its visible end, trails,
   // and mandala all share the same ~130-unit reach.
   club: { width: 258.67, height: 34.17 },
+  classic_club: { width: 258.67, height: 34.17 },
   bigclub: { width: 252, height: 65 },
 
   // Fan family
@@ -131,6 +132,10 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   doublefrostedball: { width: 300, height: 150 },
   bigfrostedball: { width: 600, height: 300 },
   bigdoublefrostedball: { width: 600, height: 300 },
+
+  // Poi — grip to head CENTRE is the club's 129.335 reach, and the head's own
+  // 16.5-unit radius overhangs that, so the box is 2 x 145.835.
+  poi: { width: 291.67, height: 38 },
 
   // Torch family
   // The flame extends beyond the old wick-only artwork. These viewBoxes grow

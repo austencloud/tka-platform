@@ -1,55 +1,62 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { useTask } from "@threlte/core";
   import { Avatar3D } from "@austencloud/scene-3d";
   import LiveSequencePerformer3D from "$lib/shared/3d/performers/LiveSequencePerformer3D.svelte";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import {
-    GGGG_CW,
-    GHGH,
-    HHHH_CCW,
-  } from "$lib/shared/combination/domain/demo-fixtures";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
     sampleFlowFestLivingCommunity,
     type FlowFestFestivalCommunityLayout,
-    type FlowFestFestivalPersonRole,
     type FlowFestLivingCommunityFrame,
   } from "$lib/features/flow-fest-sim/domain/flow-fest-living-fire-jam";
+  import {
+    createFlowFestPlaceholderPool,
+    flowFestPerformerSequenceProof,
+    flowFestSequenceForPerformer,
+    generateFlowFestPerformerPool,
+    FLOW_FEST_PERFORMER_PROFILES,
+    type FlowFestPerformerSequencePool,
+    type FlowFestPerformerSequenceProof,
+  } from "./flow-fest-performer-sequences";
 
   interface Props {
     community: FlowFestFestivalCommunityLayout;
     energy?: number;
     onAvatarReady?: (id: string) => void;
     onSimulationFrame?: (frame: FlowFestLivingCommunityFrame) => void;
+    onSequencePool?: (proof: FlowFestPerformerSequenceProof) => void;
   }
 
   const props: Props = $props();
 
-  const performerProfiles: Record<
-    Exclude<FlowFestFestivalPersonRole, "spectator">,
-    { propType: PropType; sequence: SequenceData; effectId: "fire" | "led" }
-  > = {
-    "fire-poi": {
-      propType: PropType.POI,
-      sequence: GHGH,
-      effectId: "fire",
-    },
-    "fire-hoop": {
-      propType: PropType.BIGHOOP,
-      sequence: HHHH_CCW,
-      effectId: "fire",
-    },
-    juggler: {
-      propType: PropType.CLUB,
-      sequence: GGGG_CW,
-      effectId: "led",
-    },
-    "led-flow": {
-      propType: PropType.CAPSULE_BATON,
-      sequence: GHGH,
-      effectId: "led",
-    },
-  };
+  // The scene boots on placeholders so the fire circle is never empty, then
+  // swaps to generated LOOPs the moment the generator answers.
+  let sequencePool = $state<FlowFestPerformerSequencePool>(
+    createFlowFestPlaceholderPool()
+  );
+
+  onMount(() => {
+    let cancelled = false;
+    void generateFlowFestPerformerPool({ count: 4 })
+      .then((pool) => {
+        if (cancelled) return;
+        sequencePool = pool;
+        props.onSequencePool?.(flowFestPerformerSequenceProof(pool));
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        const pool = createFlowFestPlaceholderPool();
+        pool.notes.push(
+          `LOOP generation failed: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+        sequencePool = pool;
+        props.onSequencePool?.(flowFestPerformerSequenceProof(pool));
+      });
+    return () => {
+      cancelled = true;
+    };
+  });
 
   let elapsedSeconds = 0;
   let updateAccumulator = 0;
@@ -104,14 +111,14 @@
         onModelSwapped={() => props.onAvatarReady?.(person.id)}
       />
     {:else}
-      {@const profile = performerProfiles[person.role]}
+      {@const profile = FLOW_FEST_PERFORMER_PROFILES[person.role]}
       <LiveSequencePerformer3D
         id={`flow-fest-${person.id}`}
         position={{ x: living.x, y: living.y, z: living.z }}
         facingAngle={living.facingAngle}
         avatarId={person.avatarId}
         propType={profile.propType}
-        sequence={profile.sequence}
+        sequence={flowFestSequenceForPerformer(sequencePool, person.id)}
         effectId={profile.effectId}
         effectQualityTier="low"
         phaseOffsetSteps={person.phaseOffset}

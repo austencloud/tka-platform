@@ -5,6 +5,8 @@ import {
   createFlowFestCampPlan,
   FLOW_FEST_CAMDEN_COLLEGE_CORNER_ROAD,
   FLOW_FEST_LOWER_CAMPGROUND_LOOP,
+  FLOW_FEST_LOWER_GATEHOUSE_SITE,
+  FLOW_FEST_LOWER_LOOP_ROAD_CROSSING,
   FLOW_FEST_ORTHOPHOTO_SOURCE,
   FLOW_FEST_PUBLIC_ROAD_SOURCE,
   identifyFlowFestPlanLocation,
@@ -172,11 +174,15 @@ describe("Flow Fest minimap", () => {
     expect(
       plan.internalDrives.some((line) => line.id === "check-in-to-lower-level")
     ).toBe(false);
-    expect(
-      plan.internalDrives
-        .find((line) => line.id === "camp-road-entrance-to-check-in")
-        ?.points.at(-1)
-    ).toEqual(FLOW_FEST_LOWER_CAMPGROUND_LOOP[0]);
+    const entranceApproach = plan.internalDrives.find(
+      (line) => line.id === "camp-road-entrance-to-check-in"
+    );
+    expect(entranceApproach?.points[1]).toEqual(
+      FLOW_FEST_LOWER_LOOP_ROAD_CROSSING
+    );
+    expect(entranceApproach?.points.at(-1)).toEqual(
+      FLOW_FEST_LOWER_LOOP_ROAD_CROSSING
+    );
     expect(
       plan.footConnectors.every((line) => line.evidence === "austen-traced")
     ).toBe(true);
@@ -214,11 +220,17 @@ describe("Flow Fest minimap", () => {
       shape: "polygon",
     });
     expect(
+      identifyFlowFestPlanLocation(plan, FLOW_FEST_LOWER_GATEHOUSE_SITE)
+    ).toMatchObject({ id: "camp-road-entrance", eyebrow: "Entrance" });
+    expect(
       identifyFlowFestPlanLocation(plan, {
         x: 328.2557337440163,
         z: -98.15506248891917,
       })
-    ).toMatchObject({ id: "camp-road-entrance", eyebrow: "Entrance" });
+    ).toMatchObject({
+      id: "odot-camden-college-corner-road",
+      eyebrow: "Public road",
+    });
     expect(identifyFlowFestPlanLocation(plan, { x: 170, z: 2 })).toMatchObject({
       id: "odot-camden-college-corner-road",
       label: "Camden College Corner Rd",
@@ -230,5 +242,28 @@ describe("Flow Fest minimap", () => {
       id: "lower-level",
       label: "Lower level",
     });
+  });
+
+  it("stops the woodland connector at the lower loop instead of crossing car camping", () => {
+    const contract = JSON.parse(
+      readFileSync(
+        "static/data/flow-fest-sim/gate2-runtime-contract.json",
+        "utf8"
+      )
+    ) as FlowFestRuntimeContract;
+    const sourcePoints =
+      contract.connectorTraces.middleEarthToLowerClearing.vertices;
+    const connector = createFlowFestCampPlan(
+      contract,
+      "car-camp"
+    ).footConnectors.find((line) => line.id === "middle-to-lower")!;
+    const terminal = connector.points.at(-1)!;
+
+    expect(connector.label).toBe("Middle Earth to lower loop");
+    expect(connector.points[0]).toEqual(sourcePoints[0]);
+    expect(connector.points).toHaveLength(7);
+    expect(sourcePoints).toHaveLength(14);
+    expect(terminal.x).toBeCloseTo(213.315_862, 6);
+    expect(terminal.z).toBeCloseTo(-94.683_448, 6);
   });
 });

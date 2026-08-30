@@ -9,6 +9,7 @@ import {
 import {
   buildConceptPlaceHref,
   readConceptPlaceId,
+  shouldResumeSavedConcept,
   writeConceptPlaceId,
 } from "$lib/features/learn/domain/concept-place-routes";
 import { getConceptExperience } from "$lib/features/learn/domain/concept-experience-registry";
@@ -61,6 +62,41 @@ describe("concept place registry", () => {
     expect(getApprovedPractice(getConceptPlace("1.3")!)).toEqual([]);
     expect(getApprovedPractice(getConceptPlace("1.5")!)).toEqual([]);
   });
+
+  it("grounds rotation direction in its focused lesson and related Guide page", () => {
+    const place = getConceptPlace("1.4")!;
+
+    expect(place.lessonIds).toEqual([
+      {
+        lessonId: "rotation-direction",
+        label: "Rotation Direction lesson",
+        coverage: "focused",
+      },
+    ]);
+    expect(place.guideRefs).toEqual([
+      {
+        slug: "staff-motions",
+        label: "Staff Motions",
+        coverage: "partial",
+      },
+    ]);
+  });
+
+  it("keeps orientations reference-only until it has a focused lesson owner", () => {
+    const place = getConceptPlace("1.6")!;
+
+    expect(place.lessonIds).toEqual([]);
+    expect(place.guideRefs).toEqual([
+      {
+        slug: "staff-positions",
+        label: "Staff Positions",
+        coverage: "partial",
+      },
+    ]);
+    expect(place.exploration).toBeNull();
+    expect(place.practice).toEqual([]);
+    expect(place.applications).toEqual([]);
+  });
 });
 
 describe("concept place URLs", () => {
@@ -79,5 +115,13 @@ describe("concept place URLs", () => {
     expect(url.search).toBe("?source=guide&place=1.2");
     writeConceptPlaceId(url, null);
     expect(url.search).toBe("?source=guide");
+  });
+
+  it("lets an explicit Atlas place outrank saved lesson state", () => {
+    expect(shouldResumeSavedConcept(null, "1.4", true)).toBe(false);
+    expect(shouldResumeSavedConcept(null, null, true)).toBe(true);
+    expect(shouldResumeSavedConcept("rotation-direction", "1.4", true)).toBe(
+      false
+    );
   });
 });

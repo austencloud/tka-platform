@@ -1,29 +1,83 @@
 <script lang="ts">
+  import { tick } from "svelte";
+
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import TimeRuler from "$lib/features/compose/timeline/components/TimeRuler.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import Crossfade from "$lib/shared/components/Crossfade.svelte";
-  import { flyFade, growFade, popIn } from "$lib/shared/transitions/motion";
+  import {
+    flyFade,
+    growFade,
+    motionDuration,
+    popIn,
+  } from "$lib/shared/transitions/motion";
+  import {
+    createLayoutMotion,
+    LAYOUT_MOTION_DURATION_MS,
+  } from "$lib/shared/transitions/layout-flip";
   import { DURATION } from "$lib/shared/transitions/transitions";
 
   import { getStageChoreographyContext } from "../context/stage-choreography-context";
-  import { getActiveStageSequenceClip } from "../domain/stage-sequence-timeline";
+  import {
+    getActiveStageSequenceClip,
+    samplePerformerSequenceAtBeat,
+  } from "../domain/stage-sequence-timeline";
+  import {
+    projectPerformerFloorTravel,
+    samplePerformerFloorSpeed,
+    stageSequenceDisplayName,
+    type StageFloorSpeedSample,
+    type StageFloorTravelSegment,
+  } from "../domain/stage-timeline-projection";
   import type {
     Formation,
     Performer,
     StageSequenceClip,
   } from "../domain/stage-types";
-  import type { StageEditMode } from "../state/stage-edit-mode.svelte";
+  import type {
+    StageEditMode,
+    StageSelection,
+  } from "../state/stage-edit-mode.svelte";
+  import StageFloorLane from "./StageFloorLane.svelte";
+  import StageHandsClipContent from "./StageHandsClipContent.svelte";
+  import StageMotionLane from "./StageMotionLane.svelte";
 
   type TimelineMode = "dock" | "editor";
+  type TimelineLens = "hands" | "floor" | "motion";
+
+  const TIMELINE_LENSES: {
+    value: TimelineLens;
+    label: string;
+    icon: string;
+  }[] = [
+    {
+      value: "hands",
+      label: "Hands",
+      icon: "fas fa-hands",
+    },
+    {
+      value: "floor",
+      label: "Floor",
+      icon: "fas fa-route",
+    },
+    {
+      value: "motion",
+      label: "Motion",
+      icon: "fas fa-chart-line",
+    },
+  ];
 
   interface Props {
     editMode: StageEditMode;
     mode?: TimelineMode;
+    sequences?: ReadonlyMap<string, SequenceData>;
+    timelineLens?: TimelineLens;
     onExpand?: () => void;
     onCollapse?: () => void;
+    onDeleteSelection: (selection: StageSelection) => void;
   }
 
   type ClipDrag = {
@@ -46,15 +100,71 @@
     draftTransitionBeats: number;
   };
 
+  type FloorTravelHandle = "move" | "departure" | "arrival";
+
+  type FloorTravelDrag = {
+    segmentId: string;
+    formationId: string;
+    performerId: string;
+    mode: FloorTravelHandle;
+    pointerStartX: number;
+    initialStartBeat: number;
+    initialEndBeat: number;
+    minimumStartBeat: number;
+    maximumEndBeat: number;
+    historyStarted: boolean;
+  };
+
   let {
     editMode,
     mode = "editor",
+    sequences = new Map(),
+    timelineLens = $bindable("hands"),
     onExpand = () => {},
     onCollapse = () => {},
+    onDeleteSelection,
   }: Props = $props();
 
   const stageState = getStageChoreographyContext();
   const choreography = $derived(stageState.choreography);
+  let timelineGridElement: HTMLElement | null = null;
+  const performerRowMotion = createLayoutMotion({
+    getRoot: () => timelineGridElement,
+    groups: [
+      {
+        selector: "[data-performer-row-label]",
+        datasetKey: "performerRowLabel",
+      },
+      {
+        selector: "[data-performer-row-lane]",
+        datasetKey: "performerRowLane",
+      },
+    ],
+    getDuration: () => motionDuration(LAYOUT_MOTION_DURATION_MS),
+  });
+  const performerRowSignature = $derived(
+    choreography.performers.map((performer) => performer.id).join("|")
+  );
+  let previousPerformerRowSignature: string | null = null;
+  let performerRowTransitionToken = 0;
+
+  // A removed performer changes every row below it. Capture the surviving
+  // labels and lanes before the document changes, then carry them together to
+  // their new rows so the eye never has to reconstruct where they went.
+  $effect.pre(() => {
+    const signature = performerRowSignature;
+    const previous = previousPerformerRowSignature;
+    previousPerformerRowSignature = signature;
+    if (previous === null || previous === signature) return;
+
+    const captured = performerRowMotion.capture();
+    const token = ++performerRowTransitionToken;
+    void tick().then(() => {
+      if (token === performerRowTransitionToken && captured) {
+        performerRowMotion.play();
+      }
+    });
+  });
   const maxBeats = $derived(Math.max(16, Math.ceil(stageState.maxTotalBeats)));
   const activeClipIds = $derived.by(() => {
     const ids = new Set<string>();
@@ -85,6 +195,7 @@
   let didDrag = false;
   let formationDrag = $state<FormationDrag | null>(null);
   let didFormationDrag = false;
+  let floorTravelDrag = $state<FloorTravelDrag | null>(null);
   const effectivePixelsPerBeat = $derived(
     Math.max(
       MIN_PIXELS_PER_BEAT,
@@ -92,6 +203,80 @@
         Math.max(1, maxBeats)
     )
   );
+
+  const floorTravelByPerformer = $derived.by(() => {
+    const projected = new Map<string, StageFloorTravelSegment[]>();
+    for (const performer of choreography.performers) {
+      projected.set(
+        performer.id,
+        projectPerformerFloorTravel(choreography, performer.id)
+      );
+    }
+    return projected;
+  });
+
+  const selectedFloorTravel = $derived.by(() => {
+    if (editMode.selection.kind !== "travel") return null;
+    return (
+      floorTravelByPerformer
+        .get(editMode.selection.performerId)
+        ?.find(
+          (segment) => segment.formationId === editMode.selection.formationId
+        ) ?? null
+    );
+  });
+
+  const floorSpeedByPerformer = $derived.by(() => {
+    const projected = new Map<string, StageFloorSpeedSample[]>();
+    for (const performer of choreography.performers) {
+      projected.set(
+        performer.id,
+        samplePerformerFloorSpeed(choreography, performer.id, maxBeats)
+      );
+    }
+    return projected;
+  });
+
+  const maxFloorSpeed = $derived.by(() => {
+    let max = 0;
+    for (const samples of floorSpeedByPerformer.values()) {
+      for (const sample of samples) max = Math.max(max, sample.metersPerSecond);
+    }
+    return Math.max(1, max);
+  });
+
+  const currentFrameByPerformer = $derived(
+    new Map(
+      stageState.performanceFrames.map(
+        (frame) => [frame.performerId, frame] as const
+      )
+    )
+  );
+
+  function sequenceForClip(clip: StageSequenceClip): SequenceData | undefined {
+    return sequences.get(clip.sequenceId);
+  }
+
+  function clipDisplayLabel(clip: StageSequenceClip): string {
+    const sequence = sequenceForClip(clip);
+    return (
+      clip.label?.trim() ||
+      (sequence
+        ? stageSequenceDisplayName(sequence)
+        : stageState.clipLabel(clip))
+    );
+  }
+
+  function activeStepIndex(
+    performer: Performer,
+    clip: StageSequenceClip
+  ): number | null {
+    const sample = samplePerformerSequenceAtBeat(
+      performer,
+      stageState.currentBeat
+    );
+    return sample?.clip.id === clip.id ? sample.stepIndex : null;
+  }
 
   function openPicker(performerId: string): void {
     pickerPerformerId = performerId;
@@ -109,7 +294,11 @@
   }
 
   function seekFromPointer(event: PointerEvent): void {
-    if ((event.target as Element).closest(".sequence-clip, .formation-block"))
+    if (
+      (event.target as Element).closest(
+        ".sequence-clip, .formation-block, .floor-travel-control"
+      )
+    )
       return;
     const lane = event.currentTarget as HTMLElement;
     const rect = lane.getBoundingClientRect();
@@ -119,11 +308,6 @@
     );
     const total = Math.max(1, stageState.maxTotalBeats);
     stageState.seek(Math.min(beat, total) / total);
-  }
-
-  function removeClip(performer: Performer, clip: StageSequenceClip): void {
-    stageState.removeSequenceClip(clip.id);
-    editMode.selectPerformer(performer.id);
   }
 
   function selectClip(
@@ -242,11 +426,6 @@
     if (formation) editMode.selectFormation(formation.id);
   }
 
-  function removeFormation(formationId: string): void {
-    stageState.removeFormation(formationId);
-    editMode.selectFormation(null);
-  }
-
   function beginFormationDrag(
     event: PointerEvent,
     formation: Formation,
@@ -309,11 +488,192 @@
     formationDrag = null;
   }
 
+  function selectFloorTravel(segment: StageFloorTravelSegment): void {
+    editMode.selectTravel(segment.formationId, segment.performerId);
+  }
+
+  function beginFloorTravelDrag(
+    event: PointerEvent,
+    segment: StageFloorTravelSegment,
+    mode: FloorTravelHandle
+  ): void {
+    if (event.button !== 0 || segment.distanceMeters < 0.01) return;
+    event.preventDefault();
+    event.stopPropagation();
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    selectFloorTravel(segment);
+    floorTravelDrag = {
+      segmentId: segment.id,
+      formationId: segment.formationId,
+      performerId: segment.performerId,
+      mode,
+      pointerStartX: event.clientX,
+      initialStartBeat: segment.startBeat,
+      initialEndBeat: segment.endBeat,
+      minimumStartBeat: segment.minimumStartBeat,
+      maximumEndBeat: segment.maximumEndBeat,
+      historyStarted: false,
+    };
+  }
+
+  function updateFloorTravelDrag(event: PointerEvent): void {
+    if (!floorTravelDrag) return;
+    const pixelsMoved = event.clientX - floorTravelDrag.pointerStartX;
+    if (Math.abs(pixelsMoved) <= 3) return;
+    if (!floorTravelDrag.historyStarted) {
+      stageState.beginDrag();
+      floorTravelDrag.historyStarted = true;
+    }
+
+    const beatDelta =
+      Math.round((pixelsMoved / effectivePixelsPerBeat) * 4) / 4;
+    const duration =
+      floorTravelDrag.initialEndBeat - floorTravelDrag.initialStartBeat;
+    let departureBeat = floorTravelDrag.initialStartBeat;
+    let arrivalBeat = floorTravelDrag.initialEndBeat;
+
+    if (floorTravelDrag.mode === "move") {
+      departureBeat = Math.min(
+        floorTravelDrag.maximumEndBeat - duration,
+        Math.max(
+          floorTravelDrag.minimumStartBeat,
+          floorTravelDrag.initialStartBeat + beatDelta
+        )
+      );
+      arrivalBeat = departureBeat + duration;
+    } else if (floorTravelDrag.mode === "departure") {
+      departureBeat = Math.min(
+        arrivalBeat - 0.25,
+        Math.max(
+          floorTravelDrag.minimumStartBeat,
+          floorTravelDrag.initialStartBeat + beatDelta
+        )
+      );
+    } else {
+      arrivalBeat = Math.max(
+        departureBeat + 0.25,
+        Math.min(
+          floorTravelDrag.maximumEndBeat,
+          floorTravelDrag.initialEndBeat + beatDelta
+        )
+      );
+    }
+
+    stageState.updatePerformerTravelTiming(
+      floorTravelDrag.formationId,
+      floorTravelDrag.performerId,
+      departureBeat,
+      arrivalBeat
+    );
+  }
+
+  function commitFloorTravelDrag(): void {
+    floorTravelDrag = null;
+  }
+
+  function handleFloorTravelKeydown(
+    event: KeyboardEvent,
+    segment: StageFloorTravelSegment,
+    mode: FloorTravelHandle
+  ): void {
+    if (event.key === "Delete" || event.key === "Backspace") {
+      event.preventDefault();
+      event.stopPropagation();
+      selectFloorTravel(segment);
+      onDeleteSelection({
+        kind: "travel",
+        formationId: segment.formationId,
+        performerId: segment.performerId,
+      });
+      return;
+    }
+
+    const smaller = event.shiftKey ? 1 : 0.25;
+    const delta =
+      event.key === "ArrowRight" || event.key === "ArrowUp"
+        ? smaller
+        : event.key === "ArrowLeft" || event.key === "ArrowDown"
+          ? -smaller
+          : event.key === "PageUp"
+            ? 4
+            : event.key === "PageDown"
+              ? -4
+              : null;
+    const isBoundary = event.key === "Home" || event.key === "End";
+    if (delta === null && !isBoundary) return;
+    event.preventDefault();
+    event.stopPropagation();
+    selectFloorTravel(segment);
+
+    const duration = segment.endBeat - segment.startBeat;
+    let departureBeat = segment.startBeat;
+    let arrivalBeat = segment.endBeat;
+    if (mode === "move") {
+      departureBeat =
+        event.key === "Home"
+          ? segment.minimumStartBeat
+          : event.key === "End"
+            ? segment.maximumEndBeat - duration
+            : Math.min(
+                segment.maximumEndBeat - duration,
+                Math.max(segment.minimumStartBeat, segment.startBeat + delta!)
+              );
+      arrivalBeat = departureBeat + duration;
+    } else if (mode === "departure") {
+      departureBeat =
+        event.key === "Home"
+          ? segment.minimumStartBeat
+          : event.key === "End"
+            ? segment.endBeat - 0.25
+            : Math.min(
+                segment.endBeat - 0.25,
+                Math.max(segment.minimumStartBeat, segment.startBeat + delta!)
+              );
+    } else {
+      arrivalBeat =
+        event.key === "Home"
+          ? segment.startBeat + 0.25
+          : event.key === "End"
+            ? segment.maximumEndBeat
+            : Math.max(
+                segment.startBeat + 0.25,
+                Math.min(segment.maximumEndBeat, segment.endBeat + delta!)
+              );
+    }
+    stageState.beginDrag();
+    stageState.updatePerformerTravelTiming(
+      segment.formationId,
+      segment.performerId,
+      departureBeat,
+      arrivalBeat
+    );
+  }
+
+  function adjustSelectedStepCount(delta: number): void {
+    const segment = selectedFloorTravel;
+    const range = segment?.supportedStepRange;
+    if (!segment || !range) return;
+    const current =
+      segment.requestedStepCount ?? segment.resolvedStepCount ?? range.min;
+    stageState.setPerformerTravelStepCount(
+      segment.formationId,
+      segment.performerId,
+      Math.min(range.max, Math.max(range.min, current + delta))
+    );
+  }
+
   function handleFormationKeydown(
     event: KeyboardEvent,
     formation: Formation,
     index: number
   ): void {
+    if (index > 0 && (event.key === "Delete" || event.key === "Backspace")) {
+      event.preventDefault();
+      event.stopPropagation();
+      onDeleteSelection({ kind: "formation", formationId: formation.id });
+      return;
+    }
+    if (event.target !== event.currentTarget) return;
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       editMode.selectFormation(formation.id);
@@ -331,10 +691,6 @@
       );
       return;
     }
-    if (index > 0 && (event.key === "Delete" || event.key === "Backspace")) {
-      event.preventDefault();
-      removeFormation(formation.id);
-    }
   }
 
   function handleClipKeydown(
@@ -342,6 +698,17 @@
     performer: Performer,
     clip: StageSequenceClip
   ): void {
+    if (event.key === "Delete" || event.key === "Backspace") {
+      event.preventDefault();
+      event.stopPropagation();
+      onDeleteSelection({
+        kind: "clip",
+        performerId: performer.id,
+        clipId: clip.id,
+      });
+      return;
+    }
+    if (event.target !== event.currentTarget) return;
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       editMode.selectClip(performer.id, clip.id);
@@ -356,10 +723,6 @@
       );
       return;
     }
-    if (event.key === "Delete" || event.key === "Backspace") {
-      event.preventDefault();
-      removeClip(performer, clip);
-    }
   }
 </script>
 
@@ -367,14 +730,17 @@
   onpointermove={(event) => {
     updateClipDrag(event);
     updateFormationDrag(event);
+    updateFloorTravelDrag(event);
   }}
   onpointerup={() => {
     commitClipDrag();
     commitFormationDrag();
+    commitFloorTravelDrag();
   }}
   onpointercancel={() => {
     commitClipDrag();
     commitFormationDrag();
+    commitFloorTravelDrag();
   }}
 />
 
@@ -397,6 +763,20 @@
           stageState.maxTotalBeats
         )}</strong
       >
+      {#if mode === "editor"}
+        <div class="timeline-lens-control">
+          <SegmentedControl
+            options={TIMELINE_LENSES}
+            value={timelineLens}
+            onchange={(value) => (timelineLens = value)}
+            size="sm"
+            density="tight"
+            color="accent"
+            semantics="radiogroup"
+            ariaLabel="Timeline view"
+          />
+        </div>
+      {/if}
       {#if mode === "dock"}
         <span
           class="timeline-summary"
@@ -444,14 +824,103 @@
                 : 'fa-chevron-down'}"
               aria-hidden="true"
             ></i>
-            <span class="disclosure-copy"
-              >{mode === "dock" ? "Choreograph" : "Collapse"}</span
-            >
+            <span>{mode === "dock" ? "Choreograph" : "Collapse"}</span>
           </span>
         </Crossfade>
       </button>
     </div>
   </header>
+
+  {#if mode === "editor" && timelineLens === "floor" && selectedFloorTravel}
+    {@const selectedPerformer = choreography.performers.find(
+      (performer) => performer.id === selectedFloorTravel?.performerId
+    )}
+    <div
+      class="floor-travel-editor"
+      transition:growFade={{ duration: DURATION.emphasis, axis: "y" }}
+      aria-label="Travel timing for performer {selectedPerformer?.label ??
+        ''} into {selectedFloorTravel.label}"
+    >
+      <div class="travel-editor-summary">
+        <span
+          class="travel-editor-performer"
+          style:--performer-color={selectedPerformer?.color}
+          >{selectedPerformer?.label}</span
+        >
+        <span>
+          <strong>Into {selectedFloorTravel.label}</strong>
+          <span class="travel-editor-help">
+            Drag the bar to move the trip. Drag either end to change departure
+            or arrival.
+          </span>
+        </span>
+      </div>
+
+      <dl class="travel-timing-readout">
+        <div>
+          <dt>Leave</dt>
+          <dd>{selectedFloorTravel.startBeat}</dd>
+        </div>
+        <div>
+          <dt>Arrive</dt>
+          <dd>{selectedFloorTravel.endBeat}</dd>
+        </div>
+      </dl>
+
+      <div class="step-editor">
+        <span class="step-label">Steps</span>
+        <button
+          type="button"
+          class:auto-active={selectedFloorTravel.requestedStepCount === null}
+          aria-pressed={selectedFloorTravel.requestedStepCount === null}
+          onclick={() =>
+            stageState.setPerformerTravelStepCount(
+              selectedFloorTravel!.formationId,
+              selectedFloorTravel!.performerId,
+              null
+            )}>Auto</button
+        >
+        <button
+          type="button"
+          aria-label="Use one fewer step"
+          disabled={!selectedFloorTravel.supportedStepRange ||
+            (selectedFloorTravel.requestedStepCount ??
+              selectedFloorTravel.resolvedStepCount ??
+              0) <= selectedFloorTravel.supportedStepRange.min}
+          onclick={() => adjustSelectedStepCount(-1)}
+          ><i class="fas fa-minus" aria-hidden="true"></i></button
+        >
+        <output aria-live="polite">
+          {selectedFloorTravel.requestedStepCount ??
+            selectedFloorTravel.resolvedStepCount ??
+            "—"}
+        </output>
+        <button
+          type="button"
+          aria-label="Use one more step"
+          disabled={!selectedFloorTravel.supportedStepRange ||
+            (selectedFloorTravel.requestedStepCount ??
+              selectedFloorTravel.resolvedStepCount ??
+              0) >= selectedFloorTravel.supportedStepRange.max}
+          onclick={() => adjustSelectedStepCount(1)}
+          ><i class="fas fa-plus" aria-hidden="true"></i></button
+        >
+        <span
+          class="step-status"
+          class:unsupported={!selectedFloorTravel.exact}
+        >
+          {#if selectedFloorTravel.distanceMeters < 0.01}
+            No travel
+          {:else if selectedFloorTravel.supportedStepRange}
+            Supported: {selectedFloorTravel.supportedStepRange
+              .min}–{selectedFloorTravel.supportedStepRange.max}
+          {:else}
+            Adjust the timing to make an exact walk possible
+          {/if}
+        </span>
+      </div>
+    </div>
+  {/if}
 
   {#if mode === "editor"}
     <div
@@ -462,12 +931,17 @@
     >
       <div
         class="timeline-grid"
+        bind:this={timelineGridElement}
         style:--timeline-width="{Math.max(
           720,
           maxBeats * effectivePixelsPerBeat
         )}px"
       >
-        <div class="ruler-label" aria-hidden="true">PERFORMER</div>
+        <div class="ruler-label" aria-hidden="true">
+          <Crossfade key={timelineLens} fill>
+            <span class="ruler-label-content">{timelineLens}</span>
+          </Crossfade>
+        </div>
         <div
           class="ruler"
           onpointerdown={seekFromPointer}
@@ -486,134 +960,198 @@
           ></div>
         </div>
 
-        <div class="formation-label">
-          <span class="formation-label-text">SETS</span>
-          <button
-            type="button"
-            class="add-formation"
-            onclick={addFormationAtPlayhead}
-            aria-label="Add a set at the playhead"
-            title="Add a set at the playhead"
-          >
-            <i class="fas fa-plus" aria-hidden="true"></i>
-          </button>
+        <div class="formation-label context-label">
+          <Crossfade key={timelineLens} fill>
+            <div class="context-label-content">
+              <span class="formation-label-text">
+                {timelineLens === "hands"
+                  ? "NOW"
+                  : timelineLens === "floor"
+                    ? "SETS"
+                    : "SPEED"}
+              </span>
+              {#if timelineLens === "floor"}
+                <button
+                  type="button"
+                  class="add-formation"
+                  onclick={addFormationAtPlayhead}
+                  aria-label="Add a set at the playhead"
+                  title="Add a set at the playhead"
+                >
+                  <i class="fas fa-plus" aria-hidden="true"></i>
+                </button>
+              {:else if timelineLens === "hands"}
+                <span class="context-label-glyph" title="Hand sequence">
+                  <i class="fas fa-hands" aria-hidden="true"></i>
+                </span>
+              {:else}
+                <span class="context-unit">m/s</span>
+              {/if}
+            </div>
+          </Crossfade>
         </div>
 
         <div
-          class="formation-track"
+          class="formation-track context-track"
           style="--pixels-per-beat: {effectivePixelsPerBeat}px"
           onpointerdown={seekFromPointer}
-          role="listbox"
-          aria-label="Formation sets. Each block is a held set; the ramp before it is the walk into that set."
+          role={timelineLens === "floor" ? "listbox" : "group"}
+          aria-label={timelineLens === "hands"
+            ? "Hands view guide"
+            : timelineLens === "floor"
+              ? "Formation sets. Each block is a held set; the ramp before it is the walk into that set."
+              : "Floor speed guide"}
           tabindex="-1"
         >
           <div
-            class="lane-playhead"
-            style:left="{stageState.currentBeat * effectivePixelsPerBeat}px"
-          ></div>
-          {#each choreography.formations as formation, index (formation.id)}
-            {@const beat = formationBeat(formation)}
-            {@const transition = formationTransition(formation)}
-            {@const hold = formationHoldBeats(index)}
-            {@const selected = editMode.selectedFormationId === formation.id}
-            {#if hold > 0}
+            class="context-layer hands-context"
+            class:active={timelineLens === "hands"}
+            aria-hidden={timelineLens !== "hands"}
+          >
+            <span class="view-guide-icon"><i class="fas fa-sparkles"></i></span>
+            <span>
+              <strong>Follow the glow.</strong>
+              Each tile is one hand movement in the sequence.
+            </span>
+          </div>
+
+          <div
+            class="context-layer floor-context"
+            class:active={timelineLens === "floor"}
+            aria-hidden={timelineLens !== "floor"}
+            inert={timelineLens !== "floor"}
+          >
+            {#each choreography.formations as formation, index (formation.id)}
+              {@const beat = formationBeat(formation)}
+              {@const transition = formationTransition(formation)}
+              {@const hold = formationHoldBeats(index)}
+              {@const selected = editMode.selectedFormationId === formation.id}
+              {#if hold > 0}
+                <div
+                  class="formation-hold"
+                  class:selected
+                  style="left: {beat * effectivePixelsPerBeat}px; width: {hold *
+                    effectivePixelsPerBeat}px"
+                  aria-hidden="true"
+                ></div>
+              {/if}
+              {#if transition > 0}
+                <div
+                  class="formation-ramp"
+                  class:selected
+                  style="left: {(beat - transition) *
+                    effectivePixelsPerBeat}px; width: {transition *
+                    effectivePixelsPerBeat}px"
+                  aria-hidden="true"
+                ></div>
+              {/if}
               <div
-                class="formation-hold"
+                class="formation-block"
+                data-keyboard-shortcuts-ignore
+                data-stage-formation-id={formation.id}
                 class:selected
-                style="left: {beat * effectivePixelsPerBeat}px; width: {hold *
-                  effectivePixelsPerBeat}px"
-                aria-hidden="true"
-              ></div>
-            {/if}
-            {#if transition > 0}
-              <div
-                class="formation-ramp"
-                class:selected
-                style="left: {(beat - transition) *
-                  effectivePixelsPerBeat}px; width: {transition *
-                  effectivePixelsPerBeat}px"
-                aria-hidden="true"
-              ></div>
-            {/if}
-            <div
-              class="formation-block"
-              class:selected
-              class:dragging={formationDrag?.formationId === formation.id}
-              style="left: {beat * effectivePixelsPerBeat}px"
-              role="option"
-              aria-selected={selected}
-              tabindex="0"
-              onkeydown={(event) =>
-                handleFormationKeydown(event, formation, index)}
-            >
-              {#if index > 0}
+                class:dragging={formationDrag?.formationId === formation.id}
+                style="left: {beat * effectivePixelsPerBeat}px"
+                role="option"
+                aria-selected={selected}
+                tabindex="0"
+                onkeydown={(event) =>
+                  handleFormationKeydown(event, formation, index)}
+              >
+                {#if index > 0}
+                  <button
+                    type="button"
+                    class="transition-handle"
+                    onpointerdown={(event) =>
+                      beginFormationDrag(event, formation, "transition")}
+                    aria-label="Change the walk into {formationName(
+                      formation,
+                      index
+                    )}, currently {formation.transitionBeats} counts"
+                    title="Drag to change how many counts the walk takes"
+                  ></button>
+                {/if}
                 <button
                   type="button"
-                  class="transition-handle"
-                  onpointerdown={(event) =>
-                    beginFormationDrag(event, formation, "transition")}
-                  aria-label="Change the walk into {formationName(
+                  class="formation-body"
+                  onpointerdown={(event) => {
+                    if (index === 0) return;
+                    beginFormationDrag(event, formation, "move");
+                  }}
+                  onclick={() => {
+                    if (didFormationDrag) {
+                      didFormationDrag = false;
+                      return;
+                    }
+                    editMode.selectFormation(formation.id);
+                  }}
+                  aria-label="{formationName(
                     formation,
                     index
-                  )}, currently {formation.transitionBeats} counts"
-                  title="Drag to change how many counts the walk takes"
-                ></button>
-              {/if}
-              <button
-                type="button"
-                class="formation-body"
-                onpointerdown={(event) => {
-                  if (index === 0) return;
-                  beginFormationDrag(event, formation, "move");
-                }}
-                onclick={() => {
-                  if (didFormationDrag) {
-                    didFormationDrag = false;
-                    return;
-                  }
-                  editMode.selectFormation(formation.id);
-                }}
-                aria-label="{formationName(
-                  formation,
-                  index
-                )}, in place on count {formation.atBeat}{index > 0
-                  ? `, ${formation.transitionBeats} counts to get there`
-                  : ''}"
-              >
-                <span class="formation-name">
-                  {formationName(formation, index)}
-                </span>
-                <span class="formation-count">{beat}</span>
-              </button>
-              {#if selected && index > 0}
-                <button
-                  type="button"
-                  class="formation-action"
-                  transition:popIn={{ duration: DURATION.fast }}
-                  aria-label="Remove {formationName(formation, index)}"
-                  title="Remove"
-                  onpointerdown={(event) => event.stopPropagation()}
-                  onclick={(event) => {
-                    event.stopPropagation();
-                    removeFormation(formation.id);
-                  }}
+                  )}, in place on count {formation.atBeat}{index > 0
+                    ? `, ${formation.transitionBeats} counts to get there`
+                    : ''}"
                 >
-                  <i class="fas fa-trash" aria-hidden="true"></i>
+                  <span class="formation-name">
+                    {formationName(formation, index)}
+                  </span>
+                  <span class="formation-count">{beat}</span>
                 </button>
-              {/if}
-            </div>
-          {/each}
+                {#if selected && index > 0}
+                  <button
+                    type="button"
+                    class="formation-action"
+                    transition:popIn={{ duration: DURATION.fast }}
+                    aria-label="Remove {formationName(formation, index)}"
+                    title="Remove"
+                    onpointerdown={(event) => event.stopPropagation()}
+                    onclick={(event) => {
+                      event.stopPropagation();
+                      onDeleteSelection({
+                        kind: "formation",
+                        formationId: formation.id,
+                      });
+                    }}
+                  >
+                    <i class="fas fa-trash" aria-hidden="true"></i>
+                  </button>
+                {/if}
+              </div>
+            {/each}
+          </div>
+
+          <div
+            class="context-layer motion-context"
+            class:active={timelineLens === "motion"}
+            aria-hidden={timelineLens !== "motion"}
+          >
+            <span class="view-guide-icon"
+              ><i class="fas fa-chart-line"></i></span
+            >
+            <span>
+              <strong>Floor speed · metres per second.</strong>
+              Calculated from each formation path and its easing.
+            </span>
+            <span class="motion-scale">0–{maxFloorSpeed.toFixed(1)} m/s</span>
+          </div>
+
+          <div
+            class="lane-playhead context-playhead"
+            style:left="{stageState.currentBeat * effectivePixelsPerBeat}px"
+          ></div>
         </div>
 
         {#each choreography.performers as performer (performer.id)}
           <div
             class="lane-label"
+            data-performer-row-label={performer.id}
             class:selected={editMode.selectedPerformerId === performer.id}
             style:--performer-color={performer.color}
           >
             <button
               type="button"
               class="performer-select"
+              data-stage-performer-id={performer.id}
               onclick={(event) =>
                 editMode.selectPerformer(performer.id, event.shiftKey)}
               aria-pressed={editMode.multiSelectedPerformerIds.has(
@@ -622,117 +1160,190 @@
             >
               <span>{performer.label}</span>
             </button>
-            <button
-              type="button"
-              class="add-sequence"
-              onclick={() => openPicker(performer.id)}
-              aria-label="Add sequence for performer {performer.label}"
-              title="Add sequence"
-            >
-              <i class="fas fa-plus" aria-hidden="true"></i>
-            </button>
+            <div class="lane-trailing">
+              <Crossfade key={timelineLens} fill>
+                {#if timelineLens === "hands"}
+                  <button
+                    type="button"
+                    class="add-sequence"
+                    onclick={() => openPicker(performer.id)}
+                    aria-label="Add sequence for performer {performer.label}"
+                    title="Add sequence"
+                  >
+                    <i class="fas fa-plus" aria-hidden="true"></i>
+                  </button>
+                {:else if timelineLens === "floor"}
+                  <span class="lane-mode-glyph" title="Floor path">
+                    <i class="fas fa-route" aria-hidden="true"></i>
+                  </span>
+                {:else}
+                  <span class="current-speed">
+                    <strong
+                      >{(
+                        currentFrameByPerformer.get(performer.id)
+                          ?.speedMetersPerSecond ?? 0
+                      ).toFixed(1)}</strong
+                    >
+                    <span>m/s</span>
+                  </span>
+                {/if}
+              </Crossfade>
+            </div>
           </div>
 
           <div
             class="sequence-lane"
+            data-performer-row-lane={performer.id}
             class:selected={editMode.selectedPerformerId === performer.id}
+            data-lens={timelineLens}
             style="--performer-color: {performer.color}; --pixels-per-beat: {effectivePixelsPerBeat}px"
             onpointerdown={seekFromPointer}
             role="group"
-            aria-label="Performer {performer.label} sequence lane"
+            aria-label="Performer {performer.label} {timelineLens} lane"
           >
+            <div
+              class="lens-layer hands-layer"
+              class:active={timelineLens === "hands"}
+              aria-hidden={timelineLens !== "hands"}
+              inert={timelineLens !== "hands"}
+            >
+              {#if performer.sequenceClips.length === 0}
+                <button
+                  type="button"
+                  class="lane-add-hint"
+                  transition:flyFade={{ duration: DURATION.normal, x: 6, y: 0 }}
+                  onpointerdown={(event) => event.stopPropagation()}
+                  onclick={() => openPicker(performer.id)}
+                >
+                  <i class="fas fa-plus" aria-hidden="true"></i>
+                  Add sequence
+                </button>
+              {/if}
+              {#each performer.sequenceClips as clip (clip.id)}
+                <div
+                  class="sequence-clip"
+                  data-keyboard-shortcuts-ignore
+                  class:selected={editMode.selectedClipId === clip.id}
+                  class:active={activeClipIds.has(clip.id)}
+                  class:dragging={drag?.clipId === clip.id}
+                  style="left: {clipStart(clip) *
+                    effectivePixelsPerBeat}px; width: {Math.max(
+                    28,
+                    clipDuration(clip) * effectivePixelsPerBeat
+                  )}px"
+                  role="option"
+                  aria-selected={editMode.selectedClipId === clip.id}
+                  tabindex="0"
+                  onkeydown={(event) =>
+                    handleClipKeydown(event, performer, clip)}
+                >
+                  <StageHandsClipContent
+                    title={clipDisplayLabel(clip)}
+                    sequence={sequenceForClip(clip)}
+                    activeStepIndex={activeStepIndex(performer, clip)}
+                    loop={clip.loop}
+                  />
+                  <button
+                    type="button"
+                    class="clip-body"
+                    onpointerdown={(event) =>
+                      beginClipDrag(event, clip, "move")}
+                    onclick={(event) => selectClip(event, performer, clip)}
+                    aria-label="{clipDisplayLabel(
+                      clip
+                    )}, starts at beat {clip.startBeat}, lasts {clip.durationBeats} beats"
+                  >
+                    <span class="clip-name">{clipDisplayLabel(clip)}</span>
+                  </button>
+                  {#if editMode.selectedClipId === clip.id}
+                    <button
+                      type="button"
+                      class="clip-action"
+                      transition:popIn={{ duration: DURATION.fast }}
+                      class:active={clip.loop}
+                      aria-pressed={clip.loop}
+                      aria-label="Loop {clipDisplayLabel(clip)}"
+                      title="Loop"
+                      onpointerdown={(event) => event.stopPropagation()}
+                      onclick={(event) => {
+                        event.stopPropagation();
+                        stageState.toggleSequenceClipLoop(clip.id);
+                      }}
+                    >
+                      <i class="fas fa-repeat" aria-hidden="true"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="clip-action delete-clip"
+                      transition:popIn={{ duration: DURATION.fast }}
+                      aria-label="Remove {clipDisplayLabel(clip)}"
+                      title="Remove"
+                      onpointerdown={(event) => event.stopPropagation()}
+                      onclick={(event) => {
+                        event.stopPropagation();
+                        onDeleteSelection({
+                          kind: "clip",
+                          performerId: performer.id,
+                          clipId: clip.id,
+                        });
+                      }}
+                    >
+                      <i class="fas fa-trash" aria-hidden="true"></i>
+                    </button>
+                  {/if}
+                  <button
+                    type="button"
+                    class="resize-handle"
+                    onpointerdown={(event) =>
+                      beginClipDrag(event, clip, "resize")}
+                    aria-label="Resize {clipDisplayLabel(clip)}"
+                    title="Drag to change duration"
+                  ></button>
+                </div>
+              {/each}
+            </div>
+
+            <div
+              class="lens-layer floor-layer"
+              class:active={timelineLens === "floor"}
+              aria-hidden={timelineLens !== "floor"}
+            >
+              <StageFloorLane
+                segments={floorTravelByPerformer.get(performer.id) ?? []}
+                currentBeat={stageState.currentBeat}
+                pixelsPerBeat={effectivePixelsPerBeat}
+                selectedSegmentId={selectedFloorTravel?.performerId ===
+                performer.id
+                  ? selectedFloorTravel.id
+                  : null}
+                draggingSegmentId={floorTravelDrag?.segmentId ?? null}
+                interactive={timelineLens === "floor"}
+                onSelect={selectFloorTravel}
+                onPointerStart={beginFloorTravelDrag}
+                onKeyAdjust={handleFloorTravelKeydown}
+              />
+            </div>
+
+            <div
+              class="lens-layer motion-layer"
+              class:active={timelineLens === "motion"}
+              aria-hidden={timelineLens !== "motion"}
+            >
+              <StageMotionLane
+                samples={floorSpeedByPerformer.get(performer.id) ?? []}
+                currentBeat={stageState.currentBeat}
+                currentSpeed={currentFrameByPerformer.get(performer.id)
+                  ?.speedMetersPerSecond ?? 0}
+                maxBeat={maxBeats}
+                maxSpeed={maxFloorSpeed}
+                pixelsPerBeat={effectivePixelsPerBeat}
+              />
+            </div>
+
             <div
               class="lane-playhead"
               style:left="{stageState.currentBeat * effectivePixelsPerBeat}px"
             ></div>
-            {#if performer.sequenceClips.length === 0}
-              <button
-                type="button"
-                class="lane-add-hint"
-                transition:flyFade={{ duration: DURATION.normal, x: 6, y: 0 }}
-                onpointerdown={(event) => event.stopPropagation()}
-                onclick={() => openPicker(performer.id)}
-              >
-                <i class="fas fa-plus" aria-hidden="true"></i>
-                Add sequence
-              </button>
-            {/if}
-            {#each performer.sequenceClips as clip (clip.id)}
-              <div
-                class="sequence-clip"
-                class:selected={editMode.selectedClipId === clip.id}
-                class:active={activeClipIds.has(clip.id)}
-                class:dragging={drag?.clipId === clip.id}
-                style="left: {clipStart(clip) *
-                  effectivePixelsPerBeat}px; width: {Math.max(
-                  28,
-                  clipDuration(clip) * effectivePixelsPerBeat
-                )}px"
-                role="option"
-                aria-selected={editMode.selectedClipId === clip.id}
-                tabindex="0"
-                onkeydown={(event) => handleClipKeydown(event, performer, clip)}
-              >
-                <button
-                  type="button"
-                  class="clip-body"
-                  onpointerdown={(event) => beginClipDrag(event, clip, "move")}
-                  onclick={(event) => selectClip(event, performer, clip)}
-                  aria-label="{stageState.clipLabel(
-                    clip
-                  )}, starts at beat {clip.startBeat}, lasts {clip.durationBeats} beats"
-                >
-                  <span class="clip-name">{stageState.clipLabel(clip)}</span>
-                  {#if clip.loop && editMode.selectedClipId !== clip.id}
-                    <i
-                      class="fas fa-repeat"
-                      aria-label="Loops"
-                      transition:popIn={{ duration: DURATION.fast }}
-                    ></i>
-                  {/if}
-                </button>
-                {#if editMode.selectedClipId === clip.id}
-                  <button
-                    type="button"
-                    class="clip-action"
-                    transition:popIn={{ duration: DURATION.fast }}
-                    class:active={clip.loop}
-                    aria-pressed={clip.loop}
-                    aria-label="Loop {stageState.clipLabel(clip)}"
-                    title="Loop"
-                    onpointerdown={(event) => event.stopPropagation()}
-                    onclick={(event) => {
-                      event.stopPropagation();
-                      stageState.toggleSequenceClipLoop(clip.id);
-                    }}
-                  >
-                    <i class="fas fa-repeat" aria-hidden="true"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="clip-action delete-clip"
-                    transition:popIn={{ duration: DURATION.fast }}
-                    aria-label="Remove {stageState.clipLabel(clip)}"
-                    title="Remove"
-                    onpointerdown={(event) => event.stopPropagation()}
-                    onclick={(event) => {
-                      event.stopPropagation();
-                      removeClip(performer, clip);
-                    }}
-                  >
-                    <i class="fas fa-trash" aria-hidden="true"></i>
-                  </button>
-                {/if}
-                <button
-                  type="button"
-                  class="resize-handle"
-                  onpointerdown={(event) =>
-                    beginClipDrag(event, clip, "resize")}
-                  aria-label="Resize {stageState.clipLabel(clip)}"
-                  title="Drag to change duration"
-                ></button>
-              </div>
-            {/each}
           </div>
         {/each}
       </div>
@@ -775,7 +1386,7 @@
 
   .timeline-toolbar {
     display: grid;
-    min-height: var(--stage-timeline-toolbar-size, 3.75rem);
+    min-height: 3.75rem;
     flex: 0 0 auto;
     grid-template-columns: minmax(10rem, 1fr) auto minmax(10rem, 1fr);
     align-items: center;
@@ -795,6 +1406,16 @@
     min-width: 0;
     gap: 0.5rem;
     font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .timeline-lens-control {
+    width: min(15rem, calc(100% - 6rem));
+    min-width: 11rem;
+    flex: 0 1 15rem;
+  }
+
+  .timeline-lens-control :global(.segmented-control) {
+    width: 100%;
   }
 
   .timeline-label {
@@ -826,8 +1447,8 @@
 
   .timeline-disclosure {
     display: inline-flex;
-    width: 8.75rem;
-    min-width: 8.75rem;
+    width: auto;
+    min-width: 0;
     min-height: var(--min-touch-target, 44px);
     align-items: center;
     justify-content: center;
@@ -885,6 +1506,144 @@
     background: color-mix(in srgb, var(--theme-panel-bg, #12121c) 96%, white);
   }
 
+  .floor-travel-editor {
+    display: grid;
+    min-height: 4.25rem;
+    flex: 0 0 auto;
+    grid-template-columns: minmax(15rem, 1fr) auto minmax(25rem, auto);
+    align-items: center;
+    gap: 1rem;
+    padding: 0.55rem 0.75rem;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 7%,
+      var(--theme-panel-bg, #10111a)
+    );
+  }
+
+  .travel-editor-summary {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.65rem;
+    font-size: 1rem;
+  }
+
+  .travel-editor-summary > span:last-child {
+    display: grid;
+    min-width: 0;
+    gap: 0.15rem;
+  }
+
+  .travel-editor-performer {
+    display: grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 2px solid var(--performer-color);
+    border-radius: 999px;
+    color: var(--performer-color);
+    font-weight: 800;
+  }
+
+  .travel-editor-help {
+    overflow: hidden;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
+    font-size: 0.9375rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .travel-timing-readout {
+    display: flex;
+    margin: 0;
+    gap: 0.45rem;
+  }
+
+  .travel-timing-readout div {
+    display: grid;
+    min-width: 4.5rem;
+    place-items: center;
+    padding: 0.25rem 0.55rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 0.65rem;
+    background: rgba(0, 0, 0, 0.18);
+  }
+
+  .travel-timing-readout dt,
+  .step-label {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .travel-timing-readout dd {
+    margin: 0;
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+  }
+
+  .step-editor {
+    display: flex;
+    min-width: max-content;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem;
+  }
+
+  .step-editor button {
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.35rem 0.65rem;
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
+    border-radius: 0.65rem;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    color: var(--theme-text, white);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 750;
+    transition:
+      border-color var(--duration-fast) ease,
+      background-color var(--duration-fast) ease,
+      opacity var(--duration-fast) ease;
+  }
+
+  .step-editor button:hover:not(:disabled),
+  .step-editor button:focus-visible,
+  .step-editor button.auto-active {
+    border-color: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 18%, transparent);
+  }
+
+  .step-editor button:disabled {
+    cursor: not-allowed;
+    opacity: 0.38;
+  }
+
+  .step-editor output {
+    min-width: 2rem;
+    text-align: center;
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 850;
+  }
+
+  .step-status {
+    max-width: 11rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
+    font-size: 0.875rem;
+    line-height: 1.25;
+  }
+
+  .step-status.unsupported {
+    color: var(--theme-warning, #f6c85f);
+  }
+
   .timeline-scroll {
     min-width: 0;
     min-height: 0;
@@ -931,15 +1690,23 @@
   .ruler-label {
     display: flex;
     align-items: center;
-    padding: 0 0.75rem;
+    padding: 0;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.42));
     font-size: 0.75rem;
     font-weight: 750;
     letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .ruler-label-content {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    padding: 0 0.75rem;
   }
 
   .ruler {
-    height: var(--stage-timeline-ruler-size, 2.25rem);
+    height: 2.25rem;
     overflow: hidden;
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: #11131c;
@@ -1010,6 +1777,42 @@
     cursor: pointer;
   }
 
+  .lane-trailing {
+    position: relative;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex: 0 0 auto;
+  }
+
+  .lane-mode-glyph,
+  .current-speed {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    border: 1px solid
+      color-mix(in srgb, var(--performer-color) 35%, transparent);
+    border-radius: 0.65rem;
+    background: color-mix(in srgb, var(--performer-color) 8%, transparent);
+    color: var(--performer-color);
+  }
+
+  .current-speed {
+    align-content: center;
+    gap: 0.05rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .current-speed strong {
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .current-speed span {
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 700;
+  }
+
   .formation-label {
     display: flex;
     align-items: center;
@@ -1019,6 +1822,19 @@
     /* Deliberately NOT --theme-accent: the themed accent collides with the
        performer clip colours and makes the spine read as a fifth lane. */
     --formation-accent: #7cd4e8;
+  }
+
+  .context-label {
+    padding: 0;
+  }
+
+  .context-label-content {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    padding: 0.3rem 0.45rem;
   }
   .formation-label-text {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.42));
@@ -1038,6 +1854,24 @@
     background: color-mix(in srgb, var(--formation-accent) 10%, transparent);
     color: var(--formation-accent);
     cursor: pointer;
+  }
+
+  .context-label-glyph,
+  .context-unit {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    border: 1px solid
+      color-mix(in srgb, var(--formation-accent) 38%, transparent);
+    border-radius: 0.65rem;
+    background: color-mix(in srgb, var(--formation-accent) 8%, transparent);
+    color: var(--formation-accent);
+  }
+
+  .context-unit {
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 800;
   }
   .formation-track {
     position: relative;
@@ -1059,6 +1893,81 @@
     /* Deliberately NOT --theme-accent: the themed accent collides with the
        performer clip colours and makes the spine read as a fifth lane. */
     --formation-accent: #7cd4e8;
+  }
+
+  .context-track {
+    position: relative;
+  }
+
+  /* These layers stay mounted because the Hands view owns prepared pictographs
+     and the timeline owns selection/drag state. Remounting them through the
+     keyed Crossfade primitive would discard that work on every lens switch.
+     The parent row fixes the geometry; opacity communicates the change without
+     allowing either view to move the rows around it. */
+  .context-layer,
+  .lens-layer {
+    position: absolute;
+    inset: 0;
+    min-width: 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity var(--duration-normal, 240ms) ease,
+      visibility 0s linear var(--duration-normal, 240ms);
+  }
+
+  .context-layer.active,
+  .lens-layer.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0s;
+  }
+
+  .hands-context,
+  .motion-context {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0 0.85rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
+    font-size: var(--font-size-compact, 0.75rem);
+  }
+
+  .hands-context strong,
+  .motion-context strong {
+    color: var(--theme-text, white);
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .view-guide-icon {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--formation-accent) 14%, transparent);
+    color: var(--formation-accent);
+  }
+
+  .motion-scale {
+    display: grid;
+    width: 7rem;
+    min-width: 7rem;
+    margin-left: auto;
+    place-items: center;
+    padding: 0.25rem 0.45rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 0.45rem;
+    color: var(--theme-text, white);
+    font-variant-numeric: tabular-nums;
+    font-weight: 750;
+  }
+
+  .context-playhead {
+    z-index: 10;
   }
   /* The cast is standing still: a flat hairline rail, no travel implied. */
   .formation-hold {
@@ -1222,6 +2131,7 @@
   }
   .sequence-lane {
     position: relative;
+    container-type: inline-size;
     overflow: hidden;
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     background:
@@ -1278,6 +2188,8 @@
   }
 
   .clip-body {
+    position: relative;
+    z-index: 2;
     display: flex;
     min-width: 0;
     min-height: 2.75rem;
@@ -1303,7 +2215,13 @@
     white-space: nowrap;
   }
 
+  .hands-layer .clip-name {
+    visibility: hidden;
+  }
+
   .clip-action {
+    position: relative;
+    z-index: 3;
     display: grid;
     width: 2.25rem;
     min-height: 2.75rem;
@@ -1331,6 +2249,8 @@
   }
 
   .resize-handle {
+    position: relative;
+    z-index: 3;
     display: grid;
     width: 1rem;
     min-height: 2.75rem;
@@ -1389,6 +2309,15 @@
     .timeline-grid {
       grid-template-columns: 6rem minmax(var(--timeline-width), 1fr);
     }
+
+    .floor-travel-editor {
+      grid-template-columns: minmax(13rem, 1fr) auto auto;
+    }
+
+    .travel-editor-help,
+    .step-status {
+      display: none;
+    }
   }
 
   @media (max-width: 560px) {
@@ -1409,18 +2338,28 @@
 
     .timeline-disclosure {
       width: var(--min-touch-target, 44px);
-      min-width: var(--min-touch-target, 44px);
       padding-inline: 0;
     }
 
-    .timeline-disclosure .disclosure-copy {
+    .timeline-disclosure span {
+      display: none;
+    }
+
+    .floor-travel-editor {
+      min-height: 3.75rem;
+      grid-template-columns: auto auto;
+      gap: 0.65rem;
+    }
+
+    .travel-timing-readout {
       display: none;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .sequence-clip {
-      scroll-behavior: auto;
+    .context-layer,
+    .lens-layer {
+      transition: none;
     }
   }
 </style>

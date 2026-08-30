@@ -60,6 +60,7 @@ Last audit: 2025-12-27
   import type { ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
   import SplitCanvasView from "./SplitCanvasView.svelte";
   import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import type { QualityTier } from "../domain/types/quality-types";
 
   // Props
   let {
@@ -128,6 +129,7 @@ Last audit: 2025-12-27
     playbackMode = undefined,
     onPlaybackModeChange = undefined,
     onSaveToLibrary = undefined,
+    initialQualityTier = undefined,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -262,6 +264,8 @@ Last audit: 2025-12-27
     onPlaybackModeChange?: (mode: "continuous" | "step") => void;
     /** Overrides the universal visual save action when a host tracks save state. */
     onSaveToLibrary?: () => void | Promise<void>;
+    /** Optional adaptive-quality ceiling for performance-sensitive embeds. */
+    initialQualityTier?: QualityTier;
   } = $props();
 
   const resolvedContextId =
@@ -285,10 +289,7 @@ Last audit: 2025-12-27
   // assembled → disassembling → disassembled → reassembling → assembled
   // All transitions happen via CSS on the SAME DOM tree. No overlay swaps.
   type ViewState =
-    | "assembled"
-    | "disassembling"
-    | "disassembled"
-    | "reassembling";
+    "assembled" | "disassembling" | "disassembled" | "reassembling";
   let viewState = $state<ViewState>("assembled");
   let contentWrapperEl: HTMLDivElement | undefined = $state();
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -692,6 +693,7 @@ Last audit: 2025-12-27
       {visibilityManagerOverride}
       {effectsConfigState}
       {prewarmEffects}
+      {initialQualityTier}
       {beatIndicators}
       contextId={resolvedContextId}
       {onCanvasReady}
@@ -715,6 +717,12 @@ Last audit: 2025-12-27
         {isPlaying}
         {fireConfig}
         {ledConfig}
+        trailSettings={externalTrailSettings}
+        {bluePropType}
+        {redPropType}
+        tipEffectMap={cellTipEffectMap}
+        {visibilityManagerOverride}
+        {showNonRadialPoints}
         {darkModeEnabled}
         expandRequested={splitExpandRequested}
         resizePaused={splitResizePaused}
@@ -1375,6 +1383,27 @@ Last audit: 2025-12-27
     flex: 1;
     height: auto !important;
     min-height: 0;
+  }
+
+  /* Fill mode normally owns every available pixel. During disassembly the
+     same wrapper must instead fit one full-width hero plus two half-width
+     canvases beneath it. Without this later override, fill mode wins the
+     cascade and the three canvases are forced into a full-width column. */
+  .animation-container[data-fill][data-view="disassembling"] .content-wrapper,
+  .animation-container[data-fill][data-view="disassembled"] .content-wrapper {
+    width: min(calc(100cqw - 12px), calc((100cqh - 7rem) * 2 / 3)) !important;
+    max-width: calc((100cqh - 7rem) * 2 / 3) !important;
+  }
+
+  /* A relocated/hidden transport leaves only the word header above the three
+     canvases. Reclaim that space so the disassembled composition uses the
+     full height available to embedded players such as Shape Matrix. */
+  .animation-container[data-fill][data-no-progress][data-view="disassembling"]
+    .content-wrapper,
+  .animation-container[data-fill][data-no-progress][data-view="disassembled"]
+    .content-wrapper {
+    width: min(calc(100cqw - 12px), calc((100cqh - 3.5rem) * 2 / 3)) !important;
+    max-width: calc((100cqh - 3.5rem) * 2 / 3) !important;
   }
 
   @media (prefers-reduced-motion: reduce) {

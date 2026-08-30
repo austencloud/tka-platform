@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Distance geometry tiers for Flow Fest grass. Each tier retains the accepted Forest grass material, palette textures, and UVs.",
+  "source": "forest-grass-prototypes.glb",
+  "sourceSha256": "773d4ffef6e3934ed759f834adc65756e05bd12ba91f78d361c67a9c45196e76",
+  "sourceTriangles": 296,
+  "tiers": [
+    {
+      "id": "mid",
+      "ratio": 0.35,
+      "error": 0.02,
+      "output": "forest-grass-prototypes-mid.glb",
+      "outputSha256": "eb5e0c013ba22d2d65ebe0a0546d588613241877be7966004b4baa153f6e9aca",
+      "outputBytes": 16660,
+      "outputTriangles": 168
+    },
+    {
+      "id": "far",
+      "ratio": 0.15,
+      "error": 0.04,
+      "output": "forest-grass-prototypes-far.glb",
+      "outputSha256": "e8553170cf1c2297afdd6038d51f36db746df99c4f1670b2a6db7680232c80eb",
+      "outputBytes": 9908,
+      "outputTriangles": 68
+    }
+  ]
+}

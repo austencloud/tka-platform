@@ -19,15 +19,23 @@
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { createFullscreenController } from "$lib/shared/fullscreen/state/fullscreen-controller.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import { sceneEnvironmentIdForBackground } from "$lib/shared/3d/environments/domain/scene-environment";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import {
+    SceneEnvironmentId,
+    sceneEnvironmentIdForBackground,
+  } from "$lib/shared/3d/environments/domain/scene-environment";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { FILM_DIRECTOR_ROUTE } from "$lib/features/film-director/domain/film-director-link";
   import { consumeSceneStudioHandoff } from "$lib/features/scene-3d-collection/services/open-3d-scene";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import { flyFade, growFade } from "$lib/shared/transitions/motion";
+  import {
+    flyFade,
+    growFade,
+    motionDuration,
+  } from "$lib/shared/transitions/motion";
   import { DURATION } from "$lib/shared/transitions/transitions";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { FormationPresetId } from "./domain/stage-types";
 
   import FormationOverlay from "./components/FormationOverlay.svelte";
@@ -39,10 +47,14 @@
   import { createSceneVideoExport } from "./scene/services/create-scene-video-export.svelte";
   import { setStageChoreographyContext } from "./context/stage-choreography-context";
   import { resolveActiveFormationIndex } from "./domain/active-formation";
+  import { resolveStageDeleteCommand } from "./domain/stage-delete-command";
   import { samplePerformerSequenceAtBeat } from "./domain/stage-sequence-timeline";
   import { createStageChoreographyState } from "./state/stage-choreography-state.svelte";
   import type { StudioStarter } from "./domain/studio-project";
-  import { createStageEditMode } from "./state/stage-edit-mode.svelte";
+  import {
+    createStageEditMode,
+    type StageSelection,
+  } from "./state/stage-edit-mode.svelte";
   import {
     DEFAULT_STAGE_SEQUENCE_ID,
     loadStageSequence,
@@ -101,7 +113,12 @@
 
   let chartRaised = $state(false);
   let starterVisible = $state(!handoff);
+  let starterSceneBlank = $state(false);
+  let starterCurtainVisible = $state(false);
+  let starterEnvironmentPreview = $state(false);
+  let starterTransitionId = 0;
   let timelineExpanded = $state(false);
+  let timelineLens = $state<"hands" | "floor" | "motion">("hands");
   let workspaceSizes = $state<number[]>([]);
   let pickerOpen = $state(false);
   const preloadedSequences = new Map<string, SequenceData>(
@@ -311,6 +328,7 @@
   let syncedEnvironmentId = stageState.choreography.environmentId;
   $effect(() => {
     const next = viewer.environmentId;
+    if (starterEnvironmentPreview) return;
     if (next === syncedEnvironmentId) return;
     syncedEnvironmentId = next;
     stageState.setEnvironmentId(next);
@@ -390,16 +408,60 @@
     stageState.setSharedSequence(next);
   }
 
-  async function applyStudioStarter(starter: StudioStarter): Promise<void> {
-    stageState.applyStudioStarter(starter);
-    // Stage owns cast, formation and world; the shared performer manager owns
-    // the prop look. Waiting one render lets the canonical cast adapter create
-    // exactly the rigs the fresh Stage document called for.
-    viewer.setEnvironmentId(starter.environmentId);
+  function transitionDelay(duration: number): Promise<void> {
+    return new Promise((resolve) => window.setTimeout(resolve, duration));
+  }
+
+  async function transitionStarterScene(
+    change: () => Promise<void> | void
+  ): Promise<void> {
+    const transitionId = ++starterTransitionId;
+    starterCurtainVisible = true;
     await tick();
-    for (const performer of viewer.performerManager.performers) {
-      performer.setProp(starter.prop, { equipBuild: false });
-    }
+
+    const duration = motionDuration(DURATION.normal);
+    if (duration > 0) await transitionDelay(duration);
+    if (transitionId !== starterTransitionId) return;
+
+    await change();
+    await tick();
+    if (transitionId === starterTransitionId) starterCurtainVisible = false;
+  }
+
+  function startEmptyStage(): void {
+    chartRaised = false;
+    if (stageState.isPlaying) stageState.togglePlay();
+    void transitionStarterScene(() => {
+      // The blank setup is a view over the seeded example, not a second Stage
+      // document. The real document stays untouched until the final action.
+      starterEnvironmentPreview = true;
+      viewer.setEnvironmentId(SceneEnvironmentId.VOID);
+      starterSceneBlank = true;
+    });
+  }
+
+  function returnToStarterExample(): void {
+    void transitionStarterScene(() => {
+      viewer.setEnvironmentId(choreography.environmentId);
+      starterSceneBlank = false;
+      starterEnvironmentPreview = false;
+    });
+  }
+
+  async function applyStudioStarter(starter: StudioStarter): Promise<void> {
+    await transitionStarterScene(async () => {
+      stageState.applyStudioStarter(starter);
+      // Stage owns cast, formation and world; the shared performer manager owns
+      // the prop look. Waiting one render lets the canonical cast adapter create
+      // exactly the rigs the fresh Stage document called for.
+      viewer.setEnvironmentId(starter.environmentId);
+      starterSceneBlank = false;
+      await tick();
+      for (const performer of viewer.performerManager.performers) {
+        performer.setProp(starter.prop, { equipBuild: false });
+      }
+      starterEnvironmentPreview = false;
+    });
   }
 
   /** One count, and the eight counts a drill is written in. */
@@ -435,11 +497,110 @@
     if (added) editMode.selectFormation(added.id);
   }
 
-  function removeSelectedSet(): void {
-    const id = editMode.selectedFormationId ?? activeSet?.id;
-    if (!id) return;
-    stageState.removeFormation(id);
-    editMode.clearSelection();
+  function focusStageTarget(attribute: string, id: string): void {
+    void tick().then(() => {
+      const target = Array.from(
+        document.querySelectorAll<HTMLElement>(`[${attribute}]`)
+      ).find((element) => element.getAttribute(attribute) === id);
+      target?.focus({ preventScroll: true });
+    });
+  }
+
+  function deleteStageSelection(
+    selection: StageSelection = editMode.selection
+  ): void {
+    const command = resolveStageDeleteCommand(selection);
+
+    switch (command.kind) {
+      case "remove-performers": {
+        const selectedIds = new Set(command.performerIds);
+        const firstIndex = choreography.performers.findIndex((performer) =>
+          selectedIds.has(performer.id)
+        );
+        const removedLabels = choreography.performers
+          .filter((performer) => selectedIds.has(performer.id))
+          .map((performer) => performer.label);
+
+        if (!stageState.removePerformers(command.performerIds)) {
+          if (removedLabels.length > 0) {
+            toast.warning("A scene needs at least one performer.");
+          }
+          return;
+        }
+
+        const nextIndex = Math.min(
+          Math.max(0, firstIndex),
+          choreography.performers.length - 1
+        );
+        const nextPerformer = choreography.performers[nextIndex];
+        if (nextPerformer) {
+          editMode.selectPerformer(nextPerformer.id);
+          focusStageTarget("data-stage-performer-id", nextPerformer.id);
+        } else editMode.clearSelection();
+
+        toast.success(
+          removedLabels.length === 1
+            ? `Performer ${removedLabels[0]} removed. Ctrl+Z to undo.`
+            : `${removedLabels.length} performers removed. Ctrl+Z to undo.`
+        );
+        return;
+      }
+      case "remove-formation": {
+        const index = choreography.formations.findIndex(
+          (formation) => formation.id === command.formationId
+        );
+        if (index <= 0) {
+          if (index === 0) toast.info("The opening set stays in every scene.");
+          return;
+        }
+        const name =
+          choreography.formations[index]?.label ?? `Set ${index + 1}`;
+        const nextFormation =
+          choreography.formations[index + 1] ??
+          choreography.formations[index - 1];
+        stageState.removeFormation(command.formationId);
+        if (nextFormation) {
+          editMode.selectFormation(nextFormation.id);
+          focusStageTarget("data-stage-formation-id", nextFormation.id);
+        } else editMode.clearSelection();
+        toast.success(`${name} removed. Ctrl+Z to undo.`);
+        return;
+      }
+      case "remove-clip": {
+        const performer = choreography.performers.find(
+          (candidate) => candidate.id === command.performerId
+        );
+        const clip = performer?.sequenceClips.find(
+          (candidate) => candidate.id === command.clipId
+        );
+        if (!performer || !clip) return;
+        const name = stageState.clipLabel(clip);
+        stageState.removeSequenceClip(command.clipId);
+        editMode.selectPerformer(command.performerId);
+        focusStageTarget("data-stage-performer-id", command.performerId);
+        toast.success(
+          `${name} removed from performer ${performer.label}. Ctrl+Z to undo.`
+        );
+        return;
+      }
+      case "reset-travel":
+        if (
+          stageState.resetPerformerTravelTiming(
+            command.formationId,
+            command.performerId
+          )
+        ) {
+          toast.success("Custom travel timing reset to Auto. Ctrl+Z to undo.");
+        }
+        return;
+      case "explain-required-spot":
+        toast.info(
+          "Every performer needs a spot in each set. Move it or reset the set layout instead."
+        );
+        return;
+      case "none":
+        return;
+    }
   }
 
   /**
@@ -467,7 +628,7 @@
       nextSet: () => jumpToNeighbouringSet(1),
       toggleChart: () => (chartRaised = !chartRaised),
       addSet: addSetAtPlayhead,
-      removeSelectedSet,
+      deleteSelection: () => deleteStageSelection(),
     })) {
       manager.register(shortcut);
     }
@@ -534,10 +695,22 @@
             axis: "x",
           }}
         >
-          <SetProperties {editMode} />
+          <SetProperties
+            {editMode}
+            onRemoveSet={(formationId) =>
+              deleteStageSelection({ kind: "formation", formationId })}
+          />
         </div>
       {/if}
     </div>
+  {/if}
+
+  {#if starterCurtainVisible}
+    <div
+      class="starter-scene-curtain"
+      aria-hidden="true"
+      transition:flyFade={{ duration: DURATION.normal, x: 0, y: 0 }}
+    ></div>
   {/if}
 
   {#if sequenceLoadState === "loading"}
@@ -573,6 +746,8 @@
       onChooseSequence={() => (pickerOpen = true)}
       onOpenChoreography={() => openChoreography(true)}
       onVisibilityChange={(visible) => (starterVisible = visible)}
+      onStartEmptyStage={startEmptyStage}
+      onReturnToExample={returnToStarterExample}
     />
   {/if}
 {/snippet}
@@ -606,13 +781,15 @@
         immersive={fullscreen.immersive}
         onToggleImmersive={(host) => fullscreen.toggleImmersive(host)}
         {performerSteps}
-        worldChildren={floorPaths}
+        worldChildren={starterSceneBlank ? undefined : floorPaths}
         hudActions={stageHudActions}
         overlayChildren={stageOverlay}
         hideCanvasOverlays
         sceneControlsBottomOffset="0.75rem"
         allowSaveScene={false}
         renderEmptyScene
+        visiblePerformerCount={starterSceneBlank ? 0 : undefined}
+        showSceneChrome={!starterSceneBlank}
         contained
       />
     {:else}
@@ -628,9 +805,12 @@
 {#snippet timelinePanel()}
   <StageTimeline
     {editMode}
+    sequences={resolvedSequences}
+    bind:timelineLens
     mode={timelineDisclosure === "editor" ? "editor" : "dock"}
     onExpand={() => openChoreography()}
     onCollapse={collapseChoreography}
+    onDeleteSelection={deleteStageSelection}
   />
 {/snippet}
 
@@ -738,6 +918,20 @@
     min-width: 0;
     flex: none;
     overflow-y: auto;
+  }
+
+  .starter-scene-curtain {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    background:
+      radial-gradient(
+        circle at 42% 46%,
+        color-mix(in srgb, var(--theme-accent) 7%, transparent),
+        transparent 34%
+      ),
+      color-mix(in srgb, var(--theme-panel-bg, #0c0e16) 96%, #000);
+    pointer-events: none;
   }
 
   .load-notice {

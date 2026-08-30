@@ -10,6 +10,7 @@ import {
 } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
 import {
   DEFAULT_CONFIG,
+  FOLD_OPTIONS,
   configKey,
   imageCount,
   type TunnelConfig,
@@ -21,6 +22,7 @@ import {
   type TunnelEditTarget,
   type TunnelSourceHistoryEntry,
   type TunnelSourceOrigin,
+  type TunnelWorkflowMode,
   type TunnelWorkspacePanel,
 } from "../domain/tunnel-creator-draft";
 import {
@@ -35,6 +37,9 @@ import type { TunnelPresentationState } from "./tunnel-presentation-state.svelte
 
 const INITIAL_VISIBLE_PERFORMERS = 2;
 const MAX_SOURCE_HISTORY = 12;
+/** The normal authoring surface stays legible at four cards. The persisted
+ * schema deliberately remains eight so older, larger casts reopen losslessly. */
+export const MAX_INTERACTIVE_TUNNEL_PERFORMERS = 4;
 
 export type TunnelCreatorMode = "separate" | "linked";
 export type TunnelPickerTarget = string;
@@ -165,6 +170,9 @@ export function createTunnelCreatorState(
             ? "separate"
             : "linked"))
   );
+  let workflow = $state<TunnelWorkflowMode>(
+    restoredDraft?.workflow ?? inferWorkflow(initial?.performers ?? [])
+  );
   let slots = $state<TunnelPerformerSlot[]>(initialSlots);
   // A one-performer composition came from the legacy save shape. The second UI
   // slot is useful for editing, but it is not authored choreography until the
@@ -212,6 +220,23 @@ export function createTunnelCreatorState(
 
   function currentPartner(): TunnelPerformer | null {
     return slots[1]?.performer ?? null;
+  }
+
+  function inferWorkflow(
+    performers: readonly TunnelPerformer[]
+  ): TunnelWorkflowMode {
+    if (performers.length < 2) return "seeded";
+    const leadId = performers[0]?.id;
+    return leadId &&
+      performers
+        .slice(1)
+        .every(
+          (performer) =>
+            performer.source.kind === "derived" &&
+            performer.source.performerId === leadId
+        )
+      ? "seeded"
+      : "custom";
   }
 
   function isReady(): boolean {
@@ -377,10 +402,15 @@ export function createTunnelCreatorState(
       provenance: source.provenance ?? null,
       previous,
     };
+    if (slotIndex > 0) workflow = "custom";
     const performer =
-      slotIndex !== 1 || mode !== "linked"
+      slotIndex !== 1 || mode !== "linked" || workflow === "custom"
         ? performerFromIndependentSource(nextSlot, sequence)
         : slot.performer;
+    if (slotIndex === 1 && performer?.source.kind === "independent") {
+      mode = "separate";
+      linkedPartnerIsSynthetic = false;
+    }
 
     slots = slots.map((candidate, index) =>
       index === slotIndex
@@ -446,12 +476,115 @@ export function createTunnelCreatorState(
   }
 
   function addPerformer(): string | null {
-    if (slots.length >= MAX_AUTHORED_TUNNEL_PERFORMERS) return null;
+    if (slots.length >= MAX_INTERACTIVE_TUNNEL_PERFORMERS) return null;
     if (slots.length >= imageCount(formation)) return null;
     const slot = createSlot(slots.length);
     slots = [...slots, slot];
+    if (workflow === "seeded" && slots[0]?.performer) {
+      seedPerformer(slot.id, slots.length - 1, slots.length);
+    }
     selectedPerformerId = slot.id;
     return slot.id;
+  }
+
+  function ensureFormationCapacity(count: number): boolean {
+    if (imageCount(formation) >= count) return true;
+    const multiplier = (formation.mirror ? 2 : 1) * (formation.flip ? 2 : 1);
+    const fold = FOLD_OPTIONS.find((option) => option * multiplier >= count);
+    if (!fold) return false;
+    formation = { ...formation, fold };
+    return true;
+  }
+
+  function seedPerformer(
+    targetId: string,
+    index: number,
+    castCount: number
+  ): boolean {
+    const lead = slots[0]?.performer;
+    if (!lead || index <= 0) return false;
+    const target = slots.find((slot) => slot.id === targetId);
+    if (!target) return false;
+    const length = Math.max(
+      1,
+      lead.source.kind === "independent" ? lead.source.sequence.steps.length : 1
+    );
+    const seededRelationship = { ...DEFAULT_TUNNEL_RELATIONSHIP };
+    const timing = {
+      stepOffset: Math.floor((length * index) / Math.max(1, castCount)),
+      speed: 1,
+    };
+    const seededTarget = {
+      ...target,
+      relationship: seededRelationship,
+      timing,
+    };
+    const performer = derivedPerformer(lead, seededTarget);
+    slots = slots.map((slot) =>
+      slot.id === targetId
+        ? { ...seededTarget, performer, origin: null, provenance: null }
+        : slot
+    );
+    if (index === 1) {
+      mode = "linked";
+      relationship = { ...seededTarget.relationship };
+      linkedPartnerIsSynthetic = false;
+    }
+    return true;
+  }
+
+  function setWorkflow(next: TunnelWorkflowMode): void {
+    if (workflow === next) return;
+    workflow = next;
+    if (next !== "seeded" || !slots[0]?.performer) return;
+    const count = slots.length;
+    for (let index = 1; index < count; index += 1) {
+      const targetId = slots[index]?.id;
+      if (targetId) seedPerformer(targetId, index, count);
+    }
+  }
+
+  function setPerformerCount(requested: number): boolean {
+    const count = Math.max(
+      1,
+      Math.min(MAX_INTERACTIVE_TUNNEL_PERFORMERS, Math.round(requested))
+    );
+    if (count === slots.length) return true;
+    if (!ensureFormationCapacity(count)) return false;
+
+    if (count < slots.length) {
+      const removedIds = new Set(slots.slice(count).map((slot) => slot.id));
+      const retained = slots.slice(0, count);
+      if (
+        retained.some(
+          (slot) =>
+            slot.performer?.source.kind === "derived" &&
+            removedIds.has(slot.performer.source.performerId)
+        )
+      ) {
+        return false;
+      }
+      slots = normalizeSlotLabels(retained);
+      if (!slots.some((slot) => slot.id === selectedPerformerId)) {
+        selectedPerformerId = slots.at(-1)?.id ?? null;
+      }
+      pairingTargetId = slots[1]?.id ?? null;
+      linkedPartnerIsSynthetic = false;
+      return true;
+    }
+
+    while (slots.length < count) {
+      const slot = createSlot(slots.length);
+      slots = [...slots, slot];
+    }
+    if (workflow === "seeded" && slots[0]?.performer) {
+      for (let index = 1; index < count; index += 1) {
+        const targetId = slots[index]?.id;
+        if (targetId) seedPerformer(targetId, index, count);
+      }
+    }
+    selectedPerformerId = slots.at(-1)?.id ?? selectedPerformerId;
+    return true;
   }
 
   function dependantLabels(targetId: string): string[] {
@@ -538,6 +671,7 @@ export function createTunnelCreatorState(
     if (!target || targetIndex === 0) return false;
 
     if (sourcePerformerId === null) {
+      workflow = "custom";
       const performer = target.independentSequence
         ? performerFromIndependentSource(target, target.independentSequence)
         : null;
@@ -554,6 +688,7 @@ export function createTunnelCreatorState(
     );
     const source = slots[sourceIndex]?.performer;
     if (!source || sourceIndex < 0 || sourceIndex >= targetIndex) return false;
+    if (sourceIndex !== 0) workflow = "custom";
     const performer = derivedPerformer(source, target);
     slots = slots.map((slot) =>
       slot.id === targetId ? { ...slot, performer } : slot
@@ -570,6 +705,7 @@ export function createTunnelCreatorState(
     if (mode === next) return;
     linkedPartnerIsSynthetic = false;
     mode = next;
+    if (next === "separate") workflow = "custom";
     if (
       next === "separate" &&
       activePanel === "pairing" &&
@@ -763,6 +899,7 @@ export function createTunnelCreatorState(
 
     return {
       version: TUNNEL_CREATOR_DRAFT_VERSION,
+      workflow,
       mode,
       composition,
       relationship: {
@@ -799,6 +936,9 @@ export function createTunnelCreatorState(
   }
 
   return {
+    get workflow() {
+      return workflow;
+    },
     get mode() {
       return mode;
     },
@@ -875,13 +1015,15 @@ export function createTunnelCreatorState(
     },
     get canAddPerformer() {
       return (
-        slots.length < MAX_AUTHORED_TUNNEL_PERFORMERS &&
+        slots.length < MAX_INTERACTIVE_TUNNEL_PERFORMERS &&
         slots.length < imageCount(formation)
       );
     },
     get addPerformerBlockedReason() {
-      if (slots.length >= MAX_AUTHORED_TUNNEL_PERFORMERS) {
-        return "Tunnel casts can contain up to eight authored performers.";
+      if (slots.length >= MAX_INTERACTIVE_TUNNEL_PERFORMERS) {
+        return slots.length > MAX_INTERACTIVE_TUNNEL_PERFORMERS
+          ? `${slots.length} legacy performers are preserved. New Tunnel casts use up to four.`
+          : "Tunnel casts can contain up to four authored performers.";
       }
       if (slots.length >= imageCount(formation)) {
         return `Increase the formation above ${imageCount(formation)} instances before adding another performer.`;
@@ -933,11 +1075,12 @@ export function createTunnelCreatorState(
     canMovePerformer,
     selectPerformer(targetId: string) {
       if (!slots.some((slot) => slot.id === targetId)) return false;
-      selectedPerformerId =
-        selectedPerformerId === targetId ? null : targetId;
+      selectedPerformerId = selectedPerformerId === targetId ? null : targetId;
       return true;
     },
     addPerformer,
+    setPerformerCount,
+    setWorkflow,
     removePerformer,
     movePerformer,
     setPerformerSource,

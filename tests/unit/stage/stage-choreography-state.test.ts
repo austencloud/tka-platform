@@ -52,6 +52,66 @@ describe("stage choreography state", () => {
     state.destroy();
   });
 
+  it("seeds an exact six-person circle from the guided Studio start", () => {
+    const state = createStageChoreographyState();
+
+    state.applyStudioStarter({
+      startingMaterial: "recommended",
+      performerCount: 6,
+      formation: "circle",
+      environmentId: SceneEnvironmentId.COSMIC,
+      prop: PropType.FAN,
+    });
+
+    expect(state.choreography.performers).toHaveLength(6);
+    expect(state.choreography.formations).toHaveLength(1);
+    expect(state.choreography.formations[0]?.presetId).toBe("circle");
+    expect(
+      Object.keys(state.choreography.formations[0]?.spots ?? {})
+    ).toHaveLength(6);
+    expect(
+      Object.values(state.choreography.formations[0]?.spots ?? {}).every(
+        (spot) => Number.isFinite(spot.facingAngle)
+      )
+    ).toBe(true);
+    expect(state.studioProject.version).toBe(STUDIO_PROJECT_VERSION);
+    expect(state.studioProject.stage).toBe(state.choreography);
+    state.destroy();
+  });
+
+  it("authors relational facing for duo presets and clears it for a line", () => {
+    const faceToFace = generatePresetPositions("facing-each-other", 2, 10, 8);
+    const backToBack = generatePresetPositions("back-to-back", 2, 10, 8);
+    const sideBySide = generatePresetPositions("side-by-side", 2, 10, 8);
+
+    expect(faceToFace.map((spot) => spot.facingAngle)).toEqual([Math.PI, 0]);
+    expect(backToBack.map((spot) => spot.facingAngle)).toEqual([0, Math.PI]);
+    expect(sideBySide.every((spot) => spot.facingAngle === undefined)).toBe(
+      true
+    );
+
+    const state = createStageChoreographyState();
+    state.applyStudioStarter({
+      startingMaterial: "recommended",
+      performerCount: 2,
+      formation: "facing-each-other",
+      environmentId: SceneEnvironmentId.EMBER,
+      prop: PropType.STAFF,
+    });
+    const opening = state.choreography.formations[0]!;
+    expect(
+      Object.values(opening.spots).map((spot) => spot.facingAngle)
+    ).toEqual([Math.PI, 0]);
+
+    state.applyPresetToFormation(opening.id, "side-by-side");
+    expect(
+      Object.values(opening.spots).every(
+        (spot) => spot.facingAngle === undefined
+      )
+    ).toBe(true);
+    state.destroy();
+  });
+
   it("creates isolated Stage documents holding one lane across the show", () => {
     const first = createStageChoreographyState();
     const second = createStageChoreographyState();
@@ -67,6 +127,40 @@ describe("stage choreography state", () => {
 
     first.destroy();
     second.destroy();
+  });
+
+  it("removes a performer by identity and restores the whole row with one undo", () => {
+    const state = createStageChoreographyState();
+    const [performerA, performerB, performerC] = state.choreography.performers;
+    const before = JSON.parse(JSON.stringify(state.choreography));
+
+    expect(state.removePerformers([performerB!.id])).toBe(true);
+    expect(
+      state.choreography.performers.map((performer) => performer.id)
+    ).toEqual([performerA!.id, performerC!.id]);
+    expect(
+      state.choreography.performers.map((performer) => performer.label)
+    ).toEqual(["A", "B"]);
+    for (const formation of state.choreography.formations) {
+      expect(formation.spots[performerB!.id]).toBeUndefined();
+      expect(formation.spots[performerC!.id]).toBeDefined();
+    }
+
+    state.undo();
+    expect(state.choreography).toEqual(before);
+    state.destroy();
+  });
+
+  it("refuses to delete the final performer", () => {
+    const state = createStageChoreographyState();
+    const allIds = state.choreography.performers.map(
+      (performer) => performer.id
+    );
+
+    expect(state.removePerformers(allIds)).toBe(false);
+    expect(state.choreography.performers).toHaveLength(3);
+    expect(state.canUndo).toBe(false);
+    state.destroy();
   });
 
   it("adds a library sequence to one performer without changing other lanes", () => {
@@ -126,6 +220,31 @@ describe("stage choreography state", () => {
         (clip) => clip.id === target.id
       )
     ).toBe(true);
+    state.destroy();
+  });
+
+  it("resets one custom Floor trip to inherited timing and undoes it", () => {
+    const state = createStageChoreographyState();
+    const performer = state.choreography.performers[0]!;
+    const destination = state.choreography.formations[1]!;
+
+    state.setPerformerTravelStepCount(destination.id, performer.id, 6);
+    const authored = JSON.parse(
+      JSON.stringify(destination.spots[performer.id]!.travel)
+    );
+    expect(authored).toBeDefined();
+
+    expect(state.resetPerformerTravelTiming(destination.id, performer.id)).toBe(
+      true
+    );
+    expect(
+      state.choreography.formations[1]!.spots[performer.id]!.travel
+    ).toBeUndefined();
+
+    state.undo();
+    expect(
+      state.choreography.formations[1]!.spots[performer.id]!.travel
+    ).toEqual(authored);
     state.destroy();
   });
 
@@ -200,7 +319,9 @@ describe("stage choreography state", () => {
     const arrived = at(64);
     const downstageIndex = held.reduce(
       (nearest, frame, index) =>
-        frame.stagePosition.z < held[nearest]!.stagePosition.z ? index : nearest,
+        frame.stagePosition.z < held[nearest]!.stagePosition.z
+          ? index
+          : nearest,
       0
     );
 
@@ -259,9 +380,7 @@ describe("stage choreography state", () => {
     expect(
       state.choreography.formations.map((formation) => formation.atBeat)
     ).toEqual([0, 12, 64]);
-    expect(
-      state.choreography.formations[1]!.transitionBeats
-    ).toBe(12);
+    expect(state.choreography.formations[1]!.transitionBeats).toBe(12);
     expect(stagingAt(24)).not.toEqual(beforeMove);
     state.destroy();
   });
@@ -318,6 +437,36 @@ describe("stage choreography state", () => {
         (candidate) => candidate.id === formation!.id
       )?.transitionBeats
     ).toBe(12);
+    state.destroy();
+  });
+
+  it("authors and undoes one performer's Floor timing without moving the set", () => {
+    const state = createStageChoreographyState();
+    const performer = state.choreography.performers[0]!;
+    const destination = state.choreography.formations[1]!;
+    const originalSetBeat = destination.atBeat;
+
+    state.beginDrag();
+    state.updatePerformerTravelTiming(destination.id, performer.id, 20, 30);
+    state.setPerformerTravelStepCount(destination.id, performer.id, 8);
+
+    expect(
+      state.choreography.formations[1]!.spots[performer.id]!.travel
+    ).toEqual({
+      departureBeat: 20,
+      arrivalBeat: 30,
+      stepCount: 8,
+    });
+    expect(destination.atBeat).toBe(originalSetBeat);
+
+    state.undo();
+    expect(
+      state.choreography.formations[1]!.spots[performer.id]!.travel
+    ).toEqual({ departureBeat: 20, arrivalBeat: 30 });
+    state.undo();
+    expect(
+      state.choreography.formations[1]!.spots[performer.id]!.travel
+    ).toBeUndefined();
     state.destroy();
   });
 

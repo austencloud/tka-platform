@@ -74,21 +74,10 @@
     exposeOnWindow = true,
   }: Props = $props();
 
-  const { camera, renderStage } = useThrelte();
-
-  /**
-   * The scene, reached by climbing out of the camera.
-   *
-   * `useThrelte().scene.current` is null inside a useTask callback: the
-   * reference only resolves in Svelte's reactive contexts, and the frame loop
-   * is not one. `camera.current` does resolve there, and the camera is in the
-   * scene, so the top of its parent chain is the scene.
-   */
-  function sceneRoot(): Object3D | null {
-    let node: Object3D | null = camera.current ?? null;
-    while (node?.parent) node = node.parent;
-    return node;
-  }
+  // In Threlte 8, useThrelte() returns `scene` as the Scene object itself —
+  // only camera/dpr/size are `.current` stores — so it is usable everywhere,
+  // including inside useTask callbacks.
+  const { scene, renderStage } = useThrelte();
 
   const recorder = new GaitRecorder(capacity);
   let avatars: RiggedAvatar[] = [];
@@ -115,9 +104,7 @@
   });
 
   function rescan(): void {
-    const root = sceneRoot();
-    if (!root) return;
-    avatars = collectRiggedAvatars(root);
+    avatars = collectRiggedAvatars(scene);
     recorder.retain(avatars.map((avatar) => avatar.id));
   }
 
@@ -187,8 +174,7 @@
       // scene with no bones, and a rig whose bones are named something the
       // alias table has never heard of are three different problems.
       debug: () => {
-        const root = sceneRoot();
-        if (!root) return { scene: null };
+        const root = scene;
         let objects = 0;
         let bones = 0;
         const boneNames: string[] = [];

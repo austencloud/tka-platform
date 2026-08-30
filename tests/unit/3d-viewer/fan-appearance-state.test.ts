@@ -50,4 +50,10 @@ describe("fan appearance state", () => {
     expect(propFinishState.fanFrameColor).toBe("white");
     expect(propFinishState.fanCover).toBe("covered");
   });
+
+  it("stores the Lotus frame as an independent physical build", () => {
+    propFinishState.setFanBuild("lotus");
+    expect(propFinishState.fanBuild).toBe("lotus");
+    expect(propFinishState.build.fanBuild).toBe("lotus");
+  });
 });

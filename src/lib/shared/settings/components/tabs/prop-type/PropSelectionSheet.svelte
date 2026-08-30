@@ -13,6 +13,8 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
+  import { growFade } from "$lib/shared/transitions/motion";
   import BentoPropGrid from "./BentoPropGrid.svelte";
   import type { PropChiralitySeam } from "./prop-chirality-seam";
   import CatDogToggle from "./CatDogToggle.svelte";
@@ -25,7 +27,7 @@
     onSelect,
     showTabs = false,
     activeTab = $bindable<"blue" | "red">("blue"),
-    autoClose = true,
+    onOpenChange,
     showCatDogToggle = false,
     catDogEnabled = false,
     onCatDogToggle,
@@ -40,8 +42,8 @@
     showTabs?: boolean;
     /** Active tab when showTabs is true */
     activeTab?: "blue" | "red";
-    /** Auto-close after selection. Set false when parent manages closing (e.g. cat/dog flow). */
-    autoClose?: boolean;
+    /** Reports drawer dismissal when the owner does not use two-way binding. */
+    onOpenChange?: (open: boolean) => void;
     /** Show a cat/dog mode toggle in the drawer header */
     showCatDogToggle?: boolean;
     /** Current cat/dog mode state (read by toggle) */
@@ -77,13 +79,19 @@
 
   const placement = $derived(isSideBySide ? "right" : "bottom");
 
+  function setOpen(open: boolean) {
+    if (isOpen === open) return;
+    isOpen = open;
+    onOpenChange?.(open);
+  }
+
   function handlePropSelect(propType: PropType) {
     const hapticService = getHapticFeedback();
     hapticService?.trigger("selection");
+    // Selection updates the live prop preview while the picker stays available
+    // for comparison. Closing is always a separate action: backdrop, X,
+    // Escape, or drag-dismiss.
     onSelect(propType);
-    if (autoClose) {
-      isOpen = false;
-    }
   }
 
   function handleTabChange(tab: "blue" | "red") {
@@ -95,7 +103,7 @@
   function handleClose() {
     const hapticService = getHapticFeedback();
     hapticService?.trigger("selection");
-    isOpen = false;
+    setOpen(false);
   }
 </script>
 
@@ -109,54 +117,56 @@
   ariaLabel={title}
   class="prop-selection-drawer"
   onOpenChange={(open) => {
-    if (!open) isOpen = false;
+    if (!open) setOpen(false);
   }}
 >
   <div class="sheet-content">
-    <!-- Explicit close affordance in addition to the drag handle / backdrop -->
-    <button
-      type="button"
-      class="close-button"
-      onclick={handleClose}
-      aria-label="Close prop picker"
-    >
-      <i class="fas fa-times" aria-hidden="true"></i>
-    </button>
+    <DrawerHeader
+      {title}
+      subtitle="Pick a prop or open a family to choose its style."
+      onClose={handleClose}
+    />
 
-    <!-- Header row: cat/dog toggle when enabled -->
-    {#if showCatDogToggle}
-      <div class="drawer-header-row">
-        <CatDogToggle catDogMode={catDogEnabled} onToggle={() => onCatDogToggle?.()} />
-      </div>
-    {/if}
+    {#if showCatDogToggle || showTabs}
+      <div class="picker-toolbar">
+        {#if showCatDogToggle}
+          <CatDogToggle
+            catDogMode={catDogEnabled}
+            onToggle={() => onCatDogToggle?.()}
+          />
+        {/if}
 
-    <!-- Blue/Red tabs for cat/dog mode -->
-    {#if showTabs}
-      <div class="segment-wrapper">
-        <div class="segment-control" role="tablist" aria-label="Prop hand selection">
-          <button
-            type="button"
-            role="tab"
-            class="segment-btn"
-            class:active={activeTab === "blue"}
-            aria-selected={activeTab === "blue"}
-            onclick={() => handleTabChange("blue")}
+        {#if showTabs}
+          <div
+            class="segment-control"
+            role="tablist"
+            aria-label="Prop hand selection"
+            transition:growFade={{ axis: "y" }}
           >
-            <span class="color-dot blue" aria-hidden="true"></span>
-            Blue
-          </button>
-          <button
-            type="button"
-            role="tab"
-            class="segment-btn"
-            class:active={activeTab === "red"}
-            aria-selected={activeTab === "red"}
-            onclick={() => handleTabChange("red")}
-          >
-            <span class="color-dot red" aria-hidden="true"></span>
-            Red
-          </button>
-        </div>
+            <button
+              type="button"
+              role="tab"
+              class="segment-btn"
+              class:active={activeTab === "blue"}
+              aria-selected={activeTab === "blue"}
+              onclick={() => handleTabChange("blue")}
+            >
+              <span class="color-dot blue" aria-hidden="true"></span>
+              Blue
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="segment-btn"
+              class:active={activeTab === "red"}
+              aria-selected={activeTab === "red"}
+              onclick={() => handleTabChange("red")}
+            >
+              <span class="color-dot red" aria-hidden="true"></span>
+              Red
+            </button>
+          </div>
+        {/if}
       </div>
     {/if}
 
@@ -188,7 +198,8 @@
     /* left:0/right:0 match the Drawer bottom defaults — dropped. */
     margin-left: auto;
     margin-right: auto;
-    border-radius: var(--sheet-radius-large, 20px) var(--sheet-radius-large, 20px) 0 0;
+    border-radius: var(--sheet-radius-large, 20px)
+      var(--sheet-radius-large, 20px) 0 0;
   }
 
   /* Desktop side drawer: full-height right panel (matches the inbox/messages
@@ -199,6 +210,19 @@
     --sheet-width: min(480px, 92vw);
   }
 
+  :global(.prop-selection-drawer) {
+    /* Theme panel colors are intentionally translucent on animated canvases.
+       A picker needs an opaque reading surface, so keep the active theme wash
+       while painting it over the shared solid drawer floor. */
+    --sheet-bg:
+      linear-gradient(
+        var(--theme-panel-bg, rgb(15, 15, 20)),
+        var(--theme-panel-bg, rgb(15, 15, 20))
+      ),
+      var(--sheet-bg-solid, rgb(15, 15, 20));
+    --sheet-filter: none;
+  }
+
   /* Content - fills drawer */
   .sheet-content {
     position: relative;
@@ -206,67 +230,16 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    padding: 8px;
+    padding: 0;
   }
 
-  /* Explicit X close — top-right, sits above the grid */
-  .close-button {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: 2;
+  .picker-toolbar {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: var(--min-touch-target, 44px);
-    height: var(--min-touch-target, 44px);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 50%;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    font-size: 18px;
-    cursor: pointer;
-    transition: all var(--duration-fast, 150ms) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .close-button:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
-    color: var(--theme-text, white);
-  }
-
-  .close-button:active {
-    transform: scale(0.92);
-  }
-
-  .close-button:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .close-button {
-      transition: none;
-    }
-    .close-button:active {
-      transform: none;
-    }
-  }
-
-  /* Header row with cat/dog toggle */
-  .drawer-header-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px 8px 12px;
-    flex-shrink: 0;
-  }
-
-  /* Segmented control - compact centered pill */
-  .segment-wrapper {
-    display: flex;
-    justify-content: center;
-    padding: 4px 8px 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 18px 4px;
     flex-shrink: 0;
   }
 
@@ -295,12 +268,17 @@
     cursor: pointer;
     transition: all var(--duration-fast, 150ms) ease;
     min-height: 36px;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     -webkit-tap-highlight-color: transparent;
   }
 
   .segment-btn:hover {
-    background: color-mix(in srgb, var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08)) 50%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08)) 50%,
+      transparent
+    );
     color: var(--theme-text, white);
   }
 

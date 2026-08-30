@@ -6,6 +6,7 @@
     getSelectedFamilyChoices,
   } from "$lib/shared/community/domain/profile-prop-catalog";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { growFade } from "$lib/shared/transitions/motion";
   import PropFamilyCard from "./PropFamilyCard.svelte";
   import PropVariantPicker from "./PropVariantPicker.svelte";
 
@@ -46,17 +47,20 @@
   </div>
 
   {#if activeFamilyInfo && activeFamilyInfo.choices.length > 1}
-    <PropVariantPicker
-      family={activeFamilyInfo}
-      {selectedProps}
-      {disabled}
-      ontoggle={ontoggleskill}
-    />
+    <div transition:growFade={{ axis: "y" }}>
+      <PropVariantPicker
+        family={activeFamilyInfo}
+        {selectedProps}
+        {disabled}
+        ontoggle={ontoggleskill}
+      />
+    </div>
   {/if}
 </div>
 
 <style>
   .family-picker {
+    container-type: inline-size;
     display: flex;
     flex-direction: column;
     gap: 0.625rem;
@@ -65,11 +69,17 @@
 
   .family-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.625rem;
   }
 
-  @container (min-width: 50rem) {
+  @container (min-width: 36rem) {
+    .family-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @container (min-width: 52rem) {
     .family-grid {
       grid-template-columns: repeat(5, minmax(0, 1fr));
     }

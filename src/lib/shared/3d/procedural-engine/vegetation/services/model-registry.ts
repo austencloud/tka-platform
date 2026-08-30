@@ -13,6 +13,7 @@ import {
   type Material,
 } from "three";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { attachGltfDecoders } from "../../../scene-boot/gltf-decoders";
 
 export interface CachedModel {
   geometry: BufferGeometry;
@@ -53,6 +54,7 @@ export class ModelRegistry {
 
   constructor() {
     this.loader = new GLTFLoader();
+    attachGltfDecoders(this.loader);
   }
 
 

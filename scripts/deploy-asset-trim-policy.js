@@ -3,6 +3,14 @@ export const DEPLOY_DIRECTORY_FILE_ALLOWLISTS = Object.freeze({
   "textures/autumn-floor": Object.freeze(["ground-detail-modulation.ktx2"]),
 });
 
+/** Local-only assets that must never survive into a deploy artifact. */
+export const DEPLOY_RESTRICTED_FILES = Object.freeze([
+  // The free MetaPerson export is licensed for evaluation. Local development
+  // may serve it from static/, but a build launched on that machine cannot
+  // publish the GLB.
+  "models/avatars/bakeoff/personal-metaperson.glb",
+]);
+
 /**
  * Return every directory entry that is not part of its runtime contract.
  *

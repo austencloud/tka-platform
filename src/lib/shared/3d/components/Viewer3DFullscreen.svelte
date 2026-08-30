@@ -20,6 +20,7 @@
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import SceneChromeButton from "./controls/SceneChromeButton.svelte";
+  import { warmSelectedSceneAssets } from "../scene-boot/scene-prefetch";
 
   // Canonical effects config - single source of truth for both 2D canvas
   // and 3D viewer effect parameters. One-time migration from the old VM
@@ -58,6 +59,8 @@
     exportBusy?: boolean;
     /** Keep the environment and camera visible without a loaded sequence. */
     renderEmptyScene?: boolean;
+    /** Keep reserved rigs mounted while rendering only this many performers. */
+    visiblePerformerCount?: number;
     /** Resolved per-performer step for hosts whose lanes run independent clocks. */
     performerSteps?: readonly (number | null | undefined)[] | null;
     /** Host world geometry rendered in the performer coordinate frame. */
@@ -81,6 +84,12 @@
     sceneControlsLeftOffset?: string;
     /** Hosts whose artifact is a document, not a look, turn saving off. */
     allowSaveScene?: boolean;
+    /**
+     * Hosts can temporarily quiet every editing affordance while the canvas
+     * remains mounted. The Stage starter uses this during its empty-stage
+     * setup so the user meets one decision at a time.
+     */
+    showSceneChrome?: boolean;
   }
 
   let {
@@ -105,6 +114,7 @@
     onExport,
     exportBusy = false,
     renderEmptyScene = false,
+    visiblePerformerCount,
     performerSteps = null,
     worldChildren,
     hudActions,
@@ -113,6 +123,7 @@
     sceneControlsBottomOffset,
     sceneControlsLeftOffset,
     allowSaveScene = true,
+    showSceneChrome = true,
   }: Props = $props();
 
   let hostEl = $state<HTMLElement | null>(null);
@@ -129,12 +140,16 @@
     reservedWidth: 0,
   });
   const reservedSceneWidth = $derived(
-    immersive ? 0 : sceneControlLayout.reservedWidth
+    immersive || !showSceneChrome ? 0 : sceneControlLayout.reservedWidth
   );
 
   // The canvas is the product on this route. Controls and notation are useful
   // once it is visible, but neither should hold the first scene frame hostage.
   onMount(() => {
+    // Shared decoders and the selected environment's models, warmed on idle so
+    // a scene switch inside this surface reads them from cache.
+    warmSelectedSceneAssets();
+
     let active = true;
     void import("./controls/SceneControlWorkspace.svelte").then(
       ({ default: component }) => {
@@ -162,7 +177,12 @@
   bind:this={hostEl}
   onclick={immersive ? () => onToggleImmersive?.(hostEl) : undefined}
 >
-  <div class="viewer-hud" class:hidden={immersive}>
+  <div
+    class="viewer-hud"
+    class:hidden={immersive || !showSceneChrome}
+    aria-hidden={immersive || !showSceneChrome ? true : undefined}
+    inert={immersive || !showSceneChrome ? true : undefined}
+  >
     {#if word && WordGlyph}
       <span class="word-label"><WordGlyph {word} height={14} darkMode /></span>
     {/if}
@@ -243,6 +263,7 @@
       {onPlaybackToggle}
       {onProgressBarSeek}
       {renderEmptyScene}
+      {visiblePerformerCount}
       {performerSteps}
       {worldChildren}
       {stageExtent}
@@ -258,13 +279,16 @@
   <!-- The standalone viewer uses the same adaptive scene-control owner as the
        embedded viewer. Sequence Viewer chrome is not involved. -->
   {#if SceneControls}
-    <div class="scene-controls" class:hidden={immersive}>
+    <div
+      class="scene-controls"
+      class:hidden={immersive || !showSceneChrome}
+      aria-hidden={immersive || !showSceneChrome ? true : undefined}
+      inert={immersive || !showSceneChrome ? true : undefined}
+    >
       <SceneControls
         {bpm}
         topOffset="76px"
-        topLeftOffset={word
-          ? undefined
-          : "max(1rem, env(safe-area-inset-top))"}
+        topLeftOffset={word ? undefined : "max(1rem, env(safe-area-inset-top))"}
         bottomOffset={sceneControlsBottomOffset}
         leftOffset={sceneControlsLeftOffset}
         {allowSaveScene}
@@ -298,6 +322,9 @@
     inset: 0;
     z-index: 3;
     pointer-events: none;
+    opacity: 1;
+    transition: opacity var(--duration-normal, 200ms)
+      var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
   }
 
   .word-label {
@@ -356,6 +383,9 @@
     inset: 0;
     z-index: 3;
     pointer-events: none;
+    opacity: 1;
+    transition: opacity var(--duration-normal, 200ms)
+      var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
   }
 
   .host-overlay > :global(*) {
@@ -367,13 +397,15 @@
   .scene-controls.hidden {
     opacity: 0;
     pointer-events: none;
-    transition: opacity 180ms ease;
   }
   .scene-controls {
     position: absolute;
     inset: 0;
     z-index: 4;
     pointer-events: none;
+    opacity: 1;
+    transition: opacity var(--duration-normal, 200ms)
+      var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
   }
   .scene-controls :global(button),
   .scene-controls :global([role="button"]),

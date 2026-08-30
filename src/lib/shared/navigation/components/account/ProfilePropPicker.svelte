@@ -3,6 +3,7 @@
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getProfilePropLabel } from "$lib/shared/community/domain/profile-prop-catalog";
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
+  import PropSelectionButton from "$lib/shared/settings/components/tabs/prop-type/PropSelectionButton.svelte";
 
   interface Props {
     selectedProps: PropType[];
@@ -21,142 +22,49 @@
 >
   {#each selectedProps as prop (prop)}
     {@const label = getProfilePropLabel(prop)}
-    <button
-      type="button"
-      class="profile-prop-card"
-      class:selected={value === prop}
-      onclick={() => onselect(prop)}
+    <PropSelectionButton
+      {label}
+      selected={value === prop}
+      actionLabel={`Feature ${label} on your profile`}
       {disabled}
-      aria-pressed={value === prop}
-      aria-label={`Feature ${label} on your profile`}
+      onpress={() => onselect(prop)}
     >
-      {#if value === prop}
-        <span class="selection-mark" aria-hidden="true">
-          <i class="fas fa-check"></i>
-        </span>
-      {/if}
-      <span class="profile-prop-image" aria-hidden="true">
-        <PropCompositionPreview
-          propType={prop}
-          size={92}
-          useSavedOverrides={false}
-        />
-      </span>
-      <span class="profile-prop-label">{label}</span>
-    </button>
+      {#snippet art()}
+        <PropCompositionPreview propType={prop} neutral />
+      {/snippet}
+    </PropSelectionButton>
   {/each}
 
-  <button
-    type="button"
-    class="profile-prop-card no-preference"
-    class:selected={value === null}
-    onclick={() => onselect(null)}
+  <PropSelectionButton
+    label="No featured skill"
+    selected={value === null}
+    actionLabel="Do not feature a prop skill"
     {disabled}
-    aria-pressed={value === null}
+    onpress={() => onselect(null)}
   >
-    {#if value === null}
-      <span class="selection-mark" aria-hidden="true">
-        <i class="fas fa-check"></i>
+    {#snippet art()}
+      <span class="prop-selection-art no-preference-icon">
+        <i class="fas fa-layer-group"></i>
       </span>
-    {/if}
-    <span class="no-preference-icon" aria-hidden="true">
-      <i class="fas fa-layer-group"></i>
-    </span>
-    <span class="profile-prop-label">No featured skill</span>
-  </button>
+    {/snippet}
+  </PropSelectionButton>
 </div>
 
 <style>
   .profile-prop-picker {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(7.5rem, 9rem));
+    grid-template-columns: repeat(auto-fit, minmax(6.5rem, 7.75rem));
     justify-content: center;
     gap: 0.625rem;
     padding: 0.5rem;
   }
 
-  .profile-prop-card {
-    position: relative;
-    display: flex;
-    min-height: 7rem;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    padding: 0.7rem 0.6rem;
-    color: var(--theme-text, white);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 0.85rem;
-    cursor: pointer;
-    transition:
-      background var(--duration-fast, 150ms) ease,
-      border-color var(--duration-fast, 150ms) ease,
-      box-shadow var(--duration-fast, 150ms) ease;
-  }
-
-  .profile-prop-card:hover:not(:disabled) {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.07));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-  }
-
-  .profile-prop-card.selected {
-    border-color: var(--theme-accent, #6366f1);
-    background: color-mix(in srgb, var(--theme-accent) 14%, transparent);
-    box-shadow: 0 0 0 1px var(--theme-accent, #6366f1);
-  }
-
-  .profile-prop-card:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, white);
-    outline-offset: 2px;
-  }
-
-  .profile-prop-card:disabled {
-    opacity: 0.58;
-    cursor: wait;
-  }
-
-  .selection-mark {
-    position: absolute;
-    top: 0.7rem;
-    right: 0.7rem;
-    color: var(--theme-accent, #6366f1);
-  }
-
-  .profile-prop-image,
   .no-preference-icon {
-    width: 3.5rem;
-    height: 3.5rem;
-  }
-
-  .profile-prop-image {
     display: grid;
-    place-items: center;
-  }
-
-  .profile-prop-image :global(.prop-composition-preview) {
     width: 100%;
     height: 100%;
-  }
-
-  .no-preference-icon {
-    display: grid;
     place-items: center;
-    border-radius: 50%;
     color: var(--theme-accent, #6366f1);
-    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
-    font-size: 1.5rem;
-  }
-
-  .profile-prop-label {
-    font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 700;
-    text-align: center;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .profile-prop-card {
-      transition: none;
-    }
+    font-size: clamp(1.5rem, 8cqi, 2.5rem);
   }
 </style>

@@ -41,10 +41,14 @@ describe("filterRealizations", () => {
     const r = filterRealizations(
       [edge({ letter: "J", timing: "together", direction: "opposite" })],
       "pro",
-      "pro",
+      "pro"
     );
     expect(r).toHaveLength(1);
-    expect(r[0]).toMatchObject({ mode: "TO", modeLabel: "Together · Opp", letter: "J" });
+    expect(r[0]).toMatchObject({
+      mode: "TO",
+      modeLabel: "Together · Opp",
+      letter: "J",
+    });
   });
 
   it("excludes edges whose motion types don't match the cell styles", () => {
@@ -52,6 +56,8 @@ describe("filterRealizations", () => {
       edge({ letter: "A", blueMotionType: "pro", redMotionType: "pro" }),
       edge({ letter: "Γ", blueMotionType: "anti", redMotionType: "anti" }),
     ];
-    expect(filterRealizations(edges, "anti", "anti").map((x) => x.letter)).toEqual(["Γ"]);
+    expect(
+      filterRealizations(edges, "anti", "anti").map((x) => x.letter)
+    ).toEqual(["Γ"]);
   });
 });

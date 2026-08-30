@@ -24,32 +24,42 @@
     an already-arrived container, which reads as a broken transition rather than
     a transition. Turn this on when the layers differ by more than a hair.
 
+  Two motion treatments:
+  - `motion="fade"` is the ordinary same-place crossfade.
+  - `mode="swap" motion="step" direction={1 | -1}` is the canonical sequential
+    decision-screen transition. Copy exits before the next copy becomes
+    readable, while a short shared directional drift communicates forward/back.
+
   Both are the same no-layout-shift guarantee as the ghost-sizer idiom
   (PipelineEditorDock `.dock-title`), generalized to transitioning content.
 
   REMOUNT — read before reaching for this on heavy content: `{#key}` REMOUNTS
   children on every change. Cheap for icons/labels/light panels; wasteful (and
   state-losing: scroll, focus, in-progress work) for canvases, large pictograph
-  renders, or stateful heavy panels. Those route through the dual-source
-  CellRenderer (`src/lib/shared/sequence-viewer/components/CellRenderer.svelte` +
-  `crossfader-state.svelte.ts`) so nothing remounts — solved, perf-tuned,
-  dark-mode aware. The remount cost (not the sizing) is the carve-out line.
+  renders, or stateful heavy panels. Those route through
+  `DualSourceCrossfade.svelte`, which keeps two host-prepared sources mounted.
+  CellRenderer retains its specialized image/bitmap dual-source path. The
+  remount cost (not the sizing) is the carve-out line.
 
   Boundary + rationale: docs/architecture/crossfade-primitive.md
   Routing rule: .claude/rules/crossfade-primitive.md
   Spec: docs/superpowers/specs/active/2026-06-30-crossfade-consolidation-design.md
 -->
 <script lang="ts">
-  import { fade } from "svelte/transition";
+  import { fade, type TransitionConfig } from "svelte/transition";
   import { DURATION } from "$lib/shared/transitions/transitions";
+  import { flyFade } from "$lib/shared/transitions/motion";
   import type { Snippet } from "svelte";
 
   type Mode = "crossfade" | "swap";
+  type Motion = "fade" | "step";
 
   let {
     key,
     duration = DURATION.normal,
     mode = "crossfade",
+    motion = "fade",
+    direction = 1,
     fill = false,
     animateHeight = false,
     delay = 0,
@@ -61,6 +71,10 @@
     duration?: number;
     /** "crossfade" overlaps in+out; "swap" runs out fully, then in. */
     mode?: Mode;
+    /** "step" adds a short direction-aware drift for wizard-like navigation. */
+    motion?: Motion;
+    /** Forward is 1, back is -1. Only used by `motion="step"`. */
+    direction?: -1 | 1;
     /** Layers fill a sized parent (absolute/inset:0) instead of hugging content. */
     fill?: boolean;
     /**
@@ -78,7 +92,7 @@
 
   let reducedMotion = $state(
     typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
 
   $effect(() => {
@@ -98,10 +112,37 @@
   // (delay = out duration), mirroring CellRenderer's sequential swap timing.
   // Crossfade mode uses the explicit `delay` prop (0 = pure overlap).
   const inDelay = $derived(
-    reducedMotion ? 0 : mode === "swap" ? duration : delay,
+    reducedMotion ? 0 : mode === "swap" ? duration : delay
   );
 
   const heightEnabled = $derived(animateHeight && !fill);
+
+  // A step should tell the eye where the next decision came from without
+  // turning the modal into a carousel. The sequential swap keeps old and new
+  // copy from becoming readable at the same time; this small drift carries
+  // direction while the shared helper owns easing and reduced motion.
+  const STEP_DRIFT_PX = 12;
+
+  function enterLayer(node: Element): TransitionConfig {
+    return motion === "step"
+      ? flyFade(node as HTMLElement, {
+          duration: effDuration,
+          delay: inDelay,
+          x: direction * STEP_DRIFT_PX,
+          y: 0,
+        })
+      : fade(node, { duration: effDuration, delay: inDelay });
+  }
+
+  function leaveLayer(node: Element): TransitionConfig {
+    return motion === "step"
+      ? flyFade(node as HTMLElement, {
+          duration: effDuration,
+          x: -direction * STEP_DRIFT_PX,
+          y: 0,
+        })
+      : fade(node, { duration: effDuration });
+  }
 
   // The box is driven off the INCOMING layer's natural height. The outgoing
   // layer shares the same grid cell but is pinned to the top (`align-self:
@@ -126,7 +167,11 @@
     const expected = Number.parseFloat(box.style.height);
     if (Number.isFinite(expected) && Math.abs(expected - target) < 0.5) return;
 
-    const from = box.getBoundingClientRect().height;
+    // Layout height must stay in the element's own coordinate space. A modal
+    // may scale its whole subtree while entering; getBoundingClientRect() then
+    // reports that temporary visual scale and freezes the box too short after
+    // the modal settles.
+    const from = box.offsetHeight;
     box.style.height = `${target}px`;
     if (!shouldAnimate || Math.abs(from - target) < 0.5) return;
 
@@ -144,13 +189,13 @@
         // fill the box would jump there and only then animate away from it.
         fill: "backwards",
         easing: HEIGHT_EASING,
-      },
+      }
     );
   }
 
   function measure(): void {
     if (!liveLayer) return;
-    applyHeight(liveLayer.getBoundingClientRect().height);
+    applyHeight(liveLayer.offsetHeight);
   }
 
   function cancelScheduledMeasure(): void {
@@ -236,12 +281,7 @@
   class:animate-height={heightEnabled}
 >
   {#key key}
-    <div
-      class="layer"
-      use:trackLayer
-      in:fade={{ duration: effDuration, delay: inDelay }}
-      out:fade={{ duration: effDuration }}
-    >
+    <div class="layer" use:trackLayer in:enterLayer out:leaveLayer>
       {@render children()}
     </div>
   {/key}
@@ -282,7 +322,7 @@
      shave the glow off a tile sitting on the boundary. */
   .crossfade.animate-height {
     overflow: clip;
-    overflow-clip-margin: 0.5rem;
+    overflow-clip-margin: 1rem;
   }
   /* Both layers keep their own intrinsic height instead of stretching to the
      track, so the incoming layer measures as its natural size even while the

@@ -16,13 +16,17 @@ type MotionsMap = PictographData["motions"];
  * Step layer's absence encoding), so the hidden hand has no prop, no
  * endpoints, and no path line — a genuine solo animation, not a dimmed hand.
  */
-export function prepareMandalaClubSequence(
+export function prepareMandalaPropSequence(
   seq: SequenceData,
-  opts: { show: "blue" | "red"; pathShape: MandalaPathShape },
+  opts: {
+    show: "blue" | "red";
+    pathShape: MandalaPathShape;
+    propType?: PropType;
+  }
 ): SequenceData {
-  const { show, pathShape } = opts;
+  const { show, pathShape, propType = PropType.CLUB } = opts;
   const tag = (m: MotionData | undefined): MotionData | undefined =>
-    m ? { ...m, propType: PropType.CLUB, pathShape, isVisible: true } : undefined;
+    m ? { ...m, propType, pathShape, isVisible: true } : undefined;
   const hide = (m: MotionData | undefined): MotionData | undefined =>
     m ? { ...m, isVisible: false } : undefined;
   const soloMotions = (motions: MotionsMap): MotionsMap => ({
@@ -35,7 +39,12 @@ export function prepareMandalaClubSequence(
     d.motions ? ({ ...d, motions: soloMotions(d.motions) } as T) : d;
   return {
     ...seq,
-    startPosition: seq.startPosition ? apply(seq.startPosition) : seq.startPosition,
+    startPosition: seq.startPosition
+      ? apply(seq.startPosition)
+      : seq.startPosition,
     steps: (seq.steps ?? []).map(apply),
   } as SequenceData;
 }
+
+/** Legacy lab name retained while the Shape Matrix becomes prop-selectable. */
+export const prepareMandalaClubSequence = prepareMandalaPropSequence;
