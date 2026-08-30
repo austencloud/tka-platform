@@ -30,12 +30,7 @@
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
   type TunnelRailId =
-    | "tunnel"
-    | "props"
-    | "speed"
-    | "effects"
-    | "effort"
-    | "playback";
+    "tunnel" | "props" | "speed" | "effects" | "effort" | "playback";
 
   interface Props {
     controller: TunnelViewController;
@@ -105,7 +100,7 @@
   const tunnelRail = $derived<
     { id: TunnelRailId; icon?: string; label: string; accentColor?: string }[]
   >([
-    { id: "tunnel", icon: "fa-shapes", label: "Look" },
+    { id: "tunnel", icon: "fa-shapes", label: "Formation" },
     ...(onPropChange
       ? [{ id: "props" as const, icon: "fa-paintbrush", label: "Props" }]
       : []),
@@ -193,8 +188,6 @@
       {onSaveTunnel}
       {saveTunnelLabel}
       {onArtSettingChange}
-      {bpm}
-      {playbackMode}
     />
   {:else if id === "props"}
     <!-- Prop selection — the same BentoPropGrid the 2D Download panel uses. The
