@@ -81,6 +81,22 @@ describe("concept place registry", () => {
       },
     ]);
   });
+
+  it("keeps orientations reference-only until it has a focused lesson owner", () => {
+    const place = getConceptPlace("1.6")!;
+
+    expect(place.lessonIds).toEqual([]);
+    expect(place.guideRefs).toEqual([
+      {
+        slug: "staff-positions",
+        label: "Staff Positions",
+        coverage: "partial",
+      },
+    ]);
+    expect(place.exploration).toBeNull();
+    expect(place.practice).toEqual([]);
+    expect(place.applications).toEqual([]);
+  });
 });
 
 describe("concept place URLs", () => {
