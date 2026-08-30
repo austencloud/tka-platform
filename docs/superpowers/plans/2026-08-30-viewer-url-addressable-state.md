@@ -711,7 +711,7 @@ git commit -m "feat(viewer): fx URL slice — capture/seed with zero-write guard
 
 This is the wiring task — the one that most needs hawk-eyed review. Sub-steps:
 
-- [ ] **Step 1: Failing test for the viewer-state seam**
+- [x] **Step 1: Failing test for the viewer-state seam**
 
 ```ts
 import { describe, it, expect, vi, afterEach } from "vitest";
@@ -748,7 +748,7 @@ describe("createViewerState URL seeding", () => {
 });
 ```
 
-- [ ] **Step 2: Verify it fails, then implement the seam**
+- [x] **Step 2: Verify it fails, then implement the seam**
 
 `createViewerState(options?: { initialMode?: ViewerMode; initialSplit?: SplitConfig; persist?: boolean })`:
 - `const persist = options?.persist ?? true;`
@@ -759,7 +759,7 @@ describe("createViewerState URL seeding", () => {
 
 Run the test: PASS (4 tests).
 
-- [ ] **Step 3: Wire the session end to end (read each file before editing)**
+- [x] **Step 3: Wire the session end to end (read each file before editing)**
 
 1. **Orchestrator** creates the session once at mount:
 
@@ -827,17 +827,55 @@ onDestroy(() => urlSession.dispose());
 
 6. **ViewerSplitPane** must consume the orchestrator's effects instance (`inheritedEffectsConfig` prop at ~line 81). Verify the orchestrator actually passes it everywhere the viewer renders effects; fix any path that lets a pane construct its own persist:true instance while a session override is active (that would leak link state to disk — the exact bug class this project kills).
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Run both new test files + `npx vitest run --config tests/config/vitest.config.ts src/lib/shared/sequence-viewer` (expected: all green). Then `npm run check > /tmp/check.log 2>&1; grep -ciE "^.*error" /tmp/check.log` — expected 0 errors (one check per turn; capture once, grep many).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(viewer): URL session wiring — view + effects slices seed and live-sync" -- src/lib/shared/sequence-viewer/state/viewer-state.svelte.ts src/lib/shared/sequence-viewer/state/viewer-state.url-seed.test.ts src/lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte src/routes/sequence/[id]/SequenceViewerPage.svelte src/lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte.ts src/lib/shared/sequence-viewer/components/ViewerSplitPane.svelte src/lib/shared/sequence-viewer/services/viewer-state-persistence.ts
 ```
 
 (Adjust the pathspec to the files actually touched — commit only your own changes.)
+
+**Execution notes (deltas from the plan text):**
+
+1. **`vm` is already taken on `/sequence/[id]`, by a physical artifact.**
+   `SequenceViewerPage.svelte:137` is NOT the viewer mode the spec assumed — it
+   is the printed-card BROWSE view mode (`short-code-manager.ts:404` writes
+   `vm=hsb`; `decodeViewMode` parses it into hand-path + per-prop visibility;
+   `buildScanSequenceDestination` carries it verbatim from `/q` onto
+   `/sequence/[code]`). The two vocabularies are disjoint (no viewer mode
+   parses as a browse code and vice versa), so the plumbing is not redundant
+   and was kept. The orchestrator's session now refuses to seed from,
+   overwrite, or remove a `vm` that parses as a browse code, which prevents the
+   debounced writer from stripping printed-card state off the URL.
+   **Consequence:** a viewer opened from a printed card cannot also record its
+   viewer mode in the URL. If both are ever needed at once, rename the codec's
+   viewer-mode headline param (`VIEWER_STATE_PARAM_NAMES`, `viewer-url-state-codec.ts`)
+   — `vm` belongs to the printed cards.
+2. **`ViewerSplitPane` consumes the effects instance by CONTEXT, not a prop.**
+   There is no `inheritedEffectsConfig` prop; line ~81 reads
+   `getEffectsConfigContext()`. All three shell hosts (drawer, `/sequence`,
+   `/from/spiroanim`) mount inside `SequenceViewerOrchestrator`, which calls
+   `setEffectsConfigContext`, so its local `?? createEffectsConfigState()`
+   fallback is unreachable while a session is live. Left as-is, comment
+   strengthened.
+3. **`sequence-viewer-overlay-state.svelte.ts` was NOT touched.** Drawer opens
+   are already covered: the session reads `window.location.search` inside the
+   orchestrator, which the drawer mounts. The only overlay-state change this
+   project needs is the close-path param strip, which is Task 7.
+4. **`loadViewerMode` / `loadSplitConfig` gained an optional
+   `{ persist }`.** Both write to disk on their migration paths (legacy
+   editing-pane key, mandala retirement), which a view-only mount must not do.
+   `persist:false` makes them pure reads.
+5. **The `fx` own-link comparison happens in slice space.**
+   `isOverride("fx", ...)` receives `captureFxSlice(...)` of a throwaway
+   `persist:false` instance built from `loadPersistedEffectsConfig()`, not the
+   raw `EffectsConfig` the plan snippet passed — a raw config can never
+   deep-equal an `FxSlicePayload`, which would have made every fx link an
+   override and broken the own-link rule.
 
 ---
 
@@ -975,7 +1013,7 @@ Every Phase B task follows the same five steps: **(1) Discovery** — read the b
 - [x] Task 2 — session
 - [x] Task 3 — effects snapshot/export
 - [x] Task 4 — fx slice
-- [ ] Task 5 — view seam + wiring
+- [x] Task 5 — view seam + wiring
 - [ ] Task 6 — share captureNow
 - [ ] Task 7 — close cleanup
 - [ ] Task 8 — Phase A gate (orchestrator)
