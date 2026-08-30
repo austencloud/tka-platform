@@ -4,7 +4,9 @@ import { describe, expect, it } from "vitest";
 import type { ImportedTerrainDataV2 } from "$lib/shared/3d/procedural-engine/generation/real-terrain-zone";
 import { parseFlowFestRuntimeContract } from "../../src/routes/test/flow-fest-graybox/flow-fest-runtime-contract";
 import {
+  buildFlowFestCanopyShellGeometry,
   deriveFlowFestForestEcology,
+  FLOW_FEST_CANOPY_SHELL_TIERS,
   FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS,
   FLOW_FEST_FOREST_GRASS_ASSET,
   FLOW_FEST_FOREST_GROUND_LIFE_ASSETS,
@@ -14,6 +16,9 @@ import {
   FLOW_FEST_PLANTFACTORY_ACCENT_COUNT,
   FLOW_FEST_PLANTFACTORY_TREE_FAMILIES,
   FLOW_FEST_FOREST_TREE_ASSETS,
+  flattenFlowFestDistanceTierMaterial,
+  isFlowFestForestFoliageMaterial,
+  summarizeFlowFestForestEcologyAssets,
 } from "../../src/routes/test/flow-fest-sim/flow-fest-forest-ecology";
 import { createFlowFestCampPlan } from "../../src/routes/test/flow-fest-sim/flow-fest-camp-plan";
 
@@ -320,5 +325,352 @@ describe("Flow Fest Forest ecology integration", () => {
     });
     expect(planAligned.trees.length).toBeLessThan(baseline.trees.length);
     expect(planAligned.grass.length).toBeLessThan(baseline.grass.length);
+  });
+});
+
+interface GltfJson {
+  images?: unknown[];
+  textures?: unknown[];
+  accessors?: Array<{ count: number }>;
+  materials?: Array<{ name?: string; alphaMode?: string }>;
+  meshes?: Array<{
+    primitives: Array<{
+      material: number;
+      indices?: number;
+      attributes: Record<string, number | undefined>;
+    }>;
+  }>;
+}
+
+function readGltfJson(assetUrl: string): GltfJson {
+  const bytes = readFileSync(
+    resolve(root, "static", assetUrl.replace(/^\//, ""))
+  );
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const jsonLength = view.getUint32(12, true);
+  return JSON.parse(
+    new TextDecoder().decode(
+      new Uint8Array(bytes.buffer, bytes.byteOffset + 20, jsonLength)
+    )
+  ) as GltfJson;
+}
+
+function readGltfMaterials(
+  assetUrl: string
+): Array<{ name: string; alphaMode: string }> {
+  return (readGltfJson(assetUrl).materials ?? []).map((material) => ({
+    name: material.name ?? "",
+    alphaMode: material.alphaMode ?? "OPAQUE",
+  }));
+}
+
+describe("Flow Fest forest foliage material classification", () => {
+  it("classifies every shipped alpha-cutout canopy material as foliage", () => {
+    const inspected: string[] = [];
+    for (const assetUrl of Object.values(FLOW_FEST_FOREST_TREE_ASSETS)) {
+      for (const material of readGltfMaterials(assetUrl)) {
+        const foliage = material.alphaMode === "MASK";
+        // three.js maps glTF alphaMode MASK onto a positive alphaTest.
+        const classified = isFlowFestForestFoliageMaterial({
+          name: material.name,
+          alphaTest: foliage ? 0.35 : 0,
+        });
+        expect(
+          classified,
+          `${assetUrl} :: ${material.name} (${material.alphaMode})`
+        ).toBe(foliage);
+        inspected.push(material.name);
+      }
+    }
+    expect(inspected.length).toBeGreaterThan(20);
+    // The regression this locks: "<family>_leaves" does not contain "leaf".
+    expect(inspected).toContain("island_tree_01_leaves");
+    expect(
+      isFlowFestForestFoliageMaterial({ name: "island_tree_01_leaves" })
+    ).toBe(true);
+    expect(
+      isFlowFestForestFoliageMaterial({ name: "island_tree_01_branches" })
+    ).toBe(false);
+    expect(isFlowFestForestFoliageMaterial({ name: "tree_small_02_trunk" })).toBe(
+      false
+    );
+  });
+
+  it("keeps ground-life species on the foliage side of the grade", () => {
+    expect(
+      isFlowFestForestFoliageMaterial({ name: "damp_sedge_tussock_blades" })
+    ).toBe(true);
+    expect(
+      isFlowFestForestFoliageMaterial({ name: "woodland_hazel_shrub_card" })
+    ).toBe(true);
+  });
+});
+
+describe("Flow Fest forest ecology asset reporting", () => {
+  const entry = (
+    key: string,
+    state: "pending" | "ready" | "failed",
+    message?: string
+  ) => ({ key, url: `/models/${key}.glb`, state, message });
+
+  it("reports ready only when every asset resolved", () => {
+    expect(
+      summarizeFlowFestForestEcologyAssets([
+        entry("a", "ready"),
+        entry("b", "ready"),
+      ])
+    ).toMatchObject({ status: "ready", ready: 2, expected: 2, pending: [] });
+  });
+
+  it("distinguishes a still-loading forest from a failed one", () => {
+    expect(
+      summarizeFlowFestForestEcologyAssets([
+        entry("a", "ready"),
+        entry("b", "pending"),
+      ])
+    ).toMatchObject({ status: "loading", pending: ["b"], failed: [] });
+
+    const failed = summarizeFlowFestForestEcologyAssets([
+      entry("a", "ready"),
+      entry("b", "pending"),
+      entry("c", "failed", "404"),
+    ]);
+    expect(failed.status).toBe("failed");
+    expect(failed.failed).toEqual([
+      { key: "c", url: "/models/c.glb", message: "404" },
+    ]);
+  });
+
+  it("never reports an empty forest as ready", () => {
+    const report = summarizeFlowFestForestEcologyAssets([
+      entry("a", "failed"),
+      entry("b", "failed"),
+    ]);
+    expect(report.status).toBe("failed");
+    expect(report.ready).toBe(0);
+    expect(report.failed.every((item) => item.message.length > 0)).toBe(true);
+  });
+});
+
+describe("Flow Fest distance-tier materials", () => {
+  it("drops the cutout and the atlas so untextured canopies still render", () => {
+    const leaves = {
+      name: "island_tree_01_leaves",
+      alphaTest: 0.35,
+      transparent: false,
+      depthWrite: false,
+      map: { isTexture: true },
+      alphaMap: null,
+      roughness: 0.5,
+      needsUpdate: false,
+    };
+    expect(flattenFlowFestDistanceTierMaterial(leaves)).toBe(true);
+    expect(leaves.alphaTest).toBe(0);
+    expect(leaves.map).toBeNull();
+    expect(leaves.transparent).toBe(false);
+    expect(leaves.depthWrite).toBe(true);
+    expect(leaves.needsUpdate).toBe(true);
+  });
+
+  it("strips wood maps too, because they sample the same missing UVs", () => {
+    const wood = {
+      name: "island_tree_01_branches",
+      alphaTest: 0,
+      map: { isTexture: true },
+      roughness: 0.4,
+      needsUpdate: false,
+    };
+    expect(flattenFlowFestDistanceTierMaterial(wood)).toBe(true);
+    expect(wood.map).toBeNull();
+    expect(wood.roughness).toBe(1);
+    expect(wood.needsUpdate).toBe(true);
+  });
+
+  it("proves the distance tiers ship no UVs and no textures", () => {
+    for (const tier of ["mid", "far"] as const) {
+      for (const assetUrl of Object.values(
+        FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS[tier]
+      )) {
+        const gltf = readGltfJson(assetUrl);
+        expect(gltf.images ?? [], `${assetUrl} images`).toHaveLength(0);
+        expect(gltf.textures ?? [], `${assetUrl} textures`).toHaveLength(0);
+        const canopy = (gltf.meshes ?? [])
+          .flatMap((mesh) => mesh.primitives)
+          .filter((primitive) =>
+            (gltf.materials?.[primitive.material]?.name ?? "").includes("leaves")
+          );
+        expect(canopy.length, `${assetUrl} canopy primitives`).toBeGreaterThan(0);
+        for (const primitive of canopy) {
+          // No UVs is exactly why the borrowed cutout material erased the
+          // canopy: every fragment sampled the atlas at texel (0, 0).
+          expect(
+            primitive.attributes.TEXCOORD_0,
+            `${assetUrl} canopy UVs`
+          ).toBeUndefined();
+        }
+      }
+    }
+  });
+
+  it("keeps the near tier textured and alpha-cut", () => {
+    const gltf = readGltfJson(FLOW_FEST_FOREST_TREE_ASSETS["island-tree-01"]);
+    expect((gltf.images ?? []).length).toBeGreaterThan(0);
+    const canopy = (gltf.meshes ?? [])
+      .flatMap((mesh) => mesh.primitives)
+      .filter((primitive) =>
+        (gltf.materials?.[primitive.material]?.name ?? "").includes("leaves")
+      );
+    expect(canopy.length).toBeGreaterThan(0);
+    for (const primitive of canopy) {
+      expect(primitive.attributes.TEXCOORD_0).toBeDefined();
+    }
+  });
+});
+
+function countCanopyTriangles(assetUrl: string): number {
+  const gltf = readGltfJson(assetUrl);
+  return (gltf.meshes ?? [])
+    .flatMap((mesh) => mesh.primitives)
+    .filter((primitive) =>
+      (gltf.materials?.[primitive.material]?.name ?? "").includes("leaves")
+    )
+    .reduce((total, primitive) => {
+      const indices =
+        primitive.indices == null
+          ? undefined
+          : gltf.accessors?.[primitive.indices]?.count;
+      const positions =
+        primitive.attributes.POSITION == null
+          ? undefined
+          : gltf.accessors?.[primitive.attributes.POSITION]?.count;
+      return total + (indices ?? positions ?? 0) / 3;
+    }, 0);
+}
+
+describe("Flow Fest distance canopy shells", () => {
+  it("documents why the shipped distance canopies cannot simply be graded", () => {
+    // A leaf atlas is thousands of disconnected two-triangle cards. Mesh
+    // simplification deletes cards wholesale rather than reducing them, so the
+    // shipped mid tier keeps a fraction of the near tier's canopy and none of
+    // its coverage. Grading that material paints specks, not a tree.
+    const near = countCanopyTriangles(
+      FLOW_FEST_FOREST_TREE_ASSETS["island-tree-01"]
+    );
+    const mid = countCanopyTriangles(
+      FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["island-tree-01"]
+    );
+    const far = countCanopyTriangles(
+      FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["island-tree-01"]
+    );
+    expect(near).toBeGreaterThan(0);
+    expect(mid).toBeLessThan(near * 0.35);
+    expect(far).toBeLessThanOrEqual(mid);
+  });
+
+  it("builds a crown that fills the canopy bounds it is given", () => {
+    const bounds = {
+      min: { x: -4, y: 6, z: -4 },
+      max: { x: 4, y: 14, z: 4 },
+    };
+    const shell = buildFlowFestCanopyShellGeometry(
+      bounds,
+      "island-tree-01-mid-leaves",
+      FLOW_FEST_CANOPY_SHELL_TIERS.mid
+    );
+    const box = shell.boundingBox;
+    expect(box).toBeTruthy();
+    if (!box) return;
+    // Inside the leaf envelope, so branch tips still break the silhouette.
+    expect(box.min.x).toBeGreaterThanOrEqual(bounds.min.x);
+    expect(box.max.x).toBeLessThanOrEqual(bounds.max.x);
+    expect(box.min.y).toBeGreaterThanOrEqual(bounds.min.y);
+    expect(box.max.y).toBeLessThanOrEqual(bounds.max.y);
+    expect(box.min.z).toBeGreaterThanOrEqual(bounds.min.z);
+    expect(box.max.z).toBeLessThanOrEqual(bounds.max.z);
+    // But still a crown, not a pebble: it has to occupy most of the envelope.
+    expect(box.max.x - box.min.x).toBeGreaterThan(6);
+    expect(box.max.y - box.min.y).toBeGreaterThan(6);
+    expect(box.max.z - box.min.z).toBeGreaterThan(6);
+    shell.dispose();
+  });
+
+  it("stays cheaper than the decimated canopy it replaces", () => {
+    const bounds = { min: { x: -3, y: 4, z: -3 }, max: { x: 3, y: 10, z: 3 } };
+    const budgets = { mid: 400, far: 100 } as const;
+    for (const tier of ["mid", "far"] as const) {
+      const shell = buildFlowFestCanopyShellGeometry(
+        bounds,
+        `island-tree-01-${tier}-leaves`,
+        FLOW_FEST_CANOPY_SHELL_TIERS[tier]
+      );
+      const triangles = shell.attributes.position.count / 3;
+      expect(triangles, `${tier} shell triangles`).toBeLessThanOrEqual(
+        budgets[tier]
+      );
+      expect(
+        triangles,
+        `${tier} shell vs shipped canopy`
+      ).toBeLessThan(
+        countCanopyTriangles(FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS[tier]["island-tree-01"])
+      );
+      shell.dispose();
+    }
+  });
+
+  it("carries no UVs so the borrowed atlas is still flattened away", () => {
+    const shell = buildFlowFestCanopyShellGeometry(
+      { min: { x: -2, y: 3, z: -2 }, max: { x: 2, y: 8, z: 2 } },
+      "tree-small-02-far-leaves",
+      FLOW_FEST_CANOPY_SHELL_TIERS.far
+    );
+    expect(shell.getAttribute("uv")).toBeUndefined();
+    shell.dispose();
+  });
+
+  it("shades as a soft crown: unit normals pointing away from the crown", () => {
+    const shell = buildFlowFestCanopyShellGeometry(
+      { min: { x: -3, y: 5, z: -3 }, max: { x: 3, y: 12, z: 3 } },
+      "island-tree-02-mid-leaves",
+      FLOW_FEST_CANOPY_SHELL_TIERS.mid
+    );
+    const normals = shell.attributes.normal;
+    expect(normals.count).toBe(shell.attributes.position.count);
+    for (let index = 0; index < normals.count; index += 1) {
+      const length = Math.hypot(
+        normals.getX(index),
+        normals.getY(index),
+        normals.getZ(index)
+      );
+      expect(length).toBeCloseTo(1, 5);
+    }
+    shell.dispose();
+  });
+
+  it("is deterministic per family and tier, and varies between them", () => {
+    const bounds = { min: { x: -3, y: 4, z: -3 }, max: { x: 3, y: 11, z: 3 } };
+    const first = buildFlowFestCanopyShellGeometry(
+      bounds,
+      "island-tree-01-mid-leaves",
+      FLOW_FEST_CANOPY_SHELL_TIERS.mid
+    );
+    const repeat = buildFlowFestCanopyShellGeometry(
+      bounds,
+      "island-tree-01-mid-leaves",
+      FLOW_FEST_CANOPY_SHELL_TIERS.mid
+    );
+    const other = buildFlowFestCanopyShellGeometry(
+      bounds,
+      "island-tree-03-mid-leaves",
+      FLOW_FEST_CANOPY_SHELL_TIERS.mid
+    );
+    expect(Array.from(first.attributes.position.array)).toEqual(
+      Array.from(repeat.attributes.position.array)
+    );
+    expect(Array.from(first.attributes.position.array)).not.toEqual(
+      Array.from(other.attributes.position.array)
+    );
+    first.dispose();
+    repeat.dispose();
+    other.dispose();
   });
 });

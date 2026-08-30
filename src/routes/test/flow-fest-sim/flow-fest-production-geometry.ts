@@ -14,6 +14,7 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   Object3D,
+  SphereGeometry,
   TorusGeometry,
   type Material,
   type Object3D as ThreeObject3D,
@@ -786,45 +787,68 @@ function buildCampClusters(
     registerTent(placement, "upper-tent", upperRng, index === 0);
   }
 
-  const tentGeometry = new ConeGeometry(1.75, 1.85, 4);
-  tentGeometry.rotateY(Math.PI / 4);
-  tentGeometry.translate(0, 0.925, 0);
-  const tentMesh = createInstancedMesh(
-    tentGeometry,
+  // The camper the walk-up collider sees. It stays the old pyramid envelope so
+  // every clearance in the camp plan means exactly what it meant before; only
+  // what the eye sees changes below.
+  const tentCollisionProxy = new ConeGeometry(1.75, 1.85, 4);
+  tentCollisionProxy.rotateY(Math.PI / 4);
+  tentCollisionProxy.translate(0, 0.925, 0);
+  const ridgeTentGeometry = buildRidgeTentGeometry();
+  const domeTentGeometry = buildDomeTentGeometry();
+  const tentMaterial = () =>
     new MeshStandardMaterial({
-      color: "#e56c4c",
-      roughness: 0.92,
+      color: "#ffffff",
+      roughness: 0.88,
       side: DoubleSide,
-    }),
-    tentPlacements,
+      vertexColors: true,
+    });
+  // The already-seeded colour index picks the shape too, so a camp reads as a
+  // mix of ridge and dome tents without adding a second random stream.
+  const isDomeTent = (placement: Placement) => placement.colorIndex % 2 === 1;
+  const ridgeTentPlacements = tentPlacements.filter(
+    (placement) => !isDomeTent(placement)
+  );
+  const domeTentPlacements = tentPlacements.filter(isDomeTent);
+  const tentMesh = createInstancedMesh(
+    ridgeTentGeometry,
+    tentMaterial(),
+    ridgeTentPlacements,
+    applyPlacement,
+    (placement) => new Color(TENT_COLORS[placement.colorIndex]!)
+  );
+  const domeTentMesh = createInstancedMesh(
+    domeTentGeometry,
+    tentMaterial(),
+    domeTentPlacements,
     applyPlacement,
     (placement) => new Color(TENT_COLORS[placement.colorIndex]!)
   );
   appendPlacementCollisionParts(
     staticCollisionParts,
-    tentGeometry,
+    tentCollisionProxy,
     tentPlacements,
     applyPlacement
   );
   tentMesh.name = "FFS_Tents_AuthoredFestivalDressing";
-  tentMesh.castShadow = true;
-  tentMesh.receiveShadow = true;
+  domeTentMesh.name = "FFS_TentsDome_AuthoredFestivalDressing";
+  for (const mesh of [tentMesh, domeTentMesh]) {
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+  }
 
   if (!playerTentPlacement) {
     throw new Error(`Missing authored player tent for ${selectedBranch}`);
   }
+  const playerTentMaterial = tentMaterial();
+  playerTentMaterial.color.set(TENT_COLORS[playerTentPlacement.colorIndex]!);
   const playerTent = new Mesh(
-    tentGeometry,
-    new MeshStandardMaterial({
-      color: TENT_COLORS[playerTentPlacement.colorIndex],
-      roughness: 0.92,
-      side: DoubleSide,
-    })
+    isDomeTent(playerTentPlacement) ? domeTentGeometry : ridgeTentGeometry,
+    playerTentMaterial
   );
   applyPlacement(playerTentPlacement, playerTent);
   appendPlacementCollisionParts(
     campEstablishedCollisionParts,
-    tentGeometry,
+    tentCollisionProxy,
     [playerTentPlacement],
     applyPlacement
   );
@@ -833,13 +857,18 @@ function buildCampClusters(
   playerTent.receiveShadow = true;
   playerTent.visible = false;
 
-  const vehicleGeometry = new BoxGeometry(4.6, 1.3, 2.1);
+  const vehicleGeometry = buildParkedCarGeometry();
+  // The car now sits on the field instead of straddling it, so the collider
+  // has to wrap the whole body or the camera walks through a parked windscreen.
+  const vehicleCollisionProxy = new BoxGeometry(4.5, 1.9, 2.05);
+  vehicleCollisionProxy.translate(0, 0.95, 0);
   const vehicleMesh = createInstancedMesh(
     vehicleGeometry,
     new MeshStandardMaterial({
-      color: "#78858b",
-      roughness: 0.7,
-      metalness: 0.12,
+      color: "#ffffff",
+      roughness: 0.52,
+      metalness: 0.18,
+      vertexColors: true,
     }),
     vehiclePlacements,
     applyPlacement,
@@ -850,14 +879,14 @@ function buildCampClusters(
   );
   appendPlacementCollisionParts(
     staticCollisionParts,
-    vehicleGeometry,
+    vehicleCollisionProxy,
     vehiclePlacements,
     applyPlacement
   );
   vehicleMesh.name = "FFS_Cars_AuthoredFestivalDressing";
   vehicleMesh.castShadow = true;
   vehicleMesh.receiveShadow = true;
-  group.add(tentMesh, playerTent, vehicleMesh);
+  group.add(tentMesh, domeTentMesh, playerTent, vehicleMesh);
   const allTentPlacements = occupiedTentPlacements;
   return {
     group,
@@ -1050,6 +1079,356 @@ function findCampPlacement(options: {
   );
 }
 
+/**
+ * Vertex colour multiplies with the instance colour, so one instanced draw can
+ * carry a coloured fly and a dark door, or a coloured car and black wheels,
+ * without a second material or a second batch. White keeps the instance colour
+ * exactly; a grey darkens it toward the shadowed part of the same object.
+ */
+const CAMP_SHADE = {
+  fly: 1,
+  panel: 0.72,
+  door: 0.3,
+  groundsheet: 0.24,
+  pole: 0.46,
+  glass: 0.16,
+  tyre: 0.07,
+  trim: 0.34,
+} as const;
+
+/**
+ * Give a merged part a flat vertex colour and a trivial index. Everything in
+ * the camp batch must agree on indexing before `mergeGeometries` will accept it,
+ * and three.js primitives are indexed, so the sequential index keeps a
+ * hand-authored panel in the same batch as a `BoxGeometry`.
+ */
+function shadeCampPart(geometry: BufferGeometry, shade: number): BufferGeometry {
+  // Camp dressing is untextured, and mergeGeometries rejects a batch whose
+  // members disagree about which attributes exist. Dropping the primitives' UVs
+  // lets a hand-authored fly panel share a batch with a BoxGeometry sill.
+  geometry.deleteAttribute("uv");
+  geometry.deleteAttribute("uv1");
+  const vertexCount = geometry.attributes.position.count;
+  const colors = new Float32Array(vertexCount * 3);
+  colors.fill(shade);
+  geometry.setAttribute("color", new BufferAttribute(colors, 3));
+  if (!geometry.getIndex()) {
+    const indices = new Uint16Array(vertexCount);
+    for (let index = 0; index < vertexCount; index += 1) indices[index] = index;
+    geometry.setIndex(new BufferAttribute(indices, 1));
+  }
+  return geometry;
+}
+
+/** Build a flat-shaded, indexed panel from an explicit triangle fan of corners. */
+function buildCampPanel(
+  corners: ReadonlyArray<readonly [number, number, number]>,
+  shade: number
+): BufferGeometry {
+  const triangles = corners.length - 2;
+  const positions = new Float32Array(triangles * 9);
+  const normals = new Float32Array(triangles * 9);
+  for (let triangle = 0; triangle < triangles; triangle += 1) {
+    const a = corners[0]!;
+    const b = corners[triangle + 1]!;
+    const c = corners[triangle + 2]!;
+    const ux = b[0] - a[0];
+    const uy = b[1] - a[1];
+    const uz = b[2] - a[2];
+    const vx = c[0] - a[0];
+    const vy = c[1] - a[1];
+    const vz = c[2] - a[2];
+    const nx = uy * vz - uz * vy;
+    const ny = uz * vx - ux * vz;
+    const nz = ux * vy - uy * vx;
+    const length = Math.hypot(nx, ny, nz) || 1;
+    for (const [slot, corner] of [a, b, c].entries()) {
+      const offset = triangle * 9 + slot * 3;
+      positions[offset] = corner[0];
+      positions[offset + 1] = corner[1];
+      positions[offset + 2] = corner[2];
+      normals[offset] = nx / length;
+      normals[offset + 1] = ny / length;
+      normals[offset + 2] = nz / length;
+    }
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", new BufferAttribute(positions, 3));
+  geometry.setAttribute("normal", new BufferAttribute(normals, 3));
+  return shadeCampPart(geometry, shade);
+}
+
+function mergeCampParts(parts: BufferGeometry[], label: string): BufferGeometry {
+  const merged = mergeGeometries(parts, false);
+  for (const part of parts) part.dispose();
+  if (!merged) throw new Error(`Flow Fest ${label} geometry failed to merge`);
+  return merged;
+}
+
+const RIDGE_TENT_HALF_LENGTH = 1.32;
+const RIDGE_TENT_HALF_WIDTH = 1.06;
+const RIDGE_TENT_RIDGE_HEIGHT = 1.52;
+const DOME_TENT_RADIUS = 1.18;
+const DOME_TENT_HEIGHT = 1.42;
+
+/**
+ * A four-sided cone is a pyramid, and a field of pyramids reads as traffic
+ * cones, not as a campground. Camps here are ridge tents and dome tents: a
+ * taut fly over a rectangular or round footprint, a dark door on the entry
+ * face, and a groundsheet lip where the fabric meets the field.
+ *
+ * Both variants stay inside the pyramid's old envelope, so every camp-plan
+ * coordinate, clearance and collision proxy carries over untouched.
+ */
+function buildRidgeTentGeometry(): BufferGeometry {
+  const L = RIDGE_TENT_HALF_LENGTH;
+  const W = RIDGE_TENT_HALF_WIDTH;
+  const H = RIDGE_TENT_RIDGE_HEIGHT;
+  const lip = 0.14;
+  const parts: BufferGeometry[] = [];
+
+  // The two sloping fly panels, ridge at the top, groundsheet lip at the base.
+  for (const side of [1, -1] as const) {
+    parts.push(
+      buildCampPanel(
+        side > 0
+          ? [
+              [-L, lip, side * W],
+              [L, lip, side * W],
+              [L, H, 0],
+              [-L, H, 0],
+            ]
+          : [
+              [-L, H, 0],
+              [L, H, 0],
+              [L, lip, side * W],
+              [-L, lip, side * W],
+            ],
+        CAMP_SHADE.fly
+      )
+    );
+  }
+  // The gable ends. The front one is the doorway, so it is the dark panel.
+  parts.push(
+    buildCampPanel(
+      [
+        [L, lip, -W],
+        [L, lip, W],
+        [L, H, 0],
+      ],
+      CAMP_SHADE.door
+    )
+  );
+  parts.push(
+    buildCampPanel(
+      [
+        [-L, lip, W],
+        [-L, lip, -W],
+        [-L, H, 0],
+      ],
+      CAMP_SHADE.panel
+    )
+  );
+  // Groundsheet skirt: a low box so the tent meets the field instead of
+  // hovering over it, and so a grazing view never sees under the fly.
+  const skirt = new BoxGeometry(L * 2, lip * 2, W * 2);
+  skirt.translate(0, lip, 0);
+  parts.push(shadeCampPart(skirt, CAMP_SHADE.groundsheet));
+  // Ridge pole overhang at both ends.
+  const pole = new CylinderGeometry(0.045, 0.045, L * 2.24, 5);
+  pole.rotateZ(Math.PI / 2);
+  pole.translate(0, H, 0);
+  parts.push(shadeCampPart(pole, CAMP_SHADE.pole));
+
+  return mergeCampParts(parts, "ridge tent");
+}
+
+function buildDomeTentGeometry(): BufferGeometry {
+  const parts: BufferGeometry[] = [];
+  const dome = new SphereGeometry(
+    DOME_TENT_RADIUS,
+    12,
+    5,
+    0,
+    Math.PI * 2,
+    0,
+    Math.PI * 0.5
+  );
+  dome.scale(1, DOME_TENT_HEIGHT / DOME_TENT_RADIUS, 0.88);
+  parts.push(shadeCampPart(dome, CAMP_SHADE.fly));
+
+  // Crossed dome poles, which is what reads as a dome tent at fifty metres.
+  for (const rotation of [Math.PI * 0.25, -Math.PI * 0.25]) {
+    const arc = new TorusGeometry(
+      DOME_TENT_RADIUS * 0.99,
+      0.04,
+      4,
+      12,
+      Math.PI
+    );
+    arc.rotateY(rotation);
+    arc.scale(1, DOME_TENT_HEIGHT / DOME_TENT_RADIUS, 1);
+    parts.push(shadeCampPart(arc, CAMP_SHADE.pole));
+  }
+
+  // Vestibule: a small awning over the door on the +X face.
+  parts.push(
+    buildCampPanel(
+      [
+        [DOME_TENT_RADIUS * 0.52, 0.06, -0.62],
+        [DOME_TENT_RADIUS * 1.5, 0.06, -0.46],
+        [DOME_TENT_RADIUS * 1.5, 0.06, 0.46],
+        [DOME_TENT_RADIUS * 0.52, 0.06, 0.62],
+      ],
+      CAMP_SHADE.groundsheet
+    )
+  );
+  parts.push(
+    buildCampPanel(
+      [
+        [DOME_TENT_RADIUS * 0.5, 0.06, 0.62],
+        [DOME_TENT_RADIUS * 1.48, 0.06, 0.46],
+        [DOME_TENT_RADIUS * 1.48, 0.5, 0.46],
+        [DOME_TENT_RADIUS * 0.5, 0.98, 0.62],
+      ],
+      CAMP_SHADE.panel
+    )
+  );
+  parts.push(
+    buildCampPanel(
+      [
+        [DOME_TENT_RADIUS * 0.5, 0.98, -0.62],
+        [DOME_TENT_RADIUS * 1.48, 0.5, -0.46],
+        [DOME_TENT_RADIUS * 1.48, 0.06, -0.46],
+        [DOME_TENT_RADIUS * 0.5, 0.06, -0.62],
+      ],
+      CAMP_SHADE.panel
+    )
+  );
+  // The doorway itself, inset into the dome face.
+  parts.push(
+    buildCampPanel(
+      [
+        [DOME_TENT_RADIUS * 0.5, 0.04, -0.56],
+        [DOME_TENT_RADIUS * 0.5, 0.04, 0.56],
+        [DOME_TENT_RADIUS * 0.52, 0.96, 0.34],
+        [DOME_TENT_RADIUS * 0.52, 0.96, -0.34],
+      ],
+      CAMP_SHADE.door
+    )
+  );
+
+  return mergeCampParts(parts, "dome tent");
+}
+
+/**
+ * A parked car, not a shipping container. The old dressing was a single
+ * 4.6 x 1.3 x 2.1 box centred on the placement, so half of every vehicle sat
+ * under the field and the visible half read as a slab. This sits on the
+ * ground and carries the four silhouette cues that make a car legible at
+ * distance: body, greenhouse, roof, wheels.
+ */
+function buildParkedCarGeometry(): BufferGeometry {
+  const parts: BufferGeometry[] = [];
+  const body = new BoxGeometry(4.42, 0.78, 1.96);
+  body.translate(0, 0.74, 0);
+  parts.push(shadeCampPart(body, CAMP_SHADE.fly));
+
+  const sill = new BoxGeometry(4.5, 0.16, 2.02);
+  sill.translate(0, 0.42, 0);
+  parts.push(shadeCampPart(sill, CAMP_SHADE.trim));
+
+  const glass = new BoxGeometry(2.42, 0.56, 1.82);
+  glass.translate(-0.24, 1.4, 0);
+  parts.push(shadeCampPart(glass, CAMP_SHADE.glass));
+
+  const roof = new BoxGeometry(2.26, 0.14, 1.74);
+  roof.translate(-0.24, 1.74, 0);
+  parts.push(shadeCampPart(roof, CAMP_SHADE.fly));
+
+  for (const x of [1.42, -1.38]) {
+    for (const z of [0.98, -0.98]) {
+      const wheel = new CylinderGeometry(0.37, 0.37, 0.26, 10);
+      wheel.rotateX(Math.PI / 2);
+      wheel.translate(x, 0.37, z);
+      parts.push(shadeCampPart(wheel, CAMP_SHADE.tyre));
+    }
+  }
+
+  return mergeCampParts(parts, "parked car");
+}
+
+const FIRE_PIT_INNER_RADIUS_METERS = 1.42;
+const FIRE_PIT_STONE_COUNT = 18;
+
+/**
+ * Burnt ground inside the stone ring. The rim is deliberately off-round: a
+ * perfect circle at this scale reads as a manufactured fire bowl.
+ */
+function buildFireAshBedGeometry(): BufferGeometry {
+  const geometry = new CircleGeometry(FIRE_PIT_INNER_RADIUS_METERS, 30);
+  geometry.rotateX(-Math.PI / 2);
+  const positions = geometry.attributes.position;
+  // Vertex 0 is the centre; it drops so the bed dishes toward the coals.
+  positions.setY(0, -0.05);
+  for (let index = 1; index < positions.count; index += 1) {
+    const x = positions.getX(index);
+    const z = positions.getZ(index);
+    const angle = Math.atan2(z, x);
+    // Periodic in theta, so the seam vertex pair stays coincident.
+    const wobble =
+      1 + 0.07 * Math.sin(3 * angle + 0.7) + 0.045 * Math.sin(7 * angle + 2.1);
+    positions.setXYZ(index, x * wobble, 0, z * wobble);
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+/**
+ * Hand-laid field stones. Merged into one geometry so the pit stays a single
+ * mesh for the camera collider and the authored-fixture count.
+ */
+function buildFireStoneRingGeometry(): BufferGeometry {
+  const rng = makeRng(childSeed(FLOW_FEST_MASTER_SEED, "fire-pit-stones"));
+  const stones: BufferGeometry[] = [];
+  for (let index = 0; index < FIRE_PIT_STONE_COUNT; index += 1) {
+    const angle =
+      (index / FIRE_PIT_STONE_COUNT) * Math.PI * 2 + (rng() - 0.5) * 0.14;
+    const radius = FIRE_PIT_INNER_RADIUS_METERS + 0.22 + rng() * 0.12;
+    const size = 0.19 + rng() * 0.13;
+    const stone = new DodecahedronGeometry(size, 0);
+    stone.scale(1.18, 0.62 + rng() * 0.24, 0.94);
+    stone.rotateY(rng() * Math.PI * 2);
+    stone.rotateX((rng() - 0.5) * 0.5);
+    stone.rotateZ((rng() - 0.5) * 0.5);
+    stone.translate(
+      Math.cos(angle) * radius,
+      // Half-buried, with a couple of stones seated deeper than the rest.
+      size * (0.34 + rng() * 0.3),
+      Math.sin(angle) * radius
+    );
+    stones.push(stone);
+  }
+  const merged = mergeGeometries(stones, false);
+  for (const stone of stones) stone.dispose();
+  if (!merged) {
+    throw new Error("Flow Fest fire pit stones failed to merge");
+  }
+  merged.computeVertexNormals();
+  // PolyhedronGeometry is non-indexed, but every other authored collision part
+  // is indexed and mergeGeometries refuses a mixed batch. A trivial sequential
+  // index keeps the flat-shaded vertex layout and lets the pit join the camera
+  // collider merge.
+  if (!merged.getIndex()) {
+    const vertexCount = merged.attributes.position.count;
+    const indices = new Uint16Array(vertexCount);
+    for (let index = 0; index < vertexCount; index += 1) indices[index] = index;
+    merged.setIndex(new BufferAttribute(indices, 1));
+  }
+  return merged;
+}
+
 function buildFestivalHeart(
   contract: FlowFestRuntimeContract,
   terrain: ImportedTerrainDataV2,
@@ -1114,13 +1493,35 @@ function buildFestivalHeart(
   performanceFloor.receiveShadow = true;
   group.add(performanceFloor);
 
-  const fireRing = new Mesh(
-    new TorusGeometry(1.55, 0.3, 10, 32),
-    new MeshStandardMaterial({ color: "#554438", roughness: 1 })
+  // A smooth torus reads as a pool float, not a fire pit. The pit is a bed of
+  // burnt ground with a hand-laid ring of field stones around it: irregular
+  // silhouette at 13 m, a dark disc with a warm centre at 100 m.
+  const ashBed = new Mesh(
+    buildFireAshBedGeometry(),
+    new MeshStandardMaterial({
+      color: "#100c0a",
+      roughness: 1,
+      metalness: 0,
+      emissive: "#3a1408",
+      emissiveIntensity: 0.5,
+    })
   );
-  fireRing.position.set(fireCenter.x, fireCenter.y + 0.26, fireCenter.z);
-  fireRing.rotation.x = Math.PI / 2;
+  ashBed.position.set(fireCenter.x, fireCenter.y + 0.07, fireCenter.z);
+  ashBed.name = "FFS_FireJam_CentralFireAshBed_Authored";
+  group.add(ashBed);
+
+  const fireRing = new Mesh(
+    buildFireStoneRingGeometry(),
+    new MeshStandardMaterial({
+      color: "#6d675c",
+      roughness: 0.94,
+      metalness: 0.02,
+    })
+  );
+  fireRing.position.set(fireCenter.x, fireCenter.y, fireCenter.z);
   fireRing.name = "FFS_FireJam_CentralFireRing_Authored";
+  fireRing.castShadow = true;
+  fireRing.receiveShadow = true;
   group.add(fireRing);
   appendObjectCollisionPart(collisionParts, fireRing);
 

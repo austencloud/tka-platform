@@ -1229,6 +1229,7 @@
           enableJump={true}
           enableCrouch={true}
           showReviewOverlay={false}
+          ambientLighting="none"
           collisionMode="visible-production"
           {productionCollision}
           productionCampEstablished={campEstablished}

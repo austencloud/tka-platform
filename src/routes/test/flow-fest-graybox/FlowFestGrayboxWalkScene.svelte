@@ -105,6 +105,14 @@
     enableJump?: boolean;
     enableCrouch?: boolean;
     showReviewOverlay?: boolean;
+    /**
+     * The graybox walk owns a fixed daylight rig so it can be inspected on its
+     * own. A host that supplies a time-of-day rig — the production layer's
+     * visual profile — must pass "none". The graybox key light and hemisphere
+     * sum to 2.95 in three.js light units against the night profile's 0.37, so
+     * leaving them on renders 2:13 AM as an overcast noon.
+     */
+    ambientLighting?: "graybox-daylight" | "none";
     collisionMode?: "measured-topology" | "visible-production";
     productionCollision?: FlowFestProductionCollisionSet | null;
     productionCampEstablished?: boolean;
@@ -1580,14 +1588,16 @@
   });
 </script>
 
-<T.Color attach="background" args={["#b8c4b1"]} />
-<T.HemisphereLight color="#eef3e7" groundColor="#445044" intensity={1.25} />
-<T.DirectionalLight
-  position={[-180, 260, 120]}
-  color="#fff5dc"
-  intensity={1.7}
-  castShadow={false}
-/>
+{#if (props.ambientLighting ?? "graybox-daylight") === "graybox-daylight"}
+  <T.Color attach="background" args={["#b8c4b1"]} />
+  <T.HemisphereLight color="#eef3e7" groundColor="#445044" intensity={1.25} />
+  <T.DirectionalLight
+    position={[-180, 260, 120]}
+    color="#fff5dc"
+    intensity={1.7}
+    castShadow={false}
+  />
+{/if}
 
 {#if terrainHost}
   <T is={terrainHost.root} />
