@@ -490,6 +490,12 @@ function buildViewer3DState(
   options: Viewer3DStateOptions = {}
 ) {
   const sceneUndo = getSceneUndoManager();
+  // The manager is imperative. This revision carries its subscription events
+  // into Svelte so shortcut availability changes in the same frame as history.
+  let undoRevision = $state(0);
+  const unsubscribeFromUndo = sceneUndo.subscribe(() => {
+    undoRevision++;
+  });
   const _webgl2Available = isWebGL2Available();
   /** A seeded field wins over storage; `undefined` means "not seeded". */
   const seeded = <T>(value: T | undefined, fromStorage: () => T): T =>
@@ -1713,6 +1719,7 @@ function buildViewer3DState(
    */
   function dispose() {
     _disposed = true;
+    unsubscribeFromUndo();
     performerManager.destroy();
   }
 
@@ -1843,9 +1850,11 @@ function buildViewer3DState(
     setHandPlaneScoped,
     loadSequenceScoped,
     get canUndo() {
+      undoRevision;
       return sceneUndo.canUndo;
     },
     get canRedo() {
+      undoRevision;
       return sceneUndo.canRedo;
     },
     get activeFormation() {
