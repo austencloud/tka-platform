@@ -119,6 +119,46 @@ releasing every production mocap clip under an irrevocable public license. The
 source comparison and proposed hybrid boundary are recorded in
 `EPIC-04-community-contribution-source-map.md`.
 
+### What Epic funding makes possible
+
+**Austen, August 30, 2026:**
+
+> I mean the accuracy of having mocap data over trying to hammer out little
+> miniature corrections through an AI model is going to just skyrocket I mean
+> my idea is not only will I get animations that I can just place in a scene
+> which would be cool enough on its own but would genuinely require me to have
+> you know one animation per scene would be very time consuming the broad idea
+> is that by gathering the subtleties of human movement such as where fingers
+> are in space and how wrists move and how the elbows interact with the staff
+> that's passing through the negative space above or below the arm or how a reel
+> goes behind the head effectively while the head dodges it would just save me
+> from this hellhole that I'm in of trying to just tweak character avatars until
+> they kind of do roughly what I want them to do not because I'd have a
+> prerecorded thing for everything but because I could use it as actual training
+> data I could tell a model like hey I want you to implement the the dodge effect
+> I want you to take into consideration how this recorded version does it
+> properly I mean it's just a massive workflow boost in a direction that I'm
+> already moving which I think will just be hugely efficient Umm in actually
+> gaining this data so not only am I trying to create this game but the whole
+> broader purpose of this is to demonstrate the acquisition of the understanding
+> of human movement as it relates to flow arts a very unique and novel and young
+> art form that has not been totally mapped out so this is an anatomical a dance
+> a choreography building goal at its heart because through the acquisition of
+> this understanding we can make that data be represented in different body
+> types and we can teach people more effectively through interactive 3D tools
+> that allow people to see movement from all angles as opposed to just viewing 2
+> dimensional Youtube videos that are 90 seconds on Instagram so that people
+> have a real ability to zoom in zoom out slow down speed up and truly craft
+> choreographed shows which is a huge part of the flow Arts composer system I
+> mean this is going to be yeah game but it's also gonna be very linked to Flow
+> Arts Composer which is a well existing web app which is possibly my biggest
+> proof that I can do anything of Substance which already has a established 3D
+> viewer that I can get a bunch of media packages for and a bunch of images for
+
+This is the primary source for the Epic full-project-details response. Its
+source comparison, feasibility boundaries, and proposed angle are recorded in
+`EPIC-06-full-project-details-source-map.md`.
+
 ## Verified equipment facts
 
 - Rokoko lists the Creator Bundle at a temporary sale price of $2,495 through
