@@ -7,6 +7,7 @@ import { starOfFiveFilm } from "./star-of-five";
 import { breakTheStarFilm } from "./break-the-star";
 import { figuresFilm } from "./figures";
 import { emberFilm } from "./ember";
+import { provingGroundsFilm } from "./proving-grounds";
 
 /**
  * The frame the marquee shows for a library film, and the cue that produced it.
@@ -133,6 +134,16 @@ export const FILM_LIBRARY: readonly FilmLibraryEntry[] = [
       // plays on the celestial stage, which the marquee already shows three
       // of; the ember practice room is this film's own light.
       offsetSeconds: 8,
+    },
+  },
+  {
+    key: "proving",
+    label: "Proving Grounds",
+    film: provingGroundsFilm,
+    poster: {
+      src: "/films/posters/proving.webp",
+      sceneId: "combined-draw",
+      offsetSeconds: 6,
     },
   },
 ];
