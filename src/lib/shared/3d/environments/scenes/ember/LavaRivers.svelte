@@ -4,6 +4,8 @@
     ShaderMaterial,
     DoubleSide,
     Color,
+    UniformsLib,
+    UniformsUtils,
     type BufferGeometry,
   } from "three";
   import type { LavaRiversConfig } from "../../domain/models/scene-configs";
@@ -315,6 +317,9 @@
         polygonOffsetFactor: -2,
         polygonOffsetUnits: -4,
         uniforms: {
+          // fog: true makes the renderer refresh fogColor/fogDensity on this
+          // material, so the fog uniform set must exist or the render crashes.
+          ...UniformsUtils.clone(UniformsLib.fog),
           uTime: { value: 0 },
           uBaseColor: { value: new Color(config.baseColor) },
           uHotColor: { value: new Color(config.hotColor) },
