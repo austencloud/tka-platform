@@ -51,7 +51,7 @@ describe("directiveSchema", () => {
     if (result.success) return;
     const flattened = result.error.flatten();
     expect(JSON.stringify(flattened)).toContain(
-      "Expected a literal value or a directive object ({pick}, {oneOf}, {not}, {sameAs})"
+      "Expected a literal value or a directive object ({pick}, {pick, not}, {oneOf}, {not}, {sameAs})"
     );
   });
 
@@ -73,6 +73,44 @@ describe("directiveSchema", () => {
 
   it("rejects a multi-key directive object", () => {
     expect(schema.safeParse({ oneOf: ["fan"], not: "staff" }).success).toBe(false);
+  });
+});
+
+describe("pick with not", () => {
+  it("accepts {pick, not} and normalizes not into exclude", () => {
+    expect(
+      normalizeDirective<string>({ pick: "distinct", not: "wall" })
+    ).toEqual({ kind: "pick", distinct: true, pool: null, exclude: ["wall"] });
+  });
+
+  it("accepts an array not and keeps the pool", () => {
+    expect(
+      normalizeDirective<string>({
+        pick: "any",
+        from: ["wall", "wheel", "floor"],
+        not: ["wall", "floor"],
+      })
+    ).toEqual({
+      kind: "pick",
+      distinct: false,
+      pool: ["wall", "wheel", "floor"],
+      exclude: ["wall", "floor"],
+    });
+  });
+
+  it("schema accepts {pick: 'distinct', not} on a plane axis", () => {
+    const planeAxis = directiveSchema(z.string());
+    expect(
+      planeAxis.safeParse({ pick: "distinct", not: "wall" }).success
+    ).toBe(true);
+    expect(
+      planeAxis.safeParse({ pick: "distinct", not: ["wall", "floor"] }).success
+    ).toBe(true);
+  });
+
+  it("schema still rejects an empty not array on the pick branch", () => {
+    const planeAxis = directiveSchema(z.string());
+    expect(planeAxis.safeParse({ pick: "any", not: [] }).success).toBe(false);
   });
 });
 

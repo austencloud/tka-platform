@@ -143,6 +143,39 @@ describe("resolveFilmDirectorSpec with directives", () => {
     ).toThrow(/not in this cast/);
   });
 
+  it("scene-scoped environmentId accepts {pick:'any', not} and never draws the excluded environment", () => {
+    const spec = resolveFilmDirectorSpec({
+      version: 2,
+      id: "env-not-film",
+      title: "Env Not",
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          location: { environmentId: { pick: "any", not: "forest" } },
+          performance: { cast: { count: 2 } },
+        },
+      ],
+    });
+    expect(spec.scenes[0]!.location.environmentId).not.toBe("forest");
+  });
+
+  it("scene-scoped formation still rejects pick distinct, with or without not", () => {
+    expect(() =>
+      resolveFilmDirectorSpec(
+        film({ formation: { pick: "distinct" }, cast: { count: 2 } })
+      )
+    ).toThrow(/distinct\/sameAs are performer-scoped/);
+    expect(() =>
+      resolveFilmDirectorSpec(
+        film({
+          formation: { pick: "distinct", not: "line" },
+          cast: { count: 2 },
+        })
+      )
+    ).toThrow(/distinct\/sameAs are performer-scoped/);
+  });
+
   it("v1 documents resolve exactly as before", () => {
     const spec = resolveFilmDirectorSpec({
       version: 1,

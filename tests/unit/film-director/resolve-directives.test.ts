@@ -109,6 +109,37 @@ describe("resolveCastAxis", () => {
     expect(resolved.slice(0, 3)).toEqual(["a", "b", "c"]);
   });
 
+  it("pick distinct with not draws distinct values and never the excluded one", () => {
+    // 3 performers on a 5-value catalog, excluding one value: all three
+    // resolved values are distinct and none is the excluded value.
+    const resolved = axis(
+      [
+        { pick: "distinct", not: "staff" },
+        { pick: "distinct", not: "staff" },
+        { pick: "distinct", not: "staff" },
+      ],
+      { catalog: ["staff", "fan", "club", "sword", "torch"] }
+    );
+    expect(new Set(resolved).size).toBe(3);
+    expect(resolved).not.toContain("staff");
+  });
+
+  it("pick distinct with not rejects when the pool minus exclusions is smaller than the cast", () => {
+    // 4 performers, pool of 4, excluding 1 → the existing not-enough-values
+    // rejection fires.
+    expect(() =>
+      axis(
+        [
+          { pick: "distinct", from: ["a", "b", "c", "d"], not: "a" },
+          { pick: "distinct", from: ["a", "b", "c", "d"], not: "a" },
+          { pick: "distinct", from: ["a", "b", "c", "d"], not: "a" },
+          { pick: "distinct", from: ["a", "b", "c", "d"], not: "a" },
+        ],
+        { catalog: ["a", "b", "c", "d"] }
+      )
+    ).toThrow(/distinct values were requested for 4 performers/);
+  });
+
   it("reports an accurate distinct-performer count in the failure message", () => {
     let error: unknown;
     try {
