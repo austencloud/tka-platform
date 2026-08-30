@@ -52,8 +52,10 @@
 - **URL:** https://www.unrealengine.com/en-US/megagrants
 - **Framing:** UE5 narrative walking sim, solo developer, museum game
 - **Sections:**
-  - [ ] Add Name and Email Address to the Epic account profile, then capture
-        the current portal prompts and limits
+  - [x] Capture the current portal prompts and limits
+        (draft: EPIC-01-portal-prompt-inventory.md)
+  - [ ] Lock the project identity, category, phase, Unreal status, and
+        open-source claim
   - [ ] Complete an interview and source map for every prose response
   - [ ] Approve each response angle before drafting
   - [ ] Run AI-bust and voice comparison on every draft
