@@ -12,7 +12,7 @@ Worktree: `E:/worktrees/tka-platform/scene-boot-60fps` — ALL work happens here
 - [x] Phase 3 — staged progress (scene-feature-state + curtain); the curtain
       also now waits on warm-up, without which the frame gate would prove
       smoothness after the reveal it exists to precede
-- [ ] Phase 4 — boot-window background hold in Viewer3DCanvas
+- [x] Phase 4 — boot-window background hold in Viewer3DCanvas
 - [ ] Phase 5 — prefetch track (manifest + warmer + LazyMount prefetch wiring)
 - [ ] Phase 6 — procedural-engine loader wiring
 - [ ] Phase 7 — unit tests + contract test + `npm run check` green

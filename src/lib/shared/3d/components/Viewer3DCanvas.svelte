@@ -1,3 +1,14 @@
+<script module lang="ts">
+  // Two canvases can be alive at once (split pane plus a fullscreen handoff),
+  // and the background hold is refcounted per key — so each instance needs one
+  // of its own or the first release would unfreeze the backdrop under the other.
+  let viewer3DInstanceCount = 0;
+  function nextViewer3DInstanceId(): number {
+    viewer3DInstanceCount += 1;
+    return viewer3DInstanceCount;
+  }
+</script>
+
 <script lang="ts">
   /**
    * Viewer3DCanvas
@@ -33,6 +44,10 @@
   import SceneLoadingCurtain from "../scene-features/components/SceneLoadingCurtain.svelte";
   import { createViewerCameraPlayerState } from "@austencloud/camera-3d";
   import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
+  import {
+    holdBackground,
+    releaseBackground,
+  } from "$lib/shared/background/shared/state/background-hold.svelte";
   import SceneShaderWarmup from "./SceneShaderWarmup.svelte";
   import { createAvatarPlaybackAdapter } from "$lib/shared/timeline/adapters/avatar-playback-adapter.svelte";
   import type { PlaybackMode } from "$lib/shared/timeline/unified-playback-context";
@@ -379,6 +394,22 @@
   // Tell the parent so it can withhold the 3D rail chrome until the stage is set.
   $effect(() => {
     onSceneReadyChange?.(sceneReady);
+  });
+
+  // The 2D animated backdrop keeps repainting a viewport-sized canvas behind
+  // the opaque loading curtain, where nobody can see it, while GLB parsing,
+  // geometry upload and shader compile need every millisecond of the main
+  // thread. Fullscreen occludes it outright. Freeze rather than unmount: the
+  // window is short and re-initializing costs more than it saves.
+  const backgroundHoldKey = `viewer3d-boot:${nextViewer3DInstanceId()}`;
+  $effect(() => {
+    const shouldHold = !sceneReady || fullScreen;
+    if (shouldHold) holdBackground(backgroundHoldKey);
+    else releaseBackground(backgroundHoldKey);
+
+    return () => {
+      if (shouldHold) releaseBackground(backgroundHoldKey);
+    };
   });
 
   // A host that exposes a shareable camera URL needs the settled orbit pose,
