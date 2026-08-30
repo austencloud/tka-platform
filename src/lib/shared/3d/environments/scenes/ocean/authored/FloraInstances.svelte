@@ -45,31 +45,14 @@
     createInstanceFrustumCuller,
     type InstanceFrustumCuller,
   } from "$lib/shared/3d/rendering/instance-frustum-culling";
-  import { R2_CDN } from "$lib/shared/3d/constants/r2-cdn";
+  import { isOceanFloraVariant, oceanFloraSceneUrl } from "./ocean-flora-url";
   import { page } from "$app/state";
 
-  // The flora scene GLB (~36 MB, geometry-heavy) exceeds Cloudflare Pages' 25 MiB
-  // per-file limit and is stripped from the deploy by trim-deploy-assets.js, so in
-  // production it must come from R2 (same large-asset pattern as the forest scene).
-  // Dev serves it from static/ directly — no R2 round-trip while iterating.
-  // `?flora=composed` swaps in the generated composition
-  // (scripts/generate-ocean-composition.py -> blender-export-ocean-composition.py)
-  // so it can be walked in the same harness, with the same camera presets, as
-  // the authored reef. Dev only: the switch is how the two are judged against
-  // each other, and production always ships the authored scene.
-  const FLORA_VARIANTS: Record<string, string> = {
-    authored: "ocean_flora_scene.glb",
-    composed: "ocean_composed_scene.glb",
-  };
-  const floraFile = $derived(
-    (import.meta.env.DEV &&
-      FLORA_VARIANTS[page.url.searchParams.get("flora") ?? ""]) ||
-      FLORA_VARIANTS.authored
-  );
+  const floraVariant = $derived(page.url.searchParams.get("flora"));
   const FLORA_GLB_URL = $derived(
-    import.meta.env.DEV
-      ? `/models/ocean/${floraFile}`
-      : `${R2_CDN}/models/ocean/${FLORA_VARIANTS.authored}`
+    oceanFloraSceneUrl(
+      isOceanFloraVariant(floraVariant) ? floraVariant : "authored"
+    )
   );
 
   interface Props {

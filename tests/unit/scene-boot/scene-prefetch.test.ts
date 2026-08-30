@@ -12,7 +12,7 @@ vi.mock("$app/environment", () => ({ browser: true }));
 
 import {
   DECODER_RUNTIME_URLS,
-  SCENE_ASSET_MANIFEST,
+  sceneAssetUrls,
 } from "$lib/shared/3d/scene-boot/scene-asset-manifest";
 import {
   _resetForTests,
@@ -20,7 +20,7 @@ import {
   warmSceneAssets,
 } from "$lib/shared/3d/scene-boot/scene-prefetch";
 
-const OCEAN_URLS = SCENE_ASSET_MANIFEST[BackgroundType.OCEAN];
+const OCEAN_URLS = sceneAssetUrls(BackgroundType.OCEAN);
 
 function setNavigatorProperty(key: "onLine" | "connection", value: unknown): void {
   Object.defineProperty(navigator, key, {

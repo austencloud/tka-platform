@@ -1,6 +1,8 @@
 import { AVATAR_DEFINITIONS, type AvatarId } from "@austencloud/scene-3d";
 
-export const R2_CDN = "https://assets.tkaflowarts.com";
+import { R2_CDN } from "./r2-origin";
+
+export { R2_CDN };
 
 /**
  * Square preview image for an avatar model. One owner for the path so the

@@ -1,15 +1,27 @@
 import { BackgroundType } from "@austencloud/backgrounds";
 
+import { oceanFloraSceneUrl } from "../environments/scenes/ocean/authored/ocean-flora-url";
+
 /**
- * What each 3D environment actually downloads, so its assets can be warmed into
- * the HTTP cache before the user clicks into 3D.
+ * What each 3D environment downloads before its loading curtain can lift, so
+ * those assets can be warmed into the HTTP cache before the user clicks into 3D.
  *
- * Only URLs the scene's own components load at runtime belong here. Two
- * neighbours deliberately do not:
+ * Only URLs the scene's own components load at runtime belong here, and only
+ * the ones the curtain actually waits on. Four neighbours deliberately do not:
  *
  * - `*-composer-plugin.ts` catalogs, which exist for the Scene Lab and Themes
  *   Lab authoring surfaces and are never mounted by the viewer.
  * - `scenes/winter/graybox/`, a review model reachable only from a test route.
+ * - The ocean fish pack (`/models/ocean/pack/*.glb`, named as bare filenames in
+ *   `fish-species.ts` and fetched by FishBoids). It reports into no scene
+ *   feature, so it streams in after the reveal — warming it would compete for
+ *   bandwidth with the models the curtain is waiting on.
+ * - `?flora=composed`, a dev-only comparison build of the reef.
+ *
+ * The ocean's flora scene is the one asset not written literally below. It is
+ * the bulk of that scene's boot download and it blocks the curtain, but its URL
+ * is environment-dependent, so `sceneAssetUrls` appends it from the owner that
+ * the renderer reads too.
  *
  * `tests/unit/scene-boot/scene-asset-manifest-contract.test.ts` reads the scene
  * sources and fails when this list drifts from them in either direction.
@@ -62,5 +74,7 @@ export const DECODER_RUNTIME_URLS: readonly string[] = [
 ];
 
 export function sceneAssetUrls(background: BackgroundType): readonly string[] {
-  return SCENE_ASSET_MANIFEST[background] ?? [];
+  const listed = SCENE_ASSET_MANIFEST[background] ?? [];
+  if (background !== BackgroundType.OCEAN) return listed;
+  return [...listed, oceanFloraSceneUrl()];
 }

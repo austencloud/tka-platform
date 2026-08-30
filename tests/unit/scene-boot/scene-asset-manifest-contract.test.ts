@@ -15,6 +15,12 @@
  *   authoring surfaces, never mounted by the viewer.
  * - `scenes/winter/graybox/` — a review model reachable only from a test route.
  *
+ * The scan is a literal search, which is exactly how the ocean's flora scene —
+ * the biggest thing the ocean curtain waits on — escaped the first version of
+ * this manifest: FloraInstances names it as a bare filename in a variant record
+ * and builds a dev or R2 URL around it, so no `/models/…glb` literal exists to
+ * find. It is asserted separately, through `sceneAssetUrls`, below.
+ *
  * If this test fails, fix the manifest — do not loosen the assertions.
  */
 import { readFileSync, readdirSync } from "node:fs";
@@ -23,7 +29,11 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { BackgroundType } from "@austencloud/backgrounds";
 
-import { SCENE_ASSET_MANIFEST } from "$lib/shared/3d/scene-boot/scene-asset-manifest";
+import {
+  SCENE_ASSET_MANIFEST,
+  sceneAssetUrls,
+} from "$lib/shared/3d/scene-boot/scene-asset-manifest";
+import { OCEAN_FLORA_FILES } from "$lib/shared/3d/environments/scenes/ocean/authored/ocean-flora-url";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -135,6 +145,32 @@ describe("scene asset manifest", () => {
     for (const background of Object.values(BackgroundType)) {
       expect(SCENE_ASSET_MANIFEST[background]).toBeDefined();
     }
+  });
+
+  it("warms the ocean's flora scene, which no literal scan can reach", () => {
+    const urls = sceneAssetUrls(BackgroundType.OCEAN);
+    expect(
+      urls.some((url) => url.endsWith(`/${OCEAN_FLORA_FILES.authored}`)),
+      "sceneAssetUrls(OCEAN) must include the flora scene — it is the bulk of the ocean boot"
+    ).toBe(true);
+    expect(urls).toContain("/models/ocean/ocean-environment.glb");
+  });
+
+  it("keeps the flora scene off the dev-only comparison build", () => {
+    const urls = sceneAssetUrls(BackgroundType.OCEAN);
+    expect(urls.some((url) => url.includes(OCEAN_FLORA_FILES.composed))).toBe(
+      false
+    );
+  });
+
+  it("routes the flora URL through its owner rather than a second copy", () => {
+    const flora = readFileSync(
+      path.join(SCENES_DIR, "ocean/authored/FloraInstances.svelte"),
+      "utf8"
+    );
+    expect(flora).toContain("oceanFloraSceneUrl");
+    expect(flora).not.toContain(OCEAN_FLORA_FILES.authored);
+    expect(flora).not.toContain("R2_CDN");
   });
 
   it("still excludes the authoring catalogs and the graybox review model", () => {
