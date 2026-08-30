@@ -93,6 +93,32 @@ community" appears to mean "flow arts community," and "AS plot" appears to mean
 The source comparison and proposed angle are recorded in
 `EPIC-02-elevator-pitch-source-map.md`.
 
+### Giving other creators access without abandoning a motion-library business
+
+**Austen, August 30, 2026:**
+
+> Man that's a good point ah you mean shit like I would love to be able to share
+> stuff and have other people create more dance as long as they attribute me I
+> mean that's all I really ask like if I get I make a Grapevine and another
+> person five years from now wants that data then I mean I kind of wish I could
+> find that data now today so it kind of follows logically that I should make
+> that data available to them but also if I'm the one who collected that data
+> and I could get a little bit of a payback from that that 'd be pretty sweet so
+> maybe it's unrealistic to think that would ever happen unless I try to
+> actually commit to that and form a whole business around selling those sorts
+> of things which maybe is an actual wise move to do i'm not really sure I had
+> really thought about it but the whole overarching goal is to in fact make it
+> so other people can use flow arts in their software I mean that's the whole
+> proof of the Flow Fest SIM and the museum is the notion that hey look how this
+> can possibly be rendered animatically with accuracy and anatomical correctness
+> within a real 3D environment and the sky's the limit to how you can apply that
+> awareness
+
+This answer supports community reuse with attribution but does not authorize
+releasing every production mocap clip under an irrevocable public license. The
+source comparison and proposed hybrid boundary are recorded in
+`EPIC-04-community-contribution-source-map.md`.
+
 ## Verified equipment facts
 
 - Rokoko lists the Creator Bundle at a temporary sale price of $2,495 through
