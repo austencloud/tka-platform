@@ -31,6 +31,7 @@ import {
 export const FILM_DIRECTOR_SCHEMA_VERSION = 1 as const;
 export const FILM_DIRECTOR_SCHEMA_VERSION_2 = 2 as const;
 export const FILM_DIRECTOR_SCHEMA_VERSION_3 = 3 as const;
+export const FILM_DIRECTOR_SCHEMA_VERSION_4 = 4 as const;
 
 export const FILM_DIRECTOR_DIRECTIVE_AXES = [
   "avatarId",
@@ -123,6 +124,25 @@ export const DIRECTOR_EASINGS = [
 ] as const;
 
 const finiteNumber = z.number().finite();
+
+/**
+ * Every duration in this schema has a `durationBeats` twin, because a director
+ * counts music rather than reading a stopwatch. Stating both units on one
+ * field is a contradiction, not a preference — the converter would have to
+ * pick a winner, and either choice silently discards what the director wrote.
+ */
+const oneTimeUnit = (
+  value: { durationSeconds?: number; durationBeats?: number },
+  ctx: z.RefinementCtx
+) => {
+  if (value.durationSeconds !== undefined && value.durationBeats !== undefined) {
+    ctx.addIssue({
+      code: "custom",
+      message: 'State exactly one of "durationSeconds" or "durationBeats".',
+    });
+  }
+};
+
 const vector3Schema = z.tuple([finiteNumber, finiteNumber, finiteNumber]);
 const position2Schema = z.object({ x: finiteNumber, z: finiteNumber }).strict();
 
@@ -213,14 +233,24 @@ const cameraTargetSchema = z.discriminatedUnion("kind", [
 
 const cameraKeyframeSchema = z
   .object({
-    atSeconds: finiteNumber.nonnegative(),
+    atSeconds: finiteNumber.nonnegative().optional(),
+    atBeats: finiteNumber.nonnegative().optional(),
     position: vector3Schema,
     target: cameraTargetSchema.optional(),
     fovDeg: finiteNumber.min(20).max(100).optional(),
     interpolation: z.enum(DIRECTOR_INTERPOLATIONS).optional(),
     easing: z.enum(DIRECTOR_EASINGS).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((frame, ctx) => {
+    if ((frame.atSeconds !== undefined) === (frame.atBeats !== undefined)) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          'A camera keyframe states exactly one of "atSeconds" or "atBeats".',
+      });
+    }
+  });
 
 const positionRefSchema = z.union(
   [
@@ -406,9 +436,11 @@ const blockingMoveSchema = z
       ])
       .optional(),
     durationSeconds: finiteNumber.positive().optional(),
+    durationBeats: finiteNumber.positive().optional(),
     easing: z.enum(DIRECTOR_EASINGS).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine(oneTimeUnit);
 
 const blockingSchema = z.array(blockingMoveSchema).min(1).max(16);
 
@@ -421,6 +453,7 @@ const sceneBlockingSchema = z
   .object({
     endFormation: formationIdSchema,
     durationSeconds: finiteNumber.positive().optional(),
+    durationBeats: finiteNumber.positive().optional(),
     easing: z.enum(DIRECTOR_EASINGS).optional(),
     facing: z
       .union([
@@ -429,7 +462,8 @@ const sceneBlockingSchema = z
       ])
       .optional(),
   })
-  .strict();
+  .strict()
+  .superRefine(oneTimeUnit);
 
 const performerSchema = z
   .object({
@@ -539,9 +573,11 @@ const cameraSchema = z
               ])
               .optional(),
             durationSeconds: finiteNumber.positive().optional(),
+            durationBeats: finiteNumber.positive().optional(),
             easing: z.enum(DIRECTOR_EASINGS).optional(),
           })
           .strict()
+          .superRefine(oneTimeUnit)
       )
       .min(1)
       .max(16)
@@ -590,8 +626,10 @@ const transitionSchema = z
   .object({
     kind: z.enum(["cut", "environment-dissolve", "fade-through-black"]),
     durationSeconds: finiteNumber.min(0).max(3).optional(),
+    durationBeats: finiteNumber.min(0).max(32).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine(oneTimeUnit);
 
 const sceneSchema = z
   .object({
@@ -599,6 +637,7 @@ const sceneSchema = z
     title: z.string().min(1),
     intent: z.string().min(1).optional(),
     durationSeconds: finiteNumber.min(1).max(60).optional(),
+    durationBeats: finiteNumber.positive().max(240).optional(),
     transition: transitionSchema.optional(),
     location: locationSchema.optional(),
     performance: performanceSchema.optional(),
@@ -616,7 +655,8 @@ const sceneSchema = z
       .optional(),
     camera: cameraSchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine(oneTimeUnit);
 
 const filmDirectorInputSchema = z
   .object({
@@ -624,6 +664,7 @@ const filmDirectorInputSchema = z
       z.literal(FILM_DIRECTOR_SCHEMA_VERSION),
       z.literal(FILM_DIRECTOR_SCHEMA_VERSION_2),
       z.literal(FILM_DIRECTOR_SCHEMA_VERSION_3),
+      z.literal(FILM_DIRECTOR_SCHEMA_VERSION_4),
     ]),
     id: z.string().min(1),
     title: z.string().min(1),
@@ -749,7 +790,8 @@ export interface ResolvedFilmDirectorSpec {
   version:
     | typeof FILM_DIRECTOR_SCHEMA_VERSION
     | typeof FILM_DIRECTOR_SCHEMA_VERSION_2
-    | typeof FILM_DIRECTOR_SCHEMA_VERSION_3;
+    | typeof FILM_DIRECTOR_SCHEMA_VERSION_3
+    | typeof FILM_DIRECTOR_SCHEMA_VERSION_4;
   id: string;
   title: string;
   brief: string | null;
