@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * AvatarCustomizer Panel
+   * CharacterCustomizer Panel
    *
    * UI for customizing the 3D figure's appearance:
    * - Body type toggle (masculine/feminine)
@@ -30,8 +30,8 @@
   ];
 </script>
 
-<div class="avatar-customizer">
-  <h4 class="section-title">Avatar</h4>
+<div class="character-customizer">
+  <h4 class="section-title">Character</h4>
 
   <!-- Body Type Toggle -->
   <div class="control-group">
@@ -83,7 +83,7 @@
 </div>
 
 <style>
-  .avatar-customizer {
+  .character-customizer {
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -131,7 +131,10 @@
     color: var(--theme-text-dim);
     font-size: 0.8rem;
     cursor: pointer;
-    transition: all var(--duration-fast);
+    transition:
+      background var(--transition-fast),
+      border-color var(--transition-fast),
+      color var(--transition-fast);
   }
 
   .toggle-btn:hover {
@@ -161,7 +164,10 @@
     border-radius: 50%;
     border: 2px solid transparent;
     cursor: pointer;
-    transition: all var(--duration-fast);
+    transition:
+      border-color var(--transition-fast),
+      box-shadow var(--transition-fast),
+      transform var(--transition-fast);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -174,7 +180,8 @@
 
   .skin-swatch.active {
     border-color: var(--theme-accent);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    box-shadow: 0 0 0 2px
+      color-mix(in srgb, var(--theme-accent) 30%, transparent);
   }
 
   .skin-swatch i {

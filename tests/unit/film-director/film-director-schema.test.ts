@@ -5,6 +5,7 @@ import { sampleFilmDirector } from "../../../src/routes/test/film-director/_lib/
 import {
   FILM_DIRECTOR_DIRECTIVE_AXES,
   FILM_DIRECTOR_SCHEMA_VERSION_3,
+  FILM_DIRECTOR_SCHEMA_VERSION_4,
   FilmDirectorInputSchema,
 } from "../../../src/routes/test/film-director/_lib/film-director-schema";
 
@@ -46,13 +47,13 @@ describe("film director scene language", () => {
     expect(() =>
       resolveFilmDirectorSpec({
         version: 1,
-        id: "bad-avatar",
-        title: "Bad avatar",
+        id: "bad-character",
+        title: "Bad character",
         scenes: [
           {
             id: "scene",
             title: "Scene",
-            performance: { performers: [{ avatarId: "astronaut" }] },
+            performance: { performers: [{ characterId: "astronaut" }] },
           },
         ],
       })
@@ -136,6 +137,57 @@ describe("film director scene language", () => {
       scenes: [{ id: "s1", title: "S1" }],
     });
     expect(parsed.version).toBe(3);
+  });
+
+  it("uses characterId in schema version 4", () => {
+    const parsed = FilmDirectorInputSchema.parse({
+      version: FILM_DIRECTOR_SCHEMA_VERSION_4,
+      id: "v4-film",
+      title: "V4",
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          performance: { performers: [{ characterId: "ch01" }] },
+        },
+      ],
+    });
+    expect(parsed.scenes[0]?.performance?.performers?.[0]).toMatchObject({
+      characterId: "ch01",
+    });
+  });
+
+  it("migrates avatarId only for legacy film versions", () => {
+    const legacy = FilmDirectorInputSchema.parse({
+      version: FILM_DIRECTOR_SCHEMA_VERSION_3,
+      id: "legacy-character-field",
+      title: "Legacy character field",
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          performance: { performers: [{ avatarId: "ch01" }] },
+        },
+      ],
+    });
+    expect(legacy.scenes[0]?.performance?.performers?.[0]).toMatchObject({
+      characterId: "ch01",
+    });
+
+    expect(() =>
+      FilmDirectorInputSchema.parse({
+        version: FILM_DIRECTOR_SCHEMA_VERSION_4,
+        id: "v4-legacy-field",
+        title: "V4 legacy field",
+        scenes: [
+          {
+            id: "s1",
+            title: "S1",
+            performance: { performers: [{ avatarId: "ch01" }] },
+          },
+        ],
+      })
+    ).toThrow(/avatarId/);
   });
 
   it("upgrades legacy scene units and location fields before validation", () => {

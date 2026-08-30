@@ -1,16 +1,16 @@
 <!--
-  AvatarPreviewStage
+  CharacterPreviewStage
 
-  A focused, standalone look at ONE avatar: the real rigged figure idling on a
+  A focused, standalone look at ONE character: the real rigged figure idling on a
   small pedestal, slowly orbiting. Deliberately not Scene3D — no environment,
   no grid, no scene-feature context, no props. Two lights and a camera are
-  enough to read a body, and the avatar-select modal has to stay cheap enough
+  enough to read a body, and the character-select workspace has to stay cheap enough
   to open on a phone.
 
   Consumes the inherited `--performer-color` for its backdrop glow, so it must
   be rendered inside a subtree that declares one.
 
-  Vertical framing note: Avatar3D's model origin sits at shoulder height and it
+  Vertical framing note: the character model origin sits at shoulder height and it
   drops the figure to `userProportionsState.groundY` on its own. Lifting the
   wrapper group by that same amount (the way PerformerRig does with
   `groundOffset`) puts the feet on y = 0, which is where the pedestal is.
@@ -21,20 +21,20 @@
   import { cubicOut } from "svelte/easing";
   import { Canvas, T } from "@threlte/core";
   import CameraControls from "camera-controls";
+  import { userProportionsState } from "@austencloud/scene-3d";
   import {
-    Avatar3D,
-    userProportionsState,
-    type AvatarId,
-  } from "@austencloud/scene-3d";
+    Character3D,
+    type CharacterId,
+  } from "$lib/shared/3d/domain/character-model";
   import CanvasLifecycle from "$lib/shared/3d/components/CanvasLifecycle.svelte";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import { prefersReducedMotion } from "$lib/shared/3d/environments/primitives/motion-preference";
 
   interface Props {
-    avatarId: AvatarId;
+    characterId: CharacterId;
   }
 
-  let { avatarId }: Props = $props();
+  let { characterId }: Props = $props();
 
   const reduceMotion = $derived(prefersReducedMotion());
 
@@ -43,13 +43,13 @@
   /** Never fully empty the pedestal: an uncached model can take seconds, and a
       blank stage reads as broken where a dimmed one reads as loading. */
   const FADE_FLOOR = 0.15;
-  /** Avatar3D's load failure path installs a procedural fallback and never
+  /** The renderer's load failure path installs a procedural fallback and never
       fires onModelSwapped, which would otherwise strand the stage dimmed. */
   const SWAP_WATCHDOG_MS = 4000;
 
   const modelOpacity = new Tween(1, { easing: cubicOut });
 
-  // Avatar3D applies whatever `opacity` it is handed to every material on the
+  // Character3D applies whatever `opacity` it is handed to every material on the
   // loaded model, and fires `onModelSwapped` once the replacement root is
   // compiled and live. It never animates between the two on its own — that is
   // exactly the seam this stage fills, so browsing the grid dissolves between
@@ -58,7 +58,7 @@
   // `requestedId` is the race token: if focus moved again while a model was
   // loading, the older load's callback names a body we no longer want and must
   // not ramp opacity back up over the newer one still in flight.
-  let requestedId: AvatarId | null = null;
+  let requestedId: CharacterId | null = null;
   let fadeOut: Promise<void> = Promise.resolve();
   let watchdog: ReturnType<typeof setTimeout> | null = null;
 
@@ -74,7 +74,7 @@
   }
 
   $effect(() => {
-    const nextId = avatarId;
+    const nextId = characterId;
     untrack(() => {
       // First run is the initial load, which has nothing on screen to fade out.
       if (requestedId === null || requestedId === nextId) {
@@ -85,7 +85,7 @@
 
       // Reduced motion skips the dissolve entirely rather than shortening it:
       // a zero-duration fade means a blank pedestal for the whole load, which
-      // is worse than the cut it was meant to soften. Avatar3D hot-swaps its
+      // is worse than the cut it was meant to soften. Character3D hot-swaps its
       // root without ever flashing empty, so leaving opacity alone is honest.
       if (reduceMotion) return;
 
@@ -98,13 +98,13 @@
   });
 
   function handleModelSwapped(swappedId: string): void {
-    if (swappedId !== avatarId) return;
+    if (swappedId !== characterId) return;
     if (reduceMotion) return;
     // A cached model can report back inside the same frame the fade-out
     // started, which would ramp back up from ~0.97 and read as no transition
     // at all. Chaining on the fade-out promise guarantees the full dissolve.
     void fadeOut.then(() => {
-      if (swappedId !== avatarId) return;
+      if (swappedId !== characterId) return;
       revealModel();
     });
   }
@@ -162,14 +162,14 @@
     <T.DirectionalLight position={[-3, 2.2, -2]} intensity={0.5} />
 
     <T.Group position.y={groundOffset}>
-      <!-- `avatarId` is a live prop rather than a keyed remount: Avatar3D
+      <!-- `characterId` is a live prop rather than a keyed remount: Character3D
            hot-swaps its model root without ever flashing empty, and keying
            would tear down its services and this stage's camera on every
            hover. The dissolve across that swap is owned here — opacity down,
            then back up when onModelSwapped reports the new body is live. -->
-      <Avatar3D
-        id="avatar-select-preview"
-        {avatarId}
+      <Character3D
+        id="character-select-preview"
+        avatarId={characterId}
         bluePropState={null}
         redPropState={null}
         isActive={false}

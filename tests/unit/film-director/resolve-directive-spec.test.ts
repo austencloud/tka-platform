@@ -48,17 +48,17 @@ describe("resolveFilmDirectorSpec with directives", () => {
     );
   });
 
-  it("rerolling the prop axis changes props but not avatars", () => {
+  it("rerolling the prop axis changes props but not characters", () => {
     const doc = film({
       cast: {
         count: 6,
-        defaults: { prop: { pick: "distinct" }, avatarId: { pick: "distinct" } },
+        defaults: { prop: { pick: "distinct" }, characterId: { pick: "distinct" } },
       },
     });
     const base = resolveFilmDirectorSpec(doc);
     const rerolled = resolveFilmDirectorSpec({ ...doc, seed: { axes: { prop: 1 } } });
-    expect(rerolled.scenes[0]!.performance.performers.map((p) => p.avatarId)).toEqual(
-      base.scenes[0]!.performance.performers.map((p) => p.avatarId)
+    expect(rerolled.scenes[0]!.performance.performers.map((p) => p.characterId)).toEqual(
+      base.scenes[0]!.performance.performers.map((p) => p.characterId)
     );
     expect(rerolled.scenes[0]!.performance.performers.map((p) => p.prop)).not.toEqual(
       base.scenes[0]!.performance.performers.map((p) => p.prop)

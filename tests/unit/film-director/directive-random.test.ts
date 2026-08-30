@@ -52,8 +52,8 @@ describe("createAxisStream", () => {
     const before = resolveFilmSeed("my-film");
     const after = resolveFilmSeed("my-film", { axes: { prop: 1 } });
     expect(
-      seededShuffle(items, createAxisStream(before, "shot-1", "avatarId"))
-    ).toEqual(seededShuffle(items, createAxisStream(after, "shot-1", "avatarId")));
+      seededShuffle(items, createAxisStream(before, "shot-1", "characterId"))
+    ).toEqual(seededShuffle(items, createAxisStream(after, "shot-1", "characterId")));
     expect(
       seededShuffle(items, createAxisStream(before, "shot-1", "prop"))
     ).not.toEqual(seededShuffle(items, createAxisStream(after, "shot-1", "prop")));
@@ -71,7 +71,7 @@ describe("createAxisStream", () => {
     expect(
       seededShuffle(items, createAxisStream(seed, "shot-1", "prop"))
     ).not.toEqual(
-      seededShuffle(items, createAxisStream(seed, "shot-1", "avatarId"))
+      seededShuffle(items, createAxisStream(seed, "shot-1", "characterId"))
     );
   });
 

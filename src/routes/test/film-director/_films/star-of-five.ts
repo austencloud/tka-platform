@@ -18,7 +18,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
  * - The second fan and the second buugeng mirror the first of their pair.
  */
 export const starOfFiveFilm: FilmDirectorInput = {
-  version: 3,
+  version: 4,
   id: "star-of-five-r1",
   title: "Star of Five",
   brief:
@@ -40,7 +40,7 @@ export const starOfFiveFilm: FilmDirectorInput = {
           {
             id: "baton-tip",
             name: "Baton tip",
-            avatarId: "ch01",
+            characterId: "ch01",
             prop: PropType.CAPSULE_BATON,
             effect: "led",
             effort: "linear",
@@ -53,7 +53,7 @@ export const starOfFiveFilm: FilmDirectorInput = {
           {
             id: "fan-left",
             name: "Fan left",
-            avatarId: "ch07",
+            characterId: "ch07",
             prop: PropType.FAN,
             effect: "silk",
             effort: "glide",
@@ -71,7 +71,7 @@ export const starOfFiveFilm: FilmDirectorInput = {
             // masculine, ch18 "Nora" reads masculine, ch21 "Felix" reads
             // feminine). ch07 and ch22 both read feminine on screen, which is
             // what the fan pair needs.
-            avatarId: "ch22",
+            characterId: "ch22",
             prop: PropType.FAN,
             effect: "silk",
             effort: "glide",
@@ -84,7 +84,7 @@ export const starOfFiveFilm: FilmDirectorInput = {
           {
             id: "buugeng-left",
             name: "Buugeng left",
-            avatarId: "ch10",
+            characterId: "ch10",
             prop: PropType.BUUGENG,
             effect: "bubbles",
             effort: "linear",
@@ -99,7 +99,7 @@ export const starOfFiveFilm: FilmDirectorInput = {
             name: "Buugeng right",
             // ch10 and ch24 both read masculine and have visibly different
             // builds, so the back pair is two different guys on sight.
-            avatarId: "ch24",
+            characterId: "ch24",
             prop: PropType.BUUGENG,
             effect: "bubbles",
             effort: "linear",

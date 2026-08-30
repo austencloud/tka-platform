@@ -24,23 +24,23 @@ const hubSource = readFileSync(
   resolve("src/lib/shared/3d/components/controls/PerformerHubDetail.svelte"),
   "utf8"
 );
-// The performer command bar (954f5c4a49) moved the avatar list markup out of
+// The performer command bar (954f5c4a49) moved the character list markup out of
 // the hub and into this picker. The hub still owns the intent/commit logic and
 // hands the picker its callbacks, so the budget contract spans both files.
 const pickerSource = readFileSync(
-  resolve("src/lib/shared/3d/components/controls/PerformerAvatarPicker.svelte"),
+  resolve("src/lib/shared/3d/components/controls/PerformerCharacterPicker.svelte"),
   "utf8"
 );
 
-describe("avatar swap render budget", () => {
-  it("prepares avatar data when pointer or keyboard intent is known", () => {
+describe("character swap render budget", () => {
+  it("prepares character data when pointer or keyboard intent is known", () => {
     expect(hubSource).toContain(
-      "prepareAvatarForDisplay(getAvatarModelPath(id))"
+      "prepareCharacterForDisplay(getCharacterModelPath(id))"
     );
-    expect(hubSource).toContain("queueAvatarSelectionIntent");
+    expect(hubSource).toContain("queueCharacterSelectionIntent");
     // The hub wires its intent handlers into the picker...
-    expect(hubSource).toContain("onIntent={queueAvatarSelectionIntent}");
-    expect(hubSource).toContain("onCancelIntent={cancelAvatarSelectionIntent}");
+    expect(hubSource).toContain("onIntent={queueCharacterSelectionIntent}");
+    expect(hubSource).toContain("onCancelIntent={cancelCharacterSelectionIntent}");
     // ...and the picker binds them to the pointer and focus pair, so an intent
     // that never becomes a selection is always withdrawn.
     expect(pickerSource).toContain("onpointerenter={() => onIntent(");
@@ -49,12 +49,12 @@ describe("avatar swap render budget", () => {
     expect(pickerSource).toContain("onblur={onCancelIntent}");
   });
 
-  it("keeps the current avatar visible until its replacement is prepared", () => {
+  it("keeps the current character visible until its replacement is prepared", () => {
     // The commit path awaits the prepare — the fire-and-forget
-    // `void prepareAvatarSelection(id)` is the hover-intent warmup, a
+    // `void prepareCharacterSelection(id)` is the hover-intent warmup, a
     // different call site that sits further down the file.
     const prepareSelection = hubSource.indexOf(
-      "await prepareAvatarSelection(id)"
+      "await prepareCharacterSelection(id)"
     );
     // `46dcf56152` routed the commit through writeParameter so the director can
     // record the swap as a per-performer parameter. The scope callback that
@@ -62,20 +62,20 @@ describe("avatar swap render budget", () => {
     // await, which is the ordering this test exists to hold. Anchor on that
     // callback so the guard survives the next rename of its wrapper.
     const commitSelection = hubSource.indexOf(
-      "p?.setAvatarModel(id)",
+      "p?.setCharacter(id)",
       prepareSelection
     );
 
     expect(prepareSelection).toBeGreaterThan(-1);
     expect(commitSelection).toBeGreaterThan(prepareSelection);
     expect(hubSource).toContain(
-      'writeParameter({ field: "avatarId", value: id }'
+      'writeParameter({ field: "characterId", value: id }'
     );
-    expect(hubSource).toContain("pendingAvatarId = id");
+    expect(hubSource).toContain("pendingCharacterId = id");
     // The pending flag crosses into the picker, which paints the slot it marks.
-    expect(hubSource).toContain("{pendingAvatarId}");
+    expect(hubSource).toContain("{pendingCharacterId}");
     expect(pickerSource).toContain(
-      "class:preparing={pendingAvatarId === definition.id}"
+      "class:preparing={pendingCharacterId === definition.id}"
     );
   });
 
@@ -177,7 +177,7 @@ describe("avatar swap render budget", () => {
     expect(cacheSource).not.toContain("WebGLRenderTarget");
   });
 
-  it("fits production avatar textures to the interactive display budget", () => {
+  it("fits production character textures to the interactive display budget", () => {
     expect(cacheSource).toContain("MAX_AVATAR_TEXTURE_DIMENSION = 1024");
     expect(cacheSource).toContain(
       "fitAvatarTexturesToDisplayBudget(gltf.scene)"

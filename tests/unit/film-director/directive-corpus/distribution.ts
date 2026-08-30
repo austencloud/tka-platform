@@ -255,14 +255,14 @@ export const entries: CorpusEntry[] = [
     },
   },
   {
-    id: "distinct-avatar-from-pool-larger-than-count",
-    utterance: "Five performers, five different avatars, drawn from x-bot, y-bot, remy, ch26, ch01, ch07, ch10, ch12.",
-    film: corpusFilm("distinct-avatar-from-pool-larger-than-count", {
+    id: "distinct-character-from-pool-larger-than-count",
+    utterance: "Five performers, five different characters, drawn from x-bot, y-bot, remy, ch26, ch01, ch07, ch10, ch12.",
+    film: corpusFilm("distinct-character-from-pool-larger-than-count", {
       performance: {
         cast: {
           count: 5,
           defaults: {
-            avatarId: { pick: "distinct", from: ["x-bot", "y-bot", "remy", "ch26", "ch01", "ch07", "ch10", "ch12"] },
+            characterId: { pick: "distinct", from: ["x-bot", "y-bot", "remy", "ch26", "ch01", "ch07", "ch10", "ch12"] },
           },
         },
       },
@@ -270,10 +270,10 @@ export const entries: CorpusEntry[] = [
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const avatars = spec.scenes[0]!.performance.performers.map((p) => p.avatarId);
-        if (new Set(avatars).size !== 5) throw new Error("all five avatars must be distinct");
+        const characters = spec.scenes[0]!.performance.performers.map((p) => p.characterId);
+        if (new Set(characters).size !== 5) throw new Error("all five characters must be distinct");
         const pool = new Set(["x-bot", "y-bot", "remy", "ch26", "ch01", "ch07", "ch10", "ch12"]);
-        if (avatars.some((a) => !pool.has(a))) throw new Error("every avatar must come from the requested pool");
+        if (characters.some((a) => !pool.has(a))) throw new Error("every character must come from the requested pool");
       },
     },
   },
@@ -463,19 +463,19 @@ export const entries: CorpusEntry[] = [
     },
   },
   {
-    id: "distinct-avatar-pool-tighter-than-full-catalog",
-    utterance: "Five performers, different avatars, but only pick from remy, ch18, ch21, ch22, ch24.",
-    film: corpusFilm("distinct-avatar-pool-tighter-than-full-catalog", {
+    id: "distinct-character-pool-tighter-than-full-catalog",
+    utterance: "Five performers, different characters, but only pick from remy, ch18, ch21, ch22, ch24.",
+    film: corpusFilm("distinct-character-pool-tighter-than-full-catalog", {
       performance: {
-        cast: { count: 5, defaults: { avatarId: { pick: "distinct", from: ["remy", "ch18", "ch21", "ch22", "ch24"] } } },
+        cast: { count: 5, defaults: { characterId: { pick: "distinct", from: ["remy", "ch18", "ch21", "ch22", "ch24"] } } },
       },
     }),
     expect: {
       outcome: "resolves",
       assert: (spec) => {
-        const avatars = spec.scenes[0]!.performance.performers.map((p) => p.avatarId).sort();
-        if (JSON.stringify(avatars) !== JSON.stringify(["ch18", "ch21", "ch22", "ch24", "remy"]))
-          throw new Error("the pool must be used exactly, one avatar per performer");
+        const characters = spec.scenes[0]!.performance.performers.map((p) => p.characterId).sort();
+        if (JSON.stringify(characters) !== JSON.stringify(["ch18", "ch21", "ch22", "ch24", "remy"]))
+          throw new Error("the pool must be used exactly, one character per performer");
       },
     },
   },

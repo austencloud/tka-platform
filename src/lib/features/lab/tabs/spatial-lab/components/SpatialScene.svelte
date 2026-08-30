@@ -63,7 +63,7 @@
     showLabels={labState.showLabels}
     showStage={labState.showStage}
     visiblePlanes={labState.visiblePlanes}
-    avatarPositions={[{ x: 0, y: STAGE.STAGE_DECK_HEIGHT, z: 0 }]}
+    characterPositions={[{ x: 0, y: STAGE.STAGE_DECK_HEIGHT, z: 0 }]}
     {backgroundType}
     disableOrbitControls={labState.draggingSide !== null}
     isDragging={labState.draggingSide !== null}

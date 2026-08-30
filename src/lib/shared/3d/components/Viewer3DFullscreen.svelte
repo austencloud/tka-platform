@@ -90,6 +90,9 @@
      * setup so the user meets one decision at a time.
      */
     showSceneChrome?: boolean;
+    /** Compact control sheets can ask a document host to make room around the
+     *  shared viewer without coupling the viewer to that host's layout. */
+    onCompactSceneSheetChange?: (sheet: "performer" | "scene" | null) => void;
   }
 
   let {
@@ -124,6 +127,7 @@
     sceneControlsLeftOffset,
     allowSaveScene = true,
     showSceneChrome = true,
+    onCompactSceneSheetChange,
   }: Props = $props();
 
   let hostEl = $state<HTMLElement | null>(null);
@@ -292,6 +296,7 @@
         bottomOffset={sceneControlsBottomOffset}
         leftOffset={sceneControlsLeftOffset}
         {allowSaveScene}
+        onCompactSheetChange={onCompactSceneSheetChange}
         onLayoutChange={(next) => (sceneControlLayout = next)}
       />
     </div>

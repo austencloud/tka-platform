@@ -104,6 +104,43 @@ describe("viewer-3d-state: selection scope", () => {
     expect(moveCamera).not.toHaveBeenCalled();
   });
 
+  it("returning to All keeps the current camera view", () => {
+    const state = makeSeeded3DState();
+    state.performerManager.initialize();
+    const moveCamera = vi.fn();
+    state.registerSnapTo(moveCamera);
+
+    state.selectPerformerScope(0);
+    state.selectPerformerScope(null);
+
+    expect(moveCamera).not.toHaveBeenCalled();
+  });
+
+  it("keeps the editing camera through cast and formation changes", () => {
+    const state = makeSeeded3DState();
+    state.performerManager.initialize();
+    const moveCamera = vi.fn();
+    state.registerSnapTo(moveCamera);
+
+    state.spawnPerformerFromUI();
+    state.applyFormationFromUI("stage-lr");
+    state.removePerformerFromUI();
+
+    expect(moveCamera).not.toHaveBeenCalled();
+  });
+
+  it("moves the camera only when the user explicitly frames the cast", () => {
+    const state = makeSeeded3DState();
+    state.performerManager.initialize();
+    state.spawnPerformerFromUI();
+    const moveCamera = vi.fn();
+    state.registerSnapTo(moveCamera);
+
+    state.frameAllPerformers();
+
+    expect(moveCamera).toHaveBeenCalledTimes(1);
+  });
+
   it("setHandPlaneScoped updates every performer when All is selected", () => {
     const state = makeState();
     state.performerManager.initialize();

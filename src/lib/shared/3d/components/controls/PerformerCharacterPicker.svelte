@@ -1,27 +1,30 @@
 <script lang="ts">
-  import { AVATAR_DEFINITIONS, type AvatarId } from "@austencloud/scene-3d";
-  import { avatarThumbnailUrl } from "../../constants/r2-cdn";
+  import {
+    CHARACTER_DEFINITIONS,
+    type CharacterId,
+  } from "$lib/shared/3d/domain/character-model";
+  import { characterThumbnailUrl } from "../../constants/r2-cdn";
 
   interface Props {
     /** The tile the radiogroup treats as chosen. In the select modal this is
-        the previewed avatar, which is not yet the applied one. */
-    selectedAvatarId: AvatarId | null;
-    /** The avatar actually on the performer(s) right now. Marked with a badge
+        the previewed character, which is not yet the applied one. */
+    selectedCharacterId: CharacterId | null;
+    /** The character actually on the performer(s) right now. Marked with a badge
         so previewing another body never erases where you started. */
-    appliedAvatarId?: AvatarId | null;
-    pendingAvatarId: AvatarId | null;
+    appliedCharacterId?: CharacterId | null;
+    pendingCharacterId: CharacterId | null;
     /** Names what choosing a tile does, since it is not always "select". */
     groupLabel?: string;
-    onSelect: (id: AvatarId) => void;
-    onIntent: (id: AvatarId) => void;
+    onSelect: (id: CharacterId) => void;
+    onIntent: (id: CharacterId) => void;
     onCancelIntent: () => void;
   }
 
   let {
-    selectedAvatarId,
-    appliedAvatarId = null,
-    pendingAvatarId,
-    groupLabel = "Select avatar",
+    selectedCharacterId,
+    appliedCharacterId = null,
+    pendingCharacterId,
+    groupLabel = "Select character",
     onSelect,
     onIntent,
     onCancelIntent,
@@ -29,73 +32,78 @@
 
   let loadedThumbs = $state(new Set<string>());
 
-  function moveSelection(event: KeyboardEvent, id: AvatarId): void {
-    const currentIndex = AVATAR_DEFINITIONS.findIndex(
-      (avatar) => avatar.id === id
+  function moveSelection(event: KeyboardEvent, id: CharacterId): void {
+    const currentIndex = CHARACTER_DEFINITIONS.findIndex(
+      (character) => character.id === id
     );
     let nextIndex = currentIndex;
     if (event.key === "ArrowRight" || event.key === "ArrowDown") nextIndex++;
     else if (event.key === "ArrowLeft" || event.key === "ArrowUp") nextIndex--;
     else if (event.key === "Home") nextIndex = 0;
-    else if (event.key === "End") nextIndex = AVATAR_DEFINITIONS.length - 1;
+    else if (event.key === "End") nextIndex = CHARACTER_DEFINITIONS.length - 1;
     else return;
 
     event.preventDefault();
     nextIndex =
-      (nextIndex + AVATAR_DEFINITIONS.length) % AVATAR_DEFINITIONS.length;
-    const nextAvatar = AVATAR_DEFINITIONS[nextIndex];
-    if (!nextAvatar) return;
-    const group = (event.currentTarget as HTMLElement).closest(".avatar-grid");
-    onSelect(nextAvatar.id as AvatarId);
+      (nextIndex + CHARACTER_DEFINITIONS.length) % CHARACTER_DEFINITIONS.length;
+    const nextCharacter = CHARACTER_DEFINITIONS[nextIndex];
+    if (!nextCharacter) return;
+    const group = (event.currentTarget as HTMLElement).closest(
+      ".character-grid"
+    );
+    onSelect(nextCharacter.id as CharacterId);
     queueMicrotask(() => {
       group
-        ?.querySelector<HTMLElement>(`[data-avatar-id="${nextAvatar.id}"]`)
+        ?.querySelector<HTMLElement>(
+          `[data-character-id="${nextCharacter.id}"]`
+        )
         ?.focus();
     });
   }
 </script>
 
-<div class="avatar-picker">
-  <div class="avatar-grid" role="radiogroup" aria-label={groupLabel}>
-    {#each AVATAR_DEFINITIONS as definition, index (definition.id)}
-      {@const thumbnailUrl = avatarThumbnailUrl(definition.id)}
+<div class="character-picker">
+  <div class="character-grid" role="radiogroup" aria-label={groupLabel}>
+    {#each CHARACTER_DEFINITIONS as definition, index (definition.id)}
+      {@const thumbnailUrl = characterThumbnailUrl(definition.id)}
       <button
-        class="avatar-card"
-        class:selected={selectedAvatarId === definition.id}
-        class:preparing={pendingAvatarId === definition.id}
+        class="character-card"
+        class:selected={selectedCharacterId === definition.id}
+        class:preparing={pendingCharacterId === definition.id}
         class:has-thumb={loadedThumbs.has(definition.id)}
         class:personal={definition.availability === "local-evaluation"}
         type="button"
         role="radio"
-        aria-checked={selectedAvatarId === definition.id}
-        aria-busy={pendingAvatarId === definition.id}
-        tabindex={selectedAvatarId === definition.id ||
-        (selectedAvatarId === null && index === 0)
+        aria-checked={selectedCharacterId === definition.id}
+        aria-busy={pendingCharacterId === definition.id}
+        tabindex={selectedCharacterId === definition.id ||
+        (selectedCharacterId === null && index === 0)
           ? 0
           : -1}
-        data-avatar-id={definition.id}
-        onpointerenter={() => onIntent(definition.id as AvatarId)}
+        data-character-id={definition.id}
+        onpointerenter={() => onIntent(definition.id as CharacterId)}
         onpointerleave={onCancelIntent}
-        onfocus={() => onIntent(definition.id as AvatarId)}
+        onfocus={() => onIntent(definition.id as CharacterId)}
         onblur={onCancelIntent}
-        onkeydown={(event) => moveSelection(event, definition.id as AvatarId)}
-        onclick={() => onSelect(definition.id as AvatarId)}
+        onkeydown={(event) =>
+          moveSelection(event, definition.id as CharacterId)}
+        onclick={() => onSelect(definition.id as CharacterId)}
         title={definition.description}
-        aria-label={appliedAvatarId === definition.id
-          ? `${definition.name}, current avatar`
+        aria-label={appliedCharacterId === definition.id
+          ? `${definition.name}, current character`
           : definition.name}
       >
-        {#if pendingAvatarId === definition.id}
-          <span class="avatar-loading" aria-hidden="true"></span>
+        {#if pendingCharacterId === definition.id}
+          <span class="character-loading" aria-hidden="true"></span>
         {/if}
         <i
-          class="fas {definition.icon ?? 'fa-user'} avatar-fallback-icon"
+          class="fas {definition.icon ?? 'fa-user'} character-fallback-icon"
           class:hidden={loadedThumbs.has(definition.id)}
           aria-hidden="true"
         ></i>
         {#if thumbnailUrl}
           <img
-            class="avatar-thumb"
+            class="character-thumb"
             class:loaded={loadedThumbs.has(definition.id)}
             src={thumbnailUrl}
             alt=""
@@ -104,31 +112,32 @@
               (loadedThumbs = new Set(loadedThumbs).add(definition.id))}
           />
         {/if}
-        {#if appliedAvatarId === definition.id}
-          <span class="avatar-current-badge" aria-hidden="true">Current</span>
+        {#if appliedCharacterId === definition.id}
+          <span class="character-current-badge" aria-hidden="true">Current</span
+          >
         {/if}
         {#if definition.availability === "local-evaluation"}
-          <span class="avatar-personal-badge" aria-hidden="true">Yours</span>
+          <span class="character-personal-badge" aria-hidden="true">Yours</span>
         {/if}
-        <span class="avatar-card-name">{definition.name}</span>
+        <span class="character-card-name">{definition.name}</span>
       </button>
     {/each}
   </div>
 </div>
 
 <style>
-  .avatar-picker {
+  .character-picker {
     display: flex;
     flex-direction: column;
     gap: 10px;
     container-type: inline-size;
   }
-  .avatar-grid {
+  .character-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
   }
-  .avatar-card {
+  .character-card {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -145,16 +154,16 @@
     color: var(--theme-text-dim);
     cursor: pointer;
     transition:
-      background 140ms ease,
-      border-color 140ms ease,
-      color 140ms ease,
-      transform 160ms ease;
+      background var(--transition-fast),
+      border-color var(--transition-fast),
+      color var(--transition-fast),
+      transform var(--transition-fast);
   }
-  .avatar-card.has-thumb {
+  .character-card.has-thumb {
     padding: 0;
     justify-content: flex-end;
   }
-  .avatar-card.personal {
+  .character-card.personal {
     grid-column: 2 / span 2;
     border-color: color-mix(
       in srgb,
@@ -167,16 +176,16 @@
       var(--theme-card-bg)
     );
   }
-  .avatar-card.personal .avatar-fallback-icon {
+  .character-card.personal .character-fallback-icon {
     font-size: 28px;
   }
-  .avatar-fallback-icon {
+  .character-fallback-icon {
     font-size: 19px;
   }
-  .avatar-fallback-icon.hidden {
+  .character-fallback-icon.hidden {
     display: none;
   }
-  .avatar-thumb {
+  .character-thumb {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -184,16 +193,16 @@
     object-fit: cover;
     object-position: center top;
     opacity: 0;
-    transition: opacity 160ms ease;
+    transition: opacity var(--transition-fast);
   }
-  .avatar-thumb.loaded {
+  .character-thumb.loaded {
     opacity: 0.74;
   }
-  .avatar-card.has-thumb:hover .avatar-thumb,
-  .avatar-card.has-thumb.selected .avatar-thumb {
+  .character-card.has-thumb:hover .character-thumb,
+  .character-card.has-thumb.selected .character-thumb {
     opacity: 1;
   }
-  .avatar-current-badge {
+  .character-current-badge {
     position: absolute;
     z-index: 2;
     top: 4px;
@@ -207,7 +216,7 @@
     letter-spacing: 0.03em;
     line-height: 1.2;
   }
-  .avatar-personal-badge {
+  .character-personal-badge {
     position: absolute;
     z-index: 2;
     top: 4px;
@@ -220,7 +229,7 @@
     font-weight: 700;
     line-height: 1.2;
   }
-  .avatar-card-name {
+  .character-card-name {
     position: relative;
     z-index: 1;
     width: 100%;
@@ -233,29 +242,29 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .avatar-card.has-thumb .avatar-card-name {
+  .character-card.has-thumb .character-card-name {
     background: linear-gradient(
       transparent,
       color-mix(in srgb, var(--surface-darker) 82%, black)
     );
   }
-  .avatar-card:hover {
+  .character-card:hover {
     background: color-mix(in srgb, var(--performer-color) 10%, transparent);
     border-color: color-mix(in srgb, var(--performer-color) 30%, transparent);
     color: white;
     transform: translateY(-1px);
   }
-  .avatar-card.selected {
+  .character-card.selected {
     background: color-mix(in srgb, var(--performer-color) 22%, transparent);
     border-color: var(--performer-color);
     color: white;
     box-shadow: 0 0 12px
       color-mix(in srgb, var(--performer-color) 24%, transparent);
   }
-  .avatar-card.preparing {
+  .character-card.preparing {
     border-color: color-mix(in srgb, var(--performer-color) 55%, transparent);
   }
-  .avatar-loading {
+  .character-loading {
     position: absolute;
     z-index: 2;
     top: 50%;
@@ -266,9 +275,9 @@
       color-mix(in srgb, var(--performer-color) 25%, transparent);
     border-top-color: var(--performer-color);
     border-radius: 50%;
-    animation: avatar-loading-spin 700ms linear infinite;
+    animation: character-loading-spin var(--duration-dramatic) linear infinite;
   }
-  @keyframes avatar-loading-spin {
+  @keyframes character-loading-spin {
     from {
       transform: translate(-50%, -50%) rotate(0deg);
     }
@@ -281,20 +290,20 @@
     outline-offset: 2px;
   }
   @container (min-width: 580px) {
-    .avatar-grid {
+    .character-grid {
       grid-template-columns: repeat(6, minmax(0, 1fr));
     }
-    .avatar-card.personal {
+    .character-card.personal {
       grid-column: auto / span 2;
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .avatar-card,
-    .avatar-thumb {
+    .character-card,
+    .character-thumb {
       transition: none;
     }
-    .avatar-loading {
-      animation-duration: 1400ms;
+    .character-loading {
+      animation: none;
     }
   }
 </style>

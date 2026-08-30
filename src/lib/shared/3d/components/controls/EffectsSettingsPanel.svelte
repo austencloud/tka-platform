@@ -31,7 +31,7 @@
   import EffectControlStack from "$lib/shared/effects/components/EffectControlStack.svelte";
   import { advancedControls } from "$lib/shared/effects/domain/effect-control-manifest";
   import type { EffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
-  import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  import type { CharacterInstanceState } from "$lib/shared/3d/state/character-instance-state.svelte";
   import type { EffectType } from "$lib/shared/effects/domain/effects-config";
   import { createEffectControlOverrides } from "$lib/shared/effects/effect-control-fields";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
@@ -42,9 +42,9 @@
   import { onDestroy } from "svelte";
 
   interface Props {
-    performer?: AvatarInstanceState | null;
+    performer?: CharacterInstanceState | null;
     /** All-Performers mode: apply every change to this whole group. */
-    performers?: AvatarInstanceState[] | null;
+    performers?: CharacterInstanceState[] | null;
     onSettingChange?: ViewerControlSink;
     /**
      * Set by a host that owns performer state. Effect changes in either

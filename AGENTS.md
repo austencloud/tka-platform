@@ -265,7 +265,7 @@ The rules above are a summary. The authoritative, enforced set is in `.claude/ru
 - `commit-only-your-own-changes.md` — worktree indexes are isolated, but path ownership still matters and Local sessions may share the primary index. Always `git commit -m "..." -- <explicit paths>`. Never a bare `git commit`, never `git add -A`/`.`/`-u`.
 - `worktree-workflow.md`: modifying tasks use dedicated worktrees; the primary checkout is reserved for Austen's dev server, integration, and explicitly requested local work.
 - `fast-iteration-loop.md` + `resource-budget.md` — no full `npm run check`/`build` in the inner loop; capture check output once then grep it; reuse a running dev server before spawning one; one `svelte-check` machine-wide.
-- Design/UI rules: `no-checkboxes.md`, `chip-primitives.md`, `crossfade-primitive.md`, `no-layout-shift.md`, `clickables-look-like-buttons.md`, `clickable-links.md`, `simplified-word-display.md`, `sequence-viewer-shell.md`, `primitive-discovery.md`.
+- Design/UI rules: `no-checkboxes.md`, `chip-primitives.md`, `crossfade-primitive.md`, `no-layout-shift.md`, `clickables-look-like-buttons.md`, `clickable-links.md`, `simplified-word-display.md`, `sequence-viewer-shell.md`, `primitive-discovery.md`, `3d-character-terminology.md`.
 - Domain rules: `tka-domain.md`, `verify-at-canonical-source.md`.
 
 When in doubt, `ls .claude/rules/` and read the one whose name matches your task.

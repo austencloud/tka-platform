@@ -1,45 +1,49 @@
 <!--
-  The avatar chooser is an editor, not a dialog. This component owns the
+  The character chooser is an editor, not a dialog. This component owns the
   previewing experience wherever it is composed: the live figure, focused
-  metadata, explicit Apply action, and the keyboard-aware avatar grid.
+  metadata, explicit Apply action, and the keyboard-aware character grid.
 
-  The host still owns loading and applying an avatar. Keeping that boundary
+  The host still owns loading and applying a character. Keeping that boundary
   means an inline inspector and any future modal wrapper report the same
   analytics, errors, and undo history.
 -->
 <script lang="ts">
   import { onDestroy, untrack } from "svelte";
   import {
-    AVATAR_DEFINITIONS,
-    DEFAULT_AVATAR_ID,
-    type AvatarId,
-  } from "@austencloud/scene-3d";
-  import PerformerAvatarPicker from "../PerformerAvatarPicker.svelte";
-  import AvatarPreviewStage from "./AvatarPreviewStage.svelte";
+    CHARACTER_DEFINITIONS,
+    DEFAULT_CHARACTER_ID,
+    type CharacterId,
+  } from "$lib/shared/3d/domain/character-model";
+  import PerformerCharacterPicker from "../PerformerCharacterPicker.svelte";
+  import CharacterPreviewStage from "./CharacterPreviewStage.svelte";
 
   interface Props {
-    currentAvatarId: AvatarId | null;
-    pendingAvatarId?: AvatarId | null;
+    currentCharacterId: CharacterId | null;
+    pendingCharacterId?: CharacterId | null;
     performerColor?: string;
     /** Re-anchors the preview when the inspector changes performer scope. */
     scopeKey?: string;
-    onIntent: (id: AvatarId) => void;
+    onIntent: (id: CharacterId) => void;
     onCancelIntent: () => void;
-    onCommit: (id: AvatarId) => void;
+    onCommit: (id: CharacterId) => void;
   }
 
   let {
-    currentAvatarId,
-    pendingAvatarId = null,
+    currentCharacterId,
+    pendingCharacterId = null,
     performerColor = "var(--theme-accent)",
-    scopeKey = "avatar",
+    scopeKey = "character",
     onIntent,
     onCancelIntent,
     onCommit,
   }: Props = $props();
 
-  let focusedId = $state<AvatarId>(currentAvatarId ?? DEFAULT_AVATAR_ID);
-  let previewId = $state<AvatarId>(currentAvatarId ?? DEFAULT_AVATAR_ID);
+  let focusedId = $state<CharacterId>(
+    currentCharacterId ?? DEFAULT_CHARACTER_ID
+  );
+  let previewId = $state<CharacterId>(
+    currentCharacterId ?? DEFAULT_CHARACTER_ID
+  );
   let anchorKey = $state("");
 
   // Arrow-key traversal can cross the grid faster than a model loads. The
@@ -53,7 +57,7 @@
     settleTimer = null;
   }
 
-  function focusAvatar(id: AvatarId, immediate = false): void {
+  function focusCharacter(id: CharacterId, immediate = false): void {
     focusedId = id;
     clearSettle();
     if (immediate) {
@@ -67,21 +71,22 @@
   }
 
   $effect(() => {
-    const nextAnchor = `${scopeKey}:${currentAvatarId ?? "mixed"}`;
+    const nextAnchor = `${scopeKey}:${currentCharacterId ?? "mixed"}`;
     if (nextAnchor === anchorKey) return;
     anchorKey = nextAnchor;
     untrack(() => {
-      focusAvatar(currentAvatarId ?? DEFAULT_AVATAR_ID, true);
+      focusCharacter(currentCharacterId ?? DEFAULT_CHARACTER_ID, true);
     });
   });
 
   onDestroy(clearSettle);
 
   const focusedDef = $derived(
-    AVATAR_DEFINITIONS.find((definition) => definition.id === focusedId) ?? null
+    CHARACTER_DEFINITIONS.find((definition) => definition.id === focusedId) ??
+      null
   );
-  const isCurrent = $derived(currentAvatarId === focusedId);
-  const isPending = $derived(pendingAvatarId === focusedId);
+  const isCurrent = $derived(currentCharacterId === focusedId);
+  const isPending = $derived(pendingCharacterId === focusedId);
 
   function commit(): void {
     if (isCurrent || isPending) return;
@@ -91,13 +96,13 @@
   }
 </script>
 
-<div class="avatar-select-shell" style:--performer-color={performerColor}>
-  <div class="avatar-select-workspace">
+<div class="character-select-shell" style:--performer-color={performerColor}>
+  <div class="character-select-workspace">
     <div class="preview-pane">
-      <AvatarPreviewStage avatarId={previewId} />
+      <CharacterPreviewStage characterId={previewId} />
 
       <div class="focus-meta" aria-live="polite">
-        <span class="focus-name">{focusedDef?.name ?? "Avatar"}</span>
+        <span class="focus-name">{focusedDef?.name ?? "Character"}</span>
         <span class="focus-desc">{focusedDef?.description ?? ""}</span>
       </div>
 
@@ -113,24 +118,24 @@
       >
         {#if isPending}
           <span class="button-spinner" aria-hidden="true"></span>
-          Loading avatar…
+          Loading character…
         {:else}
-          {isCurrent ? "This avatar is active" : "Use this avatar"}
+          {isCurrent ? "This character is active" : "Use this character"}
         {/if}
       </button>
     </div>
 
     <div class="picker-pane">
       <div class="picker-heading">
-        <strong>Choose an avatar</strong>
+        <strong>Choose a character</strong>
         <span>Focus a body to preview it before applying.</span>
       </div>
-      <PerformerAvatarPicker
-        selectedAvatarId={focusedId}
-        appliedAvatarId={currentAvatarId}
-        groupLabel="Preview avatar"
-        {pendingAvatarId}
-        onSelect={(id) => focusAvatar(id)}
+      <PerformerCharacterPicker
+        selectedCharacterId={focusedId}
+        appliedCharacterId={currentCharacterId}
+        groupLabel="Preview character"
+        {pendingCharacterId}
+        onSelect={(id) => focusCharacter(id)}
         {onIntent}
         {onCancelIntent}
       />
@@ -139,12 +144,12 @@
 </div>
 
 <style>
-  .avatar-select-shell {
+  .character-select-shell {
     min-width: 0;
     container-type: inline-size;
   }
 
-  .avatar-select-workspace {
+  .character-select-workspace {
     display: grid;
     grid-template-columns: minmax(13rem, 2fr) minmax(18rem, 3fr);
     gap: 1rem;
@@ -217,8 +222,8 @@
     font-weight: 650;
     cursor: pointer;
     transition:
-      background 140ms ease,
-      border-color 140ms ease;
+      background var(--transition-fast),
+      border-color var(--transition-fast);
   }
 
   .select-btn:hover:not(.is-current) {
@@ -245,7 +250,7 @@
       color-mix(in srgb, var(--performer-color) 28%, transparent);
     border-top-color: var(--performer-color);
     border-radius: 50%;
-    animation: button-spin 700ms linear infinite;
+    animation: button-spin var(--duration-dramatic) linear infinite;
   }
 
   @keyframes button-spin {
@@ -255,7 +260,7 @@
   }
 
   @container (max-width: 34rem) {
-    .avatar-select-workspace {
+    .character-select-workspace {
       grid-template-columns: minmax(0, 1fr);
     }
 
@@ -275,7 +280,7 @@
     }
 
     .button-spinner {
-      animation-duration: 1400ms;
+      animation: none;
     }
   }
 </style>

@@ -15,7 +15,7 @@
   import { Plane } from "@austencloud/scene-3d";
   import { PlaneMode } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { createAvatarInstanceState, makeStandaloneDeps } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  import { createCharacterInstanceState, makeStandaloneDeps } from "$lib/shared/3d/state/character-instance-state.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
   interface Props {
@@ -43,7 +43,7 @@
 
   // Create performer animation state (slot identity is stable per instance)
   const performerState = $derived.by(() =>
-    createAvatarInstanceState(
+    createCharacterInstanceState(
       {
         id: `museum-performer-${slot.id}`,
         positionX: slot.position.x,
