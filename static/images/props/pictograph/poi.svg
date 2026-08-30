@@ -1,13 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 258.67 150">
-  <!-- Mirror reserve (invisible): keeps the geometric bbox symmetric about the
-       viewBox center, matching the unilateral-prop convention. -->
-  <rect x="60" y="73" width="69.34" height="4" rx="2" fill="none"/>
-  <circle cx="30" cy="75" r="30" fill="none"/>
-  <!-- cord: starts at the grip (viewBox center, no offset). -->
-  <rect x="129.33" y="73" width="69.34" height="4" rx="2" fill="#2E3192"/>
-  <!-- knob (grip) at the viewBox center (129.33,75) - the handpoint. -->
-  <circle cx="129.33" cy="75" r="8" fill="#2E3192"/>
-  <!-- weighted ball: far edge at 258.67, so the whole unit (grip to tip) spans
-       exactly the club's reach (129.33 units, club viewBox 258.67). -->
-  <circle cx="228.67" cy="75" r="30" fill="#2E3192"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288.67 38">
+  <!-- Poi. Anatomy matches Poi3D.svelte: finger loop at the grip, long tether,
+       swivel, weighted head. The grip is the viewBox center (144.335,19) and the
+       head CENTER sits 129.335 out from it - the club's reach - so poi produces
+       the same mandala and trail radius as every other regular prop. The head is
+       30 units across, ~10.7cm at the staff's 90cm = 252.8-unit scale, which is a
+       real poi head; the tether is 4x that, which is what makes the prop read as
+       poi rather than as a ball on a stick. -->
+  <g data-poi-art="regular">
+    <!-- Mirror reserve (invisible): keeps the geometric bbox symmetric about the
+         grip, matching the unilateral-prop convention. -->
+    <rect x="15" y="16" width="120.34" height="6" rx="3" fill="none"/>
+    <circle cx="15" cy="19" r="15" fill="none"/>
+
+    <!-- tether: grip to head center. -->
+    <rect data-poi-part="tether" x="153.34" y="15.75" width="120.33" height="6.5" rx="3.25" fill="#2E3192"/>
+    <rect data-poi-detail="tether-sheen" x="156" y="16.6" width="112" height="1.7" rx=".85" fill="#FFFFFF" opacity=".2"/>
+
+    <!-- swivel where the tether meets the head. -->
+    <circle data-poi-part="swivel" cx="256.17" cy="19" r="4.6" fill="#2E3192" stroke="#202126" stroke-width=".8"/>
+
+    <!-- weighted head: far edge at 288.67, so grip-to-tip spans 144.335. -->
+    <circle data-poi-part="head" cx="273.67" cy="19" r="15" fill="#2E3192" stroke="#202126" stroke-width=".9"/>
+    <circle data-poi-detail="head-highlight" cx="268.6" cy="14" r="4.4" fill="#FFFFFF" opacity=".34"/>
+
+    <!-- finger loop (grip) centered on the handpoint. -->
+    <path data-poi-part="handle" fill="#2E3192" fill-rule="evenodd" stroke="#202126" stroke-width=".8"
+      d="M134.335 19a10 10 0 1 0 20 0a10 10 0 1 0-20 0ZM138.735 19a5.6 5.6 0 1 0 11.2 0a5.6 5.6 0 1 0-11.2 0Z"/>
+  </g>
 </svg>
