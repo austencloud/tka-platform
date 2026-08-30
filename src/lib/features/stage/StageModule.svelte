@@ -19,6 +19,7 @@
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { createFullscreenController } from "$lib/shared/fullscreen/state/fullscreen-controller.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import {
     SceneEnvironmentId,
     sceneEnvironmentIdForBackground,
@@ -46,10 +47,14 @@
   import { createSceneVideoExport } from "./scene/services/create-scene-video-export.svelte";
   import { setStageChoreographyContext } from "./context/stage-choreography-context";
   import { resolveActiveFormationIndex } from "./domain/active-formation";
+  import { resolveStageDeleteCommand } from "./domain/stage-delete-command";
   import { samplePerformerSequenceAtBeat } from "./domain/stage-sequence-timeline";
   import { createStageChoreographyState } from "./state/stage-choreography-state.svelte";
   import type { StudioStarter } from "./domain/studio-project";
-  import { createStageEditMode } from "./state/stage-edit-mode.svelte";
+  import {
+    createStageEditMode,
+    type StageSelection,
+  } from "./state/stage-edit-mode.svelte";
   import {
     DEFAULT_STAGE_SEQUENCE_ID,
     loadStageSequence,
@@ -492,11 +497,92 @@
     if (added) editMode.selectFormation(added.id);
   }
 
-  function removeSelectedSet(): void {
-    const id = editMode.selectedFormationId ?? activeSet?.id;
-    if (!id) return;
-    stageState.removeFormation(id);
-    editMode.clearSelection();
+  function deleteStageSelection(
+    selection: StageSelection = editMode.selection
+  ): void {
+    const command = resolveStageDeleteCommand(selection);
+
+    switch (command.kind) {
+      case "remove-performers": {
+        const selectedIds = new Set(command.performerIds);
+        const firstIndex = choreography.performers.findIndex((performer) =>
+          selectedIds.has(performer.id)
+        );
+        const removedLabels = choreography.performers
+          .filter((performer) => selectedIds.has(performer.id))
+          .map((performer) => performer.label);
+
+        if (!stageState.removePerformers(command.performerIds)) {
+          if (removedLabels.length > 0) {
+            toast.warning("A scene needs at least one performer.");
+          }
+          return;
+        }
+
+        const nextIndex = Math.min(
+          Math.max(0, firstIndex),
+          choreography.performers.length - 1
+        );
+        const nextPerformer = choreography.performers[nextIndex];
+        if (nextPerformer) editMode.selectPerformer(nextPerformer.id);
+        else editMode.clearSelection();
+
+        toast.success(
+          removedLabels.length === 1
+            ? `Performer ${removedLabels[0]} removed. Ctrl+Z to undo.`
+            : `${removedLabels.length} performers removed. Ctrl+Z to undo.`
+        );
+        return;
+      }
+      case "remove-formation": {
+        const index = choreography.formations.findIndex(
+          (formation) => formation.id === command.formationId
+        );
+        if (index <= 0) {
+          if (index === 0) toast.info("The opening set stays in every scene.");
+          return;
+        }
+        const name =
+          choreography.formations[index]?.label ?? `Set ${index + 1}`;
+        stageState.removeFormation(command.formationId);
+        editMode.clearSelection();
+        toast.success(`${name} removed. Ctrl+Z to undo.`);
+        return;
+      }
+      case "remove-clip": {
+        const performer = choreography.performers.find(
+          (candidate) => candidate.id === command.performerId
+        );
+        const clip = performer?.sequenceClips.find(
+          (candidate) => candidate.id === command.clipId
+        );
+        if (!performer || !clip) return;
+        const name = stageState.clipLabel(clip);
+        stageState.removeSequenceClip(command.clipId);
+        editMode.selectPerformer(command.performerId);
+        toast.success(
+          `${name} removed from performer ${performer.label}. Ctrl+Z to undo.`
+        );
+        return;
+      }
+      case "reset-travel":
+        if (
+          stageState.resetPerformerTravelTiming(
+            command.formationId,
+            command.performerId
+          )
+        ) {
+          toast.success("Custom travel timing reset to Auto. Ctrl+Z to undo.");
+        }
+        return;
+      case "explain-required-spot":
+        toast.info(
+          "Every performer needs a spot in each set. Move it or reset the set layout instead."
+        );
+        return;
+      case "none":
+        return;
+    }
   }
 
   /**
@@ -524,7 +610,7 @@
       nextSet: () => jumpToNeighbouringSet(1),
       toggleChart: () => (chartRaised = !chartRaised),
       addSet: addSetAtPlayhead,
-      removeSelectedSet,
+      deleteSelection: () => deleteStageSelection(),
     })) {
       manager.register(shortcut);
     }
@@ -591,7 +677,11 @@
             axis: "x",
           }}
         >
-          <SetProperties {editMode} />
+          <SetProperties
+            {editMode}
+            onRemoveSet={(formationId) =>
+              deleteStageSelection({ kind: "formation", formationId })}
+          />
         </div>
       {/if}
     </div>
@@ -702,6 +792,7 @@
     mode={timelineDisclosure === "editor" ? "editor" : "dock"}
     onExpand={() => openChoreography()}
     onCollapse={collapseChoreography}
+    onDeleteSelection={deleteStageSelection}
   />
 {/snippet}
 

@@ -82,6 +82,7 @@
       <button
         type="button"
         class="travel-control floor-travel-control"
+        data-keyboard-shortcuts-ignore
         disabled={!interactive}
         aria-pressed={selected}
         aria-label="{segment.label}: depart on count {segment.startBeat}, arrive on count {segment.endBeat}, {stepDescription(
@@ -107,6 +108,7 @@
           type="button"
           role="slider"
           class="travel-handle departure-handle floor-travel-control"
+          data-keyboard-shortcuts-ignore
           disabled={!interactive}
           aria-label="Departure for {segment.label}"
           aria-valuemin={segment.minimumStartBeat}
@@ -127,6 +129,7 @@
           type="button"
           role="slider"
           class="travel-handle arrival-handle floor-travel-control"
+          data-keyboard-shortcuts-ignore
           disabled={!interactive}
           aria-label="Arrival for {segment.label}"
           aria-valuemin={segment.startBeat}
