@@ -108,5 +108,41 @@ Save these details for later fields:
 
 ## Gate status
 
-Awaiting Austen's approval of the recommended angle. No elevator-pitch draft
-has been written.
+The first angle was approved and produced a 221-character draft. Austen rejected
+that draft because it assumed the reviewer already knew what the Kinetic
+Alphabet was and did not state the real choreographic purpose clearly enough.
+That draft is discarded and must not be entered into the portal.
+
+### Revision interview
+
+**Austen, August 30, 2026:**
+
+> Somebody who doesn't know what the kinetic alphabet is would not be able to
+> read that you need to frame it like spinning sticks and also make it clear
+> that the ultimate end goal of this is Floart's prop choreography comprehension
+> and creation and collaboration Or you can play up the dramatic effect of the
+> mundanity of the activity against the splendiferousness that it is presented
+> with
+
+"Floart's" appears to be a speech transcription of "flow arts." The earlier
+fire-jam source already supports the purposes Austen named: understanding the
+notation, making sequences, and sharing choreography with other performers. The
+January museum session supports the contrast Austen wants because he described
+walking around ordinary movement artifacts, taking them "very very seriously,"
+and expressing the fabricated history as fact.
+
+### Revised angle awaiting approval
+
+1. Begin with the concrete activity: people spinning sticks or hand-held props.
+2. Present that ordinary activity with absurd institutional scale, such as a
+   40,000-year bureaucratic history or conspiracy.
+3. Land on the real purpose: the player learns a system for understanding,
+   creating, and sharing prop choreography.
+
+The short pitch should not open with "Kinetic Alphabet" before giving the reader
+a physical image. It may name the system after the image is established. The
+institution's collapse can move to the full project details because the 225
+characters now need to explain both the activity and the real-world payoff.
+
+Awaiting Austen's approval of this revised angle. No replacement draft has been
+written.
