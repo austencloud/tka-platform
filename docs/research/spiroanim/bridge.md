@@ -98,7 +98,7 @@ app can rot the other's format.
 ### The cellKey grammar
 
 ```
-<concept>.<reference>.<ratio>.<shape>.<variant>
+<concept>.<reference>.<ratio>.<shape>.<variant>[.o<degrees>]
 ```
 
 | Field | Values |
@@ -108,8 +108,10 @@ app can rot the other's format.
 | `ratio` | `1x1` \| `1x3` \| `1x5` (`x` replaces `:`, which a path segment cannot carry cleanly) |
 | `shape` | `diamond` \| `box` |
 | `variant` | `base` \| `anti` (`anti` ⇔ `isAnti: true` in the transcription) |
+| `o<degrees>` | optional pattern orientation: `o-90` \| `o-45` \| `o0` \| `o45` \| `o90` \| `o180`. vtg/qtr only. |
 
-Example: `vtg.1-1.1x1.diamond.base`.
+Example: `vtg.1-1.1x1.diamond.base`, or with an orientation
+`vtg.3-4.1x3.diamond.base.o45`.
 
 The key is all-lowercase. His data spells the 8-Step rows uppercase (`1-AA`),
 so the boundary lowercases them and one spelling crosses the wire. 8-Step has
@@ -122,10 +124,42 @@ his own link builder emits `quarters: 1` / `reversePlane: false`, which is also
 what `cell-catalogue.json` records, so the bridge addresses that reading. The
 1,584 transcription entries collapse to 1,008 addressable keys.
 
-**Forward compatibility:** dot-separated fields beyond the fifth are IGNORED,
-not rejected. A future SpiroAnim may append an axis without breaking every
-Composer build already deployed. Anything else malformed resolves to `null`.
-Never a guess.
+**Forward compatibility:** unrecognised dot-separated fields beyond the fifth
+are IGNORED, not rejected. A future SpiroAnim may append an axis without
+breaking every Composer build already deployed. A RECOGNISED trailing field is
+parsed strictly: an `o` token with a value outside the set above, or a second
+`o` token, is a wrong coordinate and fails the parse. Anything else malformed
+resolves to `null`. Never a guess.
+
+### Orientation translation
+
+SpiroAnim's "Pattern rotation" control turns the whole flower; TKA has no such
+global knob, so the bridge translates it into the positions themselves. Three
+facts, all verified by compiling cells inside his own checkout on 2026-08-30:
+
+1. The transcription corpus was captured at pattern orientation **-90**, the
+   universal default at capture time (2026-08-09).
+2. His current default is per-ratio, and for every bridged ratio (1:1, 1:3,
+   1:5 — vtg and qtr alike) it is **0**. So a key without an `o` token means
+   "what a SpiroAnim user sees by default," which is 90° clockwise of the raw
+   transcription — not the transcription itself.
+3. Each +45° of orientation moves every hand exactly one compass step
+   **clockwise** (n → ne → e → …). Both apps label the compass from the same
+   screen frame — the transcribed grid points came from his `closestPoint`
+   mapping — so the convention carries over verbatim.
+
+The resolver (`orientation-rotation.ts`) rotates each transcribed step's
+positions clockwise by `(requested − (−90)) / 45` compass steps before the
+dataframe lookup. 45° views land on intercardinal points and resolve against
+the Box dataframe; the resolver's merged Diamond+Box index already covers that
+(proven by the o45 sweep over all 864 vtg/qtr cells). Turns are per-hand
+scalars and survive rotation unchanged, so the derived word is
+rotation-invariant. **8stp has no orientation axis:** it never rotates, and an
+`o` token on an 8stp key is treated as a foreign field.
+
+Return links are unaffected: `vtg-qtr-deep-links.json` was generated at
+orientation 0 (byte-verified against a live 0-orientation URL), which matches
+the default view the Composer now renders.
 
 ### Return links are vendored, not encoded
 
