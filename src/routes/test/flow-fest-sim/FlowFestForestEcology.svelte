@@ -4,6 +4,7 @@
   import { untrack } from "svelte";
   import {
     Group,
+    type InstancedMesh,
     type Mesh,
     type MeshStandardMaterial,
     type Object3D,
@@ -21,6 +22,8 @@
   } from "$lib/shared/3d/rendering/instance-frustum-culling";
   import ForestClearingWind from "$lib/shared/3d/environments/scenes/forest/ForestClearingWind.svelte";
   import {
+    buildFlowFestCanopyShellGeometry,
+    FLOW_FEST_CANOPY_SHELL_TIERS,
     FLOW_FEST_FOREST_GRASS_ASSET,
     FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS,
     FLOW_FEST_FOREST_GROUND_LIFE_ASSETS,
@@ -28,6 +31,11 @@
     FLOW_FEST_FOREST_DISTANCE_LOD,
     FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS,
     FLOW_FEST_FOREST_TREE_ASSETS,
+    flattenFlowFestDistanceTierMaterial,
+    isFlowFestForestFoliageMaterial,
+    summarizeFlowFestForestEcologyAssets,
+    type FlowFestForestEcologyAssetEntry,
+    type FlowFestForestEcologyAssetReport,
     type FlowFestForestEcologyLayout,
     type FlowFestForestDistanceTreeFamilyId,
     type FlowFestForestTreeFamilyId,
@@ -37,6 +45,8 @@
     layout: FlowFestForestEcologyLayout;
     foliageTint: string;
     barkTint: string;
+    grassTint: string;
+    onAssetReport?: (report: FlowFestForestEcologyAssetReport) => void;
     onReady?: (details: {
       treeInstances: number;
       grassInstances: number;
@@ -58,6 +68,8 @@
     layout,
     foliageTint,
     barkTint,
+    grassTint,
+    onAssetReport,
     onReady,
     onCullingSample,
     onGrassCullingSample,
@@ -160,6 +172,140 @@
     FLOW_FEST_FOREST_GROUND_LIFE_ASSETS["woodland-hazel-shrub"],
     loaderOptions
   );
+
+  interface EcologyAssetSource {
+    subscribe: (run: (value: unknown) => void) => () => void;
+    error: {
+      subscribe: (run: (value: Error | undefined) => void) => () => void;
+    };
+  }
+
+  const ecologyAssetSources: ReadonlyArray<{
+    key: string;
+    url: string;
+    source: EcologyAssetSource;
+  }> = [
+    ["near:island-tree-01", FLOW_FEST_FOREST_TREE_ASSETS["island-tree-01"], islandTree01],
+    ["near:island-tree-02", FLOW_FEST_FOREST_TREE_ASSETS["island-tree-02"], islandTree02],
+    ["near:island-tree-03", FLOW_FEST_FOREST_TREE_ASSETS["island-tree-03"], islandTree03],
+    ["near:tree-small-02", FLOW_FEST_FOREST_TREE_ASSETS["tree-small-02"], treeSmall02],
+    [
+      "near:plantcatalog-aesculus-carnea",
+      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-aesculus-carnea"],
+      plantCatalogAesculusCarnea,
+    ],
+    [
+      "near:plantcatalog-oak-urban",
+      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-oak-urban"],
+      plantCatalogOakUrban,
+    ],
+    [
+      "near:plantcatalog-oak-colonised",
+      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-oak-colonised"],
+      plantCatalogOakColonised,
+    ],
+    [
+      "near:plantcatalog-willow",
+      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-willow"],
+      plantCatalogWillow,
+    ],
+    [
+      "near:plantcatalog-buckeye-31",
+      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-buckeye-31"],
+      plantCatalogBuckeye31,
+    ],
+    [
+      "near:plantcatalog-buckeye-79",
+      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-buckeye-79"],
+      plantCatalogBuckeye79,
+    ],
+    [
+      "near:plantcatalog-habitat-snag",
+      FLOW_FEST_FOREST_TREE_ASSETS["plantcatalog-habitat-snag"],
+      plantCatalogHabitatSnag,
+    ],
+    ["mid:island-tree-01", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["island-tree-01"], islandTree01Mid],
+    ["mid:island-tree-02", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["island-tree-02"], islandTree02Mid],
+    ["mid:island-tree-03", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["island-tree-03"], islandTree03Mid],
+    ["mid:tree-small-02", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.mid["tree-small-02"], treeSmall02Mid],
+    ["far:island-tree-01", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["island-tree-01"], islandTree01Far],
+    ["far:island-tree-02", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["island-tree-02"], islandTree02Far],
+    ["far:island-tree-03", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["island-tree-03"], islandTree03Far],
+    ["far:tree-small-02", FLOW_FEST_FOREST_DISTANCE_TREE_ASSETS.far["tree-small-02"], treeSmall02Far],
+    ["grass:near", FLOW_FEST_FOREST_GRASS_ASSET, grassPrototypes],
+    ["grass:mid", FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS.mid, grassMidPrototypes],
+    ["grass:far", FLOW_FEST_FOREST_DISTANCE_GRASS_ASSETS.far, grassFarPrototypes],
+    [
+      "ground-life:damp-sedge-tussock",
+      FLOW_FEST_FOREST_GROUND_LIFE_ASSETS["damp-sedge-tussock"],
+      dampSedge,
+    ],
+    [
+      "ground-life:woodland-hazel-shrub",
+      FLOW_FEST_FOREST_GROUND_LIFE_ASSETS["woodland-hazel-shrub"],
+      hazelShrub,
+    ],
+  ].map(([key, url, source]) => ({
+    key: key as string,
+    url: url as string,
+    source: source as unknown as EcologyAssetSource,
+  }));
+
+  const assetLedger = new Map<string, FlowFestForestEcologyAssetEntry>(
+    ecologyAssetSources.map(({ key, url }) => [
+      key,
+      { key, url, state: "pending" as const },
+    ])
+  );
+  let assetLedgerRevision = $state(0);
+
+  $effect(() => {
+    const unsubscribers: Array<() => void> = [];
+    for (const { key, url, source } of ecologyAssetSources) {
+      unsubscribers.push(
+        source.subscribe((value) => {
+          const entry = assetLedger.get(key);
+          if (!entry || !value || entry.state === "ready") return;
+          entry.state = "ready";
+          entry.message = null;
+          assetLedgerRevision += 1;
+        })
+      );
+      unsubscribers.push(
+        source.error.subscribe((error) => {
+          const entry = assetLedger.get(key);
+          if (!entry || !error || entry.state === "failed") return;
+          entry.state = "failed";
+          entry.message = error.message || String(error);
+          console.error(
+            `[flow-fest-sim] Forest ecology asset failed to load: ${key} (${url})`,
+            error
+          );
+          assetLedgerRevision += 1;
+        })
+      );
+    }
+    return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
+  });
+
+  const assetReport = $derived.by(() => {
+    void assetLedgerRevision;
+    return summarizeFlowFestForestEcologyAssets(
+      ecologyAssetSources.map(({ key, url }) => {
+        const entry = assetLedger.get(key);
+        return {
+          key,
+          url,
+          state: entry?.state ?? "pending",
+          message: entry?.message ?? null,
+        };
+      })
+    );
+  });
+
+  $effect(() => {
+    onAssetReport?.(assetReport);
+  });
 
   let treeRoots = $state<Group[]>([]);
   let grassRoots = $state<Group[]>([]);
@@ -314,14 +460,82 @@
           FLOW_FEST_FOREST_DISTANCE_FALLBACK_FAMILY[placement.familyId] ===
           familyId
       );
-      root.add(
-        createForestRuntimeTreeInstances(geometrySource, placements, familyId, {
-          materialSource,
-          distanceTier: tier,
-        })
+      const tierInstances = createForestRuntimeTreeInstances(
+        geometrySource,
+        placements,
+        familyId,
+        { materialSource, distanceTier: tier }
       );
+      substituteDistanceTierCanopy(tierInstances, familyId, tier);
+      flattenUntexturedDistanceMaterials(tierInstances);
+      root.add(tierInstances);
     }
     return root;
+  }
+
+  /**
+   * Swap every decimated canopy in a distance tier for a solid crown shell.
+   * The simplified leaf atlas that ships in `distance-lod/*.glb` has no
+   * coverage left to grade, so the tier is rebuilt as mass. Runs before the
+   * material flatten, and the shell carries no UVs, so the flatten still
+   * strips the borrowed atlas and the moment tint owns the colour.
+   */
+  function substituteDistanceTierCanopy(
+    root: Object3D,
+    familyId: FlowFestForestDistanceTreeFamilyId,
+    tier: "mid" | "far"
+  ): number {
+    let replaced = 0;
+    root.traverse((object) => {
+      const mesh = object as InstancedMesh;
+      if (!mesh.isMesh || !mesh.geometry) return;
+      const materials = Array.isArray(mesh.material)
+        ? mesh.material
+        : [mesh.material];
+      const isFoliage = materials.some((candidate) =>
+        isFlowFestForestFoliageMaterial(candidate as MeshStandardMaterial)
+      );
+      if (!isFoliage) return;
+      if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+      const bounds = mesh.geometry.boundingBox;
+      if (!bounds) return;
+      // The source geometry belongs to the loaded GLB and is shared with every
+      // other consumer of that asset, so it is replaced, never disposed.
+      mesh.geometry = buildFlowFestCanopyShellGeometry(
+        bounds,
+        `${familyId}-${tier}-${mesh.name}`,
+        FLOW_FEST_CANOPY_SHELL_TIERS[tier]
+      );
+      mesh.userData.ownsGeometry = true;
+      mesh.computeBoundingSphere();
+      replaced += 1;
+    });
+    return replaced;
+  }
+
+  /**
+   * Distance-tier geometry ships without UVs while the near-tier materials it
+   * borrows are textured and alpha-cut. Sampling those maps with no UVs reads
+   * one transparent texel and discards the whole canopy, so strip the atlas
+   * and the cutout and let the tint own the mass. Meshes that do carry UVs are
+   * left alone, so a future textured LOD keeps its maps.
+   */
+  function flattenUntexturedDistanceMaterials(root: Object3D): void {
+    root.traverse((object) => {
+      const mesh = object as Mesh;
+      if (!mesh.isMesh || !mesh.geometry) return;
+      if (mesh.geometry.getAttribute("uv")) return;
+      const materials = Array.isArray(mesh.material)
+        ? mesh.material
+        : [mesh.material];
+      for (const candidate of materials) {
+        flattenFlowFestDistanceTierMaterial(
+          candidate as unknown as Parameters<
+            typeof flattenFlowFestDistanceTierMaterial
+          >[0]
+        );
+      }
+    });
   }
 
   $effect(() => {
@@ -476,16 +690,34 @@
         for (const candidate of materials) {
           const material = candidate as MeshStandardMaterial;
           if (!material.isMeshStandardMaterial) continue;
-          const name = material.name.toLowerCase();
-          const isFoliage =
-            name.includes("leaf") ||
-            name.includes("twig") ||
-            name.includes("foliage") ||
-            name.includes("sedge") ||
-            name.includes("hazel");
+          const isFoliage = isFlowFestForestFoliageMaterial(material);
           material.color.set(isFoliage ? foliageTint : barkTint);
           const adjustment = grade?.[isFoliage ? "foliage" : "bark"];
           if (adjustment) material.color.offsetHSL(...adjustment);
+        }
+      });
+    }
+  });
+
+  /**
+   * The grass field carries its own per-tuft instance colours, authored as a
+   * summer palette. three.js multiplies the material colour into those, so the
+   * moment's grass tint grades 21,730 tufts without disturbing a single
+   * placement. Without it, 2:13 AM renders noon-green turf everywhere the
+   * headlight or the bonfire reaches.
+   */
+  $effect(() => {
+    for (const root of grassRoots) {
+      root?.traverse((object) => {
+        const mesh = object as Mesh;
+        if (!mesh.isMesh) return;
+        const materials = Array.isArray(mesh.material)
+          ? mesh.material
+          : [mesh.material];
+        for (const candidate of materials) {
+          const material = candidate as MeshStandardMaterial;
+          if (!material.isMeshStandardMaterial) continue;
+          material.color.set(grassTint);
         }
       });
     }
