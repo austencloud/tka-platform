@@ -667,6 +667,12 @@
     formation: Formation,
     index: number
   ): void {
+    if (index > 0 && (event.key === "Delete" || event.key === "Backspace")) {
+      event.preventDefault();
+      event.stopPropagation();
+      onDeleteSelection({ kind: "formation", formationId: formation.id });
+      return;
+    }
     if (event.target !== event.currentTarget) return;
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -685,10 +691,6 @@
       );
       return;
     }
-    if (index > 0 && (event.key === "Delete" || event.key === "Backspace")) {
-      event.preventDefault();
-      onDeleteSelection({ kind: "formation", formationId: formation.id });
-    }
   }
 
   function handleClipKeydown(
@@ -696,6 +698,16 @@
     performer: Performer,
     clip: StageSequenceClip
   ): void {
+    if (event.key === "Delete" || event.key === "Backspace") {
+      event.preventDefault();
+      event.stopPropagation();
+      onDeleteSelection({
+        kind: "clip",
+        performerId: performer.id,
+        clipId: clip.id,
+      });
+      return;
+    }
     if (event.target !== event.currentTarget) return;
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -710,14 +722,6 @@
         clip.startBeat + direction * (event.shiftKey ? 4 : 0.25)
       );
       return;
-    }
-    if (event.key === "Delete" || event.key === "Backspace") {
-      event.preventDefault();
-      onDeleteSelection({
-        kind: "clip",
-        performerId: performer.id,
-        clipId: clip.id,
-      });
     }
   }
 </script>
