@@ -5,7 +5,7 @@ Worktree: `E:/worktrees/tka-platform/scene-boot-60fps` — ALL work happens here
 
 ## Ledger
 
-- [ ] Phase 1 — scene-boot module (frame gate, warmup owner, boot spans)
+- [x] Phase 1 — scene-boot module (frame gate, warmup owner, boot spans)
 - [ ] Phase 2 — SceneShaderWarmup upgrade + remove per-scene compile calls
 - [ ] Phase 3 — staged progress (scene-feature-state + curtain)
 - [ ] Phase 4 — boot-window background hold in Viewer3DCanvas
