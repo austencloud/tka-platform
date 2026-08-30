@@ -40,6 +40,9 @@ export const SELECTIVE_COLOR_PROP_TYPES = [
   // Juggling club: the body carries blue/red motion identity while the rubber
   // knob, wrapped handle, shoulder ring and top keep their authored materials.
   "club",
+  // Poi: the head carries blue/red motion identity while the rubber knob and
+  // the cord stay neutral, the same split the club uses.
+  "poi",
   "torch",
   "bigtorch",
   "sword",

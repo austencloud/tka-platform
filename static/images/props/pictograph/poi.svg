@@ -1,30 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288.67 38">
-  <!-- Poi. Anatomy matches Poi3D.svelte: finger loop at the grip, long tether,
-       swivel, weighted head. The grip is the viewBox center (144.335,19) and the
-       head CENTER sits 129.335 out from it - the club's reach - so poi produces
-       the same mandala and trail radius as every other regular prop. The head is
-       30 units across, ~10.7cm at the staff's 90cm = 252.8-unit scale, which is a
-       real poi head; the tether is 4x that, which is what makes the prop read as
-       poi rather than as a ball on a stick. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 291.67 38">
+  <!-- Poi: knob, tether, weighted head. The grip is the viewBox centre
+       (145.835,19) and the head CENTRE sits 129.335 out from it - the club's
+       reach - so poi produces the same mandala and trail radius as every other
+       regular prop. The tether is ~4x the head across, which is what makes the
+       prop read as poi rather than as a ball on a stick.
+
+       Only the head carries motion colour. The knob is a rubber bead and the
+       tether is cord, so both stay neutral the way the club's knob and grip do
+       - which is why "poi" is in SELECTIVE_COLOR_PROP_TYPES. The head fill is
+       the club body's #BDBDBD (unsaturated, so selective mode repaints it);
+       the knob and cord carry the club's blue-grey tint, which selective mode
+       preserves. -->
   <g data-poi-art="regular">
-    <!-- Mirror reserve (invisible): keeps the geometric bbox symmetric about the
-         grip, matching the unilateral-prop convention. -->
-    <rect x="15" y="16" width="120.34" height="6" rx="3" fill="none"/>
-    <circle cx="15" cy="19" r="15" fill="none"/>
+    <!-- Mirror reserve (invisible): keeps the geometric bbox symmetric about
+         the grip, matching the unilateral-prop convention. -->
+    <circle cx="16.5" cy="19" r="16.5" fill="none"/>
 
-    <!-- tether: grip to head center. -->
-    <rect data-poi-part="tether" x="153.34" y="15.75" width="120.33" height="6.5" rx="3.25" fill="#2E3192"/>
-    <rect data-poi-detail="tether-sheen" x="156" y="16.6" width="112" height="1.7" rx=".85" fill="#FFFFFF" opacity=".2"/>
+    <!-- tether: cord from the grip out to the head centre. -->
+    <rect data-poi-part="tether" x="145.83" y="16.25" width="129.34" height="5.5" rx="2.75"
+      fill="#9AA4B2" stroke="#202126" stroke-width=".7"/>
 
-    <!-- swivel where the tether meets the head. -->
-    <circle data-poi-part="swivel" cx="256.17" cy="19" r="4.6" fill="#2E3192" stroke="#202126" stroke-width=".8"/>
+    <!-- weighted head: far edge at 291.67, so grip-to-tip spans 145.835. -->
+    <circle data-poi-part="head" cx="275.17" cy="19" r="16.5"
+      fill="#BDBDBD" stroke="#202126" stroke-width=".9"/>
 
-    <!-- weighted head: far edge at 288.67, so grip-to-tip spans 144.335. -->
-    <circle data-poi-part="head" cx="273.67" cy="19" r="15" fill="#2E3192" stroke="#202126" stroke-width=".9"/>
-    <circle data-poi-detail="head-highlight" cx="268.6" cy="14" r="4.4" fill="#FFFFFF" opacity=".34"/>
-
-    <!-- finger loop (grip) centered on the handpoint. -->
-    <path data-poi-part="handle" fill="#2E3192" fill-rule="evenodd" stroke="#202126" stroke-width=".8"
-      d="M134.335 19a10 10 0 1 0 20 0a10 10 0 1 0-20 0ZM138.735 19a5.6 5.6 0 1 0 11.2 0a5.6 5.6 0 1 0-11.2 0Z"/>
+    <!-- knob: a plain rubber bead threaded on the cord and closed in the palm.
+         Centred on the handpoint, and half the head across, which is the
+         knob-to-head ratio of the real hardware. -->
+    <rect data-poi-part="knob" x="135.83" y="11" width="20" height="16" rx="8"
+      fill="#7B8798" stroke="#202126" stroke-width=".8"/>
   </g>
 </svg>
