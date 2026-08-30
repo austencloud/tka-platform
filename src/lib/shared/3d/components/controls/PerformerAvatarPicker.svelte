@@ -3,14 +3,8 @@
   import { avatarThumbnailUrl } from "../../constants/r2-cdn";
 
   interface Props {
-    /** The tile the radiogroup treats as chosen. In the select modal this is
-        the previewed avatar, which is not yet the applied one. */
     selectedAvatarId: AvatarId | null;
-    /** The avatar actually on the performer(s) right now. Marked with a badge
-        so previewing another body never erases where you started. */
-    appliedAvatarId?: AvatarId | null;
     pendingAvatarId: AvatarId | null;
-    /** Names what choosing a tile does, since it is not always "select". */
     groupLabel?: string;
     onSelect: (id: AvatarId) => void;
     onIntent: (id: AvatarId) => void;
@@ -19,7 +13,6 @@
 
   let {
     selectedAvatarId,
-    appliedAvatarId = null,
     pendingAvatarId,
     groupLabel = "Select avatar",
     onSelect,
@@ -81,9 +74,11 @@
         onkeydown={(event) => moveSelection(event, definition.id as AvatarId)}
         onclick={() => onSelect(definition.id as AvatarId)}
         title={definition.description}
-        aria-label={appliedAvatarId === definition.id
-          ? `${definition.name}, current avatar`
-          : definition.name}
+        aria-label={pendingAvatarId === definition.id
+          ? `${definition.name}, loading`
+          : selectedAvatarId === definition.id
+            ? `${definition.name}, active avatar`
+            : definition.name}
       >
         {#if pendingAvatarId === definition.id}
           <span class="avatar-loading" aria-hidden="true"></span>
@@ -104,8 +99,10 @@
               (loadedThumbs = new Set(loadedThumbs).add(definition.id))}
           />
         {/if}
-        {#if appliedAvatarId === definition.id}
-          <span class="avatar-current-badge" aria-hidden="true">Current</span>
+        {#if selectedAvatarId === definition.id}
+          <span class="avatar-selected-mark" aria-hidden="true">
+            <i class="fas fa-check"></i>
+          </span>
         {/if}
         {#if definition.availability === "local-evaluation"}
           <span class="avatar-personal-badge" aria-hidden="true">Yours</span>
@@ -118,64 +115,71 @@
 
 <style>
   .avatar-picker {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
     container-type: inline-size;
   }
+
   .avatar-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.625rem;
   }
+
   .avatar-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    gap: 0.3125rem;
+    aspect-ratio: 1;
+    width: 100%;
     min-width: 0;
-    min-height: 82px;
-    padding: 8px 5px;
+    min-height: 0;
+    padding: 0.625rem 0.375rem;
     overflow: hidden;
-    position: relative;
+    border: 2px solid var(--theme-stroke);
+    border-radius: 0.875rem;
     background: var(--theme-card-bg);
-    border: 1.5px solid transparent;
-    border-radius: 10px;
     color: var(--theme-text-dim);
     cursor: pointer;
     transition:
-      background 140ms ease,
-      border-color 140ms ease,
-      color 140ms ease,
-      transform 160ms ease;
+      background var(--transition-fast),
+      border-color var(--transition-fast),
+      color var(--transition-fast),
+      transform var(--transition-fast),
+      box-shadow var(--transition-fast);
   }
+
   .avatar-card.has-thumb {
-    padding: 0;
     justify-content: flex-end;
+    padding: 0;
   }
+
   .avatar-card.personal {
-    grid-column: 2 / span 2;
     border-color: color-mix(
       in srgb,
-      var(--performer-color) 35%,
+      var(--performer-color) 42%,
       var(--theme-stroke)
     );
     background: color-mix(
       in srgb,
-      var(--performer-color) 12%,
+      var(--performer-color) 10%,
       var(--theme-card-bg)
     );
   }
+
   .avatar-card.personal .avatar-fallback-icon {
-    font-size: 28px;
+    font-size: 2rem;
   }
+
   .avatar-fallback-icon {
-    font-size: 19px;
+    font-size: 1.5rem;
   }
+
   .avatar-fallback-icon.hidden {
     display: none;
   }
+
   .avatar-thumb {
     position: absolute;
     inset: 0;
@@ -184,90 +188,122 @@
     object-fit: cover;
     object-position: center top;
     opacity: 0;
-    transition: opacity 160ms ease;
+    transition:
+      opacity var(--transition-fast),
+      transform var(--transition-fast);
   }
+
   .avatar-thumb.loaded {
-    opacity: 0.74;
+    opacity: 0.82;
   }
+
   .avatar-card.has-thumb:hover .avatar-thumb,
   .avatar-card.has-thumb.selected .avatar-thumb {
     opacity: 1;
+    transform: scale(1.025);
   }
-  .avatar-current-badge {
+
+  .avatar-selected-mark {
     position: absolute;
     z-index: 2;
-    top: 4px;
-    left: 4px;
-    padding: 2px 6px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--performer-color) 82%, black);
+    top: 0.375rem;
+    left: 0.375rem;
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 1px solid color-mix(in srgb, white 42%, transparent);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--performer-color) 88%, black);
     color: white;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    line-height: 1.2;
+    font-size: 0.6875rem;
+    box-shadow: 0 0.125rem 0.5rem color-mix(in srgb, black 45%, transparent);
   }
+
   .avatar-personal-badge {
     position: absolute;
     z-index: 2;
-    top: 4px;
-    right: 4px;
-    padding: 2px 6px;
+    top: 0.375rem;
+    right: 0.375rem;
+    padding: 0.1875rem 0.4375rem;
     border-radius: 999px;
-    background: var(--surface-inset-deep);
-    color: var(--theme-text-dim);
-    font-size: 12px;
+    background: color-mix(in srgb, var(--surface-inset-deep) 88%, black);
+    color: var(--theme-text);
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     line-height: 1.2;
   }
+
   .avatar-card-name {
     position: relative;
     z-index: 1;
     width: 100%;
-    padding: 3px 5px 5px;
-    font-size: 14px;
-    font-weight: 650;
-    text-align: center;
-    line-height: 1.2;
-    white-space: nowrap;
+    padding: 0.75rem 0.375rem 0.4375rem;
     overflow: hidden;
+    color: currentColor;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+    line-height: 1.2;
+    text-align: center;
     text-overflow: ellipsis;
+    white-space: nowrap;
   }
+
   .avatar-card.has-thumb .avatar-card-name {
     background: linear-gradient(
       transparent,
-      color-mix(in srgb, var(--surface-darker) 82%, black)
+      color-mix(in srgb, var(--surface-darker) 94%, black)
     );
   }
+
   .avatar-card:hover {
-    background: color-mix(in srgb, var(--performer-color) 10%, transparent);
-    border-color: color-mix(in srgb, var(--performer-color) 30%, transparent);
-    color: white;
-    transform: translateY(-1px);
+    border-color: color-mix(
+      in srgb,
+      var(--performer-color) 48%,
+      var(--theme-stroke)
+    );
+    background: color-mix(
+      in srgb,
+      var(--performer-color) 12%,
+      var(--theme-card-bg)
+    );
+    color: var(--theme-text);
+    transform: translateY(-0.125rem);
   }
+
   .avatar-card.selected {
-    background: color-mix(in srgb, var(--performer-color) 22%, transparent);
     border-color: var(--performer-color);
-    color: white;
-    box-shadow: 0 0 12px
-      color-mix(in srgb, var(--performer-color) 24%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--performer-color) 20%,
+      var(--theme-card-bg)
+    );
+    color: var(--theme-text);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--performer-color) 32%, transparent),
+      0 0.375rem 1.25rem
+        color-mix(in srgb, var(--performer-color) 22%, transparent);
   }
+
   .avatar-card.preparing {
-    border-color: color-mix(in srgb, var(--performer-color) 55%, transparent);
+    border-color: color-mix(in srgb, var(--performer-color) 68%, transparent);
   }
+
   .avatar-loading {
     position: absolute;
-    z-index: 2;
+    z-index: 3;
     top: 50%;
     left: 50%;
-    width: 20px;
-    height: 20px;
+    width: 1.5rem;
+    height: 1.5rem;
     border: 2px solid
       color-mix(in srgb, var(--performer-color) 25%, transparent);
     border-top-color: var(--performer-color);
     border-radius: 50%;
-    animation: avatar-loading-spin 700ms linear infinite;
+    animation: avatar-loading-spin calc(var(--duration-dramatic) * 2) linear
+      infinite;
   }
+
   @keyframes avatar-loading-spin {
     from {
       transform: translate(-50%, -50%) rotate(0deg);
@@ -276,25 +312,46 @@
       transform: translate(-50%, -50%) rotate(360deg);
     }
   }
+
   button:focus-visible {
     outline: 2px solid var(--performer-color);
     outline-offset: 2px;
   }
-  @container (min-width: 580px) {
+
+  @container (min-width: 26rem) {
     .avatar-grid {
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
-    .avatar-card.personal {
-      grid-column: auto / span 2;
+
+    .avatar-card.personal:last-child:nth-child(4n + 1) {
+      grid-column: 2;
     }
   }
+
+  @container (min-width: 56rem) {
+    .avatar-grid {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+
+    .avatar-card.personal:last-child:nth-child(8n + 1) {
+      grid-column: 4;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .avatar-card,
     .avatar-thumb {
       transition: none;
     }
+
+    .avatar-card:hover,
+    .avatar-card.has-thumb:hover .avatar-thumb,
+    .avatar-card.has-thumb.selected .avatar-thumb {
+      transform: none;
+    }
+
     .avatar-loading {
-      animation-duration: 1400ms;
+      animation: none;
     }
   }
 </style>

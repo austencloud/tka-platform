@@ -90,13 +90,14 @@
       : null;
   });
 
-  const avatarScopeKey = $derived(
-    selectedIndex === null ? "all-performers" : `performer-${selectedIndex}`
-  );
-
   async function pickAvatar(id: AvatarId): Promise<void> {
     cancelAvatarSelectionIntent();
-    if (pendingAvatarId === id || currentAvatarId === id) return;
+    if (pendingAvatarId === id) return;
+    if (currentAvatarId === id) {
+      avatarSelectionRequest++;
+      pendingAvatarId = null;
+      return;
+    }
 
     const selectionRequest = ++avatarSelectionRequest;
     pendingAvatarId = id;
@@ -106,12 +107,14 @@
       pendingAvatarId = null;
 
       const previous = currentAvatarId;
-      if (
-        !writeParameter({ field: "avatarId", value: id }, (p) =>
-          p?.setAvatarModel(id)
-        )
-      )
-        return;
+      const applied = onPerformerEdit
+        ? onPerformerEdit({
+            performerIndex: selectedIndex,
+            field: "avatarId",
+            value: id,
+          })
+        : viewer.setAvatarModelScoped(id);
+      if (!applied) return;
       reportViewerControlChange(
         onSettingChange,
         "viewer_3d_performer",
@@ -407,10 +410,9 @@
             {currentAvatarId}
             {pendingAvatarId}
             {performerColor}
-            scopeKey={avatarScopeKey}
             onIntent={queueAvatarSelectionIntent}
             onCancelIntent={cancelAvatarSelectionIntent}
-            onCommit={(id) => void pickAvatar(id)}
+            onSelect={(id) => void pickAvatar(id)}
           />
         </div>
       </div>

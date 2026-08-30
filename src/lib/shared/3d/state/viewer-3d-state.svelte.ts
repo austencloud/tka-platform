@@ -11,7 +11,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 // propInterpolator / sequenceConverter are now module-level functions; no type imports needed
-import type { CameraStateSnapshot } from "@austencloud/scene-3d";
+import type { AvatarId, CameraStateSnapshot } from "@austencloud/scene-3d";
 import { getSceneUndoManager } from "../undo/get-scene-undo-manager";
 import type {
   DefaultsDomainSnapshot,
@@ -33,7 +33,7 @@ import {
   createPerformerManager,
   type PerformerManager,
 } from "./performer-manager.svelte";
-import { DEFAULT_AVATAR_ID } from "@austencloud/scene-3d";
+import { AVATAR_DEFINITIONS, DEFAULT_AVATAR_ID } from "@austencloud/scene-3d";
 import { STAGE } from "@austencloud/scene-3d";
 import type { FormationPreset } from "@austencloud/scene-3d";
 import {
@@ -944,6 +944,39 @@ function buildViewer3DState(
     );
   }
 
+  function setAvatarModelScoped(modelId: AvatarId): boolean {
+    const changes = scopedPerformers()
+      .filter((performer) => performer.avatarModelId !== modelId)
+      .map((performer) => ({
+        performer,
+        previousModelId: performer.avatarModelId,
+      }));
+    if (changes.length === 0) return false;
+
+    if (changes.length === 1) {
+      changes[0]!.performer.setAvatarModel(modelId);
+      return true;
+    }
+
+    sceneUndo.withoutUndo(() => {
+      for (const { performer } of changes) performer.setAvatarModel(modelId);
+    });
+    const name =
+      AVATAR_DEFINITIONS.find((definition) => definition.id === modelId)
+        ?.name ?? modelId;
+    sceneUndo.pushSelfRestoringEntry("change-avatar", `Avatar: ${name}`, {
+      undo: () => {
+        for (const { performer, previousModelId } of changes) {
+          performer.setAvatarModel(previousModelId);
+        }
+      },
+      redo: () => {
+        for (const { performer } of changes) performer.setAvatarModel(modelId);
+      },
+    });
+    return true;
+  }
+
   /**
    * Fan-out: load a sequence onto every performer in the current scope.
    * The viewer's "change sequence for this performer" control routes here.
@@ -1806,6 +1839,7 @@ function buildViewer3DState(
       return propSizeLinked;
     },
     togglePropSizeLink,
+    setAvatarModelScoped,
     setHandPlaneScoped,
     loadSequenceScoped,
     get canUndo() {
