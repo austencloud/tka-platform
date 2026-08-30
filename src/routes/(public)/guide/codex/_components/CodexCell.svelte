@@ -35,6 +35,7 @@
     showTransition = true,
     theme = "print",
     dataOverride,
+    href,
     onSelect,
   }: {
     cell: CodexCellDef;
@@ -63,12 +64,14 @@
     /** Live-transformed pictograph (rotate/mirror/color-swap) to render instead
      *  of the canonical dataset. Only the interactive reader supplies this. */
     dataOverride?: PictographData | null;
+    /** Presence makes the whole cell a semantic navigation link. */
+    href?: string;
     /** Presence makes the cell clickable - only the reader supplies it. */
     onSelect?: (id: string) => void;
   } = $props();
 
   const data = $derived(dataOverride ?? codexData(cell.id));
-  const selection = onSelect ? getSequenceSelection() : null;
+  const selection = onSelect || href ? getSequenceSelection() : null;
 </script>
 
 {#snippet cellBody()}
@@ -99,7 +102,7 @@
   {/if}
 {/snippet}
 
-{#if onSelect}
+{#if onSelect || href}
   <div
     class="codex-cell interactive tka-seq-cell"
     class:is-hovered={selection?.isHovered(cell.id)}
@@ -110,7 +113,8 @@
       groupId={cell.id}
       isGroupStart
       label={`Explore ${cell.label}${cell.name ? `, ${cell.name}` : ""} variations`}
-      onselect={() => onSelect(cell.id)}
+      {href}
+      onselect={() => onSelect?.(cell.id)}
     />
   </div>
 {:else}

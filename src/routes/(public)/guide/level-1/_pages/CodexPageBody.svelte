@@ -25,7 +25,6 @@
    * means print/book, which render the plain static sheet, no live state, no
    * clickable cells).
    */
-  import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -106,10 +105,9 @@
     state.selectedCellId = id;
   }
 
-  function openLetterExplorer(id: string) {
+  function letterExplorerHref(id: string) {
     const cell = CELLS_BY_ID.get(id);
-    if (!cell) return;
-    void goto(buildCanonicalLetterExplorerHref(cell.label));
+    return cell ? buildCanonicalLetterExplorerHref(cell.label) : undefined;
   }
 
   $effect(() => {
@@ -159,7 +157,7 @@
 
   // Register the scan-only playback handler. It is sheet-agnostic, so with both
   // Codex pages mounted, whichever registers last can still animate any letter.
-  // Direct cell selection uses openLetterExplorer instead.
+  // Direct cell selection uses a canonical Letter Explorer link instead.
   onMount(() => {
     if (state) registerCodexCellTrigger((id) => handleScannedCell(id));
     return () => registerCodexCellTrigger(null);
@@ -184,7 +182,7 @@
       propType={state.propType}
       visibility={state.visibility}
       getData={(id) => state.dataFor(id)}
-      onCellSelect={openLetterExplorer}
+      getCellHref={letterExplorerHref}
     />
   </div>
 {/if}
