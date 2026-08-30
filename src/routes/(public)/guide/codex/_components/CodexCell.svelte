@@ -109,7 +109,7 @@
     <SelectionHit
       groupId={cell.id}
       isGroupStart
-      label={`Animate ${cell.label}${cell.name ? `, ${cell.name}` : ""}`}
+      label={`Explore ${cell.label}${cell.name ? `, ${cell.name}` : ""} variations`}
       onselect={() => onSelect(cell.id)}
     />
   </div>
