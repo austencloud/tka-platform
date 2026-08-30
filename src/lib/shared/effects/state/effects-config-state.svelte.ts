@@ -672,6 +672,15 @@ export function createEffectsConfigState(
     replace(next ?? cloneConfig(DEFAULT_EFFECTS_CONFIG));
   }
 
+  /** Detached copy of the full current config (transients like prewarmHint excluded by construction). */
+  function snapshot(): EffectsConfig {
+    try {
+      return structuredClone($state.snapshot(config)) as EffectsConfig;
+    } catch {
+      return JSON.parse(JSON.stringify(config)) as EffectsConfig;
+    }
+  }
+
   return {
     get config() {
       return config;
@@ -767,7 +776,20 @@ export function createEffectsConfigState(
     restorePersonalDefault,
     resetToFactory,
     resetAllToFactory,
+    snapshot,
   };
 }
 
 export type EffectsConfigState = ReturnType<typeof createEffectsConfigState>;
+
+/**
+ * What a persist:true instance would boot with, for the URL layer's own-link
+ * comparison. Null when nothing is stored. Mirrors the persist:true
+ * constructor path exactly (`stored ?? ...` then `normalizeEffectsConfig`) by
+ * delegating to the same private loader + normalize functions rather than
+ * duplicating their logic.
+ */
+export function loadPersistedEffectsConfig(): EffectsConfig | null {
+  const stored = loadStoredConfig();
+  return stored ? normalizeEffectsConfig(stored) : null;
+}
