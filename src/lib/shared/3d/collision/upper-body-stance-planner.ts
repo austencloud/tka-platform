@@ -16,7 +16,6 @@ export interface UpperBodyStancePlan {
 const MAX_STANCE_YAW_RAD = (75 * Math.PI) / 180;
 const LATERAL_DEAD_ZONE_M = 0.1;
 const FULL_ASSIST_LATERAL_M = 0.28;
-const MIN_FORWARD_REFERENCE_M = 0.14;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -46,8 +45,6 @@ export function planUpperBodyStance(
 
   const meanX =
     active.reduce((sum, target) => sum + target.x, 0) / active.length;
-  const meanZ =
-    active.reduce((sum, target) => sum + target.z, 0) / active.length;
   const meanAbsX =
     active.reduce((sum, target) => sum + Math.abs(target.x), 0) / active.length;
   if (meanAbsX < 1e-6) return { yawRad: 0, pitchRad: 0 };
@@ -61,10 +58,11 @@ export function planUpperBodyStance(
     return { yawRad: 0, pitchRad: 0 };
   }
 
-  const desiredYaw = Math.atan2(
-    -meanX,
-    Math.max(MIN_FORWARD_REFERENCE_M, meanZ)
-  );
+  // Every wall-grid point carries the same forward plane offset. Folding that
+  // depth into atan2 made a true E/W two-hand hold look merely diagonal and
+  // left the far shoulder reaching through the neck. Lateral placement owns
+  // the stance direction; coherence and lateralWeight still soften entrances.
+  const desiredYaw = -Math.sign(meanX) * MAX_STANCE_YAW_RAD;
   const assistance = smoothstep01(coherence) * lateralWeight;
   return {
     yawRad:
