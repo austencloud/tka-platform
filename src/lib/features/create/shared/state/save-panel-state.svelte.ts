@@ -25,6 +25,10 @@ import {
 } from "$lib/shared/foundation/services/sequence-decomposer";
 import { getSequenceMotionProfile } from "$lib/shared/foundation/services/sequence-motion-profile";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
+import {
+  normalizeCardPresentation,
+  type CardPresentation,
+} from "$lib/shared/share/domain/models/card-presentation";
 
 type ContentModerator = {
   checkWord: (word: string) => ContentModerationResult;
@@ -36,6 +40,7 @@ export interface SavePanelDeps {
   soloPropSaveOrchestrator: SoloPropSaveOrchestrator | null;
   contentModerator: ContentModerator | null;
   hallOfShameSubmitter: HallOfShameSubmitter | null;
+  getDefaultCardPresentation: () => CardPresentation;
 }
 
 export interface SavePanelProps {
@@ -53,6 +58,7 @@ export function createSavePanelState(deps: SavePanelDeps) {
     soloPropSaveOrchestrator,
     contentModerator,
     hallOfShameSubmitter,
+    getDefaultCardPresentation,
   } = deps;
   const { CreateModuleState } = ctx;
   const logger = createComponentLogger("SaveToLibraryPanel");
@@ -78,6 +84,9 @@ export function createSavePanelState(deps: SavePanelDeps) {
   let notes = $state("");
   let title = $state("");
   let showNotes = $state(false);
+  let cardPresentation = $state<CardPresentation>(
+    normalizeCardPresentation(getDefaultCardPresentation())
+  );
   // Collections chosen in the picker. The sequence isn't saved yet, so we
   // collect ids here and file them right after the save (see handleSave).
   let selectedCollectionIds = $state<string[]>([]);
@@ -240,6 +249,9 @@ export function createSavePanelState(deps: SavePanelDeps) {
           ? `${motionProfile.authoredHand === "left" ? "Left" : "Right"}-hand choreography`
           : "";
       showNotes = false;
+      cardPresentation = sequence.cardPresentation
+        ? normalizeCardPresentation(sequence.cardPresentation)
+        : normalizeCardPresentation(getDefaultCardPresentation());
       selectedCollectionIds = [];
     }
   });
@@ -382,7 +394,7 @@ export function createSavePanelState(deps: SavePanelDeps) {
       });
 
       const result = await librarySaveService.saveSequence(
-        sequence,
+        { ...sequence, cardPresentation },
         {
           name: tkaName,
           visibility: publishToCommunity && !isFlagged ? "public" : "private",
@@ -611,6 +623,13 @@ export function createSavePanelState(deps: SavePanelDeps) {
     },
     set showNotes(v: boolean) {
       showNotes = v;
+    },
+
+    get cardPresentation() {
+      return cardPresentation;
+    },
+    set cardPresentation(v: CardPresentation) {
+      cardPresentation = normalizeCardPresentation(v);
     },
 
     get selectedCollectionIds() {

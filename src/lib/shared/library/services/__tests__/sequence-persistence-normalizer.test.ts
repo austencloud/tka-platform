@@ -219,6 +219,24 @@ describe("normalizeSequenceForPersistence — composition-only source", () => {
     expect("steps" in result.ownerData).toBe(false);
   });
 
+  it("persists explicit card presentation with the private owner record", async () => {
+    const result = await normalizeSequenceForPersistence(
+      buildCompositionOnlySequence("ABCD", {
+        notes: "private rehearsal note",
+        cardPresentation: {
+          schemaVersion: 1,
+          footer: { mode: "custom", text: "Shared from First Fire" },
+        },
+      })
+    );
+
+    expect(result.ownerData.cardPresentation).toEqual({
+      schemaVersion: 1,
+      footer: { mode: "custom", text: "Shared from First Fire" },
+    });
+    expect(result.ownerData.notes).toBe("private rehearsal note");
+  });
+
   it("drops legacy aliases and Dexie-local sync bookkeeping from the payload", async () => {
     const source = {
       ...buildCompositionOnlySequence("ABCD"),
