@@ -17,6 +17,7 @@ import type {
   ContextMenuItem,
 } from "$lib/shared/components/context-menu/context-menu-types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { getCanonicalCardStepColumnCounts } from "$lib/shared/render/services/card-step-column-options";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 import { buildVisualSequenceSaveMenuItem } from "$lib/shared/library/services/visual-sequence-save-menu-item";
 
@@ -37,7 +38,9 @@ export interface CardMenuSectionDeps {
   isAdmin?: boolean;
 }
 
-export function buildCardMenuSection(deps: CardMenuSectionDeps): ContextMenuEntry[] {
+export function buildCardMenuSection(
+  deps: CardMenuSectionDeps
+): ContextMenuEntry[] {
   const items: ContextMenuEntry[] = [];
 
   if (deps.sequenceForLibrarySave) {
@@ -56,11 +59,7 @@ export function buildCardMenuSection(deps: CardMenuSectionDeps): ContextMenuEntr
     const currentCols = composition.getColumnCountForStepCount(deps.stepCount);
     const stepCount = deps.stepCount;
 
-    const maxCols = Math.min(stepCount, 8);
-    const columnChoices: number[] = [];
-    for (let n = 2; n <= maxCols; n += 2) {
-      columnChoices.push(n);
-    }
+    const columnChoices = getCanonicalCardStepColumnCounts(stepCount);
 
     if (columnChoices.length > 0) {
       const children: ContextMenuItem[] = [
@@ -131,14 +130,14 @@ export function buildCardMenuSection(deps: CardMenuSectionDeps): ContextMenuEntr
         label: "Copy sequence data",
         icon: "fa-code",
         async action() {
-          const { toast } = await import("$lib/shared/toast/state/toast-state.svelte");
+          const { toast } =
+            await import("$lib/shared/toast/state/toast-state.svelte");
           try {
-            const { copyToClipboard } = await import(
-              "$lib/features/create/shared/services/sequence-json-exporter"
-            );
+            const { copyToClipboard } =
+              await import("$lib/features/create/shared/services/sequence-json-exporter");
             const ok = await copyToClipboard(sequence);
             toast[ok ? "success" : "error"](
-              ok ? "Sequence data copied" : "Failed to copy sequence data",
+              ok ? "Sequence data copied" : "Failed to copy sequence data"
             );
           } catch (err) {
             console.error("Copy sequence data failed:", err);
@@ -152,14 +151,20 @@ export function buildCardMenuSection(deps: CardMenuSectionDeps): ContextMenuEntr
         icon: "fa-download",
         async action() {
           try {
-            const { toast } = await import("$lib/shared/toast/state/toast-state.svelte");
-            const { DEFAULT_SHARE_OPTIONS } = await import("$lib/shared/share/domain/models/share-options");
+            const { toast } =
+              await import("$lib/shared/toast/state/toast-state.svelte");
+            const { DEFAULT_SHARE_OPTIONS } =
+              await import("$lib/shared/share/domain/models/share-options");
             const { getSharer } = await import("$lib/shared/share/get-sharer");
-            await getSharer().downloadImage(sequence, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
+            await getSharer().downloadImage(sequence, {
+              ...DEFAULT_SHARE_OPTIONS,
+              format: "PNG",
+            });
             toast.success("Image saved");
           } catch (err) {
             console.error("Save image failed:", err);
-            const { toast } = await import("$lib/shared/toast/state/toast-state.svelte");
+            const { toast } =
+              await import("$lib/shared/toast/state/toast-state.svelte");
             toast.error("Failed to save image");
           }
         },
@@ -170,17 +175,23 @@ export function buildCardMenuSection(deps: CardMenuSectionDeps): ContextMenuEntr
         icon: "fa-copy",
         async action() {
           try {
-            const { toast } = await import("$lib/shared/toast/state/toast-state.svelte");
-            const { DEFAULT_SHARE_OPTIONS } = await import("$lib/shared/share/domain/models/share-options");
+            const { toast } =
+              await import("$lib/shared/toast/state/toast-state.svelte");
+            const { DEFAULT_SHARE_OPTIONS } =
+              await import("$lib/shared/share/domain/models/share-options");
             const { getSharer } = await import("$lib/shared/share/get-sharer");
-            const blob = await getSharer().getImageBlob(sequence, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
+            const blob = await getSharer().getImageBlob(sequence, {
+              ...DEFAULT_SHARE_OPTIONS,
+              format: "PNG",
+            });
             await navigator.clipboard.write([
               new ClipboardItem({ "image/png": blob }),
             ]);
             toast.success("Image copied to clipboard");
           } catch (err) {
             console.error("Copy image failed:", err);
-            const { toast } = await import("$lib/shared/toast/state/toast-state.svelte");
+            const { toast } =
+              await import("$lib/shared/toast/state/toast-state.svelte");
             toast.error("Failed to copy image");
           }
         },
@@ -191,8 +202,10 @@ export function buildCardMenuSection(deps: CardMenuSectionDeps): ContextMenuEntr
         icon: "fa-robot",
         async action() {
           try {
-            const { toast } = await import("$lib/shared/toast/state/toast-state.svelte");
-            const { getClaudeCodeCopier } = await import("$lib/shared/browse/get-claude-code-copier");
+            const { toast } =
+              await import("$lib/shared/toast/state/toast-state.svelte");
+            const { getClaudeCodeCopier } =
+              await import("$lib/shared/browse/get-claude-code-copier");
             const copier = getClaudeCodeCopier();
             const result = await copier.copyForClaude(sequence);
             if (result.success) {
@@ -202,11 +215,12 @@ export function buildCardMenuSection(deps: CardMenuSectionDeps): ContextMenuEntr
             }
           } catch (err) {
             console.error("Copy for Claude failed:", err);
-            const { toast } = await import("$lib/shared/toast/state/toast-state.svelte");
+            const { toast } =
+              await import("$lib/shared/toast/state/toast-state.svelte");
             toast.error("Failed to copy for Claude");
           }
         },
-      },
+      }
     );
   }
 
