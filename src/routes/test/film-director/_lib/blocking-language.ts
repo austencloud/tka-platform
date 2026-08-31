@@ -301,6 +301,10 @@ function offsetFrom(
   };
 }
 
+/** Two-decimal display for a user-facing seconds/meters value — matches
+ * director-move-windows.ts's helper of the same name and intent. */
+const fmt = (n: number): string => String(Number(n.toFixed(2)));
+
 function assertWalkable(
   delta: { x: number; z: number },
   windowSeconds: number,
@@ -311,6 +315,6 @@ function assertWalkable(
   const speed = windowSeconds > 0 ? distance / windowSeconds : Infinity;
   if (speed <= MAX_TRAVEL_SPEED) return;
   throw new Error(
-    `Performer "${performerId}" would cover ${distance.toFixed(2)}m in ${windowSeconds.toFixed(2)}s (${speed.toFixed(2)} m/s). Travel tops out at ${MAX_TRAVEL_SPEED} m/s — give the move more time or a shorter distance.`
+    `Performer "${performerId}" would cover ${fmt(distance)}m in ${fmt(windowSeconds)}s (${fmt(speed)} m/s). Travel tops out at ${fmt(MAX_TRAVEL_SPEED)} m/s — give the move more time or a shorter distance.`
   );
 }

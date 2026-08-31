@@ -11,6 +11,7 @@ const CONTEXT = {
   durationSeconds: 8,
   aspectRatio: 16 / 9,
   groundOffset: 0,
+  sceneId: "test-scene",
   performers: [
     {
       id: "performer-1", name: "P1", characterId: "y-bot" as never,

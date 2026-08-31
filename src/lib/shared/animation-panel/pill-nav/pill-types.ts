@@ -1,3 +1,5 @@
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+
 /**
  * Pill-nav contract for AnimationPanel.
  *
@@ -33,6 +35,8 @@ export interface PillSpec {
   label: string;
   /** FontAwesome class, e.g. "fa-wand-magic-sparkles". Optional - Effort uses a color dot instead. */
   icon?: string;
+  /** Live prop artwork for the Props destination. Takes precedence over icon. */
+  propType?: PropType;
   /** Live one-line summary of the section's current state, ≤24 chars (truncated with ellipsis if longer). */
   summary: string;
   /** Optional accent color override. Effort sets this to its color so the active glow matches. */

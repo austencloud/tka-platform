@@ -29,6 +29,7 @@ import {
   compileBlockingMoves,
   type DirectorBlockingMove,
 } from "./blocking-language";
+import { convertSceneBeatTimes } from "./director-beat-times";
 import { resolveDirectorCameraTrack } from "./director-camera-track";
 import { isDirectiveExpression, type DirectiveValue } from "./directives";
 import {
@@ -57,6 +58,23 @@ import {
 const DEFAULT_CHARACTERS = CHARACTER_DEFINITIONS.map(
   (character) => character.id
 ) as CharacterId[];
+
+function createCharacterAxisStream(
+  seed: FilmSeed,
+  sceneId: string
+): () => number {
+  // Seed namespaces are persisted behavior. Keep the historical hash key so
+  // migrating avatarId to characterId does not silently recast a saved film,
+  // while making characterId the canonical reroll control for v4 authors.
+  const legacySeed: FilmSeed = {
+    ...seed,
+    axes: {
+      ...seed.axes,
+      avatarId: seed.axes.characterId ?? seed.axes.avatarId ?? 0,
+    },
+  };
+  return createAxisStream(legacySeed, sceneId, "avatarId");
+}
 
 // Axis catalogs, built once at module scope. `effect` and `characterId` stay
 // loosely typed as `string` here (see the per-axis comments in resolveScene)
@@ -458,12 +476,20 @@ function buildResolvedPerformers(
 }
 
 function resolveScene(
-  scene: DirectorSceneInput,
+  rawScene: DirectorSceneInput,
   sceneIndex: number,
   startSeconds: number,
   aspectRatio: number,
   filmSeed: FilmSeed
 ): ResolvedDirectorScene {
+  // Beats convert against the scene's own bpm, so bpm resolves first; every
+  // line below this one thinks purely in seconds. `stated` tracks whether
+  // the director actually wrote a bpm — describeBeats() phrases an
+  // unstated fallback as "the default 90 bpm" rather than naming a number
+  // the director never typed.
+  const bpmStated = rawScene.performance?.bpm !== undefined;
+  const bpm = rawScene.performance?.bpm ?? 90;
+  const scene = convertSceneBeatTimes(rawScene, { value: bpm, stated: bpmStated });
   const durationSeconds = scene.durationSeconds ?? 8;
   const cast = scene.performance?.cast;
 
@@ -514,7 +540,7 @@ function resolveScene(
     performerIds,
     values: characterIdValues,
     catalog: DEFAULT_CHARACTERS,
-    random: createAxisStream(filmSeed, scene.id, "characterId"),
+    random: createCharacterAxisStream(filmSeed, scene.id),
   });
   const resolvedProps = resolveCastAxis<PropType>({
     axis: "prop",
@@ -735,6 +761,7 @@ function resolveScene(
     aspectRatio,
     groundOffset,
     formation,
+    sceneId: scene.id,
     performers: performers.map((performer) => ({
       ...performer,
       position: {
@@ -759,7 +786,7 @@ function resolveScene(
     },
     location: { environmentId, showStage, showAudience, sceneFeatures, visiblePlanes },
     performance: {
-      bpm: scene.performance?.bpm ?? 90,
+      bpm,
       sequence: {
         source: "demo",
         loop: scene.performance?.sequence?.loop ?? true,
