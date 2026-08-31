@@ -94,3 +94,22 @@ own visual acceptance pass.
    correct shoulder-facing direction for the same-side E case, and no new
    opposite-side regression.
 5. Run one repository check after focused tests and visual iteration.
+
+## 2026-08-31 rendered-pose correction
+
+Live `ZTI6` telemetry exposed a transform-order gap in the first implementation.
+Grip weld rotates and translates the visible staff after arm IK, but head dodge
+and collision detection still measured the authored prop anchor. A shaft could
+therefore pass through the rendered head while the report contained no
+`prop-through-head` event.
+
+The shared `Avatar3D` owner now derives both staff threats and collision segments
+from the final correction-group world pose. The audit also records requested
+pitch, smoothed stance yaw, reach lean, head dodge, and achieved torso pitch so a
+bad frame can be attributed instead of judged by eye alone. Startup frames with
+an unbound zero-width skeleton are excluded.
+
+The same-side stance planner no longer adds an unconditional 18-degree forward
+pitch. Shoulder yaw remains the assistance for two targets on one side; the
+animator's existing cross-body pitch and reach-deficit lean remain available
+only when their own geometry engages them.

@@ -15,7 +15,7 @@ describe("planUpperBodyStanceYaw", () => {
 
     expect(yaw).toBeGreaterThan((45 * Math.PI) / 180);
     expect(yaw).toBeLessThanOrEqual((75 * Math.PI) / 180);
-    expect(plan.pitchRad).toBeCloseTo((18 * Math.PI) / 180, 6);
+    expect(plan.pitchRad).toBe(0);
   });
 
   it("turns the opposite direction for two west-side targets", () => {

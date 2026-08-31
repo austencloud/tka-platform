@@ -14,7 +14,6 @@ export interface UpperBodyStancePlan {
 }
 
 const MAX_STANCE_YAW_RAD = (75 * Math.PI) / 180;
-const MAX_STANCE_PITCH_RAD = (18 * Math.PI) / 180;
 const LATERAL_DEAD_ZONE_M = 0.1;
 const FULL_ASSIST_LATERAL_M = 0.28;
 const MIN_FORWARD_REFERENCE_M = 0.14;
@@ -67,12 +66,11 @@ export function planUpperBodyStance(
   const assistance = smoothstep01(coherence) * lateralWeight;
   return {
     yawRad:
-      clamp(desiredYaw, -MAX_STANCE_YAW_RAD, MAX_STANCE_YAW_RAD) *
-      assistance,
-    // The built-in cross-body pitch contributes up to 10°. Collision Lab's
-    // same-side E/E solve needs about 29° total, so this track supplies the
-    // missing shoulder carry without moving the hips or hand targets.
-    pitchRad: MAX_STANCE_PITCH_RAD * assistance,
+      clamp(desiredYaw, -MAX_STANCE_YAW_RAD, MAX_STANCE_YAW_RAD) * assistance,
+    // Same-side reaches need shoulder facing, not a permanent bow. Cross-body
+    // pitch and reach-deficit lean remain owned by the animator and engage only
+    // when their geometry actually calls for them.
+    pitchRad: 0,
   };
 }
 
