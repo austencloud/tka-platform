@@ -109,6 +109,66 @@ describe("resolveCastAxis", () => {
     expect(resolved.slice(0, 3)).toEqual(["a", "b", "c"]);
   });
 
+  it("pick distinct with not draws distinct values and never the excluded one", () => {
+    // 3 performers on a 5-value catalog, excluding one value: all three
+    // resolved values are distinct and none is the excluded value.
+    const resolved = axis(
+      [
+        { pick: "distinct", not: "staff" },
+        { pick: "distinct", not: "staff" },
+        { pick: "distinct", not: "staff" },
+      ],
+      { catalog: ["staff", "fan", "club", "sword", "torch"] }
+    );
+    expect(new Set(resolved).size).toBe(3);
+    expect(resolved).not.toContain("staff");
+  });
+
+  it("pick distinct with not rejects when the pool minus exclusions is smaller than the cast, naming the post-exclusion pool", () => {
+    // 4 performers, pool of 4, excluding 1 → the existing not-enough-values
+    // rejection fires. The message must report the POOL THE DIRECTOR ACTUALLY
+    // HAD TO DRAW FROM (3, after "a" was excluded), not the pre-exclusion
+    // count of 4 — reporting 4 here would hide that the `not` is the whole
+    // reason the pool ran out.
+    expect(() =>
+      axis(
+        [
+          { pick: "distinct", from: ["a", "b", "c", "d"], not: "a" },
+          { pick: "distinct", from: ["a", "b", "c", "d"], not: "a" },
+          { pick: "distinct", from: ["a", "b", "c", "d"], not: "a" },
+          { pick: "distinct", from: ["a", "b", "c", "d"], not: "a" },
+        ],
+        { catalog: ["a", "b", "c", "d"] }
+      )
+    ).toThrow(
+      'Scene "scene-1", axis "prop": distinct values were requested for 4 performers but the allowed pool has only 3 (b, c, d) after excluding a.'
+    );
+  });
+
+  it("pick distinct without any exclusion reports the pool plainly, with no exclusion clause", () => {
+    // Same pool-exhaustion shape as above, but nothing was excluded — the
+    // message must not claim an exclusion happened when none did.
+    let error: unknown;
+    try {
+      axis(
+        [
+          { pick: "distinct", from: ["a", "b"] },
+          { pick: "distinct", from: ["a", "b"] },
+          { pick: "distinct", from: ["a", "b"] },
+        ],
+        { catalog: ["a", "b"] }
+      );
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error).toBeInstanceOf(Error);
+    const message = (error as Error).message;
+    expect(message).toBe(
+      'Scene "scene-1", axis "prop": distinct values were requested for 3 performers but the allowed pool has only 2 (a, b).'
+    );
+    expect(message).not.toContain("excluding");
+  });
+
   it("reports an accurate distinct-performer count in the failure message", () => {
     let error: unknown;
     try {

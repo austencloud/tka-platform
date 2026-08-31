@@ -143,6 +143,39 @@ describe("resolveFilmDirectorSpec with directives", () => {
     ).toThrow(/not in this cast/);
   });
 
+  it("scene-scoped environmentId accepts {pick:'any', not} and never draws the excluded environment", () => {
+    const spec = resolveFilmDirectorSpec({
+      version: 2,
+      id: "env-not-film",
+      title: "Env Not",
+      scenes: [
+        {
+          id: "s1",
+          title: "S1",
+          location: { environmentId: { pick: "any", not: "forest" } },
+          performance: { cast: { count: 2 } },
+        },
+      ],
+    });
+    expect(spec.scenes[0]!.location.environmentId).not.toBe("forest");
+  });
+
+  it("scene-scoped formation still rejects pick distinct, with or without not", () => {
+    expect(() =>
+      resolveFilmDirectorSpec(
+        film({ formation: { pick: "distinct" }, cast: { count: 2 } })
+      )
+    ).toThrow(/distinct\/sameAs are performer-scoped/);
+    expect(() =>
+      resolveFilmDirectorSpec(
+        film({
+          formation: { pick: "distinct", not: "line" },
+          cast: { count: 2 },
+        })
+      )
+    ).toThrow(/distinct\/sameAs are performer-scoped/);
+  });
+
   it("v1 documents resolve exactly as before", () => {
     const spec = resolveFilmDirectorSpec({
       version: 1,
@@ -151,5 +184,139 @@ describe("resolveFilmDirectorSpec with directives", () => {
       scenes: [{ id: "s1", title: "S1" }],
     });
     expect(spec.scenes[0]!.performance.performers[0]!.prop).toBe("staff");
+  });
+});
+
+describe("beats resolve through the scene bpm", () => {
+  const beatsFilm = (scene: Record<string, unknown>) => ({
+    version: 4,
+    id: "beats-resolution-film",
+    title: "Beats Resolution",
+    scenes: [{ id: "s1", title: "S1", ...scene }],
+  });
+
+  // Several of these scenarios convert to 8 seconds, which is also the
+  // unstated-duration default — so each one carries a second fixture whose
+  // converted value cannot be reached by any default. Without it the test
+  // would pass on a build that ignored beats entirely.
+  it("a 16-beat scene at 120 bpm resolves to 8 seconds", () => {
+    const spec = resolveFilmDirectorSpec(
+      beatsFilm({ durationBeats: 16, performance: { bpm: 120 } })
+    );
+    expect(spec.scenes[0]!.durationSeconds).toBe(8);
+    expect(spec.durationSeconds).toBe(8);
+
+    const longer = resolveFilmDirectorSpec(
+      beatsFilm({ durationBeats: 24, performance: { bpm: 120 } })
+    );
+    expect(longer.scenes[0]!.durationSeconds).toBe(12);
+    expect(longer.durationSeconds).toBe(12);
+  });
+
+  it("beats-stated camera moves land their keyframes on the beat", () => {
+    const spec = resolveFilmDirectorSpec(
+      beatsFilm({
+        durationBeats: 16,
+        performance: { bpm: 120 },
+        camera: {
+          shotSize: "medium",
+          moves: [
+            { move: "push-in", durationBeats: 8 },
+            { move: "hold" },
+          ],
+        },
+      })
+    );
+    const keyframes = spec.scenes[0]!.camera.keyframes;
+    expect(
+      keyframes.some((frame) => Math.abs(frame.atSeconds - 4) < 1e-6)
+    ).toBe(true);
+    expect(keyframes.at(-1)!.atSeconds).toBeCloseTo(8, 6);
+
+    // A 4-beat push-in at 120 bpm arrives at 2s, where an ignored-beats build
+    // would split the 8s scene evenly and arrive at 4s.
+    const quick = resolveFilmDirectorSpec(
+      beatsFilm({
+        durationBeats: 16,
+        performance: { bpm: 120 },
+        camera: {
+          shotSize: "medium",
+          moves: [
+            { move: "push-in", durationBeats: 4 },
+            { move: "hold" },
+          ],
+        },
+      })
+    );
+    expect(
+      quick.scenes[0]!.camera.keyframes.some(
+        (frame) => Math.abs(frame.atSeconds - 2) < 1e-6
+      )
+    ).toBe(true);
+  });
+
+  it("beats-stated blocking arrives on the beat", () => {
+    const spec = resolveFilmDirectorSpec(
+      beatsFilm({
+        durationBeats: 16,
+        performance: {
+          bpm: 120,
+          performers: [
+            {
+              blocking: [
+                { move: "walk", to: { x: 1.5, z: 0 }, durationBeats: 8 },
+                { move: "stand" },
+              ],
+            },
+          ],
+        },
+      })
+    );
+    const arrival = spec.scenes[0]!.performance.performers[0]!.blocking.find(
+      (frame) => Math.abs(frame.atSeconds - 4) < 1e-6
+    );
+    expect(arrival).toBeDefined();
+    expect(arrival!.position).toEqual({ x: 1.5, z: 0 });
+
+    // A 4-beat walk at 120 bpm arrives at 2s, not the evenly-split 4s.
+    const quick = resolveFilmDirectorSpec(
+      beatsFilm({
+        durationBeats: 16,
+        performance: {
+          bpm: 120,
+          performers: [
+            {
+              blocking: [
+                { move: "walk", to: { x: 1.5, z: 0 }, durationBeats: 4 },
+                { move: "stand" },
+              ],
+            },
+          ],
+        },
+      })
+    );
+    const quickArrival = quick.scenes[0]!.performance.performers[0]!.blocking.find(
+      (frame) => Math.abs(frame.atSeconds - 2) < 1e-6
+    );
+    expect(quickArrival).toBeDefined();
+    expect(quickArrival!.position).toEqual({ x: 1.5, z: 0 });
+  });
+
+  it("a beats-stated scene with no bpm converts at the default 90", () => {
+    const spec = resolveFilmDirectorSpec(beatsFilm({ durationBeats: 12 }));
+    expect(spec.scenes[0]!.durationSeconds).toBe(8);
+
+    // 18 beats at the default 90 bpm is 12 seconds — a number no default
+    // produces, so this proves the default bpm actually drove the conversion.
+    const longer = resolveFilmDirectorSpec(beatsFilm({ durationBeats: 18 }));
+    expect(longer.scenes[0]!.durationSeconds).toBe(12);
+  });
+
+  it("a beat-count that converts past the scene ceiling rejects speaking beats", () => {
+    expect(() =>
+      resolveFilmDirectorSpec(
+        beatsFilm({ durationBeats: 96, performance: { bpm: 66 } })
+      )
+    ).toThrow(/96 beats at 66 bpm/);
   });
 });
