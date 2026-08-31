@@ -1634,13 +1634,10 @@ export function deriveFlowFestFestivalCommunityLayout(
     "ch07",
     "ch18",
     "ch24",
-    "ch10",
-    "ch44",
     "ch22",
     "ch41",
     "ch12",
     "ch21",
-    "ch34",
     "ch42",
     "ch01",
   ];
