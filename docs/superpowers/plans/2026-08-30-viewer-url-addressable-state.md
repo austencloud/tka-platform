@@ -1034,10 +1034,10 @@ store's own non-ephemeral sync path) → on dispose, restore the snapshot while 
 suspended, THEN resume persistence. Disk is never touched; recipient tweaks during
 the session stay session-local (approved view-only contract).
 
-- [ ] **Store seams (additive; NO `createPersistenceHelper` change — that premise is dropped):**
+- [x] **Store seams (additive; NO `createPersistenceHelper` change — that premise is dropped):**
   - `animation-settings-state.svelte.ts`: add `setPersistenceSuspended(suspended: boolean)` (gates the module-scope helper's save), `snapshot(): AnimationSettings` (deep), `replaceAll(settings)`.
   - `animation-visibility-state.svelte.ts`: same trio on the manager — suspension flag checked in `saveToStorage()` (alongside, not replacing, `ephemeral`), `snapshot()`, `replaceAll(settings)` applied through the normal setter path so `syncDarkModeClass()` fires on the global instance.
-- [ ] **Slice module** `viewer-url-slices/an-slice.ts`: payload `{ settings?, visibility? }`.
+- [x] **Slice module** `viewer-url-slices/an-slice.ts`: payload `{ settings?, visibility? }`.
   `tka_trail_settings` EXCLUDED — in the viewer it is shadowed by
   `tka_animation_settings.trail` (viewer surfaces pass external trail settings);
   record why in the doc comment. Diff baselines are POST-NORMALIZE defaults (fx
@@ -1049,10 +1049,10 @@ the session stay session-local (approved view-only contract).
   settings: if `motionPolicySource` overlay values are viewer/sequence-derived
   (recipient re-derives them), capture RAW settings and say so in the doc comment;
   implementer decides from the code with a stated reason.
-- [ ] **Tests** (`an-slice.test.ts`): round-trip identity; null at post-normalize
+- [x] **Tests** (`an-slice.test.ts`): round-trip identity; null at post-normalize
   defaults; zero-write spy across suspend→apply→tweak→restore→resume for BOTH
   storage keys; restore returns the store to the pre-override snapshot.
-- [ ] **Wiring** in `SequenceViewerOrchestrator.svelte` (like fx — the globals are
+- [x] **Wiring** in `SequenceViewerOrchestrator.svelte` (like fx — the globals are
   session-wide, not per-pane; a link carries 2D settings regardless of active pane):
   compute `persistedAnSlice` from the live globals; if a seed exists and
   `urlSession.isOverride("an", persistedAnSlice)`: snapshot both stores, suspend
@@ -1060,7 +1060,7 @@ the session stay session-local (approved view-only contract).
   In the existing dispose path: `replaceAll(snapshot)` while still suspended, THEN
   resume persistence. Always `urlSession.registerSlice("an", () => captureAnSlice(...))`
   reading the live globals.
-- [ ] **Commit** with explicit pathspec.
+- [x] **Commit** with explicit pathspec.
 
 Note for Task 11: several `tka-3d-*` stores may also be app-global singletons. The
 memento above is the sanctioned mechanism for global-store slices; per-store
@@ -1101,7 +1101,7 @@ discovery chooses instance-seam (fx) vs memento (an).
 - [x] Task 6 — share captureNow (verified: env blocker resolved via worktree-local pnpm install; share-state test 1/1, full sequence-viewer suite 127/127)
 - [x] Task 7 — close cleanup
 - [x] Task 8 — Phase A gate (PASSED 2026-08-30: check 0 errors; 165/165 tests; live round-trip on :5209 — sparkles+rate90%+2D pane restored in isolated context, zero recipient localStorage writes; drawer params appear on /browse and strip on close; plain-link invariant holds. Fix landed during gate: fx slice now diffs the EFFECTIVE active effect (tipEffectMap wildcard) against the derived default — raw DEFAULT_EFFECTS_CONFIG.activeEffect "none" vs migration-derived "trails" stamped fx=trails onto every untouched viewer)
-- [ ] Task 9 — an slice
+- [x] Task 9 — an slice (d7be08fda1; REVISED to global-store memento after executor discovery, 05e0d3bcc3. Orchestrator verified: re-ran suite personally — 47 files/318 tests green incl. 12 new an-slice tests; read full diff; check 0 errors per executor log)
 - [ ] Task 10 — ex slice
 - [ ] Task 11 — t3 slice
 - [ ] Task 12 — cd slice
