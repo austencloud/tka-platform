@@ -59,7 +59,10 @@
     width: var(--rail-prop-glyph-size);
     height: var(--rail-prop-glyph-size);
     flex: 0 0 auto;
-    overflow: hidden;
+    /* Optical fitting may intentionally extend beyond this stable measuring
+       slot. The button is the visual boundary; clipping here amputates wide
+       shapes such as Mini Hoop and the physical fan builds. */
+    overflow: visible;
   }
 
   .rail-prop-glyph :global(.layer) {
