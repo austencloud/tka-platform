@@ -158,6 +158,12 @@ export interface VolcanicHazeConfig {
   lightningInterval: number;
   lightningIntensity: number;
   innerGlowColor: string;
+  /**
+   * The dome is depth-tested, so this is where it stops being sky: terrain
+   * closer hides it, terrain further away is painted over. Keep it past the
+   * furthest terrain any camera can reach or it cuts a shell across the
+   * ridgelines.
+   */
   radius: number;
   /** Bearing of the distant vent lighting the low haze. Horizontal part only. */
   underglowDirection?: [number, number, number];
@@ -165,6 +171,10 @@ export interface VolcanicHazeConfig {
   underglowColor?: string;
   /** Zero leaves the dome evenly lit at eye level. */
   underglowStrength?: number;
+  /** Falloff exponent of the caldera lobe. Higher is a tighter pool. */
+  underglowFocus?: number;
+  /** Share of the underglow reaching the bearing opposite the vent. */
+  underglowWrap?: number;
 }
 
 export interface EmberSceneConfig {
