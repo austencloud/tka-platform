@@ -1,11 +1,14 @@
 <script lang="ts">
   import { AVATAR_DEFINITIONS, type AvatarId } from "@austencloud/scene-3d";
+  import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import PerformerAvatarPicker from "../PerformerAvatarPicker.svelte";
 
   interface Props {
     currentAvatarId: AvatarId | null;
     pendingAvatarId?: AvatarId | null;
     performerColor?: string;
+    previewPerformer: AvatarInstanceState | null;
+    previewPerformerNumber: number;
     onIntent: (id: AvatarId) => void;
     onCancelIntent: () => void;
     onSelect: (id: AvatarId) => void;
@@ -15,6 +18,8 @@
     currentAvatarId,
     pendingAvatarId = null,
     performerColor = "var(--theme-accent)",
+    previewPerformer,
+    previewPerformerNumber,
     onIntent,
     onCancelIntent,
     onSelect,
@@ -35,7 +40,11 @@
 <div class="avatar-select-shell" style:--performer-color={performerColor}>
   <div class="picker-heading">
     <strong>Choose an avatar</strong>
-    <span>Updates the scene instantly. Use Undo to switch back.</span>
+    <span>
+      Hover to preview {previewPerformerNumber === 1
+        ? "Performer 1's"
+        : `Performer ${previewPerformerNumber}'s`} sequence. Select to apply instantly.
+    </span>
   </div>
 
   <span class="selection-status" aria-live="polite">
@@ -49,6 +58,7 @@
   <PerformerAvatarPicker
     selectedAvatarId={currentAvatarId}
     groupLabel="Choose an avatar"
+    {previewPerformer}
     {pendingAvatarId}
     {onSelect}
     {onIntent}
