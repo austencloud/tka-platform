@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { CollisionEvent } from "@austencloud/scene-3d";
-import { AvatarSequenceCollisionAudit } from "$lib/shared/3d/collision/avatar-sequence-collision-audit";
+import {
+  AVATAR_COLLISION_AUDIT_STORAGE_KEY,
+  AvatarSequenceCollisionAudit,
+} from "$lib/shared/3d/collision/avatar-sequence-collision-audit";
 
 function event(
   stepNumber: number,
@@ -64,5 +67,20 @@ describe("AvatarSequenceCollisionAudit", () => {
     expect(
       report.clusters.map((cluster) => cluster.performerId).sort()
     ).toEqual(["austen", "remy"]);
+  });
+
+  it("publishes a browser-readable snapshot without serializing every frame", () => {
+    const audit = new AvatarSequenceCollisionAudit();
+    sessionStorage.removeItem(AVATAR_COLLISION_AUDIT_STORAGE_KEY);
+    for (let frame = 0; frame < 15; frame += 1) {
+      audit.record("austen", [event(2, frame / 15, 0.06)]);
+    }
+
+    const stored = sessionStorage.getItem(AVATAR_COLLISION_AUDIT_STORAGE_KEY);
+    expect(stored).not.toBeNull();
+    expect(JSON.parse(stored!)).toMatchObject({
+      sampledFrames: 15,
+      clusters: [{ performerId: "austen", frameCount: 15 }],
+    });
   });
 });
