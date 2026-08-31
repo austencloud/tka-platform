@@ -2,7 +2,7 @@
 
 ## Mission
 
-Restore live production analytics at `tkaflowarts.com`. The admin analytics route returned 502 because its PostHog personal API key was no longer accepted. The credential has been rotated and saved locally and in Cloudflare; the remaining work is to redeploy the current production build and prove the authenticated production request succeeds.
+Restore live production analytics at `tkaflowarts.com`. The admin analytics route returned 502 because its PostHog personal API key was no longer accepted. The credential was rotated, saved locally and in Cloudflare, deployed, and verified live on 2026-08-31.
 
 ## Done - verified
 
@@ -10,26 +10,24 @@ Restore live production analytics at `tkaflowarts.com`. The admin analytics rout
 - Rolled the PostHog personal API key named `TKA production app admin` (commit: not applicable, PostHog account state). Browser evidence on 2026-08-31 showed a newly generated `phx_` key with length 52. The previous key stopped working immediately.
 - Replaced `POSTHOG_PERSONAL_API_KEY` in `C:\tka-platform\.env` (commit: not applicable, gitignored local secret). A read-back check on 2026-08-31 found exactly one matching entry, length 52, equal to the newly rolled key.
 - Replaced the Cloudflare Pages production secret `POSTHOG_PERSONAL_API_KEY` for project `tka-platform` (commit: not applicable, Cloudflare account state). After Save, the production Variables and secrets row returned to `Value encrypted` and no editable value field remained.
+- Verified the replacement credential directly against PostHog (commit: not applicable, external runtime evidence). A minimal `SELECT 1` query returned HTTP 200 with result `1`; the key was read from local `.env` and never printed.
+- Redeployed the existing production commit `b9a927bee2` without changing application source (commit: not applicable, Cloudflare deployment state). Deployment `cde1bc59-cfe2-431e-9b79-6a7c99dbc518` finished with status `success` in 15m59s; the build stage took 12m46s and deployment took 31s.
+- Verified the authenticated live production UI at `https://tkaflowarts.com/admin/pulse` (commit: not applicable, production browser evidence). Before deployment the page showed `Analytics proxy 502`. After deployment and Retry, that error was absent and the page rendered live values including 17 visitors today, 72 over 7 days, and 226 over 30 days.
 
 ## Believed done - unverified
 
-- Cloudflare has stored the intended replacement value. The dashboard confirms the secret was saved and encrypted, but Cloudflare does not reveal secret values after saving.
-- The credential-only change should restore the route after a new production deployment. No fresh production deployment or authenticated live analytics query has run yet.
+- None. The credential, deployment, and authenticated production path all have runtime proof.
 
 ## In flight
 
 - Branch: `codex/fix-prod-analytics-502`
 - Worktree: `C:\tka-platform-analytics-502`
-- The branch owns only this handoff document. No application source files were changed.
+- The branch owns only this handoff document. No application source files were changed, and no operational repair work remains.
 - The valid replacement key is intentionally absent from Git. On this machine it is stored only in the gitignored `C:\tka-platform\.env` and in the Cloudflare encrypted production secret.
 
 ## Loose ends (ranked)
 
-1. Redeploy the current successful Cloudflare Pages production deployment for commit `b9a927bee2` (`fix(glossary): preserve landing morph on gate`). Do not deploy an unrelated newer commit just to rotate the secret.
-2. Verify the local credential with a minimal PostHog query such as `SELECT 1`; record the HTTP status without printing the key.
-3. In the signed-in Chrome session, open the production admin analytics UI and prove the live request no longer returns 502. Capture the response status or visible analytics result. A successful build or saved-secret message is not sufficient proof.
-4. If production still returns 502, inspect the Cloudflare Pages Function logs for `/api/admin/analytics` before changing source. The current evidence points to authentication, not the hardcoded PostHog API base URL.
-5. Update this handoff with the deployment ID and runtime proof, then close the task.
+1. No operational loose ends remain. Preserve this branch until the documentation is merged or intentionally closed; the production repair itself is complete.
 
 ## Decisions already made
 
@@ -43,6 +41,6 @@ Restore live production analytics at `tkaflowarts.com`. The admin analytics rout
 - Do not roll the PostHog key again while `C:\tka-platform\.env` is available. Another rotation would immediately invalidate both the local value and the Cloudflare value just saved.
 - Never print, log, commit, or paste the key into this document. Read it from the local gitignored `.env` only at the point of use.
 - Cloudflare project: `tka-platform`; account ID: `0c0fb89b9dd972a61c30f0d43dd02b18`; production domains: `tkaflowarts.com` and `tka-landing.pages.dev`.
-- The last successful production deployment visible during this work was `1fe9369e-f1c4-4bc4-92c8-f23c423e39a0` for commit `b9a927bee2`.
-- Production automatic deployments are paused. Saving a Pages secret does not itself provide runtime proof; trigger or retry the existing production deployment explicitly.
+- The successful credential-binding deployment is `cde1bc59-cfe2-431e-9b79-6a7c99dbc518` for commit `b9a927bee2`.
+- Production automatic deployments are paused. Future secret changes still need an explicit deployment and fresh authenticated runtime proof.
 - The browser tabs used for PostHog and Cloudflare are session-owned and may not be reclaimable by another agent. The local `.env` is the durable same-machine recovery point.
