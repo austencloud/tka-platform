@@ -28,7 +28,14 @@ export interface TunnelViewState {
 
 const STORAGE_KEY = "tka_tunnel_view_state";
 
-const DEFAULTS: TunnelViewState = {
+/**
+ * Post-normalize defaults: this IS what `loadTunnelViewState()` returns on
+ * empty storage (both branches below build off it directly), so it is safe
+ * as the `tn` URL slice's diff baseline with no separate migration step.
+ * Exported (not just used internally) so `tn-slice.ts` never re-derives it
+ * from a second raw constant — the fx/an trap this project has hit before.
+ */
+export const DEFAULT_TUNNEL_VIEW_STATE: TunnelViewState = {
   config: { ...DEFAULT_CONFIG },
   gridVisible: false,
   spectrum: true,
@@ -106,10 +113,11 @@ function resolveConfig(p: Record<string, unknown>): TunnelConfig {
 }
 
 export function loadTunnelViewState(): TunnelViewState {
-  if (typeof localStorage === "undefined") return { ...DEFAULTS, config: { ...DEFAULT_CONFIG } };
+  if (typeof localStorage === "undefined")
+    return { ...DEFAULT_TUNNEL_VIEW_STATE, config: { ...DEFAULT_CONFIG } };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULTS, config: { ...DEFAULT_CONFIG } };
+    if (!raw) return { ...DEFAULT_TUNNEL_VIEW_STATE, config: { ...DEFAULT_CONFIG } };
     const p = JSON.parse(raw) as Record<string, unknown>;
     // A stored "appearance" (the retired Cast tab) falls through to "tunnel".
     const section =
@@ -120,18 +128,18 @@ export function loadTunnelViewState(): TunnelViewState {
       p.section === "effort" ||
       p.section === "playback"
         ? p.section
-        : DEFAULTS.section;
+        : DEFAULT_TUNNEL_VIEW_STATE.section;
     return {
       config: resolveConfig(p),
-      gridVisible: bool(p.gridVisible, DEFAULTS.gridVisible),
-      spectrum: bool(p.spectrum, DEFAULTS.spectrum),
+      gridVisible: bool(p.gridVisible, DEFAULT_TUNNEL_VIEW_STATE.gridVisible),
+      spectrum: bool(p.spectrum, DEFAULT_TUNNEL_VIEW_STATE.spectrum),
       section,
       // Older view state only had the live config. Preserve that uncertainty;
       // a matching built-in value is not evidence that it came from that recipe.
       presetRecipe: parsePresetRecipe(p.presetRecipe),
     };
   } catch {
-    return { ...DEFAULTS, config: { ...DEFAULT_CONFIG } };
+    return { ...DEFAULT_TUNNEL_VIEW_STATE, config: { ...DEFAULT_CONFIG } };
   }
 }
 

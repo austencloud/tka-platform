@@ -12,6 +12,14 @@
   import { exportVideoFilename } from "../services/export-video-filename";
   import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
   import { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
+  import type { TunnelViewState } from "../tunnel/tunnel-view-state";
+  import { tryGetViewerUrlSessionContext } from "../services/viewer-url-session";
+  import {
+    captureTnSlice,
+    persistedTnSliceFromStorage,
+    seedFromTnSlice,
+    type TnSlicePayload,
+  } from "../services/viewer-url-slices/tn-slice";
   import {
     MandalaViewerController,
     type MandalaExportPhase,
@@ -171,6 +179,31 @@
     onTunnelSaved?: TunnelSavedCallback;
   } = $props();
 
+  // ── tn URL slice ─────────────────────────────────────────────────────────
+  // ArtPane mounts twice per viewer (artType="mandala" and artType="tunnel"),
+  // and both construct a TunnelViewController — the mandala one stays inert
+  // via `controller.active` below (a pre-existing shim, not new here). Only
+  // the tunnel-artType instance seeds/captures: the session's `registerSlice`
+  // holds one entry per slice id, so registering from both panes would just
+  // let whichever mounts second shadow the other's capture, and seeding the
+  // inert mandala-side instance would have no visible effect. See tn-slice.ts
+  // for why this is a pure instance seam (both seed and capture belong here,
+  // unlike t3's orchestrator/pane split) and how the preset-by-value
+  // constraint is already satisfied by TunnelPresetRecipe's frozen config.
+  const viewerUrlSession = tryGetViewerUrlSessionContext();
+  const tnSeedPayload =
+    artType === "tunnel"
+      ? ((viewerUrlSession?.getSeed("tn") as TnSlicePayload | null) ?? null)
+      : null;
+  // Own-link rule in slice space, both sides through captureTnSlice: a link
+  // that matches what this visitor's own disk would load is not an override,
+  // so this pane keeps reading/writing localStorage normally.
+  const tnSeed: TunnelViewState | null =
+    tnSeedPayload &&
+    viewerUrlSession?.isOverride("tn", persistedTnSliceFromStorage())
+      ? seedFromTnSlice(tnSeedPayload)
+      : null;
+
   // The tunnel controller is owned HERE and shared with both the rendering view
   // (TunnelArtView) and the controls (ArtSettingsPanel), so the panel's look /
   // grid / spectrum controls drive the same instance the canvas reads — and the
@@ -178,6 +211,7 @@
   const controller = new TunnelViewController({
     getSequence: () => playback.animationState.sequenceData ?? sequence,
     getComposition: () => tunnelComposition,
+    ...(tnSeed ? { initialViewState: tnSeed, persistViewState: false } : {}),
   });
   const saveTunnelLabel = $derived(
     tunnelSaveTarget ? "Save changes" : "Save tunnel"
@@ -186,6 +220,21 @@
   // a mandala pane keeps a (cheap) controller but doesn't drive the layer build.
   $effect(() => {
     controller.active = artType === "tunnel";
+  });
+
+  const captureTn = () => captureTnSlice(controller);
+  if (viewerUrlSession && artType === "tunnel") {
+    const unregisterTnSlice = viewerUrlSession.registerSlice("tn", captureTn);
+    onDestroy(unregisterTnSlice);
+  }
+  // The orchestrator never constructs tunnel state, so nothing upstream can
+  // track this controller's fields and re-run on them. This pane-side effect
+  // does that tracking and asks the session to write — the same gap-closer
+  // t3 uses in Viewer3DCanvas for its own lazily-mounted pane state.
+  $effect(() => {
+    if (!viewerUrlSession || artType !== "tunnel") return;
+    void captureTn();
+    viewerUrlSession.scheduleUrlWrite();
   });
 
   // The mandala controller is owned HERE (not inside MandalaPane) so the same

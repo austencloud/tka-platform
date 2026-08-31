@@ -65,6 +65,12 @@ export interface TunnelControllerSources {
   visibilityManager?: AnimationVisibilityStateManager;
   /** Embedded editors must not rewrite the viewer's last-used view state. */
   persistViewState?: boolean;
+  /** A URL-seeded view state (the `tn` slice). Takes the place of
+   *  `loadTunnelViewState()` entirely so a shared link's kaleidoscope never
+   *  reads the recipient's disk. Callers that pass this SHOULD also pass
+   *  `persistViewState: false` — the seam only replaces the read; it does not
+   *  itself suppress the write. */
+  initialViewState?: TunnelViewState;
 }
 
 /** Reduced motion caps a dense ring so a heavy kaleidoscope doesn't spin for
@@ -141,8 +147,10 @@ export class TunnelViewController {
     this.#sources = sources;
 
     // Restore the last-left config before any effect wires up, clamped to the
-    // live budget (a persisted dense ring shrinks under reduced motion).
-    const view = loadTunnelViewState();
+    // live budget (a persisted dense ring shrinks under reduced motion). A
+    // `tn`-slice seed replaces the disk read outright — never merged with it —
+    // so a shared link never picks up the recipient's own leftover state.
+    const view = sources.initialViewState ?? loadTunnelViewState();
     const requestedConfig =
       sources.getComposition?.()?.formation ?? view.config;
     const cfg = clampConfig(requestedConfig, this.#maxImages());
