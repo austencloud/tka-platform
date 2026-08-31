@@ -9,10 +9,7 @@
   import KineticAtlasOverview from "./KineticAtlasOverview.svelte";
   import LetterCodex from "./LetterCodex.svelte";
   import CodexBoardSwitcher from "./codex-boards/CodexBoardSwitcher.svelte";
-  import {
-    readBoard,
-    type BoardKey,
-  } from "./codex-boards/board-choice";
+  import { readBoard, type BoardKey } from "./codex-boards/board-choice";
   import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
   import {
     matchesGlossaryTerm,
@@ -643,13 +640,9 @@
 
     {#if landingView}
       <KineticAtlasOverview
-        regions={data.atlasRegions}
-        letterTypes={data.letterTypes}
         totalTerms={data.total}
         bind:query
-        showRegions={!filtering}
-        onOpenRegion={enterAtlasRegion}
-        onOpenCategory={enterView}
+        showMap={!filtering}
         onBrowseAll={() => enterView("all")}
       />
     {/if}
