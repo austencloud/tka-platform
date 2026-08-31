@@ -192,11 +192,13 @@ function Start-TkaTunnel {
             throw "The tka-dev tunnel token file is empty."
         }
 
-        # Flag order matters. --url and --no-tls-verify configure the tunnel
-        # command and must precede the run subcommand. After `run` they parse,
-        # but cloudflared builds an empty ingress and returns 503 for requests.
+        # Flag order matters. These configure the tunnel command and must
+        # precede the run subcommand. After `run`, ingress flags parse but never
+        # reach the ingress builder. HTTP/2 is deliberate: cloudflared's own
+        # connectivity precheck selects it for this host, while QUIC connections
+        # have remained registered during repeated public request timeouts.
         return Start-Process -FilePath $Cloudflared -ArgumentList `
-            "tunnel", "--url", "https://localhost:5173", "--no-tls-verify", `
+            "tunnel", "--protocol", "http2", "--url", "https://localhost:5173", "--no-tls-verify", `
             "run", "--token", $token -NoNewWindow -PassThru
     }
 
@@ -204,7 +206,7 @@ function Start-TkaTunnel {
         # Named-tunnel ingress and origin TLS settings live in
         # %USERPROFILE%\.cloudflared\config.yml.
         return Start-Process -FilePath $Cloudflared -ArgumentList `
-            "tunnel", "run", "tka-dev" -NoNewWindow -PassThru
+            "tunnel", "--protocol", "http2", "run", "tka-dev" -NoNewWindow -PassThru
     }
 
     return $null

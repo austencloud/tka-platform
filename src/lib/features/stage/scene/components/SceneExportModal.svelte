@@ -13,13 +13,20 @@
     onClose: () => void;
   }
 
-  let { open = $bindable(), sequence, bpm, exporter, onClose }: Props = $props();
+  let {
+    open = $bindable(),
+    sequence,
+    bpm,
+    exporter,
+    onClose,
+  }: Props = $props();
 
   const state = $derived(exporter.state);
   const progressPercent = $derived(
     Math.round(Math.max(0, Math.min(1, state.progress?.progress ?? 0)) * 100)
   );
   const progressLabel = $derived.by(() => {
+    if (state.isCancelling) return "Cancelling render";
     switch (state.progress?.stage) {
       case "capturing":
         return "Rendering frames";
@@ -108,12 +115,24 @@
           >
             <span style:width={`${progressPercent}%`}></span>
           </div>
-          <button type="button" class="cancel-button" onclick={exporter.cancel}>
-            Cancel
+          <button
+            type="button"
+            class="cancel-button"
+            onclick={exporter.cancel}
+            disabled={state.isCancelling}
+            aria-label={state.isCancelling
+              ? "Cancelling render"
+              : "Cancel render"}
+          >
+            {state.isCancelling ? "Cancelling..." : "Cancel"}
           </button>
         </div>
       {:else}
-        <button type="button" class="render-button" onclick={() => void render()}>
+        <button
+          type="button"
+          class="render-button"
+          onclick={() => void render()}
+        >
           <i class="fas fa-clapperboard" aria-hidden="true"></i>
           Render 3D video
         </button>
@@ -223,7 +242,11 @@
     justify-content: center;
     gap: 0.625rem;
     padding: 0.75rem 1rem;
-    border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 62%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #22d3ee) 62%,
+      transparent
+    );
     background: var(--theme-accent, #22d3ee);
     color: #061014;
     font-weight: 800;
@@ -259,9 +282,15 @@
 
   .cancel-button {
     align-self: center;
+    min-width: 7.5rem;
     padding: 0.625rem 1rem;
     background: transparent;
     color: var(--theme-text, #fff);
+  }
+
+  .cancel-button:disabled {
+    cursor: wait;
+    opacity: 0.62;
   }
 
   .export-error {

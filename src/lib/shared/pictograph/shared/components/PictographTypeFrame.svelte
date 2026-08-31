@@ -34,6 +34,8 @@
     min-width: 0;
     min-height: 0;
     container-type: inline-size;
+    border-radius: var(--pictograph-type-frame-radius, 0);
+    overflow: hidden;
   }
 
   .type-border {
@@ -42,6 +44,7 @@
     height: 100%;
     min-width: 0;
     min-height: 0;
+    border-radius: inherit;
     overflow: hidden;
   }
 
@@ -57,10 +60,12 @@
   .type-border::before {
     inset: 0;
     border: max(1px, 1.6cqi) solid var(--type-border-primary);
+    border-radius: inherit;
   }
 
   .type-border::after {
     inset: max(1px, 1.6cqi);
     border: max(1px, 1.6cqi) solid var(--type-border-secondary);
+    border-radius: inherit;
   }
 </style>
