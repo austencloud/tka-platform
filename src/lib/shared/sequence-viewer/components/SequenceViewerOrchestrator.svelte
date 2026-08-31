@@ -54,7 +54,13 @@
     seedFromExSlice,
     type ExSlicePayload,
   } from "../services/viewer-url-slices/ex-slice";
+  import {
+    captureCdSlice,
+    seedFromCdSlice,
+    type CdSlicePayload,
+  } from "../services/viewer-url-slices/cd-slice";
   import type { ExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
+  import type { ImageCompositionSettings } from "$lib/shared/share/state/image-composition-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
   import {
@@ -551,6 +557,36 @@
   if (initialActiveEffect)
     effectsConfigState.setActiveEffect(initialActiveEffect);
 
+  // Card composition is a third app-global singleton (`getImageCompositionManager()`,
+  // borrowed here through `imgComp.imageComposition`), so it takes the same
+  // memento. Two ordering rules make this block sit BEFORE the `an` block even
+  // though its restore runs after an's:
+  //   1. This store observes the animation-visibility manager's dark mode and
+  //      persists on every change — to localStorage AND, for a signed-in
+  //      visitor, their account. An `an` override applies the sender's dark
+  //      mode, so unless this store is already suspended when that happens, the
+  //      sender's preference lands in the recipient's account. That is why the
+  //      suspension covers an `an` override too, not only a `cd` one.
+  //   2. On close the reverse: `an` restores first (firing that observer once
+  //      more) while this store is still suspended, then this store restores its
+  //      own snapshot and resumes.
+  // Its fields are `$state`, so the live-sync effect below tracks them without
+  // the manual observer an's plain-class visibility manager needs.
+  const compositionStore = imgComp.imageComposition;
+  /** Matches the card: `effectiveSequence?.steps?.length ?? 0`. */
+  function cardStepCount(): number {
+    return (modalAnimationState.sequenceData ?? sequence)?.steps?.length ?? 0;
+  }
+  const cdSeedPayload = urlSession.getSeed("cd") as CdSlicePayload | null;
+  // Own-link rule in slice space, both sides through `captureCdSlice`.
+  const cdIsOverride = Boolean(
+    cdSeedPayload &&
+    urlSession.isOverride(
+      "cd",
+      captureCdSlice(compositionStore, cardStepCount())
+    )
+  );
+
   // The 2D animation stores are app-global singletons read directly by ~7 viewer
   // files and 2 services, with no injection seam short of the AnimationScope
   // refactor. So a link BORROWS them (memento) instead of constructing a
@@ -571,6 +607,10 @@
     anSeedPayload && urlSession.isOverride("an", captureAnSlice(anStores))
       ? { settings: anStores.settings.snapshot(), visibility: anStores.visibility.snapshot() }
       : null;
+  // Borrow the card store before `an` moves dark mode (see rule 1 above).
+  let cdRestore: ImageCompositionSettings | null =
+    cdIsOverride || anRestore ? compositionStore.getSettings() : null;
+  if (cdRestore) compositionStore.setPersistenceSuspended(true);
   if (anRestore) {
     anStores.settings.setPersistenceSuspended(true);
     anStores.visibility.setPersistenceSuspended(true);
@@ -578,6 +618,21 @@
     anStores.settings.replaceAll(anSeed.settings);
     anStores.visibility.replaceAll(anSeed.visibility);
   }
+  // Seeded after `an`, and against the store's CURRENT state rather than the
+  // restore snapshot, so the excluded dark mode is the link's (already mirrored
+  // from the visibility manager) instead of the visitor's.
+  if (cdIsOverride) {
+    compositionStore.replaceAll(
+      seedFromCdSlice(
+        cdSeedPayload!,
+        cardStepCount(),
+        compositionStore.getSettings()
+      )
+    );
+  }
+  const unregisterCdSlice = urlSession.registerSlice("cd", () =>
+    captureCdSlice(compositionStore, cardStepCount())
+  );
   urlSession.registerSlice("an", () => captureAnSlice(anStores));
   // The visibility manager is a plain class, not runes, so the live-sync effect
   // below cannot see its changes. Its own observer API closes that gap.
@@ -724,6 +779,14 @@
       exportOptionsStore.replaceAll(exRestore);
       exportOptionsStore.setPersistenceSuspended(false);
       exRestore = null;
+    }
+    // After `an` above, so the dark-mode observer's last write is still
+    // suppressed when it fires.
+    unregisterCdSlice();
+    if (cdRestore) {
+      compositionStore.replaceAll(cdRestore);
+      compositionStore.setPersistenceSuspended(false);
+      cdRestore = null;
     }
     urlSession.dispose();
     interactive.clearAutoplayTimer();
