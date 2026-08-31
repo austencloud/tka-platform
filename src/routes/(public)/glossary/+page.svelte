@@ -33,18 +33,20 @@
 {#if dev}
   <KineticAtlasDraft {data} />
 {:else}
-  <UnderConstruction
-    title="The Kinetic Atlas"
-    eyebrow="Coming soon"
-    icon="fa-compass"
-    note="The Atlas is being rebuilt. In the meantime, use the Guide or interactive lessons."
-    destinations={[
-      {
-        label: "Interactive lessons",
-        href: "/learn/concepts",
-        icon: "fa-graduation-cap",
-      },
-      { label: "Read the Guide", href: "/guide", icon: "fa-book-open" },
-    ]}
-  />
+  <div style:view-transition-name="launchpad-glossary">
+    <UnderConstruction
+      title="The Kinetic Atlas"
+      eyebrow="Coming soon"
+      icon="fa-compass"
+      note="The Atlas is being rebuilt. In the meantime, use the Guide or interactive lessons."
+      destinations={[
+        {
+          label: "Interactive lessons",
+          href: "/learn/concepts",
+          icon: "fa-graduation-cap",
+        },
+        { label: "Read the Guide", href: "/guide", icon: "fa-book-open" },
+      ]}
+    />
+  </div>
 {/if}
