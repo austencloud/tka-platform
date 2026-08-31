@@ -6,8 +6,8 @@
  * or "left hand should dash, right hand should shift".
  *
  * In TKA terminology:
- * - Blue = Left hand (lead)
- * - Red = Right hand (follow)
+ * - Blue = performer's left hand
+ * - Red = performer's right hand
  */
 
 import { ConstraintType, type ConstraintMode } from "../constraint-types.js";

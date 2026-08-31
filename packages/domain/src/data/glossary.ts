@@ -1262,22 +1262,22 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   blue: {
     definition:
-      "The color assigned to one of the two hands/props in TKA notation. Blue is conventionally the left hand or lead hand. In pictographs, the blue prop and arrow are rendered in blue. The choice of blue vs red is a notational convention, not a physical requirement.",
+      "The canonical display color for the performer's left hand and prop in TKA notation. The underlying motion identity is left; pictographs traditionally render its prop and arrow in blue.",
     examples: [
-      "Blue hand starts at N, shifts to E",
-      "Blue prop shown in blue on the pictograph",
+      "The left hand starts at N and shifts to E",
+      "The left prop and arrow use canonical blue in the default palette",
     ],
-    relatedTerms: ["red", "prop", "pictograph"],
+    relatedTerms: ["red", "left hand", "prop", "pictograph"],
     category: "general",
   },
   red: {
     definition:
-      "The color assigned to the other hand/prop in TKA notation. Red is conventionally the right hand or follow hand. In pictographs, the red prop and arrow are rendered in red.",
+      "The canonical display color for the performer's right hand and prop in TKA notation. The underlying motion identity is right; pictographs traditionally render its prop and arrow in red.",
     examples: [
-      "Red hand starts at S, shifts to W",
-      "Red prop shown in red on the pictograph",
+      "The right hand starts at S and shifts to W",
+      "The right prop and arrow use canonical red in the default palette",
     ],
-    relatedTerms: ["blue", "prop", "pictograph"],
+    relatedTerms: ["blue", "right hand", "prop", "pictograph"],
     category: "general",
   },
   constraint: {
